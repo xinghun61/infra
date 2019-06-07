@@ -83,7 +83,7 @@ export default class MrChart extends LitElement {
       }
       div#options #align #frequency {
         display: inline-block;
-        width: 50%;
+        width: 40%;
       }
       div#options #align #frequency #two-toggle {
         font-size: 95%;
@@ -92,7 +92,7 @@ export default class MrChart extends LitElement {
       }
       div#options #align .time {
         display: inline-block;
-        width: 50%;
+        width: 60%;
       }
       .choice {
         padding: 4px 10px;
@@ -175,7 +175,7 @@ export default class MrChart extends LitElement {
             </div>
           </div>
           <div class="time">
-            <label for="start-date">Choose start date:</label>
+            <label for="start-date">Choose start and end date:</label>
             <br />
             <input
               type="date"
@@ -183,20 +183,19 @@ export default class MrChart extends LitElement {
               name="start-date"
               .value=${this.startDate && this.startDate.toISOString().substr(0, 10)}
               ?disabled=${!doneLoading}
-              @change=${this._onDateChanged}
+              @change=${(e) => this.startDate = MrChart.dateStringToDate(e.target.value)}
             />
-          </div>
-          <div class="time">
-            <label for="end-date">Choose end date:</label>
-            <br />
             <input
               type="date"
               id="end-date"
               name="end-date"
               .value=${this.endDate && this.endDate.toISOString().substr(0, 10)}
               ?disabled=${!doneLoading}
-              @change=${this._onDateChanged}
+              @change=${(e) => this.endDate = MrChart.dateStringToDate(e.target.value)}
             />
+            <chops-button @click="${this._onDateChanged}" class=choice>
+              Submit
+            </chops-button>
           </div>
         </div>
       </div>
@@ -229,21 +228,13 @@ export default class MrChart extends LitElement {
   }
 
   // Fetch corresponding data when start date or end date changes
-  _onDateChanged(e) {
-    const value = e.target.value;
-
-    if (e.target.id === 'end-date') {
-      this.endDate = MrChart.dateStringToDate(value);
-    }
-    else {
-      this.startDate = MrChart.dateStringToDate(value);
-    }
-
+  _onDateChanged() {
     this._fetchData();
     const urlParams = MrChart.getSearchParams();
 
     // TODO(zhangtiff): Integrate with frontend routing once charts is part of the SPA.
-    urlParams.set(e.target.id, value);
+    urlParams.set('start-date', this.startDate.toISOString().substr(0, 10));
+    urlParams.set('end-date', this.endDate.toISOString().substr(0, 10));
     const newUrl = `${location.protocol}//${location.host}${location.pathname}?${urlParams.toString()}`;
     window.history.pushState({}, '', newUrl);
   }

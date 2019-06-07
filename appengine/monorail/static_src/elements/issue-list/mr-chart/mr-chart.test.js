@@ -164,6 +164,7 @@ describe('mr-chart', () => {
       const event = new Event('change');
       startDateInput.dispatchEvent(event);
 
+      element._onDateChanged();
       sinon.assert.calledOnce(element._fetchData);
       assert.equal(element.dateRange, 90);
       assert.equal(element.frequency, 7);
@@ -180,6 +181,7 @@ describe('mr-chart', () => {
         const event = new Event('change');
         startDateInput.dispatchEvent(event);
 
+        element._onDateChanged();
         sinon.assert.calledOnce(element._fetchData);
         assert.equal(element.dateRange, 90 * 7);
         assert.equal(element.frequency, 7);
@@ -209,11 +211,11 @@ describe('mr-chart', () => {
       const event = new Event('change');
       endDateInput.dispatchEvent(event);
 
+      element._onDateChanged();
+      sinon.assert.calledOnce(element._fetchData);
       sinon.assert.calledOnce(history.pushState);
       sinon.assert.calledWith(history.pushState, {}, '',
         sinon.match('end-date=2017-10-02'));
-
-      sinon.assert.calledOnce(element._fetchData);
     });
   });
 
