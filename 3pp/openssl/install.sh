@@ -35,7 +35,7 @@ case $OSTYPE in
     ;;
 esac
 
-perl Configure --prefix="$PREFIX" no-shared $ARGS "$TARGET"
+perl Configure -lpthread --prefix="$PREFIX" no-shared $ARGS "$TARGET"
 
 make -j $(nproc)
 make install_sw
