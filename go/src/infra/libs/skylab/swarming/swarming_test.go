@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-package cmd
+package swarming
 
 import (
 	"context"
@@ -32,7 +32,7 @@ func TestSwarmingCallWithRetries_TransientFailure(t *testing.T) {
 		}
 		return nil
 	}
-	err := swarmingCallWithRetries(ctx, f)
+	err := callWithRetries(ctx, f)
 	if err != nil {
 		t.Fatalf("call error actual != expected, %v != %v", err, nil)
 	}
@@ -47,7 +47,7 @@ func TestSwarmingCallWithRetries_NontransientFailure(t *testing.T) {
 		count++
 		return errors.New("foo")
 	}
-	err := swarmingCallWithRetries(context.Background(), f)
+	err := callWithRetries(context.Background(), f)
 	if err == nil {
 		t.Fatalf("call error unexpectedly nil")
 	}

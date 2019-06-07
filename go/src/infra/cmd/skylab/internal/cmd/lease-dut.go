@@ -11,11 +11,12 @@ import (
 
 	"github.com/maruel/subcommands"
 	"go.chromium.org/luci/auth/client/authcli"
-	swarming "go.chromium.org/luci/common/api/swarming/swarming/v1"
+	swarming_api "go.chromium.org/luci/common/api/swarming/swarming/v1"
 	"go.chromium.org/luci/common/cli"
 	"go.chromium.org/luci/common/errors"
 
 	"infra/cmd/skylab/internal/site"
+	"infra/libs/skylab/swarming"
 )
 
 // LeaseDut subcommand: Lease a DUT for debugging.
@@ -57,8 +58,12 @@ func (c *leaseDutRun) innerRun(a subcommands.Application, args []string, env sub
 	host := args[0]
 
 	ctx := cli.GetContext(a, c, env)
+	h, err := httpClient(ctx, &c.authFlags)
+	if err != nil {
+		return errors.Annotate(err, "failed to create http client").Err()
+	}
 	e := c.envFlags.Env()
-	s, err := newSwarmingService(ctx, c.authFlags, e)
+	client, err := swarming.New(ctx, h, e.SwarmingService)
 	if err != nil {
 		return errors.Annotate(err, "failed to create Swarming client").Err()
 	}
@@ -67,7 +72,7 @@ func (c *leaseDutRun) innerRun(a subcommands.Application, args []string, env sub
 		host:     host,
 		duration: time.Duration(c.leaseMinutes) * time.Minute,
 	}
-	id, err := createLeaseTask(ctx, s, e, lt)
+	id, err := createLeaseTask(ctx, client, e, lt)
 	if err != nil {
 		return err
 	}
@@ -75,12 +80,7 @@ func (c *leaseDutRun) innerRun(a subcommands.Application, args []string, env sub
 	fmt.Fprintf(a.GetOut(), "Waiting for task to start; lease isn't active yet\n")
 poll:
 	for {
-		var result *swarming.SwarmingRpcsTaskStates
-		err = swarmingCallWithRetries(ctx, func() error {
-			var err error
-			result, err = s.Tasks.GetStates().TaskId(id).Context(ctx).Do()
-			return err
-		})
+		result, err := client.GetTaskState(ctx, id)
 		if err != nil {
 			return err
 		}
@@ -106,20 +106,20 @@ type leaseTask struct {
 	duration time.Duration
 }
 
-func createLeaseTask(ctx context.Context, s *swarming.Service, e site.Environment, lt leaseTask) (taskID string, err error) {
+func createLeaseTask(ctx context.Context, t *swarming.Client, e site.Environment, lt leaseTask) (taskID string, err error) {
 	c := []string{"/bin/sh", "-c", `while true; do sleep 60; echo Zzz...; done`}
-	slices := []*swarming.SwarmingRpcsTaskSlice{{
+	slices := []*swarming_api.SwarmingRpcsTaskSlice{{
 		ExpirationSecs: 600,
-		Properties: &swarming.SwarmingRpcsTaskProperties{
+		Properties: &swarming_api.SwarmingRpcsTaskProperties{
 			Command: c,
-			Dimensions: []*swarming.SwarmingRpcsStringPair{
+			Dimensions: []*swarming_api.SwarmingRpcsStringPair{
 				{Key: "pool", Value: "ChromeOSSkylab"},
 				{Key: "dut_name", Value: lt.host},
 			},
 			ExecutionTimeoutSecs: int64(lt.duration.Seconds()),
 		},
 	}}
-	r := &swarming.SwarmingRpcsNewTaskRequest{
+	r := &swarming_api.SwarmingRpcsNewTaskRequest{
 		Name: "lease task",
 		Tags: []string{
 			"pool:ChromeOSSkylab",
@@ -131,7 +131,7 @@ func createLeaseTask(ctx context.Context, s *swarming.Service, e site.Environmen
 	}
 	ctx, cf := context.WithTimeout(ctx, 60*time.Second)
 	defer cf()
-	resp, err := swarmingCreateTaskWithRetries(ctx, s, r)
+	resp, err := t.CreateTask(ctx, r)
 	if err != nil {
 		return "", errors.Annotate(err, "failed to create task").Err()
 	}

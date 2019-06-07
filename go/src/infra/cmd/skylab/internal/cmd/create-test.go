@@ -12,13 +12,14 @@ import (
 
 	"github.com/maruel/subcommands"
 	"go.chromium.org/luci/auth/client/authcli"
-	swarming "go.chromium.org/luci/common/api/swarming/swarming/v1"
+	swarming_api "go.chromium.org/luci/common/api/swarming/swarming/v1"
 	"go.chromium.org/luci/common/cli"
 	"go.chromium.org/luci/common/errors"
 	"go.chromium.org/luci/common/flag"
 
 	"infra/cmd/skylab/internal/site"
 	"infra/cmd/skylab_swarming_worker/worker"
+	"infra/libs/skylab/swarming"
 )
 
 // CreateTest subcommand: create a test task.
@@ -166,7 +167,7 @@ func (c *createTestRun) innerRun(a subcommands.Application, args []string, env s
 		tags = append(tags, "qs_account:"+c.qsAccount)
 	}
 
-	req := &swarming.SwarmingRpcsNewTaskRequest{
+	req := &swarming_api.SwarmingRpcsNewTaskRequest{
 		Name:         taskName,
 		Tags:         tags,
 		TaskSlices:   slices,
@@ -175,14 +176,18 @@ func (c *createTestRun) innerRun(a subcommands.Application, args []string, env s
 	}
 
 	ctx := cli.GetContext(a, c, env)
-	s, err := newSwarmingService(ctx, c.authFlags, e)
+	h, err := httpClient(ctx, &c.authFlags)
+	if err != nil {
+		return errors.Annotate(err, "failed to create http client").Err()
+	}
+	client, err := swarming.New(ctx, h, e.SwarmingService)
 	if err != nil {
 		return err
 	}
 
 	ctx, cf := context.WithTimeout(ctx, 60*time.Second)
 	defer cf()
-	resp, err := swarmingCreateTaskWithRetries(ctx, s, req)
+	resp, err := client.CreateTask(ctx, req)
 	if err != nil {
 		return errors.Annotate(err, "create test").Err()
 	}
@@ -191,8 +196,8 @@ func (c *createTestRun) innerRun(a subcommands.Application, args []string, env s
 	return nil
 }
 
-func taskSlice(command []string, dimensions []*swarming.SwarmingRpcsStringPair, timeoutMins int) *swarming.SwarmingRpcsTaskSlice {
-	return &swarming.SwarmingRpcsTaskSlice{
+func taskSlice(command []string, dimensions []*swarming_api.SwarmingRpcsStringPair, timeoutMins int) *swarming_api.SwarmingRpcsTaskSlice {
+	return &swarming_api.SwarmingRpcsTaskSlice{
 		// We want all slices to wait, at least a little while, for bots with
 		// metching dimensions.
 		// For slice 0: This allows the task to try to re-use provisionable
@@ -206,7 +211,7 @@ func taskSlice(command []string, dimensions []*swarming.SwarmingRpcsStringPair, 
 		// provisionable label. This value will be overwritten for the final
 		// slice of a task.
 		ExpirationSecs: 30,
-		Properties: &swarming.SwarmingRpcsTaskProperties{
+		Properties: &swarming_api.SwarmingRpcsTaskProperties{
 			Command:              command,
 			Dimensions:           dimensions,
 			ExecutionTimeoutSecs: int64(timeoutMins * 60),
@@ -215,8 +220,8 @@ func taskSlice(command []string, dimensions []*swarming.SwarmingRpcsStringPair, 
 }
 
 // getSlices generates and returns the set of swarming task slices for the given test task.
-func getSlices(cmd worker.Command, provisionableDimensions []string, dimensions []string, timeoutMins int) ([]*swarming.SwarmingRpcsTaskSlice, error) {
-	slices := make([]*swarming.SwarmingRpcsTaskSlice, 1, 2)
+func getSlices(cmd worker.Command, provisionableDimensions []string, dimensions []string, timeoutMins int) ([]*swarming_api.SwarmingRpcsTaskSlice, error) {
+	slices := make([]*swarming_api.SwarmingRpcsTaskSlice, 1, 2)
 
 	basePairs, err := toPairs(dimensions)
 	if err != nil {

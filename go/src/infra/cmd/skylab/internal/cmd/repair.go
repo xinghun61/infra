@@ -11,12 +11,13 @@ import (
 
 	"github.com/maruel/subcommands"
 	"go.chromium.org/luci/auth/client/authcli"
-	swarming "go.chromium.org/luci/common/api/swarming/swarming/v1"
+	swarming_api "go.chromium.org/luci/common/api/swarming/swarming/v1"
 	"go.chromium.org/luci/common/cli"
 	"go.chromium.org/luci/common/errors"
 
 	"infra/cmd/skylab/internal/site"
 	"infra/cmd/skylab_swarming_worker/worker"
+	"infra/libs/skylab/swarming"
 )
 
 // Repair subcommand: Repair hosts.
@@ -50,14 +51,18 @@ func (c *repairRun) Run(a subcommands.Application, args []string, env subcommand
 
 func (c *repairRun) innerRun(a subcommands.Application, args []string, env subcommands.Env) error {
 	ctx := cli.GetContext(a, c, env)
+	h, err := httpClient(ctx, &c.authFlags)
+	if err != nil {
+		return errors.Annotate(err, "failed to create http client").Err()
+	}
 	e := c.envFlags.Env()
-	s, err := newSwarmingService(ctx, c.authFlags, e)
+	client, err := swarming.New(ctx, h, e.SwarmingService)
 	if err != nil {
 		return errors.Annotate(err, "failed to create Swarming client").Err()
 	}
 
 	for _, host := range args {
-		id, err := createRepairTask(ctx, s, e, host)
+		id, err := createRepairTask(ctx, client, e, host)
 		if err != nil {
 			return err
 		}
@@ -66,14 +71,14 @@ func (c *repairRun) innerRun(a subcommands.Application, args []string, env subco
 	return nil
 }
 
-func createRepairTask(ctx context.Context, s *swarming.Service, e site.Environment, host string) (taskID string, err error) {
+func createRepairTask(ctx context.Context, t *swarming.Client, e site.Environment, host string) (taskID string, err error) {
 	c := worker.Command{TaskName: "admin_repair"}
 	c.Config(worker.Env(e.Wrapped()))
-	slices := []*swarming.SwarmingRpcsTaskSlice{{
+	slices := []*swarming_api.SwarmingRpcsTaskSlice{{
 		ExpirationSecs: 600,
-		Properties: &swarming.SwarmingRpcsTaskProperties{
+		Properties: &swarming_api.SwarmingRpcsTaskProperties{
 			Command: c.Args(),
-			Dimensions: []*swarming.SwarmingRpcsStringPair{
+			Dimensions: []*swarming_api.SwarmingRpcsStringPair{
 				{Key: "pool", Value: "ChromeOSSkylab"},
 				{Key: "dut_name", Value: host},
 			},
@@ -81,7 +86,7 @@ func createRepairTask(ctx context.Context, s *swarming.Service, e site.Environme
 		},
 		WaitForCapacity: true,
 	}}
-	r := &swarming.SwarmingRpcsNewTaskRequest{
+	r := &swarming_api.SwarmingRpcsNewTaskRequest{
 		Name: "admin_repair",
 		Tags: []string{
 			fmt.Sprintf("log_location:%s", c.LogDogAnnotationURL),
@@ -95,7 +100,7 @@ func createRepairTask(ctx context.Context, s *swarming.Service, e site.Environme
 	}
 	ctx, cf := context.WithTimeout(ctx, 60*time.Second)
 	defer cf()
-	resp, err := swarmingCreateTaskWithRetries(ctx, s, r)
+	resp, err := t.CreateTask(ctx, r)
 	if err != nil {
 		return "", errors.Annotate(err, "failed to create task").Err()
 	}

@@ -13,12 +13,13 @@ import (
 
 	"github.com/maruel/subcommands"
 	"go.chromium.org/luci/auth/client/authcli"
-	swarming "go.chromium.org/luci/common/api/swarming/swarming/v1"
+	swarming_api "go.chromium.org/luci/common/api/swarming/swarming/v1"
 	"go.chromium.org/luci/common/cli"
 	"go.chromium.org/luci/common/errors"
 	"go.chromium.org/luci/common/flag"
 
 	"infra/cmd/skylab/internal/site"
+	"infra/libs/skylab/swarming"
 )
 
 // CreateSuite subcommand: create a suite task.
@@ -112,9 +113,13 @@ func (c *createSuiteRun) innerRun(a subcommands.Application, args []string, env 
 		"label-pool:"+c.pool,
 		"priority:"+strconv.Itoa(c.priority))
 
-	s, err := newSwarmingService(ctx, c.authFlags, e)
+	h, err := httpClient(ctx, &c.authFlags)
 	if err != nil {
-		return errors.Annotate(err, "failed to create Swarming client").Err()
+		return errors.Annotate(err, "failed to create http client").Err()
+	}
+	client, err := swarming.New(ctx, h, e.SwarmingService)
+	if err != nil {
+		return errors.Annotate(err, "failed to create client").Err()
 	}
 
 	task := taskInfo{
@@ -124,7 +129,7 @@ func (c *createSuiteRun) innerRun(a subcommands.Application, args []string, env 
 		task.Name = c.taskName
 	}
 
-	task.ID, err = createSuiteTask(ctx, s, task.Name, c.priority, slices, tags)
+	task.ID, err = createSuiteTask(ctx, client, task.Name, c.priority, slices, tags)
 	if err != nil {
 		return errors.Annotate(err, "create suite").Err()
 	}
@@ -162,11 +167,11 @@ func (c *createSuiteRun) validateArgs() error {
 	return nil
 }
 
-func newTaskSlice(command []string, dimensions []*swarming.SwarmingRpcsStringPair, timeoutMins int) *swarming.SwarmingRpcsTaskSlice {
-	return &swarming.SwarmingRpcsTaskSlice{
+func newTaskSlice(command []string, dimensions []*swarming_api.SwarmingRpcsStringPair, timeoutMins int) *swarming_api.SwarmingRpcsTaskSlice {
+	return &swarming_api.SwarmingRpcsTaskSlice{
 		ExpirationSecs:  300,
 		WaitForCapacity: false,
-		Properties: &swarming.SwarmingRpcsTaskProperties{
+		Properties: &swarming_api.SwarmingRpcsTaskProperties{
 			Command:              command,
 			Dimensions:           dimensions,
 			ExecutionTimeoutSecs: int64(timeoutMins * 60),
@@ -174,13 +179,13 @@ func newTaskSlice(command []string, dimensions []*swarming.SwarmingRpcsStringPai
 	}
 }
 
-func getSuiteSlices(board string, model string, pool string, image string, suiteName string, qsAccount string, priority int, timeoutMins int, maxRetries int, dimensions []string, keyvals map[string]string, orphan bool) ([]*swarming.SwarmingRpcsTaskSlice, error) {
+func getSuiteSlices(board string, model string, pool string, image string, suiteName string, qsAccount string, priority int, timeoutMins int, maxRetries int, dimensions []string, keyvals map[string]string, orphan bool) ([]*swarming_api.SwarmingRpcsTaskSlice, error) {
 	dims, err := toPairs(dimensions)
 	if err != nil {
 		return nil, errors.Annotate(err, "create slices").Err()
 	}
 	cmd := getRunSuiteCmd(board, model, pool, image, suiteName, qsAccount, priority, timeoutMins, maxRetries, keyvals, orphan)
-	return []*swarming.SwarmingRpcsTaskSlice{newTaskSlice(cmd, dims, timeoutMins)}, nil
+	return []*swarming_api.SwarmingRpcsTaskSlice{newTaskSlice(cmd, dims, timeoutMins)}, nil
 }
 
 func getRunSuiteCmd(board string, model string, pool string, image string, suiteName string, qsAccount string, priority int, timeoutMins int, maxRetries int, keyvals map[string]string, orphan bool) []string {
@@ -217,8 +222,8 @@ func getRunSuiteCmd(board string, model string, pool string, image string, suite
 	return cmd
 }
 
-func createSuiteTask(ctx context.Context, s *swarming.Service, taskName string, priority int, slices []*swarming.SwarmingRpcsTaskSlice, tags []string) (taskID string, err error) {
-	req := &swarming.SwarmingRpcsNewTaskRequest{
+func createSuiteTask(ctx context.Context, t *swarming.Client, taskName string, priority int, slices []*swarming_api.SwarmingRpcsTaskSlice, tags []string) (taskID string, err error) {
+	req := &swarming_api.SwarmingRpcsNewTaskRequest{
 		Name:       taskName,
 		Tags:       tags,
 		TaskSlices: slices,
@@ -226,7 +231,7 @@ func createSuiteTask(ctx context.Context, s *swarming.Service, taskName string, 
 	}
 	ctx, cf := context.WithTimeout(ctx, 60*time.Second)
 	defer cf()
-	resp, err := swarmingCreateTaskWithRetries(ctx, s, req)
+	resp, err := t.CreateTask(ctx, req)
 	if err != nil {
 		return "", errors.Annotate(err, "create suite").Err()
 	}

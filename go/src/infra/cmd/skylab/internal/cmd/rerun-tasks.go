@@ -16,13 +16,14 @@ import (
 
 	"github.com/maruel/subcommands"
 	"go.chromium.org/luci/auth/client/authcli"
-	swarming "go.chromium.org/luci/common/api/swarming/swarming/v1"
+	swarming_api "go.chromium.org/luci/common/api/swarming/swarming/v1"
 	"go.chromium.org/luci/common/cli"
 	"go.chromium.org/luci/common/errors"
 	"go.chromium.org/luci/common/flag"
 
 	"infra/cmd/skylab/internal/site"
 	"infra/cmd/skylab_swarming_worker/worker"
+	"infra/libs/skylab/swarming"
 )
 
 const showTaskLimit = 5
@@ -80,19 +81,22 @@ func (c *rerunTasksRun) innerRun(a subcommands.Application, args []string, env s
 
 	siteEnv := c.envFlags.Env()
 	ctx := cli.GetContext(a, c, env)
-
-	s, err := newSwarmingService(ctx, c.authFlags, siteEnv)
+	h, err := httpClient(ctx, &c.authFlags)
+	if err != nil {
+		return errors.Annotate(err, "failed to create http client").Err()
+	}
+	client, err := swarming.New(ctx, h, siteEnv.SwarmingService)
 	if err != nil {
 		return err
 	}
 
-	var originalTasks []*swarming.SwarmingRpcsTaskResult
+	var originalTasks []*swarming_api.SwarmingRpcsTaskResult
 	if len(c.taskIds) > 0 {
-		if originalTasks, err = getSwarmingResultsForIds(ctx, c.taskIds, s); err != nil {
+		if originalTasks, err = client.GetResults(ctx, c.taskIds); err != nil {
 			return err
 		}
 	} else {
-		if originalTasks, err = getSwarmingResultsForTags(ctx, s, c.tags); err != nil {
+		if originalTasks, err = client.GetResultsForTags(ctx, c.tags); err != nil {
 			return err
 		}
 		if !c.includePassed {
@@ -109,7 +113,7 @@ func (c *rerunTasksRun) innerRun(a subcommands.Application, args []string, env s
 	for i, r := range originalTasks {
 		originalIDs[i] = r.TaskId
 	}
-	originalRequests, err := getSwarmingRequestsForIds(ctx, originalIDs, s)
+	originalRequests, err := client.GetRequests(ctx, originalIDs)
 	if err != nil {
 		return err
 	}
@@ -127,7 +131,7 @@ func (c *rerunTasksRun) innerRun(a subcommands.Application, args []string, env s
 	defer cf()
 	originalToRerunID := make(map[string]string)
 	for id, r := range newRequests {
-		resp, err := swarmingCreateTaskWithRetries(ctx, s, r)
+		resp, err := client.CreateTask(ctx, r)
 		if err != nil {
 			return errors.Annotate(err, fmt.Sprintf("rerun task %s", id)).Err()
 		}
@@ -142,8 +146,8 @@ func (c *rerunTasksRun) innerRun(a subcommands.Application, args []string, env s
 }
 
 // filterPassedResults removes result items for passed tasks.
-func filterPassedRequests(results []*swarming.SwarmingRpcsTaskResult) []*swarming.SwarmingRpcsTaskResult {
-	filtered := make([]*swarming.SwarmingRpcsTaskResult, 0, len(results))
+func filterPassedRequests(results []*swarming_api.SwarmingRpcsTaskResult) []*swarming_api.SwarmingRpcsTaskResult {
+	filtered := make([]*swarming_api.SwarmingRpcsTaskResult, 0, len(results))
 	for _, r := range results {
 		// Failure includes: COMPLETED_FAILURE (test failure), TIMED OUT
 		// Internal Failure includes: BOT_DIED
@@ -155,8 +159,8 @@ func filterPassedRequests(results []*swarming.SwarmingRpcsTaskResult) []*swarmin
 	return filtered
 }
 
-func getNewRequests(taskIDs []string, originalRequests []*swarming.SwarmingRpcsTaskRequest, preserveParent bool, siteEnv site.Environment) (map[string]*swarming.SwarmingRpcsNewTaskRequest, error) {
-	newRequests := make(map[string]*swarming.SwarmingRpcsNewTaskRequest)
+func getNewRequests(taskIDs []string, originalRequests []*swarming_api.SwarmingRpcsTaskRequest, preserveParent bool, siteEnv site.Environment) (map[string]*swarming_api.SwarmingRpcsNewTaskRequest, error) {
+	newRequests := make(map[string]*swarming_api.SwarmingRpcsNewTaskRequest)
 	rerunTag := fmt.Sprintf("%s:%s", rerunTagKey, rerunTagVal)
 	for i, original := range originalRequests {
 		originalTags := stringset.NewFromSlice(original.Tags...)
@@ -174,7 +178,7 @@ func getNewRequests(taskIDs []string, originalRequests []*swarming.SwarmingRpcsT
 }
 
 // createRerunRequest modifies a request to produce rerun a Skylab task.
-func createRerunRequest(original *swarming.SwarmingRpcsTaskRequest, originalID string, preserveParent bool, siteEnv site.Environment) (*swarming.SwarmingRpcsNewTaskRequest, error) {
+func createRerunRequest(original *swarming_api.SwarmingRpcsTaskRequest, originalID string, preserveParent bool, siteEnv site.Environment) (*swarming_api.SwarmingRpcsNewTaskRequest, error) {
 	newURL := worker.GenerateLogDogURL(siteEnv.Wrapped())
 	for _, s := range original.TaskSlices {
 		cmd := s.Properties.Command
@@ -203,7 +207,7 @@ func createRerunRequest(original *swarming.SwarmingRpcsTaskRequest, originalID s
 		parentTaskID = original.ParentTaskId
 	}
 
-	return &swarming.SwarmingRpcsNewTaskRequest{
+	return &swarming_api.SwarmingRpcsNewTaskRequest{
 		Name:         original.Name,
 		Tags:         original.Tags,
 		TaskSlices:   original.TaskSlices,
@@ -247,7 +251,7 @@ func printJSONMap(w io.Writer, originalToRerunID map[string]string, siteEnv site
 	return nil
 }
 
-func dryRun(a subcommands.Application, newRequests map[string]*swarming.SwarmingRpcsNewTaskRequest, siteEnv site.Environment) error {
+func dryRun(a subcommands.Application, newRequests map[string]*swarming_api.SwarmingRpcsNewTaskRequest, siteEnv site.Environment) error {
 	for id, r := range newRequests {
 		fmt.Fprintf(a.GetOut(), "Would have rerun %s (%s)\n", swarmingTaskURL(siteEnv, id), r.Name)
 	}

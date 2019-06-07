@@ -14,9 +14,11 @@ import (
 
 	"github.com/maruel/subcommands"
 	"go.chromium.org/luci/auth/client/authcli"
-	swarming "go.chromium.org/luci/common/api/swarming/swarming/v1"
+	swarming_api "go.chromium.org/luci/common/api/swarming/swarming/v1"
 	"go.chromium.org/luci/common/cli"
 	"go.chromium.org/luci/common/errors"
+
+	"infra/libs/skylab/swarming"
 )
 
 // WaitTask subcommand: wait for a task to finish.
@@ -72,7 +74,11 @@ func (c *waitTaskRun) innerRun(a subcommands.Application, args []string, env sub
 
 	siteEnv := c.envFlags.Env()
 	ctx := cli.GetContext(a, c, env)
-	s, err := newSwarmingService(ctx, c.authFlags, siteEnv)
+	h, err := httpClient(ctx, &c.authFlags)
+	if err != nil {
+		return errors.Annotate(err, "failed to create http client").Err()
+	}
+	client, err := swarming.New(ctx, h, siteEnv.SwarmingService)
 	if err != nil {
 		return err
 	}
@@ -86,24 +92,24 @@ func (c *waitTaskRun) innerRun(a subcommands.Application, args []string, env sub
 	}
 	defer taskWaitCancel()
 
-	if err = waitTask(taskWaitCtx, taskID, s); err != nil {
+	if err = waitTask(taskWaitCtx, taskID, client); err != nil {
 		if err == context.DeadlineExceeded {
 			return errors.New("timed out waiting for task to complete")
 		}
 		return err
 	}
 
-	return postWaitTask(ctx, taskID, s, a.GetOut())
+	return postWaitTask(ctx, taskID, client, a.GetOut())
 }
 
 // waitTask waits until the task with the given ID has completed.
 //
 // It returns an error if the given context was cancelled or in case of swarming
 // rpc failures (after transient retry).
-func waitTask(ctx context.Context, taskID string, s *swarming.Service) error {
+func waitTask(ctx context.Context, taskID string, t *swarming.Client) error {
 	sleepInterval := time.Duration(15 * time.Second)
 	for {
-		results, err := getSwarmingResultsForIds(ctx, []string{taskID}, s)
+		results, err := t.GetResults(ctx, []string{taskID})
 		if err != nil {
 			return err
 		}
@@ -138,26 +144,7 @@ func sleepOrCancel(ctx context.Context, duration time.Duration) error {
 	}
 }
 
-func getSwarmingStdoutsForIds(ctx context.Context, IDs []string, s *swarming.Service) ([]*swarming.SwarmingRpcsTaskOutput, error) {
-	ctx, cf := context.WithTimeout(ctx, 60*time.Second)
-	defer cf()
-	results := make([]*swarming.SwarmingRpcsTaskOutput, len(IDs))
-	for i, ID := range IDs {
-		var result *swarming.SwarmingRpcsTaskOutput
-		getResult := func() error {
-			var err error
-			result, err = s.Task.Stdout(ID).Context(ctx).Do()
-			return err
-		}
-		if err := swarmingCallWithRetries(ctx, getResult); err != nil {
-			return nil, errors.Annotate(err, fmt.Sprintf("get swarming stdout for task %s", ID)).Err()
-		}
-		results[i] = result
-	}
-	return results, nil
-}
-
-func asTaskResult(s *swarming.SwarmingRpcsTaskResult) *taskResult {
+func asTaskResult(s *swarming_api.SwarmingRpcsTaskResult) *taskResult {
 	return &taskResult{
 		Name:  s.Name,
 		State: s.State,
@@ -168,16 +155,16 @@ func asTaskResult(s *swarming.SwarmingRpcsTaskResult) *taskResult {
 	}
 }
 
-func postWaitTask(ctx context.Context, taskID string, s *swarming.Service, w io.Writer) error {
-	results, err := getSwarmingResultsForIds(ctx, []string{taskID}, s)
+func postWaitTask(ctx context.Context, taskID string, t *swarming.Client, w io.Writer) error {
+	results, err := t.GetResults(ctx, []string{taskID})
 	if err != nil {
 		return err
 	}
-	stdouts, err := getSwarmingStdoutsForIds(ctx, []string{taskID}, s)
+	stdouts, err := t.GetTaskOutputs(ctx, []string{taskID})
 	if err != nil {
 		return err
 	}
-	childs, err := getSwarmingResultsForIds(ctx, results[0].ChildrenTaskIds, s)
+	childs, err := t.GetResults(ctx, results[0].ChildrenTaskIds)
 	if err != nil {
 		return err
 	}

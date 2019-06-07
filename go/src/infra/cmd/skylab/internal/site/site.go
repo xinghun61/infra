@@ -25,13 +25,13 @@ type Environment struct {
 }
 
 // Wrapped returns the environment wrapped in a helper type to satisfy
-// the worker.Environment interface.
+// the worker.Environment interface and swarming.Environment interface.
 func (e Environment) Wrapped() EnvWrapper {
 	return EnvWrapper{e: e}
 }
 
 // EnvWrapper wraps Environment to satisfy the worker.Environment
-// interface.
+// interface and swarming.Environment interface.
 type EnvWrapper struct {
 	e Environment
 }

@@ -12,7 +12,6 @@ import (
 	"io"
 	"io/ioutil"
 	"log"
-	"net"
 	"net/http"
 	"os"
 	"strings"
@@ -24,9 +23,6 @@ import (
 	swarming "go.chromium.org/luci/common/api/swarming/swarming/v1"
 	"go.chromium.org/luci/common/data/strpair"
 	"go.chromium.org/luci/common/errors"
-	"go.chromium.org/luci/common/retry"
-	"go.chromium.org/luci/common/retry/transient"
-	"google.golang.org/api/googleapi"
 
 	"infra/cmd/skylab/internal/flagx"
 	"infra/cmd/skylab/internal/site"
@@ -91,23 +87,6 @@ func httpClient(ctx context.Context, f *authcli.Flags) (*http.Client, error) {
 		return nil, errors.Annotate(err, "failed to create HTTP client").Err()
 	}
 	return c, nil
-}
-
-const swarmingAPISuffix = "_ah/api/swarming/v1/"
-
-func newSwarmingService(ctx context.Context, auth authcli.Flags, env site.Environment) (*swarming.Service, error) {
-	cl, err := httpClient(ctx, &auth)
-	if err != nil {
-		return nil, errors.Annotate(err, "create swarming client").Err()
-	}
-
-	s, err := swarming.New(cl)
-	if err != nil {
-		return nil, errors.Annotate(err, "create swarming client").Err()
-	}
-
-	s.BasePath = env.SwarmingService + swarmingAPISuffix
-	return s, nil
 }
 
 type taskInfo struct {
@@ -185,125 +164,6 @@ func toKeyvalMap(keyvals []string) (map[string]string, error) {
 		m[k] = v
 	}
 	return m, nil
-}
-
-// swarmingRetryableCodes defines error codes from swarming RPCs that are to be
-// considered transient and retryable.
-var swarmingRetryableCodes = map[int]bool{
-	http.StatusInternalServerError: true, // 500
-	http.StatusBadGateway:          true, // 502
-	http.StatusServiceUnavailable:  true, // 503
-	http.StatusGatewayTimeout:      true, // 504
-	http.StatusInsufficientStorage: true, // 507
-}
-
-// swarmingRetryParams defines the retry strategy for handling transient errors
-// from swarming RPCs.
-func swarmingRetryParams() retry.Iterator {
-	return &retry.ExponentialBackoff{
-		Limited: retry.Limited{
-			Delay:   500 * time.Millisecond,
-			Retries: 5,
-		},
-		Multiplier: 2,
-	}
-}
-
-// swarmingTagErrorIfTransient applies tags to swarming RPC errors that are
-// transient and should be retried.
-func swarmingTagErrorIfTransient(err error) error {
-	if err == nil {
-		return err
-	}
-
-	if e, ok := err.(net.Error); ok && e.Temporary() {
-		return transient.Tag.Apply(err)
-	}
-
-	if e, ok := err.(*googleapi.Error); ok && swarmingRetryableCodes[e.Code] {
-		return transient.Tag.Apply(err)
-	}
-
-	return err
-}
-
-// swarmingCallWithRetries calls the given function, retrying transient swarming
-// errors, with swarming-appropriate backoff and delay.
-func swarmingCallWithRetries(ctx context.Context, f func() error) error {
-	taggedFunc := func() error {
-		return swarmingTagErrorIfTransient(f())
-	}
-	return retry.Retry(ctx, transient.Only(swarmingRetryParams), taggedFunc, nil)
-}
-
-// swarmingCreateTaskWithRetries calls swarming's NewTaskRequest rpc, retrying
-// transient errors.
-func swarmingCreateTaskWithRetries(ctx context.Context, s *swarming.Service, req *swarming.SwarmingRpcsNewTaskRequest) (*swarming.SwarmingRpcsTaskRequestMetadata, error) {
-	var resp *swarming.SwarmingRpcsTaskRequestMetadata
-	createTask := func() error {
-		var err error
-		resp, err = s.Tasks.New(req).Context(ctx).Do()
-		return err
-	}
-
-	if err := swarmingCallWithRetries(ctx, createTask); err != nil {
-		return nil, err
-	}
-	return resp, nil
-}
-
-func getSwarmingResultsForIds(ctx context.Context, IDs []string, s *swarming.Service) ([]*swarming.SwarmingRpcsTaskResult, error) {
-	ctx, cf := context.WithTimeout(ctx, 60*time.Second)
-	defer cf()
-	results := make([]*swarming.SwarmingRpcsTaskResult, len(IDs))
-	for i, ID := range IDs {
-		var r *swarming.SwarmingRpcsTaskResult
-		getResult := func() error {
-			var err error
-			r, err = s.Task.Result(ID).Context(ctx).Do()
-			return err
-		}
-		if err := swarmingCallWithRetries(ctx, getResult); err != nil {
-			return nil, errors.Annotate(err, fmt.Sprintf("get swarming result for task %s", ID)).Err()
-		}
-		results[i] = r
-	}
-	return results, nil
-}
-
-func getSwarmingResultsForTags(ctx context.Context, s *swarming.Service, tags []string) ([]*swarming.SwarmingRpcsTaskResult, error) {
-	ctx, cf := context.WithTimeout(ctx, 60*time.Second)
-	defer cf()
-	var results *swarming.SwarmingRpcsTaskList
-	getResults := func() error {
-		var err error
-		results, err = s.Tasks.List().Tags(tags...).Context(ctx).Do()
-		return err
-	}
-	if err := swarmingCallWithRetries(ctx, getResults); err != nil {
-		return nil, errors.Annotate(err, fmt.Sprintf("get swarming result for tags %s", tags)).Err()
-	}
-
-	return results.Items, nil
-}
-
-func getSwarmingRequestsForIds(ctx context.Context, IDs []string, s *swarming.Service) ([]*swarming.SwarmingRpcsTaskRequest, error) {
-	ctx, cf := context.WithTimeout(ctx, 60*time.Second)
-	defer cf()
-	requests := make([]*swarming.SwarmingRpcsTaskRequest, len(IDs))
-	for i, ID := range IDs {
-		var request *swarming.SwarmingRpcsTaskRequest
-		getRequest := func() error {
-			var err error
-			request, err = s.Task.Request(ID).Context(ctx).Do()
-			return err
-		}
-		if err := swarmingCallWithRetries(ctx, getRequest); err != nil {
-			return nil, errors.Annotate(err, fmt.Sprintf("rerun task %s", ID)).Err()
-		}
-		requests[i] = request
-	}
-	return requests, nil
 }
 
 func prompt(s string) bool {
