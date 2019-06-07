@@ -115,7 +115,7 @@ export class MrUpload extends LitElement {
       <div class="controls">
         <input id="file-uploader" type="file" multiple @change=${this._filesChanged}>
         <label class="button" for="file-uploader">
-          <i class="material-icons">attach_file</i>Add attachments
+          <i class="material-icons" role="presentation">attach_file</i>Add attachments
         </label>
         Drop files here to add them (Max: 10.0 MB per comment)
       </div>

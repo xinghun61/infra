@@ -9,12 +9,16 @@ import {fieldTypes} from 'elements/shared/field-types.js';
 import {arrayDifference, equalsIgnoreCase} from 'elements/shared/helpers.js';
 
 import {SHARED_STYLES} from 'elements/shared/shared-styles';
+import 'elements/chops/chops-chip-input/chops-chip-input.js';
 import './mr-multi-input.js';
 import './mr-multi-checkbox.js';
 
+const MULTI_INPUTS_WITH_CHIPS_DISABLED = [
+  fieldTypes.STR_TYPE, fieldTypes.DATE_TYPE, fieldTypes.URL_TYPE];
 
 const BASIC_INPUT = 'BASIC_INPUT';
 const MULTI_INPUT = 'MULTI_INPUT';
+const CHIP_INPUT = 'CHIP_INPUT';
 const CHECKBOX_INPUT = 'CHECKBOX_INPUT';
 const SELECT_INPUT = 'SELECT_INPUT';
 
@@ -35,7 +39,9 @@ export class MrEditField extends LitElement {
         :host([hidden]) {
           display: none;
         }
-        mr-multi-input {
+        mr-chip-input,
+        mr-multi-input,
+        chops-chip-input {
           width: var(--mr-edit-field-width);
         }
         input,
@@ -83,6 +89,19 @@ export class MrEditField extends LitElement {
               </option>
             `)}
           </select>
+        `;
+      case CHIP_INPUT:
+        return html`
+          <chops-chip-input
+            .immutableValues=${this.derivedValues}
+            .initialValues=${[...this.initialValues]}
+            .name=${this.name}
+            .acType=${this.acType}
+            .autocomplete=${this._domAutocomplete}
+            .placeholder="Add ${this.name}"
+            @change=${this._changeHandler}
+            @blur=${this._changeHandler}
+          ></chops-chip-input>
         `;
       case MULTI_INPUT:
         return html`
@@ -171,7 +190,7 @@ export class MrEditField extends LitElement {
     if (changedProperties.has('initialValues')) {
       // Assume we always want to reset the user's input when initial
       // values change.
-      this.values = this.initialValues;
+      this.reset();
     }
     super.update(changedProperties);
   }
@@ -181,6 +200,7 @@ export class MrEditField extends LitElement {
       this._checkboxRef = this.shadowRoot.querySelector('mr-multi-checkbox');
       this._selectRef = this.shadowRoot.querySelector('#editSelect');
       this._multiInputRef = this.shadowRoot.querySelector('mr-multi-input');
+      this._chipInputRef = this.shadowRoot.querySelector('chops-chip-input');
       this._inputRef = this.shadowRoot.querySelector('#editInput');
     }
   }
@@ -199,7 +219,10 @@ export class MrEditField extends LitElement {
       return SELECT_INPUT;
     } else {
       if (multi) {
-        return MULTI_INPUT;
+        if (!this.acType && MULTI_INPUTS_WITH_CHIPS_DISABLED.includes(type)) {
+          return MULTI_INPUT;
+        }
+        return CHIP_INPUT;
       }
       return BASIC_INPUT;
     }
@@ -236,6 +259,8 @@ export class MrEditField extends LitElement {
         return this._selectRef;
       case MULTI_INPUT:
         return this._multiInputRef;
+      case CHIP_INPUT:
+        return this._chipInputRef;
       case BASIC_INPUT:
       default:
         return this._inputRef;
@@ -251,11 +276,11 @@ export class MrEditField extends LitElement {
     if (!Array.isArray(v)) {
       values = !!v ? [v] : [];
     }
-    this.values = values;
+    this.values = [...values];
     const input = this._getInput();
 
     if (input && input.setValues) {
-      input.setValues([...values]);
+      input.setValues([...this.values]);
     }
   }
 

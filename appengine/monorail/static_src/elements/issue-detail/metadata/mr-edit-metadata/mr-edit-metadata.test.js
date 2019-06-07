@@ -377,6 +377,7 @@ describe('mr-edit-metadata', () => {
     ];
 
     await element.updateComplete;
+    await element.updateComplete;
 
     element.shadowRoot.querySelector('#approversInput').setValue(
       ['chicken@example.com', 'foo@example.com', 'dog@example.com']);
@@ -402,6 +403,7 @@ describe('mr-edit-metadata', () => {
     ];
     element.projectName = 'chromium';
 
+    await element.updateComplete;
     await element.updateComplete;
 
     const blockedOnInput = element.shadowRoot.querySelector('#blockedOnInput');
@@ -535,6 +537,8 @@ describe('mr-edit-metadata', () => {
   });
 
   it('adding components produces delta', async () => {
+    await element.updateComplete;
+
     element.isApproval = false;
     element.issuePermissions = [ISSUE_EDIT_PERMISSION];
 

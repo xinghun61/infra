@@ -3,6 +3,7 @@
   --chops-red-50: #ffebee;
   --chops-red-700: #d32f2f;
   --chops-blue-50: #e3f2fd;
+  --chops-blue-300: #64b5f6;
   --chops-blue-700: #1976d2;
   --chops-green-50: #e8f5e9;
   --chops-light-green-50: #f1f8e9;
@@ -35,6 +36,7 @@
   /* TODO(zhangtiff): Replace this with Material Design blue once all
    * instances of links styled with #00c have been replaced. */
   --chops-link-color: #00c;
+  --chops-light-accent-color: var(--chops-blue-300);
   --chops-primary-accent-color: var(--chops-blue-700);
   --chops-primary-accent-bg: var(--chops-blue-50);
   --chops-primary-button-bg: var(--chops-primary-accent-color);

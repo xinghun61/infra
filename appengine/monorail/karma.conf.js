@@ -31,7 +31,7 @@ module.exports = function(config) {
           'ga',
           'Color',
           'Chart',
-          // TODO(ehmaldonado): Remove oncue the old autocomplete code is
+          // TODO(ehmaldonado): Remove once the old autocomplete code is
           // deprecated.
           'TKR_fetchOptions',
         ],

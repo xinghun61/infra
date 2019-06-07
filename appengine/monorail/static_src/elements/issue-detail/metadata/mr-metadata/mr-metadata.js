@@ -132,18 +132,17 @@ export class MrMetadata extends connectStore(LitElement) {
             </em>
           </td>
         </tr>
-      `: ''}
-
-      ${this.issueStatus.status === 'Duplicate' ? html`
-        <tr>
-          <th>MergedInto:</th>
-          <td>
-            <mr-issue-link
-              .projectName=${this.issueRef.projectName}
-              .issue=${this.mergedInto}
-            ></mr-issue-link>
-          </td>
-        </tr>
+        ${this.issueStatus.status === 'Duplicate' ? html`
+          <tr>
+            <th>MergedInto:</th>
+            <td>
+              <mr-issue-link
+                .projectName=${this.issueRef.projectName}
+                .issue=${this.mergedInto}
+              ></mr-issue-link>
+            </td>
+          </tr>
+        `: ''}
       `: ''}
 
       ${this.components && this.components.length ? html`

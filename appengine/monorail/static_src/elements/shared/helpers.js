@@ -45,3 +45,10 @@ export function equalsIgnoreCase(a, b) {
   if (!a || !b) return false;
   return a.toLowerCase() === b.toLowerCase();
 }
+
+export function immutableSplice(arr, index, count, ...addedItems) {
+  if (!arr) return '';
+
+  return [...arr.slice(0, index), ...addedItems, ...arr.slice(index + count)];
+}
+
