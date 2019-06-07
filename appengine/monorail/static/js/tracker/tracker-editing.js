@@ -143,7 +143,6 @@ function TKR_addAttachmentFields(id, attachprompt_id,
     div, 'a', null, null, 'Remove', 'font-size:x-small');
   removeLink.href = '#';
   removeLink.addEventListener('click', function(event) {
-    console.log(arguments);
     let target = event.target;
     $(attachafile_id).focus();
     target.parentNode.parentNode.removeChild(target.parentNode);

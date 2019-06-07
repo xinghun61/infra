@@ -734,7 +734,6 @@ describe('autolink', () => {
       const plainString =
       'comment1, comment : 5, Comment =10, comment #4, #c57';
       const actualTextRuns = markupAutolinks(plainString, componentRefs);
-      console.log(actualTextRuns);
       assert.deepEqual(
         actualTextRuns, [
           {

@@ -2,10 +2,8 @@ import {assert} from 'chai';
 import sinon from 'sinon';
 
 import MrChart from 'elements/issue-list/mr-chart/mr-chart.js';
-import AutoRefreshPrpcClient from 'prpc.js';
+import {prpcClient} from 'prpc-client-instance.js';
 
-// TODO(jeffcarp): Export prefix from prpc-client and use that.
-const xssiPrefix = ')]}\'';
 let element;
 let chartLoadedPromise;
 let dataLoadedPromise;
@@ -36,34 +34,27 @@ describe('mr-chart', () => {
       tokenExpiresSec: 0,
       app_version: 'rutabaga-version',
     };
-    sinon.stub(AutoRefreshPrpcClient, 'isTokenExpired').callsFake(() => false);
-    sinon.stub(window, 'fetch').callsFake(() => {
-      return new Promise((resolve, reject) => {
-        const dataStr = JSON.stringify({
-          snapshotCount: [{count: 8}],
-          unsupportedField: [],
-          searchLimitReached: false,
-        });
-        const responseBody = new Blob([xssiPrefix + dataStr]);
-
-        resolve(new Response(responseBody, {
-          status: 201,
-          headers: {
-            'Content-type': 'application/json',
-            'X-Prpc-Grpc-Code': 0,
-          },
-        }));
-      });
+    sinon.stub(prpcClient, 'call').callsFake(async () => {
+      return {
+        snapshotCount: [{count: 8}],
+        unsupportedField: [],
+        searchLimitReached: false,
+      };
     });
 
     element = beforeEachElement();
   });
 
-  afterEach(() => {
+  afterEach(async () => {
+    // _fetchData is always called when the element is connected, so we have to
+    // wait until all data has been loaded.
+    // Otherwise prpcClient.call will be restored and we will make actual XHR
+    // calls.
+    await dataLoadedPromise;
+
     document.body.removeChild(element);
 
-    window.fetch.restore();
-    AutoRefreshPrpcClient.isTokenExpired.restore();
+    prpcClient.call.restore();
   });
 
   describe('initializes', () => {
@@ -132,21 +123,9 @@ describe('mr-chart', () => {
     });
 
     it('if issue count is null, defaults to 0', async () => {
-      window.fetch.restore();
-      sinon.stub(window, 'fetch').callsFake(() => {
-        return new Promise((resolve, reject) => {
-          const dataStr = JSON.stringify({
-            snapshotCount: [{}],
-          });
-          const responseBody = new Blob([xssiPrefix + dataStr]);
-          resolve(new Response(responseBody, {
-            status: 201,
-            headers: {
-              'Content-type': 'application/json',
-              'X-Prpc-Grpc-Code': 0,
-            },
-          }));
-        });
+      prpcClient.call.restore();
+      sinon.stub(prpcClient, 'call').callsFake(async () => {
+        return {snapshotCount: [{}]};
       });
       MrChart.makeTimestamps.restore();
       sinon.stub(MrChart, 'makeTimestamps').callsFake((endDate) => {

@@ -258,7 +258,6 @@ export default class MrChart extends LitElement {
       this.maxQuerySizeReached = false;
       this.dateRange = MAX_QUERY_SIZE;
     } else {
-      console.log(this.dateRange);
       this.dateRangeNotLegal = false;
       if (this.dateRange >= MAX_QUERY_SIZE * 7) {
         // Case for date range too long, requires >= MAX_QUERY_SIZE queries
@@ -317,28 +316,24 @@ export default class MrChart extends LitElement {
     this.searchLimitReached = chartData.some((d) => d.searchLimitReached);
   }
 
-  _fetchDataAtTimestamp(timestamp) {
-    return new Promise((resolve, reject) => {
-      const params = MrChart.getSearchParams();
-      const query = params.get('q');
-      const cannedQuery = params.get('can');
-      const message = {
-        timestamp: timestamp,
-        projectName: this.projectName,
-        query: query,
-        cannedQuery: cannedQuery,
-      };
-      const callPromise = prpcClient.call('monorail.Issues',
-        'IssueSnapshot', message);
-      return callPromise.then((response) => {
-        resolve({
-          date: timestamp * 1000,
-          issues: response.snapshotCount[0].count || 0,
-          unsupportedField: response.unsupportedField,
-          searchLimitReached: response.searchLimitReached,
-        });
-      });
-    });
+  async _fetchDataAtTimestamp(timestamp) {
+    const params = MrChart.getSearchParams();
+    const query = params.get('q');
+    const cannedQuery = params.get('can');
+    const message = {
+      timestamp: timestamp,
+      projectName: this.projectName,
+      query: query,
+      cannedQuery: cannedQuery,
+    };
+    const response = await prpcClient.call('monorail.Issues',
+      'IssueSnapshot', message);
+    return {
+      date: timestamp * 1000,
+      issues: response.snapshotCount[0].count || 0,
+      unsupportedField: response.unsupportedField,
+      searchLimitReached: response.searchLimitReached,
+    };
   }
 
   _chartData(indices, values) {
