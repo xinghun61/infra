@@ -41,6 +41,9 @@ class SomRevRange extends Polymer.Element {
     if (this.range && this.range.positions) {
       this.range.positions.sort();
     }
+    // TODO(jojwang): use this._regressionRevStart/End
+    // to send regression revisions instead of commit positions
+    // to the backend.
     let start = this._regressionStart(this.range);
     let end = this._regressionEnd(this.range);
     let url = `/api/v1/revrange/${start}/${end}`;
@@ -85,6 +88,20 @@ class SomRevRange extends Polymer.Element {
     return message.split('\n')[0];
   }
 
+  _regressionRevStart(range) {
+    if (!range || (!range.revisions || range.revisions.length == 0)) {
+      return '';
+    }
+    return range.revisions[0];
+  }
+
+  _regressionRevEnd(range) {
+    if (!range || (!range.revisions || range.revisions.length == 0)) {
+      return '';
+    }
+    return range.revisions[range.revisions.length - 1];
+  }
+
   _regressionStart(range) {
     if (!range || (!range.positions || range.positions.length == 0)) {
       return '';
@@ -106,22 +123,51 @@ class SomRevRange extends Polymer.Element {
     if (!range) {
       return '';
     }
-    range.positions.sort();
 
-    let start = this._regressionStart(range);
-    let end = this._regressionEnd(range);
+    let start = '';
+    let end;
+    if (range.positions && range.positions.length > 0) {
+      range.positions.sort();
+      start = this._regressionStart(range);
+      end = this._regressionEnd(range);
+    } else if (range.revisions && range.revisions.length > 0) {
+      // Note: revisions should not be sorted. We can assume
+      // revisions are in the correct order.
 
+      // Get the first 7 characters of start and end revisions
+      // as user friendly revision numbers for display.
+      start = this._regressionRevStart(range).substring(0, 7);
+      end = this._regressionRevEnd(range).substring(0, 7);
+    }
     if (start && end) {
       return `${start} - ${end}`;
     }
-
     return start;
   }
 
   _regressionRangeLink(range) {
-    if (!range || !range.positions) {
+    if (!range) {
       return '';
     }
+    // Note: A range with revisions instead of positions means
+    // range data was gathered from builds' input gitilescommit.
+    // gitilescommit contains host, repo and revisions, but no commit
+    // positions.
+    // Range data gathered from builds' outputs only reliably
+    // have commit positions. And only chromium data are gathered from
+    // build outputs. So for now, if range contains positions, we assume
+    // they are for chromium builds and we use test-results to produce
+    // the git url given the commit positions.
+    if (!range.positions || range.positions.length == 0) {
+      if (!range.revisions || range.revisions.length == 0) {
+        return '';
+      }
+      const start = range.revisions[0];
+      const revLength = range.revisions.length;
+      const end = range.revisions[revLength - 1];
+      return `${range.host}/${range.repo}/+log/${start}^..${end}`;
+    }
+    range.positions.sort();
     let end = this._parseCommitPosition(range.positions[0]);
     let start = end;
     if (range.positions.length > 1) {

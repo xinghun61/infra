@@ -53,9 +53,63 @@
       };
 
       flush(() => {
-        assert(element.shadowRoot.querySelector('div').textContent.includes('398901 - 398946')) 
+        assert(element.shadowRoot.querySelector('div').textContent.includes('398901 - 398946'))
         assert.isFalse(element.$.loadingMessage.hidden);
         assert.isFalse(element.$.collapse.opened);
+        done();
+      });
+    });
+
+    test('revisions used instead of positions', function(done) {
+      element.range = {
+        positions: [],
+        repo: 'chromeos/fakerepo',
+        revisions: ['abc123456789', 'abd223456789', 'abe323456789', 'abf423456789'],
+        host: 'https://some-host.googlesource.com',
+      };
+
+        flush(() => {
+          assert(element.shadowRoot.querySelector('div').textContent.includes('abc1234 - abf4234'));
+        assert.isFalse(element.$.loadingMessage.hidden);
+        assert.isFalse(element.$.collapse.opened);
+        done();
+      });
+    });
+
+    test('test regressionRangeLink positions', function(done) {
+      element.range = {
+        positions: [
+          "refs/heads/master@{#398913}",
+          "refs/heads/master@{#398921}",
+          "refs/heads/master@{#398946}",
+          "refs/heads/master@{#398942}",
+          "refs/heads/master@{#398901}"
+        ],
+        repo: "chromium",
+      };
+
+      flush(() => {
+        const actualLink = element._regressionRangeLink(element.range)
+        assert.equal(
+          actualLink,
+            'https://test-results.appspot.com/revision_range?start=398901&end=398946');
+          done();
+      });
+    });
+
+    test('test regressionRangeLink using revisions', function(done) {
+      element.range = {
+        repo: 'chromeos/fakerepo',
+        revisions:  ['abc123456789', 'abd223456789', 'abe323456789', 'abf423456789'],
+        host: 'https://some-host.googlesource.com',
+      };
+
+      flush(() => {
+        const actualLink = element._regressionRangeLink(element.range)
+        assert.equal(
+          actualLink,
+          'https://some-host.googlesource.com/chromeos/fakerepo/+log/' +
+                'abc123456789^..abf423456789');
         done();
       });
     });
