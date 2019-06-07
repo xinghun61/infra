@@ -28,8 +28,80 @@ var Inspect = &subcommands.Command{
 		c.authFlags.Register(&c.Flags, site.DefaultAuthOptions)
 		c.envFlags.Register(&c.Flags)
 		c.Flags.BoolVar(&c.accounts, "accounts", false, "Show the account balances and policies.")
+		c.Flags.BoolVar(&c.bots, "bots", false, "Show the bot summaries.")
+		c.Flags.BoolVar(&c.tasks, "tasks", false, "Show the task summaries.")
 		return c
 	},
+}
+
+type inspectRun struct {
+	subcommands.CommandRunBase
+	authFlags authcli.Flags
+	envFlags  envFlags
+	accounts  bool
+	bots      bool
+	tasks     bool
+}
+
+func (c *inspectRun) Run(a subcommands.Application, args []string, env subcommands.Env) int {
+	ctx := cli.GetContext(a, c, env)
+
+	if len(args) == 0 {
+		fmt.Fprintf(a.GetErr(), "missing POOL_ID\n")
+		c.Flags.Usage()
+		return 1
+	}
+
+	if len(args) > 1 {
+		fmt.Fprintf(a.GetErr(), "too many arguments\n")
+		c.Flags.Usage()
+		return 1
+	}
+
+	if flagCount([]bool{c.accounts, c.bots, c.tasks}) > 1 {
+		fmt.Fprintf(a.GetErr(), "too many flags assigned\n")
+		c.Flags.Usage()
+		return 1
+	}
+
+	poolID := args[0]
+
+	viewService, err := newViewClient(ctx, &c.authFlags, &c.envFlags)
+	if err != nil {
+		fmt.Fprintf(a.GetErr(), "qscheduler: Unable to create qsview client, due to error: %s\n", err.Error())
+		return 1
+	}
+
+	req := &qscheduler.InspectPoolRequest{
+		PoolId: poolID,
+	}
+
+	resp, err := viewService.InspectPool(ctx, req)
+	if err != nil {
+		fmt.Fprintf(a.GetErr(), "qscheduler: Unable to inspect scheduler, due to error: %s\n", err.Error())
+		return 1
+	}
+
+	if c.accounts {
+		printAccountTables(a.GetOut(), resp)
+	} else if c.bots {
+		printBotTables(a.GetOut(), resp)
+	} else if c.tasks {
+		printTaskTables(a.GetOut(), resp)
+	} else {
+		fmt.Println(proto.MarshalTextString(resp))
+	}
+	return 0
+}
+
+func flagCount(flags []bool) int {
+	r := 0
+	for _, flag := range flags {
+		if flag {
+			r++
+		}
+	}
+	return r
 }
 
 type row []string
@@ -71,54 +143,6 @@ func floatInsert(v []float32, l int, r row) row {
 		r = append(r, fmt.Sprintf("%.1f", v[k]))
 	}
 	return r
-}
-
-type inspectRun struct {
-	subcommands.CommandRunBase
-	authFlags authcli.Flags
-	envFlags  envFlags
-	accounts  bool
-}
-
-func (c *inspectRun) Run(a subcommands.Application, args []string, env subcommands.Env) int {
-	ctx := cli.GetContext(a, c, env)
-
-	if len(args) == 0 {
-		fmt.Fprintf(a.GetErr(), "missing POOL_ID\n")
-		c.Flags.Usage()
-		return 1
-	}
-
-	if len(args) > 1 {
-		fmt.Fprintf(a.GetErr(), "too many arguments\n")
-		c.Flags.Usage()
-		return 1
-	}
-
-	poolID := args[0]
-
-	viewService, err := newViewClient(ctx, &c.authFlags, &c.envFlags)
-	if err != nil {
-		fmt.Fprintf(a.GetErr(), "qscheduler: Unable to create qsview client, due to error: %s\n", err.Error())
-		return 1
-	}
-
-	req := &qscheduler.InspectPoolRequest{
-		PoolId: poolID,
-	}
-
-	resp, err := viewService.InspectPool(ctx, req)
-	if err != nil {
-		fmt.Fprintf(a.GetErr(), "qscheduler: Unable to inspect scheduler, due to error: %s\n", err.Error())
-		return 1
-	}
-
-	if c.accounts {
-		printAccountTables(a.GetOut(), resp)
-	} else {
-		fmt.Println(proto.MarshalTextString(resp))
-	}
-	return 0
 }
 
 func printAccountTables(w io.Writer, report *qscheduler.InspectPoolResponse) {
@@ -181,6 +205,89 @@ func printAccountPoliciesTable(tw *tabwriter.Writer, report *qscheduler.InspectP
 			fmt.Sprintf("%t", config.GetDisableFreeTasks()),
 		}...)
 		t = append(t, r)
+	}
+	t.sort()
+	t.print(tw)
+	fmt.Fprintln(tw)
+	return
+}
+
+func printBotTables(w io.Writer, report *qscheduler.InspectPoolResponse) {
+	tw := tabwriter.NewWriter(w, 0, 0, 2, ' ', 0)
+	fmt.Fprintln(tw, "Bot Summary")
+	fmt.Fprintln(tw, "================================================================")
+	header := row{"IdleBot", "Age(Seconds)", "Dimensions"}
+	header.print(tw)
+	fmt.Fprintln(tw)
+	t := make(table, 0, len(report.GetIdleBots()))
+	for _, bot := range report.GetIdleBots() {
+		if len(bot.Dimensions) > 0 {
+			t = append(t, row{
+				bot.Id,
+				fmt.Sprintf("%d", bot.AgeSeconds),
+				bot.Dimensions[0],
+			})
+			for i := 1; i < len(bot.Dimensions); i++ {
+				t = append(t, row{
+					"",
+					"",
+					bot.Dimensions[i],
+				})
+			}
+			continue
+		}
+		t = append(t, row{
+			bot.Id,
+			fmt.Sprintf("%d", bot.AgeSeconds),
+			"",
+		})
+	}
+	t.print(tw)
+	fmt.Fprintln(tw)
+	return
+}
+
+func printTaskTables(w io.Writer, report *qscheduler.InspectPoolResponse) {
+	tw := tabwriter.NewWriter(w, 0, 0, 2, ' ', 0)
+	printRunningTaskTables(tw, report)
+	printWaitingTaskTables(tw, report)
+}
+
+func printRunningTaskTables(tw *tabwriter.Writer, report *qscheduler.InspectPoolResponse) {
+	fmt.Fprintln(tw, "Running Tasks")
+	fmt.Fprintln(tw, "================================================================")
+	header := row{"RequestId", "BotId", "Priority", "AccountId", "Age(Seconds)"}
+	header.print(tw)
+	fmt.Fprintln(tw)
+	t := make(table, 0, len(report.GetRunningTasks()))
+	for _, task := range report.GetRunningTasks() {
+		t = append(t, row{
+			task.GetId(),
+			task.GetBotId(),
+			fmt.Sprintf("%d", task.GetPriority()),
+			task.GetAccountId(),
+			fmt.Sprintf("%d", task.GetAgeSeconds()),
+		})
+	}
+	t.sort()
+	t.print(tw)
+	fmt.Fprintln(tw)
+	return
+}
+
+func printWaitingTaskTables(tw *tabwriter.Writer, report *qscheduler.InspectPoolResponse) {
+	fmt.Fprintln(tw, "Waiting Tasks")
+	fmt.Fprintln(tw, "================================================================")
+	header := row{"RequestId", "AccountId", "Age(Seconds)"}
+	header.print(tw)
+	fmt.Fprintln(tw)
+	t := make(table, 0, len(report.GetWaitingTasks()))
+	for _, task := range report.GetWaitingTasks() {
+		t = append(t, row{
+			task.GetId(),
+			task.GetAccountId(),
+			fmt.Sprintf("%d", task.GetAgeSeconds()),
+		})
 	}
 	t.sort()
 	t.print(tw)
