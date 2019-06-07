@@ -164,7 +164,7 @@ export class MrEditMetadata extends connectStore(LitElement) {
     return html`
       <link href="https://fonts.googleapis.com/icon?family=Material+Icons"
             rel="stylesheet">
-      <form id="editForm">
+      <form id="editForm" @submit=${this.save}>
         <mr-cue cuePrefName="code_of_conduct"></mr-cue>
         <textarea
           id="commentText"
@@ -657,8 +657,9 @@ export class MrEditMetadata extends connectStore(LitElement) {
     this._processChanges();
   }
 
-  save() {
+  save(event) {
     this.dispatchEvent(new CustomEvent('save'));
+    event.preventDefault();
   }
 
   discard() {
