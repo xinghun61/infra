@@ -66,28 +66,12 @@ export class MrIssueHeader extends connectStore(LitElement) {
           display: flex;
           flex-direction: row;
           align-items: center;
-        }
-        .issue-actions a {
-          color: var(--chops-link-color);
-          cursor: pointer;
-        }
-        .issue-actions a:hover {
-          text-decoration: underline;
-        }
-        .code-font-and-description-edit {
-          min-width: fit-content;
-          display: flex;
-          flex-direction: column;
-          align-items: flex-end;
           font-size: var(--chops-main-font-size);
         }
-        .code-font-and-description-edit div {
+        .issue-actions div {
           min-width: 70px;
           display: flex;
           justify-content: space-between;
-        }
-        .code-font-and-description-edit a {
-          white-space: nowrap;
         }
         .spam-notice {
           display: inline-flex;
@@ -150,16 +134,11 @@ export class MrIssueHeader extends connectStore(LitElement) {
         </div>
       </div>
       <div class="issue-actions">
-        <div class="code-font-and-description-edit">
-          <div>
-            <mr-crbug-link .issue=${this.issue}></mr-crbug-link>
-            <mr-code-font-toggle
-              .userDisplayName=${this.userDisplayName}
-            ></mr-code-font-toggle>
-          </div>
-          ${this._canEditIssue ? html`
-            <a @click=${this._openEditDescription}>Edit description</a>
-          `: ''}
+        <div>
+          <mr-crbug-link .issue=${this.issue}></mr-crbug-link>
+          <mr-code-font-toggle
+            .userDisplayName=${this.userDisplayName}
+          ></mr-code-font-toggle>
         </div>
         ${this._issueOptions.length ? html`
           <mr-dropdown
@@ -201,10 +180,6 @@ export class MrIssueHeader extends connectStore(LitElement) {
     this.isRestricted = restrictions && Object.keys(restrictions).length;
   }
 
-  get _canEditIssue() {
-    return this.issuePermissions.includes(ISSUE_EDIT_PERMISSION);
-  }
-
   get _issueOptions() {
     // We create two edit Arrays for the top and bottom half of the menu,
     // to be separated by a separator in the UI.
@@ -241,11 +216,17 @@ export class MrIssueHeader extends connectStore(LitElement) {
       }
     }
 
-    if (permissions.includes(ISSUE_EDIT_PERMISSION) && templates.length) {
+    if (permissions.includes(ISSUE_EDIT_PERMISSION)) {
       editOptions.push({
-        text: 'Convert issue template',
-        handler: this._openConvertIssue.bind(this),
+        text: 'Edit issue description',
+        handler: this._openEditDescription.bind(this),
       });
+      if (templates.length) {
+        editOptions.push({
+          text: 'Convert issue template',
+          handler: this._openConvertIssue.bind(this),
+        });
+      }
     }
 
     if (editOptions.length && riskyOptions.length) {

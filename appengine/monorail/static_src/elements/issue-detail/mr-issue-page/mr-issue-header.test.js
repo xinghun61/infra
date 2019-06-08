@@ -6,7 +6,7 @@ import {assert} from 'chai';
 import {MrIssueHeader} from './mr-issue-header.js';
 import {store} from 'elements/reducers/base.js';
 import * as issue from 'elements/reducers/issue.js';
-import {ISSUE_EDIT_PERMISSION,
+import {ISSUE_EDIT_PERMISSION, ISSUE_DELETE_PERMISSION,
   ISSUE_FLAGSPAM_PERMISSION} from 'elements/shared/permissions.js';
 
 let element;
@@ -37,7 +37,7 @@ describe('mr-issue-header', () => {
     // assert.deepEqual(element.issue, {summary: 'test'});
   });
 
-  it('_computeIssueOptions toggles spam', () => {
+  it('_issueOptions toggles spam', () => {
     element.issuePermissions = [ISSUE_FLAGSPAM_PERMISSION];
     element.issue = {isSpam: false};
     assert.isDefined(findOptionWithText(element._issueOptions,
@@ -66,7 +66,7 @@ describe('mr-issue-header', () => {
       'Un-flag issue as spam'));
   });
 
-  it('_computeIssueOptions toggles convert issue', () => {
+  it('_issueOptions toggles convert issue', () => {
     element.issuePermissions = [];
     element.projectTemplates = [];
 
@@ -88,20 +88,47 @@ describe('mr-issue-header', () => {
       'Convert issue template'));
   });
 
-  it('shows edit description link', async () => {
-    element.issuePermissions = [ISSUE_EDIT_PERMISSION];
+  it('_issueOptions toggles delete', () => {
+    element.issuePermissions = [ISSUE_DELETE_PERMISSION];
+    assert.isDefined(findOptionWithText(element._issueOptions,
+      'Delete issue'));
 
-    await element.updateComplete;
-
-    assert.isNotNull(element.shadowRoot.querySelector('a'));
-  });
-
-  it('no edit description link without edit issue permission', async () => {
     element.issuePermissions = [];
 
-    await element.updateComplete;
+    assert.isUndefined(findOptionWithText(element._issueOptions,
+      'Delete issue'));
+  });
 
-    assert.isNull(element.shadowRoot.querySelector('a'));
+  it('_issueOptions toggles move and copy', () => {
+    element.issuePermissions = [ISSUE_DELETE_PERMISSION];
+    assert.isDefined(findOptionWithText(element._issueOptions,
+      'Move issue'));
+    assert.isDefined(findOptionWithText(element._issueOptions,
+      'Copy issue'));
+
+    element.isRestricted = true;
+    assert.isUndefined(findOptionWithText(element._issueOptions,
+      'Move issue'));
+    assert.isUndefined(findOptionWithText(element._issueOptions,
+      'Copy issue'));
+
+    element.issuePermissions = [];
+
+    assert.isUndefined(findOptionWithText(element._issueOptions,
+      'Move issue'));
+    assert.isUndefined(findOptionWithText(element._issueOptions,
+      'Copy issue'));
+  });
+
+  it('_issueOptions toggles edit description', () => {
+    element.issuePermissions = [ISSUE_EDIT_PERMISSION];
+    assert.isDefined(findOptionWithText(element._issueOptions,
+      'Edit issue description'));
+
+    element.issuePermissions = [];
+
+    assert.isUndefined(findOptionWithText(element._issueOptions,
+      'Edit issue description'));
   });
 });
 
