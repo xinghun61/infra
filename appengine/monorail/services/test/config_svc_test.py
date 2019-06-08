@@ -258,7 +258,7 @@ class ConfigRowTwoLevelCacheTest(unittest.TestCase):
     self.config_service.componentdef_tbl.Select(
         self.cnxn, cols=config_svc.COMPONENTDEF_COLS, project_id=project_ids,
         is_deleted=False,
-        order_by=[('LOWER(path)', [])]).AndReturn(self.componentdef_rows)
+        order_by=[('path', [])]).AndReturn(self.componentdef_rows)
     component_ids = [cd_row[0] for cd_row in self.componentdef_rows]
     self.config_service.component2admin_tbl.Select(
         self.cnxn, cols=config_svc.COMPONENT2ADMIN_COLS,
@@ -641,7 +641,7 @@ class ConfigServiceTest(unittest.TestCase):
     self.config_service.componentdef_tbl.Select(
         self.cnxn, cols=config_svc.COMPONENTDEF_COLS,
         is_deleted=False,
-        project_id=project_ids, order_by=[('LOWER(path)', [])]).AndReturn([])
+        project_id=project_ids, order_by=[('path', [])]).AndReturn([])
     self.config_service.component2admin_tbl.Select(
         self.cnxn, cols=config_svc.COMPONENT2ADMIN_COLS,
         component_id=[]).AndReturn([])

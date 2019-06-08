@@ -291,6 +291,7 @@ CREATE TABLE IssueVisitHistory (
   viewed INT NOT NULL,
 
   PRIMARY KEY (user_id, issue_id),
+  INDEX (user_id, viewed),
   FOREIGN KEY (issue_id) REFERENCES Issue(id),
   FOREIGN KEY (user_id) REFERENCES User(user_id)
 ) ENGINE=INNODB;
@@ -556,6 +557,7 @@ CREATE TABLE ReindexQueue (
   created TIMESTAMP,
 
   PRIMARY KEY (issue_id),
+  INDEX (created),
   FOREIGN KEY (issue_id) REFERENCES Issue(id)
 ) ENGINE=INNODB;
 

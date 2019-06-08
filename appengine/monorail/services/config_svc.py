@@ -405,7 +405,7 @@ class ConfigTwoLevelCache(caches.AbstractTwoLevelCache):
 
     componentdef_rows = self.config_service.componentdef_tbl.Select(
         cnxn, cols=COMPONENTDEF_COLS, project_id=project_ids,
-        is_deleted=False, order_by=[('LOWER(path)', [])])
+        is_deleted=False, order_by=[('path', [])])
     component_ids = [cd_row[0] for cd_row in componentdef_rows]
     component2admin_rows = self.config_service.component2admin_tbl.Select(
         cnxn, cols=COMPONENT2ADMIN_COLS, component_id=component_ids)
