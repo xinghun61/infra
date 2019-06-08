@@ -59,7 +59,7 @@ libraries:
 - name: MySQLdb
   version: "latest"
 - name: django
-  version: 1.4
+  version: 1.11
 
 skip_files:
 - ^(.*/)?#.*#$
