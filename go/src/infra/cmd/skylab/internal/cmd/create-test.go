@@ -7,17 +7,16 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/maruel/subcommands"
 	"go.chromium.org/luci/auth/client/authcli"
-	swarming_api "go.chromium.org/luci/common/api/swarming/swarming/v1"
 	"go.chromium.org/luci/common/cli"
 	"go.chromium.org/luci/common/errors"
 	"go.chromium.org/luci/common/flag"
 
 	"infra/cmd/skylab/internal/site"
+	"infra/libs/skylab/request"
 	"infra/libs/skylab/swarming"
 	"infra/libs/skylab/worker"
 )
@@ -135,12 +134,12 @@ func (c *createTestRun) innerRun(a subcommands.Application, args []string, env s
 
 	dimensions = append(dimensions, userDimensions...)
 
-	var provisionableLabels []string
+	var provisionableDimensions []string
 	if c.image != "" {
-		provisionableLabels = append(provisionableLabels, "provisionable-cros-version:"+c.image)
+		provisionableDimensions = append(provisionableDimensions, "provisionable-cros-version:"+c.image)
 	}
 	for _, p := range c.provisionLabels {
-		provisionableLabels = append(provisionableLabels, "provisionable-"+p)
+		provisionableDimensions = append(provisionableDimensions, "provisionable-"+p)
 	}
 
 	keyvals, err := toKeyvalMap(c.keyvals)
@@ -157,23 +156,22 @@ func (c *createTestRun) innerRun(a subcommands.Application, args []string, env s
 		TestArgs:   c.testArgs,
 	}
 	cmd.Config(worker.Env(e.Wrapped()))
-	slices, err := getSlices(cmd, provisionableLabels, dimensions, c.timeoutMins)
-	if err != nil {
-		return errors.Annotate(err, "create test").Err()
-	}
 
 	tags := append(c.tags, "skylab-tool:create-test", "log_location:"+cmd.LogDogAnnotationURL, "luci_project:"+e.LUCIProject)
 	if c.qsAccount != "" {
 		tags = append(tags, "qs_account:"+c.qsAccount)
 	}
 
-	req := &swarming_api.SwarmingRpcsNewTaskRequest{
-		Name:         taskName,
-		Tags:         tags,
-		TaskSlices:   slices,
-		Priority:     int64(c.priority),
-		ParentTaskId: c.parentTaskID,
+	ra := request.Args{
+		Cmd:                     cmd,
+		Tags:                    tags,
+		ProvisionableDimensions: provisionableDimensions,
+		Dimensions:              dimensions,
+		TimeoutMins:             c.timeoutMins,
+		Priority:                int64(c.priority),
+		ParentTaskID:            c.parentTaskID,
 	}
+	req, err := request.New(ra)
 
 	ctx := cli.GetContext(a, c, env)
 	h, err := httpClient(ctx, &c.authFlags)
@@ -194,69 +192,4 @@ func (c *createTestRun) innerRun(a subcommands.Application, args []string, env s
 
 	fmt.Fprintf(a.GetOut(), "Created Swarming task %s\n", swarmingTaskURL(e, resp.TaskId))
 	return nil
-}
-
-func taskSlice(command []string, dimensions []*swarming_api.SwarmingRpcsStringPair, timeoutMins int) *swarming_api.SwarmingRpcsTaskSlice {
-	return &swarming_api.SwarmingRpcsTaskSlice{
-		// We want all slices to wait, at least a little while, for bots with
-		// metching dimensions.
-		// For slice 0: This allows the task to try to re-use provisionable
-		// labels that get set by previous tasks with the same label that are
-		// about to finish.
-		// For slice 1: This allows the task to wait for devices to get
-		// repaired, if there are no devices with dut_state:ready.
-		WaitForCapacity: true,
-		// Slice 0 should have a fairly short expiration time, to reduce
-		// overhead for tasks that are the first ones enqueue with a particular
-		// provisionable label. This value will be overwritten for the final
-		// slice of a task.
-		ExpirationSecs: 30,
-		Properties: &swarming_api.SwarmingRpcsTaskProperties{
-			Command:              command,
-			Dimensions:           dimensions,
-			ExecutionTimeoutSecs: int64(timeoutMins * 60),
-		},
-	}
-}
-
-// getSlices generates and returns the set of swarming task slices for the given test task.
-func getSlices(cmd worker.Command, provisionableDimensions []string, dimensions []string, timeoutMins int) ([]*swarming_api.SwarmingRpcsTaskSlice, error) {
-	slices := make([]*swarming_api.SwarmingRpcsTaskSlice, 1, 2)
-
-	basePairs, err := toPairs(dimensions)
-	if err != nil {
-		return nil, errors.Annotate(err, "create slices").Err()
-	}
-	provisionablePairs, err := toPairs(provisionableDimensions)
-	if err != nil {
-		return nil, errors.Annotate(err, "create slices").Err()
-	}
-
-	s0Dims := append(basePairs, provisionablePairs...)
-	slices[0] = taskSlice(cmd.Args(), s0Dims, timeoutMins)
-
-	// Note: This is the common case.
-	if len(provisionableDimensions) != 0 {
-		// Make a copy before mutating.
-		cmd := cmd
-		cmd.ProvisionLabels = provisionDimensionsToLabels(provisionableDimensions)
-		s1Dims := basePairs
-		slices = append(slices, taskSlice(cmd.Args(), s1Dims, timeoutMins))
-	}
-
-	finalSlice := slices[len(slices)-1]
-	// TODO(akeshet): Determine the correct expiration time, or make it a
-	// commandline argument.
-	finalSlice.ExpirationSecs = int64(timeoutMins * 60)
-
-	return slices, nil
-}
-
-// provisionDimensionsToLabels converts provisionable dimensions to labels.
-func provisionDimensionsToLabels(dims []string) []string {
-	labels := make([]string, len(dims))
-	for i, l := range dims {
-		labels[i] = strings.TrimPrefix(l, "provisionable-")
-	}
-	return labels
 }
