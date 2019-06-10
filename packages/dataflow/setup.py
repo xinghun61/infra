@@ -6,7 +6,7 @@ from setuptools import setup
 
 setup(
     name='dataflow',
-    version='0.0.5',
+    version='0.0.6',
     description='Chrome Infra Dataflow Workflows',
     long_description=('This package includes Chrome Infra workflows as well as '
                       'common modules.'),
