@@ -128,7 +128,10 @@ export class MrIssueHeader extends connectStore(LitElement) {
           </h1>
           <small class="byline">
             Reported by
-            <mr-user-link .userRef=${this.issue.reporterRef}></mr-user-link>
+            <mr-user-link
+              .userRef=${this.issue.reporterRef}
+              aria-label="issue reporter"
+            ></mr-user-link>
             on <chops-timestamp .timestamp=${this.issue.openedTimestamp}></chops-timestamp>
           </small>
         </div>
@@ -142,6 +145,7 @@ export class MrIssueHeader extends connectStore(LitElement) {
         </div>
         ${this._issueOptions.length ? html`
           <mr-dropdown
+            aria-label="issue options menu"
             .items=${this._issueOptions}
             icon="more_vert"
           ></mr-dropdown>

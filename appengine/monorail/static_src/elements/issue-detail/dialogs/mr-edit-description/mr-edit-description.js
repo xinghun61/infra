@@ -58,8 +58,8 @@ export class MrEditDescription extends connectStore(LitElement) {
     return html`
       <link href="https://fonts.googleapis.com/icon?family=Material+Icons"
             rel="stylesheet">
-      <chops-dialog>
-        <h3 class="medium-heading">
+      <chops-dialog aria-labelledby="editDialogTitle">
+        <h3 id="editDialogTitle" class="medium-heading">
           Edit ${this._title}
         </h3>
         <textarea

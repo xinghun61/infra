@@ -115,8 +115,11 @@ export class MrDropdown extends LitElement {
             <a
               href=${ifDefined(item.url)}
               @click=${this._onClick}
+              @keydown=${this._onClick}
               data-idx=${index}
-              class="menu-item">
+              tabindex="0"
+              class="menu-item"
+            >
               ${item.text}
             </a>
           `}
@@ -149,11 +152,13 @@ export class MrDropdown extends LitElement {
   }
 
   _onClick(e) {
-    const idx = e.target.dataset.idx;
-    if (idx !== undefined && this.items[idx].handler) {
-      this.items[idx].handler();
+    if (e instanceof MouseEvent || e.code === 'Enter') {
+      const idx = e.target.dataset.idx;
+      if (idx !== undefined && this.items[idx].handler) {
+        this.items[idx].handler();
+      }
+      this.close();
     }
-    this.close();
   }
 
   connectedCallback() {
