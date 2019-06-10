@@ -29,6 +29,7 @@
           "refs/heads/master@{#398942}",
           "refs/heads/master@{#398946}"
         ],
+        revisions: ["1a2b3c4d", "2a2b3c4d", "3a2b3c4d", "4a2b3c4d"],
         repo: "chromium",
       };
 
@@ -47,8 +48,9 @@
           "refs/heads/master@{#398921}",
           "refs/heads/master@{#398946}",
           "refs/heads/master@{#398942}",
-          "refs/heads/master@{#398901}"
+          "refs/heads/master@{#398901}",
         ],
+        revisions: ["1a2b3c4d", "2a2b3c4d", "3a2b3c4d", "4a2b3c4d"],
         repo: "chromium",
       };
 
@@ -62,7 +64,12 @@
 
     test('revisions used instead of positions', function(done) {
       element.range = {
-        positions: [],
+        positions: [
+          "refs/heads/master@{#398913}",
+          "refs/heads/master@{#398921}",
+          "refs/heads/master@{#398946}",
+          "refs/heads/master@{#398942}",
+        ],
         repo: 'chromeos/fakerepo',
         revisions: ['abc123456789', 'abd223456789', 'abe323456789', 'abf423456789'],
         host: 'https://some-host.googlesource.com',
@@ -85,6 +92,7 @@
           "refs/heads/master@{#398942}",
           "refs/heads/master@{#398901}"
         ],
+        revisions: ['abc123456789', 'abd223456789', 'abe323456789', 'abf423456789'],
         repo: "chromium",
       };
 
@@ -99,6 +107,13 @@
 
     test('test regressionRangeLink using revisions', function(done) {
       element.range = {
+        positions: [
+          "refs/heads/master@{#398913}",
+          "refs/heads/master@{#398921}",
+          "refs/heads/master@{#398946}",
+          "refs/heads/master@{#398942}",
+          "refs/heads/master@{#398901}"
+        ],
         repo: 'chromeos/fakerepo',
         revisions:  ['abc123456789', 'abd223456789', 'abe323456789', 'abf423456789'],
         host: 'https://some-host.googlesource.com',

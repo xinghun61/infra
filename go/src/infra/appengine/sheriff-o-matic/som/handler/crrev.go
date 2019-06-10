@@ -3,6 +3,7 @@ package handler
 import (
 	"fmt"
 	"net/http"
+	"strings"
 
 	"infra/appengine/sheriff-o-matic/som/client"
 
@@ -36,34 +37,58 @@ func GetRevRangeHandler(ctx *router.Context) {
 func getRevRangeHandler(ctx *router.Context, crRev client.CrRev) {
 	c, w, r, p := ctx.Context, ctx.Writer, ctx.Request, ctx.Params
 
-	start := p.ByName("start")
-	end := p.ByName("end")
-	if start == "" || end == "" {
-		errStatus(c, w, http.StatusBadRequest, "Start and end parameters must be set.")
+	host := p.ByName("host")
+	repo := p.ByName("repo")
+	if host == "" || repo == "" {
+		errStatus(c, w, http.StatusBadRequest, "Host and repo must be set")
+	}
+
+	// Either startPos and endPos commit positions will be passed or
+	// startRev and endRev revisions will be passed. If commit positions
+	// are passed, we get the gitilesURL using crrev via GetRedirect.
+	// If revisions are passed, we create the the gitiles url directly.
+	queryValues := r.URL.Query()
+	startPos := queryValues.Get("startPos")
+	endPos := queryValues.Get("endPos")
+	startRev := queryValues.Get("startRev")
+	endRev := queryValues.Get("endRev")
+
+	var itm memcache.Item
+	if startPos != "" && endPos != "" {
+		itm = memcache.NewItem(c, fmt.Sprintf("revrange:%s..%s", startPos, endPos))
+	} else if startRev != "" && endRev != "" {
+		itm = memcache.NewItem(c, fmt.Sprintf("revrange:%s..%s", startRev, endRev))
+	} else {
+		errStatus(c, w, http.StatusBadRequest, "Start and end position or revision parameters must be set.")
 		return
 	}
 
-	itm := memcache.NewItem(c, fmt.Sprintf("revrange:%s..%s", start, end))
 	err := memcache.Get(c, itm)
 
 	// TODO: nix this double layer of caching.
 	if err == memcache.ErrCacheMiss {
-		startRev, err := crRev.GetRedirect(c, start)
-		if err != nil {
-			errStatus(c, w, http.StatusInternalServerError, err.Error())
-			return
-		}
-
-		endRev, err := crRev.GetRedirect(c, end)
-		if err != nil {
-			errStatus(c, w, http.StatusInternalServerError, err.Error())
-			return
-		}
-
 		// TODO(seanmccullough): some sanity checking of the rev json (same repo etc)
+		if startRev == "" && endRev == "" {
+			startRevObj, err := crRev.GetRedirect(c, startPos)
+			if err != nil {
+				errStatus(c, w, http.StatusInternalServerError, err.Error())
+				return
+			}
 
-		gitilesURL := fmt.Sprintf("https://chromium.googlesource.com/chromium/src/+log/%s^..%s?format=JSON",
-			startRev["git_sha"], endRev["git_sha"])
+			endRevObj, err := crRev.GetRedirect(c, endPos)
+			if err != nil {
+				errStatus(c, w, http.StatusInternalServerError, err.Error())
+				return
+			}
+			startRev = startRevObj["git_sha"]
+			endRev = endRevObj["git_sha"]
+		}
+
+		// A repo name with "/" cannot be passed as a URL param. So all "/" were
+		// replaced with "." before this request was made.
+		repo = strings.Replace(repo, ".", "/", -1)
+		gitilesURL := fmt.Sprintf("https://%s.googlesource.com/%s/+log/%s^..%s?format=JSON",
+			host, repo, startRev, endRev)
 
 		itm.SetValue([]byte(gitilesURL))
 		if err = memcache.Set(c, itm); err != nil {

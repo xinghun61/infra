@@ -1153,8 +1153,17 @@ func (n *noopSigner) SignBytes(c context.Context, b []byte) (string, []byte, err
 	return string(b), b, n.err
 }
 
-func makeGetRequest() *http.Request {
-	req, _ := http.NewRequest("GET", "/doesntmatter", nil)
+func makeGetRequest(queryParams ...string) *http.Request {
+	if len(queryParams)%2 != 0 {
+		return nil
+	}
+	params := make([]string, len(queryParams)/2)
+	for i := range params {
+		params[i] = fmt.Sprintf("%s=%s", queryParams[2*i], queryParams[2*i+1])
+	}
+	paramsStr := strings.Join(params, "&")
+	url := fmt.Sprintf("/doesntmatter?%s", paramsStr)
+	req, _ := http.NewRequest("GET", url, nil)
 	return req
 }
 

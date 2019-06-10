@@ -25,14 +25,31 @@ func TestRevRangeHandler(t *testing.T) {
 	crRev := client.NewCrRev(fakeCrRev.Server.URL)
 
 	Convey("get rev range", t, func() {
-		Convey("ok", func() {
+		Convey("ok with positions", func() {
 			c = authtest.MockAuthConfig(c)
 			w := httptest.NewRecorder()
 			getRevRangeHandler(&router.Context{
 				Context: c,
 				Writer:  w,
-				Request: makeGetRequest(),
-				Params:  makeParams("start", "123", "end", "456"),
+				Request: makeGetRequest(
+					"startPos", "123", "endPos", "456",
+					"endRev", "1a2b3c4d"),
+				Params: makeParams(
+					"host", "chromium", "repo", "chromium.src"),
+			}, crRev)
+
+			So(w.Code, ShouldEqual, 301)
+		})
+		Convey("ok with revisions", func() {
+			c = authtest.MockAuthConfig(c)
+			w := httptest.NewRecorder()
+			getRevRangeHandler(&router.Context{
+				Context: c,
+				Writer:  w,
+				Request: makeGetRequest(
+					"startRev", "2a2b3c4d", "endRev", "1a2b3c4d"),
+				Params: makeParams(
+					"host", "chromium", "repo", "chromium.src"),
 			}, crRev)
 
 			So(w.Code, ShouldEqual, 301)
@@ -42,8 +59,11 @@ func TestRevRangeHandler(t *testing.T) {
 			getRevRangeHandler(&router.Context{
 				Context: c,
 				Writer:  w,
-				Request: makeGetRequest(),
-				Params:  makeParams("start", "123", "end", "456"),
+				Request: makeGetRequest(
+					"startPos", "123", "endPos", "456",
+					"endRev", "1a2b3c4d"),
+				Params: makeParams(
+					"host", "chromium", "repo", "chromium.src"),
 			}, crRev)
 			So(w.Code, ShouldEqual, http.StatusMovedPermanently)
 		})
@@ -58,5 +78,32 @@ func TestRevRangeHandler(t *testing.T) {
 
 			So(w.Code, ShouldEqual, 400)
 		})
+		Convey("bad start and end params", func() {
+			w := httptest.NewRecorder()
+
+			getRevRangeHandler(&router.Context{
+				Context: c,
+				Writer:  w,
+				Request: makeGetRequest(
+					"startPos", "123", "endRev", "1a2b3c4d"),
+				Params: makeParams(
+					"host", "chromium", "repo", "chromium.src"),
+			}, crRev)
+			So(w.Code, ShouldEqual, 400)
+		})
+		Convey("bad repo and host", func() {
+			w := httptest.NewRecorder()
+
+			getRevRangeHandler(&router.Context{
+				Context: c,
+				Writer:  w,
+				Request: makeGetRequest(
+					"startPos", "123", "endPos", "234",
+					"startRev", "2a2b3c4d", "endRev", "1a2b3c4d"),
+				Params: makeParams(),
+			}, crRev)
+			So(w.Code, ShouldEqual, 400)
+		})
+
 	})
 }

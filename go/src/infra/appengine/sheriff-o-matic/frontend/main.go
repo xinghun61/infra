@@ -284,7 +284,7 @@ func init() {
 	r.POST("/api/v1/filebug/", protected, handler.FileBugHandler)
 	r.GET("/api/v1/bugqueue/:label", protected, getBugQueueHandler)
 	r.GET("/api/v1/bugqueue/:label/uncached/", protected, getUncachedBugsHandler)
-	r.GET("/api/v1/revrange/:start/:end", basemw, handler.GetRevRangeHandler)
+	r.GET("/api/v1/revrange/:host/:repo", basemw, handler.GetRevRangeHandler)
 	r.GET("/api/v1/testexpectations", protected, handler.GetLayoutTestsHandler)
 	r.POST("/api/v1/testexpectation", protected, handler.PostLayoutTestExpectationChangeHandler)
 	r.GET("/logos/:tree", protected, handler.GetTreeLogoHandler)
