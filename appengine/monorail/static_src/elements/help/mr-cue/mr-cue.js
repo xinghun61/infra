@@ -59,15 +59,20 @@ export class MrCue extends connectStore(LitElement) {
         visibility: hidden;
       }
       i.material-icons {
-       float: right;
-       font-size: 14px;
-       padding: 2px;
-       cursor: pointer;
+        font-size: 14px;
       }
-      i.material-icons[hidden] {
-        display: none;
+      button {
+        background: none;
+        border: none;
+        float: right;
+        padding: 2px;
+        cursor: pointer;
+        border-radius: 50%;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
       }
-      i.material-icons:hover {
+      button:hover {
         background: rgba(0, 0, 0, .2);
       }
     `];
@@ -77,11 +82,13 @@ export class MrCue extends connectStore(LitElement) {
     return html`
       <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
       <div class="cue" ?hidden=${this.hidden} id="message">
-        <i class="material-icons"
-           title="Don't show this message again."
-           @click=${this.dismiss}
-           ?hidden=${this.nondismissible}
-           >close</i>
+        <button
+          @click=${this.dismiss}
+          title="Don't show this message again."
+          ?hidden=${this.nondismissible}
+        >
+          <i class="material-icons">close</i>
+        </button>
         ${this.message}
       </div>
     `;
