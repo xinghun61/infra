@@ -52,6 +52,23 @@ export class MrRelatedIssuesTable extends connectStore(LitElement) {
         tr.dragged td {
           background: #eee;
         }
+        h3.medium-heading {
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-end;
+        }
+        button {
+          background: none;
+          border: none;
+          color: inherit;
+          cursor: pointer;
+          margin: 0;
+          padding: 0;
+        }
+        i.material-icons {
+          font-size: var(--chops-icon-font-size);
+          color: var(--chops-primary-icon-color);
+        }
         .draggable {
           cursor: grab;
         }
@@ -70,7 +87,12 @@ export class MrRelatedIssuesTable extends connectStore(LitElement) {
     return html`
       <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
       <chops-dialog>
-        <h3 class="medium-heading">Blocked on issues</h3>
+        <h3 class="medium-heading">
+          <span>Blocked on issues</span>
+          <button aria-label="close" @click=${this.close}>
+            <i class="material-icons">close</i>
+          </button>
+        </h3>
         ${this.error ? html`
           <div class="error">${this.error}</div>
         ` : ''}
@@ -175,6 +197,10 @@ export class MrRelatedIssuesTable extends connectStore(LitElement) {
     await this.updateComplete;
     this.reset();
     this.shadowRoot.querySelector('chops-dialog').open();
+  }
+
+  close() {
+    this.shadowRoot.querySelector('chops-dialog').close();
   }
 
   reset() {
