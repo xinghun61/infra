@@ -140,6 +140,8 @@ class CombineEventsToAttempt(beam.CombineFn):
       if event.earliest_equivalent_patchset:
         attempt.earliest_equivalent_patchset = (
             event.earliest_equivalent_patchset)
+      if event.attempt_key:
+        attempt.attempt_key = event.attempt_key
 
       for field in self.consistent_fields:
         attempt_value = attempt.__dict__.get(field)
@@ -232,7 +234,7 @@ class ComputeAttempts(beam.PTransform):
 def main():
   q = ('SELECT timestamp_millis, action, attempt_start_usec, cq_name, issue,'
        '  patchset, dry_run, failure_reason, contributing_buildbucket_ids, '
-       '  earliest_equivalent_patchset '
+       '  earliest_equivalent_patchset, attempt_key '
        'FROM `chrome-infra-events.raw_events.cq`')
   p = chops_beam.EventsPipeline()
   _ = (p
