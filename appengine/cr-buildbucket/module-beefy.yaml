@@ -1,0 +1,54 @@
+# Copyright 2019 The Chromium Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+# Certain clients send requests that cannot be served by F4 instance
+# class with 10 concurrent requests. Increasing the class of all instances
+# of the default module would be expensive. Instead this file defines a separate
+# restricted module with the beefiest instance class and basic scaling.
+#
+# This service allows only buildbucket.v2.Builds requests.
+# A requester must be a member of "buildbucket-beefy-users" group to use the
+# this service.
+
+application: cr-buildbucket-dev
+module: beefy
+version: 1
+runtime: python27
+api_version: 1
+threadsafe: false   # Force no concurrency
+instance_class: B8  # The beefiest instance class: 2 GB, 4.8 GHz CPU
+basic_scaling:
+  max_instances: 5
+
+# Allow only Builds service.
+handlers:
+- url: /_ah/start
+  script: apps.frontend
+  secure: always
+- url: /prpc/buildbucket.v2.Builds/.+
+  script: apps.frontend
+  secure: always
+
+# These libraries are not used, but removing them from here
+# adds complexity in code: dynamic imports or splitting the frontend app.
+libraries:
+- name: endpoints
+  version: 1.0
+- name: webapp2
+  version: "2.5.2"
+- name: webob
+  version: "1.2.3"
+
+builtins:
+- deferred: on
+
+skip_files:
+- ^(.*/)?.*\.(orig|rej|py[co])
+- ^(.*/)?#.*#
+- ^(.*/)?.*~
+- ^(.*/)?\..*
+- ^test.*
+- ^tools.*
+- ^[A-Z]+(\.[a-z]+)?
+- .+\.md

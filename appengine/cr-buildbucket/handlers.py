@@ -2,6 +2,10 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import logging
+
+from google.appengine.api.modules import modules
+
 from components import auth
 from components import config as config_api
 from components import decorators
@@ -28,6 +32,18 @@ README_MD = (
     'https://chromium.googlesource.com/infra/infra/+/master/'
     'appengine/cr-buildbucket/README.md'
 )
+
+
+class DummyStartHandler(auth.AuthenticatingHandler):  # pragma: no cover
+  """Dummy handler for /_ah/start.
+
+  Derived from AuthenticatingHandler to initialize auth db before the first
+  request.
+  """
+
+  @auth.public
+  def get(self):
+    pass
 
 
 class MainHandler(webapp2.RequestHandler):  # pragma: no cover
@@ -92,6 +108,23 @@ class UnregisterBuilders(webapp2.RequestHandler):  # pragma: no cover
     service.unregister_builders()
 
 
+def _beefy_service_interceptor(
+    request, context, call_details, continuation
+):  # pragma: no cover
+  """Requires the requester to be a member of "buildbucket-beefy-users" group.
+  """
+  if auth.is_group_member('buildbucket-beefy-users'):
+    return continuation(request, context, call_details)
+
+  who = auth.get_current_identity().to_bytes()
+  logging.warning('%s tried to use beefy service', who)
+  context.set_code(prpc.StatusCode.PERMISSION_DENIED)
+  context.set_details(
+      '%s is not allowed to use beefy buildbucket service' % who
+  )
+  return None
+
+
 def get_frontend_routes():  # pragma: no cover
   endpoints_services = [
       legacy_api.BuildBucketApi,
@@ -99,6 +132,7 @@ def get_frontend_routes():  # pragma: no cover
       swarmbucket_api.SwarmbucketApi,
   ]
   routes = [
+      webapp2.Route(r'/_ah/start', DummyStartHandler),
       webapp2.Route(r'/', MainHandler),
       webapp2.Route(r'/b/<build_id:\d+>', BuildRPCHandler),
       webapp2.Route(r'/build/<build_id:\d+>', ViewBuildHandler),
@@ -111,6 +145,8 @@ def get_frontend_routes():  # pragma: no cover
 
   prpc_server = prpc.Server()
   prpc_server.add_interceptor(auth.prpc_interceptor)
+  if modules.get_current_module_name() == 'beefy':
+    prpc_server.add_interceptor(_beefy_service_interceptor)
   prpc_server.add_service(access.AccessServicer())
   prpc_server.add_service(api.BuildsApi())
   routes += prpc_server.get_routes()
