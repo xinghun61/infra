@@ -191,6 +191,10 @@ export class MrUpload extends LitElement {
     this.files = [];
   }
 
+  get hasAttachments() {
+    return this.files.length !== 0;
+  }
+
   async loadFiles() {
     // TODO(zhangtiff): Add preloading of files on change.
     if (!this.files || !this.files.length) return [];
@@ -269,6 +273,7 @@ export class MrUpload extends LitElement {
     const input = e.currentTarget;
     if (!input.files) return;
     this._addFiles(input.files);
+    this.dispatchEvent(new CustomEvent('change'));
   }
 
   _addFiles(newFiles) {

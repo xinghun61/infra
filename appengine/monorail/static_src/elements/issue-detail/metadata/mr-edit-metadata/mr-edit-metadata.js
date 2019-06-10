@@ -174,6 +174,7 @@ export class MrEditMetadata extends connectStore(LitElement) {
         ></textarea>
         <mr-upload
           ?hidden=${this.disableAttachments}
+          @change=${this._processChanges}
         ></mr-upload>
         <div class="input-grid">
           ${this._renderEditFields()}
@@ -694,9 +695,7 @@ export class MrEditMetadata extends connectStore(LitElement) {
   get delta() {
     try {
       this.error = '';
-      const delta = this._getDelta();
-      this.disabled = isEmptyObject(delta);
-      return delta;
+      return this._getDelta();
     } catch (e) {
       if (!(e instanceof UserInputError)) throw e;
       this.error = e.message;
@@ -810,8 +809,11 @@ export class MrEditMetadata extends connectStore(LitElement) {
 
         const delta = this.delta;
         const commentContent = this.getCommentContent();
-        store.dispatch(ui.reportDirtyForm(
-          this.formName, !isEmptyObject(delta) || Boolean(commentContent)));
+        const attachmentsElement = this.shadowRoot.querySelector('mr-upload');
+        const isDirty = !isEmptyObject(delta) || Boolean(commentContent) ||
+          attachmentsElement.hasAttachments;
+        this.disabled = !isDirty;
+        store.dispatch(ui.reportDirtyForm(this.formName, isDirty));
         this.dispatchEvent(new CustomEvent('change', {detail: {delta}}));
       }, DEBOUNCED_PRESUBMIT_TIME_OUT);
     }
