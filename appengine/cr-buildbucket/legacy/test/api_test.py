@@ -19,6 +19,7 @@ sys.path.insert(
     0, os.path.join(REPO_ROOT_DIR, 'luci', 'appengine', 'third_party_local')
 )
 
+from google.protobuf import json_format
 from google.protobuf import text_format
 
 from components import auth
@@ -257,6 +258,49 @@ class V1ApiTest(testing.EndpointsTestCase):
     self.assertEqual(resp['build']['id'], '1')
     self.assertIn(buildset_tag, resp['build']['tags'])
     self.assertIn('t:0', resp['build']['tags'])
+
+  @mock.patch('creation.add_async', autospec=True)
+  def test_put_with_v2_gerrit_changes(self, add_async):
+    changes = [
+        common_pb2.GerritChange(
+            host='chromium.googlesource.com',
+            project='project',
+            change=1,
+            patchset=1,
+        ),
+        common_pb2.GerritChange(
+            host='chromium.googlesource.com',
+            project='project',
+            change=2,
+            patchset=1,
+        ),
+    ]
+    expected_sbr = rpc_pb2.ScheduleBuildRequest(
+        builder=dict(
+            project='chromium',
+            bucket='try',
+            builder='linux',
+        ),
+        properties=dict(),
+        gerrit_changes=changes,
+    )
+    expected_request = creation.BuildRequest(
+        schedule_build_request=expected_sbr,
+        parameters={model.BUILDER_PARAMETER: 'linux'},
+    )
+
+    add_async.return_value = future(test_util.build(id=1))
+
+    params = {
+        model.BUILDER_PARAMETER: 'linux',
+        'gerrit_changes': [json_format.MessageToDict(c) for c in changes],
+    }
+    req = {
+        'bucket': 'luci.chromium.try',
+        'parameters_json': json.dumps(params),
+    }
+    self.call_api('put', req)
+    add_async.assert_called_once_with(expected_request)
 
   @mock.patch('creation.add_async', autospec=True)
   def test_put_with_generic_buildset(self, add_async):

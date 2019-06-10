@@ -10,6 +10,7 @@ import logging
 
 from google import protobuf
 from google.appengine.ext import ndb
+from google.protobuf import json_format
 from protorpc import messages
 from protorpc import message_types
 from protorpc import remote
@@ -270,6 +271,20 @@ def put_request_message_to_build_request(put_request):
   sbr.tags.extend(tags)
   if gitiles_commit:
     sbr.gitiles_commit.CopyFrom(gitiles_commit)
+
+  # Gerrit changes explicitly passed via "gerrit_changes" parameter win.
+  gerrit_change_list = parameters.pop('gerrit_changes', None)
+  if gerrit_change_list is not None:
+    if not isinstance(gerrit_change_list, list):  # pragma: no cover
+      raise errors.InvalidInputError('gerrit_changes must be a list')
+    try:
+      gerrit_changes = [
+          json_format.ParseDict(c, common_pb2.GerritChange())
+          for c in gerrit_change_list
+      ]
+    except json_format.ParseError as ex:  # pragma: no cover
+      raise errors.InvalidInputError('Invalid gerrit_changes: %s' % ex)
+
   sbr.gerrit_changes.extend(gerrit_changes)
 
   if (not gerrit_changes and
