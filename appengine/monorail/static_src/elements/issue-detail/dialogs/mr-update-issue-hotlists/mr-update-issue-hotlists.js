@@ -76,7 +76,7 @@ export class MrUpdateIssueHotlists extends connectStore(LitElement) {
   render() {
     return html`
       <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-      <chops-dialog>
+      <chops-dialog closeOnOutsideClick>
         <h3 class="medium-heading">Add issue to hotlists</h3>
         <form id="issueHotlistsForm">
           ${this.userHotlists.length ? this.userHotlists.map((hotlist) => html`

@@ -57,7 +57,8 @@ export class MrClickThroughs extends connectStore(LitElement) {
       <chops-dialog
         id="privacyDialog"
         ?opened=${this._showPrivacyDialog}
-        forced>
+        forced
+      >
         <h2>Email display settings</h2>
 
         <p>There is a <a href="/hosting/settings">setting</a> to control how
@@ -85,7 +86,8 @@ export class MrClickThroughs extends connectStore(LitElement) {
       <chops-dialog
         id="corpModeDialog"
         ?opened=${this._showCorpModeDialog}
-        forced>
+        forced
+      >
         <h2>This site hosts public issues in public projects</h2>
 
         <p>Unlike our internal issue tracker, this site makes most

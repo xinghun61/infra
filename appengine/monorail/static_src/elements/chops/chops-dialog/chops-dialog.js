@@ -102,8 +102,9 @@ export class ChopsDialog extends LitElement {
         type: Array,
       },
       /**
-       * When True, force the user to interact with the dialog rather than
-       * just dismissing it.
+       * When True, disables exiting keys and closing on outside clicks.
+       * Forces the user to interact with the dialog rather than just dismissing
+       * it.
        */
       forced: {
         type: Boolean,
@@ -121,7 +122,7 @@ export class ChopsDialog extends LitElement {
     super();
 
     this.opened = false;
-    this.closeOnOutsideClick = true;
+    this.closeOnOutsideClick = false;
     this.exitKeys = [ESC_KEYCODE];
     this.forced = false;
     this._boundKeydownHandler = this._keydownHandler.bind(this);

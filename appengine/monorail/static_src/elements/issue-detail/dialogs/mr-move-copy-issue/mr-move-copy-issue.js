@@ -44,7 +44,7 @@ export class MrMoveCopyIssue extends connectStore(LitElement) {
     return html`
       <link href="https://fonts.googleapis.com/icon?family=Material+Icons"
             rel="stylesheet">
-      <chops-dialog>
+      <chops-dialog closeOnOutsideClick>
         <div class="target-project-dialog">
           <h3 class="medium-heading">${this._action} issue</h3>
           <div class="input-grid">

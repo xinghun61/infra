@@ -86,7 +86,7 @@ export class MrRelatedIssuesTable extends connectStore(LitElement) {
       || []).includes(ISSUE_EDIT_PERMISSION);
     return html`
       <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-      <chops-dialog>
+      <chops-dialog closeOnOutsideClick>
         <h3 class="medium-heading">
           <span>Blocked on issues</span>
           <button aria-label="close" @click=${this.close}>

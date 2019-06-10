@@ -53,7 +53,7 @@ export class MrConvertIssue extends connectStore(LitElement) {
   render() {
     return html`
       <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-      <chops-dialog>
+      <chops-dialog closeOnOutsideClick>
         <h3 class="medium-heading">Convert issue to new template structure</h3>
         <form id="convertIssueForm">
           <div class="input-grid">
