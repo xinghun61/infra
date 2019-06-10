@@ -196,22 +196,6 @@ class TaskDefTest(BaseTest):
         build, self.builder_cfg, self.settings.swarming
     ).get_result()
 
-  @parameterized.expand([
-      ({'changes': 0},),
-      ({'changes': [0]},),
-      ({'changes': [{'author': 0}]},),
-      ({'changes': [{'author': {}}]},),
-      ({'changes': [{'author': {'email': 0}}]},),
-      ({'changes': [{'author': {'email': ''}}]},),
-      ({'changes': [{'author': {'email': 'a@example.com'}, 'repo_url': 0}]},),
-      ({'swarming': []},),
-      ({'swarming': {'junk': 1}},),
-      ({'swarming': {'recipe': []}},),
-  ])
-  def test_validate_build_parameters(self, parameters):
-    with self.assertRaises(errors.InvalidInputError):
-      swarming.validate_build_parameters(parameters)
-
   def test_shared_cache(self):
     self.builder_cfg.caches.add(path='builder', name='shared_builder_cache')
 
@@ -416,7 +400,6 @@ class TaskDefTest(BaseTest):
 
     expected_input_properties = {
         'a': 'b',
-        'blamelist': ['bob@example.com'],
         'buildbucket': {
             'hostname': 'cr-buildbucket.appspot.com',
             'build': {
@@ -660,24 +643,6 @@ class TaskDefTest(BaseTest):
     actual = self.prepare_task_def(build)
     self.assertTrue(actual['name'].endswith('-canary'))
 
-  def test_override_cfg(self):
-    build = test_util.build()
-    build.parameters['swarming'] = {
-        'override_builder_cfg': {
-            # Override cores dimension.
-            'dimensions': ['cores:16'],
-            'recipe': {'name': 'bob'},
-        },
-    }
-
-    self.prepare_task_def(build)
-
-    slices = self.prepare_task_def(test_util.build())['task_slices']
-    self.assertIn(
-        {'key': 'cores', 'value': '16'},
-        slices[0]['properties']['dimensions'],
-    )
-
   def test_override_exe_version(self):
     build = test_util.build(exe=dict(cipd_version='canary'))
     task_slice = self.prepare_task_def(build)['task_slices'][0]
@@ -706,43 +671,6 @@ class TaskDefTest(BaseTest):
         {'key': 'cores', 'value': '16'},
         slices[0]['properties']['dimensions'],
     )
-
-  def test_override_cfg_malformed(self):
-    build = test_util.build()
-    build.parameters['swarming'] = {'override_builder_cfg': []}
-    with self.assertRaises(errors.InvalidInputError):
-      self.prepare_task_def(build)
-
-    build = test_util.build()
-    build.parameters['swarming'] = {'override_builder_cfg': {'name': 'x'}}
-    with self.assertRaises(errors.InvalidInputError):
-      self.prepare_task_def(build)
-
-    build = test_util.build()
-    build.parameters['swarming'] = {'override_builder_cfg': {'mixins': ['x']}}
-    with self.assertRaises(errors.InvalidInputError):
-      self.prepare_task_def(build)
-
-    build = test_util.build()
-    build.parameters['swarming'] = {'override_builder_cfg': {'blabla': 'x'}}
-    with self.assertRaises(errors.InvalidInputError):
-      self.prepare_task_def(build)
-
-    # Remove a required dimension.
-    build = test_util.build()
-    build.parameters['swarming'] = {
-        'override_builder_cfg': {'dimensions': ['pool:']}
-    }
-    with self.assertRaises(errors.InvalidInputError):
-      self.prepare_task_def(build)
-
-    # Override build numbers
-    build = test_util.build()
-    build.parameters['swarming'] = {
-        'override_builder_cfg': {'build_numbers': False}
-    }
-    with self.assertRaises(errors.InvalidInputError):
-      self.prepare_task_def(build)
 
   def test_unexpected_template_task_key(self):
     # Unexpected task key.

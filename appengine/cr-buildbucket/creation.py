@@ -40,6 +40,7 @@ _BuildRequestBase = collections.namedtuple(
         'lease_expiration_date',
         'retry_of',
         'pubsub_callback_auth_token',
+        'override_builder_cfg',
     ]
 )
 
@@ -57,6 +58,7 @@ class BuildRequest(_BuildRequestBase):
       lease_expiration_date=None,
       retry_of=None,
       pubsub_callback_auth_token=None,
+      override_builder_cfg=None,
   ):
     """Creates an BuildRequest.
 
@@ -73,6 +75,8 @@ class BuildRequest(_BuildRequestBase):
       retry_of (int): value for model.Build.retry_of attribute.
       pubsub_callback_auth_token (str): value for
         model.Build.pubsub_callback.auth_token. Allowed iff r.notify is set.
+      override_builder_cfg: a function (project_config_pb2.Builder) => None
+        that may modify the config in-place before deriving a build from it.
     """
     assert schedule_build_request
     assert not parameters or 'properties' not in parameters
@@ -88,6 +92,7 @@ class BuildRequest(_BuildRequestBase):
         lease_expiration_date,
         retry_of,
         pubsub_callback_auth_token,
+        override_builder_cfg,
     )
     return self
 
@@ -364,6 +369,13 @@ def add_many_async(build_requests):
     builder = r.schedule_build_request.builder.builder
     bucket_builder_cfgs = builder_cfgs[r.bucket_id]
     builder_cfg = bucket_builder_cfgs.get(builder)
+
+    # Apply builder config overrides, if any.
+    # Exists for backward compatibility, runs only in V1 code path.
+    if builder_cfg and r.override_builder_cfg:  # pragma: no cover
+      builder_cfg = copy.deepcopy(builder_cfg)
+      r.override_builder_cfg(builder_cfg)
+
     nb = NewBuild(r, builder_cfg)
     if bucket_builder_cfgs and not builder_cfg:
       nb.exception = errors.BuilderNotFoundError(

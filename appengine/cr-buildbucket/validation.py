@@ -34,7 +34,6 @@ PUBSUB_USER_DATA_MAX_LENGTH = 4096
 MAX_BUILD_SUMMARY_MARKDOWN_SIZE = 4000  # 4 KB
 
 # swarming.py and api.py reserve these properties.
-# swarming.py does a redundant check, see validate_build_parameters().
 RESERVED_PROPERTY_PATHS = [
     # Reserved for buildbucket internals.
     ['buildbucket'],

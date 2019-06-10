@@ -3,6 +3,7 @@
 # found in the LICENSE file.
 
 import contextlib
+import copy
 import functools
 import json
 import logging
@@ -15,12 +16,15 @@ from protorpc import remote
 import endpoints
 
 from components import auth
+from components.config import validation as config_validation
+from components import protoutil
 from components import utils
 import gae_ts_mon
 
 from legacy import api_common
 from proto import build_pb2
 from proto import common_pb2
+from proto import project_config_pb2
 from proto import rpc_pb2
 import backfill_tag_index
 import bbutil
@@ -29,11 +33,16 @@ import config
 import creation
 import errors
 import fix_builds
+import flatten_swarmingcfg
 import model
 import search
 import service
+import swarmingcfg
 import user
 import validation
+
+_PARAM_SWARMING = 'swarming'
+_PARAM_CHANGES = 'changes'
 
 
 class ErrorMessage(messages.Message):
@@ -128,6 +137,75 @@ def parse_v1_tags(v1_tags):
   return v2_tags, gitiles_commit, gerrit_changes
 
 
+def validate_known_build_parameters(params):
+  """Raises errors.InvalidInputError if LUCI build parameters are invalid."""
+  params = copy.deepcopy(params)
+
+  def bad(fmt, *args):
+    raise errors.InvalidInputError(fmt % args)
+
+  def assert_object(name, value):
+    if not isinstance(value, dict):
+      bad('%s parameter must be an object' % name)
+
+  changes = params.pop(_PARAM_CHANGES, None)
+  if changes is not None:
+    if not isinstance(changes, list):
+      bad('changes param must be an array')
+    for c in changes:  # pragma: no branch
+      if not isinstance(c, dict):
+        bad('changes param must contain only objects')
+      repo_url = c.get('repo_url')
+      if repo_url is not None and not isinstance(repo_url, basestring):
+        bad('change repo_url must be a string')
+      author = c.get('author')
+      if not isinstance(author, dict):
+        bad('change author must be an object')
+      email = author.get('email')
+      if not isinstance(email, basestring):
+        bad('change author email must be a string')
+      if not email:
+        bad('change author email not specified')
+
+  swarming = params.pop(_PARAM_SWARMING, None)
+  if swarming is not None:
+    assert_object('swarming', swarming)
+    swarming = copy.deepcopy(swarming)
+
+    override_builder_cfg_data = swarming.pop('override_builder_cfg', None)
+    if override_builder_cfg_data is not None:
+      assert_object('swarming.override_builder_cfg', override_builder_cfg_data)
+      if 'build_numbers' in override_builder_cfg_data:
+        bad(
+            'swarming.override_builder_cfg parameter '
+            'cannot override build_numbers'
+        )
+
+      override_builder_cfg = project_config_pb2.Builder()
+      try:
+        protoutil.merge_dict(override_builder_cfg_data, override_builder_cfg)
+      except TypeError as ex:
+        bad('swarming.override_builder_cfg parameter: %s', ex)
+      if override_builder_cfg.name:
+        bad('swarming.override_builder_cfg cannot override builder name')
+      if override_builder_cfg.mixins:
+        bad('swarming.override_builder_cfg cannot use mixins')
+      if any(d.startswith('pool:') for d in override_builder_cfg.dimensions):
+        logging.warning(
+            'pool is being overridden: %s', override_builder_cfg.dimensions
+        )
+      if 'pool:' in override_builder_cfg.dimensions:
+        bad('swarming.override_builder_cfg cannot remove pool dimension')
+      ctx = config_validation.Context.raise_on_error(
+          exc_type=errors.InvalidInputError,
+          prefix='swarming.override_builder_cfg parameter: '
+      )
+      swarmingcfg.validate_builder_cfg(override_builder_cfg, [], False, ctx)
+
+    if swarming:
+      bad('unrecognized keys in swarming param: %r', swarming.keys())
+
+
 def put_request_message_to_build_request(put_request):
   """Converts PutRequest to BuildRequest.
 
@@ -139,6 +217,8 @@ def put_request_message_to_build_request(put_request):
   # Read parameters.
   parameters = parse_json_object(put_request.parameters_json, 'parameters_json')
   parameters = parameters or {}
+  validate_known_build_parameters(parameters)
+
   builder = parameters.get(model.BUILDER_PARAMETER) or ''
 
   # Validate tags.
@@ -151,6 +231,25 @@ def put_request_message_to_build_request(put_request):
         '"properties" parameter must be a JSON object or null'
     )
   props = props or {}
+
+  changes = parameters.get(_PARAM_CHANGES)
+  if changes:  # pragma: no branch
+    # Buildbucket-Buildbot integration passes repo_url of the first change in
+    # build parameter "changes" as "repository" attribute of SourceStamp.
+    # https://chromium.googlesource.com/chromium/tools/build/+/2c6023d
+    # /scripts/master/buildbucket/changestore.py#140
+    # Buildbot passes repository of the build source stamp as "repository"
+    # build property. Recipes, in partiular bot_update recipe module, rely on
+    # "repository" property and it is an almost sane property to support in
+    # swarmbucket.
+    repo_url = changes[0].get('repo_url')
+    if repo_url:  # pragma: no branch
+      props['repository'] = repo_url
+
+    # Buildbot-Buildbucket integration converts emails in changes to blamelist
+    # property.
+    emails = [c.get('author', {}).get('email') for c in changes]
+    props['blamelist'] = filter(None, emails)
 
   # Create a v2 request.
   sbr = rpc_pb2.ScheduleBuildRequest(
@@ -212,7 +311,25 @@ def put_request_message_to_build_request(put_request):
       parameters=parameters,
       lease_expiration_date=lease_expiration_date,
       pubsub_callback_auth_token=pubsub_callback_auth_token,
+      override_builder_cfg=_override_builder_cfg_func(parameters),
   )
+
+
+def _override_builder_cfg_func(parameters):
+  """Returns a function that overrides a Builder config.
+
+  May return None.
+
+  See creation.BuildRequest.override_builder_cfg.
+  """
+  swarming_param = parameters.get(_PARAM_SWARMING) or {}
+  overrides_dict = swarming_param.get('override_builder_cfg')
+  if not overrides_dict:
+    return None
+
+  overrides = project_config_pb2.Builder()
+  protoutil.merge_dict(overrides_dict, overrides)
+  return lambda cfg: flatten_swarmingcfg.merge_builder(cfg, overrides)
 
 
 def builds_to_messages(builds, include_lease_key=False):

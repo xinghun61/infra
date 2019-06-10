@@ -40,7 +40,6 @@ import uuid
 from components import config as component_config
 from components import decorators
 from components import net
-from components import protoutil
 from components import utils
 from components.config import validation
 from google.appengine.api import app_identity
@@ -71,8 +70,6 @@ import user
 SYNC_QUEUE_NAME = 'swarming-build-sync'
 
 _PUBSUB_TOPIC = 'swarming'
-_PARAM_SWARMING = 'swarming'
-_PARAM_CHANGES = 'changes'
 
 DEFAULT_TASK_PRIORITY = 30
 
@@ -128,79 +125,6 @@ def _get_task_template_async(canary):
   raise ndb.Return(revision, template)
 
 
-def validate_build_parameters(params):
-  """Raises errors.InvalidInputError if build parameters are invalid."""
-  params = copy.deepcopy(params)
-
-  def bad(fmt, *args):
-    raise errors.InvalidInputError(fmt % args)
-
-  params.pop(model.BUILDER_PARAMETER, None)  # already validated
-
-  def assert_object(name, value):
-    if not isinstance(value, dict):
-      bad('%s parameter must be an object' % name)
-
-  changes = params.pop(_PARAM_CHANGES, None)
-  if changes is not None:
-    if not isinstance(changes, list):
-      bad('changes param must be an array')
-    for c in changes:  # pragma: no branch
-      if not isinstance(c, dict):
-        bad('changes param must contain only objects')
-      repo_url = c.get('repo_url')
-      if repo_url is not None and not isinstance(repo_url, basestring):
-        bad('change repo_url must be a string')
-      author = c.get('author')
-      if not isinstance(author, dict):
-        bad('change author must be an object')
-      email = author.get('email')
-      if not isinstance(email, basestring):
-        bad('change author email must be a string')
-      if not email:
-        bad('change author email not specified')
-
-  swarming = params.pop(_PARAM_SWARMING, None)
-  if swarming is not None:
-    assert_object('swarming', swarming)
-    swarming = copy.deepcopy(swarming)
-
-    override_builder_cfg_data = swarming.pop('override_builder_cfg', None)
-    if override_builder_cfg_data is not None:
-      assert_object('swarming.override_builder_cfg', override_builder_cfg_data)
-      if 'build_numbers' in override_builder_cfg_data:
-        bad(
-            'swarming.override_builder_cfg parameter '
-            'cannot override build_numbers'
-        )
-
-      override_builder_cfg = project_config_pb2.Builder()
-      try:
-        protoutil.merge_dict(override_builder_cfg_data, override_builder_cfg)
-      except TypeError as ex:
-        bad('swarming.override_builder_cfg parameter: %s', ex)
-      if override_builder_cfg.name:
-        bad('swarming.override_builder_cfg cannot override builder name')
-      if override_builder_cfg.mixins:
-        bad('swarming.override_builder_cfg cannot use mixins')
-      if any(d.startswith('pool:') for d in override_builder_cfg.dimensions):
-        logging.warning(
-            'pool is being overridden: %s', override_builder_cfg.dimensions
-        )
-      if 'pool:' in override_builder_cfg.dimensions:
-        bad('swarming.override_builder_cfg cannot remove pool dimension')
-      ctx = validation.Context.raise_on_error(
-          exc_type=errors.InvalidInputError,
-          prefix='swarming.override_builder_cfg parameter: '
-      )
-      swarmingcfg_module.validate_builder_cfg(
-          override_builder_cfg, [], False, ctx
-      )
-
-    if swarming:
-      bad('unrecognized keys in swarming param: %r', swarming.keys())
-
-
 def validate_input_properties(properties, allow_reserved=False):
   """Raises errors.InvalidInputError if properties are invalid."""
   ctx = validation.Context.raise_on_error(exc_type=errors.InvalidInputError)
@@ -229,18 +153,7 @@ def _prepare_builder_config(build, builder_cfg):
   # Builders are already flattened in the datastore.
   result = builder_cfg
 
-  # Apply overrides in the swarming parameter.
-  swarming_param = (build.parameters or {}).get(_PARAM_SWARMING) or {}
-  override_builder_cfg_data = swarming_param.get('override_builder_cfg', {})
-  if override_builder_cfg_data:
-    override_builder_cfg = project_config_pb2.Builder()
-    protoutil.merge_dict(override_builder_cfg_data, override_builder_cfg)
-    ctx = validation.Context.raise_on_error(
-        exc_type=errors.InvalidInputError,
-        prefix='swarming.override_builder_cfg parameter: '
-    )
-    flatten_swarmingcfg.merge_builder(result, override_builder_cfg)
-    swarmingcfg_module.validate_builder_cfg(result, [], True, ctx)
+  # TODO(nodir): remove this function.
 
   # Apply V2 requested dimensions.
   if build.proto.infra.buildbucket.requested_dimensions:
@@ -407,8 +320,6 @@ def _create_task_def_async(builder_cfg, build, fake_build):
   assert build.key and build.key.id(), build.key
   assert build.url, 'build.url should have been initialized'
   assert isinstance(fake_build, bool), type(fake_build)
-  params = build.parameters or {}
-  validate_build_parameters(params)
   validate_input_properties(
       build.proto.input.properties, allow_reserved=bool(build.retry_of)
   )
@@ -438,7 +349,7 @@ def _create_task_def_async(builder_cfg, build, fake_build):
   extra_cipd_packages = []
   if builder_cfg.HasField('recipe'):  # pragma: no branch
     (extra_swarming_tags, extra_cipd_packages,
-     extra_task_template_params) = _setup_recipes(build, builder_cfg, params)
+     extra_task_template_params) = _setup_recipes(build, builder_cfg)
     task_template_params.update(extra_task_template_params)
 
   # Render task template.
@@ -478,7 +389,7 @@ def _create_task_def_async(builder_cfg, build, fake_build):
   raise ndb.Return(task)
 
 
-def _setup_recipes(build, builder_cfg, params):
+def _setup_recipes(build, builder_cfg):
   """Initializes a build request using recipes.
 
   Mutates build.
@@ -514,26 +425,6 @@ def _setup_recipes(build, builder_cfg, params):
   if build.proto.number:  # pragma: no branch
     props['buildnumber'] = build.proto.number
 
-  # TODO(nodir): remove changes support. This is legacy.
-  changes = params.get(_PARAM_CHANGES)
-  if changes:  # pragma: no branch
-    # Buildbucket-Buildbot integration passes repo_url of the first change in
-    # build parameter "changes" as "repository" attribute of SourceStamp.
-    # https://chromium.googlesource.com/chromium/tools/build/+/2c6023d
-    # /scripts/master/buildbucket/changestore.py#140
-    # Buildbot passes repository of the build source stamp as "repository"
-    # build property. Recipes, in partiular bot_update recipe module, rely on
-    # "repository" property and it is an almost sane property to support in
-    # swarmbucket.
-    repo_url = changes[0].get('repo_url')
-    if repo_url:  # pragma: no branch
-      props['repository'] = repo_url
-
-    # Buildbot-Buildbucket integration converts emails in changes to blamelist
-    # property.
-    emails = [c.get('author', {}).get('email') for c in changes]
-    props['blamelist'] = filter(None, emails)
-
   # Add repository property, for backward compatibility.
   # TODO(crbug.com/877161): remove it.
   if len(build.proto.input.gerrit_changes) == 1:
@@ -545,7 +436,7 @@ def _setup_recipes(build, builder_cfg, params):
       )
 
   # Make a copy of properties before setting "buildbucket" property.
-  # They are buildbucket implementation detail, reduntant for users of
+  # They are buildbucket implementation detail, redundant for users of
   # build proto and take a lot of space.
   recipe_props = copy.copy(props)
   recipe_props['$recipe_engine/buildbucket'] = _buildbucket_property(build)

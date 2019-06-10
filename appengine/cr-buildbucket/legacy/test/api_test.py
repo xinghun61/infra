@@ -7,6 +7,11 @@ import json
 import os
 import sys
 
+from parameterized import parameterized
+
+from proto import project_config_pb2
+import bbutil
+
 REPO_ROOT_DIR = os.path.abspath(
     os.path.join(os.path.realpath(__file__), '..', '..', '..', '..')
 )
@@ -24,6 +29,7 @@ import gae_ts_mon
 
 from legacy import api
 from proto import common_pb2
+from proto import project_config_pb2
 from proto import rpc_pb2
 from test import test_util
 from test.test_util import future, future_exception
@@ -1069,3 +1075,73 @@ class ConvertBucketTest(testing.AppengineTestCase):
     )
     with self.assertRaises(auth.AuthorizationError):
       api.convert_bucket('secret')
+
+
+class SwarmingTestCases(testing.AppengineTestCase):
+
+  @parameterized.expand([
+      ({'changes': 0},),
+      ({'changes': [0]},),
+      ({'changes': [{'author': 0}]},),
+      ({'changes': [{'author': {}}]},),
+      ({'changes': [{'author': {'email': 0}}]},),
+      ({'changes': [{'author': {'email': ''}}]},),
+      ({'changes': [{'author': {'email': 'a@example.com'}, 'repo_url': 0}]},),
+      ({'swarming': []},),
+      ({'swarming': {'junk': 1}},),
+      ({'swarming': {'recipe': []}},),
+  ])
+  def test_validate_known_build_parameters(self, parameters):
+    with self.assertRaises(errors.InvalidInputError):
+      api.validate_known_build_parameters(parameters)
+
+  @parameterized.expand([
+      ([],),
+      ({'name': 'x'},),
+      ({'mixins': ['x']},),
+      ({'blabla': 'x'},),
+      ({'dimensions': ['pool:']},),
+      ({'build_numbers': False},),
+      ({'dimensions': ['']},),
+  ])
+  def test_override_cfg_malformed(self, override_builder_cfg):
+    parameters = {'swarming': {'override_builder_cfg': override_builder_cfg}}
+    with self.assertRaises(errors.InvalidInputError):
+      api.validate_known_build_parameters(parameters)
+
+  def test_changes(self):
+    changes = [
+        dict(
+            repo_url='https://chromium.googlsource.com/chromium/src',
+            author=dict(email='a@example.com'),
+        ),
+        dict(
+            repo_url='https://chromium.googlsource.com/chromium/src',
+            author=dict(email='b@example.com'),
+        ),
+    ]
+    put_req = api.PutRequestMessage(
+        bucket='chromium/try',
+        parameters_json=json.dumps(dict(changes=changes))
+    )
+    build_req = api.put_request_message_to_build_request(put_req)
+    props = bbutil.struct_to_dict(build_req.schedule_build_request.properties)
+    self.assertEqual(
+        props['repository'], 'https://chromium.googlsource.com/chromium/src'
+    )
+    self.assertEqual(props['blamelist'], ['a@example.com', 'b@example.com'])
+
+  def test_override_builder_cfg(self):
+    put_req = api.PutRequestMessage(
+        bucket='chromium/try',
+        parameters_json=json.dumps(
+            dict(
+                swarming=dict(override_builder_cfg=dict(dimensions=['a:b']),),
+            )
+        )
+    )
+    build_req = api.put_request_message_to_build_request(put_req)
+
+    builder_cfg = project_config_pb2.Builder()
+    build_req.override_builder_cfg(builder_cfg)
+    self.assertEqual(list(builder_cfg.dimensions), ['a:b'])
