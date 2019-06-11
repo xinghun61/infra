@@ -8,12 +8,15 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"net/http"
 	"os"
 
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/maruel/subcommands"
 
+	"go.chromium.org/chromiumos/infra/proto/go/test_platform/config"
 	"go.chromium.org/chromiumos/infra/proto/go/test_platform/steps"
+	"go.chromium.org/luci/auth"
 	"go.chromium.org/luci/common/cli"
 	"go.chromium.org/luci/common/errors"
 
@@ -78,10 +81,18 @@ func (c *skylabExecuteRun) innerRun(a subcommands.Application, args []string, en
 		return err
 	}
 
+	if err := validateRequest(request); err != nil {
+		return err
+	}
+
 	ctx := cli.GetContext(a, c, env)
 
-	// TODO(akeshet): Construct a working client based on environment arguments.
-	client, err := swarming.New(ctx, nil, "")
+	hClient, err := httpClient(ctx, request.Config.SkylabSwarming)
+	if err != nil {
+		return err
+	}
+
+	client, err := swarming.New(ctx, hClient, request.Config.SkylabSwarming.Server)
 	if err != nil {
 		return err
 	}
@@ -109,6 +120,22 @@ func readExecuteRequest(path string) (*steps.ExecuteRequest, error) {
 	return request, nil
 }
 
+func validateRequest(request *steps.ExecuteRequest) error {
+	if request == nil {
+		return fmt.Errorf("nil request")
+	}
+
+	if request.Config == nil {
+		return fmt.Errorf("nil request.Config")
+	}
+
+	if request.Config.SkylabSwarming == nil {
+		return fmt.Errorf("nil request.Config.SkylabSwarming")
+	}
+
+	return nil
+}
+
 func writeExecuteResponse(path string, response *steps.ExecuteResponse) error {
 	output, err := os.Create(path)
 	if err != nil {
@@ -121,6 +148,20 @@ func writeExecuteResponse(path string, response *steps.ExecuteResponse) error {
 	}
 
 	return nil
+}
+
+func httpClient(ctx context.Context, c *config.Config_Swarming) (*http.Client, error) {
+	// TODO(akeshet): Specify ClientID and ClientSecret fields.
+	options := auth.Options{
+		ServiceAccountJSONPath: c.AuthJsonPath,
+		Scopes:                 []string{auth.OAuthScopeEmail},
+	}
+	a := auth.NewAuthenticator(ctx, auth.OptionalLogin, options)
+	h, err := a.Client()
+	if err != nil {
+		return nil, errors.Annotate(err, "create http client").Err()
+	}
+	return h, nil
 }
 
 func (c *skylabExecuteRun) handleRequest(ctx context.Context, output io.Writer, req *steps.ExecuteRequest, t *swarming.Client) (*steps.ExecuteResponse, error) {
