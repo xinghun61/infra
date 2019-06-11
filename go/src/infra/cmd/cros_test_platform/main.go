@@ -1,8 +1,8 @@
-// Copyright 2018 The Chromium Authors. All rights reserved.
+// Copyright 2019 The Chromium Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-// Command cros-admin is the Chrome OS infrastructure admin tool.
+// Command cros_test_platform implements the cros_test_platform recipe's steps.
 package main
 
 import (
@@ -28,6 +28,7 @@ func getApplication() *cli.Application {
 		Commands: []*subcommands.Command{
 			subcommands.CmdHelp,
 			cmd.Enumerate,
+			cmd.SkylabExecute,
 		},
 	}
 }
