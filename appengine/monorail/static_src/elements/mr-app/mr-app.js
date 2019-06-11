@@ -163,6 +163,7 @@ export class MrApp extends connectStore(LitElement) {
       'userDisplayName': this.userDisplayName,
       'issueEntryUrl': this.issueEntryUrl,
       'queryParams': ctx.params,
+      'loginUrl': this.loginUrl,
     });
   }
 

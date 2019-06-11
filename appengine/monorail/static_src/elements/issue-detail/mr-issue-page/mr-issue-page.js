@@ -2,6 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+import page from 'page';
 import {LitElement, html, css} from 'lit-element';
 
 import 'elements/chops/chops-button/chops-button.js';
@@ -269,6 +270,7 @@ export class MrIssuePage extends connectStore(LitElement) {
       issuePermissions: {type: Object},
       issueRef: {type: Object},
       prefs: {type: Object},
+      loginUrl: {type: String},
     };
   }
 
@@ -295,6 +297,11 @@ export class MrIssuePage extends connectStore(LitElement) {
   update(changedProperties) {
     if (changedProperties.has('prefs')) {
       this.codeFont = this.prefs.get('code_font') === 'true';
+    }
+    if (changedProperties.has('fetchIssueError') &&
+      !this.userDisplayName && this.fetchIssueError &&
+      this.fetchIssueError.codeName === 'PERMISSION_DENIED') {
+      page(this.loginUrl);
     }
     super.update(changedProperties);
   }
