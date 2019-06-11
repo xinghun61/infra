@@ -42,7 +42,7 @@ func AdminTaskForType(ctx context.Context, ttype fleet.TaskType) Task {
 	cmd := worker.Command{
 		TaskName: fmt.Sprintf("admin_%s", strings.ToLower(ttype.String())),
 	}
-	cmd.Config(worker.Env(wrapped(config.Get(ctx))))
+	cmd.Config(wrapped(config.Get(ctx)))
 	t := Task{
 		Name: taskName[ttype],
 		Cmd:  cmd.Args(),
@@ -63,7 +63,7 @@ func DeployTaskWithActions(ctx context.Context, actions string) Task {
 		ForceFresh: true,
 		Actions:    actions,
 	}
-	cmd.Config(worker.Env(wrapped(config.Get(ctx))))
+	cmd.Config(wrapped(config.Get(ctx)))
 	t := Task{
 		Name: "deploy",
 		Cmd:  cmd.Args(),

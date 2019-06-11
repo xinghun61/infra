@@ -73,7 +73,7 @@ func (c *repairRun) innerRun(a subcommands.Application, args []string, env subco
 
 func createRepairTask(ctx context.Context, t *swarming.Client, e site.Environment, host string) (taskID string, err error) {
 	c := worker.Command{TaskName: "admin_repair"}
-	c.Config(worker.Env(e.Wrapped()))
+	c.Config(e.Wrapped())
 	slices := []*swarming_api.SwarmingRpcsTaskSlice{{
 		ExpirationSecs: 600,
 		Properties: &swarming_api.SwarmingRpcsTaskProperties{

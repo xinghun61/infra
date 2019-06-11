@@ -73,17 +73,10 @@ func (c *Command) Args() []string {
 	return args
 }
 
-// Config configures the command with the given options.  This method
-// returns the command receiver to allow method chaining.
-func (c *Command) Config(o ...Option) *Command {
-	for _, o := range o {
-		o(c)
-	}
-	return c
+// Config configures the command with the given options.
+func (c *Command) Config(e Environment) {
+	c.LogDogAnnotationURL = GenerateLogDogURL(e)
 }
-
-// Option is used to help construct a worker command.
-type Option func(*Command)
 
 // Environment defines a Skylab environment (e.g., dev vs prod) for
 // configuring a worker command.
@@ -91,14 +84,6 @@ type Environment interface {
 	LUCIProject() string
 	LogDogHost() string
 	GenerateLogPrefix() string
-}
-
-// Env returns an option used to configure a worker command for a
-// Skylab environment (e.g., dev vs prod).
-func Env(e Environment) Option {
-	return func(c *Command) {
-		c.LogDogAnnotationURL = GenerateLogDogURL(e)
-	}
 }
 
 // GenerateLogDogURL generates a LogDog annotation URL that is

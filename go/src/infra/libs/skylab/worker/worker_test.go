@@ -56,7 +56,7 @@ func TestEnv(t *testing.T) {
 		logPrefix:   "skylab/83e6fa19-2cb0-4cc2-88b6-fb217a6cbb23",
 	}
 	var c Command
-	c.Config(Env(e))
+	c.Config(e)
 	const wantURL = "logdog://luci-logdog.appspot.com/chromeos/skylab/83e6fa19-2cb0-4cc2-88b6-fb217a6cbb23/+/annotations"
 	if c.LogDogAnnotationURL != wantURL {
 		t.Errorf("LogdogAnnotationURL = %#v; want %#v", c.LogDogAnnotationURL, wantURL)

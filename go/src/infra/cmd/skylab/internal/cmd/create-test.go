@@ -155,7 +155,7 @@ func (c *createTestRun) innerRun(a subcommands.Application, args []string, env s
 		Keyvals:    keyvals,
 		TestArgs:   c.testArgs,
 	}
-	cmd.Config(worker.Env(e.Wrapped()))
+	cmd.Config(e.Wrapped())
 
 	tags := append(c.tags, "skylab-tool:create-test", "log_location:"+cmd.LogDogAnnotationURL, "luci_project:"+e.LUCIProject)
 	if c.qsAccount != "" {
