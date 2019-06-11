@@ -13,6 +13,7 @@ import zlib
 import cloudstorage
 
 from google.appengine.api import taskqueue
+from google.appengine.api import users
 from google.appengine.ext import ndb
 from google.protobuf.field_mask_pb2 import FieldMask
 from google.protobuf import json_format
@@ -86,6 +87,7 @@ _POSTSUBMIT_PLATFORM_INFO_MAP = {
         'bucket': 'ci',
         'builder': 'linux-chromeos-oobe-code-coverage',
         'ui_name': 'ChromeOS on Linux for OOBE',
+        'hidden': True,
     },
 }
 
@@ -100,6 +102,12 @@ def _GetSameOrMostRecentReportForEachPlatform(host, project, ref, revision):
   result = {}
   platforms = _POSTSUBMIT_PLATFORM_INFO_MAP.keys()
   for platform in platforms:
+    # Some 'platforms' are hidden from the selection to avoid confusion, as they
+    # may be custom reports that do not make sense outside a certain team.
+    # They should still be reachable via a url.
+    if (_POSTSUBMIT_PLATFORM_INFO_MAP[platform].get('hidden')
+        and not users.is_current_user_admin()):
+      continue
     bucket = _POSTSUBMIT_PLATFORM_INFO_MAP[platform]['bucket']
     builder = _POSTSUBMIT_PLATFORM_INFO_MAP[platform]['builder']
     same_report = PostsubmitReport.Get(
