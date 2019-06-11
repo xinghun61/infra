@@ -56,7 +56,7 @@ func (c *upsyncRun) Run(a subcommands.Application, args []string, env subcommand
 
 func (c *upsyncRun) innerRun(a subcommands.Application, args []string, env subcommands.Env) error {
 	if err := c.validateArgs(args); err != nil {
-		return nil
+		return err
 	}
 
 	labs, err := loadAllLabsData(c.rootDir)
