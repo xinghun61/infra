@@ -1,3 +1,23 @@
+# Release Notes sheriff-o-matic 2019-06-11
+
+- 6 commits, 1 bugs affected since 40621e9 (2019-06-04T22:11:51Z)
+- 1 Authors:
+  - jojwang@chromium.org
+
+## Changes in this release
+
+- [[sOm] Fetch git URL with revisions instead of positions](https://chromium-review.googlesource.com/c/infra/infra/+/1650756) (jojwang@chromium.org)
+- [[Som]Update <som-rev-range> to consider range revisions when range positions aren't available.](https://chromium-review.googlesource.com/c/infra/infra/+/1650441) (jojwang@chromium.org)
+- [[Som]Get regressionsummary from build input for buildbucket_analyzer.](https://chromium-review.googlesource.com/c/infra/infra/+/1650025) (jojwang@chromium.org)
+- [[som] Fix som tree-builders.json](https://chromium-review.googlesource.com/c/infra/infra/+/1648954) (jojwang@chromium.org)
+- [[Som]Remove comma from json.](https://chromium-review.googlesource.com/c/infra/infra/+/1648795) (jojwang@chromium.org)
+- [[SoM]Add chromeos.postsubmit builders.](https://chromium-review.googlesource.com/c/infra/infra/+/1647380) (jojwang@chromium.org)
+
+
+## Bugs updated, by author
+- jojwang@chromium.org:
+  -  [https://crbug.com/957613](https://crbug.com/957613)
+
 
 # Release Notes sheriff-o-matic 2019-05-30
 
