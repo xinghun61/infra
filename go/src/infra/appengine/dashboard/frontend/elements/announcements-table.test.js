@@ -62,9 +62,12 @@ suite('announcements-table', () => {
     element.announcements = ANN;
     await element.updateComplete;
     const tableRows = element.shadowRoot.querySelector('table').rows;
-    assert.equal(tableRows.length, 4);
-    assert.equal(tableRows[0].cells.length, 4);
-    assert.equal(tableRows[1].cells.length, 4);
+
+    const expectedNumRows = ANN.length + 1;
+    const expectedNumCells = 3 + (element.isTrooper ? 1: 0);
+    assert.equal(tableRows.length, expectedNumRows);
+    assert.equal(tableRows[0].cells.length, expectedNumCells);
+    assert.equal(tableRows[1].cells.length, expectedNumCells);
 
     // Assert announcements-changed fired and RetireAnnouncement called
     const listener = sinon.spy();
@@ -82,11 +85,13 @@ suite('announcements-table', () => {
   test('live announcements non-trooper', async () => {
     element.announcements = ANN;
     await element.updateComplete;
-
     const tableRows = element.shadowRoot.querySelector('table').rows;
-    assert.equal(tableRows.length, 4);
-    assert.equal(tableRows[0].cells.length, 3);
-    assert.equal(tableRows[1].cells.length, 3);
+
+    const expectedNumRows = ANN.length + 1;
+    const expectedNumCells = 3 + (element.isTrooper && !element.retired ? 1: 0);
+    assert.equal(tableRows.length, expectedNumRows);
+    assert.equal(tableRows[0].cells.length, expectedNumCells);
+    assert.equal(tableRows[1].cells.length, expectedNumCells);
 
     // Assert no buttons offered.
     assert.equal(element.shadowRoot.querySelector('button'), null);
@@ -96,13 +101,14 @@ suite('announcements-table', () => {
     element.announcements = ANN;
     element.isTrooper = true;
     element.retired = true;
-
     await element.updateComplete;
-
     const tableRows = element.shadowRoot.querySelector('table').rows;
-    assert.equal(tableRows.length, 4);
-    assert.equal(tableRows[0].cells.length, 3);
-    assert.equal(tableRows[1].cells.length, 3);
+
+    const expectedNumRows = ANN.length + 1;
+    const expectedNumCells = 3 + (element.isTrooper && !element.retired ? 1: 0);
+    assert.equal(tableRows.length, expectedNumRows);
+    assert.equal(tableRows[0].cells.length, expectedNumCells);
+    assert.equal(tableRows[1].cells.length, expectedNumCells);
 
     // Assert no buttons offered.
     assert.equal(element.shadowRoot.querySelector('button'), null);
@@ -111,13 +117,15 @@ suite('announcements-table', () => {
   test('retired announcements non-trooper', async () => {
     element.announcements = ANN;
     element.retired = true;
-
     await element.updateComplete;
-
     const tableRows = element.shadowRoot.querySelector('table').rows;
-    assert.equal(tableRows.length, 4);
-    assert.equal(tableRows[0].cells.length, 3);
-    assert.equal(tableRows[1].cells.length, 3);
+
+    assert.isUndefined(element.isTrooper);
+    const expectedNumRows = ANN.length + 1;
+    const expectedNumCells = 3 + (element.isTrooper && !element.retired ? 1: 0);
+    assert.equal(tableRows.length, expectedNumRows);
+    assert.equal(tableRows[0].cells.length, expectedNumCells);
+    assert.equal(tableRows[1].cells.length, expectedNumCells);
 
     // Assert no buttons offered.
     assert.equal(element.shadowRoot.querySelector('button'), null);
