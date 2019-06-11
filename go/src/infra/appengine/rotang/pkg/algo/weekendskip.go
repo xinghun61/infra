@@ -3,6 +3,9 @@ package algo
 import (
 	"infra/appengine/rotang"
 	"time"
+
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 // WeekendSkip implements the ShiftModifier interface.
@@ -60,34 +63,39 @@ func (w *WeekendSkip) Modify(sc *rotang.ShiftConfig, shifts []rotang.ShiftEntry)
 	for i := 0; i < len(shifts); i++ {
 		start, end := shifts[i].StartTime.In(&sc.TZ), shifts[i].EndTime.In(&sc.TZ)
 		for st := start; st.Before(end); st = st.Add(fullDay) {
-			// When splitting or moving a shift, all following shifts
-			// need to be adjusted too. Skip identifies how much to add
-			// to each shift.
-			skip := fullDay
-			switch st.Weekday() {
-			case time.Saturday:
-				// If the shift starts at a Saturday -> move it no split needed.
-				if st.Equal(start) {
+			if st.Weekday() == time.Saturday || st.Weekday() == time.Sunday {
+				// Shift having a day on a weekend needs to be split.
+				if !st.Equal(start) {
+					var err error
+					shifts, err = splitShift(shifts, st, i)
+					if err != nil {
+						return nil, err
+					}
 					break
 				}
-				// Split the shift into two.
-				shifts[i].EndTime = st
-				newShift := shifts[i]
-				newShift.StartTime = shifts[i].StartTime.Add(skip)
-				newShift.EndTime = shifts[i].EndTime.Add(skip)
-
-				skip = 2 * fullDay
-				i++
-				shifts = append(shifts[:i], append([]rotang.ShiftEntry{newShift}, shifts[i:]...)...)
-			case time.Sunday:
-				// Just move the shift StartTime and EndTime forward one day.
-			default:
-				continue
-			}
-			for j := i; j < len(shifts); j++ {
-				shifts[j].StartTime, shifts[j].EndTime = shifts[j].StartTime.Add(skip), shifts[j].EndTime.Add(skip)
+				// If the shift starts on a Saturday or Sunday move it and all past shifts forward.
+				moveShifts(shifts[i:], fullDay)
+				start, end = start.Add(fullDay), end.Add(fullDay)
 			}
 		}
 	}
 	return shifts, nil
+}
+
+// splitShift splits the indicated shift in two.
+func splitShift(shifts []rotang.ShiftEntry, splitTime time.Time, idx int) ([]rotang.ShiftEntry, error) {
+	if len(shifts) <= idx {
+		return nil, status.Errorf(codes.OutOfRange, "index out of range")
+	}
+	newShift := shifts[idx]
+	shifts[idx].EndTime, newShift.StartTime = splitTime, splitTime
+	idx++
+	return append(shifts[:idx], append([]rotang.ShiftEntry{newShift}, shifts[idx:]...)...), nil
+}
+
+// moveShifts move the start and end times of the shifts forward.
+func moveShifts(shifts []rotang.ShiftEntry, timeAdd time.Duration) {
+	for i := range shifts {
+		shifts[i].StartTime, shifts[i].EndTime = shifts[i].StartTime.Add(timeAdd), shifts[i].EndTime.Add(timeAdd)
+	}
 }
