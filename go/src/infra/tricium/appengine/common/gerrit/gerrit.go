@@ -304,6 +304,8 @@ func composeChangesQueryURL(host, project string, lastTimestamp time.Time) strin
 	// necessary to create an analyze request.
 	v.Add("o", "CURRENT_REVISION")
 	v.Add("o", "CURRENT_FILES")
+	// Including current commit information allows access to commit message.
+	v.Add("o", "CURRENT_COMMIT")
 	// Including the account emails is necessary to be able to filter based
 	// on the whitelisted_groups field of the project config.
 	v.Add("o", "DETAILED_ACCOUNTS")
