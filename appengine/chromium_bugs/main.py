@@ -81,7 +81,6 @@ MISSING_TOKEN_HTML = (
 ALLOWED_CONTINUE_SCHEMES = ['http', 'https']
 ALLOWED_CONTINUE_DOMAINS = [
   re.compile(r'^localhost:8080$'),
-  re.compile(r'^code\.google\.com$'),
   re.compile(r'^bugs(-staging|-dev)?\.chromium\.org$'),
   re.compile(r'^([-a-z0-9.]+-dot-)?monorail-(prod|staging|dev)\.appspot\.com$'),
   ]
@@ -116,10 +115,6 @@ class MainHandler(webapp2.RequestHandler):
     if not continue_url:
       continue_url = 'https://bugs.chromium.org/p/chromium/issues/entry.do'
 
-    # Special case, chromium-os issues are now being tracked in /p/chromium.
-    if '//code.google.com/p/chromium-os/issues/entry.do' in continue_url:
-      continue_url = 'https://bugs.chromium.org/p/chromium/issues/entry.do'
-
     parsed = urlparse.urlparse(continue_url)
     scheme_is_allowed = parsed.scheme in ALLOWED_CONTINUE_SCHEMES
     domain_is_allowed = any(
@@ -130,11 +125,7 @@ class MainHandler(webapp2.RequestHandler):
       self.response.out.write(INVALID_CONTINUE_HTML)
       return
 
-    if '?' in continue_url:
-      # Codesite includes contextual parameters for search terms, etc.
-      validate_url = continue_url.split('?')[0]
-    else:
-      validate_url = continue_url
+    validate_url = continue_url.split('?')[0]
 
     if not validate_url.endswith('.do'):
       logging.info('validate_url does not end in .do: %r', validate_url)
@@ -148,6 +139,9 @@ class MainHandler(webapp2.RequestHandler):
     user = users.get_current_user()
     if role or (user and re.match(
         r".*?@chromium\.org\Z", user.email(), re.DOTALL | re.IGNORECASE)):
+      logging.info('Redirecting because you have a role or @chromium.org acct')
+      logging.info('role = %r', role)
+      logging.info('email = %r', user.email())
       self.redirect(issue_entry_page_url.encode('utf8'))
       return
 
@@ -245,6 +239,7 @@ class MainHandler(webapp2.RequestHandler):
         'os_name': name,
         'os_version': os_version,
         'chrome_ua': chrome_ua,
+        'issue_entry_page_url': issue_entry_page_url,
         'continue_url': continue_url,
         'token': token,
         }

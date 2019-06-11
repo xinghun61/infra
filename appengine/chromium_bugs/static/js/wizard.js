@@ -47,6 +47,7 @@ function showStep(step_num, opt_focus_id) {
 function selectRole(role_name) {
     $("user_menu").style.display = "none";
     $("dev_menu").style.display = "none";
+    $("contrib_menu").style.display = "none";
     $(role_name + "_menu").style.display = "";
     $("next2").disabled = "disabled";
 

@@ -10,23 +10,23 @@
 <div class="headbg">
 <table style="padding:0px; margin: 0px 0px 10px 0px;" cellpadding="0" cellspacing="0">
  <tr style="height: 58px;">
- 
+
  <td id="plogo">
  <img src="/static/images/logo.png"
  alt="Logo" itemprop="image" width="48" height="48">
  </td>
- 
- <td style="padding-left: 0.5em"> 
+
+ <td style="padding-left: 0.5em">
  <div id="pname">
  <a href="https://bugs.chromium.org/p/chromium/">chromium</a>
  </div>
- 
+
  <div id="psum">
  <a id="project_summary_link"
  href="https://bugs.chromium.org/p/chromium/">An open-source browser project to help move the web forward.</a>
  </div>
- 
- </td> 
+
+ </td>
  </tr>
  </table>
 
@@ -51,7 +51,7 @@
 	<table>
 	  <tr>
 	    <th>Chrome version:</th>
-	    <td><input size="20" name="chromeversion" id="chromeversion" 
+	    <td><input size="20" name="chromeversion" id="chromeversion"
 		       value="[chrome_version]" aria-label="Chrome version" /></td>
 	  </tr>
 	  <tr>
@@ -67,7 +67,7 @@
 		<option value="Cr-ChromeFrame" [is os_name "chromeframe"]selected="selected"[end]>ChromeFrame</option>
 	      </select>
 	      <b>Version:</b>
-	      <input size="20" name="osversion" id="osversion" value="[os_version]" 
+	      <input size="20" name="osversion" id="osversion" value="[os_version]"
 		     aria-label="operating system version" />
 	      <b>Channel:</b>
 	      <select name="channel" id="channel" aria-label="Channel" >
@@ -107,18 +107,18 @@
 		 onclick="document.getElementById('next1').disabled = this.checked ? '' : 'disabled'"
 		 aria-label="I searched for existing issues that already report this problem"/>
 	  <label for="already_searched">
-	    I searched for 
+	    I searched for
 	    <a href="https://bugs.chromium.org/p/chromium/issues/list">existing issues</a>
 		that already report this problem.
 	  </label>
-	</p>        
+	</p>
       </div>
 
 
       <div class="wizcontrols">
         <input type="button" value="Back" disabled="disabled" aria-label="Back" />
         <span>Step 1 of 3</span>
-        <input type="button" value="Next" onclick="goStep(2)" aria-label="Next" 
+        <input type="button" value="Next" onclick="goStep(2)" aria-label="Next"
 	       id="next1"/>
 	<a href="https://bugs.chromium.org/p/monorail/" class="feedback">Report a problem with this wizard</a>
 
@@ -127,8 +127,6 @@
     </div></div>
 
 
-
-    
     <div id="step2"><div class="wizstep">
       <h3>New issue wizard</h3>
       <div class="wizbody wizmenu">
@@ -143,6 +141,11 @@
 	    <td><input type="radio" name="userrole" value="dev" id="ur_opt_2" onclick="selectRole(this.value)" /></td>
 	    <td><label for="ur_opt_2">Web developer</label></td>
 	    <td><label for="">I am a web developer trying to build something</label></td>
+	  </tr>
+	  <tr>
+	    <td><input type="radio" name="userrole" value="contrib" id="ur_opt_3" onclick="selectRole(this.value)" /></td>
+	    <td><label for="ur_opt_3">Chromium contributor</label></td>
+	    <td><label for="">I know about a problem in specific tests or code</label></td>
 	  </tr>
 	</table>
       </div>
@@ -237,46 +240,61 @@
 	    <td>Something not listed here</td></tr>
 	</table>
       </div>
+
+      <div class="wizbody wizmenu" id="contrib_menu" style="display:none">
+        <h4>Want to explain the problem yourself?</h4>
+        <p>
+          It's usually best to work through this short wizard so that your
+          issue is given the labels needed for the right team to see it.
+          Otherwise it might take longer for your issue to be triaged and
+          resolved.
+        </p>
+        <p>
+          However, if you are a Chromium contributor and none of the other
+          options apply, you may use the
+          <a href="[issue_entry_page_url]">regular issue entry form</a>.
+        </p>
+      </div>
+
       <div class="wizcontrols">
         <input type="button" value="Back" onclick="goStep(1)" aria-label="Back" />
         <span>Step 2 of 3</span>
-        <input type="button" value="Next" onclick="goStep(3, 'summary')" id="next2" 
+        <input type="button" value="Next" onclick="goStep(3, 'summary')" id="next2"
 	       disabled="disabled" aria-label="Next" />
       </div>
     </div></div>
 
 
-    
 
-    
+
     <div id="step3"><div class="wizstep">
       <h3>New issue wizard</h3>
-      <div class="wizbody">	
+      <div class="wizbody">
         <h4>Details for problems with <span id="component_name"></span>: </h4>
-	
+
 	<dl>
 	  <dt>Please enter a one-line summary:</dt>
 	  <dd class="required">
 	    <input id="summary" name="summary" size="80" aria-label="Please enter a one-line summary" >
 	  </dd>
 	</dl>
-	
+
         <div id="detail_area">Loading...</div>
-	 
+
 	<dl>
 	  <dt>Steps to reproduce the problem:</dt>
 	  <dd class="required">
-	    <textarea name="repro_steps" cols="60" rows="4"  
-		      aria-label="Steps to reproduce the problem" >1. 
-2. 
-3. 
+	    <textarea name="repro_steps" cols="60" rows="4"
+		      aria-label="Steps to reproduce the problem" >1.
+2.
+3.
 </textarea>
 	  </dd>
 
 
 	  <dt>What is the expected behavior?</dt>
 	  <dd>
-	    <textarea name="expected" cols="60" rows="4" 
+	    <textarea name="expected" cols="60" rows="4"
 		      aria-label="What is the expected behavior?"
 		      ></textarea>
 	  </dd>
@@ -284,7 +302,7 @@
 
 	  <dt>What went wrong?</dt>
 	  <dd class="required">
-	    <textarea name="actual" cols="60" rows="6" 
+	    <textarea name="actual" cols="60" rows="6"
 		      aria-label="What went wrong?"
 		      ></textarea>
 	    <div id="attachmentarea"></div>
@@ -311,30 +329,30 @@
 	  <dt id="q_when_worked" class="conditional">Latest version when it worked?</dt>
 	  <dd><input name="when_worked" size="80" id="a_when_worked" class="conditional"
 		     aria-label="Latest version when it worked?"></dd>
-	  
+
 
 	  <dt>Any other comments?</dt>
 	  <dd>
-	    <textarea name="other_comments" cols="60" rows="4" 
+	    <textarea name="other_comments" cols="60" rows="4"
 		      aria-label="Any other comments?" ></textarea>
 	  </dd>
 	</dl>
       </div>
-      <div class="wizcontrols">	  
+      <div class="wizcontrols">
           <input type="button" value="Back" onclick="goStep(2)" aria-label="Back" />
           <span>Step 3 of 3</span>
-          <input type="button" value="Submit" id="submit_button" 
-		 onclick="stuffDataAndSubmit();" disabled="disabled" 
+          <input type="button" value="Submit" id="submit_button"
+		 onclick="stuffDataAndSubmit();" disabled="disabled"
 		 aria-label="Submit" />
       </div>
 
       <p class="note" id="actual_password_warning"></p>
       <div id="default_password_warning" style="display:none">
-	Note: Please do not include passwords or personal information that you do 
+	Note: Please do not include passwords or personal information that you do
 	not intend to share.
       </div>
     </div></div>
- 
+
   </form>
   </div>
 
