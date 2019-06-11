@@ -448,7 +448,8 @@ def _UpdateTestLocationAndTags(flake, occurrences, component_mapping,
             build_number=occurrence.build_configuration.legacy_build_number,
             step_name=occurrence
             .step_ui_name) or occurrence.step_ui_name.split()[0]
-        components.extend(_MAP_STEP_NAME_TO_COMPONENTS.get(canonical_step_name))
+        components.extend(
+            _MAP_STEP_NAME_TO_COMPONENTS.get(canonical_step_name, []))
       components = list(set(components))  # To remove duplicates.
 
       if components:
