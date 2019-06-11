@@ -7,6 +7,7 @@ from datetime import datetime
 from buildbucket_proto import common_pb2
 from google.appengine.ext import ndb
 
+from findit_v2.model import compile_failure
 from findit_v2.model.compile_failure import CompileFailure
 from findit_v2.model.compile_failure import CompileFailureAnalysis
 from findit_v2.model.compile_failure import CompileFailureGroup
@@ -203,3 +204,13 @@ class CompileFailureTest(wf_testcase.WaterfallTestCase):
     rerun_builds = CompileRerunBuild.SearchBuildOnCommit(analysis.key, commit)
     self.assertEqual(1, len(rerun_builds))
     self.assertEqual(build_id, rerun_builds[0].build_id)
+
+  def testGetMergedFailureKeyNoBuildId(self):
+    self.assertIsNone(compile_failure.GetMergedFailureKey({}, None, 's', None))
+
+  def testGetMergedFailureKey(self):
+    self.assertEqual(
+        self.target_entities[0].key,
+        compile_failure.GetMergedFailureKey(
+            {}, self.build_id, 'compile',
+            self.target_entities[0].output_targets))

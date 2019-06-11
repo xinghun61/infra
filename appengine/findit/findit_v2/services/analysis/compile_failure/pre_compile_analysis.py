@@ -14,6 +14,7 @@ from google.appengine.ext import ndb
 from google.protobuf.field_mask_pb2 import FieldMask
 
 from common.waterfall import buildbucket_client
+from findit_v2.model import compile_failure
 from findit_v2.model import luci_build
 from findit_v2.model.compile_failure import CompileFailure
 from findit_v2.model.compile_failure import CompileFailureAnalysis
@@ -61,6 +62,8 @@ def SaveCompileFailures(context, build, detailed_compile_failures):
 
   failed_build_key = build_entity.key
   compile_failure_entities = []
+
+  first_failures = {}
   for step_ui_name, step_info in detailed_compile_failures.iteritems():
     failures = step_info['failures']
     if not failures:
@@ -68,6 +71,9 @@ def SaveCompileFailures(context, build, detailed_compile_failures):
           'Cannot get detailed compile failure info for build %d,'
           ' saving step level info only.', build.id)
       first_failed_build_id = step_info.get('first_failed_build', {}).get('id')
+      merged_failure_key = compile_failure.GetMergedFailureKey(
+          first_failures, first_failed_build_id, step_ui_name, None)
+
       new_entity = CompileFailure.Create(
           failed_build_key=failed_build_key,
           step_ui_name=step_ui_name,
@@ -76,12 +82,16 @@ def SaveCompileFailures(context, build, detailed_compile_failures):
           last_passed_build_id=step_info.get('last_passed_build', {}).get('id'),
           # Default to first_failed_build_id, will be updated later if matching
           # group exists.
-          failure_group_build_id=first_failed_build_id)
+          failure_group_build_id=first_failed_build_id,
+          merged_failure_key=merged_failure_key)
       compile_failure_entities.append(new_entity)
       continue
 
     for output_targets, failure in failures.iteritems():
       first_failed_build_id = failure.get('first_failed_build', {}).get('id')
+      merged_failure_key = compile_failure.GetMergedFailureKey(
+          first_failures, first_failed_build_id, step_ui_name, output_targets)
+
       new_entity = CompileFailure.Create(
           failed_build_key=failed_build_key,
           step_ui_name=step_ui_name,
@@ -93,7 +103,8 @@ def SaveCompileFailures(context, build, detailed_compile_failures):
           # group exists.
           failure_group_build_id=first_failed_build_id,
           rule=failure.get('rule'),
-          dependencies=failure.get('dependencies'))
+          dependencies=failure.get('dependencies'),
+          merged_failure_key=merged_failure_key)
       compile_failure_entities.append(new_entity)
 
   ndb.put_multi(compile_failure_entities)
@@ -471,12 +482,17 @@ def _UpdateCompileFailureEntitiesWithGroupInfo(build,
   """
   compile_failure_entities = _GetCompileFailureEntitiesForABuild(build)
   entities_to_save = []
+  group_failures = {}
   for failure_entity in compile_failure_entities:
     failure_group_build_id = failures_with_existing_group.get(
         failure_entity.step_ui_name, {}).get(
             frozenset(failure_entity.output_targets))
+    merged_failure_key = compile_failure.GetMergedFailureKey(
+        group_failures, failure_group_build_id, failure_entity.step_ui_name,
+        failure_entity.output_targets)
     if failure_group_build_id:
       failure_entity.failure_group_build_id = failure_group_build_id
+      failure_entity.merged_failure_key = merged_failure_key
       entities_to_save.append(failure_entity)
 
   ndb.put_multi(entities_to_save)

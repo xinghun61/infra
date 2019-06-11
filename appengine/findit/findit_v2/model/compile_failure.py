@@ -11,6 +11,7 @@ from findit_v2.model.base_failure_analysis import BaseFailureAnalysis
 from findit_v2.model.failure_group import BaseFailureGroup
 from findit_v2.model.gitiles_commit import GitilesCommit
 from findit_v2.model.luci_build import LuciBuild
+from findit_v2.model.luci_build import LuciFailedBuild
 from gae_libs.model.versioned_model import VersionedModel
 
 
@@ -24,6 +25,44 @@ def GetFailedTargets(compile_failures):
       step_ui_name: list(set(failed_targets_in_step))
       for step_ui_name, failed_targets_in_step in failed_targets.iteritems()
   }
+
+
+def GetMergedFailureKey(failure_entities, referred_build_id, step_ui_name,
+                        output_targets):
+  """Gets the key to the CompileFailure entity that a failure should merge into.
+
+  Args:
+    failure_entities(dict of list of CompileFailure): Contains CompileFailure
+      entities that the current failure could potentially merge into.
+    referred_build_id(int): Id of current failure's first failed build or
+      failure group.
+    step_ui_name(str): Step name of current failure.
+    output_targets(list): Output_targets of current failure.
+
+  Returns:
+    Key to CompileFailure
+  """
+
+  def get_compile_failures_by_build_id(build_id):
+    """Gets CompileFailure entities by build id."""
+    build_key = ndb.Key(LuciFailedBuild, build_id)
+    return CompileFailure.query(ancestor=build_key).fetch()
+
+  if not referred_build_id:
+    return None
+
+  if not failure_entities.get(referred_build_id):
+    failure_entities[referred_build_id] = (
+        get_compile_failures_by_build_id(referred_build_id))
+
+  for failure in failure_entities[referred_build_id]:
+    if (failure.step_ui_name == step_ui_name and
+        set(failure.output_targets or []) == set(output_targets or [])):
+      # Found the same failure in the first failed build. Uses that
+      # failure's merged_failure_key or key to be the current failure's
+      # merged_failure_key.
+      return failure.merged_failure_key or failure.key
+  return None
 
 
 class CompileFailure(AtomicFailure):
@@ -42,6 +81,10 @@ class CompileFailure(AtomicFailure):
   # inputs. Only for CXX or CC failures.
   dependencies = ndb.StringProperty(repeated=True)
 
+  # Key to the failure that this failure merges into.
+  # No analysis on current failure, instead use the results of merged_failure.
+  merged_failure_key = ndb.KeyProperty(kind='CompileFailure')
+
   # Arguments number differs from overridden method - pylint: disable=W0221
   @classmethod
   def Create(cls,
@@ -53,13 +96,15 @@ class CompileFailure(AtomicFailure):
              last_passed_build_id=None,
              failure_group_build_id=None,
              files=None,
-             dependencies=None):
+             dependencies=None,
+             merged_failure_key=None):
     instance = super(CompileFailure, cls).Create(
         failed_build_key, step_ui_name, first_failed_build_id,
         last_passed_build_id, failure_group_build_id, files)
     instance.output_targets = output_targets or []
     instance.rule = rule
     instance.dependencies = dependencies or []
+    instance.merged_failure_key = merged_failure_key
     return instance
 
   def GetFailureIdentifier(self):

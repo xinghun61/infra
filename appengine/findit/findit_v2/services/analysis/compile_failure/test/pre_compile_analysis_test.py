@@ -12,6 +12,7 @@ from buildbucket_proto.rpc_pb2 import SearchBuildsResponse
 from buildbucket_proto.step_pb2 import Step
 
 from common.waterfall import buildbucket_client
+from findit_v2.model import luci_build
 from findit_v2.model.compile_failure import CompileFailure
 from findit_v2.model.compile_failure import CompileFailureAnalysis
 from findit_v2.model.compile_failure import CompileFailureGroup
@@ -19,30 +20,39 @@ from findit_v2.model.luci_build import LuciFailedBuild
 from findit_v2.services.analysis.compile_failure import pre_compile_analysis
 from findit_v2.services.chromium_api import ChromiumProjectAPI
 from findit_v2.services.context import Context
+from findit_v2.services.failure_type import StepTypeEnum
 from services import git
 from waterfall.test import wf_testcase
 
 
 class PreCompileAnalysisTest(wf_testcase.TestCase):
 
+  def _MockBuild(self,
+                 build_id,
+                 build_number,
+                 gitiles_commit_id,
+                 builder_name='Linux Tests',
+                 build_status=common_pb2.FAILURE):
+    builder = BuilderID(project='chromium', bucket='ci', builder=builder_name)
+    build = Build(
+        id=build_id, builder=builder, number=build_number, status=build_status)
+    build.input.gitiles_commit.host = 'gitiles.host.com'
+    build.input.gitiles_commit.project = 'project/name'
+    build.input.gitiles_commit.ref = 'ref/heads/master'
+    build.input.gitiles_commit.id = gitiles_commit_id
+    build.create_time.FromDatetime(datetime(2019, 4, 9))
+    build.start_time.FromDatetime(datetime(2019, 4, 9, 0, 1))
+    build.end_time.FromDatetime(datetime(2019, 4, 9, 1))
+    return build
+
   def setUp(self):
     super(PreCompileAnalysisTest, self).setUp()
     self.build_id = 8000000000123
     self.build_number = 123
     self.builder = BuilderID(
-        project='chromium', bucket='try', builder='linux-rel')
-    self.build = Build(
-        id=self.build_id,
-        builder=self.builder,
-        number=self.build_number,
-        status=common_pb2.FAILURE)
-    self.build.input.gitiles_commit.host = 'gitiles.host.com'
-    self.build.input.gitiles_commit.project = 'project/name'
-    self.build.input.gitiles_commit.ref = 'ref/heads/master'
-    self.build.input.gitiles_commit.id = 'git_sha_123'
-    self.build.create_time.FromDatetime(datetime(2019, 4, 9))
-    self.build.start_time.FromDatetime(datetime(2019, 4, 9, 0, 1))
-    self.build.end_time.FromDatetime(datetime(2019, 4, 9, 1))
+        project='chromium', bucket='ci', builder='Linux Tests')
+    self.build = self._MockBuild(self.build_id, self.build_number,
+                                 'git_sha_123')
 
     self.context = Context(
         luci_project_name='chromium',
@@ -67,7 +77,7 @@ class PreCompileAnalysisTest(wf_testcase.TestCase):
                     'first_failed_build': {
                         'id': 8000000000121,
                         'number': 121,
-                        'commit_id': 'git_sha'
+                        'commit_id': 'git_sha_121'
                     },
                     'last_passed_build': {
                         'id': 8000000000120,
@@ -79,7 +89,7 @@ class PreCompileAnalysisTest(wf_testcase.TestCase):
             'first_failed_build': {
                 'id': 8000000000121,
                 'number': 121,
-                'commit_id': 'git_sha'
+                'commit_id': 'git_sha_121'
             },
             'last_passed_build': {
                 'id': 8000000000120,
@@ -88,6 +98,24 @@ class PreCompileAnalysisTest(wf_testcase.TestCase):
             },
         },
     }
+
+    # Prepares data for existing failure group.
+    group_build = self._MockBuild(
+        8000003400121, 12134, 'git_sha_121', builder_name='Mac')
+    group_build_entity = luci_build.SaveFailedBuild(self.context, group_build,
+                                                    StepTypeEnum.COMPILE)
+    group_failure = CompileFailure.Create(group_build_entity.key, 'compile',
+                                          ['target1', 'target2'], 'CXX')
+    group_failure.put()
+
+    # Prepares data for first failed build.
+    first_failed_build = self._MockBuild(8000000000121, 121, 'git_sha_121')
+    first_failed_build_entity = luci_build.SaveFailedBuild(
+        self.context, first_failed_build, StepTypeEnum.COMPILE)
+    first_failure = CompileFailure.Create(
+        first_failed_build_entity.key, 'compile', ['target1', 'target2'], 'CXX')
+    first_failure.merged_failure_key = group_failure.key
+    first_failure.put()
 
     pre_compile_analysis.SaveCompileFailures(self.context, self.build,
                                              detailed_compile_failures)
@@ -98,6 +126,7 @@ class PreCompileAnalysisTest(wf_testcase.TestCase):
     compile_failures = CompileFailure.query(ancestor=build.key).fetch()
     self.assertEqual(1, len(compile_failures))
     self.assertEqual(8000000000121, compile_failures[0].first_failed_build_id)
+    self.assertEqual(group_failure.key, compile_failures[0].merged_failure_key)
 
   @mock.patch.object(git, 'GetCommitPositionFromRevision', return_value=67890)
   def testSaveCompileFailuresOnlyStepLevelFailures(self, _):
@@ -117,6 +146,14 @@ class PreCompileAnalysisTest(wf_testcase.TestCase):
         },
     }
 
+    # Prepares data for first failed build.
+    first_failed_build = self._MockBuild(8000000000121, 121, 'git_sha_121')
+    first_failed_build_entity = luci_build.SaveFailedBuild(
+        self.context, first_failed_build, StepTypeEnum.COMPILE)
+    first_failure = CompileFailure.Create(first_failed_build_entity.key,
+                                          'compile', None, 'CXX')
+    first_failure.put()
+
     pre_compile_analysis.SaveCompileFailures(self.context, self.build,
                                              detailed_compile_failures)
 
@@ -127,6 +164,7 @@ class PreCompileAnalysisTest(wf_testcase.TestCase):
     self.assertEqual(1, len(compile_failures))
     self.assertEqual(8000000000121, compile_failures[0].first_failed_build_id)
     self.assertEqual([], compile_failures[0].output_targets)
+    self.assertEqual(first_failure.key, compile_failures[0].merged_failure_key)
 
   @mock.patch.object(ChromiumProjectAPI, 'GetCompileFailures')
   @mock.patch.object(buildbucket_client, 'GetV2Build')
@@ -903,11 +941,13 @@ class PreCompileAnalysisTest(wf_testcase.TestCase):
   @mock.patch.object(
       ChromiumProjectAPI,
       'GetFailuresWithMatchingCompileFailureGroups',
-      return_value={'compile': {
-          frozenset(['target1']): 8000000000134
-      }})
-  def testGetFirstFailuresInCurrentBuildWithoutGroupPartialExistingGroup(
-      self, *_):
+      return_value={
+          'compile': {
+              frozenset(['target1']): 8000000000134,
+              frozenset(['target2']): 8000000000134
+          }
+      })
+  def testGetFirstFailuresInCurrentBuildWithoutGroup(self, *_):
     build_121_info = {
         'id': 8000000000121,
         'number': self.build_number - 2,
@@ -950,20 +990,35 @@ class PreCompileAnalysisTest(wf_testcase.TestCase):
     pre_compile_analysis.SaveCompileFailures(self.context, self.build,
                                              detailed_compile_failures)
 
-    expected_result = {
-        'failures': {
-            'compile': {
-                'output_targets': [frozenset(['target2'])],
-                'last_passed_build': build_121_info,
-            },
-        },
-        'last_passed_build': build_121_info
-    }
+    # Prepares data for existing failure group.
+    group_build = self._MockBuild(
+        8000000000134, 12134, 'git_sha_134', builder_name='Mac')
+    group_build_entity = luci_build.SaveFailedBuild(self.context, group_build,
+                                                    StepTypeEnum.COMPILE)
+    group_failure1 = CompileFailure.Create(group_build_entity.key, 'compile',
+                                           ['target1'], 'CXX')
+    group_failure1.put()
+    group_failure2 = CompileFailure.Create(group_build_entity.key, 'compile',
+                                           ['target2'], 'ACTION')
+    group_failure2.put()
 
     self.assertEqual(
-        expected_result,
+        {
+            'failures': {},
+            'last_passed_build': None
+        },
         pre_compile_analysis.GetFirstFailuresInCurrentBuildWithoutGroup(
             self.context, self.build, first_failures_in_current_build))
+
+    build = LuciFailedBuild.get_by_id(self.build_id)
+    compile_failures = CompileFailure.query(ancestor=build.key).fetch()
+    self.assertEqual(2, len(compile_failures))
+
+    for failure in compile_failures:
+      if failure.output_targets == ['target1']:
+        self.assertEqual(group_failure1.key, failure.merged_failure_key)
+      else:
+        self.assertEqual(group_failure2.key, failure.merged_failure_key)
 
   @mock.patch.object(
       git, 'GetCommitPositionFromRevision', side_effect=[66680, 66666, 66680])
