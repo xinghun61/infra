@@ -59,17 +59,17 @@ test_coverage:
 	../../test.py test appengine/monorail --html-report ~/monorail-test-coverage --coveragerc appengine/monorail/.testcoveragerc
 
 # Commands for running locally using dev_appserver.
-serve: deps config_local
+serve: config_local
 	@echo "---[Starting SDK AppEngine Server]---"
 	$(GAE_PY) devserver -- $(DEV_APPSERVER_FLAGS)& $(WEBPACK_PATH) --watch
 
-serve_email: deps config_local
+serve_email: config_local
 	@echo "---[Starting SDK AppEngine Server]---"
 	$(GAE_PY) devserver -- $(DEV_APPSERVER_FLAGS) --enable_sendmail=True& $(WEBPACK_PATH) --watch
 
 # The _remote commands expose the app on 0.0.0.0, so that it is externally
 # accessible by hostname:port, rather than just localhost:port.
-serve_remote: deps config_local
+serve_remote: config_local
 	@echo "---[Starting SDK AppEngine Server]---"
 	$(GAE_PY) devserver -o -- $(DEV_APPSERVER_FLAGS)& $(WEBPACK_PATH) --watch
 
@@ -79,10 +79,8 @@ serve_remote_email: config_local
 
 run: serve
 
-deps:
+deps: node_deps
 	rm -f static/dist/*
-
-	npm ci --no-save
 
 	mkdir -p deployed_node_modules/@webcomponents/webcomponentsjs/
 
@@ -96,9 +94,9 @@ clean_deps:
 	rm -rf node_modules
 
 node_deps:
-	npm ci
+	npm ci --no-save
 
-karma: node_deps
+karma:
 	npx karma start --debug --coverage
 
 pylint:
