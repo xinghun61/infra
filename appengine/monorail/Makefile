@@ -80,6 +80,8 @@ serve_remote_email: config_local
 run: serve
 
 deps:
+	rm -f static/dist/*
+
 	npm ci --no-save
 
 	mkdir -p deployed_node_modules/@webcomponents/webcomponentsjs/
