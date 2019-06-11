@@ -55,7 +55,7 @@ export class MrCue extends connectStore(LitElement) {
         border:  var(--chops-notice-border);
         text-align: center;
       }
-      .cue[hidden] {
+      .cue[hidden], button[hidden] {
         visibility: hidden;
       }
       i.material-icons {
