@@ -20,6 +20,7 @@ import (
 	"go.chromium.org/luci/common/cli"
 	"go.chromium.org/luci/common/errors"
 
+	"infra/cmd/cros_test_platform/internal/skylab"
 	"infra/libs/skylab/swarming"
 )
 
@@ -53,12 +54,15 @@ func (c *skylabExecuteRun) Run(a subcommands.Application, args []string, env sub
 	if err := c.validateArgs(); err != nil {
 		fmt.Fprintln(a.GetErr(), err.Error())
 		c.Flags.Usage()
-		return 1
+		return failedWithoutResponse
 	}
 
-	if err := c.innerRun(a, args, env); err != nil {
+	if responded, err := c.innerRun(a, args, env); err != nil {
 		fmt.Fprintf(a.GetErr(), "%s\n", err)
-		return 1
+		if responded {
+			return failedWithResponse
+		}
+		return failedWithoutResponse
 	}
 	return 0
 }
@@ -75,34 +79,39 @@ func (c *skylabExecuteRun) validateArgs() error {
 	return nil
 }
 
-func (c *skylabExecuteRun) innerRun(a subcommands.Application, args []string, env subcommands.Env) error {
+func (c *skylabExecuteRun) innerRun(a subcommands.Application, args []string, env subcommands.Env) (responded bool, err error) {
 	request, err := readExecuteRequest(c.inputPath)
 	if err != nil {
-		return err
+		return false, err
 	}
 
 	if err := validateRequest(request); err != nil {
-		return err
+		return false, err
 	}
 
 	ctx := cli.GetContext(a, c, env)
 
 	hClient, err := httpClient(ctx, request.Config.SkylabSwarming)
 	if err != nil {
-		return err
+		return false, err
 	}
 
 	client, err := swarming.New(ctx, hClient, request.Config.SkylabSwarming.Server)
 	if err != nil {
-		return err
+		return false, err
 	}
 
 	response, err := c.handleRequest(ctx, a.GetErr(), request, client)
-	if err != nil {
-		return err
+	if response == nil {
+		return false, err
 	}
 
-	return writeExecuteResponse(c.outputPath, response)
+	writeErr := writeExecuteResponse(c.outputPath, response)
+	if writeErr != nil {
+		return false, writeErr
+	}
+
+	return true, err
 }
 
 func readExecuteRequest(path string) (*steps.ExecuteRequest, error) {
@@ -165,6 +174,6 @@ func httpClient(ctx context.Context, c *config.Config_Swarming) (*http.Client, e
 }
 
 func (c *skylabExecuteRun) handleRequest(ctx context.Context, output io.Writer, req *steps.ExecuteRequest, t *swarming.Client) (*steps.ExecuteResponse, error) {
-	response := &steps.ExecuteResponse{}
-	return response, nil
+	run := skylab.NewRun(req.Enumeration.AutotestTests)
+	return run.LaunchAndWait(ctx, t)
 }
