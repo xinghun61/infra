@@ -49,7 +49,7 @@ def parse_dimension(string):
 
 
 def parse_dimensions(strings):
-  """Parses dimension strings to a dict {key: {(value, expiration_secs)}."""
+  """Parses dimension strings to a dict {key: {(value, expiration_secs)}}."""
   out = collections.defaultdict(set)
   for s in strings:
     key, value, expiration_secs = parse_dimension(s)

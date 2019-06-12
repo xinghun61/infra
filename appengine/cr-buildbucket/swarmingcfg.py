@@ -48,7 +48,7 @@ def read_dimensions(builder_cfg):  # pragma: no cover
   * Factors in the auto_builder_dimensions field.
 
   Returns:
-    dimensions is returned as dict {key: (value, expiration_secs)}.
+    dimensions is returned as dict {key: {(value, expiration_secs)}}.
   """
   dimensions = flatten_swarmingcfg.parse_dimensions(builder_cfg.dimensions)
   if (builder_cfg.auto_builder_dimension == project_config_pb2.YES and

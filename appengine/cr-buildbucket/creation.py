@@ -6,6 +6,7 @@
 
 import collections
 import copy
+import itertools
 import logging
 import random
 
@@ -26,6 +27,7 @@ import model
 import search
 import sequence
 import swarming
+import swarmingcfg
 import tq
 
 # The default percentage of builds that are marked as canary.
@@ -117,42 +119,40 @@ class BuildRequest(_BuildRequestBase):
     """
     sbr = self.schedule_build_request
 
-    build_proto = build_pb2.Build(
-        id=build_id,
-        builder=sbr.builder,
-        status=common_pb2.SCHEDULED,
-        created_by=created_by.to_bytes(),
-        input=dict(
-            properties=sbr.properties,
-            gerrit_changes=sbr.gerrit_changes,
-        ),
-        infra=dict(
-            buildbucket=dict(
-                requested_properties=sbr.properties,
-                requested_dimensions=sbr.dimensions,
-            ),
-        ),
-        critical=sbr.critical,
-        exe=sbr.exe,
-    )
-    build_proto.create_time.FromDatetime(now)
+    bp = build_pb2.Build()
+    if builder_cfg:  # pragma: no branch
+      _apply_builder_config(builder_cfg, bp)
 
-    if sbr.HasField('gitiles_commit'):
-      build_proto.input.gitiles_commit.CopyFrom(sbr.gitiles_commit)
-
-    if sbr.priority:
-      build_proto.infra.swarming.priority = sbr.priority
-
+    bp.id = build_id
+    bp.builder.CopyFrom(sbr.builder)
+    bp.status = common_pb2.SCHEDULED
+    bp.created_by = created_by.to_bytes()
+    bp.create_time.FromDatetime(now)
+    bp.critical = sbr.critical
+    bp.exe.CopyFrom(sbr.exe)
+    # If the SBR expressed canary preference, override what the config said.
     if sbr.canary != common_pb2.UNSET:
-      build_proto.canary = sbr.canary == common_pb2.YES
-    else:
-      canary_percentage = _DEFAULT_CANARY_PERCENTAGE
-      if builder_cfg and builder_cfg.HasField(  # pragma: no branch
-          'task_template_canary_percentage'):
-        canary_percentage = builder_cfg.task_template_canary_percentage.value
-      build_proto.canary = _should_be_canary(canary_percentage)
+      bp.canary = sbr.canary == common_pb2.YES
 
-    return build_proto
+    # Populate input.
+    bp.input.properties.CopyFrom(sbr.properties)
+    if sbr.HasField('gitiles_commit'):
+      bp.input.gitiles_commit.CopyFrom(sbr.gitiles_commit)
+    bp.input.gerrit_changes.extend(sbr.gerrit_changes)
+    bp.infra.buildbucket.requested_properties.CopyFrom(sbr.properties)
+    bp.infra.buildbucket.requested_dimensions.extend(sbr.dimensions)
+
+    # Populate swarming-specific fields.
+    sw = bp.infra.swarming
+    configured_task_dims = list(sw.task_dimensions)
+    sw.ClearField('task_dimensions')
+    sw.task_dimensions.extend(
+        _apply_dimension_overrides(configured_task_dims, sbr.dimensions)
+    )
+    if sbr.priority:
+      sw.priority = sbr.priority
+
+    return bp
 
   @staticmethod
   def compute_tag_set(sbr):
@@ -463,3 +463,46 @@ def _should_update_builder(probability):  # pragma: no cover
 
 def _should_be_canary(percentage):  # pragma: no cover
   return random.randint(0, 99) < percentage
+
+
+def _apply_dimension_overrides(base, overrides):
+  """Applies overrides to base.
+
+  Both base and overrides must be a list of common_pb2.RequestedDimension.
+  Returns another list, a result of overriding.
+  """
+
+  def by_key(dims):
+    ret = collections.defaultdict(list)
+    for d in dims:
+      ret[d.key].append(d)
+    return ret
+
+  overridden = by_key(base)
+  overridden.update(by_key(overrides))
+
+  ret = itertools.chain(*overridden.itervalues())
+  return sorted(ret, key=lambda d: (d.key, d.expiration.seconds, d.value))
+
+
+def _apply_builder_config(builder_cfg, build_proto):
+  """Applies project_config_pb2.Builder to a builds_pb2.Build."""
+
+  # Populate task dimensions.
+  for key, vs in swarmingcfg.read_dimensions(builder_cfg).iteritems():
+    if vs == {('', 0)}:
+      # This is a tombstone left from merging.
+      # Skip it.
+      continue
+
+    for value, expiration_sec in vs:
+      build_proto.infra.swarming.task_dimensions.add(
+          key=key, value=value, expiration=dict(seconds=expiration_sec)
+      )
+
+  # Decide if the build will be canary.
+  canary_percentage = _DEFAULT_CANARY_PERCENTAGE
+  if builder_cfg.HasField(  # pragma: no branch
+      'task_template_canary_percentage'):
+    canary_percentage = builder_cfg.task_template_canary_percentage.value
+  build_proto.canary = _should_be_canary(canary_percentage)

@@ -81,9 +81,6 @@ class BaseTest(testing.AppengineTestCase):
       swarming_host: "swarming.example.com"
       swarming_tags: "buildertag:yes"
       swarming_tags: "commontag:yes"
-      dimensions: "cores:8"
-      dimensions: "os:Ubuntu"
-      dimensions: "pool:Chrome"
       priority: 108
       build_numbers: YES
       service_account: "robot@example.com"
@@ -226,9 +223,20 @@ class TaskDefTest(BaseTest):
         name='second_cache',
         wait_for_warm_cache_secs=360,
     )
-    self.builder_cfg.dimensions.append("120:opt:ional")
 
-    slices = self.prepare_task_def(test_util.build())['task_slices']
+    build = test_util.build(
+        for_creation=True,
+        infra=dict(
+            swarming=dict(
+                task_dimensions=[
+                    dict(key='a', value='1', expiration=dict(seconds=120)),
+                    dict(key='pool', value='Chrome'),
+                ]
+            )
+        )
+    )
+
+    slices = self.prepare_task_def(build)['task_slices']
 
     self.assertEqual(4, len(slices))
     for t in slices:
@@ -246,11 +254,9 @@ class TaskDefTest(BaseTest):
     # But the dimensions are different. 'opt' and 'caches' are injected.
     self.assertEqual(
         slices[0]['properties']['dimensions'], [
+            {u'key': u'a', u'value': u'1'},
             {u'key': u'caches', u'value': u'second_cache'},
             {u'key': u'caches', u'value': u'shared_builder_cache'},
-            {u'key': u'cores', u'value': u'8'},
-            {u'key': u'opt', u'value': u'ional'},
-            {u'key': u'os', u'value': u'Ubuntu'},
             {u'key': u'pool', u'value': u'Chrome'},
         ]
     )
@@ -259,10 +265,8 @@ class TaskDefTest(BaseTest):
     # One 'caches' expired. 'opt' and one 'caches' are still injected.
     self.assertEqual(
         slices[1]['properties']['dimensions'], [
+            {u'key': u'a', u'value': u'1'},
             {u'key': u'caches', u'value': u'second_cache'},
-            {u'key': u'cores', u'value': u'8'},
-            {u'key': u'opt', u'value': u'ional'},
-            {u'key': u'os', u'value': u'Ubuntu'},
             {u'key': u'pool', u'value': u'Chrome'},
         ]
     )
@@ -273,8 +277,6 @@ class TaskDefTest(BaseTest):
     self.assertEqual(
         slices[2]['properties']['dimensions'], [
             {u'key': u'caches', u'value': u'second_cache'},
-            {u'key': u'cores', u'value': u'8'},
-            {u'key': u'os', u'value': u'Ubuntu'},
             {u'key': u'pool', u'value': u'Chrome'},
         ]
     )
@@ -284,8 +286,6 @@ class TaskDefTest(BaseTest):
     # The cold fallback; the last 'caches' expired.
     self.assertEqual(
         slices[3]['properties']['dimensions'], [
-            {u'key': u'cores', u'value': u'8'},
-            {u'key': u'os', u'value': u'Ubuntu'},
             {u'key': u'pool', u'value': u'Chrome'},
         ]
     )
@@ -323,41 +323,20 @@ class TaskDefTest(BaseTest):
     self.assertEqual(slices[0]['expiration_secs'], '60')
     self.assertEqual(slices[1]['expiration_secs'], '60')
 
-  def test_auto_builder_dimension(self):
-    self.builder_cfg.auto_builder_dimension = project_config_pb2.YES
-
-    slices = self.prepare_task_def(test_util.build())['task_slices']
-    self.assertEqual(
-        slices[0]['properties']['dimensions'], [
-            {u'key': u'builder', u'value': u'linux'},
-            {u'key': u'caches', u'value': linux_CACHE_NAME},
-            {u'key': u'cores', u'value': u'8'},
-            {u'key': u'os', u'value': u'Ubuntu'},
-            {u'key': u'pool', u'value': u'Chrome'},
-        ]
+  def test_too_many_dimensions(self):
+    build = test_util.build(
+        for_creation=True,
+        infra=dict(
+            swarming=dict(
+                task_dimensions=[
+                    dict(key='a', value='1', expiration=dict(seconds=i * 60))
+                    for i in xrange(8)
+                ]
+            )
+        ),
     )
-
-  def test_auto_builder_dimension_already_set(self):
-    self.builder_cfg.auto_builder_dimension = project_config_pb2.YES
-    self.builder_cfg.dimensions.append('builder:custom')
-
-    slices = self.prepare_task_def(test_util.build())['task_slices']
-    self.assertEqual(
-        slices[0]['properties']['dimensions'], [
-            {u'key': u'builder', u'value': u'custom'},
-            {u'key': u'caches', u'value': linux_CACHE_NAME},
-            {u'key': u'cores', u'value': u'8'},
-            {u'key': u'os', u'value': u'Ubuntu'},
-            {u'key': u'pool', u'value': u'Chrome'},
-        ]
-    )
-
-  def test_unset_dimension(self):
-    self.builder_cfg.dimensions[:] = ['cores:']
-
-    slices = self.prepare_task_def(test_util.build())['task_slices']
-    dim_keys = {d['key'] for d in slices[0]['properties']['dimensions']}
-    self.assertNotIn('cores', dim_keys)
+    with self.assertRaises(errors.InvalidInputError):
+      self.prepare_task_def(build)
 
   def test_overall(self):
     self.patch(
@@ -389,12 +368,16 @@ class TaskDefTest(BaseTest):
                 ),
             ],
         ),
+        infra=dict(
+            swarming=dict(
+                task_dimensions=[
+                    dict(key='cores', value='8'),
+                    dict(key='os', value='Ubuntu'),
+                    dict(key='pool', value='Chrome'),
+                ],
+            ),
+        ),
     )
-
-    build.parameters['changes'] = [{
-        'author': {'email': 'bob@example.com'},
-        'repo_url': 'https://chromium.googlesource.com/chromium/src',
-    }]
 
     actual = self.prepare_task_def(build)
 
@@ -456,10 +439,19 @@ class TaskDefTest(BaseTest):
                         'cipdPackage': 'infra/recipe_bundle',
                     },
                     'swarming': {
-                        'hostname': 'swarming.example.com',
-                        'taskId': 'deadbeef',
-                        'taskServiceAccount': 'robot@example.com',
-                        'priority': 108,
+                        'hostname':
+                            'swarming.example.com',
+                        'taskId':
+                            'deadbeef',
+                        'taskServiceAccount':
+                            'robot@example.com',
+                        'priority':
+                            108,
+                        'taskDimensions': [
+                            {'key': 'cores', 'value': '8'},
+                            {'key': 'os', 'value': 'Ubuntu'},
+                            {'key': 'pool', 'value': 'Chrome'},
+                        ],
                     },
                 },
                 'createdBy': 'anonymous:anonymous',
@@ -613,30 +605,6 @@ class TaskDefTest(BaseTest):
         'value': 'TRUE',
     }, env)
 
-  def test_max_dimensions(self):
-    self.builder_cfg.dimensions.extend([
-        '60:opt1:ional',
-        '120:opt2:ional',
-        '240:opt3:ional',
-        '300:opt4:ional',
-        '360:opt5:ional',
-        '420:opt6:ional',
-    ])
-    self.prepare_task_def(test_util.build())
-
-  def test_bad_request_dimensions(self):
-    self.builder_cfg.dimensions.extend([
-        '60:opt1:ional',
-        '120:opt2:ional',
-        '240:opt3:ional',
-        '300:opt4:ional',
-        '360:opt5:ional',
-        '420:opt6:ional',
-        '480:opt7:ional',
-    ])
-    with self.assertRaises(errors.InvalidInputError):
-      self.prepare_task_def(test_util.build())
-
   def test_canary_template(self):
     build = test_util.build(id=1, canary=common_pb2.YES, for_creation=True)
 
@@ -651,26 +619,6 @@ class TaskDefTest(BaseTest):
         if p['package_name'] == 'infra/recipe_bundle'
     ]
     self.assertEqual(pkg['version'], 'canary')
-
-  def test_override_dimensions(self):
-    build = test_util.build(
-        for_creation=True,
-        infra=dict(
-            buildbucket=dict(
-                requested_dimensions=[
-                    dict(key='cores', value='16'),
-                ]
-            ),
-        ),
-    )
-
-    self.prepare_task_def(build)
-
-    slices = self.prepare_task_def(test_util.build())['task_slices']
-    self.assertIn(
-        {'key': 'cores', 'value': '16'},
-        slices[0]['properties']['dimensions'],
-    )
 
   def test_unexpected_template_task_key(self):
     # Unexpected task key.

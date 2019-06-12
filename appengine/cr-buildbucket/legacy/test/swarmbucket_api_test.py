@@ -297,8 +297,27 @@ class SwarmbucketApiTest(testing.EndpointsTestCase):
                                 'cipdPackage': 'infra/recipe_bundle',
                             },
                             'swarming': {
-                                'hostname': 'swarming.example.com',
-                                'priority': 30,
+                                'hostname':
+                                    'swarming.example.com',
+                                'priority':
+                                    30,
+                                'taskDimensions': [
+                                    {
+                                        'key': 'baz',
+                                        'value': 'baz',
+                                        'expiration': '0s',
+                                    },
+                                    {
+                                        'key': 'builder',
+                                        'value': 'linux',
+                                        'expiration': '0s',
+                                    },
+                                    {
+                                        'key': 'foo',
+                                        'value': 'bar',
+                                        'expiration': '0s',
+                                    },
+                                ],
                             },
                         },
                         'createdBy': 'anonymous:anonymous',

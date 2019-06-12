@@ -2,6 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import contextlib
 import datetime
 
 from components import auth
@@ -47,10 +48,10 @@ class CreationTest(testing.AppengineTestCase):
         '''
         name: "luci.chromium.try"
         swarming {
-          hostname: "chromium-swarm.appspot.com"
           builders {
             name: "linux"
             build_numbers: YES
+            swarming_host: "chromium-swarm.appspot.com"
             recipe {
               name: "recipe"
               cipd_package: "infra/recipe_bundle"
@@ -59,6 +60,7 @@ class CreationTest(testing.AppengineTestCase):
           }
           builders {
             name: "mac"
+            swarming_host: "chromium-swarm.appspot.com"
             recipe {
               name: "recipe"
               cipd_package: "infra/recipe_bundle"
@@ -67,6 +69,7 @@ class CreationTest(testing.AppengineTestCase):
           }
           builders {
             name: "win"
+            swarming_host: "chromium-swarm.appspot.com"
             recipe {
               name: "recipe"
               cipd_package: "infra/recipe_bundle"
@@ -102,6 +105,11 @@ class CreationTest(testing.AppengineTestCase):
     self.patch('creation._should_be_canary', side_effect=lambda p: p > 50)
 
     self.patch('search.TagIndex.random_shard_index', return_value=0)
+
+  @contextlib.contextmanager
+  def mutate_builder_cfg(self):
+    yield self.chromium_try.swarming.builders[0]
+    config.put_bucket('chromium', 'a' * 40, self.chromium_try)
 
   def build_request(self, schedule_build_request_fields=None, **kwargs):
     schedule_build_request_fields = schedule_build_request_fields or {}
@@ -157,9 +165,8 @@ class CreationTest(testing.AppengineTestCase):
     self.assertTrue(build.proto.canary)
 
   def test_canary_in_builder(self):
-    builder_cfg = self.chromium_try.swarming.builders[0]
-    builder_cfg.task_template_canary_percentage.value = 100
-    config.put_bucket('chromium', 'a' * 40, self.chromium_try)
+    with self.mutate_builder_cfg() as cfg:
+      cfg.task_template_canary_percentage.value = 100
 
     build = self.add()
     self.assertTrue(build.proto.canary)
@@ -178,14 +185,55 @@ class CreationTest(testing.AppengineTestCase):
 
   def test_dimensions(self):
     dims = [
+        common_pb2.RequestedDimension(key='d', value='1'),
         common_pb2.RequestedDimension(
             key='d', value='1', expiration=dict(seconds=60)
+        ),
+    ]
+    build = self.add(dict(dimensions=dims))
+
+    infra = build.parse_infra()
+    self.assertEqual(list(infra.buildbucket.requested_dimensions), dims)
+    self.assertEqual(list(infra.swarming.task_dimensions), dims)
+
+  def test_dimensions_in_builder(self):
+    with self.mutate_builder_cfg() as cfg:
+      cfg.dimensions[:] = [
+          '60:a:0',
+          '0:a:1',
+          'b:0',
+          'tombstone:',
+      ]
+
+    dims = [
+        common_pb2.RequestedDimension(
+            key='b', value='1', expiration=dict(seconds=60)
         ),
         common_pb2.RequestedDimension(key='d', value='1'),
     ]
     build = self.add(dict(dimensions=dims))
+
+    infra = build.parse_infra()
+    self.assertEqual(list(infra.buildbucket.requested_dimensions), dims)
     self.assertEqual(
-        list(build.parse_infra().buildbucket.requested_dimensions), dims
+        list(infra.swarming.task_dimensions), [
+            common_pb2.RequestedDimension(
+                key='a',
+                value='1',
+                expiration=dict(seconds=0),
+            ),
+            common_pb2.RequestedDimension(
+                key='a',
+                value='0',
+                expiration=dict(seconds=60),
+            ),
+            common_pb2.RequestedDimension(
+                key='b',
+                value='1',
+                expiration=dict(seconds=60),
+            ),
+            common_pb2.RequestedDimension(key='d', value='1'),
+        ]
     )
 
   def test_notify(self):

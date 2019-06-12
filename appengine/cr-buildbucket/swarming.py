@@ -144,34 +144,6 @@ def _should_use_canary_template(percentage):  # pragma: no cover
   return random.randint(0, 99) < percentage
 
 
-def _prepare_builder_config(build, builder_cfg):
-  """Returns final version of builder config to use for |build|.
-
-  Expects arguments to be valid.
-  """
-
-  # Builders are already flattened in the datastore.
-  result = builder_cfg
-
-  # TODO(nodir): remove this function.
-
-  # Apply V2 requested dimensions.
-  if build.proto.infra.buildbucket.requested_dimensions:
-    # Piggy back on V1 merging impl until starlark-based config obsolete it.
-    dim_str = flatten_swarmingcfg.format_dimension
-    flatten_swarmingcfg.merge_builder(
-        result,
-        project_config_pb2.Builder(
-            dimensions=[
-                dim_str(d.key, d.value, d.expiration.seconds)
-                for d in build.proto.infra.buildbucket.requested_dimensions
-            ]
-        )
-    )
-
-  return result
-
-
 def _buildbucket_property(build):
   """Returns value for '$recipe_engine/buildbucket' build property.
 
@@ -323,8 +295,6 @@ def _create_task_def_async(builder_cfg, build, fake_build):
   validate_input_properties(
       build.proto.input.properties, allow_reserved=bool(build.retry_of)
   )
-
-  builder_cfg = _prepare_builder_config(build, builder_cfg)
 
   task_template_rev, task_template = yield _get_task_template_async(
       build.canary
@@ -619,25 +589,16 @@ def _setup_swarming_props(build, builder_cfg, extra_cipd_packages, props):
 
   cache_fallbacks = _setup_named_caches(builder_cfg, props)
 
-  # Add in all of the non-fallback swarming dimensions to the task properties.
-  dims = swarmingcfg_module.read_dimensions(builder_cfg)
-
-  # Reconstruct dims as the actual list of dimensions needed. The challenge here
-  # is that repeated values are valid!
+  # out is dict {expiration_secs: [{'key': key, 'value': value}]}
   out = collections.defaultdict(list)
   for expirations_secs, items in cache_fallbacks.iteritems():
     out[expirations_secs].extend(
         {u'key': u'caches', u'value': item} for item in items
     )
-  for key, entries in dims.iteritems():
-    if entries == {('', 0)}:
-      # This is a tombstone left from merging.
-      # Skip it.
-      pass
-    else:
-      for value, expiration_secs in entries:
-        assert value
-        out[expiration_secs].append({u'key': key, u'value': value})
+
+  for d in build.proto.infra.swarming.task_dimensions:
+    assert not d.expiration.nanos
+    out[d.expiration.seconds].append({u'key': d.key, u'value': d.value})
 
   props[u'dimensions'] = out.pop(0, [])
   props[u'dimensions'].sort(key=lambda x: (x[u'key'], x[u'value']))
@@ -707,6 +668,8 @@ def prepare_task_def_async(build, builder_cfg, settings, fake_build=False):
   Validates the new build.
   Mutates build.
   Creates a swarming task definition.
+
+  TODO(nodir): remove builder_cfg parameter.
 
   Returns a task_def dict.
   """
