@@ -1,17 +1,22 @@
-[approval_url]
-[commenter.display_name] made the following updates:
-
 [if-any comment.amendments][#
-  ][for comment.amendments]      [comment.amendments.field_name]: [format "raw"][comment.amendments.newvalue][end]
-[#][end][end]
-[if-any comment.attachments][#
-  ]Attachments:
-[for comment.attachments]        [comment.attachments.filename]: [domain_url][comment.attachments.downloadurl]&inline=1
-[end][end]
+  ]Updates:
+[#][for comment.amendments]        [comment.amendments.field_name]: [format "raw"][comment.amendments.newvalue][end]
+[#][end][#
+  ][end]
+Comment #[comment.sequence] on issue [issue_local_id][#
+  ] by [comment.creator.display_name]: [format "raw"][summary][#
+][end]
+[approval_url]
+
 [if-any comment.content][#
   ][for comment.text_runs][include "render-plain-text.ezt" comment.text_runs][end][#
 ][else](No comment was entered for this change.)[#
 ][end]
+[if-any comment.attachments][#
+  ]Attachments:
+[#][for comment.attachments][#
+  ]        [comment.attachments.filename]: [domain_url][comment.attachments.downloadurl]&inline=1[end]
+[end]
 
 You are receiving this message because you are listed as the TL/PM
 on this issue or you are/were listed as an approver for this

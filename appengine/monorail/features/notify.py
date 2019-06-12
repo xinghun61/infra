@@ -784,8 +784,9 @@ class NotifyApprovalChangeTask(notify_helpers.NotifyTaskBase):
     email_data = {
         'domain_url': domain_url,
         'approval_url': approval_url,
-        'commenter': commenter_view,
         'comment': comment_view,
+        'issue_local_id': issue.local_id,
+        'summary': issue.summary,
         }
     subject = '%s Approval: %s (Issue %s)' % (
         approval_name, issue.summary, issue.local_id)
