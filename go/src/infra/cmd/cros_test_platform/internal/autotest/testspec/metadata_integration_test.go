@@ -2,11 +2,12 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-package testspec
+package testspec_test
 
 import (
 	"testing"
 
+	"infra/cmd/cros_test_platform/internal/autotest/testspec"
 	"infra/cmd/cros_test_platform/internal/testutils"
 
 	"github.com/kylelemons/godebug/pretty"
@@ -27,7 +28,7 @@ func TestLoadAndParseSimple(t *testing.T) {
 		NAME = "dummy_suite"
 		TEST_TYPE = "server"
 	`)
-	got, err := Get(root)
+	got, err := testspec.Get(root)
 	if err != nil {
 		t.Fatalf("Get() failed: %s", err)
 	}
