@@ -80,11 +80,12 @@ class CreationTest(testing.AppengineTestCase):
         '''
     )
     config.put_bucket('chromium', 'a' * 40, self.chromium_try)
-    self.patch(
+    self.create_sync_task_async = self.patch(
         'swarming.create_sync_task_async',
         return_value=future({
             'is_payload': True,
         }),
+        autospec=True,
     )
     self.patch('swarming.cancel_task_async', return_value=future(None))
 
@@ -517,16 +518,15 @@ class CreationTest(testing.AppengineTestCase):
     self.assertEqual(len(idx.entries), 2)
     self.assertEqual(idx.entries[0].bucket_id, 'chromium/try')
 
-  @mock.patch('swarming.create_sync_task_async', autospec=True)
-  def test_create_sync_task_async_fails(self, prepare_async):
+  def test_create_sync_task_async_fails(self):
     expected_ex1 = errors.InvalidInputError()
 
     @ndb.tasklet
-    def prepare_async_mock(build, *_args, **_kwargs):
+    def create_sync_task_async_mock(build, *_args, **_kwargs):
       if 'buildset:a' in build.tags:
         raise expected_ex1
 
-    prepare_async.side_effect = prepare_async_mock
+    self.create_sync_task_async.side_effect = create_sync_task_async_mock
 
     ((b1, ex1), (b2, ex2)) = creation.add_many_async([
         self.build_request(dict(tags=[dict(key='buildset', value='a')])),

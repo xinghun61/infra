@@ -329,9 +329,7 @@ class NewBuild(object):
     if self.builder_cfg:  # pragma: no branch
       # This is a LUCI builder.
       try:
-        sync_task = yield swarming.create_sync_task_async(
-            b, self.builder_cfg, settings.swarming
-        )
+        sync_task = yield swarming.create_sync_task_async(b, settings.swarming)
       except errors.Error as ex:
         self.exception = ex
         return
