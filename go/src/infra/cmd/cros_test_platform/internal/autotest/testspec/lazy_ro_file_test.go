@@ -8,10 +8,12 @@ import (
 	"io/ioutil"
 	"path/filepath"
 	"testing"
+
+	"infra/cmd/cros_test_platform/internal/testutils"
 )
 
 func TestLazyROFileSimpleRead(t *testing.T) {
-	d, cleanup := createTempDirOrDie(t)
+	d, cleanup := testutils.CreateTempDirOrDie(t)
 	defer cleanup()
 	p := filepath.Join(d, "pleaseBeLazy")
 	want := "some random text"

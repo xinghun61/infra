@@ -6,18 +6,18 @@ package artifacts_test
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
 
 	"infra/cmd/cros_test_platform/internal/autotest/artifacts"
+	"infra/cmd/cros_test_platform/internal/testutils"
 
 	"go.chromium.org/luci/common/errors"
 )
 
 func TestExtractControlFiles(t *testing.T) {
-	outdir, cleanup := createTempDirOrDie(t)
+	outdir, cleanup := testutils.CreateTempDirOrDie(t)
 	defer cleanup()
 	err := artifacts.ExtractControlFiles(
 		artifacts.LocalPaths{ControlFilesArchive: testDataPath("control_files.tar")},
@@ -57,7 +57,7 @@ func formatDirectoryTreeOrDie(root string) string {
 }
 
 func TestExtractTestSuites(t *testing.T) {
-	outdir, cleanup := createTempDirOrDie(t)
+	outdir, cleanup := testutils.CreateTempDirOrDie(t)
 	defer cleanup()
 	err := artifacts.ExtractControlFiles(
 		artifacts.LocalPaths{TestSuitesArchive: testDataPath("test_suites.tar.bz2")},
@@ -69,17 +69,5 @@ func TestExtractTestSuites(t *testing.T) {
 	want := filepath.Join(outdir, "autotest", "test_suites", "control.dummy")
 	if !isRegularFile(want) {
 		t.Errorf("File %s not created. Output: %s", want, formatDirectoryTreeOrDie(outdir))
-	}
-}
-
-//TODO(pprabhu) Deduplicate with testspec/autotest/loader_test.go
-func createTempDirOrDie(t *testing.T) (string, func()) {
-	t.Helper()
-	dir, err := ioutil.TempDir("", "controlFilesTest")
-	if err != nil {
-		panic(err)
-	}
-	return dir, func() {
-		os.RemoveAll(dir)
 	}
 }

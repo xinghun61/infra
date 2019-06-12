@@ -7,12 +7,14 @@ package testspec
 import (
 	"testing"
 
+	"infra/cmd/cros_test_platform/internal/testutils"
+
 	"github.com/kylelemons/godebug/pretty"
 	"go.chromium.org/chromiumos/infra/proto/go/chromite/api"
 )
 
 func TestLoadAndParseSimple(t *testing.T) {
-	root, cleanup := createTempDirOrDie(t)
+	root, cleanup := testutils.CreateTempDirOrDie(t)
 	defer cleanup()
 
 	createTestFileOrDie(t, root, `
@@ -45,9 +47,9 @@ func TestLoadAndParseSimple(t *testing.T) {
 }
 
 func createTestFileOrDie(t *testing.T, root string, text string) {
-	createFileOrDie(t, []string{root, "site_tests", "control"}, text)
+	testutils.CreateFileOrDie(t, []string{root, "site_tests", "control"}, text)
 }
 
 func createSuiteFileOrDie(t *testing.T, root string, text string) {
-	createFileOrDie(t, []string{root, "test_suites", "control"}, text)
+	testutils.CreateFileOrDie(t, []string{root, "test_suites", "control"}, text)
 }

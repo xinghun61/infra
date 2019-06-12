@@ -5,15 +5,15 @@
 package testspec
 
 import (
-	"io/ioutil"
-	"os"
 	"path/filepath"
 	"testing"
+
+	"infra/cmd/cros_test_platform/internal/testutils"
 )
 
 func TestCreation(t *testing.T) {
 	d := &controlFilesLoaderImpl{}
-	root, cleanup := createTempDirOrDie(t)
+	root, cleanup := testutils.CreateTempDirOrDie(t)
 	defer cleanup()
 
 	if err := d.Discover(root); err != nil {
@@ -25,20 +25,9 @@ func TestCreation(t *testing.T) {
 	}
 }
 
-func createTempDirOrDie(t *testing.T) (string, func()) {
-	t.Helper()
-	dir, err := ioutil.TempDir("", "discoverTest")
-	if err != nil {
-		panic(err)
-	}
-	return dir, func() {
-		os.RemoveAll(dir)
-	}
-}
-
 func TestEnumeration(t *testing.T) {
 	d := &controlFilesLoaderImpl{}
-	root, cleanup := createTempDirOrDie(t)
+	root, cleanup := testutils.CreateTempDirOrDie(t)
 	defer cleanup()
 
 	cases := []struct {
@@ -68,17 +57,5 @@ func TestEnumeration(t *testing.T) {
 }
 
 func createDummyFileOrDie(t *testing.T, path ...string) string {
-	return createFileOrDie(t, path, "fake control")
-}
-
-func createFileOrDie(t *testing.T, path []string, text string) string {
-	file := path[len(path)-1]
-	dir := filepath.Join(path[:len(path)-1]...)
-	if err := os.MkdirAll(dir, 0755); err != nil {
-		panic(err)
-	}
-	if err := ioutil.WriteFile(filepath.Join(dir, file), []byte(text), 0644); err != nil {
-		panic(err)
-	}
-	return filepath.Join(dir, file)
+	return testutils.CreateFileOrDie(t, path, "fake control")
 }
