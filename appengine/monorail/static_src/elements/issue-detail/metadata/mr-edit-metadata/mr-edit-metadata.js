@@ -156,6 +156,31 @@ export class MrEditMetadata extends connectStore(LitElement) {
           color: gray;
           vertical-align: bottom;
         }
+        .star-line {
+          display: flex;
+          align-items: center;
+          background: var(--chops-notice-bubble-bg);
+          border: var(--chops-notice-border);
+          justify-content: flex-start;
+          margin-top: 4px;
+          padding: 2px 4px 2px 8px;
+        }
+        /* Wrap the star icon around a button for accessibility. */
+        .star-line button {
+          background: none;
+          border: none;
+          cursor: pointer;
+          padding: 0;
+          margin: 0;
+          margin-right: 8px;
+        }
+        .star-line i.material-icons {
+          font-size: var(--chops-icon-font-size);
+          color: hsl(120, 5%, 66%);
+        }
+        .star-line i.material-icons[starred] {
+          color: cornflowerblue;
+        }
       `,
     ];
   }
@@ -166,6 +191,7 @@ export class MrEditMetadata extends connectStore(LitElement) {
             rel="stylesheet">
       <form id="editForm" @submit=${this.save}>
         <mr-cue cuePrefName="code_of_conduct"></mr-cue>
+        ${this._renderStarLine()}
         <textarea
           id="commentText"
           placeholder="Add a comment"
@@ -203,6 +229,33 @@ export class MrEditMetadata extends connectStore(LitElement) {
           ${!this.isApproval ? this._renderPresubmitChanges() : ''}
         </div>
       </form>
+    `;
+  }
+
+  _renderStarLine() {
+    if (this._canEditIssue || this.isApproval) return '';
+
+    return html`
+      <div class="star-line">
+        <button
+          class="star-button"
+          @click=${this.toggleStar}
+          ?disabled=${!this._canStar}
+        >
+          <i
+            class="material-icons"
+            ?starred=${this.isStarred}
+            title="${this.isStarred ? 'You\'ve starred' : 'Star'} this issue"
+          >star</i>
+        </button>
+        <span>
+          ${this.isStarred ? `
+            You have voted for this issue and will receive notifications.
+          ` : `
+            Star this issue instead of commenting "+1 Me too!" to add a vote
+            and get notifications.`}
+        </span>
+      </div>
     `;
   }
 
@@ -516,6 +569,9 @@ export class MrEditMetadata extends connectStore(LitElement) {
       projectConfig: {type: Object},
       projectName: {type: String},
       isApproval: {type: Boolean},
+      isStarred: {type: Boolean},
+      fetchingIsStarred: {type: Boolean},
+      starringIssue: {type: Boolean},
       issuePermissions: {type: Object},
       issueRef: {type: Object},
       hasApproverPrivileges: {type: Boolean},
@@ -547,6 +603,11 @@ export class MrEditMetadata extends connectStore(LitElement) {
   get _nicheFieldCount() {
     const fieldDefs = this.fieldDefs || [];
     return fieldDefs.reduce((acc, fd) => acc + (fd.isNiche | 0), 0);
+  }
+
+  get _canStar() {
+    const {fetchingIsStarred, starringIssue} = this;
+    return !fetchingIsStarred && !starringIssue;
   }
 
   get _canEditIssue() {
@@ -614,6 +675,9 @@ export class MrEditMetadata extends connectStore(LitElement) {
     this.projectName = issue.issueRef(state).projectName;
     this.issuePermissions = issue.permissions(state);
     this.optionsPerEnumField = project.optionsPerEnumField(state);
+    this.isStarred = issue.isStarred(state);
+    this.fetchingIsStarred = issue.requests(state).fetchIsStarred.requesting;
+    this.starringIssue = issue.requests(state).star.requesting;
   }
 
   disconnectedCallback() {
@@ -669,6 +733,16 @@ export class MrEditMetadata extends connectStore(LitElement) {
     if (!isDirty || confirm('Discard your changes?')) {
       this.dispatchEvent(new CustomEvent('discard'));
     }
+  }
+
+  toggleStar(e) {
+    e.preventDefault();
+    if (!this._canStar) return;
+
+    const newIsStarred = !this.isStarred;
+    const issueRef = this.issueRef;
+
+    store.dispatch(issue.star(issueRef, newIsStarred));
   }
 
   async focus() {
