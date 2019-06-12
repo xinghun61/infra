@@ -66,6 +66,13 @@ class BigQueryExportTest(testing.AppengineTestCase):
                     task_dimensions=[
                         dict(key='a', value='1', expiration=dict(seconds=1)),
                     ],
+                    caches=[
+                        dict(
+                            path='a',
+                            name='1',
+                            wait_for_warm_cache=dict(seconds=1),
+                        ),
+                    ],
                 ),
             ),
         ),

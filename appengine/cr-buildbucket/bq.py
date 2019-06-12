@@ -152,8 +152,9 @@ def _export_builds(dataset, builds, deadline):
       s.summary_markdown = ''
       s.ClearField('logs')
 
-    # Drop requested_dimension.expiration fields until crbug.com/926536 is
-    # fixed.
+    # Drop Duration fields until crbug.com/926536 is fixed.
+    for c in proto.infra.swarming.caches:
+      c.ClearField('wait_for_warm_cache')
     for d in proto.infra.swarming.task_dimensions:
       d.ClearField('expiration')
 
