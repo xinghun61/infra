@@ -165,9 +165,6 @@ func httpClient(ctx context.Context, c *config.Config_Swarming) (*http.Client, e
 }
 
 func (c *skylabExecuteRun) handleRequest(ctx context.Context, output io.Writer, req *steps.ExecuteRequest, t *swarming.Client) (*steps.ExecuteResponse, error) {
-	for _, test := range req.Enumeration.Tests {
-		fmt.Fprintf(output, "would have emitted task for %s", test.Name)
-	}
 	response := &steps.ExecuteResponse{}
 	return response, nil
 }
