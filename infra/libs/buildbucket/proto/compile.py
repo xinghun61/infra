@@ -31,6 +31,9 @@ COMPONENTS_TOOLS_DIR = os.path.join(
 )
 RPC_PROTO_DIR = os.path.join(LUCI_GO_DIR, 'grpc', 'proto')
 BUILDBUCKET_PROTO_DIR = os.path.join(LUCI_GO_DIR, 'buildbucket', 'proto')
+SWARMING_PROTO = os.path.join(
+    LUCI_GO_DIR, 'swarming', 'proto', 'api', 'swarming.proto'
+)
 
 
 def modify_proto(src, dest):
@@ -39,8 +42,9 @@ def modify_proto(src, dest):
 
   # Rewrite imports.
   contents = re.sub(
-      r'import "go\.chromium\.org/luci/buildbucket/proto/([^"]+)";',
-      r'import "\1";', contents
+      r'import "go\.chromium\.org/.+/([^"/]+)";',
+      r'import "\1";',
+      contents,
   )
 
   with open(dest, 'w') as f:
@@ -48,16 +52,17 @@ def modify_proto(src, dest):
 
 
 def find_files(path, suffix=''):
-  return [f for f in os.listdir(path) if f.endswith(suffix)]
+  return [os.path.join(path, f) for f in os.listdir(path) if f.endswith(suffix)]
 
 
 def main():
   tmpd = tempfile.mkdtemp(suffix='buildbucket-proto')
 
   proto_files = find_files(BUILDBUCKET_PROTO_DIR, suffix='.proto')
+  proto_files += [SWARMING_PROTO]
   # Copy modified .proto files into temp dir.
   for f in proto_files:
-    modify_proto(os.path.join(BUILDBUCKET_PROTO_DIR, f), os.path.join(tmpd, f))
+    modify_proto(f, os.path.join(tmpd, os.path.basename(f)))
 
   # Compile them.
   args = [
@@ -69,7 +74,7 @@ def main():
       '--python_out=.',
       '--prpc-python_out=.',
   ]
-  args += [os.path.join(tmpd, f) for f in proto_files]
+  args += [os.path.join(tmpd, f) for f in os.listdir(tmpd)]
 
   # Include protoc-gen-prpc-python in $PATH.
   env = os.environ.copy()
@@ -85,7 +90,7 @@ def main():
 
   # Copy _pb2.py files to dest dir.
   for f in pb2_files:
-    shutil.copyfile(os.path.join(tmpd, f), os.path.join(THIS_DIR, f))
+    shutil.copyfile(f, os.path.join(THIS_DIR, os.path.basename(f)))
 
 
 if __name__ == '__main__':
