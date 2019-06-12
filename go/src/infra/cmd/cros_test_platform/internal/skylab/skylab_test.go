@@ -51,15 +51,15 @@ func (f *fakeSwarming) GetResults(ctx context.Context, IDs []string) ([]*swarmin
 	return results, nil
 }
 
-// setNextState causes this fake to start returning the given state of all future
+// setTaskState causes this fake to start returning the given state of all future
 // GetResults calls.
-func (f *fakeSwarming) setNextState(state string) {
+func (f *fakeSwarming) setTaskState(state string) {
 	f.nextState = state
 }
 
-// setNextError causes this fake to start returning the given error on all
+// setError causes this fake to start returning the given error on all
 // future API calls.
-func (f *fakeSwarming) setNextError(err error) {
+func (f *fakeSwarming) setError(err error) {
 	f.nextError = err
 }
 
@@ -112,7 +112,7 @@ func TestServiceError(t *testing.T) {
 		run := skylab.NewRun(tests)
 
 		Convey("when the swarming service immediately returns errors, that error is surfaced as a launch error.", func() {
-			swarming.setNextError(fmt.Errorf("foo error"))
+			swarming.setError(fmt.Errorf("foo error"))
 			_, err := run.LaunchAndWait(ctx, swarming)
 			So(err, ShouldNotBeNil)
 			So(err.Error(), ShouldContainSubstring, "launch test")
@@ -121,7 +121,7 @@ func TestServiceError(t *testing.T) {
 
 		Convey("when the swarming service starts returning errors after the initial launch calls, that errors is surfaced as a wait error.", func() {
 			swarming.setCallback(func() {
-				swarming.setNextError(fmt.Errorf("foo error"))
+				swarming.setError(fmt.Errorf("foo error"))
 			})
 			_, err := run.LaunchAndWait(ctx, swarming)
 			So(err.Error(), ShouldContainSubstring, "wait for tests")
