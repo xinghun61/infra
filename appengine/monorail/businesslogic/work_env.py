@@ -55,6 +55,7 @@ import time
 
 import settings
 from features import features_constants
+from features import filterrules_helpers
 from features import send_notifications
 from features import features_bizobj
 from features import hotlist_helpers
@@ -1718,7 +1719,7 @@ class WorkEnv(object):
   # FUTURE: DeleteUser()
   # FUTURE: ListStarredUsers()
 
-  def ExpungeUsers(self, _user_ids):
+  def ExpungeUsers(self, emails):
     """Permanently deletes user data and removes remaining user references
        for all listed users.
 
@@ -1736,54 +1737,66 @@ class WorkEnv(object):
       operations would have to be known in order for later operations to
       succeed.  E.g. ExpungeUsersIngroups().
     """
-    # limit = 10000
+
+    user_ids_by_email = self.services.user.LookupExistingUserIDs(
+        self.mc.cnxn, emails)
+    user_ids = user_ids_by_email.values()
+    limit = 10000
+
     # Spam verdict and report tables have user_id columns that do not
     # reference User. No limit will be applied.
-    # self.services.spam.ExpungeUsersInSpam(self.mc.cnxn, user_ids)
+    self.services.spam.ExpungeUsersInSpam(self.mc.cnxn, user_ids)
 
-    # self.services.issue.ExpungeUsersInIssues(
-    #   self.mc.cnxn, user_ids, limit=limit)
+    self.services.issue.ExpungeUsersInIssues(
+        self.mc.cnxn, user_ids, limit=limit)
 
-    # self.services.issue_star.ExpungeUsersInStars(
-    #   self.mc.cnxn, user_ids, limit=limit)
-    # self.services.project_star.ExpungeUsersInStars(
-    #   self.mc.cnxn, user_ids, limit=limit)
-    # self.services.hotlist_star.ExpungeUsersInStars(
-    #   self.mc.cnxn, user_ids, limit=limit)
-    # self.services.user_star.ExpungeUsersInStars(
-    #   self.mc.cnxn, user_ids, limit=limit)
-    # for user_id in user_ids:
-    #   self.services.user_star.ExpungeStars(
-    #      self.mc.cnxn, user_id, commit=False, limit=limit)
+    self.services.issue_star.ExpungeUsersInStars(
+        self.mc.cnxn, user_ids, limit=limit)
+    self.services.project_star.ExpungeUsersInStars(
+        self.mc.cnxn, user_ids, limit=limit)
+    self.services.hotlist_star.ExpungeUsersInStars(
+        self.mc.cnxn, user_ids, limit=limit)
+    self.services.user_star.ExpungeUsersInStars(
+        self.mc.cnxn, user_ids, limit=limit)
+    for user_id in user_ids:
+      self.services.user_star.ExpungeStars(
+          self.mc.cnxn, user_id, commit=False, limit=limit)
 
-    # self.services.features.ExpungeUsersInQuickEdits(
-    #   self.mc.cnxn, user_ids, limit=limit)
-    # self.services.features.ExpungeUsersInSavedQueries(
-    #   self.mc.cnxn, user_ids, limit=limit)
+    self.services.features.ExpungeUsersInQuickEdits(
+        self.mc.cnxn, user_ids, limit=limit)
+    self.services.features.ExpungeUsersInSavedQueries(
+        self.mc.cnxn, user_ids, limit=limit)
 
     # No limit will be applied for expunging in hotlists.
-    # self.services.features.ExpungeUsersInHotlists(user_ids)
+    self.services.features.ExpungeUsersInHotlists(
+        self.mc.cnxn, user_ids, self.services.hotlist_star, self.services.user)
 
-    # self.services.template.ExpungeUsersInTemplates(
-    #   self.mc.cnxn, user_ids, limit=limit)
-    # self.services.config.ExpungeUsersInConfigs(
-    #   self.mc.cnxn, user_ids, limit=limit)
+    self.services.template.ExpungeUsersInTemplates(
+        self.mc.cnxn, user_ids, limit=limit)
+    self.services.config.ExpungeUsersInConfigs(
+        self.mc.cnxn, user_ids, limit=limit)
+
     # No limit will be applied for expunging in UserGroups.
-    # self.services.usergroup.ExpungeUsersInGroups(
-    #   self.mc.cnxn, user_ids, limit=limit)
+    self.services.usergroup.ExpungeUsersInGroups(
+        self.mc.cnxn, user_ids, limit=limit)
 
     # No limit will be applied for expunging in FilterRules.
-    #deleted_rules = self.services.features.ExpungeFilterRulesByUser(emails)
-    #rule_strs_by_project = filterrules_helpers.BuildRedactedFilterRuleStrings(
-    #self.mc.cnxn, deleted_rules, self.services.user, emails)
+    deleted_rules_by_project = self.services.features.ExpungeFilterRulesByUser(
+        self.mc.cnxn, user_ids_by_email)
+    rule_strs_by_project = filterrules_helpers.BuildRedactedFilterRuleStrings(
+        self.mc.cnxn, deleted_rules_by_project, self.services.user, emails)
 
     # We will attempt to expunge all given users here. Limiting the users we
     # delete should be done before work_env.ExpungeUsers is called.
-    # self.services.user.ExpungeUsers(self.mc.cnxn, user_ids)
+    self.services.user.ExpungeUsers(self.mc.cnxn, user_ids)
 
-    # self.services.usergroup.group_dag.MarkObsolete()
-    # send emails for deleted FilterRules to project owners.
-    return
+    self.mc.cnxn.Commit()
+    self.services.usergroup.group_dag.MarkObsolete()
+
+    hostport = framework_helpers.GetHostPort()
+    for project_id, filter_rule_strs in rule_strs_by_project.iteritems():
+      send_notifications.PrepareAndSendDeletedFilterRulesNotification(
+          project_id, hostport, filter_rule_strs)
 
   ### Group methods
 

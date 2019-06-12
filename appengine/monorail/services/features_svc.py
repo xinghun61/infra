@@ -554,7 +554,7 @@ class FeaturesService(object):
     changes to in-memory data.
     Args:
       cnxn: connection to SQL database.
-      user_ids_by_email: dict of {user_id: email} of all users we want to
+      user_ids_by_email: dict of {email: user_id ..} of all users we want to
         expunge
 
     Returns:

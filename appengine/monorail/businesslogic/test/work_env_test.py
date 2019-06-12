@@ -18,16 +18,24 @@ from google.appengine.ext import testbed
 
 import settings
 from businesslogic import work_env
+from features import filterrules_helpers
 from framework import exceptions
+from framework import framework_constants
 from framework import framework_views
 from framework import permissions
 from features import send_notifications
 from proto import project_pb2
 from proto import tracker_pb2
 from proto import user_pb2
+from services import config_svc
 from services import features_svc
+from services import issue_svc
+from services import project_svc
+from services import user_svc
 from services import usergroup_svc
 from services import service_manager
+from services import spam_svc
+from services import star_svc
 from services import template_svc
 from testing import fake
 from testing import testing_helpers
@@ -2800,6 +2808,145 @@ class WorkEnvTest(unittest.TestCase):
   # FUTURE: DeleteUser()
   # FUTURE: ListStarredUsers()
 
+  @mock.patch(
+      'features.send_notifications.'
+      'PrepareAndSendDeletedFilterRulesNotification')
+  def testExpungeUsers(self, fake_pasdfrn):
+    """Test user data correctly expunged."""
+    limit = 10000
+    # Set up mocks
+    # NOTE: If these Expunge...() methods are called in places other than
+    # ExpungeUsers(), then these methods should be added to testing.fake
+    # classes. If they are only used in ExpungeUsers, then mocking is fine.
+    self.services.config = mock.Mock(spec=config_svc.ConfigService)
+    self.services.issue = mock.Mock(spec=issue_svc.IssueService)
+    self.services.user = mock.Mock(spec=user_svc.UserService)
+    self.services.project = mock.Mock(spec=project_svc.ProjectService)
+    self.services.issue_star = mock.Mock(spec=star_svc.IssueStarService)
+    self.services.project_star = mock.Mock(spec=star_svc.ProjectStarService)
+    self.services.user_star = mock.Mock(spec=star_svc.UserStarService)
+    self.services.hotlist_star = mock.Mock(spec=star_svc.HotlistStarService)
+    self.services.features = mock.Mock(spec=features_svc.FeaturesService)
+    self.services.usergroup = mock.Mock(spec=usergroup_svc.UserGroupService)
+    self.services.template = mock.Mock(spec=template_svc.TemplateService)
+    self.services.spam = mock.Mock(spec=spam_svc.SpamService)
+
+    wipeout_emails = ['cow@test.com', 'chicken@test.com', 'llama@test.com',
+                      'alpaca@test.com']
+    existing_emails = ['cow@test.com', 'chicken@test.com', 'llama@test.com']
+    ids_by_email = {existing_emails[0]: 111, existing_emails[1]: 222,
+                    existing_emails[2]: 333}
+    user_ids = ids_by_email.values()
+    self.services.user.LookupExistingUserIDs = mock.Mock(
+        return_value=ids_by_email)
+
+    self.services.spam.ExpungeUsersInSpam = mock.Mock()
+
+    self.services.spam.ExpungeUsersInIssues = mock.Mock()
+
+    self.services.issue_star.ExpungeUsersInStars = mock.Mock()
+    self.services.project_star.ExpungeUsersInStars = mock.Mock()
+    self.services.hotlist_star.ExpungeUsersInStars = mock.Mock()
+    self.services.user_star.ExpungeUsersInStars = mock.Mock()
+    self.services.user_star.ExpungeStars = mock.Mock()
+
+    self.services.features.ExpungeUsersInQuickEdits = mock.Mock()
+    self.services.features.ExpungeUsersInSavedQueries = mock.Mock()
+
+    self.services.features.ExpungeUsersInHotlists = mock.Mock()
+
+    self.services.features.ExpungeUsersInHotlists = mock.Mock()
+
+    self.services.template.ExpungeUsersInTemplates = mock.Mock()
+    self.services.config.ExpungeUsersInConfigs = mock.Mock()
+
+    self.services.usergroup.ExpungeUsersInGroups = mock.Mock()
+
+    rule1 = filterrules_helpers.MakeRule('owner:cow@test.com', add_cc_ids=[888])
+    rule2 = filterrules_helpers.MakeRule(
+        'owner:random@test.com', add_cc_ids=[222, 333])
+    rule3 = filterrules_helpers.MakeRule(
+        'label:random-label', add_notify=['llama@test.com'])
+    deleted_rules_dict = {16: [rule1, rule2], 17: [rule3]}
+    self.services.user.LookupUserEmails = mock.Mock(
+        return_value={111: existing_emails[0], 222: existing_emails[1],
+                      333: existing_emails[2], 888: 'random@test.com'})
+    self.services.features.ExpungeFilterRulesByUser = mock.Mock(
+        return_value=deleted_rules_dict)
+
+    self.services.user.ExpungeUsers = mock.Mock()
+
+    self.mr.cnxn = mock.Mock()
+    self.services.usergroup.group_dag = mock.Mock()
+
+    # call ExpungeUsers
+    with self.work_env as we:
+      we.ExpungeUsers(wipeout_emails)
+
+    # test correct calls made
+    self.services.spam.ExpungeUsersInSpam.assert_called_once_with(
+        self.mr.cnxn, user_ids)
+
+    self.services.issue.ExpungeUsersInIssues.assert_called_once_with(
+        self.mr.cnxn, user_ids, limit=limit)
+
+    self.services.issue_star.ExpungeUsersInStars.assert_called_once_with(
+        self.mr.cnxn, user_ids, limit=limit)
+    self.services.project_star.ExpungeUsersInStars.assert_called_once_with(
+        self.mr.cnxn, user_ids, limit=limit)
+    self.services.hotlist_star.ExpungeUsersInStars.assert_called_once_with(
+        self.mr.cnxn, user_ids, limit=limit)
+    self.services.user_star.ExpungeUsersInStars.assert_called_once_with(
+        self.mr.cnxn, user_ids, limit=limit)
+    self.assertItemsEqual(
+        self.services.user_star.ExpungeStars.call_args_list,
+        [
+            mock.call(self.mr.cnxn, user_ids[0], commit=False, limit=limit),
+            mock.call(self.mr.cnxn, user_ids[1], commit=False, limit=limit),
+            mock.call(self.mr.cnxn, user_ids[2], commit=False, limit=limit)])
+
+    self.services.features.ExpungeUsersInQuickEdits.assert_called_once_with(
+        self.mr.cnxn, user_ids, limit=limit)
+    self.services.features.ExpungeUsersInSavedQueries.assert_called_once_with(
+        self.mr.cnxn, user_ids, limit=limit)
+
+    self.services.features.ExpungeUsersInHotlists.assert_called_once_with(
+        self.mr.cnxn, user_ids, self.services.hotlist_star, self.services.user)
+
+    self.services.template.ExpungeUsersInTemplates.assert_called_once_with(
+        self.mr.cnxn, user_ids, limit=limit)
+    self.services.config.ExpungeUsersInConfigs.assert_called_once_with(
+        self.mr.cnxn, user_ids, limit=limit)
+
+    self.services.usergroup.ExpungeUsersInGroups.assert_called_once_with(
+        self.mr.cnxn, user_ids, limit=limit)
+
+    self.services.features.ExpungeFilterRulesByUser.assert_called_once_with(
+        self.mr.cnxn, ids_by_email)
+
+    self.services.user.ExpungeUsers.assert_called_once_with(
+        self.mr.cnxn, user_ids)
+
+    self.mr.cnxn.Commit.assert_called_once()
+    self.services.usergroup.group_dag.MarkObsolete.assert_called_once()
+
+    fake_pasdfrn.assert_has_calls(
+        [mock.call(
+            16,
+            'testing-app.appspot.com',
+            ['if owner:%s then add cc(s): random@test.com' % (
+                framework_constants.DELETED_USER_NAME),
+             'if owner:random@test.com then add cc(s): %s, %s' % (
+                 framework_constants.DELETED_USER_NAME,
+                 framework_constants.DELETED_USER_NAME)]),
+         mock.call(
+             17,
+             'testing-app.appspot.com',
+             ['if label:random-label then notify: %s' % (
+                 framework_constants.DELETED_USER_NAME)])
+        ])
+
+
   # FUTURE: CreateGroup()
   # FUTURE: ListGroups()
   # FUTURE: UpdateGroup()
@@ -3564,31 +3711,31 @@ class WorkEnvTest(unittest.TestCase):
   def setUpExpungeUsersFromStars(self):
     config = fake.MakeTestConfig(789, [], [])
     self.work_env.services.project_star.SetStarsBatch(
-        self.cnxn, 789, [222L, 444L, 555L], True)
+        self.cnxn, 789, [222, 444, 555], True)
     self.work_env.services.issue_star.SetStarsBatch(
-        self.cnxn, self.services, config, 78901, [222L, 444L, 666L], True)
+        self.cnxn, self.services, config, 78901, [222, 444, 666], True)
     self.work_env.services.hotlist_star.SetStarsBatch(
-        self.cnxn, 1678, [222L, 444L, 555L], True)
+        self.cnxn, 1678, [222, 444, 555], True)
     self.work_env.services.user_star.SetStarsBatch(
-        self.cnxn, 888L, [222L, 333L, 777L], True)
+        self.cnxn, 888, [222, 333, 777], True)
     self.work_env.services.user_star.SetStarsBatch(
-        self.cnxn, 999L, [111L, 222L, 333L], True)
+        self.cnxn, 999, [111, 222, 333], True)
 
   def testExpungeUsersFromStars(self):
     self.setUpExpungeUsersFromStars()
-    user_ids = [999L, 222L, 555L]
+    user_ids = [999, 222, 555]
     self.work_env.expungeUsersFromStars(user_ids)
     self.assertEqual(
         self.work_env.services.project_star.LookupItemStarrers(self.cnxn, 789),
-        [444L])
+        [444])
     self.assertEqual(
         self.work_env.services.issue_star.LookupItemStarrers(self.cnxn, 78901),
-        [444L, 666L])
+        [444, 666])
     self.assertEqual(
         self.work_env.services.hotlist_star.LookupItemStarrers(self.cnxn, 1678),
-        [444L])
+        [444])
     self.assertEqual(
-        self.work_env.services.user_star.LookupItemStarrers(self.cnxn, 888L),
-        [333L, 777L])
+        self.work_env.services.user_star.LookupItemStarrers(self.cnxn, 888),
+        [333, 777])
     self.assertEqual(
-        self.work_env.services.user_star.expunged_item_ids, [999L, 222L, 555L])
+        self.work_env.services.user_star.expunged_item_ids, [999, 222, 555])
