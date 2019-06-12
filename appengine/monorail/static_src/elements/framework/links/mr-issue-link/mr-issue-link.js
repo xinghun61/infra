@@ -3,6 +3,7 @@
 // found in the LICENSE file.
 
 import {LitElement, html, css} from 'lit-element';
+import {ifDefined} from 'lit-html/directives/if-defined';
 import {issueRefToString} from 'elements/shared/converters.js';
 
 /**
@@ -25,7 +26,7 @@ export class MrIssueLink extends LitElement {
       <a
         id="bugLink"
         href=${this._issueUrl}
-        title=${this.issue && this.issue.summary}
+        title=${ifDefined(this.issue && this.issue.summary)}
         ?is-closed=${this.isClosed}
       >${this._linkText}</a>
     `;

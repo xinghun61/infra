@@ -69,5 +69,18 @@ describe('mr-issue-link', () => {
 
     const link = element.shadowRoot.querySelector('#bugLink');
     assert.include(link.href.trim(), '/p/test/issues/detail?id=11');
+    assert.equal(link.title, '');
+  });
+
+  it('shows title when summary is defined', async () => {
+    element.issue = {
+      projectName: 'test',
+      localId: 11,
+      summary: 'Summary',
+    };
+
+    await element.updateComplete;
+    const link = element.shadowRoot.querySelector('#bugLink');
+    assert.equal(link.title, 'Summary');
   });
 });
