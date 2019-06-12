@@ -6,6 +6,8 @@
 
 import collections
 import copy
+import datetime
+import hashlib
 import itertools
 import logging
 import random
@@ -39,6 +41,11 @@ _DEFAULT_CANARY_PERCENTAGE = 10
 
 # Default value of Build.infra.swarming.priority.
 _DEFAULT_SWARMING_PRIORITY = 30
+# Default value of Build.scheduling_timeout.
+_DEFAULT_SCHEDULING_TIMEOUT = datetime.timedelta(hours=6)
+# Default value of Build.execution_timeout.
+_DEFAULT_EXECUTION_TIMEOUT = datetime.timedelta(hours=3)
+_DEFAULT_BUILDER_CACHE_EXPIRATION = datetime.timedelta(minutes=4)
 
 _BuildRequestBase = collections.namedtuple(
     '_BuildRequestBase', [
@@ -117,6 +124,19 @@ class BuildRequest(_BuildRequestBase):
         ((identity or auth.get_current_identity()).to_bytes(), req_id)
     )
 
+  def _ensure_builder_cache(self, build_proto):
+    """Ensures that build_proto has a "builder" cache."""
+    caches = build_proto.infra.swarming.caches
+    if not any(c.path == 'builder' for c in caches):
+      h = hashlib.sha256(config.builder_id_string(build_proto.builder))
+      builder_cache = caches.add(
+          path='builder',
+          name='builder_%s_v2' % h.hexdigest(),
+      )
+      builder_cache.wait_for_warm_cache.FromTimedelta(
+          _DEFAULT_BUILDER_CACHE_EXPIRATION
+      )
+
   @ndb.tasklet
   def create_build_proto_async(self, build_id, builder_cfg, created_by, now):
     """Converts the request to a build_pb2.Build.
@@ -164,6 +184,7 @@ class BuildRequest(_BuildRequestBase):
     elif bp.input.experimental:
       sw.priority = min(255, sw.priority * 2)
 
+    self._ensure_builder_cache(bp)
     raise ndb.Return(bp)
 
   @staticmethod
@@ -509,6 +530,15 @@ def _apply_builder_config_async(builder_cfg, build_proto):
     canary_percentage = builder_cfg.task_template_canary_percentage.value
   build_proto.canary = _should_be_canary(canary_percentage)
 
+  # Populate timeouts.
+  build_proto.scheduling_timeout.seconds = builder_cfg.expiration_secs
+  if not build_proto.scheduling_timeout.seconds:
+    build_proto.scheduling_timeout.FromTimedelta(_DEFAULT_SCHEDULING_TIMEOUT)
+
+  build_proto.execution_timeout.seconds = builder_cfg.execution_timeout_secs
+  if not build_proto.execution_timeout.seconds:
+    build_proto.execution_timeout.FromTimedelta(_DEFAULT_EXECUTION_TIMEOUT)
+
   # Populate input.
   build_proto.input.properties.update(
       flatten_swarmingcfg.read_properties(builder_cfg.recipe)
@@ -550,6 +580,14 @@ def _apply_builder_config_async(builder_cfg, build_proto):
       sw.task_dimensions.add(
           key=key, value=value, expiration=dict(seconds=expiration_sec)
       )
+
+  # Populate caches.
+  for c in builder_cfg.caches:
+    sw.caches.add(
+        name=c.name,
+        path=c.path,
+        wait_for_warm_cache=dict(seconds=c.wait_for_warm_cache_secs),
+    )
 
 
 @ndb.tasklet

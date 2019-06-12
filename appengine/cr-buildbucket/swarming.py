@@ -226,7 +226,7 @@ def _apply_if_tags(task):
 
 
 @ndb.tasklet
-def _create_task_def_async(builder_cfg, build, fake_build):
+def _create_task_def_async(build, fake_build):
   """Creates a swarming task definition for the |build|.
 
   Supports build properties that are supported by Buildbot-Buildbucket
@@ -238,7 +238,6 @@ def _create_task_def_async(builder_cfg, build, fake_build):
   Raises:
     errors.InvalidInputError if build.parameters are invalid.
   """
-  assert isinstance(builder_cfg, project_config_pb2.Builder), type(builder_cfg)
   assert isinstance(build, model.Build), type(build)
   assert build.key and build.key.id(), build.key
   assert build.url, 'build.url should have been initialized'
@@ -256,6 +255,7 @@ def _create_task_def_async(builder_cfg, build, fake_build):
 
   bp.infra.buildbucket.service_config_revision = task_template_rev
 
+  # TODO(nodir): remove builder_hash parameter.
   h = hashlib.sha256(build.builder_id).hexdigest()
   task_template_params = {
       'builder_hash': h,
@@ -300,9 +300,7 @@ def _create_task_def_async(builder_cfg, build, fake_build):
   )
   task = _apply_if_tags(task)
 
-  _setup_swarming_request_task_slices(
-      build, builder_cfg, extra_cipd_packages, task
-  )
+  _setup_swarming_request_task_slices(build, extra_cipd_packages, task)
 
   if not fake_build:  # pragma: no branch | covered by swarmbucketapi_test.py
     _setup_swarming_request_pubsub(task, build)
@@ -392,9 +390,7 @@ def _calc_tags(build, extra_swarming_tags, task_template_rev, tags):
   return sorted(tags)
 
 
-def _setup_swarming_request_task_slices(
-    build, builder_cfg, extra_cipd_packages, task
-):
+def _setup_swarming_request_task_slices(build, extra_cipd_packages, task):
   """Mutate the task request with named cache, CIPD packages and (soon) expiring
   dimensions.
   """
@@ -413,33 +409,21 @@ def _setup_swarming_request_task_slices(
         'Unexpected task keys: %s' % sorted(set(task) - expected)
     )
 
-  # For now, refuse a task template with more than one TaskSlice. Otherwise
-  # it would be much harder to rationalize what's happening while reading the
-  # Swarming task template.
-  if len(task[u'task_slices']) != 1:
-    raise errors.InvalidInputError(
-        'base swarming task template can only have one task_slices'
-    )
+  assert len(task[u'task_slices']) == 1, task[u'task_slices']
+  base_slice = task[u'task_slices'][0]
 
   expected = frozenset(('expiration_secs', 'properties', 'wait_for_capacity'))
-  if set(task[u'task_slices'][0]) - expected:
+  if set(base_slice) - expected:
     raise errors.InvalidInputError(
-        'Unexpected slice keys: %s' %
-        sorted(set(task[u'task_slices'][0]) - expected)
+        'Unexpected slice keys: %s' % sorted(set(base_slice) - expected)
     )
 
-  if builder_cfg.expiration_secs > 0:
-    task[u'task_slices'][0][u'expiration_secs'] = str(
-        builder_cfg.expiration_secs
-    )
+  base_slice[u'expiration_secs'] = str(build.proto.scheduling_timeout.seconds)
 
   # Now take a look to generate a fallback! This is done by inspecting the
-  # Builder named caches for the flag "wait_for_warm_cache_secs".
+  # Build named caches for field "wait_for_warm_cache".
   dims = _setup_swarming_props(
-      build,
-      builder_cfg,
-      extra_cipd_packages,
-      task[u'task_slices'][0][u'properties'],
+      build, extra_cipd_packages, base_slice[u'properties']
   )
 
   if dims:
@@ -449,21 +433,21 @@ def _setup_swarming_request_task_slices(
       )
     # Create a fallback by copying the original task slice, each time adding the
     # corresponding expiration.
-    base_task_slice = task[u'task_slices'].pop()
-    base_task_slice.setdefault(u'wait_for_capacity', False)
+    task[u'task_slices'] = []
+    base_slice.setdefault(u'wait_for_capacity', False)
     last_exp = 0
     for expiration_secs in sorted(dims):
       t = {
           u'expiration_secs': str(expiration_secs - last_exp),
-          u'properties': copy.deepcopy(base_task_slice[u'properties']),
-          u'wait_for_capacity': base_task_slice[u'wait_for_capacity'],
+          u'properties': copy.deepcopy(base_slice[u'properties']),
+          u'wait_for_capacity': base_slice[u'wait_for_capacity'],
       }
       last_exp = expiration_secs
       task[u'task_slices'].append(t)
-    # Tweak expiration on the base_task_slice, which is the last slice.
-    exp = max(int(base_task_slice[u'expiration_secs']) - last_exp, 60)
-    base_task_slice[u'expiration_secs'] = str(exp)
-    task[u'task_slices'].append(base_task_slice)
+    # Tweak expiration on the base_slice, which is the last slice.
+    exp = max(int(base_slice[u'expiration_secs']) - last_exp, 60)
+    base_slice[u'expiration_secs'] = str(exp)
+    task[u'task_slices'].append(base_slice)
 
     assert len(task[u'task_slices']) == len(dims) + 1
 
@@ -480,7 +464,7 @@ def _setup_swarming_request_task_slices(
       props[u'dimensions'].sort(key=lambda x: (x[u'key'], x[u'value']))
 
 
-def _setup_swarming_props(build, builder_cfg, extra_cipd_packages, props):
+def _setup_swarming_props(build, extra_cipd_packages, props):
   """Fills a TaskProperties.
 
   Updates props; a python format of TaskProperties.
@@ -507,13 +491,12 @@ def _setup_swarming_props(build, builder_cfg, extra_cipd_packages, props):
       'key': 'BUILDBUCKET_EXPERIMENTAL',
       'value': str(build.experimental).upper(),
   })
-  props.setdefault('cipd_input', {}).setdefault('packages',
-                                                []).extend(extra_cipd_packages)
+  packages = props.setdefault('cipd_input', {}).setdefault('packages', [])
+  packages.extend(extra_cipd_packages)
 
-  if builder_cfg.execution_timeout_secs > 0:
-    props['execution_timeout_secs'] = str(builder_cfg.execution_timeout_secs)
+  props['execution_timeout_secs'] = str(build.proto.execution_timeout.seconds)
 
-  cache_fallbacks = _setup_named_caches(builder_cfg, props)
+  cache_fallbacks = _setup_named_caches(build, props)
 
   # out is dict {expiration_secs: [{'key': key, 'value': value}]}
   out = collections.defaultdict(list)
@@ -531,7 +514,7 @@ def _setup_swarming_props(build, builder_cfg, extra_cipd_packages, props):
   return out
 
 
-def _setup_named_caches(builder_cfg, props):
+def _setup_named_caches(build, props):
   """Adds/replaces named caches to/in the Swarming TaskProperties.
 
   Mutates props.
@@ -544,9 +527,9 @@ def _setup_named_caches(builder_cfg, props):
 
   names = set()
   paths = set()
-  cache_fallbacks = {}
+  cache_fallbacks = collections.defaultdict(list)
   # Look for builder specific named caches.
-  for c in builder_cfg.caches:
+  for c in build.proto.infra.swarming.caches:
     if c.path.startswith(u'cache/'):  # pragma: no cover
       # TODO(nodir): remove this code path once clients remove "cache/" from
       # their configs.
@@ -556,8 +539,8 @@ def _setup_named_caches(builder_cfg, props):
     names.add(c.name)
     paths.add(cache_path)
     props[u'caches'].append({u'path': cache_path, u'name': c.name})
-    if c.wait_for_warm_cache_secs:
-      cache_fallbacks.setdefault(c.wait_for_warm_cache_secs, []).append(c.name)
+    if c.wait_for_warm_cache.seconds:
+      cache_fallbacks[c.wait_for_warm_cache.seconds].append(c.name)
 
   # Look for named cache fallback from the swarming task template itself.
   for c in template_caches:
@@ -588,14 +571,12 @@ def _setup_swarming_request_pubsub(task, build):
 
 
 @ndb.tasklet
-def prepare_task_def_async(build, builder_cfg, settings, fake_build=False):
+def prepare_task_def_async(build, settings, fake_build=False):
   """Prepares a swarming task definition.
 
   Validates the new build.
   Mutates build.
   Creates a swarming task definition.
-
-  TODO(nodir): remove builder_cfg parameter.
 
   Returns a task_def dict.
   """
@@ -605,7 +586,7 @@ def prepare_task_def_async(build, builder_cfg, settings, fake_build=False):
     )
 
   build.url = _generate_build_url(settings.milo_hostname, build)
-  task_def = yield _create_task_def_async(builder_cfg, build, fake_build)
+  task_def = yield _create_task_def_async(build, fake_build)
 
   for t in task_def.get('tags', []):  # pragma: no branch
     key, value = buildtags.parse(t)
@@ -618,14 +599,14 @@ def prepare_task_def_async(build, builder_cfg, settings, fake_build=False):
 
 
 @ndb.tasklet
-def create_sync_task_async(build, builder_cfg, settings):  # pragma: no cover
+def create_sync_task_async(build, settings):  # pragma: no cover
   """Returns def of a push task that maintains build state until it ends.
 
   Settings is service_config_pb2.SwarmingSettings.
 
   Handled by TaskSyncBuild.
   """
-  task_def = yield prepare_task_def_async(build, builder_cfg, settings)
+  task_def = yield prepare_task_def_async(build, settings)
   payload = {
       'id': build.key.id(),
       'task_def': task_def,

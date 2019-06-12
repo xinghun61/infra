@@ -196,6 +196,77 @@ class CreationTest(testing.AppengineTestCase):
     self.assertFalse(build.proto.input.experimental)
     self.assertEqual(build.parse_infra().swarming.priority, 30)
 
+  def test_configured_caches(self):
+    with self.mutate_builder_cfg() as cfg:
+      cfg.caches.add(
+          path='required',
+          name='1',
+      )
+      cfg.caches.add(
+          path='optional',
+          name='1',
+          wait_for_warm_cache_secs=60,
+      )
+
+    caches = self.add().parse_infra().swarming.caches
+    self.assertIn(
+        build_pb2.BuildInfra.Swarming.CacheEntry(
+            path='required',
+            name='1',
+            wait_for_warm_cache=dict(),
+        ),
+        caches,
+    )
+    self.assertIn(
+        build_pb2.BuildInfra.Swarming.CacheEntry(
+            path='optional',
+            name='1',
+            wait_for_warm_cache=dict(seconds=60),
+        ),
+        caches,
+    )
+
+  def test_builder_cache(self):
+    caches = self.add().parse_infra().swarming.caches
+
+    self.assertIn(
+        build_pb2.BuildInfra.Swarming.CacheEntry(
+            path='builder',
+            name=(
+                'builder_ccadafffd20293e0378d1f94d214c63a0f8342d1161454ef0acf'
+                'a0405178106b_v2'
+            ),
+            wait_for_warm_cache=dict(seconds=240),
+        ),
+        caches,
+    )
+
+  def test_builder_cache_overridden(self):
+    with self.mutate_builder_cfg() as cfg:
+      cfg.caches.add(
+          path='builder',
+          name='builder',
+      )
+
+    caches = self.add().parse_infra().swarming.caches
+    self.assertIn(
+        build_pb2.BuildInfra.Swarming.CacheEntry(
+            path='builder',
+            name='builder',
+            wait_for_warm_cache=dict(),
+        ),
+        caches,
+    )
+
+  def test_configured_timeouts(self):
+    with self.mutate_builder_cfg() as cfg:
+      cfg.expiration_secs = 60
+      cfg.execution_timeout_secs = 120
+
+    build = self.add()
+    self.assertEqual(build.proto.scheduling_timeout.seconds, 60)
+    self.assertEqual(build.proto.execution_timeout.seconds, 120)
+
   def test_dimensions(self):
     dims = [
         common_pb2.RequestedDimension(key='d', value='1'),

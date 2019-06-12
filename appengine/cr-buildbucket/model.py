@@ -209,10 +209,8 @@ class Build(ndb.Model):
   # Example: "chromium/try/linux-rel".
   # Prefix "luci.<project_id>." is stripped from bucket name.
   builder_id = ndb.ComputedProperty(
-      lambda self: '%s/%s/%s' % (
-          self.proto.builder.project,
-          self.proto.builder.bucket,
-          self.proto.builder.builder))
+      lambda self: config.builder_id_string(self.proto.builder)
+  )
 
   canary = ndb.ComputedProperty(lambda self: self.proto.canary)
 

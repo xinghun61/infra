@@ -481,3 +481,9 @@ def get_settings_async():  # pragma: no cover
       'settings.cfg', service_config_pb2.SettingsCfg, store_last_good=True
   )
   raise ndb.Return(global_settings or service_config_pb2.SettingsCfg())
+
+
+def builder_id_string(builder_id_message):  # pragma: no cover
+  """Returns a canonical string representation of a BuilderID."""
+  bid = builder_id_message
+  return '%s/%s/%s' % (bid.project, bid.bucket, bid.builder)

@@ -76,27 +76,6 @@ class BaseTest(testing.AppengineTestCase):
         return_value=future(self.settings)
     )
 
-    builder_cfg_text = '''
-      name: "linux"
-      recipe {
-        name: "recipe"
-      }
-      caches {
-        path: "a"
-        name: "a"
-      }
-      caches {
-        path: "git_cache"
-        name: "git_chromium"
-      }
-      caches {
-        path: "out"
-        name: "build_chromium"
-      }
-    '''
-    self.builder_cfg = project_config_pb2.Builder()
-    protobuf.text_format.Merge(builder_cfg_text, self.builder_cfg)
-
 
 class TaskDefTest(BaseTest):
 
@@ -116,10 +95,7 @@ class TaskDefTest(BaseTest):
             'luci_project:${project}',
         ],
         'task_slices': [{
-            'expiration_secs': '3600',
             'properties': {
-                'execution_timeout_secs':
-                    '3600',
                 'extra_args': [
                     'cook',
                     '-recipe',
@@ -182,20 +158,24 @@ class TaskDefTest(BaseTest):
     return test_util.build(for_creation=True, **build_proto_fields)
 
   def prepare_task_def(self, build):
-    return swarming.prepare_task_def_async(
-        build, self.builder_cfg, self.settings.swarming
-    ).get_result()
+    return swarming.prepare_task_def_async(build,
+                                           self.settings.swarming).get_result()
 
   def test_shared_cache(self):
-    self.builder_cfg.caches.add(path='builder', name='shared_builder_cache')
+    build = self._test_build(
+        infra=dict(
+            swarming=dict(
+                caches=[
+                    dict(path='builder', name='shared_builder_cache'),
+                ],
+            ),
+        ),
+    )
 
-    slices = self.prepare_task_def(self._test_build())['task_slices']
+    slices = self.prepare_task_def(build)['task_slices']
     self.assertEqual(
         slices[0]['properties']['caches'], [
-            {'path': 'cache/a', 'name': 'a'},
             {'path': 'cache/builder', 'name': 'shared_builder_cache'},
-            {'path': 'cache/git_cache', 'name': 'git_chromium'},
-            {'path': 'cache/out', 'name': 'build_chromium'},
         ]
     )
 
@@ -206,20 +186,22 @@ class TaskDefTest(BaseTest):
     #
     # This ensures the combination of these features works correctly, and that
     # multiple 'caches' dimensions can be injected.
-    self.builder_cfg.caches.add(
-        path='builder',
-        name='shared_builder_cache',
-        wait_for_warm_cache_secs=60,
-    )
-    self.builder_cfg.caches.add(
-        path='second',
-        name='second_cache',
-        wait_for_warm_cache_secs=360,
-    )
-
     build = self._test_build(
+        scheduling_timeout=dict(seconds=3600),
         infra=dict(
             swarming=dict(
+                caches=[
+                    dict(
+                        path='builder',
+                        name='shared_builder_cache',
+                        wait_for_warm_cache=dict(seconds=60),
+                    ),
+                    dict(
+                        path='second',
+                        name='second_cache',
+                        wait_for_warm_cache=dict(seconds=360),
+                    ),
+                ],
                 task_dimensions=[
                     dict(key='a', value='1', expiration=dict(seconds=120)),
                     dict(key='pool', value='Chrome'),
@@ -235,15 +217,12 @@ class TaskDefTest(BaseTest):
       # They all use the same cache definitions.
       self.assertEqual(
           t['properties']['caches'], [
-              {'path': u'cache/a', 'name': u'a'},
               {'path': u'cache/builder', 'name': u'shared_builder_cache'},
-              {'path': u'cache/git_cache', 'name': u'git_chromium'},
-              {'path': u'cache/out', 'name': u'build_chromium'},
               {'path': u'cache/second', 'name': u'second_cache'},
           ]
       )
 
-    # But the dimensions are different. 'opt' and 'caches' are injected.
+    # But the dimensions are different. 'a' and 'caches' are injected.
     self.assertEqual(
         slices[0]['properties']['dimensions'], [
             {u'key': u'a', u'value': u'1'},
@@ -254,7 +233,7 @@ class TaskDefTest(BaseTest):
     )
     self.assertEqual(slices[0]['expiration_secs'], '60')
 
-    # One 'caches' expired. 'opt' and one 'caches' are still injected.
+    # One 'caches' expired. 'a' and one 'caches' are still injected.
     self.assertEqual(
         slices[1]['properties']['dimensions'], [
             {u'key': u'a', u'value': u'1'},
@@ -265,7 +244,7 @@ class TaskDefTest(BaseTest):
     # 120-60
     self.assertEqual(slices[1]['expiration_secs'], '60')
 
-    # 'opt' expired, one 'caches' remains.
+    # 'a' expired, one 'caches' remains.
     self.assertEqual(
         slices[2]['properties']['dimensions'], [
             {u'key': u'caches', u'value': u'second_cache'},
@@ -284,32 +263,15 @@ class TaskDefTest(BaseTest):
     # 3600-360
     self.assertEqual(slices[3]['expiration_secs'], '3240')
 
-  def test_cache_fallback_fail_multiple_task_slices(self):
-    # Make it so the swarming task template has two task_slices, which is
-    # incompatible with a builder using wait_for_warm_cache_secs.
-    self.task_template['task_slices'].append(
-        self.task_template['task_slices'][0]
-    )
-    self.builder_cfg.caches.add(
-        path='builder',
-        name='shared_builder_cache',
-        wait_for_warm_cache_secs=60,
-    )
-
-    with self.assertRaises(errors.InvalidInputError):
-      self.prepare_task_def(self._test_build())
-
   def test_execution_timeout(self):
-    self.builder_cfg.execution_timeout_secs = 120
-
-    slices = self.prepare_task_def(self._test_build())['task_slices']
+    build = self._test_build(execution_timeout=dict(seconds=120))
+    slices = self.prepare_task_def(build)['task_slices']
 
     self.assertEqual(slices[0]['properties']['execution_timeout_secs'], '120')
 
-  def test_expiration(self):
-    self.builder_cfg.expiration_secs = 120
-
-    slices = self.prepare_task_def(self._test_build())['task_slices']
+  def test_scheduling_timeout(self):
+    build = self._test_build(scheduling_timeout=dict(seconds=120))
+    slices = self.prepare_task_def(build)['task_slices']
 
     self.assertEqual(2, len(slices))
     self.assertEqual(slices[0]['expiration_secs'], '60')
@@ -464,6 +426,8 @@ class TaskDefTest(BaseTest):
     build = self._test_build(
         id=1,
         number=1,
+        scheduling_timeout=dict(seconds=3600),
+        execution_timeout=dict(seconds=3600),
         builder=build_pb2.BuilderID(
             project='chromium', bucket='try', builder='linux'
         ),
@@ -493,6 +457,9 @@ class TaskDefTest(BaseTest):
                     dict(key='cores', value='8'),
                     dict(key='os', value='Ubuntu'),
                     dict(key='pool', value='Chrome'),
+                ],
+                caches=[
+                    dict(name='a', path='a'),
                 ],
             ),
         ),
@@ -525,8 +492,6 @@ class TaskDefTest(BaseTest):
         'caches': [
             {'path': 'cache/a', 'name': 'a'},
             {'path': 'cache/builder', 'name': linux_CACHE_NAME},
-            {'path': 'cache/git_cache', 'name': 'git_chromium'},
-            {'path': 'cache/out', 'name': 'build_chromium'},
         ],
         'cipd_input': {
             'packages': [

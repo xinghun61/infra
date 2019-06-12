@@ -67,6 +67,13 @@ class SwarmbucketApiTest(testing.EndpointsTestCase):
               dimensions: "foo:bar"
               dimensions: "baz:baz"
               auto_builder_dimension: YES
+
+              # Override builder cache without timeout to make tests
+              # simpler.
+              caches {
+                path: "builder"
+                name: "builder_cache_name"
+              }
             }
             builders {
               name: "windows"
@@ -76,6 +83,13 @@ class SwarmbucketApiTest(testing.EndpointsTestCase):
                 cipd_package: "infra/recipe_bundle"
                 cipd_version: "refs/heads/master"
                 name: "presubmit"
+              }
+
+              # Override builder cache without timeout to make tests
+              # simpler.
+              caches {
+                path: "builder"
+                name: "builder_cache_name"
               }
             }
           }
@@ -95,8 +109,6 @@ class SwarmbucketApiTest(testing.EndpointsTestCase):
     config.put_bucket('v8', 'deadbeef', v8_cfg)
 
     props_def = {
-        'execution_timeout_secs':
-            '3600',
         'extra_args': [
             'cook',
             '-recipe',
@@ -106,10 +118,6 @@ class SwarmbucketApiTest(testing.EndpointsTestCase):
             '-logdog-project',
             '${project}',
         ],
-        'caches': [{
-            'path': '${cache_dir}/builder',
-            'name': 'builder_${builder_hash}',
-        }],
         'cipd_input': {
             'packages': [
                 {
@@ -126,10 +134,8 @@ class SwarmbucketApiTest(testing.EndpointsTestCase):
         },
     }
     self.task_template = {
-        'name':
-            'bb-${build_id}-${project}-${builder}',
+        'name': 'bb-${build_id}-${project}-${builder}',
         'task_slices': [{
-            'expiration_secs': '3600',
             'properties': props_def,
             'wait_for_capacity': False,
         }],
@@ -298,6 +304,8 @@ class SwarmbucketApiTest(testing.EndpointsTestCase):
                         'number': 1,
                         'createdBy': 'anonymous:anonymous',
                         'createTime': '2015-11-30T00:00:00Z',
+                        'schedulingTimeout': '21600s',
+                        'executionTimeout': '10800s',
                         'exe': {
                             'cipdPackage': 'infra/recipe_bundle',
                             'cipdVersion': 'refs/heads/master',
@@ -307,26 +315,28 @@ class SwarmbucketApiTest(testing.EndpointsTestCase):
                             'buildbucket': {'serviceConfigRevision': 'rev'},
                             'swarming': {
                                 'hostname':
-                                    'swarming.example.com',
-                                'priority':
-                                    30,
-                                'taskDimensions': [
-                                    {
-                                        'key': 'baz',
-                                        'value': 'baz',
-                                        'expiration': '0s',
-                                    },
-                                    {
-                                        'key': 'builder',
-                                        'value': 'linux',
-                                        'expiration': '0s',
-                                    },
-                                    {
-                                        'key': 'foo',
-                                        'value': 'bar',
-                                        'expiration': '0s',
-                                    },
-                                ],
+                                    'swarming.example.com', 'priority':
+                                        30, 'taskDimensions': [
+                                            {
+                                                'key': 'baz',
+                                                'value': 'baz',
+                                                'expiration': '0s',
+                                            },
+                                            {
+                                                'key': 'builder',
+                                                'value': 'linux',
+                                                'expiration': '0s',
+                                            },
+                                            {
+                                                'key': 'foo',
+                                                'value': 'bar',
+                                                'expiration': '0s',
+                                            },
+                                        ], 'caches': [{
+                                            'path': 'builder',
+                                            'name': 'builder_cache_name',
+                                            'waitForWarmCache': '0s',
+                                        },]
                             },
                         },
                     },
@@ -344,7 +354,7 @@ class SwarmbucketApiTest(testing.EndpointsTestCase):
             u'chromium',
         ],
         u'execution_timeout_secs':
-            u'3600',
+            u'10800',
         u'cipd_input': {
             u'packages': [
                 {
@@ -370,12 +380,8 @@ class SwarmbucketApiTest(testing.EndpointsTestCase):
             {u'key': u'foo', u'value': u'bar'},
         ],
         u'caches': [{
-            u'path':
-                u'cache/builder',
-            u'name': (
-                u'builder_ccadafffd20293e0378d1f94d214c63a0f8342d1161454ef0acfa'
-                '0405178106b'
-            ),
+            u'path': u'cache/builder',
+            u'name': u'builder_cache_name',
         }],
     }
     expected_task_def = {
@@ -396,7 +402,7 @@ class SwarmbucketApiTest(testing.EndpointsTestCase):
         u'pool_task_template':
             u'CANARY_NEVER',
         u'task_slices': [{
-            u'expiration_secs': u'3600',
+            u'expiration_secs': u'21600',
             u'properties': props_def,
             u'wait_for_capacity': False,
         }],
