@@ -105,8 +105,8 @@ def _GetSameOrMostRecentReportForEachPlatform(host, project, ref, revision):
     # Some 'platforms' are hidden from the selection to avoid confusion, as they
     # may be custom reports that do not make sense outside a certain team.
     # They should still be reachable via a url.
-    if (_POSTSUBMIT_PLATFORM_INFO_MAP[platform].get('hidden')
-        and not users.is_current_user_admin()):
+    if (_POSTSUBMIT_PLATFORM_INFO_MAP[platform].get('hidden') and
+        not users.is_current_user_admin()):
       continue
     bucket = _POSTSUBMIT_PLATFORM_INFO_MAP[platform]['bucket']
     builder = _POSTSUBMIT_PLATFORM_INFO_MAP[platform]['builder']
@@ -753,17 +753,39 @@ class ProcessCodeCoverageData(BaseHandler):
     all_json_gs_path = '%s/all.json.gz' % full_gs_metadata_dir
     data = _GetValidatedData(all_json_gs_path)
 
-    # Save the data in json.
+    # For presubmit coverage, save the whole data in json.
     if build.builder.bucket == 'try':
       # Assume there is only 1 patch which is true in CQ.
       assert len(build.input.gerrit_changes) == 1, 'Expect only one patchset'
       patch = build.input.gerrit_changes[0]
       self._ProcessCLPatchData(patch, data['files'], build_id)
-    else:  # For a commit, we save the data by file and directory.
-      assert build.input.gitiles_commit is not None, 'Expect a commit'
+    # For postsubmit coverage, we save the data by file and directory.
+    else:
+      if not self._IsGitilesCommitAvailable(build.input.gitiles_commit):
+        self._SetGitilesCommitFromOutputProperty(build, properties)
+
+      assert self._IsGitilesCommitAvailable(build.input.gitiles_commit), (
+          'gitiles commit information is expected to be available either in '
+          'input properties or output properties')
       self._ProcessFullRepositoryData(build.input.gitiles_commit, data,
                                       full_gs_metadata_dir, build.builder,
                                       build_id)
+
+  def _IsGitilesCommitAvailable(self, gitiles_commit):
+    """Returns True if gitiles_commit is available in the input property."""
+    return (gitiles_commit.host and gitiles_commit.project and
+            gitiles_commit.ref and gitiles_commit.id)
+
+  def _SetGitilesCommitFromOutputProperty(self, build, output_properties):
+    """Set gitiles_commit of the build from output properties."""
+    logging.info('gitiles_commit is not available in the input properties, '
+                 'set them from output properties.')
+    build.input.gitiles_commit.host = output_properties.get(
+        'gitiles_commit_host')
+    build.input.gitiles_commit.project = output_properties.get(
+        'gitiles_commit_project')
+    build.input.gitiles_commit.ref = output_properties.get('gitiles_commit_ref')
+    build.input.gitiles_commit.id = output_properties.get('gitiles_commit_id')
 
   # TODO(crbug.com/965559): Move this to a config, which can be easily changed
   # without commit/deployment cycles.
