@@ -13,6 +13,7 @@ import random
 from google.appengine.ext import ndb
 
 from components import auth
+from components import net
 from components import utils
 
 from proto import build_pb2
@@ -21,6 +22,7 @@ from proto import project_config_pb2
 import bbutil
 import buildtags
 import config
+import flatten_swarmingcfg
 import errors
 import events
 import model
@@ -34,6 +36,9 @@ import tq
 # This number is relatively high so we treat canary seriously and that we have
 # a strong signal if the canary is broken.
 _DEFAULT_CANARY_PERCENTAGE = 10
+
+# Default value of Build.infra.swarming.priority.
+_DEFAULT_SWARMING_PRIORITY = 30
 
 _BuildRequestBase = collections.namedtuple(
     '_BuildRequestBase', [
@@ -112,7 +117,8 @@ class BuildRequest(_BuildRequestBase):
         ((identity or auth.get_current_identity()).to_bytes(), req_id)
     )
 
-  def create_build_proto(self, build_id, builder_cfg, created_by, now):
+  @ndb.tasklet
+  def create_build_proto_async(self, build_id, builder_cfg, created_by, now):
     """Converts the request to a build_pb2.Build.
 
     Assumes self is valid.
@@ -121,7 +127,7 @@ class BuildRequest(_BuildRequestBase):
 
     bp = build_pb2.Build()
     if builder_cfg:  # pragma: no branch
-      _apply_builder_config(builder_cfg, bp)
+      yield _apply_builder_config_async(builder_cfg, bp)
 
     bp.id = build_id
     bp.builder.CopyFrom(sbr.builder)
@@ -129,18 +135,21 @@ class BuildRequest(_BuildRequestBase):
     bp.created_by = created_by.to_bytes()
     bp.create_time.FromDatetime(now)
     bp.critical = sbr.critical
-    bp.exe.CopyFrom(sbr.exe)
+    bp.exe.cipd_version = sbr.exe.cipd_version or bp.exe.cipd_version
     # If the SBR expressed canary preference, override what the config said.
     if sbr.canary != common_pb2.UNSET:
       bp.canary = sbr.canary == common_pb2.YES
 
     # Populate input.
-    bp.input.properties.CopyFrom(sbr.properties)
+    # Override properties from the config with values in the request.
+    bbutil.update_struct(bp.input.properties, sbr.properties)
     if sbr.HasField('gitiles_commit'):
       bp.input.gitiles_commit.CopyFrom(sbr.gitiles_commit)
     bp.input.gerrit_changes.extend(sbr.gerrit_changes)
     bp.infra.buildbucket.requested_properties.CopyFrom(sbr.properties)
     bp.infra.buildbucket.requested_dimensions.extend(sbr.dimensions)
+    if sbr.experimental != common_pb2.UNSET:
+      bp.input.experimental = sbr.experimental == common_pb2.YES
 
     # Populate swarming-specific fields.
     sw = bp.infra.swarming
@@ -149,10 +158,13 @@ class BuildRequest(_BuildRequestBase):
     sw.task_dimensions.extend(
         _apply_dimension_overrides(configured_task_dims, sbr.dimensions)
     )
+
     if sbr.priority:
       sw.priority = sbr.priority
+    elif bp.input.experimental:
+      sw.priority = min(255, sw.priority * 2)
 
-    return bp
+    raise ndb.Return(bp)
 
   @staticmethod
   def compute_tag_set(sbr):
@@ -174,14 +186,15 @@ class BuildRequest(_BuildRequestBase):
 
     return tags
 
-  def create_build(self, build_id, builder_cfg, created_by, now):
+  @ndb.tasklet
+  def create_build_async(self, build_id, builder_cfg, created_by, now):
     """Converts the request to a build.
 
     Assumes self is valid.
     """
     sbr = self.schedule_build_request
 
-    build_proto = self.create_build_proto(
+    build_proto = yield self.create_build_proto_async(
         build_id, builder_cfg, created_by, now
     )
     build = model.Build(
@@ -196,7 +209,6 @@ class BuildRequest(_BuildRequestBase):
         create_time=now,
         never_leased=self.lease_expiration_date is None,
         retry_of=self.retry_of,
-        experimental=bbutil.TRINARY_TO_BOOLISH[sbr.experimental],
     )
 
     if sbr.builder.builder:  # pragma: no branch
@@ -218,7 +230,7 @@ class BuildRequest(_BuildRequestBase):
       build.leasee = created_by
       build.regenerate_lease_key()
 
-    return build
+    raise ndb.Return(build)
 
 
 @ndb.tasklet
@@ -390,10 +402,12 @@ def add_many_async(build_requests):
   to_create = [nb for nb in new_builds if not nb.final]
   if to_create:
     build_ids = model.create_build_ids(now, len(to_create))
-    for nb, build_id in zip(to_create, build_ids):
-      nb.build = nb.request.create_build(
-          build_id, nb.builder_cfg, identity, now
-      )
+    builds = yield [
+        nb.request.create_build_async(build_id, nb.builder_cfg, identity, now)
+        for nb, build_id in zip(to_create, build_ids)
+    ]
+    for nb, build in zip(to_create, builds):
+      nb.build = build
 
     yield _update_builders_async(to_create, now)
     yield _generate_build_numbers_async(to_create)
@@ -485,10 +499,47 @@ def _apply_dimension_overrides(base, overrides):
   return sorted(ret, key=lambda d: (d.key, d.expiration.seconds, d.value))
 
 
-def _apply_builder_config(builder_cfg, build_proto):
+@ndb.tasklet
+def _apply_builder_config_async(builder_cfg, build_proto):
   """Applies project_config_pb2.Builder to a builds_pb2.Build."""
+  # Decide if the build will be canary.
+  canary_percentage = _DEFAULT_CANARY_PERCENTAGE
+  if builder_cfg.HasField(  # pragma: no branch
+      'task_template_canary_percentage'):
+    canary_percentage = builder_cfg.task_template_canary_percentage.value
+  build_proto.canary = _should_be_canary(canary_percentage)
 
-  # Populate task dimensions.
+  # Populate input.
+  build_proto.input.properties.update(
+      flatten_swarmingcfg.read_properties(builder_cfg.recipe)
+  )
+
+  is_prod = yield _is_migrating_builder_prod_async(builder_cfg, build_proto)
+  if is_prod is not None:  # pragma: no cover | TODO(nodir): remove branch
+    build_proto.input.experimental = not is_prod
+  else:
+    build_proto.input.experimental = (
+        builder_cfg.experimental == project_config_pb2.YES
+    )
+
+  # Populate exe.
+  build_proto.exe.CopyFrom(builder_cfg.exe)
+  # TODO(nodir): remove builder_cfg.recipe. Use only builder_cfg.exe.
+  if builder_cfg.HasField('recipe'):  # pragma: no branch
+    build_proto.exe.cipd_package = builder_cfg.recipe.cipd_package
+    build_proto.exe.cipd_version = (
+        builder_cfg.recipe.cipd_version or 'refs/heads/master'
+    )
+    build_proto.input.properties['recipe'] = builder_cfg.recipe.name
+    build_proto.infra.recipe.cipd_package = builder_cfg.recipe.cipd_package
+    build_proto.infra.recipe.name = builder_cfg.recipe.name
+
+  # Populate swarming fields.
+  sw = build_proto.infra.swarming
+  sw.hostname = builder_cfg.swarming_host
+  sw.task_service_account = builder_cfg.service_account
+  sw.priority = builder_cfg.priority or _DEFAULT_SWARMING_PRIORITY
+
   for key, vs in swarmingcfg.read_dimensions(builder_cfg).iteritems():
     if vs == {('', 0)}:
       # This is a tombstone left from merging.
@@ -496,13 +547,62 @@ def _apply_builder_config(builder_cfg, build_proto):
       continue
 
     for value, expiration_sec in vs:
-      build_proto.infra.swarming.task_dimensions.add(
+      sw.task_dimensions.add(
           key=key, value=value, expiration=dict(seconds=expiration_sec)
       )
 
-  # Decide if the build will be canary.
-  canary_percentage = _DEFAULT_CANARY_PERCENTAGE
-  if builder_cfg.HasField(  # pragma: no branch
-      'task_template_canary_percentage'):
-    canary_percentage = builder_cfg.task_template_canary_percentage.value
-  build_proto.canary = _should_be_canary(canary_percentage)
+
+@ndb.tasklet
+def _is_migrating_builder_prod_async(
+    builder_cfg, build_proto
+):  # pragma: no cover | TODO(nodir): delete this code
+  """Returns True if the builder is prod according to the migration app.
+
+  See also 'luci_migration_host' in the project config.
+
+  If unknown, returns None.
+  On failures, logs them and returns None.
+
+  TODO(nodir): remove this function when Buildbot is turned down.
+  """
+  ret = None
+
+  master = None
+  props_list = (
+      build_proto.input.properties,
+      bbutil.dict_to_struct(
+          flatten_swarmingcfg.read_properties(builder_cfg.recipe)
+      ),
+  )
+  for prop_name in ('luci_migration_master_name', 'mastername'):
+    for props in props_list:
+      if prop_name in props:
+        master = props[prop_name]
+        break
+    if master:  # pragma: no branch
+      break
+
+  host = _clear_dash(builder_cfg.luci_migration_host)
+  if master and host:
+    try:
+      url = 'https://%s/masters/%s/builders/%s/' % (
+          host, master, builder_cfg.name
+      )
+      res = yield net.json_request_async(
+          url, params={'format': 'json'}, scopes=net.EMAIL_SCOPE
+      )
+      ret = res.get('luci_is_prod')
+    except net.NotFoundError:
+      logging.warning(
+          'missing migration status for %r/%r', master, builder_cfg.name
+      )
+    except net.Error:
+      logging.exception(
+          'failed to get migration status for %r/%r', master, builder_cfg.name
+      )
+  raise ndb.Return(ret)
+
+
+def _clear_dash(s):
+  """Returns s if it is not '-', otherwise returns ''."""
+  return s if s != '-' else ''

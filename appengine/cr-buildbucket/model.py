@@ -229,8 +229,9 @@ class Build(ndb.Model):
 
   # If True, the build won't affect monitoring and won't be surfaced in
   # search results unless explicitly requested.
-  # TODO(nodir): make it computed from proto.
-  experimental = ndb.BooleanProperty()
+  experimental = ndb.ComputedProperty(
+      lambda self: self.proto.input.experimental
+  )
 
   # Value of proto.created_by.
   # Making this property computed is not-entirely trivial because
@@ -322,7 +323,6 @@ class Build(ndb.Model):
     assert not _ts_less(self.proto.start_time, self.proto.create_time)
     assert not _ts_less(self.proto.end_time, self.proto.create_time)
     assert not _ts_less(self.proto.end_time, self.proto.start_time)
-    self.experimental = bool(self.experimental)
     self.tags = sorted(set(self.tags))
 
   def update_v1_status_fields(self):

@@ -197,6 +197,13 @@ def build_to_message(build, build_output_properties, include_lease_key=False):
   logdog = infra.logdog
   recipe = infra.recipe
 
+  recipe_name = recipe.name
+  if build.input_properties_bytes:  # pragma: no cover
+    input_props = struct_pb2.Struct()
+    input_props.ParseFromString(build.input_properties_bytes)
+    if 'recipe' in input_props.fields:
+      recipe_name = input_props['recipe']
+
   if bp.status != common_pb2.SUCCESS and bp.summary_markdown:
     result_details['error'] = {
         'message': bp.summary_markdown,
@@ -214,8 +221,11 @@ def build_to_message(build, build_output_properties, include_lease_key=False):
     tags.add('swarming_task_id:%s' % sw.task_id)
 
     # Milo uses swarming tags.
-    tags.add('swarming_tag:recipe_name:%s' % recipe.name)
-    tags.add('swarming_tag:recipe_package:%s' % recipe.cipd_package)
+    tags.add('swarming_tag:recipe_name:%s' % recipe_name)
+    tags.add(
+        'swarming_tag:recipe_package:%s' %
+        (bp.exe.cipd_package or recipe.cipd_package)
+    )
     tags.add(
         'swarming_tag:log_location:logdog://%s/%s/%s/+/annotations' %
         (logdog.hostname, logdog.project, logdog.prefix)

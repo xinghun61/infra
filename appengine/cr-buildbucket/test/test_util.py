@@ -72,6 +72,10 @@ BUILD_DEFAULTS = build_pb2.Build(
     created_by='anonymous:anonymous',
     tags=[INDEXED_TAG],
     canary=False,
+    exe=dict(
+        cipd_package='infra/recipe_bundle',
+        cipd_version='refs/heads/master',
+    ),
     infra=dict(
         swarming=dict(
             hostname='swarming.example.com',
@@ -82,10 +86,6 @@ BUILD_DEFAULTS = build_pb2.Build(
             hostname='logdog.example.com',
             project='chromium',
             prefix='bb',
-        ),
-        recipe=dict(
-            cipd_package='infra/recipes',
-            name='trybot',
         ),
     ),
 )
@@ -145,7 +145,6 @@ def build(for_creation=False, **build_proto_fields):  # pragma: no cover
       create_time=proto.create_time.ToDatetime(),
       status_changed_time=now,
       tags=sorted(tags),
-      experimental=proto.input.experimental or None,
       parameters={
           model.BUILDER_PARAMETER:
               proto.builder.builder,

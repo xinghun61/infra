@@ -71,8 +71,6 @@ SYNC_QUEUE_NAME = 'swarming-build-sync'
 
 _PUBSUB_TOPIC = 'swarming'
 
-DEFAULT_TASK_PRIORITY = 30
-
 # This is the path, relative to the swarming run dir, to the directory that
 # contains the mounted swarming named caches. It will be prepended to paths of
 # caches defined in swarmbucket configs.
@@ -155,6 +153,8 @@ def _buildbucket_property(build):
   export.ClearField('status')
   export.ClearField('update_time')
   export.input.ClearField('properties')
+  export.infra.ClearField('logdog')
+  export.infra.ClearField('recipe')
   export.infra.buildbucket.ClearField('requested_properties')
   build.tags_to_protos(export.tags)
   return {
@@ -226,55 +226,6 @@ def _apply_if_tags(task):
 
 
 @ndb.tasklet
-def _is_migrating_builder_prod_async(builder_cfg, build):
-  """Returns True if the builder is prod according to the migration app.
-
-  See also 'luci_migration_host' in the project config.
-
-  If unknown, returns None.
-  On failures, logs them and returns None.
-
-  TODO(nodir): remove this function when Buildbot is turned down.
-  """
-  ret = None
-
-  master = None
-  props_list = (
-      build.proto.input.properties,
-      bbutil.dict_to_struct(
-          flatten_swarmingcfg.read_properties(builder_cfg.recipe)
-      ),
-  )
-  for prop_name in ('luci_migration_master_name', 'mastername'):
-    for props in props_list:
-      if prop_name in props:
-        master = props[prop_name]
-        break
-    if master:  # pragma: no branch
-      break
-
-  host = _clear_dash(builder_cfg.luci_migration_host)
-  if master and host:
-    try:
-      url = 'https://%s/masters/%s/builders/%s/' % (
-          host, master, builder_cfg.name
-      )
-      res = yield net.json_request_async(
-          url, params={'format': 'json'}, scopes=net.EMAIL_SCOPE
-      )
-      ret = res.get('luci_is_prod')
-    except net.NotFoundError:
-      logging.warning(
-          'missing migration status for %r/%r', master, builder_cfg.name
-      )
-    except net.Error:
-      logging.exception(
-          'failed to get migration status for %r/%r', master, builder_cfg.name
-      )
-  raise ndb.Return(ret)
-
-
-@ndb.tasklet
 def _create_task_def_async(builder_cfg, build, fake_build):
   """Creates a swarming task definition for the |build|.
 
@@ -300,16 +251,17 @@ def _create_task_def_async(builder_cfg, build, fake_build):
       build.canary
   )
 
-  build.proto.infra.buildbucket.service_config_revision = task_template_rev
+  bp = build.proto
+  sw = bp.infra.swarming
 
-  assert builder_cfg.swarming_host
-  build.proto.infra.swarming.hostname = builder_cfg.swarming_host
-  h = hashlib.sha256('%s/%s' % (build.bucket_id, builder_cfg.name)).hexdigest()
+  bp.infra.buildbucket.service_config_revision = task_template_rev
+
+  h = hashlib.sha256(build.builder_id).hexdigest()
   task_template_params = {
       'builder_hash': h,
       'build_id': build.key.id(),
       'build_url': build.url,
-      'builder': builder_cfg.name,
+      'builder': bp.builder.builder,
       'cache_dir': _CACHE_DIR,
       'hostname': app_identity.get_default_version_hostname(),
       'project': build.project,
@@ -317,9 +269,9 @@ def _create_task_def_async(builder_cfg, build, fake_build):
   }
   extra_swarming_tags = []
   extra_cipd_packages = []
-  if builder_cfg.HasField('recipe'):  # pragma: no branch
+  if 'recipe' in bp.input.properties.fields:
     (extra_swarming_tags, extra_cipd_packages,
-     extra_task_template_params) = _setup_recipes(build, builder_cfg)
+     extra_task_template_params) = _setup_recipes(build)
     task_template_params.update(extra_task_template_params)
 
   # Render task template.
@@ -339,13 +291,12 @@ def _create_task_def_async(builder_cfg, build, fake_build):
 
   task['priority'] = str(build.proto.infra.swarming.priority)
 
-  if builder_cfg.service_account:  # pragma: no branch
+  if sw.task_service_account:  # pragma: no branch
     # Don't pass it if not defined, for backward compatibility.
-    task['service_account'] = builder_cfg.service_account
+    task['service_account'] = sw.task_service_account
 
   task['tags'] = _calc_tags(
-      build, builder_cfg, extra_swarming_tags, task_template_rev,
-      task.get('tags')
+      build, extra_swarming_tags, task_template_rev, task.get('tags')
   )
   task = _apply_if_tags(task)
 
@@ -359,7 +310,7 @@ def _create_task_def_async(builder_cfg, build, fake_build):
   raise ndb.Return(task)
 
 
-def _setup_recipes(build, builder_cfg):
+def _setup_recipes(build):
   """Initializes a build request using recipes.
 
   Mutates build.
@@ -367,26 +318,19 @@ def _setup_recipes(build, builder_cfg):
   Returns:
     extra_swarming_tags, extra_cipd_packages, extra_task_template_params
   """
-  recipe = build.proto.infra.recipe
-  recipe.cipd_package = builder_cfg.recipe.cipd_package
-  recipe.name = builder_cfg.recipe.name
+  exe = build.proto.exe
+  props = copy.copy(build.proto.input.properties)
 
-  # Properties specified in build parameters must override those in builder
-  # config.
-  props = build.proto.input.properties
-  props.Clear()
-  props.update(flatten_swarmingcfg.read_properties(builder_cfg.recipe))
-  bbutil.update_struct(
-      props, build.proto.infra.buildbucket.requested_properties
-  )
+  # TODO(nodir): Remove recipe dependencies from buildbucket.
+  assert 'recipe' in props.fields, props
+  recipe = props['recipe']
 
   # In order to allow some builders to behave like other builders, we allow
   # builders to explicitly set buildername.
   # TODO(nodir): delete this "feature".
   if 'buildername' not in props:  # pragma: no branch
-    props['buildername'] = builder_cfg.name
+    props['buildername'] = build.proto.builder.builder
 
-  assert isinstance(build.experimental, bool)
   props.get_or_create_struct('$recipe_engine/runtime').update({
       'is_luci': True,
       'is_experimental': build.experimental,
@@ -397,7 +341,7 @@ def _setup_recipes(build, builder_cfg):
 
   # Add repository property, for backward compatibility.
   # TODO(crbug.com/877161): remove it.
-  if len(build.proto.input.gerrit_changes) == 1:
+  if len(build.proto.input.gerrit_changes) == 1:  # pragma: no branch
     cl = build.proto.input.gerrit_changes[0]
     suffix = '-review.googlesource.com'
     if cl.host.endswith(suffix) and cl.project:  # pragma: no branch
@@ -413,7 +357,7 @@ def _setup_recipes(build, builder_cfg):
   # TODO(nodir): remove legacy "buildbucket" property.
   recipe_props['buildbucket'] = _buildbucket_property_legacy(build)
   extra_task_template_params = {
-      'recipe': builder_cfg.recipe.name,
+      'recipe': recipe,
       'properties_json': api_common.properties_to_json(recipe_props),
       'checkout_dir': _KITCHEN_CHECKOUT,
       # TODO(iannucci): remove these when the templates no longer have them
@@ -421,36 +365,19 @@ def _setup_recipes(build, builder_cfg):
       'revision': '',
   }
   extra_swarming_tags = [
-      'recipe_name:%s' % builder_cfg.recipe.name,
-      'recipe_package:%s' % builder_cfg.recipe.cipd_package,
+      'recipe_name:%s' % recipe,
+      'recipe_package:%s' % exe.cipd_package,
   ]
   extra_cipd_packages = [{
-      'path':
-          _KITCHEN_CHECKOUT,
-      'package_name':
-          builder_cfg.recipe.cipd_package,
-      'version': (
-          build.proto.exe.cipd_version or builder_cfg.recipe.cipd_version or
-          'refs/heads/master'
-      ),
+      'path': _KITCHEN_CHECKOUT,
+      'package_name': exe.cipd_package,
+      'version': exe.cipd_version,
   }]
 
   return extra_swarming_tags, extra_cipd_packages, extra_task_template_params
 
 
-def _default_priority(builder_cfg, experimental):
-  """Calculates the Swarming task request priority to use."""
-  priority = DEFAULT_TASK_PRIORITY
-  if builder_cfg.priority > 0:  # pragma: no branch
-    priority = builder_cfg.priority
-  if experimental:
-    priority = min(255, priority * 2)
-  return priority
-
-
-def _calc_tags(
-    build, builder_cfg, extra_swarming_tags, task_template_rev, tags
-):
+def _calc_tags(build, extra_swarming_tags, task_template_rev, tags):
   """Calculates the Swarming task request tags to use."""
   tags = set(tags or [])
   tags.add('buildbucket_bucket:%s' % build.bucket_id)
@@ -461,7 +388,6 @@ def _calc_tags(
   tags.add('buildbucket_template_canary:%s' % ('1' if build.canary else '0'))
   tags.add('buildbucket_template_revision:%s' % task_template_rev)
   tags.update(extra_swarming_tags)
-  tags.update(builder_cfg.swarming_tags)
   tags.update(build.tags)
   return sorted(tags)
 
@@ -678,31 +604,14 @@ def prepare_task_def_async(build, builder_cfg, settings, fake_build=False):
         'Swarming buckets do not support creation of leased builds'
     )
 
-  bp = build.proto
-
   build.url = _generate_build_url(settings.milo_hostname, build)
-  sw = bp.infra.swarming
-  sw.task_service_account = builder_cfg.service_account
-  sw.priority = sw.priority or _default_priority(
-      builder_cfg, bp.input.experimental
-  )
-
-  if build.experimental is None:
-    build.experimental = (builder_cfg.experimental == project_config_pb2.YES)
-    is_prod = yield _is_migrating_builder_prod_async(builder_cfg, build)
-    if is_prod is not None:
-      build.experimental = not is_prod
-  bp.input.experimental = build.experimental
-
   task_def = yield _create_task_def_async(builder_cfg, build, fake_build)
 
   for t in task_def.get('tags', []):  # pragma: no branch
     key, value = buildtags.parse(t)
     if key == 'log_location':
-      host, project, prefix, _ = logdog.parse_url(value)
-      bp.infra.logdog.hostname = host
-      bp.infra.logdog.project = project
-      bp.infra.logdog.prefix = prefix
+      ld = build.proto.infra.logdog
+      ld.hostname, ld.project, ld.prefix, _ = logdog.parse_url(value)
       break
 
   raise ndb.Return(task_def)
@@ -1277,11 +1186,6 @@ def _parse_ts(ts):
   if '.' not in ts:
     ts += '.0'
   return datetime.datetime.strptime(ts, '%Y-%m-%dT%H:%M:%S.%f')
-
-
-def _clear_dash(s):
-  """Returns s if it is not '-', otherwise returns ''."""
-  return s if s != '-' else ''
 
 
 def _end_build(build_id, status, summary_markdown='', end_time=None):

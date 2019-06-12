@@ -53,8 +53,8 @@ class ApiCommonTests(testing.AppengineTestCase):
         ),
         'swarming_tag:luci_project:chromium',
         'swarming_tag:os:Ubuntu',
-        'swarming_tag:recipe_name:trybot',
-        'swarming_tag:recipe_package:infra/recipes',
+        'swarming_tag:recipe_name:recipe',
+        'swarming_tag:recipe_package:infra/recipe_bundle',
         'swarming_task_id:deadbeef',
     ]
     result_details = {
@@ -73,6 +73,7 @@ class ApiCommonTests(testing.AppengineTestCase):
         'bucket': 'luci.chromium.try',
         'created_by': 'anonymous:anonymous',
         'created_ts': '1483228800000000',
+        'experimental': False,
         'completed_ts': '1483228800000000',
         'id': '8991715593768927232',
         'parameters_json': props_json,
@@ -95,6 +96,9 @@ class ApiCommonTests(testing.AppengineTestCase):
     build = test_util.build(
         status=common_pb2.INFRA_FAILURE,
         summary_markdown='bad',
+        input=dict(properties=bbutil.dict_to_struct({
+            'recipe': 'recipe',
+        })),
         infra=dict(
             swarming=dict(
                 bot_dimensions=[

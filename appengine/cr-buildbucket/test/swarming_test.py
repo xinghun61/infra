@@ -78,18 +78,8 @@ class BaseTest(testing.AppengineTestCase):
 
     builder_cfg_text = '''
       name: "linux"
-      swarming_host: "swarming.example.com"
-      swarming_tags: "buildertag:yes"
-      swarming_tags: "commontag:yes"
-      priority: 108
-      build_numbers: YES
-      service_account: "robot@example.com"
       recipe {
         name: "recipe"
-        cipd_package: "infra/recipe_bundle"
-        cipd_version: "refs/heads/master"
-        properties_j: "predefined-property:\\\"x\\\""
-        properties_j: "predefined-property-bool:true"
       }
       caches {
         path: "a"
@@ -188,6 +178,9 @@ class TaskDefTest(BaseTest):
         return_value='cr-buildbucket.appspot.com'
     )
 
+  def _test_build(self, **build_proto_fields):
+    return test_util.build(for_creation=True, **build_proto_fields)
+
   def prepare_task_def(self, build):
     return swarming.prepare_task_def_async(
         build, self.builder_cfg, self.settings.swarming
@@ -196,7 +189,7 @@ class TaskDefTest(BaseTest):
   def test_shared_cache(self):
     self.builder_cfg.caches.add(path='builder', name='shared_builder_cache')
 
-    slices = self.prepare_task_def(test_util.build())['task_slices']
+    slices = self.prepare_task_def(self._test_build())['task_slices']
     self.assertEqual(
         slices[0]['properties']['caches'], [
             {'path': 'cache/a', 'name': 'a'},
@@ -224,8 +217,7 @@ class TaskDefTest(BaseTest):
         wait_for_warm_cache_secs=360,
     )
 
-    build = test_util.build(
-        for_creation=True,
+    build = self._test_build(
         infra=dict(
             swarming=dict(
                 task_dimensions=[
@@ -305,27 +297,26 @@ class TaskDefTest(BaseTest):
     )
 
     with self.assertRaises(errors.InvalidInputError):
-      self.prepare_task_def(test_util.build())
+      self.prepare_task_def(self._test_build())
 
   def test_execution_timeout(self):
     self.builder_cfg.execution_timeout_secs = 120
 
-    slices = self.prepare_task_def(test_util.build())['task_slices']
+    slices = self.prepare_task_def(self._test_build())['task_slices']
 
     self.assertEqual(slices[0]['properties']['execution_timeout_secs'], '120')
 
   def test_expiration(self):
     self.builder_cfg.expiration_secs = 120
 
-    slices = self.prepare_task_def(test_util.build())['task_slices']
+    slices = self.prepare_task_def(self._test_build())['task_slices']
 
     self.assertEqual(2, len(slices))
     self.assertEqual(slices[0]['expiration_secs'], '60')
     self.assertEqual(slices[1]['expiration_secs'], '60')
 
   def test_too_many_dimensions(self):
-    build = test_util.build(
-        for_creation=True,
+    build = self._test_build(
         infra=dict(
             swarming=dict(
                 task_dimensions=[
@@ -338,27 +329,28 @@ class TaskDefTest(BaseTest):
     with self.assertRaises(errors.InvalidInputError):
       self.prepare_task_def(build)
 
-  def test_overall(self):
+  def test_properties(self):
     self.patch(
         'components.auth.get_current_identity',
         autospec=True,
         return_value=auth.Identity('user', 'john@example.com')
     )
-    self.patch(
-        'swarming._is_migrating_builder_prod_async',
-        autospec=True,
-        return_value=future(True)
-    )
 
-    build = test_util.build(
-        for_creation=True,
+    build = self._test_build(
         id=1,
         number=1,
         builder=build_pb2.BuilderID(
             project='chromium', bucket='try', builder='linux'
         ),
+        exe=dict(
+            cipd_package='infra/recipe_bundle',
+            cipd_version='refs/heads/master',
+        ),
         input=dict(
-            properties=bbutil.dict_to_struct({'a': 'b'}),
+            properties=bbutil.dict_to_struct({
+                'a': 'b',
+                'recipe': 'recipe',
+            }),
             gerrit_changes=[
                 dict(
                     host='chromium-review.googlesource.com',
@@ -370,6 +362,8 @@ class TaskDefTest(BaseTest):
         ),
         infra=dict(
             swarming=dict(
+                task_service_account='robot@example.com',
+                priority=108,
                 task_dimensions=[
                     dict(key='cores', value='8'),
                     dict(key='os', value='Ubuntu'),
@@ -379,9 +373,10 @@ class TaskDefTest(BaseTest):
         ),
     )
 
-    actual = self.prepare_task_def(build)
+    _, _, extra_task_template_params = swarming._setup_recipes(build)
+    actual = json.loads(extra_task_template_params['properties_json'])
 
-    expected_input_properties = {
+    expected = {
         'a': 'b',
         'buildbucket': {
             'hostname': 'cr-buildbucket.appspot.com',
@@ -405,8 +400,7 @@ class TaskDefTest(BaseTest):
         },
         'buildername': 'linux',
         'buildnumber': 1,
-        'predefined-property': 'x',
-        'predefined-property-bool': True,
+        'recipe': 'recipe',
         'repository': 'https://chromium.googlesource.com/chromium/src',
         '$recipe_engine/buildbucket': {
             'hostname': 'cr-buildbucket.appspot.com',
@@ -419,6 +413,10 @@ class TaskDefTest(BaseTest):
                 },
                 'number': 1,
                 'tags': [{'value': '1', 'key': 'buildset'}],
+                'exe': {
+                    'cipdPackage': 'infra/recipe_bundle',
+                    'cipdVersion': 'refs/heads/master',
+                },
                 'input': {
                     'gerritChanges': [{
                         'host': 'chromium-review.googlesource.com',
@@ -428,16 +426,7 @@ class TaskDefTest(BaseTest):
                     }],
                 },
                 'infra': {
-                    'buildbucket': {'serviceConfigRevision': 'template_rev'},
-                    'logdog': {
-                        'hostname': 'logdog.example.com',
-                        'project': 'chromium',
-                        'prefix': 'bb',
-                    },
-                    'recipe': {
-                        'name': 'recipe',
-                        'cipdPackage': 'infra/recipe_bundle',
-                    },
+                    'buildbucket': {},
                     'swarming': {
                         'hostname':
                             'swarming.example.com',
@@ -463,6 +452,54 @@ class TaskDefTest(BaseTest):
             'is_luci': True,
         },
     }
+    self.assertEqual(test_util.ununicode(actual), expected)
+
+  def test_overall(self):
+    self.patch(
+        'components.auth.get_current_identity',
+        autospec=True,
+        return_value=auth.Identity('user', 'john@example.com')
+    )
+
+    build = self._test_build(
+        id=1,
+        number=1,
+        builder=build_pb2.BuilderID(
+            project='chromium', bucket='try', builder='linux'
+        ),
+        exe=dict(
+            cipd_package='infra/recipe_bundle',
+            cipd_version='refs/heads/master',
+        ),
+        input=dict(
+            properties=bbutil.dict_to_struct({
+                'a': 'b',
+                'recipe': 'recipe',
+            }),
+            gerrit_changes=[
+                dict(
+                    host='chromium-review.googlesource.com',
+                    project='chromium/src',
+                    change=1234,
+                    patchset=5,
+                ),
+            ],
+        ),
+        infra=dict(
+            swarming=dict(
+                task_service_account='robot@example.com',
+                priority=108,
+                task_dimensions=[
+                    dict(key='cores', value='8'),
+                    dict(key='os', value='Ubuntu'),
+                    dict(key='pool', value='Chrome'),
+                ],
+            ),
+        ),
+    )
+
+    actual = self.prepare_task_def(build)
+
     expected_swarming_props_def = {
         'env': [{
             'key': 'BUILDBUCKET_EXPERIMENTAL',
@@ -475,7 +512,8 @@ class TaskDefTest(BaseTest):
             '-recipe',
             'recipe',
             '-properties',
-            api_common.properties_to_json(expected_input_properties),
+            # Properties are tested by test_properties() above.
+            swarming._setup_recipes(build)[2]['properties_json'],
             '-logdog-project',
             'chromium',
         ],
@@ -530,9 +568,7 @@ class TaskDefTest(BaseTest):
             'buildbucket_template_canary:0',
             'buildbucket_template_revision:template_rev',
             'builder:linux',
-            'buildertag:yes',
             'buildset:1',
-            'commontag:yes',
             (
                 'log_location:logdog://luci-logdog-dev.appspot.com/chromium/'
                 'buildbucket/cr-buildbucket.appspot.com/1/+/annotations'
@@ -587,16 +623,11 @@ class TaskDefTest(BaseTest):
         build.proto.infra.logdog.prefix,
         'buildbucket/cr-buildbucket.appspot.com/1'
     )
-    self.assertEqual(build.proto.input.properties['predefined-property'], 'x')
     self.assertNotIn('buildbucket', build.proto.input.properties)
     self.assertNotIn('$recipe_engine/buildbucket', build.proto.input.properties)
-    self.assertEqual(build.proto.infra.recipe.name, 'recipe')
 
   def test_experimental(self):
-    build = test_util.build(
-        for_creation=True,
-        input=dict(experimental=True),
-    )
+    build = self._test_build(input=dict(experimental=True))
     actual = self.prepare_task_def(build)
 
     env = actual['task_slices'][0]['properties']['env']
@@ -606,49 +637,40 @@ class TaskDefTest(BaseTest):
     }, env)
 
   def test_canary_template(self):
-    build = test_util.build(id=1, canary=common_pb2.YES, for_creation=True)
+    build = self._test_build(id=1, canary=common_pb2.YES)
 
     actual = self.prepare_task_def(build)
     self.assertTrue(actual['name'].endswith('-canary'))
 
-  def test_override_exe_version(self):
-    build = test_util.build(exe=dict(cipd_version='canary'))
-    task_slice = self.prepare_task_def(build)['task_slices'][0]
-    (pkg,) = [
-        p for p in task_slice['properties']['cipd_input']['packages']
-        if p['package_name'] == 'infra/recipe_bundle'
-    ]
-    self.assertEqual(pkg['version'], 'canary')
-
   def test_unexpected_template_task_key(self):
     # Unexpected task key.
-    build = test_util.build()
+    build = self._test_build()
     self.task_template['unexpected_key'] = True
     with self.assertRaises(errors.InvalidInputError):
       self.prepare_task_def(build)
 
   def test_unexpected_template_slices_key(self):
     # Unexpected task key.
-    build = test_util.build()
+    build = self._test_build()
     self.task_template['task_slices'][0]['unexpected_key'] = True
     with self.assertRaises(errors.InvalidInputError):
       self.prepare_task_def(build)
 
   def test_unexpected_template_properties_key(self):
     # Unexpected task key.
-    build = test_util.build()
+    build = self._test_build()
     self.task_template['task_slices'][0]['properties']['unexpected_key'] = True
     with self.assertRaises(errors.InvalidInputError):
       self.prepare_task_def(build)
 
   def test_on_leased_build(self):
-    build = test_util.build()
+    build = self._test_build()
     build.lease_key = 12345
     with self.assertRaises(errors.InvalidInputError):
       self.prepare_task_def(build)
 
   def test_generate_build_url(self):
-    build = test_util.build(id=1, for_creation=True)
+    build = self._test_build(id=1)
     self.assertEqual(
         swarming._generate_build_url('milo.example.com', build),
         'https://milo.example.com/b/1',
@@ -974,131 +996,6 @@ class SyncBuildTest(BaseTest):
         list(build.parse_infra().swarming.bot_dimensions),
         case.get('bot_dimensions', [])
     )
-
-
-class MigrationTest(BaseTest):
-
-  def setUp(self):
-    super(MigrationTest, self).setUp()
-
-    self.json_response = None
-    self.net_err_response = None
-
-    def json_request_async(*_, **__):
-      if self.net_err_response is not None:
-        return future_exception(self.net_err_response)
-      if self.json_response is not None:
-        return future(self.json_response)
-      self.fail('unexpected outbound request')  # pragma: no cover
-
-    self.patch(
-        'components.net.json_request_async',
-        autospec=True,
-        side_effect=json_request_async
-    )
-
-  def is_migrating_builder_prod(self, build):
-    fut = swarming._is_migrating_builder_prod_async(self.builder_cfg, build)
-    return fut.get_result()
-
-  def test_no_master_name(self):
-    self.builder_cfg.luci_migration_host = 'migration.example.com'
-    self.assertIsNone(self.is_migrating_builder_prod(test_util.build()))
-    self.assertFalse(net.json_request_async.called)
-
-  def test_no_host(self):
-    build = test_util.build(
-        for_creation=True,
-        input=dict(
-            properties=bbutil.dict_to_struct({
-                'mastername': 'tryserver.chromium.linux',
-            })
-        ),
-    )
-    self.assertIsNone(self.is_migrating_builder_prod(build))
-    self.assertFalse(net.json_request_async.called)
-
-  def test_prod(self):
-    self.builder_cfg.luci_migration_host = 'migration.example.com'
-    build = test_util.build(
-        for_creation=True,
-        input=dict(
-            properties=bbutil.dict_to_struct({
-                'mastername': 'tryserver.chromium.linux',
-            })
-        ),
-    )
-    self.json_response = {'luci_is_prod': True, 'bucket': 'luci.chromium.try'}
-    self.assertTrue(self.is_migrating_builder_prod(build))
-    self.assertTrue(net.json_request_async.called)
-
-  def test_mastername_in_builder(self):
-    self.builder_cfg.luci_migration_host = 'migration.example.com'
-    self.builder_cfg.recipe.properties_j.append(
-        'mastername:"tryserver.chromium.linux"'
-    )
-    self.json_response = {'luci_is_prod': True, 'bucket': 'luci.chromium.try'}
-    self.assertTrue(self.is_migrating_builder_prod(test_util.build()))
-    self.assertTrue(net.json_request_async.called)
-
-  def test_custom_name(self):
-    self.builder_cfg.luci_migration_host = 'migration.example.com'
-    build = test_util.build(
-        for_creation=True,
-        input=dict(
-            properties=bbutil.dict_to_struct({
-                'luci_migration_master_name': 'custom_master',
-                'mastername': 'ordinary_mastername',
-            })
-        ),
-    )
-    self.json_response = {'luci_is_prod': True, 'bucket': 'luci.chromium.try'}
-    self.assertTrue(self.is_migrating_builder_prod(build))
-    self.assertTrue(net.json_request_async.called)
-    self.assertIn('custom_master', net.json_request_async.call_args[0][0])
-
-  def test_404(self):
-    self.builder_cfg.luci_migration_host = 'migration.example.com'
-    build = test_util.build(
-        for_creation=True,
-        input=dict(
-            properties=bbutil.dict_to_struct({
-                'mastername': 'tryserver.chromium.linux',
-            })
-        ),
-    )
-
-    self.net_err_response = net.NotFoundError('nope', 404, 'can\'t find it')
-    self.assertIsNone(self.is_migrating_builder_prod(build))
-
-  def test_500(self):
-    self.builder_cfg.luci_migration_host = 'migration.example.com'
-    build = test_util.build(
-        for_creation=True,
-        input=dict(
-            properties=bbutil.dict_to_struct({
-                'mastername': 'tryserver.chromium.linux',
-            })
-        ),
-    )
-
-    self.net_err_response = net.Error('BOOM', 500, 'IT\'S BAD')
-    self.assertIsNone(self.is_migrating_builder_prod(build))
-
-  def test_no_is_prod_in_response(self):
-    self.builder_cfg.luci_migration_host = 'migration.example.com'
-    build = test_util.build(
-        for_creation=True,
-        input=dict(
-            properties=bbutil.dict_to_struct({
-                'mastername': 'tryserver.chromium.linux',
-            })
-        ),
-    )
-
-    self.net_err_response = None
-    self.json_response = {'foo': True}
-    self.assertIsNone(self.is_migrating_builder_prod(build))
 
 
 class SubNotifyTest(BaseTest):

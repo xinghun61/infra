@@ -388,7 +388,10 @@ class V1ApiTest(testing.EndpointsTestCase):
 
   @mock.patch('creation.add_async', autospec=True)
   def test_retry(self, add_async):
-    props = bbutil.dict_to_struct({'foo': 'bar'})
+    props = bbutil.dict_to_struct({
+        'foo': 'bar',
+        'recipe': 'recipe',
+    })
     orig_build = test_util.build(
         id=1,
         input=dict(

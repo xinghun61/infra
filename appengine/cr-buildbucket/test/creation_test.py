@@ -177,11 +177,24 @@ class CreationTest(testing.AppengineTestCase):
     build = self.add(dict(properties=prop_struct))
     actual = struct_pb2.Struct()
     actual.ParseFromString(build.input_properties_bytes)
-    self.assertEqual(actual, prop_struct)
+
+    expected = bbutil.dict_to_struct(props)
+    expected['recipe'] = 'recipe'
+    self.assertEqual(actual, expected)
     self.assertEqual(
         build.parse_infra().buildbucket.requested_properties, prop_struct
     )
     self.assertEqual(build.parameters.get(model.PROPERTIES_PARAMETER), props)
+
+  def test_experimental(self):
+    build = self.add(dict(experimental=common_pb2.YES))
+    self.assertTrue(build.proto.input.experimental)
+    self.assertEqual(build.parse_infra().swarming.priority, 60)
+
+  def test_non_experimental(self):
+    build = self.add(dict(experimental=common_pb2.NO))
+    self.assertFalse(build.proto.input.experimental)
+    self.assertEqual(build.parse_infra().swarming.priority, 30)
 
   def test_dimensions(self):
     dims = [

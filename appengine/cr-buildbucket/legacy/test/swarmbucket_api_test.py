@@ -72,6 +72,11 @@ class SwarmbucketApiTest(testing.EndpointsTestCase):
               name: "windows"
               category: "Chromium"
               swarming_host: "swarming.example.com"
+              recipe {
+                cipd_package: "infra/recipe_bundle"
+                cipd_version: "refs/heads/master"
+                name: "presubmit"
+              }
             }
           }
     '''
@@ -269,6 +274,7 @@ class SwarmbucketApiTest(testing.EndpointsTestCase):
             u'presubmit',
             u'-properties',
             api_common.properties_to_json({
+                'recipe': 'presubmit',
                 'buildbucket': {
                     'hostname': 'cr-buildbucket.appspot.com',
                     'build': {
@@ -290,12 +296,15 @@ class SwarmbucketApiTest(testing.EndpointsTestCase):
                             'builder': 'linux',
                         },
                         'number': 1,
+                        'createdBy': 'anonymous:anonymous',
+                        'createTime': '2015-11-30T00:00:00Z',
+                        'exe': {
+                            'cipdPackage': 'infra/recipe_bundle',
+                            'cipdVersion': 'refs/heads/master',
+                        },
+                        'input': {},
                         'infra': {
                             'buildbucket': {'serviceConfigRevision': 'rev'},
-                            'recipe': {
-                                'name': 'presubmit',
-                                'cipdPackage': 'infra/recipe_bundle',
-                            },
                             'swarming': {
                                 'hostname':
                                     'swarming.example.com',
@@ -320,10 +329,6 @@ class SwarmbucketApiTest(testing.EndpointsTestCase):
                                 ],
                             },
                         },
-                        'createdBy': 'anonymous:anonymous',
-                        'exe': {},
-                        'input': {},
-                        'createTime': '2015-11-30T00:00:00Z',
                     },
                 },
                 '$recipe_engine/runtime': {

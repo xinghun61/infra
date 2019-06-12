@@ -206,9 +206,9 @@ class SwarmbucketApi(remote.Service):
 
       # Create a fake build and prepare a task definition.
       identity = auth.get_current_identity()
-      build = build_request.create_build(
+      build = build_request.create_build_async(
           1, builder_cfg, identity, utils.utcnow()
-      )
+      ).get_result()
       build.proto.number = 1
       settings = config.get_settings_async().get_result()
       task_def = swarming.prepare_task_def_async(
