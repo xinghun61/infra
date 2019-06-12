@@ -134,7 +134,7 @@ func (c *createSuiteRun) innerRun(a subcommands.Application, args []string, env 
 		return errors.Annotate(err, "create suite").Err()
 	}
 
-	task.URL = swarmingTaskURL(e, task.ID)
+	task.URL = swarming.TaskURL(e.SwarmingService, task.ID)
 	if c.json {
 		return json.NewEncoder(a.GetOut()).Encode(task)
 	}

@@ -190,6 +190,6 @@ func (c *createTestRun) innerRun(a subcommands.Application, args []string, env s
 		return errors.Annotate(err, "create test").Err()
 	}
 
-	fmt.Fprintf(a.GetOut(), "Created Swarming task %s\n", swarmingTaskURL(e, resp.TaskId))
+	fmt.Fprintf(a.GetOut(), "Created Swarming task %s\n", swarming.TaskURL(e.SwarmingService, resp.TaskId))
 	return nil
 }

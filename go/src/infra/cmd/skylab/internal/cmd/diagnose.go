@@ -20,6 +20,7 @@ import (
 
 	fleet "infra/appengine/crosskylabadmin/api/fleet/v1"
 	"infra/cmd/skylab/internal/site"
+	"infra/libs/skylab/swarming"
 )
 
 // Diagnose subcommand: Diagnose DUT status.
@@ -104,7 +105,7 @@ func printBotDiagnosisShort(w io.Writer, e site.Environment, bots []*fleet.BotSu
 		var url string
 		ts := "Unknown"
 		if ds := b.GetDiagnosis(); len(ds) > 0 {
-			url = swarmingTaskURL(e, ds[0].GetId())
+			url = swarming.TaskURL(e.SwarmingService, ds[0].GetId())
 			ts = getTaskTimeString(ds[0])
 		}
 		fmt.Fprintf(w, "%s\t%s\t%s\t%s\n", b.GetDimensions().GetDutName(), b.GetDutState(), ts, url)
@@ -171,7 +172,7 @@ func printDiagnosisTask(w io.Writer, e site.Environment, t *fleet.Task) {
 	ts := getTaskTimeString(t)
 	fmt.Fprintf(w, "\t%s\t%s <- %s\t%s\t%s\t\n",
 		t.GetName(), t.GetStateAfter(), t.GetStateBefore(), ts,
-		swarmingTaskURL(e, t.GetId()))
+		swarming.TaskURL(e.SwarmingService, t.GetId()))
 }
 
 func getTaskTimeString(t *fleet.Task) string {

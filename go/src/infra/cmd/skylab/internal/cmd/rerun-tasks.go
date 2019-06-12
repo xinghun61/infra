@@ -230,7 +230,7 @@ func upsertTag(tags []string, key string, replacementValue string) []string {
 func printIDMap(w io.Writer, originalToRerunID map[string]string, siteEnv site.Environment) error {
 	for originalID, rerunID := range originalToRerunID {
 		fmt.Fprintf(w, "Rerunning %s\tCreated Swarming task %s\n",
-			originalID, swarmingTaskURL(siteEnv, rerunID))
+			originalID, swarming.TaskURL(siteEnv.SwarmingService, rerunID))
 	}
 
 	return nil
@@ -253,7 +253,7 @@ func printJSONMap(w io.Writer, originalToRerunID map[string]string, siteEnv site
 
 func dryRun(a subcommands.Application, newRequests map[string]*swarming_api.SwarmingRpcsNewTaskRequest, siteEnv site.Environment) error {
 	for id, r := range newRequests {
-		fmt.Fprintf(a.GetOut(), "Would have rerun %s (%s)\n", swarmingTaskURL(siteEnv, id), r.Name)
+		fmt.Fprintf(a.GetOut(), "Would have rerun %s (%s)\n", swarming.TaskURL(siteEnv.SwarmingService, id), r.Name)
 	}
 	return nil
 }

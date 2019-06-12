@@ -205,3 +205,8 @@ func callWithRetries(ctx context.Context, f func() error) error {
 	}
 	return retry.Retry(ctx, transient.Only(retryParams), taggedFunc, nil)
 }
+
+// TaskURL returns a URL to inspect a task with the given ID.
+func TaskURL(swarmingService string, taskID string) string {
+	return fmt.Sprintf("%stask?id=%s", swarmingService, taskID)
+}

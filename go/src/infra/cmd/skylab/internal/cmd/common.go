@@ -20,12 +20,13 @@ import (
 	"github.com/maruel/subcommands"
 	"go.chromium.org/luci/auth"
 	"go.chromium.org/luci/auth/client/authcli"
-	swarming "go.chromium.org/luci/common/api/swarming/swarming/v1"
+	swarming_api "go.chromium.org/luci/common/api/swarming/swarming/v1"
 	"go.chromium.org/luci/common/data/strpair"
 	"go.chromium.org/luci/common/errors"
 
 	"infra/cmd/skylab/internal/flagx"
 	"infra/cmd/skylab/internal/site"
+	"infra/libs/skylab/swarming"
 )
 
 const progName = "skylab"
@@ -95,10 +96,6 @@ type taskInfo struct {
 	URL  string `json:"task_url"`
 }
 
-func swarmingTaskURL(e site.Environment, taskID string) string {
-	return fmt.Sprintf("%stask?id=%s", e.SwarmingService, taskID)
-}
-
 // UserErrorReporter reports a detailed error message to the user.
 //
 // PrintError() uses a UserErrorReporter to print multi-line user error details
@@ -139,14 +136,14 @@ func (e *usageError) ReportUserError(w io.Writer) {
 }
 
 // toPairs converts a slice of strings in foo:bar form to a slice of swarming rpc string pairs.
-func toPairs(dimensions []string) ([]*swarming.SwarmingRpcsStringPair, error) {
-	pairs := make([]*swarming.SwarmingRpcsStringPair, len(dimensions))
+func toPairs(dimensions []string) ([]*swarming_api.SwarmingRpcsStringPair, error) {
+	pairs := make([]*swarming_api.SwarmingRpcsStringPair, len(dimensions))
 	for i, d := range dimensions {
 		k, v := strpair.Parse(d)
 		if v == "" {
 			return nil, fmt.Errorf("malformed dimension with key '%s' has no value", k)
 		}
-		pairs[i] = &swarming.SwarmingRpcsStringPair{Key: k, Value: v}
+		pairs[i] = &swarming_api.SwarmingRpcsStringPair{Key: k, Value: v}
 	}
 	return pairs, nil
 }
@@ -176,12 +173,12 @@ func prompt(s string) bool {
 
 // printTaskInfo displays a list of user-friendly list of tasks (with a given
 // upper limit), with a header of the form "Found X tasks to <showText>:"
-func printTaskInfo(results []*swarming.SwarmingRpcsTaskResult, showLimit int, showText string, siteEnv site.Environment) {
+func printTaskInfo(results []*swarming_api.SwarmingRpcsTaskResult, showLimit int, showText string, siteEnv site.Environment) {
 	fmt.Fprintln(os.Stderr, strings.Repeat("-", 80))
 	fmt.Fprintf(os.Stderr, "Found %d tasks to %s:\n", len(results), showText)
 	for i, r := range results {
 		if i < showTaskLimit {
-			fmt.Fprintf(os.Stderr, "%s\n", swarmingTaskURL(siteEnv, r.TaskId))
+			fmt.Fprintf(os.Stderr, "%s\n", swarming.TaskURL(siteEnv.SwarmingService, r.TaskId))
 		} else {
 			break
 		}

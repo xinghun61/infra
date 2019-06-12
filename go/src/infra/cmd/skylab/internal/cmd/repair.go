@@ -66,7 +66,7 @@ func (c *repairRun) innerRun(a subcommands.Application, args []string, env subco
 		if err != nil {
 			return err
 		}
-		fmt.Fprintf(a.GetOut(), "Created Swarming task %s for host %s\n", swarmingTaskURL(e, id), host)
+		fmt.Fprintf(a.GetOut(), "Created Swarming task %s for host %s\n", swarming.TaskURL(e.SwarmingService, id), host)
 	}
 	return nil
 }

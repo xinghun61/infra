@@ -76,7 +76,7 @@ func (c *leaseDutRun) innerRun(a subcommands.Application, args []string, env sub
 	if err != nil {
 		return err
 	}
-	fmt.Fprintf(a.GetOut(), "Created lease task for host %s: %s\n", host, swarmingTaskURL(e, id))
+	fmt.Fprintf(a.GetOut(), "Created lease task for host %s: %s\n", host, swarming.TaskURL(e.SwarmingService, id))
 	fmt.Fprintf(a.GetOut(), "Waiting for task to start; lease isn't active yet\n")
 poll:
 	for {
