@@ -132,7 +132,7 @@ export class MrPhase extends connectStore(LitElement) {
         ></mr-approval-card>
       `)}
       ${!this.approvals || !this.approvals.length ? html`No tasks for this phase.` : ''}
-      // TODO(ehmaldonado): Move to /issue-detail/dialogs
+      <!-- TODO(ehmaldonado): Move to /issue-detail/dialogs -->
       <chops-dialog id="editPhase" aria-labelledby="phaseDialogTitle">
         <h3 id="phaseDialogTitle" class="medium-heading">
           Editing phase: ${this.phaseName}
