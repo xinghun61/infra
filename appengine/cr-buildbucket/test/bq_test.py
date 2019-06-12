@@ -58,7 +58,17 @@ class BigQueryExportTest(testing.AppengineTestCase):
 
   def test_cron_export_builds_to_bq(self):
     builds = [
-        test_util.build(id=1, status=common_pb2.SUCCESS),
+        test_util.build(
+            id=1,
+            status=common_pb2.SUCCESS,
+            infra=dict(
+                swarming=dict(
+                    task_dimensions=[
+                        dict(key='a', value='1', expiration=dict(seconds=1)),
+                    ],
+                ),
+            ),
+        ),
         test_util.build(id=2, status=common_pb2.FAILURE),
         test_util.build(id=3, status=common_pb2.SCHEDULED),
         test_util.build(id=4, status=common_pb2.STARTED),
