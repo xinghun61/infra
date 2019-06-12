@@ -196,13 +196,19 @@ export class MrIssueHeader extends connectStore(LitElement) {
     const templates = this.projectTemplates;
 
 
-    if (permissions.includes(ISSUE_FLAGSPAM_PERMISSION)) {
-      const text = (isSpam ? 'Un-flag' : 'Flag') + ' issue as spam';
-      riskyOptions.push({
-        text,
-        handler: this._markIssue.bind(this),
+    if (permissions.includes(ISSUE_EDIT_PERMISSION)) {
+      editOptions.push({
+        text: 'Edit issue description',
+        handler: this._openEditDescription.bind(this),
       });
+      if (templates.length) {
+        riskyOptions.push({
+          text: 'Convert issue template',
+          handler: this._openConvertIssue.bind(this),
+        });
+      }
     }
+
     if (permissions.includes(ISSUE_DELETE_PERMISSION)) {
       riskyOptions.push({
         text: 'Delete issue',
@@ -220,17 +226,12 @@ export class MrIssueHeader extends connectStore(LitElement) {
       }
     }
 
-    if (permissions.includes(ISSUE_EDIT_PERMISSION)) {
-      editOptions.push({
-        text: 'Edit issue description',
-        handler: this._openEditDescription.bind(this),
+    if (permissions.includes(ISSUE_FLAGSPAM_PERMISSION)) {
+      const text = (isSpam ? 'Un-flag' : 'Flag') + ' issue as spam';
+      riskyOptions.push({
+        text,
+        handler: this._markIssue.bind(this),
       });
-      if (templates.length) {
-        editOptions.push({
-          text: 'Convert issue template',
-          handler: this._openConvertIssue.bind(this),
-        });
-      }
     }
 
     if (editOptions.length && riskyOptions.length) {
