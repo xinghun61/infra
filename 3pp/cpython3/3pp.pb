@@ -73,8 +73,7 @@ create {
 }
 
 create {
-  # We don't run 32bit windows hosts anymore, so don't bother.
-  platform_re: "windows-amd64"
+  platform_re: "windows-.*"
   source { script { name: "fetch.py" } }
   build {
     tool: "lessmsi"
