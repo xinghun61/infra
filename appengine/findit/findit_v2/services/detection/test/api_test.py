@@ -61,15 +61,19 @@ class APITest(unittest.TestCase):
     step.status = common_pb2.FAILURE
     self.assertFalse(api.OnBuildFailure(self.context, build))
 
-  @mock.patch('findit_v2.se'
-              'rvices.projects.GetProjectAPI',
-              return_value=DummyProjectAPI())
-  def testCompileFailure(self, *_):
+  @mock.patch(
+      'findit_v2.services.projects.GetProjectAPI',
+      return_value=DummyProjectAPI())
+  @mock.patch('findit_v2.services.analysis.compile_failure.compile_api.'
+              'AnalyzeCompileFailure')
+  def testCompileFailure(self, mocked_AnalyzeCompileFailure, _):
     build = Build()
     step = build.steps.add()
     step.name = 'compile'
     step.status = common_pb2.FAILURE
     self.assertTrue(api.OnBuildFailure(self.context, build))
+    mocked_AnalyzeCompileFailure.assert_called_once_with(
+        self.context, build, [step])
 
   @mock.patch.object(
       compile_api, 'OnCompileRerunBuildCompletion', return_value=True)

@@ -33,12 +33,8 @@ def OnBuildFailure(context, build):
       fs[0] for fs in failed_steps if fs[1] == StepTypeEnum.COMPILE
   ]
   if compile_steps:
-    # Findit v2 is not ready yet. Logs the failure but not start an analysis.
-    # TODO(crbug.com/938143): Revert change
-    # https://chromium-review.googlesource.com/c/infra/infra/+/1572449
-    # when Findit v2 for ChromeOS compile failure analysis is ready.
     logging.info('Compile failure found in build %d.', build.id)
-    return True
+    return compile_api.AnalyzeCompileFailure(context, build, compile_steps)
 
   logging.info('Unsupported failure types: %r', [fs[1] for fs in failed_steps])
   return False

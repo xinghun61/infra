@@ -13,7 +13,6 @@ from google.appengine.api import taskqueue
 from google.appengine.ext import ndb
 from google.protobuf.field_mask_pb2 import FieldMask
 
-from buildbucket_proto.build_pb2 import Build
 from gae_libs import appengine_util
 from gae_libs.handlers.base_handler import BaseHandler
 from gae_libs.handlers.base_handler import Permission
@@ -24,6 +23,10 @@ from model.isolated_target import IsolatedTarget
 _PROP_NAME_REGEX = re.compile(
     r'swarm_hashes_(?P<ref>.*)\(at\)\{\#(?P<cp>[0-9]+)\}'
     r'(?P<suffix>(_with(out)?_patch))?')
+
+# Builds from such LUCI projects should be intercepted by Findit v2.
+# It doesn't necessarily mean build failures will be analyzed in v2 though.
+_FINDIT_V2_INTERCEPT_PROJECTS = ['chromium', 'chromeos']
 
 
 class CompletedBuildPubsubIngestor(BaseHandler):
@@ -62,11 +65,13 @@ class CompletedBuildPubsubIngestor(BaseHandler):
 
     if status == 'COMPLETED':
       _HandlePossibleCodeCoverageBuild(int(build_id))
-      if project == 'chromium':
+      if project in _FINDIT_V2_INTERCEPT_PROJECTS:
         _HandlePossibleFailuresInBuild(project, bucket, builder_name,
                                        int(build_id), build_result)
-        return _IngestProto(int(build_id))
-    # We don't care about pending or non-chromium builds, so we accept the
+        if project == 'chromium':
+          # Only ingests chromium builds.
+          return _IngestProto(int(build_id))
+    # We don't care about pending or non-supported builds, so we accept the
     # notification by returning 200, and prevent pubsub from retrying it.
 
 
