@@ -17,6 +17,7 @@ import collections
 import logging
 import time
 
+from features import federated
 from framework import exceptions
 from framework import framework_bizobj
 from framework import framework_constants
@@ -831,7 +832,8 @@ def MakeIssueDelta(
     status, owner_id, cc_ids_add, cc_ids_remove, comp_ids_add, comp_ids_remove,
     labels_add, labels_remove, field_vals_add, field_vals_remove, fields_clear,
     blocked_on_add, blocked_on_remove, blocking_add, blocking_remove,
-    merged_into, summary):
+    merged_into, summary, ext_blocked_on_add=None, ext_blocked_on_remove=None,
+    ext_blocking_add=None, ext_blocking_remove=None):
   """Construct an IssueDelta object with the given fields, iff non-None."""
   delta = tracker_pb2.IssueDelta(
       cc_ids_add=cc_ids_add, cc_ids_remove=cc_ids_remove,
@@ -849,6 +851,14 @@ def MakeIssueDelta(
     delta.merged_into = merged_into
   if summary is not None:
     delta.summary = summary
+  if ext_blocked_on_add is not None:
+    delta.ext_blocked_on_add = ext_blocked_on_add
+  if ext_blocked_on_remove is not None:
+    delta.ext_blocked_on_remove = ext_blocked_on_remove
+  if ext_blocking_add is not None:
+    delta.ext_blocking_add = ext_blocking_add
+  if ext_blocking_remove is not None:
+    delta.ext_blocking_remove = ext_blocking_remove
 
   return delta
 
@@ -1031,6 +1041,38 @@ def ApplyIssueDelta(cnxn, issue_service, issue, delta, config):
                      if iid not in blocking_remove]
     issue.blocking_iids = blocking_refs
     impacted_iids.update(blocking_add + blocking_remove)
+
+  # Update external issue references.
+  if delta.ext_blocked_on_add or delta.ext_blocked_on_remove:
+    add_refs = [
+        tracker_pb2.DanglingIssueRef(ext_issue_identifier=ext_id)
+        for ext_id in delta.ext_blocked_on_add
+        if federated.shortlink_is_valid(ext_id)]
+    remove_refs = [
+        tracker_pb2.DanglingIssueRef(ext_issue_identifier=ext_id)
+        for ext_id in delta.ext_blocked_on_remove
+        if federated.shortlink_is_valid(ext_id)]
+    # TODO(jeffcarp): Enable when ready to store ExtIssueRefs.
+    # amendments.append(MakeBlockedOnAmendment(add_refs, remove_refs))
+    issue.dangling_blocked_on_refs = [
+        ref for ref in issue.dangling_blocked_on_refs + add_refs
+        if ref.ext_issue_identifier not in delta.ext_blocked_on_remove]
+
+  # Update external issue references.
+  if delta.ext_blocking_add or delta.ext_blocking_remove:
+    add_refs = [
+        tracker_pb2.DanglingIssueRef(ext_issue_identifier=ext_id)
+        for ext_id in delta.ext_blocking_add
+        if federated.shortlink_is_valid(ext_id)]
+    remove_refs = [
+        tracker_pb2.DanglingIssueRef(ext_issue_identifier=ext_id)
+        for ext_id in delta.ext_blocking_remove
+        if federated.shortlink_is_valid(ext_id)]
+    # TODO(jeffcarp): Enable when ready to store ExtIssueRefs.
+    # amendments.append(MakeBlockingAmendment(add_refs, remove_refs))
+    issue.dangling_blocking_refs = [
+        ref for ref in issue.dangling_blocking_refs + add_refs
+        if ref.ext_issue_identifier not in delta.ext_blocking_remove]
 
   if (delta.merged_into is not None and
       delta.merged_into != issue.merged_into):
@@ -1434,11 +1476,12 @@ def GetAmendmentFieldName(amendment):
     return field_name.capitalize()
 
 
-def MakeDanglingIssueRef(project_name, issue_id):
+def MakeDanglingIssueRef(project_name, issue_id, ext_id=''):
   """Create a DanglingIssueRef pb."""
   ret = tracker_pb2.DanglingIssueRef()
   ret.project = project_name
   ret.issue_id = issue_id
+  ret.ext_issue_identifier = ext_id
   return ret
 
 
@@ -1457,6 +1500,11 @@ def FormatIssueRef(issue_ref_tuple, default_project_name=None):
   """Format an issue reference for users: e.g., 123, or projectname:123."""
   if issue_ref_tuple is None:
     return ''
+
+  # TODO(jeffcarp): Improve method signature to not require isinstance.
+  if isinstance(issue_ref_tuple, tracker_pb2.DanglingIssueRef):
+    return issue_ref_tuple.ext_issue_identifier
+
   project_name, local_id = issue_ref_tuple
   if project_name and project_name != default_project_name:
     return '%s:%d' % (project_name, local_id)

@@ -329,13 +329,13 @@ CREATE TABLE DanglingIssueRelation (
   issue_id INT NOT NULL,
   dst_issue_project VARCHAR(80),
   dst_issue_local_id INT,
-  ext_issue_identifier VARCHAR(2048),
+  ext_issue_identifier VARCHAR(256),
 
   -- This table uses 'blocking' so that it can guarantee the src issue
   -- always exists, while the dst issue is always the dangling one.
   kind ENUM ('blockedon', 'blocking', 'mergedinto') NOT NULL,
 
-  PRIMARY KEY (issue_id, dst_issue_project, dst_issue_local_id, kind),
+  PRIMARY KEY (issue_id, dst_issue_project, dst_issue_local_id, kind, ext_issue_identifier),
   INDEX (issue_id),
   INDEX (ext_issue_identifier),
   FOREIGN KEY (issue_id) REFERENCES Issue(id)

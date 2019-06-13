@@ -105,7 +105,8 @@ ATTACHMENT_COLS = [
 ISSUERELATION_COLS = ['issue_id', 'dst_issue_id', 'kind', 'rank']
 ABBR_ISSUERELATION_COLS = ['dst_issue_id', 'rank']
 DANGLINGRELATION_COLS = [
-    'issue_id', 'dst_issue_project', 'dst_issue_local_id', 'kind']
+    'issue_id', 'dst_issue_project', 'dst_issue_local_id',
+    'ext_issue_identifier', 'kind']
 ISSUEUPDATE_COLS = [
     'id', 'issue_id', 'comment_id', 'field', 'old_value', 'new_value',
     'added_user_id', 'removed_user_id', 'custom_field_name']
@@ -344,14 +345,17 @@ class IssueTwoLevelCache(caches.AbstractTwoLevelCache):
         if kind == 'blockedon':
           dst_issue.blocking_iids.append(issue_id)
 
-    for issue_id, dst_issue_proj, dst_issue_id, kind in dangling_relation_rows:
+    for row in dangling_relation_rows:
+      issue_id, dst_issue_proj, dst_issue_id, ext_id, kind = row
       src_issue = results_dict.get(issue_id)
       if kind == 'blockedon':
         src_issue.dangling_blocked_on_refs.append(
-            tracker_bizobj.MakeDanglingIssueRef(dst_issue_proj, dst_issue_id))
+            tracker_bizobj.MakeDanglingIssueRef(dst_issue_proj,
+                dst_issue_id, ext_id))
       elif kind == 'blocking':
         src_issue.dangling_blocking_refs.append(
-            tracker_bizobj.MakeDanglingIssueRef(dst_issue_proj, dst_issue_id))
+            tracker_bizobj.MakeDanglingIssueRef(dst_issue_proj, dst_issue_id,
+                ext_id))
       else:
         logging.warn('unhandled danging relation kind %r', kind)
         continue
@@ -1248,11 +1252,21 @@ class IssueService(object):
       for dst_issue_id in issue.blocking_iids:
         blocking_rows.append((dst_issue_id, issue.issue_id, 'blockedon'))
       for dst_ref in issue.dangling_blocked_on_refs:
-        dangling_relation_rows.append((
-            issue.issue_id, dst_ref.project, dst_ref.issue_id, 'blockedon'))
+        if dst_ref.ext_issue_identifier:
+          # TODO(jeffcarp): Append here to enable storing ExtIssueRefs.
+          pass
+        else:
+          dangling_relation_rows.append((
+              issue.issue_id, dst_ref.project, dst_ref.issue_id,
+              None, 'blockedon'))
       for dst_ref in issue.dangling_blocking_refs:
-        dangling_relation_rows.append((
-            issue.issue_id, dst_ref.project, dst_ref.issue_id, 'blocking'))
+        if dst_ref.ext_issue_identifier:
+          # TODO(jeffcarp): Append here to enable storing ExtIssueRefs.
+          pass
+        else:
+          dangling_relation_rows.append((
+              issue.issue_id, dst_ref.project, dst_ref.issue_id,
+              dst_ref.ext_issue_identifier, 'blocking'))
       if issue.merged_into:
         relation_rows.append((
             issue.issue_id, issue.merged_into, 'mergedinto', None))

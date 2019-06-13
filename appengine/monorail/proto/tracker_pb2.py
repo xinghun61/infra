@@ -74,9 +74,10 @@ class Phase(messages.Message):
 
 
 class DanglingIssueRef(messages.Message):
-  """Holds a reference to an issue still on Google Codesite."""
+  """Holds a reference to an issue on Codesite or an external tracker."""
   project = messages.StringField(1, required=True)
   issue_id = messages.IntegerField(2, required=True)
+  ext_issue_identifier = messages.StringField(3, required=False)
 
 
 class Issue(messages.Message):
@@ -225,6 +226,10 @@ class IssueDelta(messages.Message):
   blocking_remove = messages.IntegerField(15, repeated=True)
   merged_into = messages.IntegerField(16)
   summary = messages.StringField(17)
+  ext_blocked_on_add = messages.StringField(18, repeated=True)
+  ext_blocked_on_remove = messages.StringField(19, repeated=True)
+  ext_blocking_add = messages.StringField(20, repeated=True)
+  ext_blocking_remove = messages.StringField(21, repeated=True)
 
 
 class Amendment(messages.Message):

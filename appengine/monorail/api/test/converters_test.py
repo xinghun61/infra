@@ -382,6 +382,14 @@ class ConverterFunctionsTest(unittest.TestCase):
         common_pb2.IssueRef(project_name='proj', local_id=1),
         actual)
 
+  def testConvertIssueRef_ExtIssue(self):
+    """ConvertIssueRef successfully converts an external issue."""
+    actual = converters.ConvertIssueRef(('', 0), ext_id='b/1234567')
+    self.assertEqual(
+        common_pb2.IssueRef(project_name='', local_id=0,
+            ext_identifier='b/1234567'),
+        actual)
+
   def testConvertIssueRefs(self):
     """We can convert issue_ids to IssueRefs."""
     related_refs_dict = {
@@ -1094,6 +1102,20 @@ class ConverterFunctionsTest(unittest.TestCase):
     actual = converters.IngestIssueRefs(
         self.cnxn, [ref], self.services)
     self.assertEqual([], actual)
+
+  def testIngestExtIssueRefs_Normal(self):
+    """IngestExtIssueRefs returns all valid external refs."""
+    refs = [
+      common_pb2.IssueRef(project_name='rutabaga', local_id=1234),
+      common_pb2.IssueRef(ext_identifier='b123456'),
+      common_pb2.IssueRef(ext_identifier='b/123456'), # <- Valid ref 1.
+      common_pb2.IssueRef(ext_identifier='rutabaga/123456'),
+      common_pb2.IssueRef(ext_identifier='123456'),
+      common_pb2.IssueRef(ext_identifier='b/56789'), # <- Valid ref 2.
+      common_pb2.IssueRef(ext_identifier='b//123456')]
+
+    actual = converters.IngestExtIssueRefs(refs)
+    self.assertEqual(['b/123456', 'b/56789'], actual)
 
   def testIngestIssueDelta_Empty(self):
     """An empty protorpc IssueDelta makes an empty protoc IssueDelta."""

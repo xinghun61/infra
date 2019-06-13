@@ -23,6 +23,7 @@ from api.api_proto import features_objects_pb2
 from api.api_proto import issue_objects_pb2
 from api.api_proto import project_objects_pb2
 from api.api_proto import user_objects_pb2
+from features import federated
 from framework import exceptions
 from framework import filecontent
 from framework import framework_constants
@@ -211,10 +212,15 @@ def ConvertComponents(explicit_component_ids, derived_component_ids, config):
   return result
 
 
-def ConvertIssueRef(issue_ref_pair):
-  """Convert (project_name, local_id) to an IssueRef protoc object."""
+def ConvertIssueRef(issue_ref_pair, ext_id=''):
+  """Convert (project_name, local_id) to an IssueRef protoc object.
+
+  With optional external ref in ext_id.
+  """
   project_name, local_id = issue_ref_pair
-  return common_pb2.IssueRef(project_name=project_name, local_id=local_id)
+  ref = common_pb2.IssueRef(project_name=project_name, local_id=local_id,
+      ext_identifier=ext_id)
+  return ref
 
 
 def ConvertIssueRefs(issue_ids, related_refs_dict):
@@ -337,7 +343,8 @@ def ConvertIssue(issue, users_by_id, related_refs, config):
   blocked_on_issue_refs = ConvertIssueRefs(
       issue.blocked_on_iids, related_refs)
   dangling_blocked_on_refs = [
-      ConvertIssueRef((dangling_issue.project, dangling_issue.issue_id))
+      ConvertIssueRef((dangling_issue.project, dangling_issue.issue_id),
+          ext_id=dangling_issue.ext_issue_identifier)
       for dangling_issue in issue.dangling_blocked_on_refs]
   blocking_issue_refs = ConvertIssueRefs(
       issue.blocking_iids, related_refs)
@@ -574,6 +581,15 @@ def IngestIssueRefs(cnxn, issue_refs, services):
   return issue_ids
 
 
+def IngestExtIssueRefs(issue_refs):
+  """Validate and return external issue refs."""
+  return [
+      ref.ext_identifier
+      for ref in issue_refs
+      if ref.ext_identifier
+      and federated.shortlink_is_valid(ref.ext_identifier)]
+
+
 def IngestIssueDelta(
     cnxn, services, delta, config, phases, ignore_missing_objects=False):
   """Ingest a protoc IssueDelta and create a protorpc IssueDelta."""
@@ -616,6 +632,7 @@ def IngestIssueDelta(
       cnxn, services.user, field_vals_remove, config, phases=phases)
   fields_clear = IngestFieldRefs(delta.fields_clear, config)
 
+  # Ingest intra-tracker issue refs.
   blocked_on_add = IngestIssueRefs(
       cnxn, delta.blocked_on_refs_add, services)
   blocked_on_remove = IngestIssueRefs(
@@ -624,6 +641,13 @@ def IngestIssueDelta(
       cnxn, delta.blocking_refs_add, services)
   blocking_remove = IngestIssueRefs(
       cnxn, delta.blocking_refs_remove, services)
+
+  # Ingest inter-tracker issue refs.
+  ext_blocked_on_add = IngestExtIssueRefs(delta.blocked_on_refs_add)
+  ext_blocked_on_remove = IngestExtIssueRefs(delta.blocked_on_refs_remove)
+  ext_blocking_add = IngestExtIssueRefs(delta.blocking_refs_add)
+  ext_blocking_remove = IngestExtIssueRefs(delta.blocking_refs_remove)
+
   merged_into = None
   if delta.HasField('merged_into_ref'):
     if not delta.merged_into_ref.local_id:
@@ -635,7 +659,11 @@ def IngestIssueDelta(
       status, owner_id, cc_ids_add, cc_ids_remove, comp_ids_add,
       comp_ids_remove, labels_add, labels_remove, field_vals_add,
       field_vals_remove, fields_clear, blocked_on_add, blocked_on_remove,
-      blocking_add, blocking_remove, merged_into, summary)
+      blocking_add, blocking_remove, merged_into, summary,
+      ext_blocked_on_add=ext_blocked_on_add,
+      ext_blocked_on_remove=ext_blocked_on_remove,
+      ext_blocking_add=ext_blocking_add,
+      ext_blocking_remove=ext_blocking_remove)
   return result
 
 def IngestAttachmentUploads(attachment_uploads):

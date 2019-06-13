@@ -173,8 +173,9 @@ class IssueTwoLevelCacheTest(unittest.TestCase):
     self.relation_rows = (
         self.blocked_on_rows + self.blocking_rows + self.merged_rows)
     self.dangling_relation_rows = [
-        (78901, 'codesite', 5001, 'blocking'),
-        (78901, 'codesite', 5002, 'blockedon')]
+        (78901, 'codesite', 5001, None, 'blocking'),
+        (78901, 'codesite', 5002, None, 'blockedon'),
+        (78901, None, None, 'b/1234567', 'blockedon')]
     self.phase_rows = [(1, 'Canary', 1), (2, 'Stable', 11)]
     self.approvalvalue_rows = [(22, 78901, 2, 'not_set', None, None),
                                (21, 78901, 1, 'needs_review', None, None),
@@ -234,6 +235,22 @@ class IssueTwoLevelCacheTest(unittest.TestCase):
     av_22 = tracker_bizobj.FindApprovalValueByID(
         22, issue.approval_values)
     self.assertEqual(av_22.phase_id, 2)
+    self.assertEqual([
+        tracker_pb2.DanglingIssueRef(
+          project=row[1],
+          issue_id=row[2],
+          ext_issue_identifier=row[3])
+          for row in self.dangling_relation_rows
+          if row[4] == 'blockedon'
+        ], issue.dangling_blocked_on_refs)
+    self.assertEqual([
+        tracker_pb2.DanglingIssueRef(
+          project=row[1],
+          issue_id=row[2],
+          ext_issue_identifier=row[3])
+          for row in self.dangling_relation_rows
+          if row[4] == 'blocking'
+        ], issue.dangling_blocking_refs)
 
   def testDeserializeIssues_UnexpectedLabel(self):
     unexpected_label_rows = [

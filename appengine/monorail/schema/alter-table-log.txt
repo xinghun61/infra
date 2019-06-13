@@ -1665,12 +1665,18 @@ ALTER TABLE DanglingIssueRelation ADD COLUMN ext_issue_identifier VARCHAR(2048);
 ALTER TABLE DanglingIssueRelation ADD INDEX (ext_issue_identifier);
 
 ================================================================
-2019-06-16: Allow full unicode labels.
+2019-06-06: Allow full unicode labels.
 
 ALTER TABLE LabelDef CHANGE label label VARCHAR(80) BINARY NOT NULL COLLATE utf8mb4_unicode_ci;
 
-
-2019-06-07: Add indexes to reduce cases of using filesort
 ================================================================
+2019-06-07: Add indexes to reduce cases of using filesort
+
 ALTER TABLE HotlistVisitHistory ADD INDEX (user_id, viewed);
 ALTER TABLE ReindexQueue ADD INDEX (created);
+
+================================================================
+2019-06-13: Add ext_issue_identifier to DanglingIssueRelation PRIMARY KEY.
+
+ALTER TABLE DanglingIssueRelation MODIFY COLUMN ext_issue_identifier VARCHAR(256);
+ALTER TABLE DanglingIssueRelation DROP PRIMARY KEY, ADD PRIMARY KEY(issue_id, dst_issue_project, dst_issue_local_id, kind, ext_issue_identifier);

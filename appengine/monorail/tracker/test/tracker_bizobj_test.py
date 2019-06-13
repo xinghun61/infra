@@ -1018,7 +1018,11 @@ class BizobjTest(unittest.TestCase):
       'New', 111, [222], [333], [1], [2],
       ['AddedLabel'], ['RemovedLabel'], [added_fv], [removed_fv],
       [3], [78901], [78902], [78903], [78904], 78905,
-      'New summary')
+      'New summary',
+      ext_blocked_on_add=['b/123', 'b/234'],
+      ext_blocked_on_remove=['b/345', 'b/456'],
+      ext_blocking_add=['b/567', 'b/678'],
+      ext_blocking_remove=['b/789', 'b/890'])
     self.assertEqual('New', actual.status)
     self.assertEqual(111, actual.owner_id)
     self.assertEqual([222], actual.cc_ids_add)
@@ -1036,6 +1040,10 @@ class BizobjTest(unittest.TestCase):
     self.assertEqual([78904], actual.blocking_remove)
     self.assertEqual(78905, actual.merged_into)
     self.assertEqual('New summary', actual.summary)
+    self.assertEqual(['b/123', 'b/234'], actual.ext_blocked_on_add)
+    self.assertEqual(['b/345', 'b/456'], actual.ext_blocked_on_remove)
+    self.assertEqual(['b/567', 'b/678'], actual.ext_blocking_add)
+    self.assertEqual(['b/789', 'b/890'], actual.ext_blocking_remove)
 
   def testMakeIssueDelta_WithNones(self):
     """None for status, owner_id, or summary does not set a value."""
@@ -1328,6 +1336,36 @@ class BizobjTest(unittest.TestCase):
        ],
       actual_amendments)
     self.assertEqual(set(), actual_impacted_iids)
+
+  def testApplyIssueDelta_ExternalRefs(self):
+    """Only applies valid issue refs from a delta."""
+    issue = tracker_pb2.Issue(
+        status='New', owner_id=111, cc_ids=[222], labels=['a', 'b'],
+        component_ids=[1], blocked_on_iids=[78902], blocking_iids=[78903],
+        merged_into=78904, summary='Sum',
+        dangling_blocked_on_refs=[
+          tracker_pb2.DanglingIssueRef(ext_issue_identifier='b/345'),
+          tracker_pb2.DanglingIssueRef(ext_issue_identifier='b/111')],
+        dangling_blocking_refs=[
+          tracker_pb2.DanglingIssueRef(ext_issue_identifier='b/789'),
+          tracker_pb2.DanglingIssueRef(ext_issue_identifier='b/222')])
+    delta = tracker_pb2.IssueDelta(
+        # Add one valid, one invalid, and another valid.
+        ext_blocked_on_add=['b/123', 'b123', 'b/234'],
+        # Remove one valid, one invalid, and one that does not exist.
+        ext_blocked_on_remove=['b/345', 'b', 'b/456'],
+        # Add one valid, one invalid, and another valid.
+        ext_blocking_add=['b/567', 'b//123', 'b/678'],
+        # Remove one valid, one invalid, and one that does not exist.
+        ext_blocking_remove=['b/789', 'b/123/123', 'b/890'])
+
+    amendments, impacted_iids = tracker_bizobj.ApplyIssueDelta(
+        self.cnxn, self.services.issue, issue, delta, self.config)
+
+    # Test amendments.
+    # TODO(jeffcarp): Update when storing ExtIssueRefs.
+    self.assertEqual(0, len(amendments))
+    self.assertEqual(0, len(impacted_iids))
 
   def testMakeAmendment(self):
     amendment = tracker_bizobj.MakeAmendment(
@@ -1754,6 +1792,21 @@ class BizobjTest(unittest.TestCase):
 
     self.assertEqual(
         '1', tracker_bizobj.FormatIssueRef((None, 1)))
+
+  def testFormatIssueRef_External(self):
+    """Outputs shortlink as-is."""
+    ref = tracker_pb2.DanglingIssueRef(ext_issue_identifier='b/1234')
+    self.assertEqual('b/1234', tracker_bizobj.FormatIssueRef(ref))
+
+  def testFormatIssueRef_ExternalInvalid(self):
+    """Does not validate external IDs."""
+    ref = tracker_pb2.DanglingIssueRef(ext_issue_identifier='invalid')
+    self.assertEqual('invalid', tracker_bizobj.FormatIssueRef(ref))
+
+  def testFormatIssueRef_Empty(self):
+    """Passes on empty values."""
+    ref = tracker_pb2.DanglingIssueRef(ext_issue_identifier='')
+    self.assertEqual('', tracker_bizobj.FormatIssueRef(ref))
 
   def testParseIssueRef(self):
     self.assertEqual(None, tracker_bizobj.ParseIssueRef(''))
