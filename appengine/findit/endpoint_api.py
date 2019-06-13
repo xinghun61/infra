@@ -24,6 +24,8 @@ from common import acl
 from common import constants
 from common import exceptions
 from common.waterfall import failure_type
+from findit_v2.model.messages import findit_result
+from findit_v2.services import api as findit_v2_api
 from gae_libs import appengine_util
 from gae_libs.caches import PickledMemCache
 from libs import analysis_status
@@ -693,3 +695,45 @@ class FindItApi(remote.Service):
       logging.exception('Failed to queue flake report for async processing')
 
     return _FlakeAnalysis(queued=queued)
+
+  @gae_ts_mon.instrument_endpoint()
+  @endpoints.method(
+      findit_result.BuildFailureAnalysisRequestCollection,
+      findit_result.BuildFailureAnalysisResponseCollection,
+      path='lucibuildfailure',
+      name='lucibuildfailure')
+  def AnalyzeLuciBuildFailures(self, api_input):
+    """Returns analysis results for the given build failures in the request.
+
+    This API is a replacement of AnalyzeBuildFailures since that one requires
+    buildbot concept. And this API has access to Findit v2 results and can
+    potentially get results from v1, while AnalyzeBuildFailures only gets
+    results from v1.
+
+    Args:
+      api_input (findit_result.BuildFailureAnalysisRequestCollection):
+        A list of build failures.
+
+    Returns:
+      findit_result.BuildFailureAnalysisResponseCollection:
+        A list of analysis results for the given build failures.
+    """
+    _ValidateOauthUser()
+
+    results = []
+    build_count_with_responses = 0
+
+    for request in api_input.requests:
+      build_results = findit_v2_api.OnBuildFailureAnalysisResultRequested(
+          request)
+      if not build_results:
+        continue
+
+      build_count_with_responses += 1
+      results.extend(build_results)
+
+    logging.info(
+        '%d build failure(s), while findit_v2 can provide results for'
+        '%d.', len(api_input.requests), build_count_with_responses)
+    return findit_result.BuildFailureAnalysisResponseCollection(
+        responses=results)

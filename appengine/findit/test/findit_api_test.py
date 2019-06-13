@@ -16,6 +16,7 @@ from testing_utils import testing
 from common import exceptions
 from common.waterfall import failure_type
 import endpoint_api
+from findit_v2.model.messages import findit_result
 from gae_libs import appengine_util
 from libs import analysis_status
 from model import analysis_approach_type
@@ -28,9 +29,9 @@ from model.wf_try_job import WfTryJob
 from waterfall import suspected_cl_util
 from waterfall import waterfall_config
 
-
 # pylint:disable=unused-argument, unused-variable
 # https://crbug.com/947753
+
 
 class FinditApiTest(testing.EndpointsTestCase):
   api_service_cls = endpoint_api.FindItApi
@@ -1419,10 +1420,50 @@ class FinditApiTest(testing.EndpointsTestCase):
         (None, None, None),
         endpoint_api.FindItApi()._GetSwarmingTaskAndTryJobForFailure(
             's', None, failure_result_map, None, None))
-    # Assertions have never worked properly because we were using mock 1.0.1.
-    # After rolling to mock 2.0.0, which fixes assertions, these assertions now
-    # fail. https://crbug.com/947753.
-    # mock_log.assert_has_called_once_with(
+    # mock_log.assert_called_once_with(
     #     'Try_job_key in wrong format - failure_result_map: %s; step_name: %s;'
     #     ' test_name: %s.', json.dumps(failure_result_map, default=str), 's',
     #     None)
+
+  @mock.patch.object(
+      endpoint_api, '_ValidateOauthUser', return_value=('email', False))
+  @mock.patch.object(logging, 'info')
+  @mock.patch(
+      'endpoint_api.findit_v2_api.OnBuildFailureAnalysisResultRequested')
+  def testAnalyzeLuciBuildFailures(self, mock_api, mock_logging, _):
+    api_input = {
+        'requests': [
+            {
+                'build_id': 8000000000123,
+                'failed_steps': ['a']
+            },
+            {
+                'build_alternative_id': {
+                    'project': 'chromium',
+                    'bucket': 'ci',
+                    'builder': 'Luci Tests',
+                    'number': 124
+                },
+                'failed_steps': ['compile']
+            },
+        ]
+    }
+
+    mock_api.side_effect = [
+        [],
+        [
+            findit_result.BuildFailureAnalysisResponse(
+                build_alternative_id=findit_result.BuildIdentifierByNumber(
+                    project='chromium',
+                    bucket='ci',
+                    builder='Luci Tests',
+                    number=124),
+                is_finished=False,
+            )
+        ]
+    ]
+
+    response = self.call_api('AnalyzeLuciBuildFailures', body=api_input)
+    self.assertEqual(200, response.status_int)
+    mock_logging.assert_called_once_with(
+        '%d build failure(s), while findit_v2 can provide results for%d.', 2, 1)
