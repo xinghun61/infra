@@ -15,6 +15,7 @@ import (
 	swarming_api "go.chromium.org/luci/common/api/swarming/swarming/v1"
 	"go.chromium.org/luci/common/clock"
 	"go.chromium.org/luci/common/errors"
+	"go.chromium.org/luci/swarming/proto/jsonrpc"
 
 	"infra/libs/skylab/request"
 )
@@ -22,6 +23,13 @@ import (
 // Run encapsulates the running state of an ExecuteRequest.
 type Run struct {
 	testRuns []*testRun
+}
+
+// unfinishedTaskStates indicate swarming states that correspond to non-final
+// tasks.
+var unfinishedTaskStates = map[jsonrpc.TaskState]bool{
+	jsonrpc.TaskState_PENDING: true,
+	jsonrpc.TaskState_RUNNING: true,
 }
 
 type testRun struct {
@@ -118,8 +126,12 @@ func (r *Run) tick(ctx context.Context, swarming Swarming) (complete bool, err e
 			return false, errors.Annotate(err, "wait for tests").Err()
 		}
 
-		// TODO(akeshet): Respect actual completed statuses.
-		if result.State == "COMPLETED" {
+		state, err := unpackTaskState(result.State)
+		if err != nil {
+			return false, errors.Annotate(err, "wait for tests").Err()
+		}
+
+		if !unfinishedTaskStates[state] {
 			attempt.completed = true
 			continue
 		}
@@ -142,6 +154,14 @@ func unpackResultForAttempt(results []*swarming_api.SwarmingRpcsTaskResult, a at
 	}
 
 	return result, nil
+}
+
+func unpackTaskState(state string) (jsonrpc.TaskState, error) {
+	val, ok := jsonrpc.TaskState_value[state]
+	if !ok {
+		return jsonrpc.TaskState_INVALID, errors.Reason("invalid task state %s", state).Err()
+	}
+	return jsonrpc.TaskState(val), nil
 }
 
 func (r *Run) response() *steps.ExecuteResponse {

@@ -13,6 +13,7 @@ import (
 
 	chromite "go.chromium.org/chromiumos/infra/proto/go/chromite/api"
 	swarming_api "go.chromium.org/luci/common/api/swarming/swarming/v1"
+	"go.chromium.org/luci/swarming/proto/jsonrpc"
 
 	"infra/cmd/cros_test_platform/internal/skylab"
 )
@@ -20,7 +21,7 @@ import (
 // fakeSwarming implements skylab.Swarming
 type fakeSwarming struct {
 	nextID      int
-	nextState   string
+	nextState   jsonrpc.TaskState
 	nextError   error
 	callback    func()
 	createCalls int
@@ -46,14 +47,17 @@ func (f *fakeSwarming) GetResults(ctx context.Context, IDs []string) ([]*swarmin
 	}
 	results := make([]*swarming_api.SwarmingRpcsTaskResult, len(IDs))
 	for i, taskID := range IDs {
-		results[i] = &swarming_api.SwarmingRpcsTaskResult{TaskId: taskID, State: f.nextState}
+		results[i] = &swarming_api.SwarmingRpcsTaskResult{
+			TaskId: taskID,
+			State:  jsonrpc.TaskState_name[int32(f.nextState)],
+		}
 	}
 	return results, nil
 }
 
 // setTaskState causes this fake to start returning the given state of all future
 // GetResults calls.
-func (f *fakeSwarming) setTaskState(state string) {
+func (f *fakeSwarming) setTaskState(state jsonrpc.TaskState) {
 	f.nextState = state
 }
 
@@ -71,7 +75,7 @@ func (f *fakeSwarming) setCallback(fn func()) {
 
 func newFakeSwarming() *fakeSwarming {
 	return &fakeSwarming{
-		nextState: "COMPLETED",
+		nextState: jsonrpc.TaskState_COMPLETED,
 		callback:  func() {},
 	}
 }
