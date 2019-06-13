@@ -33,7 +33,9 @@ def GetMergedFailureKey(failure_entities, referred_build_id, step_ui_name,
 
   Args:
     failure_entities(dict of list of CompileFailure): Contains CompileFailure
-      entities that the current failure could potentially merge into.
+      entities that the current failure could potentially merge into. This dict
+      could potentially be modified, if the referred build was not included
+      before.
     referred_build_id(int): Id of current failure's first failed build or
       failure group.
     step_ui_name(str): Step name of current failure.
