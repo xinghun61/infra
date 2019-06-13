@@ -183,7 +183,7 @@ def TriggerRerunBuild(context, analyzed_build_id, referred_build, analysis_key,
   CompileRerunBuild.Create(
       luci_project=rerun_builder.project,
       luci_bucket=rerun_builder.bucket,
-      luci_builder=referred_build.builder.builder,
+      luci_builder=rerun_builder.builder,
       build_id=new_build.id,
       legacy_build_number=new_build.number,
       gitiles_host=rerun_commit.gitiles_host,

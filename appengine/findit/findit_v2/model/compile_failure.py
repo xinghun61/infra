@@ -284,9 +284,9 @@ class CompileRerunBuild(LuciBuild):
     self.status = status  # pylint: disable=attribute-defined-outside-init
     self.failures = []
     for step_ui_name, step_info in detailed_compile_failures.iteritems():
-      for failure in step_info['failures'].itervalues():
+      for output_targets in step_info['failures']:
         failure_entity = CompileFailureInRerunBuild(
-            step_ui_name=step_ui_name, output_targets=failure['output_targets'])
+            step_ui_name=step_ui_name, output_targets=output_targets)
         self.failures.append(failure_entity)
     self.put()
 

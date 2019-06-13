@@ -163,8 +163,7 @@ class CompileFailureTest(wf_testcase.WaterfallTestCase):
     detailed_compile_failures = {
         'compile': {
             'failures': {
-                'target1 target2': {
-                    'output_targets': ['target1.o', 'target2.o'],
+                frozenset(['target1.o', 'target2.o']): {
                     'rule': 'CXX',
                     'first_failed_build': {
                         'id': 8000000000121,

@@ -157,8 +157,7 @@ class CompileApiTest(wf_testcase.TestCase):
     mock_compile_failures.return_value = {
         'install packages': {
             'failures': {
-                'target1 target2': {
-                    'output_targets': ['target1.o', 'target2.o'],
+                frozenset(['target1.o', 'target2.o']): {
                     'rule': 'CXX',
                     'first_failed_build': {
                         'id': build_id,

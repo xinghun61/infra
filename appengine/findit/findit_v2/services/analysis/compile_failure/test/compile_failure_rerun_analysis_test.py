@@ -259,8 +259,7 @@ class CompileFailureRerunAnalysisTest(wf_testcase.TestCase):
     rerun_build_failures = {
         'compile': {
             'failures': {
-                'target_str': {
-                    'output_targets': ['a.o'],
+                frozenset(['a.o']): {
                     'rule': 'CXX'
                 }
             }
@@ -308,8 +307,7 @@ class CompileFailureRerunAnalysisTest(wf_testcase.TestCase):
     rerun_build_failures = {
         'compile': {
             'failures': {
-                'target_str': {
-                    'output_targets': ['a.o'],
+                frozenset(['a.o']): {
                     'rule': 'CXX'
                 }
             }
