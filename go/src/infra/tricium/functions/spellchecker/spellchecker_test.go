@@ -100,31 +100,19 @@ func TestSpellCheckerAnalyzeFiles(t *testing.T) {
 			"This is not in a comment so aberation shouldn't be flagged.\n" +
 			"//The word wanna has a reason to be disabled, so isn't flagged\n" +
 			"/*Here are\ncombinatins of\nlines.\nAnd GAE is ignored.*/\n"
+			// 2019/06/13 13:58:35 ADDING "iminent" with fixes: ["imminent" "immanent" "eminent"]
 
 		expected := &tricium.Data_Results{
 			Comments: []*tricium.Data_Comment{
 				{
 					Path:      "test.c",
-					Message:   `"iminent" is a possible misspelling of "eminent", "imminent", or "immanent".`,
+					Message:   `"iminent" is a possible misspelling of "imminent", "immanent", or "eminent".`,
 					Category:  "SpellChecker",
 					StartLine: 1,
 					EndLine:   1,
 					StartChar: 19,
 					EndChar:   26,
 					Suggestions: []*tricium.Data_Suggestion{
-						{
-							Description: "Misspelling fix suggestion",
-							Replacements: []*tricium.Data_Replacement{
-								{
-									Path:        "test.c",
-									Replacement: "eminent",
-									StartLine:   1,
-									EndLine:     1,
-									StartChar:   19,
-									EndChar:     26,
-								},
-							},
-						},
 						{
 							Description: "Misspelling fix suggestion",
 							Replacements: []*tricium.Data_Replacement{
@@ -144,6 +132,19 @@ func TestSpellCheckerAnalyzeFiles(t *testing.T) {
 								{
 									Path:        "test.c",
 									Replacement: "immanent",
+									StartLine:   1,
+									EndLine:     1,
+									StartChar:   19,
+									EndChar:     26,
+								},
+							},
+						},
+						{
+							Description: "Misspelling fix suggestion",
+							Replacements: []*tricium.Data_Replacement{
+								{
+									Path:        "test.c",
+									Replacement: "eminent",
 									StartLine:   1,
 									EndLine:     1,
 									StartChar:   19,
