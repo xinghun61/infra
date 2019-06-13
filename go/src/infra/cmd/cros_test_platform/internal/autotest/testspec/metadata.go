@@ -71,15 +71,15 @@ func (g *getter) Get(root string) (*api.TestMetadataResponse, error) {
 func (g *getter) parseTests(controls map[string]io.Reader) ([]*testMetadata, error) {
 	var merr errors.MultiError
 	tests := make([]*testMetadata, 0, len(controls))
-	for _, t := range controls {
+	for n, t := range controls {
 		bt, err := ioutil.ReadAll(t)
 		if err != nil {
-			merr = append(merr, errors.Annotate(err, "parse tests").Err())
+			merr = append(merr, errors.Annotate(err, "parse test %s", n).Err())
 			continue
 		}
 		tm, err := g.parseTestControlFn(string(bt))
 		if err != nil {
-			merr = append(merr, errors.Annotate(err, "parse tests").Err())
+			merr = append(merr, errors.Annotate(err, "parse test %s", n).Err())
 			continue
 		}
 		tests = append(tests, tm)
@@ -90,15 +90,15 @@ func (g *getter) parseTests(controls map[string]io.Reader) ([]*testMetadata, err
 func (g *getter) parseSuites(controls map[string]io.Reader) ([]*api.AutotestSuite, error) {
 	var merr errors.MultiError
 	suites := make([]*api.AutotestSuite, 0, len(controls))
-	for _, t := range controls {
+	for n, t := range controls {
 		bt, err := ioutil.ReadAll(t)
 		if err != nil {
-			merr = append(merr, errors.Annotate(err, "parse tests").Err())
+			merr = append(merr, errors.Annotate(err, "parse suite %s", n).Err())
 			continue
 		}
 		sm, err := g.parseSuiteControlFn(string(bt))
 		if err != nil {
-			merr = append(merr, errors.Annotate(err, "parse suites").Err())
+			merr = append(merr, errors.Annotate(err, "parse suite %s", n).Err())
 			continue
 		}
 		suites = append(suites, sm)
