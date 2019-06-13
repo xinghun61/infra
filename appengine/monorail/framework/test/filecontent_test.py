@@ -26,6 +26,7 @@ class MimeTest(unittest.TestCase):
 
   _CODE_EXTENSIONS = [
       'py', 'java', 'mf', 'bat', 'sh', 'php', 'vb', 'pl', 'sql',
+      'patch', 'diff',
   ]
 
   def testCommonExtensions(self):

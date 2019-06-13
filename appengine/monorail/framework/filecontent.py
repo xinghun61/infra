@@ -88,8 +88,8 @@ COMMON_BINARY_FILE_EXTENSIONS = {
 # correctly).
 COMMON_TEXT_FILE_EXTENSIONS = (
     set(framework_constants.PRETTIFY_CLASS_MAP.iterkeys()) |
-    { '', 'ada', 'asm', 'asp', 'bat', 'cgi', 'csv', 'el', 'emacs',
-      'jsp', 'log', 'markdown', 'md', 'mf', 'plist', 'properties', 'r',
+    { '', 'ada', 'asm', 'asp', 'bat', 'cgi', 'csv', 'diff', 'el', 'emacs',
+      'jsp', 'log', 'markdown', 'md', 'mf', 'patch', 'plist', 'properties', 'r',
       'rc', 'txt', 'vim', 'wiki', 'xemacs', 'yacc',
       })
 COMMON_TEXT_FILENAMES = (
