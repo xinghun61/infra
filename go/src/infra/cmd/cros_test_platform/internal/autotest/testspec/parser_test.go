@@ -111,6 +111,15 @@ func TestParseTestControlDependencies(t *testing.T) {
 		{`DEPENDENCIES = "dep1, dep2"`, stringset.NewFromSlice("dep1", "dep2")},
 		{`DEPENDENCIES = "dep1,dep2"`, stringset.NewFromSlice("dep1", "dep2")},
 		{`DEPENDENCIES = "dep1,dep2,"`, stringset.NewFromSlice("dep1", "dep2")},
+		// Control file fields are just python global variable assignments.
+		// If the same global variable is assigned multiple times, lexically
+		// last assignment wins.
+		{
+			Text: `
+				DEPENDENCIES = "dep1"
+				DEPENDENCIES = "dep2"`,
+			Want: stringset.NewFromSlice("dep2"),
+		},
 	}
 
 	for _, c := range cases {

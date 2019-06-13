@@ -55,12 +55,31 @@ func findMatchesInAllLines(text string, re *regexp.Regexp) [][]string {
 	return ms
 }
 
-func unwrapSingleSubmatchOrError(values [][]string, errContext string) (string, error) {
-	switch len(values) {
+func unwrapSingleSubmatchOrError(matches [][]string, errContext string) (string, error) {
+	ss := unwrapSubmatches(matches, errContext)
+	switch len(ss) {
 	case 0:
 		return "", nil
 	case 1:
-		m := values[0]
+		return ss[0], nil
+	default:
+		return "", fmt.Errorf("%s: more than one value: %s", errContext, matches)
+	}
+}
+
+func unwrapLastSubmatch(matches [][]string, errContext string) string {
+	ss := unwrapSubmatches(matches, errContext)
+	switch len(ss) {
+	case 0:
+		return ""
+	default:
+		return ss[len(ss)-1]
+	}
+}
+
+func unwrapSubmatches(matches [][]string, errContext string) []string {
+	ss := make([]string, 0, len(matches))
+	for _, m := range matches {
 		if len(m) != 2 {
 			// Number of sub-matches is determined only by the regexp
 			// definitions in this module.
@@ -68,10 +87,9 @@ func unwrapSingleSubmatchOrError(values [][]string, errContext string) (string, 
 			// will cause a panic() on *every* successful match.
 			panic(fmt.Sprintf("%s: match has %d submatches, want 1: %s", errContext, len(m), m[1:]))
 		}
-		return m[1], nil
-	default:
-		return "", fmt.Errorf("%s: more than one value: %s", errContext, values)
+		ss = append(ss, m[1])
 	}
+	return ss
 }
 
 func parseSyncCount(text string, tm *testMetadata) error {
@@ -122,11 +140,7 @@ func setDefaultRetries(tm *testMetadata) {
 
 func parseDependencies(text string, tm *testMetadata) error {
 	ms := findMatchesInAllLines(text, dependenciesPattern)
-	cl, err := unwrapSingleSubmatchOrError(ms, "parseDependencies")
-	if err != nil {
-		return err
-	}
-	for _, s := range splitAndTrimCommaList(cl) {
+	for _, s := range splitAndTrimCommaList(unwrapLastSubmatch(ms, "parseDependencies")) {
 		tm.Dependencies = append(tm.Dependencies, &api.AutotestTaskDependency{Label: s})
 	}
 	return nil
