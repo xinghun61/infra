@@ -33,12 +33,22 @@ func CreateTempDirOrDie(t *testing.T) (string, func()) {
 // This function panics on error.
 func CreateFileOrDie(t *testing.T, path []string, text string) string {
 	file := path[len(path)-1]
-	dir := filepath.Join(path[:len(path)-1]...)
-	if err := os.MkdirAll(dir, 0750); err != nil {
-		panic(err)
-	}
+	dir := CreateDirOrDie(t, path[:len(path)-1]...)
 	if err := ioutil.WriteFile(filepath.Join(dir, file), []byte(text), 0640); err != nil {
 		panic(err)
 	}
 	return filepath.Join(dir, file)
+}
+
+// CreateDirOrDie creates a directory at the given path.
+//
+// This function returns the path to the created directory.
+// This function panics on error.
+func CreateDirOrDie(t *testing.T, path ...string) string {
+	t.Helper()
+	dir := filepath.Join(path...)
+	if err := os.MkdirAll(dir, 0750); err != nil {
+		panic(err)
+	}
+	return dir
 }

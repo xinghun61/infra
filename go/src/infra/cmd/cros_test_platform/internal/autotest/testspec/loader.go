@@ -51,6 +51,9 @@ func (d *controlFilesLoaderImpl) walkFunc(path string, info os.FileInfo, err err
 	if err != nil {
 		return err
 	}
+	if info.IsDir() {
+		return nil
+	}
 	if isTestControl(path) {
 		d.tests[path] = openROLazy(path)
 	}
@@ -71,7 +74,7 @@ func isSuiteControl(path string) bool {
 var controlFilePattern = regexp.MustCompile(`control(\..*)?`)
 
 func isControl(path string) bool {
-	return controlFilePattern.MatchString(path)
+	return controlFilePattern.MatchString(filepath.Base(path))
 }
 
 func isInDir(dir, path string) bool {

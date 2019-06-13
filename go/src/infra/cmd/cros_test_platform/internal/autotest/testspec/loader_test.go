@@ -39,6 +39,10 @@ func TestEnumeration(t *testing.T) {
 		{createDummyFileOrDie(t, root, "server", "site_tests", "control"), true, false},
 		{createDummyFileOrDie(t, root, "server", "site_tests", "control.gobi3k"), true, false},
 		{createDummyFileOrDie(t, root, "server", "test_suites", "control"), false, true},
+		// Must ignore name matching pattern in directories.
+		{createDummyFileOrDie(t, root, "server", "site_tests", "control_flow", "file"), false, false},
+		{createDummyFileOrDie(t, root, "server", "test_suites", "uber_control", "problem"), false, false},
+		{testutils.CreateDirOrDie(t, root, "server", "control"), false, false},
 	}
 
 	if err := d.Discover(root); err != nil {
