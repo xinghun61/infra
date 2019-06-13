@@ -49,3 +49,7 @@ class BaseFailureAnalysis(ndb.Model):
   status = ndb.IntegerProperty(default=analysis_status.RUNNING, indexed=False)
   # Error code and message, if any.
   error = ndb.JsonProperty(indexed=False)
+
+  @property
+  def completed(self):
+    return self.status in (analysis_status.COMPLETED, analysis_status.ERROR)

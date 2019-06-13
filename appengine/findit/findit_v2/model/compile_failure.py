@@ -114,6 +114,29 @@ class CompileFailure(AtomicFailure):
       step."""
     return self.output_targets
 
+  def GetMergedFailure(self):
+    """Gets the merged_failure for the current failure."""
+    if self.merged_failure_key:
+      return self.merged_failure_key.get()
+
+    if (self.first_failed_build_id == self.build_id and
+        self.failure_group_build_id == self.build_id):
+      # First failure without being merged into any other failure group.
+      return self
+
+    # In a special case that a non-first failure was processed before the first
+    # failure, it's possible that the merged_failure_key is not stored in the
+    # non-first failure.
+    merged_failure_key = GetMergedFailureKey(
+        {}, self.first_failed_build_id, self.step_ui_name, self.output_targets)
+
+    if merged_failure_key:
+      self.merged_failure_key = merged_failure_key
+      self.put()
+      return merged_failure_key.get()
+
+    return None
+
 
 class CompileFailureGroup(BaseFailureGroup):
   """Class for group of compile failures."""

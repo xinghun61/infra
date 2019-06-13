@@ -61,6 +61,11 @@ class AtomicFailure(ndb.Model):
   # Mentioned files in failure log for the failure.
   files = ndb.LocalStructuredProperty(FileInFailureLog, repeated=True)
 
+  @property
+  def build_id(self):
+    """Gets the id of the build that this failure belongs to."""
+    return self.key.parent().id()
+
   @classmethod
   def Create(cls,
              failed_build_key,
@@ -92,4 +97,8 @@ class AtomicFailure(ndb.Model):
       - For test failures, it'll be the [test_name].
 
     """
+    raise NotImplementedError
+
+  def GetMergedFailure(self):
+    """Gets the most up-to-date merged_failure for the current failure."""
     raise NotImplementedError

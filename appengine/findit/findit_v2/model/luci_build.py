@@ -36,6 +36,11 @@ def ParseBuilderId(builder_id):
   )
 
 
+def GetBuilderIdString(luci_project, luci_bucket, luci_builder):
+  """Returns the builder_id in string representation."""
+  return '{}/{}/{}'.format(luci_project, luci_bucket, luci_builder)
+
+
 def SaveFailedBuild(context, build, build_failure_type):
   """Saves the failed build.
 
@@ -137,7 +142,8 @@ class LuciBuild(ndb.Model):
       return cls(
           luci_project=luci_project,
           bucket_id='{}/{}'.format(luci_project, luci_bucket),
-          builder_id='{}/{}/{}'.format(luci_project, luci_bucket, luci_builder),
+          builder_id=GetBuilderIdString(luci_project, luci_bucket,
+                                        luci_builder),
           build_id=build_id,
           legacy_build_number=legacy_build_number,
           gitiles_commit=gitiles_commit,
@@ -149,13 +155,22 @@ class LuciBuild(ndb.Model):
     return cls(
         luci_project=luci_project,
         bucket_id='{}/{}'.format(luci_project, luci_bucket),
-        builder_id='{}/{}/{}'.format(luci_project, luci_bucket, luci_builder),
+        builder_id=GetBuilderIdString(luci_project, luci_bucket, luci_builder),
         build_id=build_id,
         legacy_build_number=legacy_build_number,
         gitiles_commit=gitiles_commit,
         create_time=create_time,
         status=status,
         id=build_id)
+
+  @classmethod
+  def GetBuildByNumber(cls, luci_project, luci_bucket, luci_builder, number):
+    builds = cls.query(
+        ndb.AND(
+            LuciFailedBuild.builder_id == GetBuilderIdString(
+                luci_project, luci_bucket, luci_builder),
+            LuciFailedBuild.legacy_build_number == number)).fetch()
+    return builds[0] if builds else None
 
 
 class LuciFailedBuild(LuciBuild):

@@ -5,7 +5,9 @@
 from datetime import datetime
 
 from findit_v2.model.compile_failure import CompileFailure
+from findit_v2.model.gitiles_commit import Culprit as CulpritNdb
 from findit_v2.model.gitiles_commit import GitilesCommit
+from findit_v2.model.messages.findit_result import Culprit
 from findit_v2.model.luci_build import LuciFailedBuild
 from findit_v2.services.analysis import analysis_util
 from findit_v2.services.context import Context
@@ -215,3 +217,20 @@ class AnalysisUtilTest(wf_testcase.TestCase):
 
     result = analysis_util.GroupFailuresByRegerssionRange(failures_with_range)
     self.assertItemsEqual(expected_result, result)
+
+  def testGetCulpritsForFailures(self):
+    culprit = CulpritNdb.Create(self.gitiles_host, self.gitiles_project,
+                                self.gitiles_ref, 'git_hash_123', 123)
+    culprit.put()
+
+    failure1 = CompileFailure.Create(self.build.key, 'compile', ['a.o'], 'CC')
+    failure1.culprit_commit_key = culprit.key
+    failure1.put()
+
+    failure2 = CompileFailure.Create(self.build.key, 'compile', ['b.o'], 'CC')
+    failure2.culprit_commit_key = culprit.key
+    failure2.put()
+
+    culprits = analysis_util.GetCulpritsForFailures([failure1, failure2])
+    self.assertEqual(1, len(culprits))
+    self.assertEqual('git_hash_123', culprits[0].commit.id)

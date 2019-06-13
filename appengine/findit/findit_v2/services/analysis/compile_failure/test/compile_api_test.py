@@ -10,14 +10,20 @@ from buildbucket_proto.build_pb2 import Build
 from buildbucket_proto.build_pb2 import BuilderID
 from buildbucket_proto.step_pb2 import Step
 
+from findit_v2.model.compile_failure import CompileFailure
 from findit_v2.model.compile_failure import CompileFailureAnalysis
 from findit_v2.model.compile_failure import CompileRerunBuild
+from findit_v2.model.gitiles_commit import Culprit
+from findit_v2.model.luci_build import LuciFailedBuild
+from findit_v2.model.messages import findit_result
 from findit_v2.services.analysis.compile_failure import compile_api
 from findit_v2.services.analysis.compile_failure import (
     compile_failure_rerun_analysis)
 from findit_v2.services.analysis.compile_failure import pre_compile_analysis
 from findit_v2.services.chromeos_api import ChromeOSProjectAPI
 from findit_v2.services.context import Context
+from findit_v2.services.failure_type import StepTypeEnum
+from libs import analysis_status
 from waterfall.test import wf_testcase
 
 
@@ -66,6 +72,37 @@ class CompileApiTest(wf_testcase.TestCase):
                      'UpdateCompileFailuresWithFirstFailureInfo')
   @mock.patch.object(ChromeOSProjectAPI, 'GetCompileFailures', return_value={})
   def testAnalyzeCompileFailureNoFirstFailure(self, mock_failures,
+                                              mock_first_failure, *_):
+    build = Build()
+    compile_failures = []
+    self.assertFalse(
+        compile_api.AnalyzeCompileFailure(self.context, build,
+                                          compile_failures))
+    mock_failures.assert_called_once_with(build, compile_failures)
+    mock_first_failure.assert_called_once_with(self.context, build, {})
+
+  @mock.patch.object(
+      pre_compile_analysis,
+      'GetFirstFailuresInCurrentBuildWithoutGroup',
+      return_value={
+          'failures': {},
+          'last_passed_build': None
+      })
+  @mock.patch.object(
+      pre_compile_analysis,
+      'GetFirstFailuresInCurrentBuild',
+      return_value={
+          'failures': {
+              'install packages': {
+                  'output_targets': ['target4', 'target1', 'target2']
+              }
+          }
+      })
+  @mock.patch.object(pre_compile_analysis, 'SaveCompileFailures')
+  @mock.patch.object(pre_compile_analysis,
+                     'UpdateCompileFailuresWithFirstFailureInfo')
+  @mock.patch.object(ChromeOSProjectAPI, 'GetCompileFailures', return_value={})
+  def testAnalyzeCompileFailureAllFoundGroups(self, mock_failures,
                                               mock_first_failure, *_):
     build = Build()
     compile_failures = []
@@ -259,3 +296,120 @@ class CompileApiTest(wf_testcase.TestCase):
     self.assertEqual({}, rerun_build.GetFailedTargets())
 
     self.assertTrue(mock_analysis.called)
+
+  def testOnCompileFailureAnalysisResultRequested(self):
+    build_id = 800000000123
+    request = findit_result.BuildFailureAnalysisRequest(
+        build_id=build_id, failed_steps=['compile'])
+
+    build = LuciFailedBuild.Create(
+        luci_project='chromium',
+        luci_bucket='ci',
+        luci_builder='Linux Builder',
+        build_id=build_id,
+        legacy_build_number=12345,
+        gitiles_host='chromium.googlesource.com',
+        gitiles_project='chromium/src',
+        gitiles_ref='refs/heads/master',
+        gitiles_id='git_hash',
+        commit_position=65450,
+        status=20,
+        create_time=datetime(2019, 3, 28),
+        start_time=datetime(2019, 3, 28, 0, 1),
+        end_time=datetime(2019, 3, 28, 1),
+        build_failure_type=StepTypeEnum.COMPILE)
+    build.put()
+
+    culprit_id = 'git_hash_65432'
+    culprit_commit_position = 65432
+    culprit = Culprit.Create(
+        self.context.gitiles_host, self.context.gitiles_project,
+        self.context.gitiles_ref, culprit_id, culprit_commit_position)
+    culprit.put()
+
+    compile_failure = CompileFailure.Create(build.key, 'compile', ['target1'],
+                                            'CXX')
+    compile_failure.culprit_commit_key = culprit.key
+    compile_failure.first_failed_build_id = build.build_id
+    compile_failure.failure_group_build_id = build.build_id
+    compile_failure.put()
+
+    analysis = CompileFailureAnalysis.Create(
+        luci_project=self.context.luci_project_name,
+        luci_bucket='postsubmit',
+        luci_builder='Linux Builder',
+        build_id=build_id,
+        gitiles_host=self.context.gitiles_host,
+        gitiles_project=self.context.gitiles_project,
+        gitiles_ref=self.context.gitiles_ref,
+        last_passed_gitiles_id='last_passed_git_hash',
+        last_passed_commit_position=65430,
+        first_failed_gitiles_id='git_hash',
+        first_failed_commit_position=65450,
+        rerun_builder_id='chromeos/postsubmit/builder-bisect',
+        compile_failure_keys=[])
+    analysis.status = analysis_status.COMPLETED
+    analysis.Save()
+
+    responses = compile_api.OnCompileFailureAnalysisResultRequested(
+        request, build)
+
+    self.assertEqual(1, len(responses))
+    self.assertEqual(1, len(responses[0].culprits))
+    self.assertEqual(culprit_id, responses[0].culprits[0].commit.id)
+    self.assertTrue(responses[0].is_finished)
+    self.assertTrue(responses[0].is_supported)
+
+  def testOnCompileFailureAnalysisResultRequestedAnalysisRunning(self):
+    build_id = 800000000123
+    request = findit_result.BuildFailureAnalysisRequest(
+        build_id=build_id, failed_steps=['compile'])
+
+    build = LuciFailedBuild.Create(
+        luci_project='chromium',
+        luci_bucket='ci',
+        luci_builder='Linux Builder',
+        build_id=build_id,
+        legacy_build_number=12345,
+        gitiles_host='chromium.googlesource.com',
+        gitiles_project='chromium/src',
+        gitiles_ref='refs/heads/master',
+        gitiles_id='git_hash',
+        commit_position=65450,
+        status=20,
+        create_time=datetime(2019, 3, 28),
+        start_time=datetime(2019, 3, 28, 0, 1),
+        end_time=datetime(2019, 3, 28, 1),
+        build_failure_type=StepTypeEnum.COMPILE)
+    build.put()
+
+    compile_failure = CompileFailure.Create(build.key, 'compile', ['target1'],
+                                            'CXX')
+    compile_failure.first_failed_build_id = build.build_id
+    compile_failure.failure_group_build_id = build.build_id
+    compile_failure.put()
+
+    analysis = CompileFailureAnalysis.Create(
+        luci_project=self.context.luci_project_name,
+        luci_bucket='postsubmit',
+        luci_builder='Linux Builder',
+        build_id=build_id,
+        gitiles_host=self.context.gitiles_host,
+        gitiles_project=self.context.gitiles_project,
+        gitiles_ref=self.context.gitiles_ref,
+        last_passed_gitiles_id='last_passed_git_hash',
+        last_passed_commit_position=65430,
+        first_failed_gitiles_id='git_hash',
+        first_failed_commit_position=65450,
+        rerun_builder_id='chromeos/postsubmit/builder-bisect',
+        compile_failure_keys=[])
+    analysis.status = analysis_status.RUNNING
+    analysis.Save()
+
+    responses = compile_api.OnCompileFailureAnalysisResultRequested(
+        request, build)
+
+    self.assertEqual(1, len(responses))
+    self.assertEqual(0, len(responses[0].culprits))
+    self.assertFalse(responses[0].is_finished)
+    self.assertTrue(responses[0].is_supported)

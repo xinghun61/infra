@@ -2,15 +2,20 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+from datetime import datetime
 import mock
-import unittest
 
 from buildbucket_proto.build_pb2 import Build
 from google.protobuf.field_mask_pb2 import FieldMask
 
 from common.constants import DEFAULT_SERVICE_ACCOUNT
+from findit_v2.model.luci_build import LuciFailedBuild
+from findit_v2.model.messages import findit_result
 from findit_v2.services import api
+from findit_v2.services.analysis.compile_failure import compile_api
 from findit_v2.services.context import Context
+from findit_v2.services.failure_type import StepTypeEnum
+from waterfall.test.wf_testcase import WaterfallTestCase
 
 _MOCKED_LUCI_PROJECTS = {
     'project': {
@@ -29,7 +34,7 @@ _MOCKED_GERRIT_PROJECTS = {
 }
 
 
-class APITest(unittest.TestCase):
+class APITest(WaterfallTestCase):
 
   @mock.patch('findit_v2.services.projects.LUCI_PROJECTS',
               _MOCKED_LUCI_PROJECTS)
@@ -167,3 +172,71 @@ class APITest(unittest.TestCase):
   def testGetBuildAndContextForAnalysisNoBuild(self, _):
     self.assertEqual((None, None),
                      api.GetBuildAndContextForAnalysis('chromium', 123))
+
+  @mock.patch.object(compile_api, 'OnCompileFailureAnalysisResultRequested')
+  def testOnBuildFailureAnalysisResultRequestedNoBuildInDataStore(
+      self, mock_compile_api):
+    request = findit_result.BuildFailureAnalysisRequest(
+        build_id=8000456, failed_steps=['compile'])
+    self.assertEqual([], api.OnBuildFailureAnalysisResultRequested(request))
+    self.assertFalse(mock_compile_api.called)
+
+  @mock.patch.object(compile_api, 'OnCompileFailureAnalysisResultRequested')
+  def testOnBuildFailureAnalysisResultRequestedNotSupport(
+      self, mock_compile_api):
+    build_id = 80004567
+    build = LuciFailedBuild.Create(
+        luci_project='chromium',
+        luci_bucket='ci',
+        luci_builder='Linux Builder',
+        build_id=80004567,
+        legacy_build_number=4567,
+        gitiles_host='chromium.googlesource.com',
+        gitiles_project='chromium/src',
+        gitiles_ref='refs/heads/master',
+        gitiles_id='git_hash',
+        commit_position=65450,
+        status=20,
+        create_time=datetime(2019, 3, 28),
+        start_time=datetime(2019, 3, 28, 0, 1),
+        end_time=datetime(2019, 3, 28, 1),
+        build_failure_type=StepTypeEnum.TEST)
+    build.put()
+
+    request = findit_result.BuildFailureAnalysisRequest(
+        build_id=build_id, failed_steps=['browser_tests'])
+    self.assertEqual([], api.OnBuildFailureAnalysisResultRequested(request))
+    self.assertFalse(mock_compile_api.called)
+
+  @mock.patch.object(
+      compile_api,
+      'OnCompileFailureAnalysisResultRequested',
+      return_value=['responses'])
+  def testOnBuildFailureAnalysisResultRequested(self, mock_compile_api):
+    luci_project = 'chromium'
+    luci_bucket = 'ci'
+    luci_builder = 'Linux Builder'
+    build_number = 4567
+    build = LuciFailedBuild.Create(
+        luci_project=luci_project,
+        luci_bucket=luci_bucket,
+        luci_builder=luci_builder,
+        build_id=80004567,
+        legacy_build_number=build_number,
+        gitiles_host='chromium.googlesource.com',
+        gitiles_project='chromium/src',
+        gitiles_ref='refs/heads/master',
+        gitiles_id='git_hash',
+        commit_position=65450,
+        status=20,
+        create_time=datetime(2019, 3, 28),
+        start_time=datetime(2019, 3, 28, 0, 1),
+        end_time=datetime(2019, 3, 28, 1),
+        build_failure_type=StepTypeEnum.COMPILE)
+    build.put()
+
+    request = findit_result.BuildFailureAnalysisRequest(
+        build_id=80004567, failed_steps=['compile'])
+    self.assertEqual(['responses'],
+                     api.OnBuildFailureAnalysisResultRequested(request))
+    mock_compile_api.assert_called_once_with(request, build)

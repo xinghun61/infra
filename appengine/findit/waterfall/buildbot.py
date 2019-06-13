@@ -233,14 +233,16 @@ def GetBlameListForV2Build(build):
       break
 
   if not previous_build:
-    logging.warning('No previous build found for build %d.', build.id)
+    logging.error(
+        'No previous build found for build %d, cannot get blame list.',
+        build.id)
+    return []
 
   repo_url = git.GetRepoUrlFromV2Build(build)
-  previous_build_gitiles_id = (
-      previous_build.input.gitiles_commit.id if previous_build else None)
 
   return git.GetCommitsBetweenRevisionsInOrder(
-      previous_build_gitiles_id, build.input.gitiles_commit.id, repo_url)
+      previous_build.input.gitiles_commit.id, build.input.gitiles_commit.id,
+      repo_url)
 
 
 def ExtractBuildInfoFromV2Build(master_name, builder_name, build_number, build):

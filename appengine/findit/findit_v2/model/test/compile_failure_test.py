@@ -59,6 +59,29 @@ class CompileFailureTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(2, len(failures_in_build))
     self.assertItemsEqual([['target1.o'], ['target2.o']],
                           [f.GetFailureIdentifier() for f in failures_in_build])
+    self.assertEqual(self.build_id, failures_in_build[0].build_id)
+
+  def testGetMergedFailureForFirstFailureInGroup(self):
+    failure = self.target_entities[0]
+    failure.first_failed_build_id = self.build_id
+    failure.failure_group_build_id = self.build_id
+    self.assertEqual(failure, failure.GetMergedFailure())
+
+  def testGetMergedFailureWithSavedMergedFailure(self):
+    dummy_merged_failure = CompileFailure.Create(
+        ndb.Key(LuciFailedBuild, 9876543201), 'compile', ['target1.o'])
+    dummy_merged_failure.put()
+    failure = self.target_entities[0]
+    failure.merged_failure_key = dummy_merged_failure.key
+    self.assertEqual(dummy_merged_failure, failure.GetMergedFailure())
+
+  def testGetMergedFailureForNonFirstFailure(self):
+    dummy_merged_failure = CompileFailure.Create(
+        ndb.Key(LuciFailedBuild, 9876543201), 'compile', ['target1.o'])
+    dummy_merged_failure.put()
+    failure = self.target_entities[0]
+    failure.merged_failure_key = dummy_merged_failure.key
+    self.assertEqual(dummy_merged_failure, failure.GetMergedFailure())
 
   def testCompileFailureGroup(self):
     CompileFailureGroup.Create(
@@ -214,3 +237,11 @@ class CompileFailureTest(wf_testcase.WaterfallTestCase):
         compile_failure.GetMergedFailureKey(
             {}, self.build_id, 'compile',
             self.target_entities[0].output_targets))
+
+  def testGetMergedFailure(self):
+    failure = CompileFailure.Create(
+        ndb.Key(LuciFailedBuild, 9876543234), 'compile', ['target1.o'])
+    failure.first_failed_build_id = self.build_id
+    failure.put()
+
+    self.assertEqual(self.target_entities[0], failure.GetMergedFailure())

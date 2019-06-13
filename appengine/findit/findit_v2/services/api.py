@@ -10,9 +10,12 @@ from google.protobuf.field_mask_pb2 import FieldMask
 from common.constants import DEFAULT_SERVICE_ACCOUNT
 from common.waterfall import buildbucket_client
 
+from findit_v2.model.luci_build import LuciFailedBuild
 from findit_v2.services import projects
+from findit_v2.services.analysis.compile_failure import compile_api
 from findit_v2.services.context import Context
 from findit_v2.services.detection import api as detection_api
+from findit_v2.services.failure_type import StepTypeEnum
 
 
 def GetBuildAndContextForAnalysis(project, build_id):
@@ -111,8 +114,8 @@ def OnBuildCompletion(project, bucket, builder_name, build_id, build_result):
   # Skip builders that are not in the whitelist of a supported project/bucket.
   bucket_info = projects.LUCI_PROJECTS.get(project, {}).get(bucket, {})
   if not bucket_info:
-    logging.info('project: %s, bucket: %s is not supported.' % (
-    project, bucket))
+    logging.info(
+        'project: %s, bucket: %s is not supported.' % (project, bucket))
     return False
 
   supported_builders = bucket_info.get('supported_builders', [])
@@ -128,3 +131,43 @@ def OnBuildCompletion(project, bucket, builder_name, build_id, build_result):
   logging.info('Unsupported build %s/%s/%s/%s.', project, bucket, builder_name,
                build_id)
   return False
+
+
+def OnBuildFailureAnalysisResultRequested(request):
+  """Returns the findings of an analysis for a failed build.
+
+  Since Findit v2 only supports compile failure on cros builds, this api will
+  simply respond an empty response on other failures. This is to prevent Findit
+  spending too many pixels to tell users many failures are not supported.
+
+  Args:
+    request(findit_result.BuildFailureAnalysisRequest): request for a build
+      failure.
+
+  Returns:
+    (findit_result.BuildFailureAnalysisResponseCollection): Analysis results
+      for the requested build.
+  """
+  build_id = request.build_id
+  build_alternative_id = request.build_alternative_id
+  if build_id:
+    build_entity = LuciFailedBuild.get_by_id(build_id)
+    if not build_entity:
+      logging.debug('No LuciFailedBuild entity for build %d.', request.build_id)
+      return []
+  else:
+    build_entity = LuciFailedBuild.GetBuildByNumber(
+        build_alternative_id.project, build_alternative_id.bucket,
+        build_alternative_id.builder, build_alternative_id.number)
+    if not build_entity:
+      logging.debug('No LuciFailedBuild entity for build %s/%s/%s/%d.',
+                    build_alternative_id.project, build_alternative_id.bucket,
+                    build_alternative_id.builder, build_alternative_id.number)
+      return []
+
+  if build_entity.build_failure_type == StepTypeEnum.COMPILE:
+    return compile_api.OnCompileFailureAnalysisResultRequested(
+        request, build_entity)
+
+  logging.debug('Findit v2 only supports compile failure analysis.')
+  return []

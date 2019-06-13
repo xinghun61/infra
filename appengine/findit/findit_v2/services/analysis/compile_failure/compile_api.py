@@ -2,14 +2,19 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+from collections import defaultdict
 import logging
 
 from buildbucket_proto import common_pb2
 
+from findit_v2.model.compile_failure import CompileFailure
 from findit_v2.model.compile_failure import CompileFailureAnalysis
 from findit_v2.model.compile_failure import CompileRerunBuild
+from findit_v2.model.messages.findit_result import (
+    BuildFailureAnalysisResponse)
 from findit_v2.services import build_util
 from findit_v2.services import projects
+from findit_v2.services.analysis import analysis_util
 from findit_v2.services.analysis.compile_failure import (
     compile_failure_rerun_analysis)
 from findit_v2.services.analysis.compile_failure import pre_compile_analysis
@@ -150,3 +155,79 @@ def OnCompileRerunBuildCompletion(context, rerun_build):
   compile_failure_rerun_analysis.RerunBasedAnalysis(context, analyzed_build_id,
                                                     rerun_build)
   return True
+
+
+def _IsAnalysisFinished(failures):
+  """ Checks if the analysis has finished.
+
+  Here the 'analysis' refers to the overall analysis for the failures, it's
+  possible that there are multiple analyses analyzing different failures, but
+  Findit will just summarizes all and return a single flag.
+
+  Returns:
+    True if analyses exist and have completed, otherwise False.
+  """
+  analysis_build_ids = set([failure.build_id for failure in failures])
+  for analysis_build_id in analysis_build_ids:
+    analysis = CompileFailureAnalysis.GetVersion(analysis_build_id)
+    if not analysis:
+      logging.warning('Not found compile analysis for build %d',
+                      analysis_build_id)
+      return False
+
+    if not analysis.completed:
+      return False
+
+  return True
+
+
+def OnCompileFailureAnalysisResultRequested(request, requested_build):
+  """Returns the findings for the requested build's compile failure.
+
+  Since SoM doesn't have atomic failure info for compile steps, currently Findit
+  will only respond with aggregated step level results.
+
+  Args:
+    request(findit_result.BuildFailureAnalysisRequest): request for a build
+      failure.
+    requested_build(LuciFailedBuild): A LuciFailedBuild entity with COMPILE
+      build_failure_type.
+
+  Returns:
+    [findit_result.BuildFailureAnalysisResponse]: Analysis results
+      for the requested build.
+  """
+  compile_failures = CompileFailure.query(ancestor=requested_build.key).fetch()
+  if not compile_failures:
+    return None
+
+  requested_steps = request.failed_steps
+  requested_failures = defaultdict(list)
+
+  for failure in compile_failures:
+    if requested_steps and failure.step_ui_name not in requested_steps:
+      continue
+    requested_failures[failure.step_ui_name].append(failure)
+
+  responses = []
+  for step_ui_name, requested_failures_in_step in requested_failures.iteritems(
+  ):
+    merged_failures = []
+    for failure in requested_failures_in_step:
+      # Merged failures are the failures being actually analyzed and only they
+      # have stored culprits info.
+      merged_failures.append(failure.GetMergedFailure())
+
+    culprits = analysis_util.GetCulpritsForFailures(merged_failures)
+    response = BuildFailureAnalysisResponse(
+        build_id=request.build_id,
+        build_alternative_id=request.build_alternative_id,
+        step_name=step_ui_name,
+        test_name=None,
+        culprits=culprits,
+        is_finished=_IsAnalysisFinished(merged_failures),
+        is_supported=True,
+    )
+    responses.append(response)
+
+  return responses

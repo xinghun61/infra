@@ -52,12 +52,9 @@ class LuciFailedBuildTest(wf_testcase.WaterfallTestCase):
     self.assertEqual('chromium/ci/Linux Builder', build.builder_id)
 
     # Get entity by build number.
-    res1 = LuciFailedBuild.query(
-        ndb.AND(LuciFailedBuild.builder_id == 'chromium/ci/Linux Builder',
-                LuciFailedBuild.legacy_build_number ==
-                legacy_build_number)).fetch()
-    self.assertEqual(1, len(res1))
-    self.assertEqual(build_id, res1[0].build_id)
+    res1 = LuciFailedBuild.GetBuildByNumber('chromium', 'ci', 'Linux Builder',
+                                            legacy_build_number)
+    self.assertEqual(build_id, res1.build_id)
 
     # Get entity by commit_position.
     res2 = LuciFailedBuild.query(
@@ -94,3 +91,8 @@ class LuciFailedBuildTest(wf_testcase.WaterfallTestCase):
                                               StepTypeEnum.COMPILE)
 
     self.assertIsNotNone(build_entity)
+
+  def testGetBuilderIdString(self):
+    self.assertEqual(
+        'chromium/try/linux-rel',
+        luci_build.GetBuilderIdString('chromium', 'try', 'linux-rel'))

@@ -7,6 +7,9 @@ from collections import defaultdict
 import logging
 
 from findit_v2.model.gitiles_commit import GitilesCommit
+from findit_v2.model.messages.findit_result import Culprit
+from findit_v2.model.messages.findit_result import (GitilesCommit as
+                                                    GitilesCommitPb)
 
 
 def BisectGitilesCommit(context, left_bound_commit, right_bound_commit,
@@ -185,3 +188,31 @@ def GroupFailuresByRegerssionRange(failures_with_range):
         'first_failed_commit'] = first_failed_commit
 
   return range_to_failures.values()
+
+
+def GetCulpritsForFailures(failures):
+  """Gets culprits for the requested failures.
+
+  Args:
+    failures (list of AtomicFailures)
+
+  Returns:
+    (list of findit_result.Culprit)
+  """
+  culprit_keys = set([
+      failure.culprit_commit_key
+      for failure in failures
+      if failure and failure.culprit_commit_key
+  ])
+  culprits = []
+  for culprit_key in culprit_keys:
+    culprit_entity = culprit_key.get()
+    culprit_message = Culprit(
+        commit=GitilesCommitPb(
+            host=culprit_entity.gitiles_host,
+            project=culprit_entity.gitiles_project,
+            ref=culprit_entity.gitiles_ref,
+            id=culprit_entity.gitiles_id,
+            commit_position=culprit_entity.commit_position))
+    culprits.append(culprit_message)
+  return culprits
