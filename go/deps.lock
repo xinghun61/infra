@@ -434,7 +434,7 @@ imports:
   subpackages:
   - errgroup
 - name: golang.org/x/sys
-  version: 301114b31cced3624480dfb114ca1b495ec69aa5
+  version: ab3f67ed278a7dfdc808828162c1d14c19a32238
   repo: https://go.googlesource.com/sys.git
   subpackages:
   - unix
