@@ -33,9 +33,8 @@ RUN /bin/chmod a+x /tmp/setup-deps/install-build-deps*.sh
 RUN /bin/bash -x /tmp/setup-deps/install-build-deps-android.sh
 
 # Cleanup to shrink image sizes.
-RUN /usr/bin/find /var/lib/apt/lists /tmp /var/tmp /var/cache/man \
-      /usr/share/groff /usr/share/info /usr/share/lintian  \
-      /usr/share/man -maxdepth 1 -mindepth 1 -exec rm -rf {} \;
+RUN /usr/bin/find /var/lib/apt/lists /tmp /var/tmp /usr/share/info \
+      /usr/share/lintian /usr/share/man -maxdepth 1 -mindepth 1 -exec rm -rf {} \;
 RUN /usr/bin/find /usr/share/doc -depth -type f ! -name copyright -exec rm -rf {} \;
 RUN /usr/bin/find /usr/share/doc -depth -empty -exec rm -rf {} \;
 

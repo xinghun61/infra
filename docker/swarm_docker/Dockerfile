@@ -8,7 +8,7 @@ RUN /usr/bin/apt-get -y install curl lsof python sudo
 
 # Cleanup to shrink image sizes.
 RUN /usr/bin/find /var/lib/apt/lists /tmp /var/tmp /usr/share/info \
-    /usr/share/lintian /usr/share/man -maxdepth 1 -mindepth 1 -exec rm -rf {} \;
+      /usr/share/lintian /usr/share/man -maxdepth 1 -mindepth 1 -exec rm -rf {} \;
 RUN /usr/bin/find /usr/share/doc -depth -type f ! -name copyright -exec rm -rf {} \;
 RUN /usr/bin/find /usr/share/doc -depth -empty -exec rm -rf {} \;
 
