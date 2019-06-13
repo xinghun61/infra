@@ -3,7 +3,6 @@ package analyzer
 import (
 	"encoding/json"
 	"fmt"
-	"infra/appengine/sheriff-o-matic/som/client"
 	"infra/monitoring/messages"
 	"net/url"
 	"strings"
@@ -282,21 +281,28 @@ func (a *Analyzer) BuildBucketAlerts(ctx context.Context, builderIDs []*bbpb.Bui
 		}
 
 		someBuilder := alertedBuilders[0]
-		master := masterLocationByName[someBuilder.Master]
-		if master != nil {
-			results, err := a.FindIt.Findit(ctx, master, someBuilder.Name, someBuilder.LatestFailure, []string{stepName})
-			if err != nil {
-				logging.Errorf(ctx, "error getting findit results: %v", err)
-			}
-
-			if len(results) > 0 {
-				buildURL := client.BuildURLDeprecated(master, someBuilder.Name, 0).String()
-				bf.FinditStatus = results[0].TryJobStatus
-				bf.HasFindings = results[0].HasFindings
-				bf.FinditURL = fmt.Sprintf("https://findit-for-me.appspot.com/waterfall/failure?url=%s", buildURL)
-			}
+		buildAlternativeID := messages.BuildIdentifierByNumber{
+			Project: someBuilder.Project,
+			Bucket:  someBuilder.Bucket,
+			Builder: someBuilder.Name,
+			Number:  someBuilder.LatestFailure,
+		}
+		results, err := a.FindIt.FinditBuildbucket(ctx, &buildAlternativeID, []string{stepName})
+		if err != nil {
+			logging.Errorf(ctx, "error getting findit results: %v", err)
 		}
 
+		for _, result := range results {
+			if result.StepName != bf.StepAtFault.Step.Name {
+				continue
+			}
+
+			bf.Culprits = append(bf.Culprits, result.Culprits...)
+			bf.HasFindings = len(result.Culprits) > 0
+			bf.IsFinished = result.IsFinished
+			bf.IsSupported = result.IsSupported
+
+		}
 		// This assumes there is one set of reasons that applies to all instances
 		// of stepName failures. Obviously this isn't always true, and we should
 		// do more advanced grouping for test failures within a step, once we have

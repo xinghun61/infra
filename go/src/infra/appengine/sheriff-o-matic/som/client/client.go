@@ -210,6 +210,11 @@ type FinditAPIResponse struct {
 	Results []*messages.FinditResult `json:"results"`
 }
 
+// FinditAPIResponseV2 represents a response from the findit api.
+type FinditAPIResponseV2 struct {
+	Responses []*messages.FinditResultV2 `json:"responses"`
+}
+
 func cacheable(b *messages.Build) bool {
 	return len(b.Times) > 1 && b.Times[1] != 0
 }

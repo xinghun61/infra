@@ -411,6 +411,7 @@ func TestBuilderStepAlerts(t *testing.T) {
 			recentBuilds  []int64
 			testData      *analyzertest.BuilderFaker
 			finditData    []*messages.FinditResult
+			finditDataV2  []*messages.FinditResultV2
 			time          time.Time
 			buildsAtFault []int
 			stepsAtFault  []string
@@ -691,6 +692,7 @@ func TestBuilderStepAlerts(t *testing.T) {
 						IsSupported: true,
 					},
 				},
+				finditDataV2:  []*messages.FinditResultV2{},
 				buildsAtFault: []int{0, 0},
 				stepsAtFault:  []string{"fake_step", "other_step"},
 				wantAlerts: []messages.Alert{
@@ -1045,8 +1047,9 @@ func TestBuilderStepAlerts(t *testing.T) {
 					builds = test.testData.Builds
 				}
 				mc := clientTest.MockReader{
-					Builds:        builds,
-					FinditResults: test.finditData,
+					Builds:          builds,
+					FinditResults:   test.finditData,
+					FinditResultsV2: test.finditDataV2,
 				}
 				a.Milo = mc
 				a.FindIt = mc

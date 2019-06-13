@@ -22,13 +22,19 @@ func (bb *StubBuildBucket) LatestBuilds(ctx context.Context, builderIDs []*bbpb.
 
 // StubFindIt is a stub for testing.
 type StubFindIt struct {
-	Result []*messages.FinditResult
-	Err    error
+	Result    []*messages.FinditResult
+	Responses []*messages.FinditResultV2
+	Err       error
 }
 
 // Findit returns Findit results.
 func (fi *StubFindIt) Findit(ctx context.Context, master *messages.MasterLocation, builder string, buildNum int64, failedSteps []string) ([]*messages.FinditResult, error) {
 	return fi.Result, fi.Err
+}
+
+// FinditBuildbucket returns FinditBuildbucket results.
+func (fi *StubFindIt) FinditBuildbucket(ctx context.Context, buildAlternativeID *messages.BuildIdentifierByNumber, failedSteps []string) ([]*messages.FinditResultV2, error) {
+	return fi.Responses, fi.Err
 }
 
 // StubLogReader is a stub for testing.

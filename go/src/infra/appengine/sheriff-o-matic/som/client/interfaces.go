@@ -33,6 +33,8 @@ type CrBug interface {
 type FindIt interface {
 	// FindIt returns FindIt results for a build.
 	Findit(ctx context.Context, master *messages.MasterLocation, builder string, buildNum int64, failedSteps []string) ([]*messages.FinditResult, error)
+	// FinditBuildbucket returns FindIt results for a build. Both input and output are using buildbucket concepts.
+	FinditBuildbucket(ctx context.Context, buildAlternativeID *messages.BuildIdentifierByNumber, failedSteps []string) ([]*messages.FinditResultV2, error)
 }
 
 // LogReader returns logs from build steps.

@@ -158,6 +158,12 @@ type BuildFailure struct {
 	HasFindings bool   `json:"has_findings"`
 	IsFinished  bool   `json:"is_finished"`
 	IsSupported bool   `json:"is_supported"`
+	// New struct for the culprits found by Findit.
+	// Culprit is essentially the same as SuspectedCL, but it has more
+	// gitiles information like host/project/ref to identify a commit, so
+	// that it can support different LUCI projects easily.
+	// When presents, SuspectedCLs should be empty.
+	Culprits []Culprit `json:"culprits"`
 }
 
 // BuildStep is a step which was run in a particular build. Useful for analyzing

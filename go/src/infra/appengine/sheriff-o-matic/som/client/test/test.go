@@ -24,6 +24,7 @@ type MockReader struct {
 	TestResultsValue  *model.FullResult
 	StdioForStepValue []string
 	FinditResults     []*messages.FinditResult
+	FinditResultsV2   []*messages.FinditResultV2
 	BuildFetchError,
 	StepFetchError,
 	StdioForStepError error
@@ -80,4 +81,9 @@ func (m MockReader) CrbugItems(ctx context.Context, tree string) ([]messages.Crb
 // Findit implements the Reader interface.
 func (m MockReader) Findit(ctx context.Context, master *messages.MasterLocation, builder string, buildNum int64, failedSteps []string) ([]*messages.FinditResult, error) {
 	return m.FinditResults, nil
+}
+
+// FinditBuildbucket implements the Reader interface.
+func (m MockReader) FinditBuildbucket(ctx context.Context, buildAlternativeID *messages.BuildIdentifierByNumber, failedSteps []string) ([]*messages.FinditResultV2, error) {
+	return m.FinditResultsV2, nil
 }

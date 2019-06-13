@@ -176,6 +176,32 @@
       });
     });
 
+    test('renders Findit v2 culprits', function(done) {
+      element.extension = {
+        culprits: [
+          {commit: {id: '1234', host: 'gitiles.host.com', project:'project/name', commmit_position: 123}},
+        ],
+      };
+      flush(() => {
+        let item = element.$$('#finditResults');
+        assert.isNotNull(item);
+        assert.equal(item.getElementsByClassName('suspect-cl-link')[0].href,
+          'https://gitiles.host.com/project/name/+/1234');
+        done();
+      });
+    });
+
+    test('removes duplicate Findit v2 culprits', function() {
+      element.extension = {
+        culprits: [
+          {commit: {id: '1234', host: 'gitiles.host.com', project:'project/name', commmit_position: 123}},
+          {commit: {id: '1234', host: 'gitiles.host.com', project:'project/name', commmit_position: 123}},
+        ],
+      };
+
+      assert.equal(element._culprits.length, 1);
+    });
+
     test('removes duplicate suspect CLs', function() {
       element.extension = {
         reason: {

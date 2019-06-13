@@ -95,7 +95,33 @@ func TestBuildBucketAlerts(t *testing.T) {
 		ctx = gologger.StdConfig.Use(ctx)
 		tr := &client.StubTestResults{}
 		lr := &client.StubLogReader{}
-		fi := &client.StubFindIt{}
+		fi := &client.StubFindIt{
+			Responses: []*messages.FinditResultV2{
+				{
+					BuildAlternativeID: messages.BuildIdentifierByNumber{
+						Project: "chromium",
+						Bucket:  "ci",
+						Builder: "linux-rel",
+						Number:  42,
+					},
+					StepName: "step-name",
+					Culprits: []messages.Culprit{
+						{
+							Commit: messages.GitilesCommit{
+								Host:           "gitiles.host.com",
+								Project:        "project/name",
+								ID:             "git_sha",
+								Ref:            "refs/heads/master",
+								CommitPosition: 123,
+							},
+						},
+					},
+					IsFinished:  true,
+					IsSupported: true,
+				},
+			},
+			Err: nil,
+		}
 		a.BuildBucketStepAnalyzers = step.DefaultBuildBucketStepAnalyzers(tr, lr, fi)
 		a.FindIt = fi
 		failures, err := a.BuildBucketAlerts(ctx, []*bbpb.BuilderID{builderID})
@@ -109,6 +135,13 @@ func TestBuildBucketAlerts(t *testing.T) {
 		So(failures[0].Builders[0].Name, ShouldEqual, "linux-rel")
 		So(failures[0].Builders[0].FirstFailure, ShouldEqual, 42)
 		So(failures[0].Builders[0].LatestFailure, ShouldEqual, 42)
+		// Testing FinditBuildbucket results.
+		So(failures[0].HasFindings, ShouldEqual, true)
+		So(failures[0].IsFinished, ShouldEqual, true)
+		So(failures[0].IsSupported, ShouldEqual, true)
+		So(failures[0].Culprits, ShouldNotBeEmpty)
+		So(failures[0].Culprits[0].Commit.ID, ShouldEqual, "git_sha")
+		So(failures[0].Culprits[0].Commit.Host, ShouldEqual, "gitiles.host.com")
 	})
 
 	Convey("single failure, single step, multiple reasons", t, func() {

@@ -26,6 +26,10 @@ class SomExtensionBuildFailure extends Polymer.mixinBehaviors(
         computed: '_computeSuspectedCls(extension)',
       },
       tree: String,
+      _culprits: {
+        type: Array,
+        computed: '_computeCulprits(extension)',
+      },
     };
   }
 
@@ -105,14 +109,26 @@ class SomExtensionBuildFailure extends Polymer.mixinBehaviors(
     return Object.values(revisions);
   }
 
+  _computeCulprits(extension) {
+    if (!this._haveCulprits(extension)) {
+      return [];
+    }
+    const culprits = {};
+    for (const culprit of extension.culprits) {
+      culprits[culprit.commit.id] = culprit;
+    }
+    return Object.values(culprits);
+  }
+
   _finditIsRunning(extension) {
-    return extension && !extension.suspected_cls && !extension.is_finished &&
-           !extension.has_findings && extension.is_supported;
+    return extension && !extension.suspected_cls && !extension.culprits &&
+           !extension.is_finished && !extension.has_findings &&
+           extension.is_supported;
   }
 
   _finditHasNoResult(extension) {
-    return extension && !extension.suspected_cls && extension.is_finished &&
-           !extension.has_findings;
+    return extension && !extension.suspected_cls && !extension.culprits &&
+           extension.is_finished && !extension.has_findings;
   }
 
   _finditFoundNoResult(extension) {
@@ -149,6 +165,14 @@ class SomExtensionBuildFailure extends Polymer.mixinBehaviors(
 
   _revertIsCommitted(cl) {
     return this._haveRevertCL(cl) && cl.revert_committed;
+  }
+
+  _haveCulprits(extension) {
+    return extension && extension.culprits;
+  }
+
+  _linkForCulprit(culprit) {
+    return 'https://' + culprit.commit.host + '/' + culprit.commit.project + '/+/' + culprit.commit.id;
   }
 
   _haveRegressionRanges(regression_ranges) {
