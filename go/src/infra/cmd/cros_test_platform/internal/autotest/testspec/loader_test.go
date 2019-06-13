@@ -35,10 +35,11 @@ func TestEnumeration(t *testing.T) {
 		IsTest  bool
 		IsSuite bool
 	}{
-		{createDummyFileOrDie(t, root, "server", "autoserv"), false, false},
 		{createDummyFileOrDie(t, root, "server", "site_tests", "control"), true, false},
 		{createDummyFileOrDie(t, root, "server", "site_tests", "control.gobi3k"), true, false},
 		{createDummyFileOrDie(t, root, "server", "test_suites", "control"), false, true},
+		{createDummyFileOrDie(t, root, "server", "autoserv"), false, false},
+		{createDummyFileOrDie(t, root, "server", "site_tests", "control.py"), false, false},
 		// Must ignore name matching pattern in directories.
 		{createDummyFileOrDie(t, root, "server", "site_tests", "control_flow", "file"), false, false},
 		{createDummyFileOrDie(t, root, "server", "test_suites", "uber_control", "problem"), false, false},

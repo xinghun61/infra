@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"strings"
 
 	"go.chromium.org/luci/common/errors"
 )
@@ -74,7 +75,8 @@ func isSuiteControl(path string) bool {
 var controlFilePattern = regexp.MustCompile(`control(\..*)?`)
 
 func isControl(path string) bool {
-	return controlFilePattern.MatchString(filepath.Base(path))
+	f := filepath.Base(path)
+	return controlFilePattern.MatchString(f) && !strings.HasSuffix(f, ".py")
 }
 
 func isInDir(dir, path string) bool {
