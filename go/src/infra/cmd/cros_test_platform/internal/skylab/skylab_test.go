@@ -7,6 +7,7 @@ package skylab_test
 import (
 	"context"
 	"fmt"
+	"sync"
 	"testing"
 
 	. "github.com/smartystreets/goconvey/convey"
@@ -158,5 +159,37 @@ func TestTaskURL(t *testing.T) {
 		taskID := resp.TaskResults[0].TaskId
 		So(taskURL, ShouldStartWith, swarming_service)
 		So(taskURL, ShouldEndWith, taskID)
+	})
+}
+
+func TestIncompleteWait(t *testing.T) {
+	Convey("Given a run that is cancelled while running, error and response reflect cancellation.", t, func() {
+		ctx, cancel := context.WithCancel(context.Background())
+
+		swarming := newFakeSwarming("")
+		swarming.setTaskState(jsonrpc.TaskState_RUNNING)
+
+		tests := []*chromite.AutotestTest{{}}
+		run := skylab.NewRun(tests)
+
+		wg := sync.WaitGroup{}
+		wg.Add(1)
+		var err error
+		go func() {
+			err = run.LaunchAndWait(ctx, swarming)
+			wg.Done()
+		}()
+
+		cancel()
+		wg.Wait()
+
+		So(err.Error(), ShouldContainSubstring, context.Canceled.Error())
+
+		resp := run.Response(swarming)
+		So(resp, ShouldNotBeNil)
+		So(resp.TaskResults, ShouldHaveLength, 1)
+		// TODO(akeshet): Ensure that response either reflects the error or
+		// has an incomplete flag, once that part of the response proto is
+		// defined.
 	})
 }
