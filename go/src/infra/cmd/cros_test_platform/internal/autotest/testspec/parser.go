@@ -17,20 +17,19 @@ import (
 func parseTestControl(text string) (*testMetadata, error) {
 	var merr errors.MultiError
 	var tm testMetadata
-	merr = append(merr, parseTestName(text, &tm))
+	parseTestName(text, &tm)
 	merr = append(merr, parseSyncCount(text, &tm))
 	merr = append(merr, parseRetries(text, &tm))
 	merr = append(merr, parseDependencies(text, &tm))
-	merr = append(merr, parseSuites(text, &tm))
+	parseSuites(text, &tm)
 	return &tm, unwrapMultiErrorIfNil(merr)
 }
 
 func parseSuiteControl(text string) (*api.AutotestSuite, error) {
-	var merr errors.MultiError
 	var as api.AutotestSuite
-	merr = append(merr, parseSuiteName(text, &as))
-	merr = append(merr, parseChildDependencies(text, &as))
-	return &as, unwrapMultiErrorIfNil(merr)
+	parseSuiteName(text, &as)
+	parseChildDependencies(text, &as)
+	return &as, nil
 }
 
 func unwrapMultiErrorIfNil(merr errors.MultiError) error {
@@ -40,11 +39,9 @@ func unwrapMultiErrorIfNil(merr errors.MultiError) error {
 	return merr
 }
 
-func parseTestName(text string, tm *testMetadata) error {
+func parseTestName(text string, tm *testMetadata) {
 	ms := findMatchesInAllLines(text, namePattern)
-	var err error
-	tm.Name, err = unwrapSingleSubmatchOrError(ms, "parseTestName")
-	return err
+	tm.Name = unwrapLastSubmatch(ms, "parseTestName")
 }
 
 func findMatchesInAllLines(text string, re *regexp.Regexp) [][]string {
@@ -53,18 +50,6 @@ func findMatchesInAllLines(text string, re *regexp.Regexp) [][]string {
 		ms = append(ms, re.FindAllStringSubmatch(s, -1)...)
 	}
 	return ms
-}
-
-func unwrapSingleSubmatchOrError(matches [][]string, errContext string) (string, error) {
-	ss := unwrapSubmatches(matches, errContext)
-	switch len(ss) {
-	case 0:
-		return "", nil
-	case 1:
-		return ss[0], nil
-	default:
-		return "", fmt.Errorf("%s: more than one value: %s", errContext, matches)
-	}
 }
 
 func unwrapLastSubmatch(matches [][]string, errContext string) string {
@@ -94,13 +79,11 @@ func unwrapSubmatches(matches [][]string, errContext string) []string {
 
 func parseSyncCount(text string, tm *testMetadata) error {
 	ms := findMatchesInAllLines(text, syncCountPattern)
-	sc, err := unwrapSingleSubmatchOrError(ms, "parseSyncCount")
-	if err != nil {
-		return err
-	}
+	sc := unwrapLastSubmatch(ms, "parseSyncCount")
 	if sc == "" {
 		return nil
 	}
+	var err error
 	tm.DutCount, err = parseInt32OrError(sc, "parseSyncCount")
 	if tm.DutCount > 0 {
 		tm.NeedsMultipleDuts = true
@@ -118,14 +101,12 @@ func parseInt32OrError(sc string, errContext string) (int32, error) {
 
 func parseRetries(text string, tm *testMetadata) error {
 	ms := findMatchesInAllLines(text, retriesPattern)
-	sc, err := unwrapSingleSubmatchOrError(ms, "parseRetries")
-	if err != nil {
-		return err
-	}
+	sc := unwrapLastSubmatch(ms, "parseRetries")
 	if sc == "" {
 		setDefaultRetries(tm)
 		return nil
 	}
+	var err error
 	tm.MaxRetries, err = parseInt32OrError(sc, "parseRetries")
 	if tm.MaxRetries > 0 {
 		tm.AllowRetries = true
@@ -158,14 +139,10 @@ func splitAndTrimCommaList(cl string) []string {
 	return ret
 }
 
-func parseSuites(text string, tm *testMetadata) error {
+func parseSuites(text string, tm *testMetadata) {
 	ms := findMatchesInAllLines(text, attributesPattern)
-	cl, err := unwrapSingleSubmatchOrError(ms, "parseSuites")
-	if err != nil {
-		return err
-	}
+	cl := unwrapLastSubmatch(ms, "parseSuites")
 	tm.Suites = findAndStripPrefixFromEach(splitAndTrimCommaList(cl), "suite:")
-	return nil
 }
 
 func findAndStripPrefixFromEach(ss []string, prefix string) []string {
@@ -178,23 +155,17 @@ func findAndStripPrefixFromEach(ss []string, prefix string) []string {
 	return ret
 }
 
-func parseSuiteName(text string, as *api.AutotestSuite) error {
+func parseSuiteName(text string, as *api.AutotestSuite) {
 	ms := findMatchesInAllLines(text, namePattern)
-	var err error
-	as.Name, err = unwrapSingleSubmatchOrError(ms, "parseSuiteName")
-	return err
+	as.Name = unwrapLastSubmatch(ms, "parseSuiteName")
 }
 
-func parseChildDependencies(text string, as *api.AutotestSuite) error {
+func parseChildDependencies(text string, as *api.AutotestSuite) {
 	ms := findMatchesInAllLines(text, suiteDependenciesPattern)
-	cl, err := unwrapSingleSubmatchOrError(ms, "parseChildDependencies")
-	if err != nil {
-		return err
-	}
+	cl := unwrapLastSubmatch(ms, "parseChildDependencies")
 	for _, s := range splitAndTrimCommaList(cl) {
 		as.ChildDependencies = append(as.ChildDependencies, &api.AutotestTaskDependency{Label: s})
 	}
-	return nil
 }
 
 var (
