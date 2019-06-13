@@ -26,6 +26,7 @@ type fakeSwarming struct {
 	callback    func()
 	createCalls int
 	getCalls    int
+	server      string
 }
 
 func (f *fakeSwarming) CreateTask(ctx context.Context, req *swarming_api.SwarmingRpcsNewTaskRequest) (*swarming_api.SwarmingRpcsTaskRequestMetadata, error) {
@@ -55,8 +56,12 @@ func (f *fakeSwarming) GetResults(ctx context.Context, IDs []string) ([]*swarmin
 	return results, nil
 }
 
+func (f *fakeSwarming) GetTaskURL(taskID string) string {
+	// Note: this is not the true swarming task URL schema.
+	return f.server + "/task=" + taskID
+}
+
 // setTaskState causes this fake to start returning the given state of all future
-// GetResults calls.
 func (f *fakeSwarming) setTaskState(state jsonrpc.TaskState) {
 	f.nextState = state
 }
@@ -73,18 +78,19 @@ func (f *fakeSwarming) setCallback(fn func()) {
 	f.callback = fn
 }
 
-func newFakeSwarming() *fakeSwarming {
+func newFakeSwarming(server string) *fakeSwarming {
 	return &fakeSwarming{
 		nextState: jsonrpc.TaskState_COMPLETED,
 		callback:  func() {},
+		server:    server,
 	}
 }
 
-func TestLaunchAndWaitSingleTest(t *testing.T) {
+func TestLaunchAndWaitTest(t *testing.T) {
 	Convey("Given two enumerated test", t, func() {
 		ctx := context.Background()
 
-		swarming := newFakeSwarming()
+		swarming := newFakeSwarming("")
 
 		var tests []*chromite.AutotestTest
 		tests = append(tests, &chromite.AutotestTest{}, &chromite.AutotestTest{})
@@ -92,12 +98,15 @@ func TestLaunchAndWaitSingleTest(t *testing.T) {
 		Convey("when running a skylab execution", func() {
 			run := skylab.NewRun(tests)
 
-			resp, err := run.LaunchAndWait(ctx, swarming)
+			err := run.LaunchAndWait(ctx, swarming)
 			So(err, ShouldBeNil)
+
+			resp := run.Response(swarming)
 			So(resp, ShouldNotBeNil)
 
 			Convey("then results for all tests are reflected.", func() {
 				So(resp.TaskResults, ShouldHaveLength, 2)
+				// TODO(akeshet): Assert that results have correct task state.
 			})
 			Convey("then the expected number of external swarming calls are made.", func() {
 				So(swarming.getCalls, ShouldEqual, 2)
@@ -110,14 +119,14 @@ func TestLaunchAndWaitSingleTest(t *testing.T) {
 func TestServiceError(t *testing.T) {
 	Convey("Given a single enumerated test", t, func() {
 		ctx := context.Background()
-		swarming := newFakeSwarming()
+		swarming := newFakeSwarming("")
 
 		tests := []*chromite.AutotestTest{{}}
 		run := skylab.NewRun(tests)
 
 		Convey("when the swarming service immediately returns errors, that error is surfaced as a launch error.", func() {
 			swarming.setError(fmt.Errorf("foo error"))
-			_, err := run.LaunchAndWait(ctx, swarming)
+			err := run.LaunchAndWait(ctx, swarming)
 			So(err, ShouldNotBeNil)
 			So(err.Error(), ShouldContainSubstring, "launch test")
 			So(err.Error(), ShouldContainSubstring, "foo error")
@@ -127,9 +136,27 @@ func TestServiceError(t *testing.T) {
 			swarming.setCallback(func() {
 				swarming.setError(fmt.Errorf("foo error"))
 			})
-			_, err := run.LaunchAndWait(ctx, swarming)
+			err := run.LaunchAndWait(ctx, swarming)
 			So(err.Error(), ShouldContainSubstring, "wait for tests")
 			So(err.Error(), ShouldContainSubstring, "foo error")
 		})
+	})
+}
+
+func TestTaskURL(t *testing.T) {
+	Convey("Given a single enumerated test running to completion, its task URL is well formed.", t, func() {
+		ctx := context.Background()
+		swarming_service := "https://foo.bar.com/"
+		swarming := newFakeSwarming(swarming_service)
+		tests := []*chromite.AutotestTest{{}}
+		run := skylab.NewRun(tests)
+		run.LaunchAndWait(ctx, swarming)
+
+		resp := run.Response(swarming)
+		So(resp.TaskResults, ShouldHaveLength, 1)
+		taskURL := resp.TaskResults[0].TaskUrl
+		taskID := resp.TaskResults[0].TaskId
+		So(taskURL, ShouldStartWith, swarming_service)
+		So(taskURL, ShouldEndWith, taskID)
 	})
 }

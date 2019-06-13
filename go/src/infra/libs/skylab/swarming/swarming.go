@@ -23,6 +23,7 @@ import (
 // Client is a swarming client for creating tasks and waiting for their results.
 type Client struct {
 	SwarmingService *swarming_api.Service
+	server          string
 }
 
 // New creates a new tasker client, with given http client and
@@ -32,7 +33,11 @@ func New(ctx context.Context, h *http.Client, server string) (*Client, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &Client{service}, nil
+	c := &Client{
+		SwarmingService: service,
+		server:          server,
+	}
+	return c, nil
 }
 
 const swarmingAPISuffix = "_ah/api/swarming/v1/"
@@ -157,6 +162,11 @@ func (c *Client) GetTaskOutputs(ctx context.Context, IDs []string) ([]*swarming_
 		results[i] = result
 	}
 	return results, nil
+}
+
+// GetTaskURL gets a URL for the task with the given ID.
+func (c *Client) GetTaskURL(taskID string) string {
+	return TaskURL(c.server, taskID)
 }
 
 var retryableCodes = map[int]bool{

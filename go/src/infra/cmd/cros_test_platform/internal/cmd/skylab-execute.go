@@ -175,5 +175,6 @@ func httpClient(ctx context.Context, c *config.Config_Swarming) (*http.Client, e
 
 func (c *skylabExecuteRun) handleRequest(ctx context.Context, output io.Writer, req *steps.ExecuteRequest, t *swarming.Client) (*steps.ExecuteResponse, error) {
 	run := skylab.NewRun(req.Enumeration.AutotestTests)
-	return run.LaunchAndWait(ctx, t)
+	err := run.LaunchAndWait(ctx, t)
+	return run.Response(t), err
 }

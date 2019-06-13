@@ -11,6 +11,7 @@ import (
 	"time"
 
 	build_api "go.chromium.org/chromiumos/infra/proto/go/chromite/api"
+	"go.chromium.org/chromiumos/infra/proto/go/test_platform"
 	"go.chromium.org/chromiumos/infra/proto/go/test_platform/steps"
 	swarming_api "go.chromium.org/luci/common/api/swarming/swarming/v1"
 	"go.chromium.org/luci/common/clock"
@@ -47,6 +48,7 @@ type attempt struct {
 type Swarming interface {
 	CreateTask(context.Context, *swarming_api.SwarmingRpcsNewTaskRequest) (*swarming_api.SwarmingRpcsTaskRequestMetadata, error)
 	GetResults(ctx context.Context, IDs []string) ([]*swarming_api.SwarmingRpcsTaskResult, error)
+	GetTaskURL(taskID string) string
 }
 
 // NewRun creates a new Run.
@@ -55,7 +57,7 @@ func NewRun(tests []*build_api.AutotestTest) *Run {
 	for i, test := range tests {
 		testRuns[i] = &testRun{test: test}
 	}
-	return &Run{testRuns}
+	return &Run{testRuns: testRuns}
 }
 
 // LaunchAndWait launches a skylab execution and waits for it to complete,
@@ -65,9 +67,9 @@ func NewRun(tests []*build_api.AutotestTest) *Run {
 // If the supplied context is cancelled prior to completion, or some other error
 // is encountered, this method returns whatever partial execution response
 // was visible to it prior to that error.
-func (r *Run) LaunchAndWait(ctx context.Context, swarming Swarming) (*steps.ExecuteResponse, error) {
+func (r *Run) LaunchAndWait(ctx context.Context, swarming Swarming) error {
 	if err := r.launch(ctx, swarming); err != nil {
-		return r.response(), err
+		return err
 	}
 
 	return r.wait(ctx, swarming)
@@ -92,16 +94,16 @@ func (r *Run) launch(ctx context.Context, swarming Swarming) error {
 	return nil
 }
 
-func (r *Run) wait(ctx context.Context, swarming Swarming) (*steps.ExecuteResponse, error) {
+func (r *Run) wait(ctx context.Context, swarming Swarming) error {
 	for {
 		complete, err := r.tick(ctx, swarming)
 		if complete || err != nil {
-			return r.response(), err
+			return err
 		}
 
 		select {
 		case <-ctx.Done():
-			return r.response(), errors.Annotate(ctx.Err(), "wait for tests").Err()
+			return errors.Annotate(ctx.Err(), "wait for tests").Err()
 		case <-clock.After(ctx, 15*time.Second):
 		}
 	}
@@ -164,16 +166,18 @@ func unpackTaskState(state string) (jsonrpc.TaskState, error) {
 	return jsonrpc.TaskState(val), nil
 }
 
-func (r *Run) response() *steps.ExecuteResponse {
+// Response constructs a response based on the current state of the
+// run.
+func (r *Run) Response(swarming Swarming) *steps.ExecuteResponse {
 	resp := &steps.ExecuteResponse{}
 	for _, test := range r.testRuns {
 		for _, attempt := range test.attempts {
 			resp.TaskResults = append(resp.TaskResults, &steps.ExecuteResponse_TaskResult{
-				Name:   test.test.Name,
-				TaskId: attempt.taskID,
-				// TODO(akeshet): Determine correct taskURL. This requires knowing
-				// which swarming instance was used.
-				TaskUrl: "taskurl_placeholder",
+				Name: test.test.Name,
+				// TODO(akeshet): Map task status correctly.
+				State:   &test_platform.TaskState{},
+				TaskId:  attempt.taskID,
+				TaskUrl: swarming.GetTaskURL(attempt.taskID),
 			})
 		}
 	}
