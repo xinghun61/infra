@@ -24,6 +24,7 @@ export class ChopsInput extends LitElement {
         cursor: text;
         display: flex;
         justify-content: space-between;
+        margin-top: 1em;
         padding: 4px;
         position: relative;
       }

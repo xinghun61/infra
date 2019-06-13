@@ -24,6 +24,7 @@ export class ChopsTextarea extends LitElement {
         border: 1px solid var(--chops-textarea-label-color, grey);
         cursor: text;
         display: flex;
+        margin-top: 1em;
         outline: none;
         padding: 4px;
         position: relative;
@@ -58,11 +59,19 @@ export class ChopsTextarea extends LitElement {
     `;
   }
 
+  constructor() {
+    super();
+    this.autofocus = false;
+    this.focused = false;
+    this.label = '';
+    this.value = '';
+  }
+
   render() {
     return html`
       <div id="label">${this.label}</div>
       <textarea
-          value="${this.value}"
+          .value="${this.value}"
           @blur="${this._onBlur}"
           @focus="${this._onFocus}"
           @keyup="${this._onKeyup}"></textarea>

@@ -1,9 +1,11 @@
 {
   "name": "@chopsui/chops-button",
-  "version": "0.1.5",
+  "version": "0.1.11",
   "description": "A shared raised button element for Chops.",
   "author": "The Chromium Authors",
   "license": "BSD-3-Clause",
+  "main": "chops-button.js",
+  "module": "chops-button.js",
   "repository": {
     "type": "git",
     "url": "https://chromium.googlesource.com/infra/infra/crdx/chopsui-npm.git"

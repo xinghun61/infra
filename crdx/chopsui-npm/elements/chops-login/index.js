@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import {LitElement, html} from 'lit-element/lit-element.js';
+import {LitElement, html, css} from 'lit-element';
 
 /**
  * `chops-login` shows the login/logout links and current user, if provided.
@@ -18,13 +18,8 @@ import {LitElement, html} from 'lit-element/lit-element.js';
  */
 
 export class ChopsLogin extends LitElement {
-  constructor() {
-    super();
-  }
-
-  render() {
-    return html`
-    <style>
+  static get styles() {
+    return css`
       :host {
         --chops-login-link-color: inherit;
       }
@@ -33,12 +28,16 @@ export class ChopsLogin extends LitElement {
         font-size: 0.75em;
         text-decoration: none;
       }
-    </style>
-    ${this.user
-        ? html`${this.user} (<a href="${this.logoutUrl}">LOGOUT</a>)`
-        : html`<a href="${this.loginUrl}">LOGIN</a>`
-    }`;
+    `;
   }
+
+  render() {
+    if (this.user) {
+      return html`${this.user} (<a href="${this.logoutUrl}">LOGOUT</a>)`;
+    }
+    return html`<a href="${this.loginUrl}">LOGIN</a>`;
+  }
+
   static get properties() {
     return {
       /** The login URL must be provided if no user is given. */

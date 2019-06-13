@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import {LitElement} from 'lit-element/lit-element.js';
+import {LitElement} from 'lit-element';
 import {getAuthorizationHeadersSync, getUserProfileSync} from '../chops-signin';
 
 // This component adapts chops-signin to an API that is more familiar to Polymer

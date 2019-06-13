@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import {LitElement, html} from 'lit-element/lit-element.js';
+import {LitElement, html, css} from 'lit-element';
 
 export class ChopsHeader extends LitElement {
   constructor() {
@@ -36,64 +36,67 @@ export class ChopsHeader extends LitElement {
     };
   }
 
+  static get styles() {
+    return css`
+      :host {
+        color: var(--chops-header-text-color);
+        box-sizing: border-box;
+        background: hsl(221, 67%, 92%);
+        font-size: 14px;
+        width: 100%;
+        height: 50px;
+        display: flex;
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+        z-index: 100;
+      }
+      a {
+        color: var(--chops-header-text-color);
+        text-decoration: none;
+      }
+      a:hover {
+        text-decoration: underline;
+      }
+      #headerTitle {
+        font-size: 18px;
+        display: flex;
+        align-items: center;
+      }
+      #headerTitle img {
+        height: 32px;
+        width: 32px;
+        font-size: 10px;
+        overflow: hidden;
+        margin: 0;
+      }
+      #headerTitle small {
+        font-size: 14px;
+      }
+      #headerTitleText {
+        display: flex;
+        align-items: baseline;
+      }
+      #headerTitleTextMain {
+        padding: 0 8px;
+      }
+      .header-section {
+        padding: 0.5em 16px;
+        display: flex;
+        align-items: center;
+      }
+      @media (max-width: 840px) {
+        .header-section {
+          font-size: 0.8em;
+          min-width: 10%;
+          text-align: left;
+        }
+      }
+    `;
+  }
+
   render() {
     return html`
-      <style>
-        :host {
-          color: var(--chops-header-text-color);
-          box-sizing: border-box;
-          background: hsl(221, 67%, 92%);
-          font-size: 14px;
-          width: 100%;
-          height: 50px;
-          display: flex;
-          flex-direction: row;
-          justify-content: space-between;
-          align-items: center;
-          z-index: 100;
-        }
-        a {
-          color: var(--chops-header-text-color);
-          text-decoration: none;
-        }
-        a:hover {
-          text-decoration: underline;
-        }
-        #headerTitle {
-          font-size: 18px;
-          display: flex;
-          align-items: center;
-        }
-        #headerTitle img {
-          height: 32px;
-          width: 32px;
-          font-size: 10px;
-          overflow: hidden;
-          margin: 0;
-        }
-        #headerTitle small {
-          font-size: 14px;
-        }
-        #headerTitleText {
-          display: flex;
-          align-items: baseline;
-        }
-        #headerTitleTextMain {
-          padding: 0 8px;
-        }
-        .header-section {
-          padding: 0.5em 16px;
-          display: flex;
-          align-items: center;
-        }
-        @media (max-width: 840px) {
-          .header-section {
-            font-size: 0.8em;
-            min-width: 10%;
-            text-align: left;
-          }
-        }
-      </style>
       <div class="header-section">
         <slot name="before-header"></slot>
         <div id="headerTitle">

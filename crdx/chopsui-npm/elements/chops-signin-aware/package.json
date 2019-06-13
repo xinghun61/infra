@@ -1,9 +1,11 @@
 {
   "name": "@chopsui/chops-signin-aware",
-  "version": "0.1.5",
+  "version": "0.1.11",
   "description": "A shared signin-aware element for Chops.",
   "author": "The Chromium Authors",
   "license": "BSD-3-Clause",
+  "main": "chops-signin-aware.js",
+  "module": "chops-signin-aware.js",
   "repository": {
     "type": "git",
     "url": "https://chromium.googlesource.com/infra/infra/crdx/chopsui-npm.git"

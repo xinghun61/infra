@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import {LitElement, html, svg} from 'lit-element/lit-element.js';
+import {LitElement, html, svg, css} from 'lit-element';
 
 /**
  * `chops-signin` is a web component that manages signing into services using
@@ -37,10 +37,8 @@ export class ChopsSignin extends LitElement {
     window.removeEventListener('user-update', this._onUserUpdate);
   }
 
-  render() {
-    const profile = getUserProfileSync();
-    return html`
-      <style>
+  static get styles() {
+    return css`
      :host {
         --chops-signin-size: 32px;
         fill: var(--chops-signin-fill-color, red);
@@ -54,11 +52,16 @@ export class ChopsSignin extends LitElement {
         border-radius: 50%;
         overflow: hidden;
       }
-       svg {
+      svg {
         width: var(--chops-signin-size);
         height: var(--chops-signin-size);
       }
-      </style>
+    `;
+  }
+
+  render() {
+    const profile = getUserProfileSync();
+    return html`
       ${this.errorMsg?
     html`<div class="error">Error: ${this.errorMsg}</div>` :
     html`${!profile ?

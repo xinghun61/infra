@@ -1,9 +1,11 @@
 {
   "name": "@chopsui/chops-input",
-  "version": "0.1.5",
+  "version": "0.1.11",
   "description": "A shared text input element for Chops.",
   "author": "The Chromium Authors",
   "license": "BSD-3-Clause",
+  "main": "chops-input.js",
+  "module": "chops-input.js",
   "repository": {
     "type": "git",
     "url": "https://chromium.googlesource.com/infra/infra/crdx/chopsui-npm.git"
