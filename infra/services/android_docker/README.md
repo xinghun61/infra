@@ -6,7 +6,7 @@ By design, it's stateless and event-driven. It has two modes of execution:
               time a device appears/reappears on the system via udev.
 
 It's intended to be run in conjucture with the android_docker container image.
-More information on the image can be found [here](https://chromium.googlesource.com/infra/infra/+/master/docker/android_devices/README.md).
+More information on the image can be found [here](https://chromium.googlesource.com/infra/infra/+/master/docker/docker_devices/README.md).
 
 
 Launching the containers
