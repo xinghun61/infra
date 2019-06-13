@@ -20,7 +20,8 @@ import (
 // configuration update requests.
 func UpdateHandler(ctx *router.Context) {
 	h := ctx.Writer
-	c, _ := context.WithTimeout(ctx.Context, 9*time.Minute)
+	c, cancel := context.WithTimeout(ctx.Context, 9*time.Minute)
+	defer cancel()
 	if err := config.UpdateAllConfigs(c); err != nil {
 		logging.WithError(err).Errorf(c, "Failed to update configs.")
 		h.WriteHeader(http.StatusInternalServerError)

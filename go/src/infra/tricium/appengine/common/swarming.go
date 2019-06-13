@@ -52,7 +52,8 @@ func (s swarmingServer) Trigger(c context.Context, params *TriggerParameters) (*
 		})
 	}
 	// Need to increase the timeout to get a response from the Swarming service.
-	c, _ = context.WithTimeout(c, 60*time.Second)
+	c, cancel := context.WithTimeout(c, 60*time.Second)
+	defer cancel()
 	oauthClient, err := getOAuthClient(c)
 	if err != nil {
 		return nil, errors.Annotate(err, "failed to create oauth client").Err()
@@ -103,7 +104,8 @@ func (s swarmingServer) Trigger(c context.Context, params *TriggerParameters) (*
 // Collect implements the TaskServerAPI.
 func (s swarmingServer) Collect(c context.Context, params *CollectParameters) (*CollectResult, error) {
 	// Need to increase the timeout to get a response from the Swarming service.
-	c, _ = context.WithTimeout(c, 60*time.Second)
+	c, cancel := context.WithTimeout(c, 60*time.Second)
+	defer cancel()
 	oauthClient, err := getOAuthClient(c)
 	if err != nil {
 		return nil, errors.Annotate(err, "failed to create oauth client").Err()
