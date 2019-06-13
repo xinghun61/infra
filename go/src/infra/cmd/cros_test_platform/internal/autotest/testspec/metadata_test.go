@@ -140,6 +140,25 @@ func TestGetTwoSuitesWithSameTest(t *testing.T) {
 	}
 }
 
+func TestGetTestInNonExistentSuite(t *testing.T) {
+	fl := newFakeLoader()
+	fl.AddTests([]string{"test"})
+	ft := newFakeParseTestControlFn(map[string]*testMetadata{
+		"test": testWithNameAndSuites("test", []string{"non_existent_suite"}),
+	})
+	fs := newFakeParseSuiteControlFn(map[string]*api.AutotestSuite{})
+	g := getter{fl, ft, fs}
+	resp, err := g.Get("ignored")
+	if err != nil {
+		t.Fatalf("getter.Get(): %s", err)
+	}
+	want := map[string][]string{}
+	got := extractSuiteTests(resp.GetAutotest().GetSuites())
+	if diff := pretty.Compare(want, got); diff != "" {
+		t.Errorf("Suite.Tests differ, -want +got, %s", diff)
+	}
+}
+
 // newFakeParseTestControlFn returns a fake parseTestControlFn that returns
 // canned parse results.
 //

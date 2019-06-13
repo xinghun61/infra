@@ -112,8 +112,10 @@ func collectTestsInSuites(tests []*testMetadata, suites []*api.AutotestSuite) {
 		sm[s.GetName()] = s
 	}
 	for _, t := range tests {
-		for _, s := range t.Suites {
-			appendTestToSuite(t, sm[s])
+		for _, sn := range t.Suites {
+			if s, ok := sm[sn]; ok {
+				appendTestToSuite(t, s)
+			}
 		}
 	}
 }
@@ -128,7 +130,6 @@ func sortTestsInSuites(suites []*api.AutotestSuite) {
 
 func appendTestToSuite(test *testMetadata, suite *api.AutotestSuite) {
 	suite.Tests = append(suite.Tests, &api.AutotestSuite_TestReference{Name: test.GetName()})
-
 }
 
 func extractAutotestTests(tests []*testMetadata) []*api.AutotestTest {
