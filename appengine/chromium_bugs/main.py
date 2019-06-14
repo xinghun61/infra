@@ -141,7 +141,7 @@ class MainHandler(webapp2.RequestHandler):
         r".*?@chromium\.org\Z", user.email(), re.DOTALL | re.IGNORECASE)):
       logging.info('Redirecting because you have a role or @chromium.org acct')
       logging.info('role = %r', role)
-      logging.info('email = %r', user.email())
+      logging.info('email = %r', user and user.email())
       self.redirect(issue_entry_page_url.encode('utf8'))
       return
 
