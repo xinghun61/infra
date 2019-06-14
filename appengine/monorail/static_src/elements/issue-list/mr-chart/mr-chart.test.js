@@ -450,5 +450,39 @@ describe('mr-chart', () => {
         ]);
       });
     });
+
+    describe('getPredictedData', () => {
+      it('get predicted data shown in daily', () => {
+        const values = [0, 1, 2, 3, 4, 5, 6];
+        const result = MrChart.getPredictedData(values, values.length, 3, 1);
+        assert.deepEqual(result[0], ['10/4/2017', '10/5/2017', '10/6/2017']);
+        assert.deepEqual(result[1], [7, 8, 9]);
+        assert.deepEqual(result[2], [0, 1, 2, 3, 4, 5, 6]);
+      });
+
+      it('get predicted data shown in weekly', () => {
+        const values = [0, 7, 14, 21, 28, 35, 42, 49, 56, 63, 70, 77, 84];
+        const result = MrChart.getPredictedData(values, 91, 13, 7);
+        assert.deepEqual(result[1], values.map((x) => x+91));
+        assert.deepEqual(result[2], values);
+      });
+    });
+
+    describe('getErrorData', () => {
+      it('get error data with perfect regression', () => {
+        const values = [0, 1, 2, 3, 4, 5, 6];
+        const result = MrChart.getErrorData(values, values, [7, 8, 9]);
+        assert.deepEqual(result[0], [7, 8, 9]);
+        assert.deepEqual(result[1], [7, 8, 9]);
+      });
+
+      it('get error data with nonperfect regression', () => {
+        const values = [0, 1, 3, 4, 6, 6, 7];
+        const result = MrChart.getPredictedData(values, values.length, 3, 1);
+        const error = MrChart.getErrorData(result[2], values, result[1]);
+        assert.isTrue(error[0][0] > result[1][0]);
+        assert.isTrue(error[1][0] < result[1][0]);
+      });
+    });
   });
 });

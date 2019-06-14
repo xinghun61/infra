@@ -42,7 +42,7 @@ export class ChopsChart extends LitElement {
   }
 
   async updated(changedProperties) {
-    await import(/* webpackChunkName: "chartjs" */ 'chart.js/dist/Chart.min.js');
+    await import(/* webpackChunkName: "chartjs" */ 'chart.js/dist/Chart.bundle.min.js');
     if (!this._chart) {
       const {type, data, options} = this;
       const ctx = this.shadowRoot.querySelector('canvas').getContext('2d');
