@@ -11,7 +11,6 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/golang/protobuf/jsonpb"
 	"github.com/maruel/subcommands"
 
 	"go.chromium.org/chromiumos/infra/proto/go/test_platform/config"
@@ -22,11 +21,6 @@ import (
 
 	"infra/cmd/cros_test_platform/internal/skylab"
 	"infra/libs/skylab/swarming"
-)
-
-var (
-	unmarshaller = jsonpb.Unmarshaler{AllowUnknownFields: true}
-	marshaller   = jsonpb.Marshaler{}
 )
 
 // SkylabExecute subcommand: Run a set of enumerated tests against skylab backend.
