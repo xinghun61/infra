@@ -121,14 +121,6 @@ func (c *createTestRun) innerRun(a subcommands.Application, args []string, env s
 
 	taskName := c.Flags.Arg(0)
 
-	var provisionableDimensions []string
-	if c.image != "" {
-		provisionableDimensions = append(provisionableDimensions, "provisionable-cros-version:"+c.image)
-	}
-	for _, p := range c.provisionLabels {
-		provisionableDimensions = append(provisionableDimensions, "provisionable-"+p)
-	}
-
 	keyvals, err := toKeyvalMap(c.keyvals)
 	if err != nil {
 		return err
@@ -152,7 +144,7 @@ func (c *createTestRun) innerRun(a subcommands.Application, args []string, env s
 	ra := request.Args{
 		Cmd:                     cmd,
 		Tags:                    tags,
-		ProvisionableDimensions: provisionableDimensions,
+		ProvisionableDimensions: c.getProvisionableDimensions(),
 		Dimensions:              c.getDimensions(),
 		SchedulableLabels:       c.getLabels(),
 		TimeoutMins:             c.timeoutMins,
@@ -207,4 +199,15 @@ func (c *createTestRun) getDimensions() []string {
 	dimensions := []string{"pool:ChromeOSSkylab", "dut_state:ready"}
 	dimensions = append(dimensions, userDimensions...)
 	return dimensions
+}
+
+func (c *createTestRun) getProvisionableDimensions() []string {
+	var provisionableDimensions []string
+	if c.image != "" {
+		provisionableDimensions = append(provisionableDimensions, "provisionable-cros-version:"+c.image)
+	}
+	for _, p := range c.provisionLabels {
+		provisionableDimensions = append(provisionableDimensions, "provisionable-"+p)
+	}
+	return provisionableDimensions
 }
