@@ -211,9 +211,9 @@ class SwarmbucketApi(remote.Service):
       ).get_result()
       build.proto.number = 1
       settings = config.get_settings_async().get_result()
-      task_def = swarming.prepare_task_def_async(
+      task_def = swarming.prepare_task_def(
           build, settings.swarming, fake_build=True
-      ).get_result()
+      )
       task_def_json = json.dumps(task_def)
 
       return GetTaskDefinitionResponseMessage(

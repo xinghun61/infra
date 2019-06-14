@@ -131,7 +131,7 @@ class TaskDefTest(BaseTest):
     self.task_template_canary = self.task_template.copy()
     self.task_template_canary['name'] += '-canary'
 
-    def get_self_config_async(path, *_args, **_kwargs):
+    def get_self_config(path, *_args, **_kwargs):
       if path not in ('swarming_task_template.json',
                       'swarming_task_template_canary.json'):  # pragma: no cover
         self.fail()
@@ -140,13 +140,15 @@ class TaskDefTest(BaseTest):
         template = self.task_template
       else:
         template = self.task_template_canary
-      return future((
-          'template_rev', json.dumps(template) if template is not None else None
-      ))
+      return (
+          'template_rev',
+          json.dumps(template) if template is not None else None,
+      )
 
     self.patch(
-        'components.config.get_self_config_async',
-        side_effect=get_self_config_async
+        'components.config.get_self_config',
+        side_effect=get_self_config,
+        autospec=True,
     )
 
     self.patch(
@@ -158,8 +160,7 @@ class TaskDefTest(BaseTest):
     return test_util.build(for_creation=True, **build_proto_fields)
 
   def prepare_task_def(self, build):
-    return swarming.prepare_task_def_async(build,
-                                           self.settings.swarming).get_result()
+    return swarming.prepare_task_def(build, self.settings.swarming)
 
   def test_shared_cache(self):
     build = self._test_build(
@@ -663,9 +664,7 @@ class CreateTaskTest(BaseTest):
         'properties': {},
     }]}
     self.patch(
-        'swarming.prepare_task_def_async',
-        autospec=True,
-        return_value=future(self.task_def)
+        'swarming.prepare_task_def', autospec=True, return_value=self.task_def
     )
 
     self.build = test_util.build(id=1, created_by='user:john@example.com')

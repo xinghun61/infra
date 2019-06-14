@@ -112,8 +112,7 @@ class TemplateNotFound(Error):
   """Raised when a task template is not found."""
 
 
-@ndb.tasklet
-def _get_task_template_async(canary):
+def _get_task_template(canary):
   """Gets a tuple (template_revision, template_dict).
 
   Args:
@@ -129,18 +128,18 @@ def _get_task_template_async(canary):
   revision = None
   if canary:
     logging.warning('using canary swarming task template')
-    revision, text = yield component_config.get_self_config_async(
+    revision, text = component_config.get_self_config(
         'swarming_task_template_canary.json', store_last_good=True
     )
 
   if not text:
-    revision, text = yield component_config.get_self_config_async(
+    revision, text = component_config.get_self_config(
         'swarming_task_template.json', store_last_good=True
     )
 
   template = json.loads(text)
   template.pop('__comment__', None)
-  raise ndb.Return(revision, template)
+  return revision, template
 
 
 def validate_input_properties(properties, allow_reserved=False):
@@ -227,8 +226,7 @@ def _remove_if_tags(task):
   return walk(task)
 
 
-@ndb.tasklet
-def _create_task_def_async(build, fake_build):
+def _create_task_def(build, fake_build):
   """Creates a swarming task definition for the |build|.
 
   Supports build properties that are supported by Buildbot-Buildbucket
@@ -248,9 +246,7 @@ def _create_task_def_async(build, fake_build):
       build.proto.input.properties, allow_reserved=bool(build.retry_of)
   )
 
-  task_template_rev, task_template = yield _get_task_template_async(
-      build.canary
-  )
+  task_template_rev, task_template = _get_task_template(build.canary)
 
   bp = build.proto
   sw = bp.infra.swarming
@@ -307,7 +303,7 @@ def _create_task_def_async(build, fake_build):
   if not fake_build:  # pragma: no branch | covered by swarmbucketapi_test.py
     _setup_swarming_request_pubsub(task, build)
 
-  raise ndb.Return(task)
+  return task
 
 
 def _setup_recipes(build):
@@ -581,8 +577,7 @@ def _setup_swarming_request_pubsub(task, build):
   )
 
 
-@ndb.tasklet
-def prepare_task_def_async(build, settings, fake_build=False):
+def prepare_task_def(build, settings, fake_build=False):
   """Prepares a swarming task definition.
 
   Validates the new build.
@@ -597,7 +592,7 @@ def prepare_task_def_async(build, settings, fake_build=False):
     )
 
   build.url = _generate_build_url(settings.milo_hostname, build)
-  task_def = yield _create_task_def_async(build, fake_build)
+  task_def = _create_task_def(build, fake_build)
 
   for t in task_def.get('tags', []):  # pragma: no branch
     key, value = buildtags.parse(t)
@@ -606,30 +601,23 @@ def prepare_task_def_async(build, settings, fake_build=False):
       ld.hostname, ld.project, ld.prefix, _ = logdog.parse_url(value)
       break
 
-  raise ndb.Return(task_def)
+  return task_def
 
 
-@ndb.tasklet
-def create_sync_task_async(build, settings):  # pragma: no cover
+def create_sync_task(build):  # pragma: no cover
   """Returns def of a push task that maintains build state until it ends.
-
-  Settings is service_config_pb2.SwarmingSettings.
 
   Handled by TaskSyncBuild.
   """
-  # TODO(nodir): stop putting swarming task_def into push task body
-  # and make swarming task def preparation synchronous.
-  task_def = yield prepare_task_def_async(build, settings)
   payload = {
       'id': build.key.id(),
-      'task_def': task_def,
       'generation': 0,
   }
-  raise ndb.Return({
+  return {
       'url': '/internal/task/swarming/sync-build/%s' % build.key.id(),
       'payload': json.dumps(payload, sort_keys=True),
       'retry_options': {'task_age_limit': model.BUILD_TIMEOUT.total_seconds()},
-  })
+  }
 
 
 def _create_swarming_task(build_id):
@@ -651,7 +639,7 @@ def _create_swarming_task(build_id):
   # Deserialize all fields.
   build.proto.infra.ParseFromString(build.infra_bytes)
   build.proto.input.properties.ParseFromString(build.input_properties_bytes)
-  task_def = prepare_task_def_async(build, settings).get_result()
+  task_def = prepare_task_def(build, settings)
 
   # Insert secret bytes.
   secrets = launcher_pb2.BuildSecrets(
