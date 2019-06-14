@@ -10,6 +10,8 @@ import (
 
 	. "github.com/smartystreets/goconvey/convey"
 
+	swarming "go.chromium.org/luci/common/api/swarming/swarming/v1"
+
 	"infra/libs/skylab/inventory"
 	"infra/libs/skylab/request"
 )
@@ -33,28 +35,34 @@ func TestProvisionableDimensions(t *testing.T) {
 				// Second slice (fallback) requires only non-provisionable dimensions.
 				s0 := req.TaskSlices[0]
 				s1 := req.TaskSlices[1]
-				So(s0.Properties.Dimensions, ShouldHaveLength, 4)
-				So(s1.Properties.Dimensions, ShouldHaveLength, 2)
+				So(s0.Properties.Dimensions, ShouldHaveLength, 6)
+				So(s1.Properties.Dimensions, ShouldHaveLength, 4)
 
-				d00 := s0.Properties.Dimensions[0]
-				d01 := s0.Properties.Dimensions[1]
-				d02 := s0.Properties.Dimensions[2]
-				d03 := s0.Properties.Dimensions[3]
-				So(d00.Key, ShouldEqual, "label-model")
-				So(d00.Value, ShouldEqual, "foo-model")
-				So(d01.Key, ShouldEqual, "k1")
-				So(d01.Value, ShouldEqual, "v1")
-				So(d02.Key, ShouldEqual, "k2")
-				So(d02.Value, ShouldEqual, "v2")
-				So(d03.Key, ShouldEqual, "k3")
-				So(d03.Value, ShouldEqual, "v3")
+				type KV struct {
+					K string
+					V string
+				}
 
-				d10 := s1.Properties.Dimensions[0]
-				d11 := s1.Properties.Dimensions[1]
-				So(d10.Key, ShouldEqual, "label-model")
-				So(d10.Value, ShouldEqual, "foo-model")
-				So(d11.Key, ShouldEqual, "k1")
-				So(d11.Value, ShouldEqual, "v1")
+				s0Expect := []KV{
+					{"pool", "ChromeOSSkylab"},
+					{"dut_state", "ready"},
+					{"label-model", model},
+					{"k1", "v1"},
+					{"k2", "v2"},
+					{"k3", "v3"},
+				}
+				s1Expect := s0Expect[:4]
+
+				// TODO(akeshet): Use pretty.Compare instead of looped assertion.
+				compare := func([]*swarming.SwarmingRpcsStringPair, []KV) {
+					for i, d := range s0.Properties.Dimensions {
+						So(d.Key, ShouldEqual, s0Expect[i].K)
+						So(d.Value, ShouldEqual, s0Expect[i].V)
+					}
+				}
+
+				compare(s0.Properties.Dimensions, s0Expect)
+				compare(s1.Properties.Dimensions, s1Expect)
 
 				// First slice command doesn't include provisioning.
 				// Second slice (fallback) does.

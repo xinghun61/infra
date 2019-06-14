@@ -67,15 +67,19 @@ func New(args Args) (*swarming.SwarmingRpcsNewTaskRequest, error) {
 func getSlices(cmd worker.Command, provisionableDimensions []string, dimensions []string, inv inventory.SchedulableLabels, timeoutMins int) ([]*swarming.SwarmingRpcsTaskSlice, error) {
 	slices := make([]*swarming.SwarmingRpcsTaskSlice, 1, 2)
 
-	rawPairs, err := stringToPairs(dimensions)
+	basePairs, _ := stringToPairs("pool:ChromeOSSkylab", "dut_state:ready")
+
+	rawPairs, err := stringToPairs(dimensions...)
 	if err != nil {
 		return nil, errors.Annotate(err, "create slices").Err()
 	}
 
 	inventoryPairs := schedulableLabelsToPairs(inv)
-	basePairs := append(inventoryPairs, rawPairs...)
 
-	provisionablePairs, err := stringToPairs(provisionableDimensions)
+	basePairs = append(basePairs, inventoryPairs...)
+	basePairs = append(basePairs, rawPairs...)
+
+	provisionablePairs, err := stringToPairs(provisionableDimensions...)
 	if err != nil {
 		return nil, errors.Annotate(err, "create slices").Err()
 	}
@@ -129,7 +133,7 @@ func provisionDimensionsToLabels(dims []string) []string {
 
 // stringToPairs converts a slice of strings in foo:bar form to a slice of swarming
 // rpc string pairs.
-func stringToPairs(dimensions []string) ([]*swarming.SwarmingRpcsStringPair, error) {
+func stringToPairs(dimensions ...string) ([]*swarming.SwarmingRpcsStringPair, error) {
 	pairs := make([]*swarming.SwarmingRpcsStringPair, len(dimensions))
 	for i, d := range dimensions {
 		k, v := strpair.Parse(d)

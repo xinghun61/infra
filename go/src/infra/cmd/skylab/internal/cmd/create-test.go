@@ -120,10 +120,6 @@ func (c *createTestRun) innerRun(a subcommands.Application, args []string, env s
 	}
 
 	taskName := c.Flags.Arg(0)
-	userDimensions := c.Flags.Args()[1:]
-
-	dimensions := []string{"pool:ChromeOSSkylab", "dut_state:ready"}
-	dimensions = append(dimensions, userDimensions...)
 
 	var provisionableDimensions []string
 	if c.image != "" {
@@ -157,7 +153,7 @@ func (c *createTestRun) innerRun(a subcommands.Application, args []string, env s
 		Cmd:                     cmd,
 		Tags:                    tags,
 		ProvisionableDimensions: provisionableDimensions,
-		Dimensions:              dimensions,
+		Dimensions:              c.getDimensions(),
 		SchedulableLabels:       c.getLabels(),
 		TimeoutMins:             c.timeoutMins,
 		Priority:                int64(c.priority),
@@ -204,4 +200,11 @@ func (c *createTestRun) getLabels() inventory.SchedulableLabels {
 		}
 	}
 	return labels
+}
+
+func (c *createTestRun) getDimensions() []string {
+	userDimensions := c.Flags.Args()[1:]
+	dimensions := []string{"pool:ChromeOSSkylab", "dut_state:ready"}
+	dimensions = append(dimensions, userDimensions...)
+	return dimensions
 }
