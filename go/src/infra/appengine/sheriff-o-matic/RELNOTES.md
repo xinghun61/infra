@@ -1,3 +1,20 @@
+# Release Notes sheriff-o-matic 2019-06-14
+
+- 2 commits, 2 bugs affected since fde17de (2019-06-11T22:16:09Z)
+- 1 Authors:
+  - chanli@chromium.org
+
+## Changes in this release
+
+- [[SoM] Call the legacy API for chromium failrues in buildbucket_analyzer](https://chromium-review.googlesource.com/c/infra/infra/+/1659730) (chanli@chromium.org)
+- [[SoM] Use Findit's lucibuildfailure API to get Findit results using buildbucket concepts.](https://chromium-review.googlesource.com/c/infra/infra/+/1650499) (chanli@chromium.org)
+
+
+## Bugs updated, by author
+- chanli@chromium.org:
+  -  [https://crbug.com/943744](https://crbug.com/943744)
+  -  [https://crbug.com/973613](https://crbug.com/973613)
+
 # Release Notes sheriff-o-matic 2019-06-11
 
 - 6 commits, 1 bugs affected since 40621e9 (2019-06-04T22:11:51Z)
