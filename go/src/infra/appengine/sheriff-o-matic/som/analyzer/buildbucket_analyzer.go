@@ -281,28 +281,60 @@ func (a *Analyzer) BuildBucketAlerts(ctx context.Context, builderIDs []*bbpb.Bui
 		}
 
 		someBuilder := alertedBuilders[0]
-		buildAlternativeID := messages.BuildIdentifierByNumber{
-			Project: someBuilder.Project,
-			Bucket:  someBuilder.Bucket,
-			Builder: someBuilder.Name,
-			Number:  someBuilder.LatestFailure,
-		}
-		results, err := a.FindIt.FinditBuildbucket(ctx, &buildAlternativeID, []string{stepName})
-		if err != nil {
-			logging.Errorf(ctx, "error getting findit results: %v", err)
-		}
 
-		for _, result := range results {
-			if result.StepName != bf.StepAtFault.Step.Name {
-				continue
+		if someBuilder.Project == "chromeos" {
+			buildAlternativeID := messages.BuildIdentifierByNumber{
+				Project: someBuilder.Project,
+				Bucket:  someBuilder.Bucket,
+				Builder: someBuilder.Name,
+				Number:  someBuilder.LatestFailure,
+			}
+			results, err := a.FindIt.FinditBuildbucket(ctx, &buildAlternativeID, []string{stepName})
+			if err != nil {
+				logging.Errorf(ctx, "error getting findit results: %v", err)
 			}
 
-			bf.Culprits = append(bf.Culprits, result.Culprits...)
-			bf.HasFindings = len(result.Culprits) > 0
-			bf.IsFinished = result.IsFinished
-			bf.IsSupported = result.IsSupported
+			for _, result := range results {
+				if result.StepName != bf.StepAtFault.Step.Name {
+					continue
+				}
 
+				bf.Culprits = append(bf.Culprits, result.Culprits...)
+				bf.HasFindings = len(result.Culprits) > 0
+				bf.IsFinished = result.IsFinished
+				bf.IsSupported = result.IsSupported
+
+			}
+		} else if someBuilder.Project == "chromium" {
+			master := masterLocationByName[someBuilder.Master]
+			if master != nil {
+				results, err := a.FindIt.Findit(ctx, master, someBuilder.Name, someBuilder.LatestFailure, []string{stepName})
+				if err != nil {
+					logging.Errorf(ctx, "error getting findit results: %v", err)
+				}
+
+				for _, result := range results {
+					if result.StepName != bf.StepAtFault.Step.Name {
+						continue
+					}
+
+					bf.SuspectedCLs = append(bf.SuspectedCLs, result.SuspectedCLs...)
+					bf.FinditStatus = result.TryJobStatus
+					bf.HasFindings = result.HasFindings
+					bf.IsFinished = result.IsFinished
+					bf.IsSupported = result.IsSupported
+
+					buildNumberInURL := result.FirstKnownFailedBuildNumber
+					if buildNumberInURL == 0 {
+						// If Findit analysis is still running, result.FirstKnownFailedBuildNumber may be empty.
+						buildNumberInURL = result.BuildNumber
+					}
+					buildURL := fmt.Sprintf("https://ci.chromium.org/p/%s/builders/%s/%s/%d", someBuilder.Project, someBuilder.Bucket, someBuilder.Name, buildNumberInURL)
+					bf.FinditURL = fmt.Sprintf("https://findit-for-me.appspot.com/waterfall/failure?url=%s", buildURL)
+				}
+			}
 		}
+
 		// This assumes there is one set of reasons that applies to all instances
 		// of stepName failures. Obviously this isn't always true, and we should
 		// do more advanced grouping for test failures within a step, once we have

@@ -71,7 +71,82 @@ func TestBuildBucketAlerts(t *testing.T) {
 		So(alerts, ShouldBeEmpty)
 	})
 
-	Convey("single failure, single step", t, func() {
+	Convey("single failure, single step, chromium", t, func() {
+		a := New(0, 100)
+		a.BuildBucket = &client.StubBuildBucket{
+			Latest: []*bbpb.Build{
+				{
+					Number: 42,
+					Steps: []*bbpb.Step{
+						{
+							Name:   "step-name",
+							Status: bbpb.Status_FAILURE,
+						},
+					},
+					Builder: &bbpb.BuilderID{
+						Project: "chromium",
+						Bucket:  "ci",
+						Builder: "linux-rel",
+					},
+					Input: inputProperties("some-master.foo", "linux-rel", "", "", ""),
+				},
+			},
+			Err: nil,
+		}
+		ctx := gaetesting.TestingContext()
+		ctx = gologger.StdConfig.Use(ctx)
+		tr := &client.StubTestResults{}
+		lr := &client.StubLogReader{}
+		fi := &client.StubFindIt{
+			Result: []*messages.FinditResult{
+				{
+					MasterURL:                   "https://ci.chromium.org/p/fake.master",
+					BuilderName:                 "fake.builder",
+					BuildNumber:                 42,
+					FirstKnownFailedBuildNumber: 41,
+					TryJobStatus:                "FINISHED",
+					StepName:                    "step-name",
+					SuspectedCLs: []messages.SuspectCL{
+						{
+							RepoName:         "test",
+							Revision:         "291569",
+							Confidence:       90,
+							AnalysisApproach: "HEURISTIC",
+							RevertCLURL:      "https://codereview/12345",
+							RevertCommitted:  true,
+						},
+					},
+					HasFindings: true,
+					IsFinished:  true,
+					IsSupported: true,
+				},
+			},
+			Err: nil,
+		}
+		a.BuildBucketStepAnalyzers = step.DefaultBuildBucketStepAnalyzers(tr, lr, fi)
+		a.FindIt = fi
+		failures, err := a.BuildBucketAlerts(ctx, []*bbpb.BuilderID{builderID})
+		So(err, ShouldBeNil)
+		So(failures, ShouldNotBeEmpty)
+		So(failures[0].StepAtFault, ShouldNotBeNil)
+		So(failures[0].StepAtFault.Step, ShouldNotBeNil)
+		So(failures[0].StepAtFault.Step.Name, ShouldEqual, "step-name")
+
+		So(failures[0].Builders, ShouldNotBeEmpty)
+		So(failures[0].Builders[0].Name, ShouldEqual, "linux-rel")
+		So(failures[0].Builders[0].FirstFailure, ShouldEqual, 42)
+		So(failures[0].Builders[0].LatestFailure, ShouldEqual, 42)
+		// Testing Findit results.
+		So(failures[0].HasFindings, ShouldEqual, true)
+		So(failures[0].IsFinished, ShouldEqual, true)
+		So(failures[0].IsSupported, ShouldEqual, true)
+		So(failures[0].SuspectedCLs, ShouldNotBeEmpty)
+		So(failures[0].SuspectedCLs[0].Revision, ShouldEqual, "291569")
+		So(failures[0].SuspectedCLs[0].RevertCLURL, ShouldEqual, "https://codereview/12345")
+		So(failures[0].FinditURL, ShouldEqual, "https://findit-for-me.appspot.com/waterfall/failure?url=https://ci.chromium.org/p/chromium/builders/ci/linux-rel/41")
+	})
+
+	Convey("single failure, single step, chromeos", t, func() {
 		a := New(0, 100)
 		a.BuildBucket = &client.StubBuildBucket{
 			Latest: []*bbpb.Build{
@@ -85,6 +160,7 @@ func TestBuildBucketAlerts(t *testing.T) {
 					},
 					Builder: &bbpb.BuilderID{
 						Builder: "linux-rel",
+						Project: "chromeos",
 					},
 					Input: inputProperties("some-master.foo", "linux-rel", "", "", ""),
 				},
@@ -99,7 +175,7 @@ func TestBuildBucketAlerts(t *testing.T) {
 			Responses: []*messages.FinditResultV2{
 				{
 					BuildAlternativeID: messages.BuildIdentifierByNumber{
-						Project: "chromium",
+						Project: "chromeos",
 						Bucket:  "ci",
 						Builder: "linux-rel",
 						Number:  42,
