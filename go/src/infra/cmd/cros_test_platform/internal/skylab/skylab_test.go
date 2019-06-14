@@ -108,7 +108,9 @@ func TestLaunchAndWaitTest(t *testing.T) {
 
 			Convey("then results for all tests are reflected.", func() {
 				So(resp.TaskResults, ShouldHaveLength, 2)
-				// TODO(akeshet): Assert that results have correct task state.
+				for _, tr := range resp.TaskResults {
+					So(tr.State.LifeCycle, ShouldEqual, test_platform.TaskState_LIFE_CYCLE_COMPLETED)
+				}
 			})
 			Convey("then the expected number of external swarming calls are made.", func() {
 				So(swarming.getCalls, ShouldEqual, 2)
@@ -189,6 +191,7 @@ func TestIncompleteWait(t *testing.T) {
 		resp := run.Response(swarming)
 		So(resp, ShouldNotBeNil)
 		So(resp.TaskResults, ShouldHaveLength, 1)
+		So(resp.TaskResults[0].State.LifeCycle, ShouldEqual, test_platform.TaskState_LIFE_CYCLE_RUNNING)
 		// TODO(akeshet): Ensure that response either reflects the error or
 		// has an incomplete flag, once that part of the response proto is
 		// defined.

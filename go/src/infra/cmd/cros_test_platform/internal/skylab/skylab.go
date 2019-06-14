@@ -43,6 +43,7 @@ type testRun struct {
 type attempt struct {
 	taskID    string
 	completed bool
+	state     jsonrpc.TaskState
 }
 
 // Swarming defines an interface used to interact with a swarming service.
@@ -118,7 +119,7 @@ func (r *TaskSet) tick(ctx context.Context, swarming Swarming) (complete bool, e
 	complete = true
 
 	for _, testRun := range r.testRuns {
-		attempt := testRun.attempts[len(testRun.attempts)-1]
+		attempt := &testRun.attempts[len(testRun.attempts)-1]
 		if attempt.completed {
 			continue
 		}
@@ -128,7 +129,7 @@ func (r *TaskSet) tick(ctx context.Context, swarming Swarming) (complete bool, e
 			return false, errors.Annotate(err, "wait for tests").Err()
 		}
 
-		result, err := unpackResultForAttempt(results, attempt)
+		result, err := unpackResult(results, attempt.taskID)
 		if err != nil {
 			return false, errors.Annotate(err, "wait for tests").Err()
 		}
@@ -137,6 +138,7 @@ func (r *TaskSet) tick(ctx context.Context, swarming Swarming) (complete bool, e
 		if err != nil {
 			return false, errors.Annotate(err, "wait for tests").Err()
 		}
+		attempt.state = state
 
 		if !unfinishedTaskStates[state] {
 			attempt.completed = true
@@ -150,14 +152,14 @@ func (r *TaskSet) tick(ctx context.Context, swarming Swarming) (complete bool, e
 	return complete, nil
 }
 
-func unpackResultForAttempt(results []*swarming_api.SwarmingRpcsTaskResult, a attempt) (*swarming_api.SwarmingRpcsTaskResult, error) {
+func unpackResult(results []*swarming_api.SwarmingRpcsTaskResult, taskID string) (*swarming_api.SwarmingRpcsTaskResult, error) {
 	if len(results) != 1 {
-		return nil, errors.Reason("expected 1 result for task id %s, got %d", a.taskID, len(results)).Err()
+		return nil, errors.Reason("expected 1 result for task id %s, got %d", taskID, len(results)).Err()
 	}
 
 	result := results[0]
-	if result.TaskId != a.taskID {
-		return nil, errors.Reason("expected result for task id %s, got %s", a.taskID, result.TaskId).Err()
+	if result.TaskId != taskID {
+		return nil, errors.Reason("expected result for task id %s, got %s", taskID, result.TaskId).Err()
 	}
 
 	return result, nil
@@ -171,6 +173,20 @@ func unpackTaskState(state string) (jsonrpc.TaskState, error) {
 	return jsonrpc.TaskState(val), nil
 }
 
+var taskStateToLifeCycle = map[jsonrpc.TaskState]test_platform.TaskState_LifeCycle{
+	jsonrpc.TaskState_BOT_DIED:  test_platform.TaskState_LIFE_CYCLE_ABORTED,
+	jsonrpc.TaskState_CANCELED:  test_platform.TaskState_LIFE_CYCLE_CANCELLED,
+	jsonrpc.TaskState_COMPLETED: test_platform.TaskState_LIFE_CYCLE_COMPLETED,
+	// TODO(akeshet): This mapping is inexact. Add a lifecycle entry for this.
+	jsonrpc.TaskState_EXPIRED:     test_platform.TaskState_LIFE_CYCLE_CANCELLED,
+	jsonrpc.TaskState_KILLED:      test_platform.TaskState_LIFE_CYCLE_ABORTED,
+	jsonrpc.TaskState_NO_RESOURCE: test_platform.TaskState_LIFE_CYCLE_REJECTED,
+	jsonrpc.TaskState_PENDING:     test_platform.TaskState_LIFE_CYCLE_PENDING,
+	jsonrpc.TaskState_RUNNING:     test_platform.TaskState_LIFE_CYCLE_RUNNING,
+	// TODO(akeshet): This mapping is inexact. Add a lifecycle entry for this.
+	jsonrpc.TaskState_TIMED_OUT: test_platform.TaskState_LIFE_CYCLE_ABORTED,
+}
+
 // Response constructs a response based on the current state of the
 // TaskSet.
 func (r *TaskSet) Response(swarming Swarming) *steps.ExecuteResponse {
@@ -179,8 +195,12 @@ func (r *TaskSet) Response(swarming Swarming) *steps.ExecuteResponse {
 		for _, attempt := range test.attempts {
 			resp.TaskResults = append(resp.TaskResults, &steps.ExecuteResponse_TaskResult{
 				Name: test.test.Name,
-				// TODO(akeshet): Map task status correctly.
-				State:   &test_platform.TaskState{},
+				State: &test_platform.TaskState{
+					LifeCycle: taskStateToLifeCycle[attempt.state],
+					// TODO(akeshet): Determine a way to extract and identify
+					// test verdicts.
+					Verdict: test_platform.TaskState_VERDICT_NO_VERDICT,
+				},
 				TaskId:  attempt.taskID,
 				TaskUrl: swarming.GetTaskURL(attempt.taskID),
 			})
