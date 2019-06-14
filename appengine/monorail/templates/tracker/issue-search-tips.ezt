@@ -65,15 +65,16 @@ more precisely, you can use search operators for more power.</p>
 
 <p>Normal search terms will match words found in any field of an
 issue.  You can narrow the search to a specific field by using the
-name of the field.  The built-in field operators are summary:,
-description:, comment:, status:, reporter:, owner:, cc:, commentby:,
-and label:.  You can limit your search to just open issues by using
+name of the field.  The built-in field operators are <tt>summary</tt>,
+<tt>description</tt>, <tt>comment</tt>, <tt>status</tt>, <tt>reporter</tt>,
+<tt>owner</tt>, <tt>cc</tt>, <tt>commentby</tt>,
+and <tt>label</tt>.  You can limit your search to just open issues by using
 is:open, or to just closed issues by using a minus sign to negate it:
--is:open.</p>
+<tt>-is:open</tt>.</p>
 [# TODO(jrobbins): dateopened:]
 
 <p>For example, here's how to search for issues with the word
-<b>calculation</b> in the summary field.</p>
+"calculation" in the summary field.</p>
 
 <form action="list" method="GET">
  <p><input type="text" size="25" name="q" value="summary:calculation">
@@ -82,7 +83,7 @@ is:open, or to just closed issues by using a minus sign to negate it:
 
 <p>When searching for issues owned by a specific user, you can use his
 or her email address, or part of it.  When referring to yourself, you can also
- use the special term <b>me</b>. For example, this restricts the search to
+ use the special term <tt>me</tt>. For example, this restricts the search to
 issues that are owned by you.</p>
 
 <form action="list" method="GET">
@@ -103,7 +104,7 @@ issues that are owned by you.</p>
 tracker stores many issue details as labels.</p>
 
 <p>For example, if you labeled security-related issues with the label
-<b>Security</b>, here's how to search for them.</p>
+<tt>Security</tt>, here's how to search for them.</p>
 
 <form action="list" method="GET">
  <p><input type="text" size="25" name="q" value="label:security">
@@ -112,13 +113,13 @@ tracker stores many issue details as labels.</p>
 
 
 <p>In addition to simple one-word labels, you can use two part labels
-that specify an attribute and a value, like <b>Priority-High</b>,
-<b>Priority-Medium</b>, and <b>Priority-Low</b>.  You can search for
-these with the label: operator, or you can use the first part of the
+that specify an attribute and a value, like <tt>Priority-High</tt>,
+<tt>Priority-Medium</tt>, and <tt>Priority-Low</tt>.  You can search for
+these with the <tt>label</tt> operator, or you can use the first part of the
 label name like an operator.</p>
 
 <p>For example, if you labeled high priority issues with
-<b>Priority-High</b>, here's one way to search for them.</p>
+<tt>Priority-High</tt>, here's one way to search for them.</p>
 
 <form action="list" method="GET">
  <p><input type="text" size="25" name="q" value="label:Priority-High">
@@ -132,8 +133,8 @@ label name like an operator.</p>
  <input type="submit" name="btn" value="Search"></p>
 </form>
 
-<p>For <b>components</b>, the default search will find issues in that component
-and all of its subcomponents.</p>
+<p>For the <tt>components</tt> operator, the default search will find
+issues in that component and all of its subcomponents.</p>
 
 <form action="list" method="GET">
  <p><input type="text" size="25" name="q" value="component:UI">
@@ -150,25 +151,28 @@ and all of its subcomponents.</p>
 
 <h3>Empty (or non-empty) field search</h3>
 
-<p>For each built-in field operator, you can use the 'has' operator to search for
-issues with empty or non-empty fields.</p>
+<p>For each built-in field operator, you can use the <tt>has</tt>
+operator to search for issues with empty or non-empty fields.  The
+<tt>has</tt> operator can be used with status, owner, cc, component,
+attachments, blocking, blockedon, mergedinto, any key-value label prefix, or
+any custom field name.</p>
 
-<p>For example, here's how to search for issues whose owner field is non-empty,
-assigned to someone.</p>
+<p>For example, here's how to search for issues that have one or more
+components.</p>
 
 <form action="list" method="GET">
- <p><input type="text" size="25" name="q" value="has:owner">
+ <p><input type="text" size="25" name="q" value="has:component">
  <input type="submit" name="btn" value="Search">
 </form>
 
-<p>Or, you can use '-has' operator for negation, to search for issues with empty
-fields.</p>
+<p>Or, you can use the <tt>-has</tt> operator for negation, to search for
+issues with empty fields.</p>
 
-<p>For example, here's how to search for issues whose owner field is empty
-because no one is assigned to it.</p>
+<p>For example, here's how to search for issues that are not associated with
+any component.</p>
 
 <form action="list" method="GET">
- <p><input type="text" size="25" name="q" value="-has:owner">
+ <p><input type="text" size="25" name="q" value="-has:component">
  <input type="submit" name="btn" value="Search">
 </form>
 
@@ -184,7 +188,7 @@ with the same prefix by using.</p>
 </form>
 
 
-<p>You can combine two separate queries into one using the <b>OR</b> operator.
+<p>You can combine two separate queries into one using the <tt>OR</tt> operator.
 We do not support parentheses or complex boolean expressions, just top-level OR.</p>
 
 <form action="list" method="GET">
@@ -196,11 +200,11 @@ We do not support parentheses or complex boolean expressions, just top-level OR.
 <h3>Exact value search</h3>
 
 <p>You can search for issues that exactly match the given term by using
-the search operator '='.</p>
+the search operator <tt>=</tt>.</p>
 
-<p>For example, searching for 'Milestone=2009' only matches issues with the
-label 'Milestone-2009', while searching for 'Milestone:2009' matches issues
-with the labels 'Milestone-2009', 'Milestone-2009-Q1', 'Milestone-2009-Q3',
+<p>For example, searching for <tt>Milestone=2009</tt> only matches issues with the
+label <tt>Milestone-2009</tt>, while searching for <tt>Milestone:2009</tt> matches
+issues with the labels <tt>Milestone-2009</tt>, <tt>Milestone-2009-Q1</tt>, <tt>Milestone-2009-Q3</tt>,
 etc.</p>
 
 <form action="list" method="GET">
@@ -306,9 +310,10 @@ part of issue comments.</p>
 <p>This search syntax is divided into two parts, the action and the date,
 [[]action]:[[]date]</p>
 
-<p>Supported predicates are: 'opened', 'modified', and 'closed'. Each can be
-paired with an inequality operator '&lt' or '&gt'. The date must to be specified
-as 'YYYY-MM-DD', 'YYYY/MM/DD' or 'today-N'.</p>
+<p>Built-in date operators include <tt>opened</tt>,
+<tt>modified</tt>, and <tt>closed</tt>. Each can be paired with an
+inequality operator <tt>&lt</tt> or <tt>&gt</tt>. The date must to be
+specified as YYYY-MM-DD, YYYY/MM/DD or today-N.</p>
 
 <p>For example, if you want to search for issues opened after 2009/4/1, you
 could do the following:</p>
