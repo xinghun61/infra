@@ -10,14 +10,17 @@ import (
 
 	. "github.com/smartystreets/goconvey/convey"
 
+	"infra/libs/skylab/inventory"
 	"infra/libs/skylab/request"
 )
 
 func TestProvisionableDimensions(t *testing.T) {
-	Convey("Given request arguments that specify provisionable and regular dimenisons", t, func() {
+	Convey("Given request arguments that specify provisionable and regular dimenisons and inventory labels", t, func() {
+		model := "foo-model"
 		args := request.Args{
 			Dimensions:              []string{"k1:v1"},
 			ProvisionableDimensions: []string{"k2:v2", "k3:v3"},
+			SchedulableLabels:       inventory.SchedulableLabels{Model: &model},
 		}
 		Convey("when a request is formed", func() {
 			req, err := request.New(args)
@@ -30,22 +33,28 @@ func TestProvisionableDimensions(t *testing.T) {
 				// Second slice (fallback) requires only non-provisionable dimensions.
 				s0 := req.TaskSlices[0]
 				s1 := req.TaskSlices[1]
-				So(s0.Properties.Dimensions, ShouldHaveLength, 3)
-				So(s1.Properties.Dimensions, ShouldHaveLength, 1)
+				So(s0.Properties.Dimensions, ShouldHaveLength, 4)
+				So(s1.Properties.Dimensions, ShouldHaveLength, 2)
 
 				d00 := s0.Properties.Dimensions[0]
 				d01 := s0.Properties.Dimensions[1]
 				d02 := s0.Properties.Dimensions[2]
-				So(d00.Key, ShouldEqual, "k1")
-				So(d00.Value, ShouldEqual, "v1")
-				So(d01.Key, ShouldEqual, "k2")
-				So(d01.Value, ShouldEqual, "v2")
-				So(d02.Key, ShouldEqual, "k3")
-				So(d02.Value, ShouldEqual, "v3")
+				d03 := s0.Properties.Dimensions[3]
+				So(d00.Key, ShouldEqual, "label-model")
+				So(d00.Value, ShouldEqual, "foo-model")
+				So(d01.Key, ShouldEqual, "k1")
+				So(d01.Value, ShouldEqual, "v1")
+				So(d02.Key, ShouldEqual, "k2")
+				So(d02.Value, ShouldEqual, "v2")
+				So(d03.Key, ShouldEqual, "k3")
+				So(d03.Value, ShouldEqual, "v3")
 
 				d10 := s1.Properties.Dimensions[0]
-				So(d10.Key, ShouldEqual, "k1")
-				So(d10.Value, ShouldEqual, "v1")
+				d11 := s1.Properties.Dimensions[1]
+				So(d10.Key, ShouldEqual, "label-model")
+				So(d10.Value, ShouldEqual, "foo-model")
+				So(d11.Key, ShouldEqual, "k1")
+				So(d11.Value, ShouldEqual, "v1")
 
 				// First slice command doesn't include provisioning.
 				// Second slice (fallback) does.

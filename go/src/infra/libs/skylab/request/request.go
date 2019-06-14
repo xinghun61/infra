@@ -14,23 +14,41 @@ import (
 	"go.chromium.org/luci/common/data/strpair"
 	"go.chromium.org/luci/common/errors"
 
+	"infra/libs/skylab/inventory"
+	swarming_inventory "infra/libs/skylab/inventory/swarming"
 	"infra/libs/skylab/worker"
 )
 
 // Args defines the set of arguments for creating a request.
 type Args struct {
-	Cmd                     worker.Command
-	Tags                    []string
+	// Cmd specifies the payload command to run for the request.
+	Cmd worker.Command
+	// Tags specifies swarming tags to apply to the request.
+	Tags []string
+	// ProvisionableDimensions specifies the provisionable dimensions in raw
+	// string form; e.g. {"provisionable-cros-version:foo-cq-R75-1.2.3.4"}
 	ProvisionableDimensions []string
-	Dimensions              []string
-	TimeoutMins             int
-	Priority                int64
-	ParentTaskID            string
+	// Dimensions specifies swarming dimensions in raw string form.
+	//
+	// It is preferable to specify dimensions via the SchedulableLabels
+	// argument. This argument should only be used for user-supplied freeform
+	// dimensions; e.g. {"label-power:battery"}
+	//
+	// TODO(akeshet): This feature is needed to support `skylab create-test`
+	// which allows arbitrary user-specified dimensions. If and when that
+	// feature is dropped, then this feature can be dropped as well.
+	Dimensions []string
+	// SchedulableLabels specifies schedulable label requirements that will
+	// be translated to dimensions.
+	SchedulableLabels inventory.SchedulableLabels
+	TimeoutMins       int
+	Priority          int64
+	ParentTaskID      string
 }
 
 // New creates a new swarming request for the given worker command and parameters.
 func New(args Args) (*swarming.SwarmingRpcsNewTaskRequest, error) {
-	slices, err := getSlices(args.Cmd, args.ProvisionableDimensions, args.Dimensions, args.TimeoutMins)
+	slices, err := getSlices(args.Cmd, args.ProvisionableDimensions, args.Dimensions, args.SchedulableLabels, args.TimeoutMins)
 	if err != nil {
 		return nil, errors.Annotate(err, "create request").Err()
 	}
@@ -46,14 +64,18 @@ func New(args Args) (*swarming.SwarmingRpcsNewTaskRequest, error) {
 }
 
 // getSlices generates and returns the set of swarming task slices for the given test task.
-func getSlices(cmd worker.Command, provisionableDimensions []string, dimensions []string, timeoutMins int) ([]*swarming.SwarmingRpcsTaskSlice, error) {
+func getSlices(cmd worker.Command, provisionableDimensions []string, dimensions []string, inv inventory.SchedulableLabels, timeoutMins int) ([]*swarming.SwarmingRpcsTaskSlice, error) {
 	slices := make([]*swarming.SwarmingRpcsTaskSlice, 1, 2)
 
-	basePairs, err := toPairs(dimensions)
+	rawPairs, err := stringToPairs(dimensions)
 	if err != nil {
 		return nil, errors.Annotate(err, "create slices").Err()
 	}
-	provisionablePairs, err := toPairs(provisionableDimensions)
+
+	inventoryPairs := schedulableLabelsToPairs(inv)
+	basePairs := append(inventoryPairs, rawPairs...)
+
+	provisionablePairs, err := stringToPairs(provisionableDimensions)
 	if err != nil {
 		return nil, errors.Annotate(err, "create slices").Err()
 	}
@@ -105,9 +127,9 @@ func provisionDimensionsToLabels(dims []string) []string {
 	return labels
 }
 
-// toPairs converts a slice of strings in foo:bar form to a slice of swarming
+// stringToPairs converts a slice of strings in foo:bar form to a slice of swarming
 // rpc string pairs.
-func toPairs(dimensions []string) ([]*swarming.SwarmingRpcsStringPair, error) {
+func stringToPairs(dimensions []string) ([]*swarming.SwarmingRpcsStringPair, error) {
 	pairs := make([]*swarming.SwarmingRpcsStringPair, len(dimensions))
 	for i, d := range dimensions {
 		k, v := strpair.Parse(d)
@@ -117,4 +139,15 @@ func toPairs(dimensions []string) ([]*swarming.SwarmingRpcsStringPair, error) {
 		pairs[i] = &swarming.SwarmingRpcsStringPair{Key: k, Value: v}
 	}
 	return pairs, nil
+}
+
+func schedulableLabelsToPairs(inv inventory.SchedulableLabels) []*swarming.SwarmingRpcsStringPair {
+	dimensions := swarming_inventory.Convert(&inv)
+	pairs := make([]*swarming.SwarmingRpcsStringPair, 0, len(dimensions))
+	for key, values := range dimensions {
+		for _, value := range values {
+			pairs = append(pairs, &swarming.SwarmingRpcsStringPair{Key: key, Value: value})
+		}
+	}
+	return pairs
 }
