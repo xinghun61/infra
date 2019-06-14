@@ -13,6 +13,7 @@ import (
 	. "github.com/smartystreets/goconvey/convey"
 
 	build_api "go.chromium.org/chromiumos/infra/proto/go/chromite/api"
+	"go.chromium.org/chromiumos/infra/proto/go/test_platform"
 	swarming_api "go.chromium.org/luci/common/api/swarming/swarming/v1"
 	"go.chromium.org/luci/swarming/proto/jsonrpc"
 
@@ -97,7 +98,7 @@ func TestLaunchAndWaitTest(t *testing.T) {
 		tests = append(tests, &build_api.AutotestTest{}, &build_api.AutotestTest{})
 
 		Convey("when running a skylab execution", func() {
-			run := skylab.NewTaskSet(tests)
+			run := skylab.NewTaskSet(tests, &test_platform.Request_Params{})
 
 			err := run.LaunchAndWait(ctx, swarming)
 			So(err, ShouldBeNil)
@@ -123,7 +124,7 @@ func TestServiceError(t *testing.T) {
 		swarming := newFakeSwarming("")
 
 		tests := []*build_api.AutotestTest{{}}
-		run := skylab.NewTaskSet(tests)
+		run := skylab.NewTaskSet(tests, &test_platform.Request_Params{})
 
 		Convey("when the swarming service immediately returns errors, that error is surfaced as a launch error.", func() {
 			swarming.setError(fmt.Errorf("foo error"))
@@ -150,7 +151,7 @@ func TestTaskURL(t *testing.T) {
 		swarming_service := "https://foo.bar.com/"
 		swarming := newFakeSwarming(swarming_service)
 		tests := []*build_api.AutotestTest{{}}
-		run := skylab.NewTaskSet(tests)
+		run := skylab.NewTaskSet(tests, &test_platform.Request_Params{})
 		run.LaunchAndWait(ctx, swarming)
 
 		resp := run.Response(swarming)
@@ -170,7 +171,7 @@ func TestIncompleteWait(t *testing.T) {
 		swarming.setTaskState(jsonrpc.TaskState_RUNNING)
 
 		tests := []*build_api.AutotestTest{{}}
-		run := skylab.NewTaskSet(tests)
+		run := skylab.NewTaskSet(tests, &test_platform.Request_Params{})
 
 		wg := sync.WaitGroup{}
 		wg.Add(1)

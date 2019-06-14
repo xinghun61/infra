@@ -25,6 +25,7 @@ import (
 // a Skylab Execution.
 type TaskSet struct {
 	testRuns []*testRun
+	params   *test_platform.Request_Params
 }
 
 // unfinishedTaskStates indicate swarming states that correspond to non-final
@@ -53,12 +54,15 @@ type Swarming interface {
 }
 
 // NewTaskSet creates a new TaskSet.
-func NewTaskSet(tests []*build_api.AutotestTest) *TaskSet {
+func NewTaskSet(tests []*build_api.AutotestTest, params *test_platform.Request_Params) *TaskSet {
 	testRuns := make([]*testRun, len(tests))
 	for i, test := range tests {
 		testRuns[i] = &testRun{test: test}
 	}
-	return &TaskSet{testRuns: testRuns}
+	return &TaskSet{
+		testRuns: testRuns,
+		params:   params,
+	}
 }
 
 // LaunchAndWait launches a skylab execution and waits for it to complete,
