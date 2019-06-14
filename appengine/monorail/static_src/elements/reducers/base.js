@@ -7,6 +7,7 @@ import {applyMiddleware, combineReducers, compose, createStore} from 'redux';
 import thunk from 'redux-thunk';
 import * as issue from './issue.js';
 import * as project from './project.js';
+import * as sitewide from './sitewide.js';
 import * as user from './user.js';
 import * as ui from './ui.js';
 
@@ -17,6 +18,7 @@ const RESET_STATE = 'RESET_STATE';
 {
   issue: Object,
   project: Object,
+  sitewide: Object,
   user: Object,
 
   ui: Object,
@@ -28,6 +30,7 @@ const reducer = combineReducers({
   issue: issue.reducer,
   project: project.reducer,
   user: user.reducer,
+  sitewide: sitewide.reducer,
 
   ui: ui.reducer,
 });

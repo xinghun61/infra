@@ -6,6 +6,8 @@ import {LitElement, html, css} from 'lit-element';
 import page from 'page';
 import qs from 'qs';
 
+import {getServerStatusCron} from 'elements/shared/cron.js';
+import 'elements/framework/mr-site-banner/mr-site-banner.js';
 import {store, connectStore} from 'elements/reducers/base.js';
 import * as issue from 'elements/reducers/issue.js';
 import * as ui from 'elements/reducers/ui.js';
@@ -45,9 +47,13 @@ export class MrApp extends connectStore(LitElement) {
         .loginUrl=${this.loginUrl}
         .logoutUrl=${this.logoutUrl}
       ></mr-header>
-      <mr-cue cuePrefName="switch_to_parent_account"
-              .loginUrl=${this.loginUrl}
-              centered nondismissible></mr-cue>
+      <mr-site-banner></mr-site-banner>
+      <mr-cue
+        cuePrefName="switch_to_parent_account"
+        .loginUrl=${this.loginUrl}
+        centered
+        nondismissible
+      ></mr-cue>
       <mr-cue cuePrefName="search_for_numbers" centered></mr-cue>
       <main></main>
     `;
@@ -86,6 +92,9 @@ export class MrApp extends connectStore(LitElement) {
 
     // page doesn't handle users reloading the page or closing a tab.
     window.onbeforeunload = this._confirmDiscardMessage.bind(this);
+
+    // Start a cron task to periodically request the status from the server.
+    getServerStatusCron.start();
 
     page('*', (ctx, next) => {
       // Navigate to the requested element if a hash is present.
