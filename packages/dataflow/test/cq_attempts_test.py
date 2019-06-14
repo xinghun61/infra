@@ -238,6 +238,12 @@ class TestCQAttemptAccumulator(unittest.TestCase):
     attempt = self.combFn.extract_output([event])
     self.assertEqual(attempt['earliest_equivalent_patchset'], 455)
 
+  def test_attempt_key(self):
+    event = self.basic_event()
+    event.attempt_key = 'deadbeef512'
+    attempt = self.combFn.extract_output([event])
+    self.assertEqual(attempt['attempt_key'], 'deadbeef512')
+
   def test_extract_consistent_field(self):
     event = self.basic_event()
     attempt = self.combFn.extract_output([event])
