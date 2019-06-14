@@ -21,8 +21,9 @@ import (
 	"infra/libs/skylab/request"
 )
 
-// Run encapsulates the running state of an ExecuteRequest.
-type Run struct {
+// TaskSet encapsulates the running state of a set of tasks, to satisfy
+// a Skylab Execution.
+type TaskSet struct {
 	testRuns []*testRun
 }
 
@@ -51,13 +52,13 @@ type Swarming interface {
 	GetTaskURL(taskID string) string
 }
 
-// NewRun creates a new Run.
-func NewRun(tests []*build_api.AutotestTest) *Run {
+// NewTaskSet creates a new TaskSet.
+func NewTaskSet(tests []*build_api.AutotestTest) *TaskSet {
 	testRuns := make([]*testRun, len(tests))
 	for i, test := range tests {
 		testRuns[i] = &testRun{test: test}
 	}
-	return &Run{testRuns: testRuns}
+	return &TaskSet{testRuns: testRuns}
 }
 
 // LaunchAndWait launches a skylab execution and waits for it to complete,
@@ -67,7 +68,7 @@ func NewRun(tests []*build_api.AutotestTest) *Run {
 // If the supplied context is cancelled prior to completion, or some other error
 // is encountered, this method returns whatever partial execution response
 // was visible to it prior to that error.
-func (r *Run) LaunchAndWait(ctx context.Context, swarming Swarming) error {
+func (r *TaskSet) LaunchAndWait(ctx context.Context, swarming Swarming) error {
 	if err := r.launch(ctx, swarming); err != nil {
 		return err
 	}
@@ -75,7 +76,7 @@ func (r *Run) LaunchAndWait(ctx context.Context, swarming Swarming) error {
 	return r.wait(ctx, swarming)
 }
 
-func (r *Run) launch(ctx context.Context, swarming Swarming) error {
+func (r *TaskSet) launch(ctx context.Context, swarming Swarming) error {
 	for _, testRun := range r.testRuns {
 		// TODO(akeshet): These request args don't include any of the actual
 		// test details yet. Fix this, and use correct args.
@@ -94,7 +95,7 @@ func (r *Run) launch(ctx context.Context, swarming Swarming) error {
 	return nil
 }
 
-func (r *Run) wait(ctx context.Context, swarming Swarming) error {
+func (r *TaskSet) wait(ctx context.Context, swarming Swarming) error {
 	for {
 		complete, err := r.tick(ctx, swarming)
 		if complete || err != nil {
@@ -109,7 +110,7 @@ func (r *Run) wait(ctx context.Context, swarming Swarming) error {
 	}
 }
 
-func (r *Run) tick(ctx context.Context, swarming Swarming) (complete bool, err error) {
+func (r *TaskSet) tick(ctx context.Context, swarming Swarming) (complete bool, err error) {
 	complete = true
 
 	for _, testRun := range r.testRuns {
@@ -167,8 +168,8 @@ func unpackTaskState(state string) (jsonrpc.TaskState, error) {
 }
 
 // Response constructs a response based on the current state of the
-// run.
-func (r *Run) Response(swarming Swarming) *steps.ExecuteResponse {
+// TaskSet.
+func (r *TaskSet) Response(swarming Swarming) *steps.ExecuteResponse {
 	resp := &steps.ExecuteResponse{}
 	for _, test := range r.testRuns {
 		for _, attempt := range test.attempts {
