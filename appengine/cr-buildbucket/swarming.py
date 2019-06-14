@@ -80,6 +80,26 @@ _CACHE_DIR = 'cache'
 # are either checked out, or installed via CIPD package.
 _KITCHEN_CHECKOUT = 'kitchen-checkout'
 
+# TODO(crbug.com/973721): remove this blacklist
+VPYTHON_NATIVE_BLACKLIST_OF_LUCI_PROJECTS = {
+    'angle',
+    'boringssl',
+    'cast-chromecast-internal',
+    'celab',
+    'chromeos',
+    'dawn',
+    'franky',
+    'gazoo',
+    'gn',
+    'goma-client',
+    'goma-client-internal',
+    'goma-server',
+    'infra-experimental',
+    'infra-internal',
+    'openscreen',
+    'tricium',
+}
+
 ################################################################################
 # Creation/cancellation of tasks.
 
@@ -190,36 +210,18 @@ def _buildbucket_property_legacy(build):
   }
 
 
-def _apply_if_tags(task):
-  """Filters a task based on '#if-tag's on JSON objects.
+def _remove_if_tags(task):
+  """Removes '#if-tag's on JSON objects.
 
-  JSON objects containing a property '#if-tag' will be checked to see if the
-  given value is one of the task's swarming tags. If the tag is present in the
-  swarming tags of the task, the object is included and the '#if-tag' property
-  is dropped.
-
-  If the JSON object does not contain '#if-tag', it will be unconditionally
-  included.
-
-  It is not possible to filter the entire (top-level) task :).
-
-  This returns a copy of the task.
+  TODO(crbug.com/973721): remove this function.
   """
-  tags = set(task.get('tags', ()))
   tag_string = '#if-tag'
-
-  def keep(obj):
-    if isinstance(obj, dict) and tag_string in obj:
-      return obj[tag_string] in tags
-    return True
 
   def walk(obj):
     if isinstance(obj, dict):
-      return {
-          k: walk(v) for k, v in obj.iteritems() if k != tag_string and keep(v)
-      }
+      return {k: walk(v) for k, v in obj.iteritems() if k != tag_string}
     if isinstance(obj, list):
-      return [walk(i) for i in obj if keep(i)]
+      return [walk(i) for i in obj]
     return obj
 
   return walk(task)
@@ -298,7 +300,7 @@ def _create_task_def_async(build, fake_build):
   task['tags'] = _calc_tags(
       build, extra_swarming_tags, task_template_rev, task.get('tags')
   )
-  task = _apply_if_tags(task)
+  task = _remove_if_tags(task)
 
   _setup_swarming_request_task_slices(build, extra_cipd_packages, task)
 
@@ -493,6 +495,15 @@ def _setup_swarming_props(build, extra_cipd_packages, props):
   })
   packages = props.setdefault('cipd_input', {}).setdefault('packages', [])
   packages.extend(extra_cipd_packages)
+
+  vpython_native_blacklisted = (
+      build.proto.builder.project in VPYTHON_NATIVE_BLACKLIST_OF_LUCI_PROJECTS
+  )
+  if vpython_native_blacklisted:  # pragma: no cover
+    packages[:] = [
+        p for p in packages
+        if p['package_name'] != 'infra/tools/luci/vpython-native/${platform}'
+    ]
 
   props['execution_timeout_secs'] = str(build.proto.execution_timeout.seconds)
 
