@@ -94,10 +94,14 @@ class CreationTest(testing.AppengineTestCase):
     )
 
     self.patch('tq.enqueue_async', autospec=True, return_value=future(None))
+    self.settings = service_config_pb2.SettingsCfg(
+        swarming=dict(global_caches=[dict(path='git')]),
+        logdog=dict(hostname='logs.example.com'),
+    )
     self.patch(
         'config.get_settings_async',
         autospec=True,
-        return_value=future(service_config_pb2.SettingsCfg())
+        return_value=future(self.settings)
     )
 
     self.patch('creation._should_update_builder', side_effect=lambda p: p > 0.5)
@@ -144,6 +148,15 @@ class CreationTest(testing.AppengineTestCase):
     self.assertEqual(build.proto.builder.bucket, 'try')
     self.assertEqual(build.proto.builder.builder, 'linux')
     self.assertEqual(build.created_by, auth.get_current_identity())
+
+    infra = build.parse_infra()
+    self.assertEqual(infra.logdog.hostname, 'logs.example.com')
+    self.assertIn(
+        build_pb2.BuildInfra.Swarming.CacheEntry(
+            path='git', name='git', wait_for_warm_cache=dict()
+        ),
+        infra.swarming.caches,
+    )
 
   def test_non_existing_builder(self):
     builder_id = build_pb2.BuilderID(
@@ -223,6 +236,25 @@ class CreationTest(testing.AppengineTestCase):
             wait_for_warm_cache=dict(seconds=60),
         ),
         caches,
+    )
+
+  def test_configured_cache_overrides_global_one(self):
+    with self.mutate_builder_cfg() as cfg:
+      cfg.caches.add(
+          path='git',
+          name='git2',
+      )
+    caches = self.add().parse_infra().swarming.caches
+    git_caches = [c for c in caches if c.path == 'git']
+    self.assertEqual(
+        git_caches,
+        [
+            build_pb2.BuildInfra.Swarming.CacheEntry(
+                path='git',
+                name='git2',
+                wait_for_warm_cache=dict(),
+            )
+        ],
     )
 
   def test_builder_cache(self):

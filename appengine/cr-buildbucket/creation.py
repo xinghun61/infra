@@ -12,6 +12,7 @@ import itertools
 import logging
 import random
 
+from google.appengine.api import app_identity
 from google.appengine.ext import ndb
 
 from components import auth
@@ -21,6 +22,7 @@ from components import utils
 from proto import build_pb2
 from proto import common_pb2
 from proto import project_config_pb2
+from proto import service_config_pb2
 import bbutil
 import buildtags
 import config
@@ -138,7 +140,9 @@ class BuildRequest(_BuildRequestBase):
       )
 
   @ndb.tasklet
-  def create_build_proto_async(self, build_id, builder_cfg, created_by, now):
+  def create_build_proto_async(
+      self, build_id, settings, builder_cfg, created_by, now
+  ):
     """Converts the request to a build_pb2.Build.
 
     Assumes self is valid.
@@ -146,6 +150,7 @@ class BuildRequest(_BuildRequestBase):
     sbr = self.schedule_build_request
 
     bp = build_pb2.Build()
+    _apply_global_settings(settings, bp)
     if builder_cfg:  # pragma: no branch
       yield _apply_builder_config_async(builder_cfg, bp)
 
@@ -166,10 +171,17 @@ class BuildRequest(_BuildRequestBase):
     if sbr.HasField('gitiles_commit'):
       bp.input.gitiles_commit.CopyFrom(sbr.gitiles_commit)
     bp.input.gerrit_changes.extend(sbr.gerrit_changes)
+
+    # Populate infra fields.
     bp.infra.buildbucket.requested_properties.CopyFrom(sbr.properties)
     bp.infra.buildbucket.requested_dimensions.extend(sbr.dimensions)
     if sbr.experimental != common_pb2.UNSET:
       bp.input.experimental = sbr.experimental == common_pb2.YES
+
+    bp.infra.logdog.project = bp.builder.project
+    bp.infra.logdog.prefix = 'buildbucket/%s/%s' % (
+        app_identity.get_default_version_hostname(), bp.id
+    )
 
     # Populate swarming-specific fields.
     sw = bp.infra.swarming
@@ -208,7 +220,9 @@ class BuildRequest(_BuildRequestBase):
     return tags
 
   @ndb.tasklet
-  def create_build_async(self, build_id, builder_cfg, created_by, now):
+  def create_build_async(
+      self, build_id, settings, builder_cfg, created_by, now
+  ):
     """Converts the request to a build.
 
     Assumes self is valid.
@@ -216,7 +230,7 @@ class BuildRequest(_BuildRequestBase):
     sbr = self.schedule_build_request
 
     build_proto = yield self.create_build_proto_async(
-        build_id, builder_cfg, created_by, now
+        build_id, settings, builder_cfg, created_by, now
     )
     build = model.Build(
         id=build_id,
@@ -387,6 +401,8 @@ def add_many_async(build_requests):
       '%s is creating %d builds', identity.to_bytes(), len(build_requests)
   )
 
+  settings = yield config.get_settings_async()
+
   # Fetch and index configs.
   bucket_ids = {br.bucket_id for br in build_requests}
   bucket_cfgs = yield config.get_buckets_async(bucket_ids)
@@ -422,8 +438,9 @@ def add_many_async(build_requests):
   if to_create:
     build_ids = model.create_build_ids(now, len(to_create))
     builds = yield [
-        nb.request.create_build_async(build_id, nb.builder_cfg, identity, now)
-        for nb, build_id in zip(to_create, build_ids)
+        nb.request.create_build_async(
+            build_id, settings, nb.builder_cfg, identity, now
+        ) for nb, build_id in zip(to_create, build_ids)
     ]
     for nb, build in zip(to_create, builds):
       nb.build = build
@@ -516,6 +533,14 @@ def _apply_dimension_overrides(base, overrides):
   return sorted(ret, key=lambda d: (d.key, d.expiration.seconds, d.value))
 
 
+def _apply_global_settings(settings, build_proto):
+  """Applies global settings to build_proto."""
+  assert isinstance(settings, service_config_pb2.SettingsCfg)
+  build_proto.infra.logdog.hostname = settings.logdog.hostname
+  for c in settings.swarming.global_caches:
+    _add_configured_cache(build_proto, c)
+
+
 @ndb.tasklet
 def _apply_builder_config_async(builder_cfg, build_proto):
   """Applies project_config_pb2.Builder to a builds_pb2.Build."""
@@ -577,13 +602,34 @@ def _apply_builder_config_async(builder_cfg, build_proto):
           key=key, value=value, expiration=dict(seconds=expiration_sec)
       )
 
-  # Populate caches.
+  _apply_caches_in_builder_cfg(build_proto, builder_cfg)
+
+
+def _apply_caches_in_builder_cfg(build_proto, builder_cfg):
+  caches = build_proto.infra.swarming.caches
+
+  # Drop the global caches and then re-add non-overridden ones.
+  global_caches = list(caches)
+  del caches[:]
+
   for c in builder_cfg.caches:
-    sw.caches.add(
-        name=c.name,
-        path=c.path,
-        wait_for_warm_cache=dict(seconds=c.wait_for_warm_cache_secs),
-    )
+    _add_configured_cache(build_proto, c)
+
+  names = {c.name for c in caches}
+  paths = {c.path for c in caches}
+  for gc in global_caches:
+    if gc.name not in names and gc.path not in paths:
+      caches.add().CopyFrom(gc)
+
+
+def _add_configured_cache(build_proto, configured_cache):
+  build_proto.infra.swarming.caches.add(
+      path=configured_cache.path,
+      name=configured_cache.name or configured_cache.path,
+      wait_for_warm_cache=dict(
+          seconds=configured_cache.wait_for_warm_cache_secs
+      ),
+  )
 
 
 @ndb.tasklet

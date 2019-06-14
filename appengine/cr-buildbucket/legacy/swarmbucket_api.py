@@ -204,10 +204,12 @@ class SwarmbucketApi(remote.Service):
             (builder_id.project, builder_id.bucket, builder_id.builder)
         )
 
+      settings = config.get_settings_async().get_result()
+
       # Create a fake build and prepare a task definition.
       identity = auth.get_current_identity()
       build = build_request.create_build_async(
-          1, builder_cfg, identity, utils.utcnow()
+          1, settings, builder_cfg, identity, utils.utcnow()
       ).get_result()
       build.proto.number = 1
       settings = config.get_settings_async().get_result()

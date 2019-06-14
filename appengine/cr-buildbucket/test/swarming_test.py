@@ -66,9 +66,7 @@ class BaseTest(testing.AppengineTestCase):
     )
 
     self.settings = service_config_pb2.SettingsCfg(
-        swarming=service_config_pb2.SwarmingSettings(
-            milo_hostname='milo.example.com',
-        ),
+        swarming=dict(milo_hostname='milo.example.com'),
     )
     self.patch(
         'config.get_settings_async',
@@ -105,11 +103,6 @@ class TaskDefTest(BaseTest):
                     '-logdog-project',
                     '${project}',
                 ],
-                'caches': [{
-                    'path': '${cache_dir}/builder',
-                    'name': 'builder_${builder_hash}',
-                    'wait_for_warm_cache_secs': 60,
-                }],
                 'cipd_input': {
                     'packages': [
                         {
@@ -274,9 +267,8 @@ class TaskDefTest(BaseTest):
     build = self._test_build(scheduling_timeout=dict(seconds=120))
     slices = self.prepare_task_def(build)['task_slices']
 
-    self.assertEqual(2, len(slices))
-    self.assertEqual(slices[0]['expiration_secs'], '60')
-    self.assertEqual(slices[1]['expiration_secs'], '60')
+    self.assertEqual(1, len(slices))
+    self.assertEqual(slices[0]['expiration_secs'], '120')
 
   def test_too_many_dimensions(self):
     build = self._test_build(
@@ -460,7 +452,7 @@ class TaskDefTest(BaseTest):
                     dict(key='pool', value='Chrome'),
                 ],
                 caches=[
-                    dict(name='a', path='a'),
+                    dict(path='a', name='1'),
                 ],
             ),
         ),
@@ -490,10 +482,7 @@ class TaskDefTest(BaseTest):
             {'key': 'os', 'value': 'Ubuntu'},
             {'key': 'pool', 'value': 'Chrome'},
         ],
-        'caches': [
-            {'path': 'cache/a', 'name': 'a'},
-            {'path': 'cache/builder', 'name': linux_CACHE_NAME},
-        ],
+        'caches': [{'path': 'cache/a', 'name': '1'}],
         'cipd_input': {
             'packages': [
                 {
@@ -514,13 +503,6 @@ class TaskDefTest(BaseTest):
             ],
         },
     }
-    # The swarming template has fallback.
-    props_def_first = copy.deepcopy(expected_swarming_props_def)
-    props_def_first[u'dimensions'].append({
-        u'key': u'caches',
-        u'value': linux_CACHE_NAME,
-    })
-    props_def_first[u'dimensions'].sort(key=lambda x: (x[u'key'], x[u'value']))
     expected = {
         'name':
             'bb-1-chromium-linux',
@@ -545,18 +527,11 @@ class TaskDefTest(BaseTest):
         ],
         'pool_task_template':
             'CANARY_NEVER',
-        'task_slices': [
-            {
-                'expiration_secs': '60',
-                'properties': props_def_first,
-                'wait_for_capacity': False,
-            },
-            {
-                'expiration_secs': '3540',
-                'properties': expected_swarming_props_def,
-                'wait_for_capacity': False,
-            },
-        ],
+        'task_slices': [{
+            'expiration_secs': '3600',
+            'properties': expected_swarming_props_def,
+            'wait_for_capacity': False,
+        }],
         'pubsub_topic':
             'projects/testbed-test/topics/swarming',
         'pubsub_userdata':
@@ -581,14 +556,6 @@ class TaskDefTest(BaseTest):
         build.proto.infra.buildbucket.service_config_revision, 'template_rev'
     )
 
-    self.assertEqual(
-        build.proto.infra.logdog.hostname, 'luci-logdog-dev.appspot.com'
-    )
-    self.assertEqual(build.proto.infra.logdog.project, 'chromium')
-    self.assertEqual(
-        build.proto.infra.logdog.prefix,
-        'buildbucket/cr-buildbucket.appspot.com/1'
-    )
     self.assertNotIn('buildbucket', build.proto.input.properties)
     self.assertNotIn('$recipe_engine/buildbucket', build.proto.input.properties)
 

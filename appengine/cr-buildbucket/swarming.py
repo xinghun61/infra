@@ -59,7 +59,6 @@ import config
 import errors
 import events
 import flatten_swarmingcfg
-import logdog
 import model
 import swarmingcfg as swarmingcfg_module
 import tokens
@@ -529,11 +528,10 @@ def _setup_named_caches(build, props):
   Returns:
     dict {expiration_secs: list(caches)}
   """
-  template_caches = props.get(u'caches', [])
+  # Ignore caches configured in the swarming task template.
+  # Global caches are now configured in settings.cfg
   props[u'caches'] = []
 
-  names = set()
-  paths = set()
   cache_fallbacks = collections.defaultdict(list)
   # Look for builder specific named caches.
   for c in build.proto.infra.swarming.caches:
@@ -543,20 +541,9 @@ def _setup_named_caches(build, props):
       cache_path = c.path
     else:
       cache_path = posixpath.join(_CACHE_DIR, c.path)
-    names.add(c.name)
-    paths.add(cache_path)
     props[u'caches'].append({u'path': cache_path, u'name': c.name})
     if c.wait_for_warm_cache.seconds:
       cache_fallbacks[c.wait_for_warm_cache.seconds].append(c.name)
-
-  # Look for named cache fallback from the swarming task template itself.
-  for c in template_caches:
-    # Only process the caches that were not overridden.
-    if c.get(u'path') not in paths and c.get(u'name') not in names:
-      props[u'caches'].append({u'name': c[u'name'], u'path': c[u'path']})
-      v = c.get(u'wait_for_warm_cache_secs')
-      if v:  # pragma: no branch
-        cache_fallbacks.setdefault(v, []).append(c[u'name'])
 
   props[u'caches'].sort(key=lambda p: p.get(u'path'))
   return cache_fallbacks
@@ -593,14 +580,6 @@ def prepare_task_def(build, settings, fake_build=False):
 
   build.url = _generate_build_url(settings.milo_hostname, build)
   task_def = _create_task_def(build, fake_build)
-
-  for t in task_def.get('tags', []):  # pragma: no branch
-    key, value = buildtags.parse(t)
-    if key == 'log_location':
-      ld = build.proto.infra.logdog
-      ld.hostname, ld.project, ld.prefix, _ = logdog.parse_url(value)
-      break
-
   return task_def
 
 
