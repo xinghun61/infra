@@ -52,3 +52,11 @@ export function immutableSplice(arr, index, count, ...addedItems) {
   return [...arr.slice(0, index), ...addedItems, ...arr.slice(index + count)];
 }
 
+export function userIsMember(userRef, projectName, usersProjects) {
+  if (!userRef || !userRef.displayName || !projectName) return false;
+  const userProjects = usersProjects.get(userRef.displayName);
+  if (!userProjects) return false;
+  return userProjects.ownerOf.includes(projectName) ||
+    userProjects.memberOf.includes(projectName) ||
+    userProjects.contributorTo.includes(projectName);
+}

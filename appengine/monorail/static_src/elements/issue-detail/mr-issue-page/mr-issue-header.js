@@ -10,6 +10,7 @@ import 'elements/chops/chops-timestamp/chops-timestamp.js';
 import {store, connectStore} from 'elements/reducers/base.js';
 import * as issue from 'elements/reducers/issue.js';
 import * as project from 'elements/reducers/project.js';
+import {userIsMember} from 'elements/shared/helpers.js';
 import {SHARED_STYLES} from 'elements/shared/shared-styles.js';
 import 'elements/framework/links/mr-user-link/mr-user-link.js';
 import 'elements/framework/links/mr-crbug-link/mr-crbug-link.js';
@@ -92,6 +93,18 @@ export class MrIssueHeader extends connectStore(LitElement) {
           line-height: 140%;
           color: var(--chops-text-color);
         }
+        .role-label {
+          background-color: var(--chops-gray-600);
+          border-radius: 3px;
+          color: white;
+          display: inline-block;
+          padding: 2px 4px;
+          font-size: 75%;
+          font-weight: bold;
+          line-height: 14px;
+          vertical-align: text-bottom;
+          margin-left: 16px;
+        }
         .main-text-outer {
           flex-basis: 100%;
           display: flex;
@@ -117,6 +130,8 @@ export class MrIssueHeader extends connectStore(LitElement) {
   }
 
   render() {
+    const reporterIsMember = userIsMember(
+      this.issue.reporterRef, this.issue.projectName, this.usersProjects);
     return html`
       <div class="main-text-outer">
         <div class="main-text">
@@ -133,6 +148,8 @@ export class MrIssueHeader extends connectStore(LitElement) {
               aria-label="issue reporter"
             ></mr-user-link>
             on <chops-timestamp .timestamp=${this.issue.openedTimestamp}></chops-timestamp>
+            ${reporterIsMember ? html`
+              <span class="role-label">Project Member</span>` : ''}
           </small>
         </div>
       </div>
@@ -162,6 +179,7 @@ export class MrIssueHeader extends connectStore(LitElement) {
       issuePermissions: {type: Object},
       isRestricted: {type: Boolean},
       projectTemplates: {type: Array},
+      usersProjects: {type: Object},
       _action: {type: String},
       _targetProjectError: {type: String},
     };
@@ -172,6 +190,7 @@ export class MrIssueHeader extends connectStore(LitElement) {
     this.issuePermissions = [];
     this.projectTemplates = [];
     this.issue = {};
+    this.usersProjects = new Map();
     this.isRestricted = false;
   }
 
@@ -179,6 +198,7 @@ export class MrIssueHeader extends connectStore(LitElement) {
     this.issue = issue.issue(state);
     this.issuePermissions = issue.permissions(state);
     this.projectTemplates = project.project(state).templates;
+    this.usersProjects = issue.usersProjects(state);
 
     const restrictions = issue.restrictions(state);
     this.isRestricted = restrictions && Object.keys(restrictions).length;

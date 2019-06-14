@@ -10,6 +10,7 @@ import './mr-comment.js';
 import {connectStore} from 'elements/reducers/base.js';
 import * as issue from 'elements/reducers/issue.js';
 import * as ui from 'elements/reducers/ui.js';
+import {userIsMember} from 'elements/shared/helpers.js';
 import {SHARED_STYLES} from 'elements/shared/shared-styles.js';
 
 const ADD_ISSUE_COMMENT_PERMISSION = 'addissuecomment';
@@ -31,6 +32,8 @@ export class MrCommentList extends connectStore(LitElement) {
     this.issuePermissions = [];
     this.focusId = null;
 
+    this.usersProjects = new Map();
+
     this._hideComments = true;
   }
 
@@ -43,6 +46,8 @@ export class MrCommentList extends connectStore(LitElement) {
       issuePermissions: {type: Array},
       focusId: {type: String},
 
+      usersProjects: {type: Object},
+
       _hideComments: {type: Boolean},
     };
   }
@@ -50,6 +55,7 @@ export class MrCommentList extends connectStore(LitElement) {
   stateChanged(state) {
     this.issuePermissions = issue.permissions(state);
     this.focusId = ui.focusId(state);
+    this.usersProjects = issue.usersProjects(state);
   }
 
   updated(changedProperties) {
@@ -119,11 +125,14 @@ export class MrCommentList extends connectStore(LitElement) {
   }
 
   renderComment(comment) {
+    const commenterIsMember = userIsMember(
+      comment.commenter, comment.projectName, this.usersProjects);
     return html`
       <mr-comment
           .comment=${comment}
           headingLevel=${this.headingLevel}
           ?highlighted=${'c' + comment.sequenceNum === this.focusId}
+          ?commenterIsMember=${commenterIsMember}
       ></mr-comment>`;
   }
 

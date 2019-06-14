@@ -53,6 +53,10 @@ const FETCH_REFERENCED_USERS_START = 'FETCH_REFERENCED_USERS_START';
 const FETCH_REFERENCED_USERS_SUCCESS = 'FETCH_REFERENCED_USERS_SUCCESS';
 const FETCH_REFERENCED_USERS_FAILURE = 'FETCH_REFERENCED_USERS_FAILURE';
 
+const FETCH_USERS_PROJECTS_START = 'FETCH_USERS_PROJECTS_START';
+const FETCH_USERS_PROJECTS_SUCCESS = 'FETCH_USERS_PROJECTS_SUCCESS';
+const FETCH_USERS_PROJECTS_FAILURE = 'FETCH_USERS_PROJECTS_FAILURE';
+
 const FETCH_RELATED_ISSUES_START = 'FETCH_RELATED_ISSUES_START';
 const FETCH_RELATED_ISSUES_SUCCESS = 'FETCH_RELATED_ISSUES_SUCCESS';
 const FETCH_RELATED_ISSUES_FAILURE = 'FETCH_RELATED_ISSUES_FAILURE';
@@ -83,6 +87,7 @@ const UPDATE_APPROVAL_FAILURE = 'UPDATE_APPROVAL_FAILURE';
   commentReferences: Map,
   relatedIssues: Map,
   referencedUsers: Array,
+  usersProjects: Map,
   isStarred: Boolean,
   permissions: Array,
   presubmitResponse: Object,
@@ -162,6 +167,22 @@ const referencedUsersReducer = createReducer(new Map(), {
   [FETCH_REFERENCED_USERS_SUCCESS]: (_state, action) => action.referencedUsers,
 });
 
+const usersProjectsReducer = createReducer(new Map(), {
+  [FETCH_USERS_PROJECTS_SUCCESS]: (state, action) => {
+    const newState = new Map();
+    const updateNewState = (userProjects, displayName) => {
+      newState.set(displayName, {
+        ownerOf: [...(userProjects.ownerOf || [])],
+        memberOf: [...(userProjects.memberOf || [])],
+        contributorTo: [...(userProjects.contributorTo || [])],
+      });
+    };
+    state.forEach(updateNewState);
+    action.usersProjects.forEach(updateNewState);
+    return newState;
+  },
+});
+
 const isStarredReducer = createReducer(false, {
   [STAR_SUCCESS]: (state, _action) => !state,
   [FETCH_IS_STARRED_SUCCESS]: (_state, action) => !!action.isStarred,
@@ -202,6 +223,10 @@ const requestsReducer = combineReducers({
     FETCH_REFERENCED_USERS_START,
     FETCH_REFERENCED_USERS_SUCCESS,
     FETCH_REFERENCED_USERS_FAILURE),
+  fetchUsersProjects: createRequestReducer(
+    FETCH_USERS_PROJECTS_START,
+    FETCH_USERS_PROJECTS_SUCCESS,
+    FETCH_USERS_PROJECTS_FAILURE),
   fetchIsStarred: createRequestReducer(
     FETCH_IS_STARRED_START, FETCH_IS_STARRED_SUCCESS, FETCH_IS_STARRED_FAILURE),
   convert: createRequestReducer(
@@ -227,6 +252,7 @@ export const reducer = combineReducers({
   commentReferences: commentReferencesReducer,
   relatedIssues: relatedIssuesReducer,
   referencedUsers: referencedUsersReducer,
+  usersProjects: usersProjectsReducer,
   isStarred: isStarredReducer,
   permissions: permissionsReducer,
   presubmitResponse: presubmitResponseReducer,
@@ -255,6 +281,7 @@ export const permissions = (state) => state.issue.permissions;
 export const presubmitResponse = (state) => state.issue.presubmitResponse;
 export const relatedIssues = (state) => state.issue.relatedIssues;
 export const referencedUsers = (state) => state.issue.referencedUsers;
+export const usersProjects = (state) => state.issue.usersProjects;
 export const isStarred = (state) => state.issue.isStarred;
 
 export const requests = (state) => state.issue.requests;
@@ -498,6 +525,23 @@ export const fetchReferencedUsers = (issue) => async (dispatch) => {
   }
 };
 
+export const fetchUsersProjects = (userRefs) => async (dispatch) => {
+  if (!userRefs || !userRefs.length) return;
+  dispatch({type: FETCH_USERS_PROJECTS_START});
+
+  try {
+    const resp = await prpcClient.call(
+      'monorail.Users', 'GetUsersProjects', {userRefs});
+    const usersProjects = new Map();
+    (resp.usersProjects || []).forEach((userProjects) => {
+      usersProjects.set(userProjects.userRef.displayName, userProjects);
+    });
+    dispatch({type: FETCH_USERS_PROJECTS_SUCCESS, usersProjects});
+  } catch (error) {
+    dispatch({type: FETCH_USERS_PROJECTS_FAILURE, error});
+  }
+};
+
 // TODO(zhangtiff): Figure out if we can reduce request/response sizes by
 // diffing issues to fetch against issues we already know about to avoid
 // fetching duplicate info.
@@ -565,6 +609,7 @@ export const fetch = (message) => async (dispatch) => {
       dispatch(fetchRelatedIssues(issue));
       dispatch(fetchHotlists(message.issueRef));
       dispatch(fetchReferencedUsers(issue));
+      dispatch(fetchUsersProjects([issue.reporterRef]));
     }
   } catch (error) {
     dispatch({type: FETCH_FAILURE, error});
@@ -607,12 +652,15 @@ export const fetchComments = (message) => async (dispatch) => {
 
   try {
     const resp = await prpcClient.call(
-      'monorail.Issues', 'ListComments', message
-    );
+      'monorail.Issues', 'ListComments', message);
 
     dispatch({type: FETCH_COMMENTS_SUCCESS, comments: resp.comments});
     dispatch(fetchCommentReferences(
       resp.comments, message.issueRef.projectName));
+
+    const commenterRefs = (resp.comments || []).map(
+      (comment) => comment.commenter);
+    dispatch(fetchUsersProjects(commenterRefs));
   } catch (error) {
     dispatch({type: FETCH_COMMENTS_FAILURE, error});
   };

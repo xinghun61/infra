@@ -44,6 +44,7 @@ export class MrComment extends LitElement {
         type: Boolean,
         reflect: true,
       },
+      commenterIsMember: {type: Boolean},
       _isExpandedIfDeleted: {type: Boolean},
       _showOriginalContent: {type: Boolean},
     };
@@ -87,6 +88,18 @@ export class MrComment extends LitElement {
       }
       .comment-header a {
         display: inline-flex;
+      }
+      .role-label {
+        background-color: var(--chops-gray-600);
+        border-radius: 3px;
+        color: white;
+        display: inline-block;
+        padding: 2px 4px;
+        font-size: 75%;
+        font-weight: bold;
+        line-height: 14px;
+        vertical-align: text-bottom;
+        margin-left: 16px;
       }
       .comment-options {
         float: right;
@@ -149,10 +162,12 @@ export class MrComment extends LitElement {
       return html`
         by
         <mr-user-link .userRef=${this.comment.commenter}></mr-user-link>
-          on
-          <chops-timestamp
-            .timestamp=${this.comment.timestamp}
-          ></chops-timestamp>
+        on
+        <chops-timestamp
+          .timestamp=${this.comment.timestamp}
+        ></chops-timestamp>
+        ${this.commenterIsMember && !this.comment.isDeleted ? html`
+          <span class="role-label">Project Member</span>` : ''}
       `;
     } else {
       return html`<span class="deleted-comment-notice">Deleted</span>`;
