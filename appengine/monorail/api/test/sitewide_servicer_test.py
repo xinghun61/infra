@@ -15,6 +15,7 @@ from components.prpc import codes
 from components.prpc import context
 from components.prpc import server
 
+import settings
 from api import sitewide_servicer
 from api.api_proto import common_pb2
 from api.api_proto import sitewide_pb2
@@ -97,3 +98,45 @@ class SitewideServicerTest(unittest.TestCase):
     with self.assertRaises(xsrf.TokenIncorrect):
       self.CallWrapped(self.sitewide_svcr.RefreshToken, mc, request)
 
+  def testGetServerStatus_Normal(self):
+    request = sitewide_pb2.GetServerStatusRequest()
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='owner@example.com')
+    response = self.CallWrapped(self.sitewide_svcr.GetServerStatus, mc, request)
+
+    self.assertEqual(
+        sitewide_pb2.GetServerStatusResponse(),
+        response)
+
+  @mock.patch('settings.banner_message', 'Message')
+  def testGetServerStatus_BannerMessage(self):
+    request = sitewide_pb2.GetServerStatusRequest()
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='owner@example.com')
+    response = self.CallWrapped(self.sitewide_svcr.GetServerStatus, mc, request)
+
+    self.assertEqual(
+        sitewide_pb2.GetServerStatusResponse(banner_message='Message'),
+        response)
+
+  @mock.patch('settings.banner_time', (2019, 6, 13, 18, 30))
+  def testGetServerStatus_BannerTime(self):
+    request = sitewide_pb2.GetServerStatusRequest()
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='owner@example.com')
+    response = self.CallWrapped(self.sitewide_svcr.GetServerStatus, mc, request)
+
+    self.assertEqual(
+        sitewide_pb2.GetServerStatusResponse(banner_time=1560450600),
+        response)
+
+  @mock.patch('settings.read_only', True)
+  def testGetServerStatus_ReadOnly(self):
+    request = sitewide_pb2.GetServerStatusRequest()
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='owner@example.com')
+    response = self.CallWrapped(self.sitewide_svcr.GetServerStatus, mc, request)
+
+    self.assertEqual(
+        sitewide_pb2.GetServerStatusResponse(read_only=True),
+        response)

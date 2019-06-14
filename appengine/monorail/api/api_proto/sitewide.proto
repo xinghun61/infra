@@ -9,6 +9,7 @@ package monorail;
 
 service Sitewide {
   rpc RefreshToken (RefreshTokenRequest) returns (RefreshTokenResponse) {}
+  rpc GetServerStatus (GetServerStatusRequest) returns (GetServerStatusResponse) {}
 }
 
 
@@ -23,4 +24,17 @@ message RefreshTokenRequest {
 message RefreshTokenResponse {
   string token = 1;
   uint32 token_expires_sec = 2;
+}
+
+
+// Next available tag: 1
+message GetServerStatusRequest {
+}
+
+
+// Next available tag: 4
+message GetServerStatusResponse {
+  string banner_message = 1;
+  fixed32 banner_time = 2;
+  bool read_only = 3;
 }

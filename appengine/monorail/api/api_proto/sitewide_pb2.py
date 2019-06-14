@@ -19,7 +19,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   package='monorail',
   syntax='proto3',
   serialized_options=None,
-  serialized_pb=_b('\n\x1c\x61pi/api_proto/sitewide.proto\x12\x08monorail\"8\n\x13RefreshTokenRequest\x12\r\n\x05token\x18\x02 \x01(\t\x12\x12\n\ntoken_path\x18\x03 \x01(\t\"@\n\x14RefreshTokenResponse\x12\r\n\x05token\x18\x01 \x01(\t\x12\x19\n\x11token_expires_sec\x18\x02 \x01(\r2[\n\x08Sitewide\x12O\n\x0cRefreshToken\x12\x1d.monorail.RefreshTokenRequest\x1a\x1e.monorail.RefreshTokenResponse\"\x00\x62\x06proto3')
+  serialized_pb=_b('\n\x1c\x61pi/api_proto/sitewide.proto\x12\x08monorail\"8\n\x13RefreshTokenRequest\x12\r\n\x05token\x18\x02 \x01(\t\x12\x12\n\ntoken_path\x18\x03 \x01(\t\"@\n\x14RefreshTokenResponse\x12\r\n\x05token\x18\x01 \x01(\t\x12\x19\n\x11token_expires_sec\x18\x02 \x01(\r\"\x18\n\x16GetServerStatusRequest\"Y\n\x17GetServerStatusResponse\x12\x16\n\x0e\x62\x61nner_message\x18\x01 \x01(\t\x12\x13\n\x0b\x62\x61nner_time\x18\x02 \x01(\x07\x12\x11\n\tread_only\x18\x03 \x01(\x08\x32\xb5\x01\n\x08Sitewide\x12O\n\x0cRefreshToken\x12\x1d.monorail.RefreshTokenRequest\x1a\x1e.monorail.RefreshTokenResponse\"\x00\x12X\n\x0fGetServerStatus\x12 .monorail.GetServerStatusRequest\x1a!.monorail.GetServerStatusResponse\"\x00\x62\x06proto3')
 )
 
 
@@ -100,8 +100,79 @@ _REFRESHTOKENRESPONSE = _descriptor.Descriptor(
   serialized_end=164,
 )
 
+
+_GETSERVERSTATUSREQUEST = _descriptor.Descriptor(
+  name='GetServerStatusRequest',
+  full_name='monorail.GetServerStatusRequest',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  serialized_options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=166,
+  serialized_end=190,
+)
+
+
+_GETSERVERSTATUSRESPONSE = _descriptor.Descriptor(
+  name='GetServerStatusResponse',
+  full_name='monorail.GetServerStatusResponse',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='banner_message', full_name='monorail.GetServerStatusResponse.banner_message', index=0,
+      number=1, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b("").decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='banner_time', full_name='monorail.GetServerStatusResponse.banner_time', index=1,
+      number=2, type=7, cpp_type=3, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='read_only', full_name='monorail.GetServerStatusResponse.read_only', index=2,
+      number=3, type=8, cpp_type=7, label=1,
+      has_default_value=False, default_value=False,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  serialized_options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=192,
+  serialized_end=281,
+)
+
 DESCRIPTOR.message_types_by_name['RefreshTokenRequest'] = _REFRESHTOKENREQUEST
 DESCRIPTOR.message_types_by_name['RefreshTokenResponse'] = _REFRESHTOKENRESPONSE
+DESCRIPTOR.message_types_by_name['GetServerStatusRequest'] = _GETSERVERSTATUSREQUEST
+DESCRIPTOR.message_types_by_name['GetServerStatusResponse'] = _GETSERVERSTATUSRESPONSE
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
 RefreshTokenRequest = _reflection.GeneratedProtocolMessageType('RefreshTokenRequest', (_message.Message,), dict(
@@ -118,6 +189,20 @@ RefreshTokenResponse = _reflection.GeneratedProtocolMessageType('RefreshTokenRes
   ))
 _sym_db.RegisterMessage(RefreshTokenResponse)
 
+GetServerStatusRequest = _reflection.GeneratedProtocolMessageType('GetServerStatusRequest', (_message.Message,), dict(
+  DESCRIPTOR = _GETSERVERSTATUSREQUEST,
+  __module__ = 'api.api_proto.sitewide_pb2'
+  # @@protoc_insertion_point(class_scope:monorail.GetServerStatusRequest)
+  ))
+_sym_db.RegisterMessage(GetServerStatusRequest)
+
+GetServerStatusResponse = _reflection.GeneratedProtocolMessageType('GetServerStatusResponse', (_message.Message,), dict(
+  DESCRIPTOR = _GETSERVERSTATUSRESPONSE,
+  __module__ = 'api.api_proto.sitewide_pb2'
+  # @@protoc_insertion_point(class_scope:monorail.GetServerStatusResponse)
+  ))
+_sym_db.RegisterMessage(GetServerStatusResponse)
+
 
 
 _SITEWIDE = _descriptor.ServiceDescriptor(
@@ -126,8 +211,8 @@ _SITEWIDE = _descriptor.ServiceDescriptor(
   file=DESCRIPTOR,
   index=0,
   serialized_options=None,
-  serialized_start=166,
-  serialized_end=257,
+  serialized_start=284,
+  serialized_end=465,
   methods=[
   _descriptor.MethodDescriptor(
     name='RefreshToken',
@@ -136,6 +221,15 @@ _SITEWIDE = _descriptor.ServiceDescriptor(
     containing_service=None,
     input_type=_REFRESHTOKENREQUEST,
     output_type=_REFRESHTOKENRESPONSE,
+    serialized_options=None,
+  ),
+  _descriptor.MethodDescriptor(
+    name='GetServerStatus',
+    full_name='monorail.Sitewide.GetServerStatus',
+    index=1,
+    containing_service=None,
+    input_type=_GETSERVERSTATUSREQUEST,
+    output_type=_GETSERVERSTATUSRESPONSE,
     serialized_options=None,
   ),
 ])

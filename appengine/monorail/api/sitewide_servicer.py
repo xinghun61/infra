@@ -9,9 +9,11 @@ from __future__ import absolute_import
 
 import logging
 
+import settings
 from api import monorail_servicer
 from api.api_proto import sitewide_pb2
 from api.api_proto import sitewide_prpc_pb2
+from framework import servlet_helpers
 from framework import xsrf
 
 
@@ -44,4 +46,12 @@ class SitewideServicer(monorail_servicer.MonorailServicer):
     result = sitewide_pb2.RefreshTokenResponse(
         token=xsrf.GenerateToken(mc.auth.user_id, request.token_path),
         token_expires_sec=xsrf.TokenExpiresSec())
+    return result
+
+  @monorail_servicer.PRPCMethod
+  def GetServerStatus(self, _mc, _request):
+    result = sitewide_pb2.GetServerStatusResponse(
+        banner_message=settings.banner_message,
+        banner_time=servlet_helpers.GetBannerTime(settings.banner_time),
+        read_only=settings.read_only)
     return result
