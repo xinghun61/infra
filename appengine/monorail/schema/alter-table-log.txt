@@ -1678,5 +1678,5 @@ ALTER TABLE ReindexQueue ADD INDEX (created);
 ================================================================
 2019-06-13: Add ext_issue_identifier to DanglingIssueRelation PRIMARY KEY.
 
-ALTER TABLE DanglingIssueRelation MODIFY COLUMN ext_issue_identifier VARCHAR(256);
+ALTER TABLE DanglingIssueRelation MODIFY COLUMN ext_issue_identifier VARCHAR(255);
 ALTER TABLE DanglingIssueRelation DROP PRIMARY KEY, ADD PRIMARY KEY(issue_id, dst_issue_project, dst_issue_local_id, kind, ext_issue_identifier);

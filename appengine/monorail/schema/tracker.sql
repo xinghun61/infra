@@ -329,7 +329,7 @@ CREATE TABLE DanglingIssueRelation (
   issue_id INT NOT NULL,
   dst_issue_project VARCHAR(80),
   dst_issue_local_id INT,
-  ext_issue_identifier VARCHAR(256),
+  ext_issue_identifier VARCHAR(255),
 
   -- This table uses 'blocking' so that it can guarantee the src issue
   -- always exists, while the dst issue is always the dangling one.
