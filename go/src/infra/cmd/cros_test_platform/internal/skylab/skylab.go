@@ -18,7 +18,10 @@ import (
 	"go.chromium.org/luci/common/errors"
 	"go.chromium.org/luci/swarming/proto/jsonrpc"
 
+	"infra/libs/skylab/inventory"
+	"infra/libs/skylab/inventory/autotest/labels"
 	"infra/libs/skylab/request"
+	"infra/libs/skylab/worker"
 )
 
 // TaskSet encapsulates the running state of a set of tasks, to satisfy
@@ -83,9 +86,25 @@ func (r *TaskSet) LaunchAndWait(ctx context.Context, swarming Swarming) error {
 
 func (r *TaskSet) launch(ctx context.Context, swarming Swarming) error {
 	for _, testRun := range r.testRuns {
-		// TODO(akeshet): These request args don't include any of the actual
-		// test details yet. Fix this, and use correct args.
-		req, err := request.New(request.Args{})
+		t := testRun.test
+		// TODO(akeshet): Run cmd.Config() with correct environment.
+		cmd := &worker.Command{TaskName: t.Name}
+
+		args := request.Args{
+			Cmd:               *cmd,
+			SchedulableLabels: toInventoryLabels(t.Dependencies),
+			// TODO(akeshet): Determine parent task ID correctly.
+			ParentTaskID: "",
+			// TODO(akeshet): Determine priority correctly.
+			Priority: 0,
+			// TODO(akeshet): Determine provisionable dimensions correctly.
+			ProvisionableDimensions: nil,
+			// TODO(akeshet): Determine tags correctly.
+			Tags: nil,
+			// TODO(akeshet): Determine timeout correctly.
+			TimeoutMins: 0,
+		}
+		req, err := request.New(args)
 		if err != nil {
 			return errors.Annotate(err, "launch test").Err()
 		}
@@ -150,6 +169,14 @@ func (r *TaskSet) tick(ctx context.Context, swarming Swarming) (complete bool, e
 	}
 
 	return complete, nil
+}
+
+func toInventoryLabels(deps []*build_api.AutotestTaskDependency) inventory.SchedulableLabels {
+	flatDims := make([]string, len(deps))
+	for i, dep := range deps {
+		flatDims[i] = dep.Label
+	}
+	return *labels.Revert(flatDims)
 }
 
 func unpackResult(results []*swarming_api.SwarmingRpcsTaskResult, taskID string) (*swarming_api.SwarmingRpcsTaskResult, error) {

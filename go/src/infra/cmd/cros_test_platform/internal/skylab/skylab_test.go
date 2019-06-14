@@ -7,6 +7,7 @@ package skylab_test
 import (
 	"context"
 	"fmt"
+	"strings"
 	"sync"
 	"testing"
 
@@ -26,15 +27,15 @@ type fakeSwarming struct {
 	nextState   jsonrpc.TaskState
 	nextError   error
 	callback    func()
-	createCalls int
-	getCalls    int
 	server      string
+	createCalls []*swarming_api.SwarmingRpcsNewTaskRequest
+	getCalls    [][]string
 }
 
 func (f *fakeSwarming) CreateTask(ctx context.Context, req *swarming_api.SwarmingRpcsNewTaskRequest) (*swarming_api.SwarmingRpcsTaskRequestMetadata, error) {
 	defer f.callback()
 	f.nextID++
-	f.createCalls++
+	f.createCalls = append(f.createCalls, req)
 	if f.nextError != nil {
 		return nil, f.nextError
 	}
@@ -44,7 +45,7 @@ func (f *fakeSwarming) CreateTask(ctx context.Context, req *swarming_api.Swarmin
 
 func (f *fakeSwarming) GetResults(ctx context.Context, IDs []string) ([]*swarming_api.SwarmingRpcsTaskResult, error) {
 	defer f.callback()
-	f.getCalls++
+	f.getCalls = append(f.getCalls, IDs)
 	if f.nextError != nil {
 		return nil, f.nextError
 	}
@@ -113,8 +114,8 @@ func TestLaunchAndWaitTest(t *testing.T) {
 				}
 			})
 			Convey("then the expected number of external swarming calls are made.", func() {
-				So(swarming.getCalls, ShouldEqual, 2)
-				So(swarming.createCalls, ShouldEqual, 2)
+				So(swarming.getCalls, ShouldHaveLength, 2)
+				So(swarming.createCalls, ShouldHaveLength, 2)
 			})
 		})
 	})
@@ -195,5 +196,45 @@ func TestIncompleteWait(t *testing.T) {
 		// TODO(akeshet): Ensure that response either reflects the error or
 		// has an incomplete flag, once that part of the response proto is
 		// defined.
+	})
+}
+
+func TestRequestArguments(t *testing.T) {
+	Convey("Given test metadata with certain parameters", t, func() {
+		ctx := context.Background()
+		swarming := newFakeSwarming("")
+
+		tests := []*build_api.AutotestTest{
+			{
+				Name: "name1",
+				Dependencies: []*build_api.AutotestTaskDependency{
+					{Label: "board:foo_board"},
+					{Label: "model:foo_model"},
+				},
+			},
+		}
+
+		run := skylab.NewTaskSet(tests, &test_platform.Request_Params{})
+		run.LaunchAndWait(ctx, swarming)
+
+		Convey("the launched task request should have correct parameters.", func() {
+			So(swarming.createCalls, ShouldHaveLength, 1)
+			create := swarming.createCalls[0]
+			// TODO(akeshet): Add a provisionable label to the request and proper
+			// provisionable label handling, at which point we will expect 2
+			// slices here.
+			So(create.TaskSlices, ShouldHaveLength, 1)
+
+			slice := create.TaskSlices[0]
+			flatCommand := strings.Join(slice.Properties.Command, " ")
+			So(flatCommand, ShouldContainSubstring, "-task-name name1")
+
+			flatDimensions := make([]string, len(slice.Properties.Dimensions))
+			for i, d := range slice.Properties.Dimensions {
+				flatDimensions[i] = d.Key + ":" + d.Value
+			}
+			So(flatDimensions, ShouldContain, "label-board:foo_board")
+			So(flatDimensions, ShouldContain, "label-model:foo_model")
+		})
 	})
 }
