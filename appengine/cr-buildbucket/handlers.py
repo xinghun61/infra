@@ -15,6 +15,7 @@ from components import prpc
 import webapp2
 
 from legacy import api as legacy_api
+from legacy import api_common
 from legacy import swarmbucket_api
 import access
 import api
@@ -89,7 +90,7 @@ class ViewBuildHandler(auth.AuthenticatingHandler):  # pragma: no cover
       self.response.write('build %d not found' % build_id)
       self.abort(404)
 
-    return self.redirect(str(build.url))
+    return self.redirect(str(api_common.get_build_url(build)))
 
 
 class TaskCancelSwarmingTask(webapp2.RequestHandler):  # pragma: no cover

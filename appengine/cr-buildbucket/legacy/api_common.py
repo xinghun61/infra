@@ -145,6 +145,14 @@ INTEGER_PROPERTIES = [
 ]
 
 
+def get_build_url(build):
+  """Returns view URL of the build."""
+  if build.url:
+    return build.url
+  settings = config.get_settings_async().get_result()
+  return 'https://%s/b/%d' % (settings.swarming.milo_hostname, build.proto.id)
+
+
 def properties_to_json(properties):
   """Converts properties to JSON.
 
@@ -252,7 +260,7 @@ def build_to_message(build, build_output_properties, include_lease_key=False):
       cancelation_reason=build.cancelation_reason,
       failure_reason=build.failure_reason,
       lease_key=build.lease_key if include_lease_key else None,
-      url=build.url,
+      url=get_build_url(build),
       created_ts=proto_to_timestamp(bp.create_time),
       started_ts=proto_to_timestamp(bp.start_time),
       updated_ts=proto_to_timestamp(bp.update_time),

@@ -4,6 +4,7 @@
 
 import datetime
 import json
+import mock
 
 from components import utils
 utils.fix_protobuf_package()
@@ -13,6 +14,7 @@ from testing_utils import testing
 
 from legacy import api_common
 from proto import common_pb2
+from proto import service_config_pb2
 import bbutil
 import config
 import model
@@ -159,6 +161,26 @@ class ToBucketIDTest(testing.AppengineTestCase):
 
   def test_convert_bucket_resolution_fails(self):
     self.assertIsNone(self.to_bucket_id('master.x'))
+
+  def test_get_build_url(self):
+    build = test_util.build(id=1)
+    self.assertEqual(
+        api_common.get_build_url(build), 'https://ci.example.com/1'
+    )
+
+  @mock.patch('config.get_settings_async')
+  def test_get_build_url_milo(self, get_settings_async):
+    get_settings_async.return_value = test_util.future(
+        service_config_pb2.SettingsCfg(
+            swarming=dict(milo_hostname='milo.example.com')
+        ),
+    )
+
+    build = test_util.build(id=1)
+    build.url = None
+    self.assertEqual(
+        api_common.get_build_url(build), 'https://milo.example.com/b/1'
+    )
 
 
 class PropertiesToJson(testing.AppengineTestCase):
