@@ -24,22 +24,10 @@ class EztDataTest(unittest.TestCase):
 
   def testGetBannerTime(self):
     """Tests GetBannerTime method."""
-    timestamp = ['2009', '3', '13', '21', '24', '5']
+    timestamp = [2019, 6, 13, 18, 30]
 
     banner_time = servlet_helpers.GetBannerTime(timestamp)
-
-    # Ensure that the banner timestamp falls in a timestamp range to account for
-    # the test being run in different timezones.
-    # Using "Sun, 12 Mar 2009 00:00:00 GMT" and "Sun, 15 Mar 2009 00:00:00 GMT".
-    self.assertTrue(1236816000000 <= banner_time.ts <= 1237075200000)
-    self.assertEqual(2009, banner_time.year)
-    self.assertEqual(3, banner_time.month)
-    self.assertEqual(13, banner_time.day)
-    self.assertEqual(21, banner_time.hour)
-    self.assertEqual(24, banner_time.minute)
-    self.assertEqual(5, banner_time.second)
-    self.assertEqual('Friday', banner_time.weekday)
-    self.assertEqual('09:24PM', banner_time.hour_min)
+    self.assertEqual(1560450600, banner_time)
 
 
 class AssertBasePermissionTest(unittest.TestCase):

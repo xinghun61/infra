@@ -8,9 +8,9 @@ from __future__ import print_function
 from __future__ import division
 from __future__ import absolute_import
 
+import calendar
 import datetime
 import logging
-import time
 import urllib
 
 from framework import framework_bizobj
@@ -20,9 +20,18 @@ from framework import template_helpers
 from framework import urls
 from framework import xsrf
 
+_ZERO = datetime.timedelta(0)
 
-_WEEKDAY = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday',
-            'Saturday', 'Sunday']
+class _UTCTimeZone(datetime.tzinfo):
+    """UTC"""
+    def utcoffset(self, _dt):
+        return _ZERO
+    def tzname(self, _dt):
+        return "UTC"
+    def dst(self, _dt):
+        return _ZERO
+
+_UTC = _UTCTimeZone()
 
 
 def GetBannerTime(timestamp):
@@ -39,19 +48,8 @@ def GetBannerTime(timestamp):
   if timestamp is None:
     return None
 
-  # Get the weekday and 'hour:min AM/PM' to display the timestamp
-  # to users with javascript disabled
-  ts = datetime.datetime(*[int(t) for t in timestamp])
-  weekday = _WEEKDAY[ts.weekday()]
-  hour_min = datetime.datetime.strftime(ts, '%I:%M%p')
-
-  # Convert the timestamp to milliseconds since the epoch to display
-  # the timestamp to users with javascript
-  ts_ms = time.mktime(ts.timetuple()) * 1000
-
-  return template_helpers.EZTItem(
-      ts=ts_ms, year=ts.year, month=ts.month, day=ts.day, hour=ts.hour,
-      minute=ts.minute, second=ts.second, weekday=weekday, hour_min=hour_min)
+  ts = datetime.datetime(*timestamp, tzinfo=_UTC)
+  return calendar.timegm(ts.timetuple())
 
 
 def AssertBasePermissionForUser(user, user_view):

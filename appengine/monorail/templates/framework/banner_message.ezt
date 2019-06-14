@@ -2,7 +2,7 @@
  <div style="font-weight:bold; color:var(--chops-field-error-color); padding:5px; margin-top:10px; text-align:center; background:var(--chops-orange-50);">
   [site_banner_message]
   [if-any banner_time]
-      <a href="http://www.timeanddate.com/worldclock/fixedtime.html?month=[banner_time.month]&day=[banner_time.day]&year=[banner_time.year]&hour=[banner_time.hour]&min=[banner_time.minute]&sec=[banner_time.second]&p1=137">[banner_time.weekday], [banner_time.hour_min] PDT</a>
+    <chops-timestamp timestamp="[banner_time]"></chops-timestamp>
   [end]
  </div>
 [end]

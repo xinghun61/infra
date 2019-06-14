@@ -127,8 +127,8 @@ read_only = False
 
 # Timestamp used to notify users when the read only mode or other status
 # described in the banner message takes effect.  It is
-# expressed as a 5-tuple of ints: (year, month, day, hour, minute),
-# e.g. (2009, 3, 20, 21, 45) represents March 20 2009 9:45PM.
+# expressed as a tuple of ints: (year, month, day[, hour[, minute[, second]]])
+# e.g. (2009, 3, 20, 21, 45) represents March 20 2009 9:45PM UTC.
 banner_time = None
 
 # Display a site maintenance banner on every monorail page.
