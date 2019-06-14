@@ -617,6 +617,8 @@ def create_sync_task_async(build, settings):  # pragma: no cover
 
   Handled by TaskSyncBuild.
   """
+  # TODO(nodir): stop putting swarming task_def into push task body
+  # and make swarming task def preparation synchronous.
   task_def = yield prepare_task_def_async(build, settings)
   payload = {
       'id': build.key.id(),
@@ -630,7 +632,7 @@ def create_sync_task_async(build, settings):  # pragma: no cover
   })
 
 
-def _create_swarming_task(build_id, task_def):
+def _create_swarming_task(build_id):
   build = model.Build.get_by_id(build_id)
   if not build:  # pragma: no cover
     logging.warning('build not found')
@@ -642,6 +644,14 @@ def _create_swarming_task(build_id, task_def):
     return
 
   task_key = str(uuid.uuid4())
+
+  settings = config.get_settings_async().get_result().swarming
+
+  # Prepare task definition.
+  # Deserialize all fields.
+  build.proto.infra.ParseFromString(build.infra_bytes)
+  build.proto.input.properties.ParseFromString(build.input_properties_bytes)
+  task_def = prepare_task_def_async(build, settings).get_result()
 
   # Insert secret bytes.
   secrets = launcher_pb2.BuildSecrets(
@@ -740,7 +750,7 @@ class TaskSyncBuild(webapp2.RequestHandler):  # pragma: no cover
   @decorators.require_taskqueue(SYNC_QUEUE_NAME)
   def post(self, build_id):  # pylint: disable=unused-argument
     body = json.loads(self.request.body)
-    _create_swarming_task(body['id'], body['task_def'])
+    _create_swarming_task(body['id'])
 
     # TODO(crbug.com/943818): Re-enqueue itself without task_def.
     # If no task_def in body, call _sync_build_async.

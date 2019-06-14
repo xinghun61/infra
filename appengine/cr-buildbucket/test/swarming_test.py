@@ -662,6 +662,11 @@ class CreateTaskTest(BaseTest):
     self.task_def = {'is_task_def': True, 'task_slices': [{
         'properties': {},
     }]}
+    self.patch(
+        'swarming.prepare_task_def_async',
+        autospec=True,
+        return_value=future(self.task_def)
+    )
 
     self.build = test_util.build(id=1, created_by='user:john@example.com')
     self.build.swarming_task_key = None
@@ -677,7 +682,7 @@ class CreateTaskTest(BaseTest):
     )
 
     net.json_request_async.return_value = future({'task_id': 'x'})
-    swarming._create_swarming_task(1, self.task_def)
+    swarming._create_swarming_task(1)
 
     actual_task_def = net.json_request_async.call_args[1]['payload']
     self.assertEqual(actual_task_def, expected_task_def)
@@ -704,7 +709,7 @@ class CreateTaskTest(BaseTest):
       infra.swarming.task_id = 'exists'
     self.build.put()
 
-    swarming._create_swarming_task(1, self.task_def)
+    swarming._create_swarming_task(1)
     self.assertFalse(net.json_request_async.called)
 
   @mock.patch('swarming.cancel_task', autospec=True)
@@ -719,7 +724,7 @@ class CreateTaskTest(BaseTest):
 
     net.json_request_async.side_effect = json_request_async
 
-    swarming._create_swarming_task(1, self.task_def)
+    swarming._create_swarming_task(1)
     cancel_task.assert_called_with('swarming.example.com', 'new task')
 
   def test_http_400(self):
@@ -727,7 +732,7 @@ class CreateTaskTest(BaseTest):
         net.Error('HTTP 401', 400, 'invalid request')
     )
 
-    swarming._create_swarming_task(1, self.task_def)
+    swarming._create_swarming_task(1)
 
     build = self.build.key.get()
     self.assertEqual(build.status, common_pb2.INFRA_FAILURE)
@@ -742,7 +747,7 @@ class CreateTaskTest(BaseTest):
     )
 
     with self.assertRaises(net.Error):
-      swarming._create_swarming_task(1, self.task_def)
+      swarming._create_swarming_task(1)
 
 
 class CancelTest(BaseTest):
