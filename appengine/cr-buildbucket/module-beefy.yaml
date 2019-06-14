@@ -26,6 +26,9 @@ handlers:
 - url: /_ah/start
   script: apps.frontend
   secure: always
+- url: /build/.+
+  script: apps.frontend
+  secure: always
 - url: /prpc/buildbucket.v2.Builds/.+
   script: apps.frontend
   secure: always
