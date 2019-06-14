@@ -50,14 +50,16 @@ func TestEnumeration(t *testing.T) {
 		t.Fatalf("%s", err)
 	}
 	for _, c := range cases {
-		_, isTest := d.Tests()[c.Path]
-		if isTest != c.IsTest {
-			t.Errorf("%s is in Tests(): %t, want %t", c.Path, isTest, c.IsTest)
-		}
-		_, isSuite := d.Suites()[c.Path]
-		if isSuite != c.IsSuite {
-			t.Errorf("%s is in Tests(): %t, want %t", c.Path, isSuite, c.IsSuite)
-		}
+		t.Run(c.Path, func(t *testing.T) {
+			_, isTest := d.Tests()[c.Path]
+			if isTest != c.IsTest {
+				t.Errorf("%s is in Tests(): %t, want %t", c.Path, isTest, c.IsTest)
+			}
+			_, isSuite := d.Suites()[c.Path]
+			if isSuite != c.IsSuite {
+				t.Errorf("%s is in Tests(): %t, want %t", c.Path, isSuite, c.IsSuite)
+			}
+		})
 	}
 }
 

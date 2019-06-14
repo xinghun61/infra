@@ -14,16 +14,18 @@ import (
 
 func TestParseTestControlName(t *testing.T) {
 	var cases = []struct {
+		Tag  string
 		Text string
 		Want string
 	}{
-		{`# NAME = 'platform'`, ""},
-		{`NAME = 'platform'`, "platform"},
-		{`NAME = "platform"`, "platform"},
-		{`  NAME = "platform"`, "platform"},
-		{`		NAME = "platform"`, "platform"},
-		{`NAME = "platform_23Hours.almost-daily"`, "platform_23Hours.almost-daily"},
+		{"ignore comment", `# NAME = 'platform'`, ""},
+		{"single quoted name", `NAME = 'platform'`, "platform"},
+		{"double quoted name", `NAME = "platform"`, "platform"},
+		{"leading space", `  NAME = "platform"`, "platform"},
+		{"leading tabs", `		NAME = "platform"`, "platform"},
+		{"special character dot", `NAME = "platform_23Hours.almost-daily"`, "platform_23Hours.almost-daily"},
 		{
+			Tag: "multiline with context",
 			Text: `
 				AUTHOR = "somebody"
 				NAME = "platform_SuspendResumeTiming"
@@ -39,82 +41,91 @@ func TestParseTestControlName(t *testing.T) {
 	}
 
 	for _, c := range cases {
-		tm, err := parseTestControl(c.Text)
-		if err != nil {
-			t.Fatalf("parseTestControl: %s", err)
-		}
-		if c.Want != tm.Name {
-			t.Errorf("Name differs for %s, want: %s, got %s", c.Text, c.Want, tm.Name)
-		}
+		t.Run(c.Tag, func(t *testing.T) {
+			tm, err := parseTestControl(c.Text)
+			if err != nil {
+				t.Fatalf("parseTestControl: %s", err)
+			}
+			if c.Want != tm.Name {
+				t.Errorf("Name differs for %s, want: %s, got %s", c.Text, c.Want, tm.Name)
+			}
+		})
 	}
 }
 
 func TestParseTestControlSyncCount(t *testing.T) {
 	var cases = []struct {
+		Tag                   string
 		Text                  string
 		WantNeedsMultipleDuts bool
 		WantDutCount          int32
 	}{
-		{``, false, 0},
-		{`SYNC_COUNT = 0`, false, 0},
-		{`SYNC_COUNT = 3`, true, 3},
+		{"default value", ``, false, 0},
+		{"explicit zero", `SYNC_COUNT = 0`, false, 0},
+		{"multi dut", `SYNC_COUNT = 3`, true, 3},
 	}
 
 	for _, c := range cases {
-		tm, err := parseTestControl(c.Text)
-		if err != nil {
-			t.Fatalf("parseTestControl: %s", err)
-		}
-		if c.WantNeedsMultipleDuts != tm.NeedsMultipleDuts {
-			t.Errorf("NeedsMultipleDuts differs for |%s|, want: %t, got %t", c.Text, c.WantNeedsMultipleDuts, tm.NeedsMultipleDuts)
-		}
-		if c.WantDutCount != tm.DutCount {
-			t.Errorf("NeedsMultipleDuts differs for |%s|, want: %d, got %d", c.Text, c.WantDutCount, tm.DutCount)
-		}
+		t.Run(c.Tag, func(t *testing.T) {
+			tm, err := parseTestControl(c.Text)
+			if err != nil {
+				t.Fatalf("parseTestControl: %s", err)
+			}
+			if c.WantNeedsMultipleDuts != tm.NeedsMultipleDuts {
+				t.Errorf("NeedsMultipleDuts differs for |%s|, want: %t, got %t", c.Text, c.WantNeedsMultipleDuts, tm.NeedsMultipleDuts)
+			}
+			if c.WantDutCount != tm.DutCount {
+				t.Errorf("NeedsMultipleDuts differs for |%s|, want: %d, got %d", c.Text, c.WantDutCount, tm.DutCount)
+			}
+		})
 	}
 }
 
 func TestParseTestControlRetries(t *testing.T) {
 	var cases = []struct {
+		Tag              string
 		Text             string
 		WantAllowRetries bool
 		WantMaxRetries   int32
 	}{
-		{`JOB_RETRIES = 3`, true, 3},
-		{`JOB_RETRIES = 0`, false, 0},
-		// JOB_RETRIES must be explicitly set to 0 to disallow retries. Default is 1 retry.
-		{``, true, 1},
+		{"default value", ``, true, 1},
+		{"multiple retries", `JOB_RETRIES = 3`, true, 3},
+		{"no retries", `JOB_RETRIES = 0`, false, 0},
 	}
 
 	for _, c := range cases {
-		tm, err := parseTestControl(c.Text)
-		if err != nil {
-			t.Fatalf("parseTestControl: %s", err)
-		}
-		if c.WantAllowRetries != tm.AllowRetries {
-			t.Errorf("AllowRetries differs for |%s|, want: %t, got %t", c.Text, c.WantAllowRetries, tm.AllowRetries)
-		}
-		if c.WantMaxRetries != tm.MaxRetries {
-			t.Errorf("MaxRetries differs for |%s|, want: %d, got %d", c.Text, c.WantMaxRetries, tm.MaxRetries)
-		}
+		t.Run(c.Tag, func(t *testing.T) {
+			tm, err := parseTestControl(c.Text)
+			if err != nil {
+				t.Fatalf("parseTestControl: %s", err)
+			}
+			if c.WantAllowRetries != tm.AllowRetries {
+				t.Errorf("AllowRetries differs for |%s|, want: %t, got %t", c.Text, c.WantAllowRetries, tm.AllowRetries)
+			}
+			if c.WantMaxRetries != tm.MaxRetries {
+				t.Errorf("MaxRetries differs for |%s|, want: %d, got %d", c.Text, c.WantMaxRetries, tm.MaxRetries)
+			}
+		})
 	}
 }
 
 func TestParseTestControlDependencies(t *testing.T) {
 	var cases = []struct {
+		Tag  string
 		Text string
 		Want stringset.Set
 	}{
-		{``, stringset.NewFromSlice()},
-		{`DEPENDENCIES = 'dep'`, stringset.NewFromSlice("dep")},
-		{`DEPENDENCIES = 'model:mario'`, stringset.NewFromSlice("model:mario")},
-		{`DEPENDENCIES = "dep1, dep2"`, stringset.NewFromSlice("dep1", "dep2")},
-		{`DEPENDENCIES = "dep1,dep2"`, stringset.NewFromSlice("dep1", "dep2")},
-		{`DEPENDENCIES = "dep1,dep2,"`, stringset.NewFromSlice("dep1", "dep2")},
+		{"default value", ``, stringset.NewFromSlice()},
+		{"one value", `DEPENDENCIES = 'dep'`, stringset.NewFromSlice("dep")},
+		{"one valuewith colon", `DEPENDENCIES = 'model:mario'`, stringset.NewFromSlice("model:mario")},
+		{"two values with space", `DEPENDENCIES = "dep1, dep2"`, stringset.NewFromSlice("dep1", "dep2")},
+		{"two values without space", `DEPENDENCIES = "dep1,dep2"`, stringset.NewFromSlice("dep1", "dep2")},
+		{"two values with trailing comma", `DEPENDENCIES = "dep1,dep2,"`, stringset.NewFromSlice("dep1", "dep2")},
 		// Control file fields are just python global variable assignments.
 		// If the same global variable is assigned multiple times, lexically
 		// last assignment wins.
 		{
+			Tag: "multiple assignments",
 			Text: `
 				DEPENDENCIES = "dep1"
 				DEPENDENCIES = "dep2"`,
@@ -123,13 +134,15 @@ func TestParseTestControlDependencies(t *testing.T) {
 	}
 
 	for _, c := range cases {
-		tm, err := parseTestControl(c.Text)
-		if err != nil {
-			t.Fatalf("parseTestControl: %s", err)
-		}
-		if diff := pretty.Compare(c.Want, autotestLabelSet(tm.Dependencies)); diff != "" {
-			t.Errorf("Dependencies differ for |%s|, -want, +got, %s", c.Text, diff)
-		}
+		t.Run(c.Tag, func(t *testing.T) {
+			tm, err := parseTestControl(c.Text)
+			if err != nil {
+				t.Fatalf("parseTestControl: %s", err)
+			}
+			if diff := pretty.Compare(c.Want, autotestLabelSet(tm.Dependencies)); diff != "" {
+				t.Errorf("Dependencies differ for |%s|, -want, +got, %s", c.Text, diff)
+			}
+		})
 	}
 }
 
@@ -143,44 +156,50 @@ func autotestLabelSet(deps []*api.AutotestTaskDependency) stringset.Set {
 
 func TestParseTestControlSuites(t *testing.T) {
 	var cases = []struct {
+		Tag  string
 		Text string
 		Want stringset.Set
 	}{
-		{``, stringset.NewFromSlice()},
-		{`ATTRIBUTES = 'dep'`, stringset.NewFromSlice()},
-		{`ATTRIBUTES = 'suite:network_nightly'`, stringset.NewFromSlice("network_nightly")},
-		{`ATTRIBUTES = "suite:bvt, suite:bvt-inline"`, stringset.NewFromSlice("bvt", "bvt-inline")},
-		{`ATTRIBUTES = "suite:cts,another_attribute"`, stringset.NewFromSlice("cts")},
+		{"default value", ``, stringset.NewFromSlice()},
+		{"unrelated dependency", `ATTRIBUTES = 'dep'`, stringset.NewFromSlice()},
+		{"one suite", `ATTRIBUTES = 'suite:network_nightly'`, stringset.NewFromSlice("network_nightly")},
+		{"two suites", `ATTRIBUTES = "suite:bvt, suite:bvt-inline"`, stringset.NewFromSlice("bvt", "bvt-inline")},
+		{"one suite in context", `ATTRIBUTES = "suite:cts,another_attribute"`, stringset.NewFromSlice("cts")},
 	}
 
 	for _, c := range cases {
-		tm, err := parseTestControl(c.Text)
-		if err != nil {
-			t.Fatalf("parseTestControl: %s", err)
-		}
-		if diff := pretty.Compare(c.Want, stringset.NewFromSlice(tm.Suites...)); diff != "" {
-			t.Errorf("Suites differ for |%s|, -want, +got, %s", c.Text, diff)
-		}
+		t.Run(c.Tag, func(t *testing.T) {
+			tm, err := parseTestControl(c.Text)
+			if err != nil {
+				t.Fatalf("parseTestControl: %s", err)
+			}
+			if diff := pretty.Compare(c.Want, stringset.NewFromSlice(tm.Suites...)); diff != "" {
+				t.Errorf("Suites differ for |%s|, -want, +got, %s", c.Text, diff)
+			}
+		})
 	}
 }
 
 func TestParseSuiteControlChildDependencies(t *testing.T) {
 	var cases = []struct {
+		Tag  string
 		Text string
 		Want stringset.Set
 	}{
-		{``, stringset.NewFromSlice()},
-		{`SUITE_DEPENDENCIES = 'model:mario'`, stringset.NewFromSlice()},
-		{`args_dict['suite_dependencies'] = 'carrier:verizon,modem_repair'`, stringset.NewFromSlice("carrier:verizon", "modem_repair")},
+		{"default value", ``, stringset.NewFromSlice()},
+		{"incorrect format", `SUITE_DEPENDENCIES = 'model:mario'`, stringset.NewFromSlice()},
+		{"correct format", `args_dict['suite_dependencies'] = 'carrier:verizon,modem_repair'`, stringset.NewFromSlice("carrier:verizon", "modem_repair")},
 	}
 
 	for _, c := range cases {
-		as, err := parseSuiteControl(c.Text)
-		if err != nil {
-			t.Fatalf("parseSuiteControl: %s", err)
-		}
-		if diff := pretty.Compare(c.Want, autotestLabelSet(as.ChildDependencies)); diff != "" {
-			t.Errorf("ChildDependencies differ for |%s|, -want, +got, %s", c.Text, diff)
-		}
+		t.Run(c.Tag, func(t *testing.T) {
+			as, err := parseSuiteControl(c.Text)
+			if err != nil {
+				t.Fatalf("parseSuiteControl: %s", err)
+			}
+			if diff := pretty.Compare(c.Want, autotestLabelSet(as.ChildDependencies)); diff != "" {
+				t.Errorf("ChildDependencies differ for |%s|, -want, +got, %s", c.Text, diff)
+			}
+		})
 	}
 }
