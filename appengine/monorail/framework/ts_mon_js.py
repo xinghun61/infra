@@ -50,8 +50,17 @@ CHARTS_SWITCH_DATE_RANGE_METRIC = ts_mon.CounterMetric(
   ), field_spec=STANDARD_FIELDS + [ts_mon.IntegerField('date_range')])
 
 # Page load metrics.
+ISSUE_COMMENTS_LOAD_EXTRA_FIELDS = [
+  ts_mon.StringField('template_name'),
+  ts_mon.BooleanField('full_app_load'),
+]
+ISSUE_COMMENTS_LOAD_LATENCY_METRIC = ts_mon.CumulativeDistributionMetric(
+  'monorail/frontend/issue_comments_load_latency', (
+    'Time from navigation or click to issue comments loaded.'
+  ), field_spec=STANDARD_FIELDS + ISSUE_COMMENTS_LOAD_EXTRA_FIELDS,
+  units=ts_mon.MetricsDataUnits.MILLISECONDS)
 DOM_CONTENT_LOADED_EXTRA_FIELDS = [
-    ts_mon.StringField('template_name')]
+  ts_mon.StringField('template_name')]
 DOM_CONTENT_LOADED_METRIC = ts_mon.CumulativeDistributionMetric(
   'frontend/dom_content_loaded', (
     'domContentLoaded performance timing.'
@@ -68,6 +77,7 @@ class MonorailTSMonJSHandler(TSMonJSHandler):
         ISSUE_UPDATE_LATENCY_METRIC,
         AUTOCOMPLETE_POPULATE_LATENCY_METRIC,
         CHARTS_SWITCH_DATE_RANGE_METRIC,
+        ISSUE_COMMENTS_LOAD_LATENCY_METRIC,
         DOM_CONTENT_LOADED_METRIC])
 
   def xsrf_is_valid(self, body):

@@ -77,6 +77,18 @@ export default class MonorailTSMon extends TSMonClient {
       ]))
     );
 
+    this.issueCommentsLoadMetric = this.cumulativeDistribution(
+      'monorail/frontend/issue_comments_load_latency',
+      'Time from navigation or click to issue comments loaded.',
+      null, (new Map([
+        ['client_id', TSMonClient.stringField('client_id')],
+        ['host_name', TSMonClient.stringField('host_name')],
+        ['template_name', TSMonClient.stringField('template_name')],
+        ['document_visible', TSMonClient.boolField('document_visible')],
+        ['full_app_load', TSMonClient.boolField('full_app_load')],
+      ]))
+    );
+
     this.pageLoadMetric = this.cumulativeDistribution(
       'frontend/dom_content_loaded',
       'domContentLoaded performance timing.',
@@ -153,6 +165,17 @@ export default class MonorailTSMon extends TSMonClient {
       ]);
       this.pageLoadMetric.add(domContentLoadedMs, metricFields);
     }
+  }
+
+  recordIssueCommentsLoadTiming(value, fullAppLoad) {
+    const metricFields = new Map([
+      ['client_id', this.clientId],
+      ['host_name', window.CS_env.app_version],
+      ['template_name', PAGE_TYPES.ISSUE_DETAIL_SPA],
+      ['document_visible', MonorailTSMon.isPageVisible()],
+      ['full_app_load', fullAppLoad],
+    ]);
+    this.issueCommentsLoadMetric.add(value, metricFields);
   }
 
   recordIssueDetailTiming(maxThresholdMs=PAGE_LOAD_MAX_THRESHOLD) {

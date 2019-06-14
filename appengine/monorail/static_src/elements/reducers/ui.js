@@ -6,18 +6,24 @@ import {combineReducers} from 'redux';
 import {createReducer} from './redux-helpers.js';
 
 // Actions
+const INCREMENT_NAVIGATION_COUNT = 'INCREMENT_NAVIGATION_COUNT';
 const REPORT_DIRTY_FORM = 'REPORT_DIRTY_FORM';
 const CLEAR_DIRTY_FORMS = 'CLEAR_DIRTY_FORMS';
 const SET_FOCUS_ID = 'SET_FOCUS_ID';
 
 /* State Shape
 {
+  navigationCount: Number,
   dirtyForms: Array,
   focusId: String,
 }
 */
 
 // Reducers
+const navigationCountReducer = createReducer(0, {
+  [INCREMENT_NAVIGATION_COUNT]: (state) => state + 1,
+});
+
 const dirtyFormsReducer = createReducer([], {
   [REPORT_DIRTY_FORM]: (state, action) => {
     const newState = [...state];
@@ -37,6 +43,8 @@ const focusIdReducer = createReducer(null, {
 });
 
 export const reducer = combineReducers({
+  // Count of "page" navigations.
+  navigationCount: navigationCountReducer,
   // Forms to be checked for user changes before leaving the page.
   dirtyForms: dirtyFormsReducer,
   // The ID of the element to be focused, as given by the hash part of the URL.
@@ -44,10 +52,15 @@ export const reducer = combineReducers({
 });
 
 // Selectors
+export const navigationCount = (state) => state.ui.navigationCount;
 export const dirtyForms = (state) => state.ui.dirtyForms;
 export const focusId = (state) => state.ui.focusId;
 
 // Action Creators
+export const incrementNavigationCount = () => {
+  return {type: INCREMENT_NAVIGATION_COUNT};
+};
+
 export const reportDirtyForm = (name, isDirty) => {
   return {type: REPORT_DIRTY_FORM, name, isDirty};
 };

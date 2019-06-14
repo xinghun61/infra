@@ -124,6 +124,9 @@ export class MrApp extends connectStore(LitElement) {
       this.queryParams = ctx.query;
       this._currentContext = ctx;
 
+      // Increment the count of navigations in the Redux store.
+      store.dispatch(ui.incrementNavigationCount());
+
       next();
     });
     page('/p/:project/issues/detail', this._loadIssuePage.bind(this));
@@ -150,6 +153,9 @@ export class MrApp extends connectStore(LitElement) {
   }
 
   async _loadIssuePage(ctx, next) {
+    performance.clearMarks('start load issue detail page');
+    performance.mark('start load issue detail page');
+
     store.dispatch(issue.setIssueRef(
       Number.parseInt(ctx.query.id), ctx.params.project));
 
