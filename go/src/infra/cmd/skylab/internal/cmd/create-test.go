@@ -16,6 +16,7 @@ import (
 	"go.chromium.org/luci/common/flag"
 
 	"infra/cmd/skylab/internal/site"
+	"infra/libs/skylab/inventory"
 	"infra/libs/skylab/request"
 	"infra/libs/skylab/swarming"
 	"infra/libs/skylab/worker"
@@ -122,16 +123,6 @@ func (c *createTestRun) innerRun(a subcommands.Application, args []string, env s
 	userDimensions := c.Flags.Args()[1:]
 
 	dimensions := []string{"pool:ChromeOSSkylab", "dut_state:ready"}
-	if c.board != "" {
-		dimensions = append(dimensions, "label-board:"+c.board)
-	}
-	if c.model != "" {
-		dimensions = append(dimensions, "label-model:"+c.model)
-	}
-	if c.pool != "" {
-		dimensions = append(dimensions, "label-pool:"+c.pool)
-	}
-
 	dimensions = append(dimensions, userDimensions...)
 
 	var provisionableDimensions []string
@@ -167,6 +158,7 @@ func (c *createTestRun) innerRun(a subcommands.Application, args []string, env s
 		Tags:                    tags,
 		ProvisionableDimensions: provisionableDimensions,
 		Dimensions:              dimensions,
+		SchedulableLabels:       c.getLabels(),
 		TimeoutMins:             c.timeoutMins,
 		Priority:                int64(c.priority),
 		ParentTaskID:            c.parentTaskID,
@@ -192,4 +184,24 @@ func (c *createTestRun) innerRun(a subcommands.Application, args []string, env s
 
 	fmt.Fprintf(a.GetOut(), "Created Swarming task %s\n", swarming.TaskURL(e.SwarmingService, resp.TaskId))
 	return nil
+}
+
+func (c *createTestRun) getLabels() inventory.SchedulableLabels {
+	labels := inventory.SchedulableLabels{}
+
+	if c.board != "" {
+		labels.Board = &c.board
+	}
+	if c.model != "" {
+		labels.Model = &c.model
+	}
+	if c.pool != "" {
+		pool, ok := inventory.SchedulableLabels_DUTPool_value[c.pool]
+		if ok {
+			labels.CriticalPools = []inventory.SchedulableLabels_DUTPool{inventory.SchedulableLabels_DUTPool(pool)}
+		} else {
+			labels.SelfServePools = []string{c.pool}
+		}
+	}
+	return labels
 }
