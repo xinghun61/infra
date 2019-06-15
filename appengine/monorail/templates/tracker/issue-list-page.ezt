@@ -57,7 +57,9 @@
 
 <div id="helparea"></div>
 
-[if-any grid_mode][else]
+[if-any grid_mode]
+  [include "issue-grid-js.ezt" "issuelist"]
+[else]
   [include "issue-list-js.ezt" "issuelist"]
 [end]
 

@@ -17,11 +17,11 @@
     <td class="vt hoverTarget [is grid_cell_mode "tiles"][else]idcount[end]">
      [for grid_data.cells_in_row.tiles]
       [is grid_cell_mode "tiles"]
-       [include "issue-grid-tile.ezt" grid_data.cells_in_row.tiles.starred grid_data.cells_in_row.tiles.local_id grid_data.cells_in_row.tiles.status grid_data.cells_in_row.tiles.summary grid_data.cells_in_row.tiles.issue_url]
+       [include "issue-grid-tile.ezt" grid_data.cells_in_row.tiles.starred grid_data.cells_in_row.tiles.local_id grid_data.cells_in_row.tiles.status grid_data.cells_in_row.tiles.summary grid_data.cells_in_row.tiles.issue_url grid_data.cells_in_row.tiles.data_idx]
       [end]
       [is grid_cell_mode "ids"]
        <a title="[grid_data.cells_in_row.tiles.summary]"
-          href=[grid_data.cells_in_row.tiles.issue_url]>[if-any is_hotlist][grid_data.cells_in_row.tiles.issue_ref][else][grid_data.cells_in_row.tiles.local_id][end]</a>
+          href=[grid_data.cells_in_row.tiles.issue_url] class="computehref" data-idx="[grid_data.cells_in_row.tiles.data_idx]">[if-any is_hotlist][grid_data.cells_in_row.tiles.issue_ref][else][grid_data.cells_in_row.tiles.local_id][end]</a>
       [end]
      [end]
      [is grid_cell_mode "counts"]

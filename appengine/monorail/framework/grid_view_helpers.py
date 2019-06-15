@@ -159,6 +159,8 @@ def MakeGridData(
     cells_in_row = []
     for x in x_headings:
       tiles = x_y_data[x, y]
+      for i, tile in enumerate(tiles):
+        tile.data_idx = i
 
       drill_down = ''
       if x_attr != '--':
@@ -455,7 +457,8 @@ def PrepareForMakeGridData(
   def IssueViewFactory(issue):
     return template_helpers.EZTItem(
       summary=issue.summary, local_id=issue.local_id, issue_id=issue.issue_id,
-      status=issue.status or issue.derived_status, starred=None)
+      status=issue.status or issue.derived_status, starred=None, data_idx=0,
+      project_name=issue.project_name)
 
   grid_data = MakeGridData(
       allowed_results, x_attr, grid_col_values, y_attr, grid_row_values,

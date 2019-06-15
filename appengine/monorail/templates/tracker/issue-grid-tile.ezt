@@ -12,14 +12,14 @@
       </a>
      [end]
     [end]
-    <a href=[arg4]>[arg1]</a>
+    <a href=[arg4] class="computehref" data-idx=[arg5]>[arg1]</a>
    </td>
    <td class="status">[arg2]</td>
   </tr>
   <tr>
    <td colspan="2">
     <div>
-     <a href=[arg4]>[arg3]</a>
+     <a href=[arg4] class="computehref" data-idx=[arg5]>[arg3]</a>
     </div>
    </td>
   </tr>

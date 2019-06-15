@@ -1,0 +1,58 @@
+<script type="text/javascript" nonce="[nonce]">
+runOnLoad(function() {
+  window.getTSMonClient().recordIssueListTiming();
+
+  [# Update the issue link hrefs on-load and whenever the column-spec changes.]
+  _ctxCan = [can];
+  _ctxQuery = "[format "js"][query][end]";
+  _ctxSortspec = "[format "js"][sortspec][end]";
+  _ctxGroupBy = "[format "js"][groupby][end]";
+  _ctxStart = [start];
+  _ctxNum = [num];
+  _ctxHotlistID = "[hotlist_id]";
+  _ctxArgs = _formatContextQueryArgs();
+
+
+  function _goIssue(issueIndex, newWindow) {
+    var url = _makeIssueLink(issueRefs[[]issueIndex]);
+    _go(url, newWindow);
+  }
+  // Added to enable calling from TKR_openArtifactAtCursor
+  window._goIssue = _goIssue;
+
+  window.issueRefs = [[]
+    [for grid_data]
+      [for grid_data.cells_in_row]
+        [for grid_data.cells_in_row.tiles]
+            {
+                project_name: "[format "js"][grid_data.cells_in_row.tiles.project_name][end]",
+                id: [grid_data.cells_in_row.tiles.local_id]
+            },
+            [end][end][end]
+  ];
+  function _handleResultsClick(event) {
+    var target = event.target;
+    var value = target.attributes[[]"data-idx"].value;
+    if (event.button >= 3)
+      return;
+    if (target.classList.contains("label"))
+      return;
+    if (target.classList.contains("rowwidgets") || target.parentNode.classList.contains("rowwidgets"))
+      return;
+    while (target && target.tagName != "TR") target = target.parentNode;
+    event.preventDefault();
+    if ('[is_hotlist]') {
+       _go(target.attributes[[]"issue-context-url"].value, (event.metaKey || event.ctrlKey || event.button == 1));
+    }
+    else {
+       _goIssue(value, (event.metaKey || event.ctrlKey || event.button == 1));
+    }
+  };
+
+[if-any grid_data]
+  _addClickListener($("resultstable"), _handleResultsClick);
+[end]
+
+
+});
+</script>
