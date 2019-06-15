@@ -397,6 +397,11 @@ class TaskDefTest(BaseTest):
                             {'key': 'pool', 'value': 'Chrome'},
                         ],
                     },
+                    'logdog': {
+                        'hostname': 'logdog.example.com',
+                        'project': 'chromium',
+                        'prefix': 'bb',
+                    },
                 },
                 'createdBy': 'anonymous:anonymous',
                 'createTime': '2015-11-30T00:00:00Z',

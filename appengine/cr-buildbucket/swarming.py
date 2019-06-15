@@ -171,7 +171,6 @@ def _buildbucket_property(build):
   export.ClearField('status')
   export.ClearField('update_time')
   export.input.ClearField('properties')
-  export.infra.ClearField('logdog')
   export.infra.ClearField('recipe')
   export.infra.buildbucket.ClearField('requested_properties')
   build.tags_to_protos(export.tags)

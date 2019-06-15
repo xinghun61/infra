@@ -11,6 +11,7 @@ from testing_utils import testing
 
 from legacy import api_common
 from legacy import swarmbucket_api
+from proto import service_config_pb2
 from test import test_util
 from test.test_util import future
 import config
@@ -145,6 +146,15 @@ class SwarmbucketApiTest(testing.EndpointsTestCase):
         'swarming._get_task_template',
         autospec=True,
         return_value=('rev', self.task_template),
+    )
+
+    self.settings = service_config_pb2.SettingsCfg(
+        logdog=dict(hostname='logdog.example.com'),
+    )
+    self.patch(
+        'config.get_settings_async',
+        autospec=True,
+        return_value=future(self.settings),
     )
 
   def test_get_builders(self):
@@ -316,28 +326,40 @@ class SwarmbucketApiTest(testing.EndpointsTestCase):
                             'buildbucket': {'serviceConfigRevision': 'rev'},
                             'swarming': {
                                 'hostname':
-                                    'swarming.example.com', 'priority':
-                                        30, 'taskDimensions': [
-                                            {
-                                                'key': 'baz',
-                                                'value': 'baz',
-                                                'expiration': '0s',
-                                            },
-                                            {
-                                                'key': 'builder',
-                                                'value': 'linux',
-                                                'expiration': '0s',
-                                            },
-                                            {
-                                                'key': 'foo',
-                                                'value': 'bar',
-                                                'expiration': '0s',
-                                            },
-                                        ], 'caches': [{
-                                            'path': 'builder',
-                                            'name': 'builder_cache_name',
-                                            'waitForWarmCache': '0s',
-                                        },]
+                                    'swarming.example.com',
+                                'priority':
+                                    30,
+                                'taskDimensions': [
+                                    {
+                                        'key': 'baz',
+                                        'value': 'baz',
+                                        'expiration': '0s',
+                                    },
+                                    {
+                                        'key': 'builder',
+                                        'value': 'linux',
+                                        'expiration': '0s',
+                                    },
+                                    {
+                                        'key': 'foo',
+                                        'value': 'bar',
+                                        'expiration': '0s',
+                                    },
+                                ],
+                                'caches': [{
+                                    'path': 'builder',
+                                    'name': 'builder_cache_name',
+                                    'waitForWarmCache': '0s',
+                                }],
+                            },
+                            'logdog': {
+                                'hostname':
+                                    'logdog.example.com',
+                                'project':
+                                    'chromium',
+                                'prefix': (
+                                    'buildbucket/cr-buildbucket.appspot.com/1'
+                                ),
                             },
                         },
                     },
