@@ -729,7 +729,7 @@ describe('autolink', () => {
         ]);
     });
 
-    // Test to check that comment references are properly linked.
+    // Check that comment references are properly linked.
     it('comments are correctly linked', () => {
       const plainString =
       'comment1, comment : 5, Comment =10, comment #4, #c57';
@@ -786,6 +786,52 @@ describe('autolink', () => {
         actualTextRuns, [
           {
             content: 'comment number 4, comment-4, comment= # 5, comment#c56',
+          },
+        ]
+      );
+    });
+
+    // Check that issue/comment references are properly linked.
+    it('issue/comment that should be linked', () => {
+      const plainString =
+      'issue 2 comment 3, issue2 comment 9, bug #3 comment=4';
+      const actualTextRuns = markupAutolinks(plainString, componentRefs);
+      assert.deepEqual(
+        actualTextRuns, [
+          {
+            content: 'issue 2 comment 3',
+            tag: 'a',
+            href: '?id=2#c3',
+          },
+          {
+            content: ', ',
+          },
+          {
+            content: 'issue2 comment 9',
+            tag: 'a',
+            href: '?id=2#c9',
+          },
+          {
+            content: ', ',
+          },
+          {
+            content: 'bug #3 comment=4',
+            tag: 'a',
+            href: '?id=3#c4',
+          },
+        ]
+      );
+    });
+
+    // Check that improperly formatted issue/comment references do not get linked.
+    it('issue/comment that should not be linked', () => {
+      const plainString =
+      'theissue 2comment 3, issue2comment 9';
+      const actualTextRuns = markupAutolinks(plainString, componentRefs);
+      assert.deepEqual(
+        actualTextRuns, [
+          {
+            content: 'theissue 2comment 3, issue2comment 9',
           },
         ]
       );
