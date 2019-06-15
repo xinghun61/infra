@@ -21,7 +21,9 @@ _MOCKED_LUCI_PROJECTS = {
     'project': {
         'ci': {
             'supported_builders': ['builder'],
-            'rerun_builders': ['r_builder']
+            'rerun_builders': ['r_builder'],
+            'supported_builder_pattern': r'.*-supported',
+            'rerun_builder_pattern': r'.*-rerun',
         },
     }
 }
@@ -143,7 +145,7 @@ class APITest(WaterfallTestCase):
     build.input.gitiles_commit.id = 'git_sha'
     mocked_GetV2Build.return_value = build
     self.assertFalse(
-        api.OnBuildCompletion('project', 'ci', 'r_builder', 123, 'SUCCESS'))
+        api.OnBuildCompletion('project', 'ci', 'builder-rerun', 123, 'SUCCESS'))
     mocked_GetV2Build.assert_called_once_with(
         123, fields=FieldMask(paths=['*']))
 
@@ -172,6 +174,33 @@ class APITest(WaterfallTestCase):
   def testGetBuildAndContextForAnalysisNoBuild(self, _):
     self.assertEqual((None, None),
                      api.GetBuildAndContextForAnalysis('chromium', 123))
+
+  @mock.patch('findit_v2.services.projects.LUCI_PROJECTS',
+              _MOCKED_LUCI_PROJECTS)
+  @mock.patch('findit_v2.services.projects.GERRIT_PROJECTS',
+              _MOCKED_GERRIT_PROJECTS)
+  @mock.patch('common.waterfall.buildbucket_client.GetV2Build')
+  @mock.patch('findit_v2.services.detection.api.OnBuildFailure')
+  def testValidFailedBuildWithBuilderMatchPattern(self, mocked_OnBuildFailure,
+                                                  mocked_GetV2Build, *_):
+    build = Build()
+    build.input.gitiles_commit.host = 'gitiles.host.com'
+    build.input.gitiles_commit.project = 'project/name'
+    build.input.gitiles_commit.ref = 'ref/heads/master'
+    build.input.gitiles_commit.id = 'git_sha'
+    mocked_GetV2Build.return_value = build
+    self.assertTrue(
+        api.OnBuildCompletion('project', 'ci', 'builder-supported', 123,
+                              'FAILURE'))
+    mocked_GetV2Build.assert_called_once_with(
+        123, fields=FieldMask(paths=['*']))
+    mocked_OnBuildFailure.assert_called_once_with(
+        Context(
+            luci_project_name='project',
+            gitiles_host='gitiles.host.com',
+            gitiles_project='project/name',
+            gitiles_ref='ref/heads/master',
+            gitiles_id='git_sha'), build)
 
   @mock.patch.object(compile_api, 'OnCompileFailureAnalysisResultRequested')
   def testOnBuildFailureAnalysisResultRequestedNoBuildInDataStore(

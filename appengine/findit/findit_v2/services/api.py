@@ -112,20 +112,13 @@ def OnBuildCompletion(project, bucket, builder_name, build_id, build_result):
     False if it is unsupported or skipped; otherwise True.
   """
   # Skip builders that are not in the whitelist of a supported project/bucket.
-  bucket_info = projects.LUCI_PROJECTS.get(project, {}).get(bucket, {})
-  if not bucket_info:
-    logging.info(
-        'project: %s, bucket: %s is not supported.' % (project, bucket))
-    return False
+  builder_type = projects.GetBuilderType(project, bucket, builder_name)
 
-  supported_builders = bucket_info.get('supported_builders', [])
-  rerun_builders = bucket_info.get('rerun_builders', [])
-
-  if builder_name in supported_builders:
+  if builder_type == projects.BuilderTypeEnum.SUPPORTED:
     return OnSupportedBuildCompletion(project, bucket, builder_name, build_id,
                                       build_result)
 
-  if builder_name in rerun_builders:
+  if builder_type == projects.BuilderTypeEnum.RERUN:
     return OnRerunBuildCompletion(project, build_id)
 
   logging.info('Unsupported build %s/%s/%s/%s.', project, bucket, builder_name,
