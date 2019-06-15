@@ -95,7 +95,7 @@ Analyzer**. Existing examples of this are in the Fuchsia project.
 ### Building
 
 To build the Go Analyzers examples, you should first set up the infra Go
-environment; see [The infra Go README.][../../../../go/README.md]. After the
+environment; see [The infra Go README.](../../../../README.md). After the
 environment is set up, running `go build` in the directory should produce a
 usable binary.
 
