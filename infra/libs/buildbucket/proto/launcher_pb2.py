@@ -20,7 +20,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   package='buildbucket.v2',
   syntax='proto3',
   serialized_options=_b('Z4go.chromium.org/luci/buildbucket/proto;buildbucketpb'),
-  serialized_pb=_b('\n\x0elauncher.proto\x12\x0e\x62uildbucket.v2\x1a\x0b\x62uild.proto\"#\n\x0c\x42uildSecrets\x12\x13\n\x0b\x62uild_token\x18\x01 \x01(\t\"\xa6\x04\n\nRunnerArgs\x12\x18\n\x10\x62uildbucket_host\x18\x01 \x01(\t\x12\x13\n\x0blogdog_host\x18\x02 \x01(\t\x12$\n\x05\x62uild\x18\x03 \x01(\x0b\x32\x15.buildbucket.v2.Build\x12-\n\x04\x61uth\x18\x04 \x01(\x0b\x32\x1f.buildbucket.v2.RunnerArgs.Auth\x12\x10\n\x08work_dir\x18\x05 \x01(\t\x12\x17\n\x0f\x65xecutable_path\x18\x06 \x01(\t\x12\x11\n\tcache_dir\x18\x07 \x01(\t\x1a\x36\n\x07GitAuth\x12\x0f\n\x07\x64isable\x18\x01 \x01(\x08\x12\x1a\n\x12known_gerrit_hosts\x18\x02 \x03(\t\x1a\x1d\n\nDisablable\x12\x0f\n\x07\x64isable\x18\x01 \x01(\x08\x1a\xfe\x01\n\x04\x41uth\x12/\n\x03git\x18\x01 \x01(\x0b\x32\".buildbucket.v2.RunnerArgs.GitAuth\x12\x38\n\tdev_shell\x18\x02 \x01(\x0b\x32%.buildbucket.v2.RunnerArgs.Disablable\x12\x35\n\x06\x64ocker\x18\x03 \x01(\x0b\x32%.buildbucket.v2.RunnerArgs.Disablable\x12\x37\n\x08\x66irebase\x18\x04 \x01(\x0b\x32%.buildbucket.v2.RunnerArgs.Disablable\x12\x1b\n\x13luci_system_account\x18\x05 \x01(\tB6Z4go.chromium.org/luci/buildbucket/proto;buildbucketpbb\x06proto3')
+  serialized_pb=_b('\n\x0elauncher.proto\x12\x0e\x62uildbucket.v2\x1a\x0b\x62uild.proto\"#\n\x0c\x42uildSecrets\x12\x13\n\x0b\x62uild_token\x18\x01 \x01(\t\"\xdf\x01\n\nRunnerArgs\x12\x18\n\x10\x62uildbucket_host\x18\x01 \x01(\t\x12\x13\n\x0blogdog_host\x18\x02 \x01(\t\x12$\n\x05\x62uild\x18\x03 \x01(\x0b\x32\x15.buildbucket.v2.Build\x12\x10\n\x08work_dir\x18\x04 \x01(\t\x12\x17\n\x0f\x65xecutable_path\x18\x05 \x01(\t\x12\x11\n\tcache_dir\x18\x06 \x01(\t\x12!\n\x19known_public_gerrit_hosts\x18\x07 \x03(\t\x12\x1b\n\x13luci_system_account\x18\x08 \x01(\tB6Z4go.chromium.org/luci/buildbucket/proto;buildbucketpbb\x06proto3')
   ,
   dependencies=[build__pb2.DESCRIPTOR,])
 
@@ -58,131 +58,6 @@ _BUILDSECRETS = _descriptor.Descriptor(
 )
 
 
-_RUNNERARGS_GITAUTH = _descriptor.Descriptor(
-  name='GitAuth',
-  full_name='buildbucket.v2.RunnerArgs.GitAuth',
-  filename=None,
-  file=DESCRIPTOR,
-  containing_type=None,
-  fields=[
-    _descriptor.FieldDescriptor(
-      name='disable', full_name='buildbucket.v2.RunnerArgs.GitAuth.disable', index=0,
-      number=1, type=8, cpp_type=7, label=1,
-      has_default_value=False, default_value=False,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='known_gerrit_hosts', full_name='buildbucket.v2.RunnerArgs.GitAuth.known_gerrit_hosts', index=1,
-      number=2, type=9, cpp_type=9, label=3,
-      has_default_value=False, default_value=[],
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
-  ],
-  extensions=[
-  ],
-  nested_types=[],
-  enum_types=[
-  ],
-  serialized_options=None,
-  is_extendable=False,
-  syntax='proto3',
-  extension_ranges=[],
-  oneofs=[
-  ],
-  serialized_start=293,
-  serialized_end=347,
-)
-
-_RUNNERARGS_DISABLABLE = _descriptor.Descriptor(
-  name='Disablable',
-  full_name='buildbucket.v2.RunnerArgs.Disablable',
-  filename=None,
-  file=DESCRIPTOR,
-  containing_type=None,
-  fields=[
-    _descriptor.FieldDescriptor(
-      name='disable', full_name='buildbucket.v2.RunnerArgs.Disablable.disable', index=0,
-      number=1, type=8, cpp_type=7, label=1,
-      has_default_value=False, default_value=False,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
-  ],
-  extensions=[
-  ],
-  nested_types=[],
-  enum_types=[
-  ],
-  serialized_options=None,
-  is_extendable=False,
-  syntax='proto3',
-  extension_ranges=[],
-  oneofs=[
-  ],
-  serialized_start=349,
-  serialized_end=378,
-)
-
-_RUNNERARGS_AUTH = _descriptor.Descriptor(
-  name='Auth',
-  full_name='buildbucket.v2.RunnerArgs.Auth',
-  filename=None,
-  file=DESCRIPTOR,
-  containing_type=None,
-  fields=[
-    _descriptor.FieldDescriptor(
-      name='git', full_name='buildbucket.v2.RunnerArgs.Auth.git', index=0,
-      number=1, type=11, cpp_type=10, label=1,
-      has_default_value=False, default_value=None,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='dev_shell', full_name='buildbucket.v2.RunnerArgs.Auth.dev_shell', index=1,
-      number=2, type=11, cpp_type=10, label=1,
-      has_default_value=False, default_value=None,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='docker', full_name='buildbucket.v2.RunnerArgs.Auth.docker', index=2,
-      number=3, type=11, cpp_type=10, label=1,
-      has_default_value=False, default_value=None,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='firebase', full_name='buildbucket.v2.RunnerArgs.Auth.firebase', index=3,
-      number=4, type=11, cpp_type=10, label=1,
-      has_default_value=False, default_value=None,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='luci_system_account', full_name='buildbucket.v2.RunnerArgs.Auth.luci_system_account', index=4,
-      number=5, type=9, cpp_type=9, label=1,
-      has_default_value=False, default_value=_b("").decode('utf-8'),
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
-  ],
-  extensions=[
-  ],
-  nested_types=[],
-  enum_types=[
-  ],
-  serialized_options=None,
-  is_extendable=False,
-  syntax='proto3',
-  extension_ranges=[],
-  oneofs=[
-  ],
-  serialized_start=381,
-  serialized_end=635,
-)
-
 _RUNNERARGS = _descriptor.Descriptor(
   name='RunnerArgs',
   full_name='buildbucket.v2.RunnerArgs',
@@ -212,29 +87,36 @@ _RUNNERARGS = _descriptor.Descriptor(
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='auth', full_name='buildbucket.v2.RunnerArgs.auth', index=3,
-      number=4, type=11, cpp_type=10, label=1,
-      has_default_value=False, default_value=None,
+      name='work_dir', full_name='buildbucket.v2.RunnerArgs.work_dir', index=3,
+      number=4, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='work_dir', full_name='buildbucket.v2.RunnerArgs.work_dir', index=4,
+      name='executable_path', full_name='buildbucket.v2.RunnerArgs.executable_path', index=4,
       number=5, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='executable_path', full_name='buildbucket.v2.RunnerArgs.executable_path', index=5,
+      name='cache_dir', full_name='buildbucket.v2.RunnerArgs.cache_dir', index=5,
       number=6, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='cache_dir', full_name='buildbucket.v2.RunnerArgs.cache_dir', index=6,
-      number=7, type=9, cpp_type=9, label=1,
+      name='known_public_gerrit_hosts', full_name='buildbucket.v2.RunnerArgs.known_public_gerrit_hosts', index=6,
+      number=7, type=9, cpp_type=9, label=3,
+      has_default_value=False, default_value=[],
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='luci_system_account', full_name='buildbucket.v2.RunnerArgs.luci_system_account', index=7,
+      number=8, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
@@ -242,7 +124,7 @@ _RUNNERARGS = _descriptor.Descriptor(
   ],
   extensions=[
   ],
-  nested_types=[_RUNNERARGS_GITAUTH, _RUNNERARGS_DISABLABLE, _RUNNERARGS_AUTH, ],
+  nested_types=[],
   enum_types=[
   ],
   serialized_options=None,
@@ -252,18 +134,10 @@ _RUNNERARGS = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=85,
-  serialized_end=635,
+  serialized_end=308,
 )
 
-_RUNNERARGS_GITAUTH.containing_type = _RUNNERARGS
-_RUNNERARGS_DISABLABLE.containing_type = _RUNNERARGS
-_RUNNERARGS_AUTH.fields_by_name['git'].message_type = _RUNNERARGS_GITAUTH
-_RUNNERARGS_AUTH.fields_by_name['dev_shell'].message_type = _RUNNERARGS_DISABLABLE
-_RUNNERARGS_AUTH.fields_by_name['docker'].message_type = _RUNNERARGS_DISABLABLE
-_RUNNERARGS_AUTH.fields_by_name['firebase'].message_type = _RUNNERARGS_DISABLABLE
-_RUNNERARGS_AUTH.containing_type = _RUNNERARGS
 _RUNNERARGS.fields_by_name['build'].message_type = build__pb2._BUILD
-_RUNNERARGS.fields_by_name['auth'].message_type = _RUNNERARGS_AUTH
 DESCRIPTOR.message_types_by_name['BuildSecrets'] = _BUILDSECRETS
 DESCRIPTOR.message_types_by_name['RunnerArgs'] = _RUNNERARGS
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
@@ -276,35 +150,11 @@ BuildSecrets = _reflection.GeneratedProtocolMessageType('BuildSecrets', (_messag
 _sym_db.RegisterMessage(BuildSecrets)
 
 RunnerArgs = _reflection.GeneratedProtocolMessageType('RunnerArgs', (_message.Message,), dict(
-
-  GitAuth = _reflection.GeneratedProtocolMessageType('GitAuth', (_message.Message,), dict(
-    DESCRIPTOR = _RUNNERARGS_GITAUTH,
-    __module__ = 'launcher_pb2'
-    # @@protoc_insertion_point(class_scope:buildbucket.v2.RunnerArgs.GitAuth)
-    ))
-  ,
-
-  Disablable = _reflection.GeneratedProtocolMessageType('Disablable', (_message.Message,), dict(
-    DESCRIPTOR = _RUNNERARGS_DISABLABLE,
-    __module__ = 'launcher_pb2'
-    # @@protoc_insertion_point(class_scope:buildbucket.v2.RunnerArgs.Disablable)
-    ))
-  ,
-
-  Auth = _reflection.GeneratedProtocolMessageType('Auth', (_message.Message,), dict(
-    DESCRIPTOR = _RUNNERARGS_AUTH,
-    __module__ = 'launcher_pb2'
-    # @@protoc_insertion_point(class_scope:buildbucket.v2.RunnerArgs.Auth)
-    ))
-  ,
   DESCRIPTOR = _RUNNERARGS,
   __module__ = 'launcher_pb2'
   # @@protoc_insertion_point(class_scope:buildbucket.v2.RunnerArgs)
   ))
 _sym_db.RegisterMessage(RunnerArgs)
-_sym_db.RegisterMessage(RunnerArgs.GitAuth)
-_sym_db.RegisterMessage(RunnerArgs.Disablable)
-_sym_db.RegisterMessage(RunnerArgs.Auth)
 
 
 DESCRIPTOR._options = None
