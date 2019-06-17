@@ -89,6 +89,18 @@ func newFakeSwarming(server string) *fakeSwarming {
 	}
 }
 
+func newTest(name string, client bool, labels ...string) *build_api.AutotestTest {
+	ee := build_api.AutotestTest_EXECUTION_ENVIRONMENT_SERVER
+	if client {
+		ee = build_api.AutotestTest_EXECUTION_ENVIRONMENT_CLIENT
+	}
+	deps := make([]*build_api.AutotestTaskDependency, len(labels))
+	for i, lab := range labels {
+		deps[i] = &build_api.AutotestTaskDependency{Label: lab}
+	}
+	return &build_api.AutotestTest{Name: name, ExecutionEnvironment: ee, Dependencies: deps}
+}
+
 func TestLaunchAndWaitTest(t *testing.T) {
 	Convey("Given two enumerated test", t, func() {
 		ctx := context.Background()
@@ -96,7 +108,7 @@ func TestLaunchAndWaitTest(t *testing.T) {
 		swarming := newFakeSwarming("")
 
 		var tests []*build_api.AutotestTest
-		tests = append(tests, &build_api.AutotestTest{}, &build_api.AutotestTest{})
+		tests = append(tests, newTest("", false), newTest("", true))
 
 		Convey("when running a skylab execution", func() {
 			run := skylab.NewTaskSet(tests, &test_platform.Request_Params{})
@@ -126,7 +138,7 @@ func TestServiceError(t *testing.T) {
 		ctx := context.Background()
 		swarming := newFakeSwarming("")
 
-		tests := []*build_api.AutotestTest{{}}
+		tests := []*build_api.AutotestTest{newTest("", false)}
 		run := skylab.NewTaskSet(tests, &test_platform.Request_Params{})
 
 		Convey("when the swarming service immediately returns errors, that error is surfaced as a launch error.", func() {
@@ -153,7 +165,7 @@ func TestTaskURL(t *testing.T) {
 		ctx := context.Background()
 		swarming_service := "https://foo.bar.com/"
 		swarming := newFakeSwarming(swarming_service)
-		tests := []*build_api.AutotestTest{{}}
+		tests := []*build_api.AutotestTest{newTest("", false)}
 		run := skylab.NewTaskSet(tests, &test_platform.Request_Params{})
 		run.LaunchAndWait(ctx, swarming)
 
@@ -173,7 +185,7 @@ func TestIncompleteWait(t *testing.T) {
 		swarming := newFakeSwarming("")
 		swarming.setTaskState(jsonrpc.TaskState_RUNNING)
 
-		tests := []*build_api.AutotestTest{{}}
+		tests := []*build_api.AutotestTest{newTest("", false)}
 		run := skylab.NewTaskSet(tests, &test_platform.Request_Params{})
 
 		wg := sync.WaitGroup{}
@@ -200,18 +212,12 @@ func TestIncompleteWait(t *testing.T) {
 }
 
 func TestRequestArguments(t *testing.T) {
-	Convey("Given test metadata with certain parameters", t, func() {
+	Convey("Given a server test with autotest labels", t, func() {
 		ctx := context.Background()
 		swarming := newFakeSwarming("")
 
 		tests := []*build_api.AutotestTest{
-			{
-				Name: "name1",
-				Dependencies: []*build_api.AutotestTaskDependency{
-					{Label: "board:foo_board"},
-					{Label: "model:foo_model"},
-				},
-			},
+			newTest("name1", false, "board:foo_board", "model:foo_model"),
 		}
 
 		run := skylab.NewTaskSet(tests, &test_platform.Request_Params{})
@@ -228,6 +234,7 @@ func TestRequestArguments(t *testing.T) {
 			slice := create.TaskSlices[0]
 			flatCommand := strings.Join(slice.Properties.Command, " ")
 			So(flatCommand, ShouldContainSubstring, "-task-name name1")
+			So(flatCommand, ShouldNotContainSubstring, "-client-test")
 
 			flatDimensions := make([]string, len(slice.Properties.Dimensions))
 			for i, d := range slice.Properties.Dimensions {
@@ -235,6 +242,29 @@ func TestRequestArguments(t *testing.T) {
 			}
 			So(flatDimensions, ShouldContain, "label-board:foo_board")
 			So(flatDimensions, ShouldContain, "label-model:foo_model")
+		})
+	})
+}
+
+func TestClientTestArg(t *testing.T) {
+	Convey("Given a client test", t, func() {
+		ctx := context.Background()
+		swarming := newFakeSwarming("")
+
+		tests := []*build_api.AutotestTest{
+			newTest("name1", true, "board:foo_board", "model:foo_model"),
+		}
+
+		run := skylab.NewTaskSet(tests, &test_platform.Request_Params{})
+		run.LaunchAndWait(ctx, swarming)
+
+		Convey("the launched task request should have correct parameters.", func() {
+			So(swarming.createCalls, ShouldHaveLength, 1)
+			create := swarming.createCalls[0]
+			So(create.TaskSlices, ShouldHaveLength, 1)
+			slice := create.TaskSlices[0]
+			flatCommand := strings.Join(slice.Properties.Command, " ")
+			So(flatCommand, ShouldContainSubstring, "-client-test")
 		})
 	})
 }

@@ -84,11 +84,27 @@ func (r *TaskSet) LaunchAndWait(ctx context.Context, swarming Swarming) error {
 	return r.wait(ctx, swarming)
 }
 
+var isClientTest = map[build_api.AutotestTest_ExecutionEnvironment]bool{
+	build_api.AutotestTest_EXECUTION_ENVIRONMENT_CLIENT: true,
+	build_api.AutotestTest_EXECUTION_ENVIRONMENT_SERVER: false,
+}
+
 func (r *TaskSet) launch(ctx context.Context, swarming Swarming) error {
 	for _, testRun := range r.testRuns {
 		t := testRun.test
+
+		// TODO(akeshet): move everything from here to args construction to a
+		// method on testRun.
+		isClient, ok := isClientTest[t.ExecutionEnvironment]
+		if !ok {
+			return errors.Reason("unknown exec environment %s for task named %s", t.ExecutionEnvironment, t.Name).Err()
+		}
+
 		// TODO(akeshet): Run cmd.Config() with correct environment.
-		cmd := &worker.Command{TaskName: t.Name}
+		cmd := &worker.Command{
+			TaskName:   t.Name,
+			ClientTest: isClient,
+		}
 
 		args := request.Args{
 			Cmd:               *cmd,
