@@ -157,30 +157,32 @@ func (b *BatchRunner) runRequestsInBatches(store *Store) {
 		nb.append(r)
 		<-b.tBatchWait
 
-		// Read from b.requests and enqueue as many as possible, without blocking.
-	enqueue:
-		for {
-			select {
-			case r := <-b.requests:
-				if r == nil {
-					// Requests channel is closed.
-					break enqueue
-				}
-				nb.append(r)
-				<-b.tBatchWait
-			default:
-				// Block on b.requests reads if we are in a test fixgure and
-				// are currently waiting on requests to be batched.
-				if !b.tWait {
-					break enqueue
-				}
-			}
-		}
+		b.collectForBatch(nb)
 
 		nb.executeAndClose(ctx, store)
 	}
 	// No more requests, close batches channel.
 	close(b.closed)
+}
+
+func (b *BatchRunner) collectForBatch(nb *batch) {
+	for {
+		select {
+		case r := <-b.requests:
+			if r == nil {
+				// Requests channel is closed, stop collecting.
+				return
+			}
+			nb.append(r)
+			<-b.tBatchWait
+		default:
+			// Stop collecting, unless we are in a test test fixture and
+			// waiting for additional requests.
+			if !b.tWait {
+				return
+			}
+		}
+	}
 }
 
 // closeFixtureChannels closes all the channels related to the test fixture
