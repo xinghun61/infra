@@ -1,0 +1,75 @@
+// Copyright 2019 The LUCI Authors. All rights reserved.
+// Use of this source code is governed under the Apache License, Version 2.0
+// that can be found in the LICENSE file.
+
+syntax = "proto3";
+
+import "google/protobuf/timestamp.proto";
+
+package drone_queen;
+
+option go_package = "api";
+
+service DroneQueen {
+  // ReportDrone is called by drones to report liveness and get DUT
+  // assignments.
+  //
+  // See the README for details on the contract that the drone must
+  // follow.
+  rpc ReportDrone(ReportDroneRequest) returns (ReportDroneResponse);
+
+  // ReportDrone is called by drones to release ownership of DUTs.
+  rpc ReleaseDuts(ReleaseDutsRequest) returns (ReleaseDutsResponse);
+
+  // DeclareDuts tells the service all of the DUTs available to assign
+  // to drones.
+  rpc DeclareDuts(DeclareDutsRequest) returns (DeclareDutsResponse);
+}
+
+message ReportDroneRequest {
+  // drone_uuid is the UUID assigned to the drone.  New drones should
+  // leave this empty; a new UUID will be assigned to the drone.
+  string drone_uuid = 1;
+  // load_indicators are used for load balancing.
+  LoadIndicators load_indicators = 2;
+  message LoadIndicators {
+    // dut_capacity is a simple load indicator that indicates how many
+    // total DUTs the drone can support.
+    uint32 dut_capacity = 1;
+  }
+}
+message ReportDroneResponse {
+  // status reports the status of the call.  It is important to check
+  // this for errors.
+  Status status = 1;
+  enum Status {
+    UNKNOWN_ERROR = 0;
+    OK = 1;
+    UNKNOWN_UUID = 2;
+  }
+  // drone_uuid is the UUID assigned to the drone.  If drone_uuid was
+  // set in the request, this field will either have the same value or
+  // be omitted.
+  string drone_uuid = 2;
+  // expiration_time is when the current assignment expires.
+  google.protobuf.Timestamp expiration_time = 3;
+  // assigned_duts are the DUTs assigned to the drone.
+  repeated string assigned_duts = 4;
+  // draining_duts are the DUTs that the drone should drain.  This is
+  // always a subset of assigned_duts.
+  repeated string draining_duts = 5;
+}
+
+message ReleaseDutsRequest {
+  // drone_uuid is the UUID assigned to the drone.
+  string drone_uuid = 1;
+  // duts to release.
+  repeated string duts = 2;
+}
+message ReleaseDutsResponse {}
+
+message DeclareDutsRequest {
+  // duts is all of the DUTs to be made available to drones.
+  repeated string duts = 1;
+}
+message DeclareDutsResponse {}
