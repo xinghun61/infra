@@ -175,16 +175,15 @@ def _validate_recipe_cfg(recipe, ctx, final=True):
   validate_recipe_properties(recipe.properties, recipe.properties_j, ctx)
 
 
-def validate_recipe_property(key, value, ctx, allow_reserved=False):
+def validate_recipe_property(key, value, ctx):
   if not key:
     ctx.error('key not specified')
   elif key == 'buildbucket':
-    if not allow_reserved:  # pragma: no branch
-      ctx.error('reserved property')
+    ctx.error('reserved property')
   elif key == '$recipe_engine/runtime':
     if not isinstance(value, dict):
       ctx.error('not a JSON object')
-    elif not allow_reserved:  # pragma: no branch
+    else:
       for k in ('is_luci', 'is_experimental'):
         if k in value:
           ctx.error('key %r: reserved key', k)

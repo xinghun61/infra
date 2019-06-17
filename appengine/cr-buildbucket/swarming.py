@@ -141,16 +141,6 @@ def _get_task_template(canary):
   return revision, template
 
 
-def validate_input_properties(properties, allow_reserved=False):
-  """Raises errors.InvalidInputError if properties are invalid."""
-  ctx = validation.Context.raise_on_error(exc_type=errors.InvalidInputError)
-  for k, v in sorted(bbutil.struct_to_dict(properties).iteritems()):
-    with ctx.prefix('property %r:', k):
-      swarmingcfg_module.validate_recipe_property(
-          k, v, ctx, allow_reserved=allow_reserved
-      )
-
-
 # Mocked in tests.
 def _should_use_canary_template(percentage):  # pragma: no cover
   """Returns True if a canary template should be used.
@@ -232,17 +222,11 @@ def _create_task_def(build, fake_build):
   https://chromium.googlesource.com/chromium/tools/build/+/eff4ceb/scripts/master/buildbucket/README.md#Build-parameters
 
   Mutates build.proto.infra.swarming and build.canary.
-
-  Raises:
-    errors.InvalidInputError if build.parameters are invalid.
   """
   assert isinstance(build, model.Build), type(build)
   assert build.key and build.key.id(), build.key
   assert build.url, 'build.url should have been initialized'
   assert isinstance(fake_build, bool), type(fake_build)
-  validate_input_properties(
-      build.proto.input.properties, allow_reserved=bool(build.retry_of)
-  )
 
   task_template_rev, task_template = _get_task_template(build.canary)
 
@@ -391,7 +375,7 @@ def _setup_swarming_request_task_slices(build, extra_cipd_packages, task):
   dimensions.
   """
   # TODO(maruel): Use textproto once https://crbug.com/913953 is done.
-  expected = frozenset((
+  unexpected = set(task) - {
       '__comment__',
       'name',
       'pool_task_template',
@@ -399,20 +383,18 @@ def _setup_swarming_request_task_slices(build, extra_cipd_packages, task):
       'service_account',
       'tags',
       'task_slices',
-  ))
-  if set(task) - expected:
-    raise errors.InvalidInputError(
-        'Unexpected task keys: %s' % sorted(set(task) - expected)
-    )
+  }
+  assert not unexpected, 'Unexpected task keys: %s' % unexpected
 
   assert len(task[u'task_slices']) == 1, task[u'task_slices']
   base_slice = task[u'task_slices'][0]
 
-  expected = frozenset(('expiration_secs', 'properties', 'wait_for_capacity'))
-  if set(base_slice) - expected:
-    raise errors.InvalidInputError(
-        'Unexpected slice keys: %s' % sorted(set(base_slice) - expected)
-    )
+  unexpected = set(base_slice) - {
+      'expiration_secs',
+      'properties',
+      'wait_for_capacity',
+  }
+  assert not unexpected, 'Unexpected slice keys: %s' % unexpected
 
   base_slice[u'expiration_secs'] = str(build.proto.scheduling_timeout.seconds)
 
@@ -423,10 +405,7 @@ def _setup_swarming_request_task_slices(build, extra_cipd_packages, task):
   )
 
   if dims:
-    if len(dims) > 6:
-      raise errors.InvalidInputError(
-          'Too many (%d > 6) TaskSlice fallbacks' % len(dims)
-      )
+    assert len(dims) <= 6
     # Create a fallback by copying the original task slice, each time adding the
     # corresponding expiration.
     task[u'task_slices'] = []
@@ -469,7 +448,7 @@ def _setup_swarming_props(build, extra_cipd_packages, props):
     dict {expiration_sec: [{'key': key, 'value': value}]} to support caches.
     This is different than the format in flatten_swarmingcfg.parse_dimensions().
   """
-  expected = frozenset((
+  unexpected = set(props) - {
       'caches',
       'cipd_input',
       'command',
@@ -477,11 +456,8 @@ def _setup_swarming_props(build, extra_cipd_packages, props):
       'env_prefixes',
       'execution_timeout_secs',
       'extra_args',
-  ))
-  if set(props) - expected:
-    raise errors.InvalidInputError(
-        'Unexpected properties keys: %s' % sorted(set(props) - expected)
-    )
+  }
+  assert not unexpected, 'Unexpected property keys: %s' % unexpected
 
   props.setdefault('env', []).append({
       'key': 'BUILDBUCKET_EXPERIMENTAL',
@@ -563,6 +539,24 @@ def _setup_swarming_request_pubsub(task, build):
   )
 
 
+def validate_build(build):
+  """Raises errors.InvalidInputError if swarming constraints are violated."""
+  if build.lease_key:
+    raise errors.InvalidInputError(
+        'Swarming buckets do not support creation of leased builds'
+    )
+
+  expirations = set()
+  for dim in build.proto.infra.swarming.task_dimensions:
+    assert not dim.expiration.nanos
+    expirations.add(dim.expiration.seconds)
+
+  if len(expirations) > 6:
+    raise errors.InvalidInputError(
+        'swarming supports up to 6 unique expirations'
+    )
+
+
 def prepare_task_def(build, settings, fake_build=False):
   """Prepares a swarming task definition.
 
@@ -572,11 +566,6 @@ def prepare_task_def(build, settings, fake_build=False):
 
   Returns a task_def dict.
   """
-  if build.lease_key:
-    raise errors.InvalidInputError(
-        'Swarming buckets do not support creation of leased builds'
-    )
-
   build.url = _generate_build_url(settings.milo_hostname, build)
   task_def = _create_task_def(build, fake_build)
   return task_def
@@ -586,7 +575,12 @@ def create_sync_task(build):  # pragma: no cover
   """Returns def of a push task that maintains build state until it ends.
 
   Handled by TaskSyncBuild.
+
+  Raises:
+    errors.InvalidInputError if the build is invalid.
   """
+  validate_build(build)
+
   payload = {
       'id': build.key.id(),
       'generation': 0,

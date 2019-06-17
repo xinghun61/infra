@@ -270,20 +270,6 @@ class TaskDefTest(BaseTest):
     self.assertEqual(1, len(slices))
     self.assertEqual(slices[0]['expiration_secs'], '120')
 
-  def test_too_many_dimensions(self):
-    build = self._test_build(
-        infra=dict(
-            swarming=dict(
-                task_dimensions=[
-                    dict(key='a', value='1', expiration=dict(seconds=i * 60))
-                    for i in xrange(8)
-                ]
-            )
-        ),
-    )
-    with self.assertRaises(errors.InvalidInputError):
-      self.prepare_task_def(build)
-
   def test_properties(self):
     self.patch(
         'components.auth.get_current_identity',
@@ -580,33 +566,6 @@ class TaskDefTest(BaseTest):
     actual = self.prepare_task_def(build)
     self.assertTrue(actual['name'].endswith('-canary'))
 
-  def test_unexpected_template_task_key(self):
-    # Unexpected task key.
-    build = self._test_build()
-    self.task_template['unexpected_key'] = True
-    with self.assertRaises(errors.InvalidInputError):
-      self.prepare_task_def(build)
-
-  def test_unexpected_template_slices_key(self):
-    # Unexpected task key.
-    build = self._test_build()
-    self.task_template['task_slices'][0]['unexpected_key'] = True
-    with self.assertRaises(errors.InvalidInputError):
-      self.prepare_task_def(build)
-
-  def test_unexpected_template_properties_key(self):
-    # Unexpected task key.
-    build = self._test_build()
-    self.task_template['task_slices'][0]['properties']['unexpected_key'] = True
-    with self.assertRaises(errors.InvalidInputError):
-      self.prepare_task_def(build)
-
-  def test_on_leased_build(self):
-    build = self._test_build()
-    build.lease_key = 12345
-    with self.assertRaises(errors.InvalidInputError):
-      self.prepare_task_def(build)
-
   def test_generate_build_url(self):
     build = self._test_build(id=1)
     self.assertEqual(
@@ -764,6 +723,38 @@ class CancelTest(BaseTest):
 
 
 class SyncBuildTest(BaseTest):
+
+  def test_validate(self):
+    build = test_util.build()
+    swarming.validate_build(build)
+
+  def test_validate_lease_key(self):
+    build = test_util.build()
+    build.lease_key = 123
+    with self.assertRaises(errors.InvalidInputError):
+      swarming.validate_build(build)
+
+  @parameterized.expand([
+      (
+          dict(
+              infra=dict(
+                  swarming=dict(
+                      task_dimensions=[
+                          dict(
+                              key='a',
+                              value='b',
+                              expiration=dict(seconds=60 * i)
+                          ) for i in xrange(7)
+                      ],
+                  ),
+              ),
+          ),
+      ),
+  ])
+  def test_validate_fails(self, build_params):
+    build = test_util.build(for_creation=True, **build_params)
+    with self.assertRaises(errors.InvalidInputError):
+      swarming.validate_build(build)
 
   @parameterized.expand([
       ({

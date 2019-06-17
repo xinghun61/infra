@@ -142,6 +142,10 @@ def validate_known_build_parameters(params):
   """Raises errors.InvalidInputError if LUCI build parameters are invalid."""
   params = copy.deepcopy(params)
 
+  ctx = config_validation.Context.raise_on_error(
+      exc_type=errors.InvalidInputError
+  )
+
   def bad(fmt, *args):
     raise errors.InvalidInputError(fmt % args)
 
@@ -149,7 +153,7 @@ def validate_known_build_parameters(params):
     if not isinstance(value, dict):
       bad('%s parameter must be an object' % name)
 
-  changes = params.pop(_PARAM_CHANGES, None)
+  changes = params.get(_PARAM_CHANGES)
   if changes is not None:
     if not isinstance(changes, list):
       bad('changes param must be an array')
@@ -168,7 +172,7 @@ def validate_known_build_parameters(params):
       if not email:
         bad('change author email not specified')
 
-  swarming = params.pop(_PARAM_SWARMING, None)
+  swarming = params.get(_PARAM_SWARMING)
   if swarming is not None:
     assert_object('swarming', swarming)
     swarming = copy.deepcopy(swarming)
@@ -197,14 +201,17 @@ def validate_known_build_parameters(params):
         )
       if 'pool:' in override_builder_cfg.dimensions:
         bad('swarming.override_builder_cfg cannot remove pool dimension')
-      ctx = config_validation.Context.raise_on_error(
-          exc_type=errors.InvalidInputError,
-          prefix='swarming.override_builder_cfg parameter: '
-      )
-      swarmingcfg.validate_builder_cfg(override_builder_cfg, [], False, ctx)
+      with ctx.prefix('swarming.override_builder_cfg parameter: '):
+        swarmingcfg.validate_builder_cfg(override_builder_cfg, [], False, ctx)
 
     if swarming:
       bad('unrecognized keys in swarming param: %r', swarming.keys())
+
+  properties = params.get('properties')
+  if properties:
+    for k, v in sorted(properties.iteritems()):
+      with ctx.prefix('property %r:', k):
+        swarmingcfg.validate_recipe_property(k, v, ctx)
 
 
 def put_request_message_to_build_request(put_request):
