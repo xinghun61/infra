@@ -45,7 +45,9 @@ class ShowFlakeTest(WaterfallTestCase):
                      response.json_body.get('error_message'))
 
   @mock.patch.object(time_util, 'GetUTCNow', return_value=datetime(2018, 1, 3))
-  def testShowFlake(self, _):
+  @mock.patch.object(
+      time_util, 'GetDateDaysBeforeNow', return_value=datetime(2017, 12, 27))
+  def testShowFlake(self, *_):
     flake_issue = FlakeIssue.Create(monorail_project='chromium', issue_id=900)
     flake_issue.last_updated_time_by_flake_detection = datetime(2018, 1, 1)
     flake_issue.status = 'Assigned'

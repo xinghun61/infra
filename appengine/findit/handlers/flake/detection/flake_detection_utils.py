@@ -19,6 +19,7 @@ from model.flake.flake import TAG_DELIMITER
 from model.flake.flake_issue import FlakeIssue
 from model.flake.flake_type import FlakeType
 from model.flake.flake_type import FLAKE_TYPE_DESCRIPTIONS
+from services import constants
 from services.flake_detection.detect_flake_occurrences import SUPPORTED_TAGS
 from services.flake_failure.flake_bug_util import (
     GetMinimumConfidenceToUpdateEndpoints)
@@ -209,7 +210,7 @@ def _GetFlakeAnalysesResults(bug_id):
 
 
 def _FetchFlakeOccurrences(flake, flake_type, max_occurrence_count):
-  """Fetches flake occurrences of a certain type.
+  """Fetches flake occurrences of a certain type within a time range.
 
   Args:
     flake(Flake): Flake object for a flaky test.
@@ -219,13 +220,31 @@ def _FetchFlakeOccurrences(flake, flake_type, max_occurrence_count):
   Returns:
     (list): A list of occurrences.
   """
+  start_date = time_util.GetDateDaysBeforeNow(days=constants.DAYS_IN_A_WEEK)
   occurrences_query = FlakeOccurrence.query(ancestor=flake.key).filter(
-      FlakeOccurrence.flake_type == flake_type).order(
-          -FlakeOccurrence.time_happened)
+      ndb.AND(FlakeOccurrence.flake_type == flake_type,
+              FlakeOccurrence.time_happened >
+              start_date)).order(-FlakeOccurrence.time_happened)
+
+  occurrences_query_old_flakes = FlakeOccurrence.query(
+      ancestor=flake.key).filter(FlakeOccurrence.flake_type == flake_type
+                                ).order(-FlakeOccurrence.time_happened)
 
   if max_occurrence_count:
-    return occurrences_query.fetch(max_occurrence_count)
-  return occurrences_query.fetch()
+    flake_occurrences = occurrences_query.fetch(max_occurrence_count)
+
+    # No occurrences in the past 7 days.
+    if not flake_occurrences:
+      flake_occurrences = occurrences_query_old_flakes.fetch(
+          max_occurrence_count)
+  else:
+    flake_occurrences = occurrences_query.fetch()
+
+    # No occurrences in the past 7 days.
+    if not flake_occurrences:
+      flake_occurrences = occurrences_query_old_flakes.fetch()
+
+  return flake_occurrences
 
 
 def _GetLastUpdatedTimeDelta(flake_issue):
