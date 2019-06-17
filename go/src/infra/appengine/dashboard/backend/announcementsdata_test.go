@@ -10,9 +10,11 @@ import (
 	"testing"
 	"time"
 
+	"github.com/golang/protobuf/ptypes"
 	"github.com/golang/protobuf/ptypes/timestamp"
 	"go.chromium.org/gae/service/datastore"
 	"go.chromium.org/luci/common/clock/testclock"
+	"golang.org/x/net/context"
 
 	. "github.com/smartystreets/goconvey/convey"
 )
@@ -30,6 +32,16 @@ var cowFieldPlat = &Platform{Name: "field"}
 var cowPlats = []*Platform{cowBarnPlat, cowFieldPlat}
 
 var foxPlats = []*Platform{{Name: "forest"}}
+
+var closer = "closer@test.com"
+
+func retireAnnouncementTesting(ctx context.Context, annProto *dashpb.Announcement) {
+	recentTS, _ := ptypes.TimestampProto(testclock.TestRecentTimeUTC.Round(time.Microsecond))
+	RetireAnnouncement(ctx, annProto.Id, closer)
+	annProto.Retired = true
+	annProto.Closer = closer
+	annProto.EndTime = recentTS
+}
 
 func TestConvertAnnouncement(t *testing.T) {
 	startTS := int64(764797594)
@@ -144,7 +156,7 @@ func TestCreateLiveAnnouncement(t *testing.T) {
 func TestSearchAnnouncements(t *testing.T) {
 	ctx := newTestContext()
 	foxProto, _ := CreateLiveAnnouncement(ctx, foxAnn.Message, foxAnn.Creator, foxPlats)
-	RetireAnnouncement(ctx, foxProto.Id)
+	retireAnnouncementTesting(ctx, foxProto)
 
 	cowProto, _ := CreateLiveAnnouncement(ctx, cowAnn.Message, cowAnn.Creator, cowPlats)
 	chickenProto, _ := CreateLiveAnnouncement(ctx, chickenAnn.Message, chickenAnn.Creator, chickenPlats)
@@ -167,17 +179,14 @@ func TestSearchAnnouncements(t *testing.T) {
 		})
 	})
 	Convey("SearchAnnouncements retired", t, func() {
-		RetireAnnouncement(ctx, cowProto.Id)
-		cowProto.Retired = true
-		foxProto.Retired = true
+		retireAnnouncementTesting(ctx, cowProto)
 		Convey("get all retired announcements", func() {
 			anns, err := SearchAnnouncements(ctx, "", true, -1, -1)
 			So(err, ShouldBeNil)
 			So(anns, ShouldResemble, []*dashpb.Announcement{foxProto, cowProto})
 		})
 		Convey("get limited and offset retired announcements", func() {
-			RetireAnnouncement(ctx, chickenProto.Id)
-			chickenProto.Retired = true
+			retireAnnouncementTesting(ctx, chickenProto)
 			anns, err := SearchAnnouncements(ctx, "", true, 3, 1)
 			So(err, ShouldBeNil)
 			So(anns, ShouldResemble, []*dashpb.Announcement{cowProto, chickenProto})
@@ -196,11 +205,14 @@ func TestSearchAnnouncements(t *testing.T) {
 func TestRetireAnnouncement(t *testing.T) {
 	ctx := newTestContext()
 	cowProto, _ := CreateLiveAnnouncement(ctx, cowAnn.Message, cowAnn.Creator, cowPlats)
+	recentTime := testclock.TestRecentTimeUTC.Round(time.Microsecond)
 	Convey("RetireAnnouncement", t, func() {
-		err := RetireAnnouncement(ctx, cowProto.Id)
+		err := RetireAnnouncement(ctx, cowProto.Id, closer)
 		So(err, ShouldBeNil)
 		announcement := &Announcement{ID: cowProto.Id}
 		datastore.Get(ctx, announcement)
 		So(announcement.Retired, ShouldBeTrue)
+		So(announcement.Closer, ShouldEqual, closer)
+		So(announcement.EndTime, ShouldResemble, recentTime)
 	})
 }

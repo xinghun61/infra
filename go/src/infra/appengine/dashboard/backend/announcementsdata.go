@@ -24,6 +24,7 @@ type Announcement struct {
 	EndTime       time.Time
 	Message       string
 	Creator       string
+	Closer        string
 	PlatformNames []string
 }
 
@@ -51,6 +52,7 @@ func (a *Announcement) ToProto(platforms []*Platform) (*dashpb.Announcement, err
 		Id:             a.ID,
 		MessageContent: a.Message,
 		Creator:        a.Creator,
+		Closer:         a.Closer,
 		Retired:        a.Retired,
 		Platforms:      ConvertPlatforms(platforms),
 	}
@@ -191,13 +193,16 @@ func GetAllAnnouncementsPlatforms(c context.Context, announcements []*Announceme
 // RetireAnnouncement sets a given announcement's retired to true.
 //
 // It returns nil on success and err on datastore errors.
-func RetireAnnouncement(c context.Context, announcementID int64) error {
+func RetireAnnouncement(c context.Context, announcementID int64, closer string) error {
 	announcement := &Announcement{ID: announcementID}
 	return datastore.RunInTransaction(c, func(c context.Context) error {
 		if err := datastore.Get(c, announcement); err != nil {
 			return fmt.Errorf("error getting Announcement - %s", err)
 		}
 		announcement.Retired = true
+		// datastore will only store timestamps precise to microseconds.
+		announcement.EndTime = clock.Now(c).UTC().Truncate(time.Microsecond)
+		announcement.Closer = closer
 		if err := datastore.Put(c, announcement); err != nil {
 			return fmt.Errorf("error saving Announcement - %s", err)
 		}

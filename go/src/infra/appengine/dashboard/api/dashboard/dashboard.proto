@@ -107,4 +107,6 @@ message Announcement {
   // and should not be displayed in platforms.
   bool retired = 6;
   repeated Platform platforms = 7;
+  // The user who retires the announcement.
+  string closer = 8;
 }

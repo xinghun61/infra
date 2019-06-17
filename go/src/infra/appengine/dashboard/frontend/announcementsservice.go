@@ -71,7 +71,8 @@ func (s *announcementsServiceImpl) RetireAnnouncement(ctx context.Context, req *
 	if req.AnnouncementId == 0 {
 		return nil, status.Error(codes.InvalidArgument, "Id field was empty")
 	}
-	err := backend.RetireAnnouncement(ctx, req.AnnouncementId)
+	userIdentity := auth.CurrentIdentity(ctx)
+	err := backend.RetireAnnouncement(ctx, req.AnnouncementId, string(userIdentity))
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "error retiring announcement - %s", err)
 	}
