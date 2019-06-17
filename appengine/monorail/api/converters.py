@@ -348,6 +348,10 @@ def ConvertIssue(issue, users_by_id, related_refs, config):
       for dangling_issue in issue.dangling_blocked_on_refs]
   blocking_issue_refs = ConvertIssueRefs(
       issue.blocking_iids, related_refs)
+  dangling_blocking_refs = [
+      ConvertIssueRef((dangling_issue.project, dangling_issue.issue_id),
+          ext_id=dangling_issue.ext_issue_identifier)
+      for dangling_issue in issue.dangling_blocking_refs]
   merged_into_issue_ref = None
   if issue.merged_into:
     merged_into_issue_ref = ConvertIssueRef(related_refs[issue.merged_into])
@@ -366,6 +370,7 @@ def ConvertIssue(issue, users_by_id, related_refs, config):
       blocked_on_issue_refs=blocked_on_issue_refs,
       dangling_blocked_on_refs=dangling_blocked_on_refs,
       blocking_issue_refs=blocking_issue_refs,
+      dangling_blocking_refs=dangling_blocking_refs,
       merged_into_issue_ref=merged_into_issue_ref, field_values=field_values,
       is_deleted=issue.deleted, reporter_ref=reporter_ref,
       opened_timestamp=issue.opened_timestamp,

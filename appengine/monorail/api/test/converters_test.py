@@ -528,6 +528,8 @@ class ConverterFunctionsTest(unittest.TestCase):
         ]
     issue.dangling_blocked_on_refs = [
         tracker_pb2.DanglingIssueRef(project='dangling_proj', issue_id=1234)]
+    issue.dangling_blocking_refs = [
+        tracker_pb2.DanglingIssueRef(project='dangling_proj', issue_id=5678)]
 
     actual = converters.ConvertIssue(
         issue, self.users_by_id, related_refs_dict, self.config)
@@ -566,6 +568,8 @@ class ConverterFunctionsTest(unittest.TestCase):
         attachment_count=0,
         dangling_blocked_on_refs=[
             common_pb2.IssueRef(project_name='dangling_proj', local_id=1234)],
+        dangling_blocking_refs=[
+            common_pb2.IssueRef(project_name='dangling_proj', local_id=5678)],
         phases=[
             issue_objects_pb2.PhaseDef(
               phase_ref=issue_objects_pb2.PhaseRef(phase_name='Dev'),

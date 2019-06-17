@@ -98,7 +98,7 @@ message FieldValue {
 }
 
 
-// Next available tag: 24
+// Next available tag: 25
 message Issue {
   string project_name = 1;
   uint32 local_id = 2;
@@ -111,6 +111,7 @@ message Issue {
   repeated IssueRef blocked_on_issue_refs = 9;
   repeated IssueRef blocking_issue_refs = 10;
   repeated IssueRef dangling_blocked_on_refs = 23;
+  repeated IssueRef dangling_blocking_refs = 24;
   IssueRef merged_into_issue_ref = 11;
   repeated FieldValue field_values = 12;
   bool is_deleted = 13;
