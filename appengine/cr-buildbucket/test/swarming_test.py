@@ -543,10 +543,6 @@ class TaskDefTest(BaseTest):
         build.proto.infra.swarming.task_service_account, 'robot@example.com'
     )
 
-    self.assertEqual(
-        build.proto.infra.buildbucket.service_config_revision, 'template_rev'
-    )
-
     self.assertNotIn('buildbucket', build.proto.input.properties)
     self.assertNotIn('$recipe_engine/buildbucket', build.proto.input.properties)
 

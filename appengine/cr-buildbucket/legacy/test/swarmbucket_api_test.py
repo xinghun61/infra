@@ -323,7 +323,7 @@ class SwarmbucketApiTest(testing.EndpointsTestCase):
                         },
                         'input': {},
                         'infra': {
-                            'buildbucket': {'serviceConfigRevision': 'rev'},
+                            'buildbucket': {},
                             'swarming': {
                                 'hostname':
                                     'swarming.example.com',

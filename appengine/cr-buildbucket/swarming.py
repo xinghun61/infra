@@ -215,14 +215,7 @@ def _remove_if_tags(task):
 
 
 def _create_task_def(build, fake_build):
-  """Creates a swarming task definition for the |build|.
-
-  Supports build properties that are supported by Buildbot-Buildbucket
-  integration. See
-  https://chromium.googlesource.com/chromium/tools/build/+/eff4ceb/scripts/master/buildbucket/README.md#Build-parameters
-
-  Mutates build.proto.infra.swarming and build.canary.
-  """
+  """Creates a swarming task definition for the |build|."""
   assert isinstance(build, model.Build), type(build)
   assert build.key and build.key.id(), build.key
   assert build.url, 'build.url should have been initialized'
@@ -232,8 +225,6 @@ def _create_task_def(build, fake_build):
 
   bp = build.proto
   sw = bp.infra.swarming
-
-  bp.infra.buildbucket.service_config_revision = task_template_rev
 
   # TODO(nodir): remove builder_hash parameter.
   h = hashlib.sha256(build.builder_id).hexdigest()
@@ -291,8 +282,6 @@ def _create_task_def(build, fake_build):
 def _setup_recipes(build):
   """Initializes a build request using recipes.
 
-  Mutates build.
-
   Returns:
     extra_swarming_tags, extra_cipd_packages, extra_task_template_params
   """
@@ -327,20 +316,13 @@ def _setup_recipes(build):
           cl.host[:-len(suffix)], cl.project
       )
 
-  # Make a copy of properties before setting "buildbucket" property.
-  # They are buildbucket implementation detail, redundant for users of
-  # build proto and take a lot of space.
-  recipe_props = copy.copy(props)
-  recipe_props['$recipe_engine/buildbucket'] = _buildbucket_property(build)
+  props['$recipe_engine/buildbucket'] = _buildbucket_property(build)
   # TODO(nodir): remove legacy "buildbucket" property.
-  recipe_props['buildbucket'] = _buildbucket_property_legacy(build)
+  props['buildbucket'] = _buildbucket_property_legacy(build)
   extra_task_template_params = {
       'recipe': recipe,
-      'properties_json': api_common.properties_to_json(recipe_props),
+      'properties_json': api_common.properties_to_json(props),
       'checkout_dir': _KITCHEN_CHECKOUT,
-      # TODO(iannucci): remove these when the templates no longer have them
-      'repository': '',
-      'revision': '',
   }
   extra_swarming_tags = [
       'recipe_name:%s' % recipe,
@@ -477,7 +459,7 @@ def _setup_swarming_props(build, extra_cipd_packages, props):
 
   props['execution_timeout_secs'] = str(build.proto.execution_timeout.seconds)
 
-  cache_fallbacks = _setup_named_caches(build, props)
+  props['caches'], cache_fallbacks = _setup_named_caches(build)
 
   # out is dict {expiration_secs: [{'key': key, 'value': value}]}
   out = collections.defaultdict(list)
@@ -495,20 +477,15 @@ def _setup_swarming_props(build, extra_cipd_packages, props):
   return out
 
 
-def _setup_named_caches(build, props):
-  """Adds/replaces named caches to/in the Swarming TaskProperties.
-
-  Mutates props.
+def _setup_named_caches(build):
+  """Computes swarming task caches.
 
   Returns:
-    dict {expiration_secs: list(caches)}
+    (cache_list, {expiration_secs: list(caches)}
   """
-  # Ignore caches configured in the swarming task template.
-  # Global caches are now configured in settings.cfg
-  props[u'caches'] = []
-
+  caches = []
   cache_fallbacks = collections.defaultdict(list)
-  # Look for builder specific named caches.
+
   for c in build.proto.infra.swarming.caches:
     if c.path.startswith(u'cache/'):  # pragma: no cover
       # TODO(nodir): remove this code path once clients remove "cache/" from
@@ -516,12 +493,12 @@ def _setup_named_caches(build, props):
       cache_path = c.path
     else:
       cache_path = posixpath.join(_CACHE_DIR, c.path)
-    props[u'caches'].append({u'path': cache_path, u'name': c.name})
+    caches.append({u'path': cache_path, u'name': c.name})
     if c.wait_for_warm_cache.seconds:
       cache_fallbacks[c.wait_for_warm_cache.seconds].append(c.name)
 
-  props[u'caches'].sort(key=lambda p: p.get(u'path'))
-  return cache_fallbacks
+  caches.sort(key=lambda p: p.get(u'path'))
+  return caches, cache_fallbacks
 
 
 def _setup_swarming_request_pubsub(task, build):
