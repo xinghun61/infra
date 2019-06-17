@@ -7,6 +7,7 @@ package request_test
 import (
 	"strings"
 	"testing"
+	"time"
 
 	. "github.com/smartystreets/goconvey/convey"
 
@@ -77,22 +78,22 @@ func TestProvisionableDimensions(t *testing.T) {
 }
 
 func TestSliceExpiration(t *testing.T) {
-	timeOutMins := 11
+	timeout := 11 * time.Minute
 	Convey("Given a request arguments with no provisionable dimensions", t, func() {
 		args := request.Args{
-			TimeoutMins: timeOutMins,
+			Timeout: timeout,
 		}
 		req, err := request.New(args)
 		So(req, ShouldNotBeNil)
 		So(err, ShouldBeNil)
 		Convey("request should have a single slice with provided timeout.", func() {
 			So(req.TaskSlices, ShouldHaveLength, 1)
-			So(req.TaskSlices[0].ExpirationSecs, ShouldEqual, 60*timeOutMins)
+			So(req.TaskSlices[0].ExpirationSecs, ShouldEqual, 60*11)
 		})
 	})
 	Convey("Given a request arguments with provisionable dimensions", t, func() {
 		args := request.Args{
-			TimeoutMins:             timeOutMins,
+			Timeout:                 timeout,
 			ProvisionableDimensions: []string{"k1:v1"},
 		}
 		req, err := request.New(args)
@@ -101,7 +102,7 @@ func TestSliceExpiration(t *testing.T) {
 		Convey("request should have 2 slices, with provided timeout on only the second.", func() {
 			So(req.TaskSlices, ShouldHaveLength, 2)
 			So(req.TaskSlices[0].ExpirationSecs, ShouldBeLessThan, 60*5)
-			So(req.TaskSlices[1].ExpirationSecs, ShouldEqual, 60*timeOutMins)
+			So(req.TaskSlices[1].ExpirationSecs, ShouldEqual, 60*11)
 		})
 	})
 }

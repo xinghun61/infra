@@ -9,6 +9,7 @@ package request
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	swarming "go.chromium.org/luci/common/api/swarming/swarming/v1"
 	"go.chromium.org/luci/common/data/strpair"
@@ -40,14 +41,14 @@ type Args struct {
 	// SchedulableLabels specifies schedulable label requirements that will
 	// be translated to dimensions.
 	SchedulableLabels inventory.SchedulableLabels
-	TimeoutMins       int
+	Timeout           time.Duration
 	Priority          int64
 	ParentTaskID      string
 }
 
 // New creates a new swarming request for the given worker command and parameters.
 func New(args Args) (*swarming.SwarmingRpcsNewTaskRequest, error) {
-	slices, err := getSlices(args.Cmd, args.ProvisionableDimensions, args.Dimensions, args.SchedulableLabels, args.TimeoutMins)
+	slices, err := getSlices(args.Cmd, args.ProvisionableDimensions, args.Dimensions, args.SchedulableLabels, args.Timeout)
 	if err != nil {
 		return nil, errors.Annotate(err, "create request").Err()
 	}
@@ -63,7 +64,7 @@ func New(args Args) (*swarming.SwarmingRpcsNewTaskRequest, error) {
 }
 
 // getSlices generates and returns the set of swarming task slices for the given test task.
-func getSlices(cmd worker.Command, provisionableDimensions []string, dimensions []string, inv inventory.SchedulableLabels, timeoutMins int) ([]*swarming.SwarmingRpcsTaskSlice, error) {
+func getSlices(cmd worker.Command, provisionableDimensions []string, dimensions []string, inv inventory.SchedulableLabels, timeout time.Duration) ([]*swarming.SwarmingRpcsTaskSlice, error) {
 	slices := make([]*swarming.SwarmingRpcsTaskSlice, 1, 2)
 
 	basePairs, _ := stringToPairs("pool:ChromeOSSkylab", "dut_state:ready")
@@ -84,21 +85,21 @@ func getSlices(cmd worker.Command, provisionableDimensions []string, dimensions 
 	}
 
 	s0Dims := append(basePairs, provisionablePairs...)
-	slices[0] = taskSlice(cmd.Args(), s0Dims, timeoutMins)
+	slices[0] = taskSlice(cmd.Args(), s0Dims, timeout)
 
 	if len(provisionableDimensions) != 0 {
 		cmd.ProvisionLabels = provisionDimensionsToLabels(provisionableDimensions)
 		s1Dims := basePairs
-		slices = append(slices, taskSlice(cmd.Args(), s1Dims, timeoutMins))
+		slices = append(slices, taskSlice(cmd.Args(), s1Dims, timeout))
 	}
 
 	finalSlice := slices[len(slices)-1]
-	finalSlice.ExpirationSecs = int64(timeoutMins * 60)
+	finalSlice.ExpirationSecs = int64(timeout.Seconds())
 
 	return slices, nil
 }
 
-func taskSlice(command []string, dimensions []*swarming.SwarmingRpcsStringPair, timeoutMins int) *swarming.SwarmingRpcsTaskSlice {
+func taskSlice(command []string, dimensions []*swarming.SwarmingRpcsStringPair, timeout time.Duration) *swarming.SwarmingRpcsTaskSlice {
 	return &swarming.SwarmingRpcsTaskSlice{
 		// We want all slices to wait, at least a little while, for bots with
 		// metching dimensions.
@@ -116,7 +117,7 @@ func taskSlice(command []string, dimensions []*swarming.SwarmingRpcsStringPair, 
 		Properties: &swarming.SwarmingRpcsTaskProperties{
 			Command:              command,
 			Dimensions:           dimensions,
-			ExecutionTimeoutSecs: int64(timeoutMins * 60),
+			ExecutionTimeoutSecs: int64(timeout.Seconds()),
 		},
 	}
 }

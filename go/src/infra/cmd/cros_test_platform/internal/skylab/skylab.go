@@ -102,7 +102,7 @@ func (r *TaskSet) launch(ctx context.Context, swarming Swarming) error {
 			// TODO(akeshet): Determine tags correctly.
 			SwarmingTags: nil,
 			// TODO(akeshet): Determine timeout correctly.
-			TimeoutMins: 0,
+			Timeout: 0,
 		}
 		req, err := request.New(args)
 		if err != nil {

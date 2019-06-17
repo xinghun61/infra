@@ -147,7 +147,7 @@ func (c *createTestRun) innerRun(a subcommands.Application, args []string, env s
 		ProvisionableDimensions: c.getProvisionableDimensions(),
 		Dimensions:              c.getDimensions(),
 		SchedulableLabels:       c.getLabels(),
-		TimeoutMins:             c.timeoutMins,
+		Timeout:                 time.Duration(c.timeoutMins) * time.Minute,
 		Priority:                int64(c.priority),
 		ParentTaskID:            c.parentTaskID,
 	}
