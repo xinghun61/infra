@@ -143,7 +143,7 @@ func (c *createTestRun) innerRun(a subcommands.Application, args []string, env s
 
 	ra := request.Args{
 		Cmd:                     cmd,
-		Tags:                    tags,
+		SwarmingTags:            tags,
 		ProvisionableDimensions: c.getProvisionableDimensions(),
 		Dimensions:              c.getDimensions(),
 		SchedulableLabels:       c.getLabels(),

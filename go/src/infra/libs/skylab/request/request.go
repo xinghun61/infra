@@ -22,9 +22,8 @@ import (
 // Args defines the set of arguments for creating a request.
 type Args struct {
 	// Cmd specifies the payload command to run for the request.
-	Cmd worker.Command
-	// Tags specifies swarming tags to apply to the request.
-	Tags []string
+	Cmd          worker.Command
+	SwarmingTags []string
 	// ProvisionableDimensions specifies the provisionable dimensions in raw
 	// string form; e.g. {"provisionable-cros-version:foo-cq-R75-1.2.3.4"}
 	ProvisionableDimensions []string
@@ -55,7 +54,7 @@ func New(args Args) (*swarming.SwarmingRpcsNewTaskRequest, error) {
 
 	req := &swarming.SwarmingRpcsNewTaskRequest{
 		Name:         args.Cmd.TaskName,
-		Tags:         args.Tags,
+		Tags:         args.SwarmingTags,
 		TaskSlices:   slices,
 		Priority:     args.Priority,
 		ParentTaskId: args.ParentTaskID,

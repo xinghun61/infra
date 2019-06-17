@@ -100,7 +100,7 @@ func (r *TaskSet) launch(ctx context.Context, swarming Swarming) error {
 			// TODO(akeshet): Determine provisionable dimensions correctly.
 			ProvisionableDimensions: nil,
 			// TODO(akeshet): Determine tags correctly.
-			Tags: nil,
+			SwarmingTags: nil,
 			// TODO(akeshet): Determine timeout correctly.
 			TimeoutMins: 0,
 		}
