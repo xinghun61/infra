@@ -5,6 +5,7 @@
 package frontend
 
 import (
+	"context"
 	"regexp"
 	"strconv"
 
@@ -16,7 +17,6 @@ import (
 	"go.chromium.org/luci/common/logging"
 	"go.chromium.org/luci/common/sync/parallel"
 	"go.chromium.org/luci/grpc/grpcutil"
-	"golang.org/x/net/context"
 
 	admin "infra/tricium/api/admin/v1"
 	"infra/tricium/api/v1"

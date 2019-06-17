@@ -5,19 +5,18 @@
 package common
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"os"
 
 	"go.chromium.org/luci/common/errors"
 	gcps "go.chromium.org/luci/common/gcloud/pubsub"
-	"golang.org/x/net/context"
+	"go.chromium.org/luci/common/logging"
+	"go.chromium.org/luci/server/auth"
 	"google.golang.org/api/googleapi"
 	"google.golang.org/api/pubsub/v1"
 	"google.golang.org/appengine"
-
-	"go.chromium.org/luci/common/logging"
-	"go.chromium.org/luci/server/auth"
 )
 
 const (

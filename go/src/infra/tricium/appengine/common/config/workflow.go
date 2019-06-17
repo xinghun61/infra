@@ -5,7 +5,7 @@
 package config
 
 import (
-	"golang.org/x/net/context"
+	"context"
 
 	"github.com/golang/protobuf/proto"
 	ds "go.chromium.org/gae/service/datastore"

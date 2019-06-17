@@ -6,6 +6,7 @@
 package common
 
 import (
+	"context"
 	"net/http"
 
 	"go.chromium.org/gae/service/info"
@@ -16,7 +17,6 @@ import (
 	"go.chromium.org/luci/grpc/prpc"
 	"go.chromium.org/luci/server/auth"
 	"go.chromium.org/luci/server/router"
-	"golang.org/x/net/context"
 	"google.golang.org/appengine"
 )
 

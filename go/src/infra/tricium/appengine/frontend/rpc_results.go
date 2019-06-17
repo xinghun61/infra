@@ -5,6 +5,7 @@
 package frontend
 
 import (
+	"context"
 	"strconv"
 
 	"github.com/golang/protobuf/jsonpb"
@@ -12,9 +13,8 @@ import (
 	"go.chromium.org/luci/common/errors"
 	"go.chromium.org/luci/common/logging"
 	"go.chromium.org/luci/grpc/grpcutil"
-	"golang.org/x/net/context"
 
-	"infra/tricium/api/v1"
+	tricium "infra/tricium/api/v1"
 	"infra/tricium/appengine/common/track"
 )
 

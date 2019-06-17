@@ -5,10 +5,11 @@
 package config
 
 import (
-	ds "go.chromium.org/gae/service/datastore"
-	"golang.org/x/net/context"
+	"context"
 
-	"infra/tricium/api/v1"
+	ds "go.chromium.org/gae/service/datastore"
+
+	tricium "infra/tricium/api/v1"
 )
 
 // projectConfig contains a Tricium project config for one config.

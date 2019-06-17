@@ -1,29 +1,28 @@
-application: chrome-infra-tricium-dev
 dispatch:
 
-- url: "*/launcher/*"
-  module: launcher
-
-- url: "*/push-handlers/notify"
-  module: driver
+- url: "*/config/*"
+    module: backend
 
 - url: "*/driver/*"
-  module: driver
+    module: backend
 
 - url: "*/gerrit/*"
-  module: gerrit
+    module: backend
 
-- url: "*/tracker/*"
-  module: tracker
+- url: "*/launcher/*"
+    module: backend
 
-- url: "*/config/*"
-  module: config
+- url: "*/push-handlers/notify"
+    module: backend
 
 - url: "*/rpcexplorer/*"
-  module: static
+    module: default
 
 - url: "*/static/*"
-  module: static
+    module: default
+
+- url: "*/tracker/*"
+    module: backend
 
 - url: "*/*"
-  module: default
+    module: default

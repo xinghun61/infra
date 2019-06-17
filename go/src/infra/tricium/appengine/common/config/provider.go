@@ -5,9 +5,9 @@
 package config
 
 import (
-	"golang.org/x/net/context"
+	"context"
 
-	"infra/tricium/api/v1"
+	tricium "infra/tricium/api/v1"
 )
 
 // ProviderAPI supplies Tricium service and project configs.

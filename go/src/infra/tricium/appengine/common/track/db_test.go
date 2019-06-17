@@ -5,16 +5,15 @@
 package track
 
 import (
+	"context"
 	"testing"
-
-	"golang.org/x/net/context"
 
 	. "github.com/smartystreets/goconvey/convey"
 	ds "go.chromium.org/gae/service/datastore"
 	"go.chromium.org/luci/server/auth"
 	"go.chromium.org/luci/server/auth/authtest"
 
-	"infra/tricium/api/v1"
+	tricium "infra/tricium/api/v1"
 	"infra/tricium/appengine/common/triciumtest"
 )
 

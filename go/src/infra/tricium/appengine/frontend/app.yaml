@@ -1,4 +1,3 @@
-application: tricium-dev
 module: default
 runtime: go
 api_version: go1
@@ -19,6 +18,10 @@ handlers:
   static_dir: ui/build/default/src/
   secure: always
 
+- url: /static
+  static_dir: static
+  secure: always
+
 - url: /node_modules
   static_dir: ui/build/default/node_modules/
   secure: always
@@ -26,6 +29,9 @@ handlers:
 - url: /.*
   script: _go_app
   secure: always
+
+includes:
+- common
 
 skip_files:
   - ui/node_modules/

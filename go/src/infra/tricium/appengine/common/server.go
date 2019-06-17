@@ -5,11 +5,10 @@
 package common
 
 import (
+	"context"
 	"net/http"
 
 	"go.chromium.org/luci/server/auth"
-
-	"golang.org/x/net/context"
 
 	admin "infra/tricium/api/admin/v1"
 )

@@ -14,7 +14,7 @@ import (
 	"go.chromium.org/luci/server/auth"
 	"go.chromium.org/luci/server/auth/authtest"
 
-	"infra/tricium/api/v1"
+	tricium "infra/tricium/api/v1"
 	"infra/tricium/appengine/common/track"
 	"infra/tricium/appengine/common/triciumtest"
 )

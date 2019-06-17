@@ -102,7 +102,7 @@ func TestValidate(t *testing.T) {
 						Configs: []*tricium.Config{
 							{
 								Name:      config,
-								ValueType: &tricium.Config_Value{"all"},
+								ValueType: &tricium.Config_Value{Value: "all"},
 							},
 						},
 					},
@@ -122,7 +122,7 @@ func TestValidate(t *testing.T) {
 						Configs: []*tricium.Config{
 							{
 								Name:      "blabla",
-								ValueType: &tricium.Config_Value{"all"},
+								ValueType: &tricium.Config_Value{Value: "all"},
 							},
 						},
 					},

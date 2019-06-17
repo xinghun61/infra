@@ -5,17 +5,16 @@
 package frontend
 
 import (
+	"context"
 	"testing"
 
-	tq "go.chromium.org/gae/service/taskqueue"
-
 	. "github.com/smartystreets/goconvey/convey"
+	tq "go.chromium.org/gae/service/taskqueue"
 	"go.chromium.org/luci/auth/identity"
 	"go.chromium.org/luci/server/auth"
 	"go.chromium.org/luci/server/auth/authtest"
-	"golang.org/x/net/context"
 
-	"infra/tricium/api/v1"
+	tricium "infra/tricium/api/v1"
 	"infra/tricium/appengine/common"
 	"infra/tricium/appengine/common/track"
 	"infra/tricium/appengine/common/triciumtest"

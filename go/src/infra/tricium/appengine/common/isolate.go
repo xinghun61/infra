@@ -6,6 +6,7 @@ package common
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"net/http"
 
@@ -17,9 +18,8 @@ import (
 	"go.chromium.org/luci/common/logging"
 	"go.chromium.org/luci/common/sync/parallel"
 	"go.chromium.org/luci/server/auth"
-	"golang.org/x/net/context"
 
-	"infra/tricium/api/admin/v1"
+	admin "infra/tricium/api/admin/v1"
 	tricium "infra/tricium/api/v1"
 )
 

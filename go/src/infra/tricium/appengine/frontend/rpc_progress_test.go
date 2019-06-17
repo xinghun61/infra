@@ -15,10 +15,9 @@ import (
 	"go.chromium.org/luci/grpc/grpcutil"
 	"go.chromium.org/luci/server/auth"
 	"go.chromium.org/luci/server/auth/authtest"
-
 	"google.golang.org/grpc/codes"
 
-	"infra/tricium/api/v1"
+	tricium "infra/tricium/api/v1"
 	"infra/tricium/appengine/common/track"
 	"infra/tricium/appengine/common/triciumtest"
 )

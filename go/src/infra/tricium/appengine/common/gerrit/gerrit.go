@@ -6,6 +6,7 @@ package gerrit
 
 import (
 	"bytes"
+	"context"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -22,7 +23,6 @@ import (
 	"go.chromium.org/luci/common/logging"
 	"go.chromium.org/luci/server/auth"
 	gr "golang.org/x/build/gerrit"
-	"golang.org/x/net/context"
 
 	tricium "infra/tricium/api/v1"
 	"infra/tricium/appengine/common/track"

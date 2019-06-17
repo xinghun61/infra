@@ -314,11 +314,11 @@ func TestCreateWorker(t *testing.T) {
 			Configs: []*tricium.Config{
 				{
 					Name:      config,
-					ValueType: &tricium.Config_Value{configValue},
+					ValueType: &tricium.Config_Value{Value: configValue},
 				},
 				{
 					Name:      configJSON,
-					ValueType: &tricium.Config_ValueJ{configValueJSON},
+					ValueType: &tricium.Config_ValueJ{ValueJ: configValueJSON},
 				},
 			},
 		}

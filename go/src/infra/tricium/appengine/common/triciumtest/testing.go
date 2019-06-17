@@ -8,6 +8,7 @@ package triciumtest
 
 import (
 	"bytes"
+	"context"
 	"io/ioutil"
 	"net/http"
 	"time"
@@ -18,8 +19,6 @@ import (
 	tq "go.chromium.org/gae/service/taskqueue"
 	"go.chromium.org/luci/common/clock/testclock"
 	"go.chromium.org/luci/common/logging/memlogger"
-
-	"golang.org/x/net/context"
 
 	"infra/tricium/appengine/common"
 )

@@ -1,0 +1,24 @@
+module: backend
+runtime: go
+api_version: go1
+
+handlers:
+
+- url: /internal/.*
+  script: _go_app
+  secure: always
+  login: admin
+
+- url: /.*/internal/.*
+  script: _go_app
+  secure: always
+  login: admin
+
+- url: /_ah/push-handlers/notify
+  script: _go_app
+  secure: always
+  login: admin
+
+- url: /.*
+  script: _go_app
+  secure: always

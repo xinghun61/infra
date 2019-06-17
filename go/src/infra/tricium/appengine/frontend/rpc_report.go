@@ -5,6 +5,8 @@
 package frontend
 
 import (
+	"context"
+
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/golang/protobuf/ptypes"
 	ds "go.chromium.org/gae/service/datastore"
@@ -12,7 +14,6 @@ import (
 	"go.chromium.org/luci/common/errors"
 	"go.chromium.org/luci/common/logging"
 	"go.chromium.org/luci/grpc/grpcutil"
-	"golang.org/x/net/context"
 
 	apibq "infra/tricium/api/bigquery"
 	tricium "infra/tricium/api/v1"

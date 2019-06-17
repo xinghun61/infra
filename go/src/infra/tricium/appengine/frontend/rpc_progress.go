@@ -5,13 +5,13 @@
 package frontend
 
 import (
+	"context"
 	"strconv"
 
 	ds "go.chromium.org/gae/service/datastore"
 	"go.chromium.org/luci/common/errors"
 	"go.chromium.org/luci/common/logging"
 	"go.chromium.org/luci/grpc/grpcutil"
-	"golang.org/x/net/context"
 
 	tricium "infra/tricium/api/v1"
 	"infra/tricium/appengine/common/gerrit"

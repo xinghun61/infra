@@ -5,14 +5,15 @@
 package config
 
 import (
+	"context"
+
 	"github.com/golang/protobuf/proto"
 	"go.chromium.org/luci/common/errors"
 	"go.chromium.org/luci/common/logging"
 	"go.chromium.org/luci/common/sync/parallel"
 	luciConfig "go.chromium.org/luci/config"
-	"golang.org/x/net/context"
 
-	"infra/tricium/api/v1"
+	tricium "infra/tricium/api/v1"
 	"infra/tricium/appengine/common"
 )
 

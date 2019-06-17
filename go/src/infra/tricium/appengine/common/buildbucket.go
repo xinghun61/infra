@@ -5,6 +5,7 @@
 package common
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -14,7 +15,6 @@ import (
 	"go.chromium.org/luci/common/errors"
 	"go.chromium.org/luci/common/logging"
 	"go.chromium.org/luci/grpc/prpc"
-	"golang.org/x/net/context"
 	fm "google.golang.org/genproto/protobuf/field_mask"
 
 	admin "infra/tricium/api/admin/v1"

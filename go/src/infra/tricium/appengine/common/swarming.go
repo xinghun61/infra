@@ -5,6 +5,7 @@
 package common
 
 import (
+	"context"
 	"fmt"
 	"strings"
 	"time"
@@ -13,7 +14,6 @@ import (
 	"go.chromium.org/luci/common/errors"
 	"go.chromium.org/luci/common/isolatedclient"
 	"go.chromium.org/luci/common/logging"
-	"golang.org/x/net/context"
 )
 
 const (
