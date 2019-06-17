@@ -52,11 +52,11 @@ type enumerateRun struct {
 }
 
 func (c *enumerateRun) Run(a subcommands.Application, args []string, env subcommands.Env) int {
-	if err := c.innerRun(a, args, env); err != nil {
+	err := c.innerRun(a, args, env)
+	if err != nil {
 		fmt.Fprintf(a.GetErr(), "%s\n", err)
-		return 1
 	}
-	return 0
+	return exitCode(err)
 }
 
 func (c *enumerateRun) innerRun(a subcommands.Application, args []string, env subcommands.Env) error {
@@ -82,14 +82,15 @@ func (c *enumerateRun) innerRun(a subcommands.Application, args []string, env su
 	if err != nil {
 		return err
 	}
+
 	tm, err := computeMetadata(lp, workspace)
-	if err != nil {
+	if err != nil && tm == nil {
+		// Catastrophic error. There is no reasonable response to write.
 		return err
 	}
-	if err := c.writeResponse(c.enumerate(tm, request)); err != nil {
-		return err
-	}
-	return nil
+	ts := c.enumerate(tm, request)
+	resp := steps.EnumerationResponse{AutotestTests: ts}
+	return writeResponse(c.outputPath, &resp, err)
 }
 
 func (c *enumerateRun) processCLIArgs(args []string) error {
@@ -148,19 +149,6 @@ func (c *enumerateRun) enumerate(tm *api.TestMetadataResponse, request *steps.En
 	ts = append(ts, enumeration.GetForTests(tm.GetAutotest(), request.GetTests())...)
 	ts = append(ts, enumeration.GetForSuites(tm.GetAutotest(), request.GetSuites())...)
 	return ts
-}
-
-func (c *enumerateRun) writeResponse(tests []*api.AutotestTest) error {
-	w, err := os.Create(c.outputPath)
-	if err != nil {
-		return errors.Annotate(err, "write response").Err()
-	}
-	defer w.Close()
-	resp := steps.EnumerationResponse{AutotestTests: tests}
-	if err := marshaller.Marshal(w, &resp); err != nil {
-		return errors.Annotate(err, "write response").Err()
-	}
-	return nil
 }
 
 func computeMetadata(localPaths artifacts.LocalPaths, workspace string) (*api.TestMetadataResponse, error) {
