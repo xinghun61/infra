@@ -1,28 +1,28 @@
 dispatch:
 
 - url: "*/config/*"
-    module: backend
+  module: backend
 
 - url: "*/driver/*"
-    module: backend
+  module: backend
 
 - url: "*/gerrit/*"
-    module: backend
+  module: backend
 
 - url: "*/launcher/*"
-    module: backend
+  module: backend
 
 - url: "*/push-handlers/notify"
-    module: backend
+  module: backend
 
 - url: "*/rpcexplorer/*"
-    module: default
+  module: default
 
 - url: "*/static/*"
-    module: default
+  module: default
 
 - url: "*/tracker/*"
-    module: backend
+  module: backend
 
 - url: "*/*"
-    module: default
+  module: default
