@@ -17,6 +17,9 @@ package state
 import (
 	"context"
 	"sync"
+	"time"
+
+	"go.chromium.org/luci/common/clock"
 
 	"infra/appengine/qscheduler-swarming/app/state/types"
 	"infra/qscheduler/qslib/scheduler"
@@ -157,7 +160,7 @@ func (b *BatchRunner) runRequestsInBatches(store *Store) {
 		nb.append(r)
 		<-b.tBatchWait
 
-		b.collectForBatch(nb)
+		b.collectForBatch(ctx, nb)
 
 		nb.executeAndClose(ctx, store)
 	}
@@ -165,7 +168,7 @@ func (b *BatchRunner) runRequestsInBatches(store *Store) {
 	close(b.closed)
 }
 
-func (b *BatchRunner) collectForBatch(nb *batch) {
+func (b *BatchRunner) collectForBatch(ctx context.Context, nb *batch) {
 	for {
 		select {
 		case r := <-b.requests:
@@ -175,7 +178,7 @@ func (b *BatchRunner) collectForBatch(nb *batch) {
 			}
 			nb.append(r)
 			<-b.tBatchWait
-		default:
+		case <-clock.After(ctx, 100*time.Millisecond):
 			// Stop collecting, unless we are in a test test fixture and
 			// waiting for additional requests.
 			if !b.tWait {
