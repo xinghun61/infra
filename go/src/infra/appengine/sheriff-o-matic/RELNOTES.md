@@ -1,3 +1,13 @@
+# Release Notes sheriff-o-matic 2019-06-17
+
+- 1 commits, 0 bugs affected since ae9b595 (2019-06-14T18:28:59Z)
+- 1 Authors:
+  - dtu@google.com
+
+## Changes in this release
+
+- [[som] Move ChromeOS rotations from rota to oncall.](https://chromium-review.googlesource.com/c/infra/infra/+/1661337) (dtu@google.com)
+
 # Release Notes sheriff-o-matic 2019-06-14
 
 - 2 commits, 2 bugs affected since fde17de (2019-06-11T22:16:09Z)
