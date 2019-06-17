@@ -133,8 +133,8 @@
       </div>
       <div class="legend">
         Legend:
-        <div class="color-sample high-coverage"> 100% </div>
-        <div class="color-sample medium-coverage"> 80%-99% </div>
+        <div class="color-sample high-coverage"> &ge; 90% </div>
+        <div class="color-sample medium-coverage"> 80% - 90% </div>
         <div class="color-sample low-coverage"> &lt; 80% </div>
       </div>
       <table>
@@ -203,7 +203,7 @@
                 {% if not found and metric.name == name %}
                   {% set found = True %}
                   {% set percentage = metric.covered*100.0/metric.total %}
-                  {% if percentage > 99.9999 %}
+                  {% if percentage > 89.9999 %}
                     {% set css_class = 'high-coverage' %}
                   {% elif percentage > 79.9999 %}
                     {% set css_class = 'medium-coverage' %}
@@ -237,7 +237,7 @@
                 {% if not found and metric.name == name %}
                   {% set found = True %}
                   {% set percentage = metric.covered*100.0/metric.total %}
-                  {% if percentage > 99.9999 %}
+                  {% if percentage > 89.9999 %}
                     {% set css_class = 'high-coverage' %}
                   {% elif percentage > 79.9999 %}
                     {% set css_class = 'medium-coverage' %}
