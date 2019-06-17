@@ -13,14 +13,6 @@ const ROTATIONS = {
   ],
   'chromeos': [
     {
-      name: 'Sheriffs (MTV)',
-      url: 'https://rota-ng.appspot.com/legacy/sheriff_cros_mtv.json',
-    },
-    {
-      name: 'Sheriffs (Non-MTV)',
-      url: 'https://rota-ng.appspot.com/legacy/sheriff_cros_nonmtv.json',
-    },
-    {
       name: 'Gardener',
       url: 'https://rota-ng.appspot.com/legacy/sheriff_cr_cros_gardeners.json',
     },
