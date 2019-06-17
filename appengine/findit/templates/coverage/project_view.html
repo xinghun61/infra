@@ -62,13 +62,13 @@
             {% endif %}
           </tr>
           <tr>
-            <th>Commit Position</th>
-            <th>Commit Time (PST)</th>
-            <th>Report</th>
-            <th>Line</th>
-            <th>Function</th>
-            <th>Region</th>
-            <th>Data Source</th>
+            <th title="Commit position used to build targets and generate code coverage report.">Commit Position</th>
+            <th title="Time when the revision was commited into the source tree.">Commit Time (PST)</th>
+            <th title="Link to code coverage report for the particular commit position.">Report</th>
+            <th title="Line coverage is the percentage of code lines which have been executed at least once. Only executable lines within function bodies are considered to be code lines.">Line</th>
+            <th title="Function coverage is the percentage of functions which have been executed at least once. A function is considered to be executed if any of its instantiations are executed.">Function</th>
+            <th title="Region coverage is the percentage of code regions which have been executed at least once. A code region may span multiple lines (e.g in a large function body with no control flow). However, it's also possible for a single line to contain multiple code regions (e.g in 'return x || y &amp;&amp; z').">Region</th>
+            <th title="Link to the build that generated this report.">Data Source</th>
             {% if user_info and user_info.is_admin %}
               <th>Is Visible</th>
             {% endif %}
@@ -80,7 +80,7 @@
           {% if user_info and user_info.is_admin or datum.visible %}
             <tr>
               <td>
-                {{datum.commit_position}}
+                <a href="https://crrev.com/{{datum.commit_position}}">{{datum.commit_position}}</a>
               </td>
               <td>
                 {{datum.commit_timestamp}}
