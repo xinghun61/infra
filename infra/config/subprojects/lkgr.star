@@ -16,6 +16,7 @@ luci.builder(
         'cpu': 'x86-64',
         'cores': '8',
         'pool': 'luci.infra.cron',
+        'builderless': '1',
     },
     execution_timeout = 2 * time.hour,
     schedule = 'with 3000s interval',

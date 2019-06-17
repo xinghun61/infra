@@ -19,6 +19,7 @@ luci.builder(
         'cpu': 'x86-64',
         'cores': '2',
         'pool': 'luci.infra.cron',
+        'builderless': '1',
     },
     properties = {
         'device_type': 'kevin',

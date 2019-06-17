@@ -18,6 +18,7 @@ def builder(name, recipe, builder_dimension=None, cores=8, **kwargs):
           'os': 'Ubuntu-14.04',
           'cpu': 'x86-64',
           'cores': str(cores),
+          'builderless': '1',
       },
       **kwargs
   )

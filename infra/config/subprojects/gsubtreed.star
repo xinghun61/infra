@@ -28,6 +28,7 @@ def gsubtreed_cron(
           'cpu': 'x86-64',
           'cores': '2',
           'pool': 'luci.infra.cron',
+          'builderless': '1',
       },
       service_account = 'gsubtreed@chops-service-accounts.iam.gserviceaccount.com',
       # 1 stuck builder shouldn't block others using the same pool of machines.
