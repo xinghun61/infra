@@ -3,7 +3,7 @@
 # found in the LICENSE file.
 
 from recipe_engine.post_process import DoesNotRun, MustRun, DropExpectation
-
+from recipe_engine.recipe_api import Property
 
 DEPS = [
     'build/docker',
@@ -25,8 +25,16 @@ _CONTAINER_REGISTRY_CREDENTIAL_PATH = (
     '/creds/service_accounts/service-account-container_registry_pusher.json')
 _CONTAINER_REGISTRY_PROJECT = 'chromium-container-registry'
 
+PROPERTIES = {
+    'arch_type': Property(
+        kind=str,
+        help='The CPU architecture [arm64, intel, etc.]',
+        default=None
+    ),
+}
 
-def RunSteps(api):
+
+def RunSteps(api, arch_type):
   api.gclient.set_config('infra')
   api.bot_update.ensure_checkout()
   api.gclient.runhooks()
@@ -52,6 +60,8 @@ def RunSteps(api):
   # Run the build script. It assign a name to the resulting image and tags it
   # with 'latest'.
   dir_name = api.properties.get('dir_name', container_name)
+  if arch_type:
+    dir_name = dir_name + '_' + arch_type
   build_script = api.path['checkout'].join('docker', dir_name, 'build.sh')
   api.step('build image', ['/bin/bash', build_script])
 
@@ -85,7 +95,9 @@ def GenTests(api):
   yield (
       api.test('full_build') +
       api.properties(
-        container_name='android_docker', dir_name='android_devices')
+        container_name='android_docker',
+        dir_name='android_devices',
+        arch_type='ARM')
   )
   yield (
       api.test('full_build_luci') +

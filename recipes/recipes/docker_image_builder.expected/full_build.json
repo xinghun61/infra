@@ -126,7 +126,7 @@
   {
     "cmd": [
       "/bin/bash",
-      "[START_DIR]/infra/docker/android_devices/build.sh"
+      "[START_DIR]/infra/docker/android_devices_ARM/build.sh"
     ],
     "name": "build image"
   },
