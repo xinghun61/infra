@@ -89,8 +89,6 @@ func ConvertPlatforms(platforms []*Platform) (convertedPlatforms []*dashpb.Platf
 	return
 }
 
-// TODO(jojwang): update this to return dashpb.Announcement
-
 // CreateLiveAnnouncement takes announcement information and Platforms to build
 // an Announcement and adds AnnouncementKeys to all platforms and puts all
 // structs in Datastore.
@@ -150,7 +148,7 @@ func ListAnnouncements(c context.Context, announcementIDs ...int64) ([]*dashpb.A
 //
 // It returns (announcements, nil) on success, and (nil, err) on datastore or conversion errors.
 func SearchAnnouncements(c context.Context, platformName string, retired bool, limit, offset int32) ([]*dashpb.Announcement, error) {
-	annQ := datastore.NewQuery("Announcement").Eq("Retired", retired).Limit(limit).Offset(offset)
+	annQ := datastore.NewQuery("Announcement").Eq("Retired", retired).Limit(limit).Offset(offset).Order("-EndTime", "-StartTime")
 	if platformName != "" {
 		annQ = annQ.Eq("PlatformNames", platformName)
 	}

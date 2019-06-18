@@ -15,11 +15,20 @@ export class ChopsAnnouncements extends LitElement {
     return {
       isTrooper: {type: Boolean},
       liveAnnouncements: {type: Array},
+      retiredAnnouncements: {type: Array},
+      _liveErrorMessage: {type: String},
+      _retiredErrorMessage: {type: String},
     };
   }
 
+  constructor() {
+    super();
+    this.liveAnnouncements = [];
+    this.retiredAnnouncements = [];
+  }
+
   firstUpdated() {
-    this._fetchLiveAnnouncements();
+    this._fetchAnnouncements(0);
   }
 
   static get styles() {
@@ -27,7 +36,6 @@ export class ChopsAnnouncements extends LitElement {
       .round-icon {
         border-radius: 25px;
         display: table;
-        width: 48px;
         height: 24px;
         margin: 2px;
       }
@@ -40,33 +48,97 @@ export class ChopsAnnouncements extends LitElement {
       }
       .live {
         background-color: red;
+        width: 48px;
+      }
+      .retired {
+        background-color: grey;
+        width: 55px;
+      }
+      .table-area {
+        padding: 15px;
+      }
+      announcement-input {
+        width: 70%;
+        display: block;
+        margin-left: auto;
+        margin-right: auto;
+        padding: 10px;
+      }
+      .note {
+        float: right;
+        font-weight: bold;
       }
     `];
   }
   render() {
     return html`
-      <div class="round-icon live small"><p>LIVE</p></div>
-      <announcements-table
-        id="live-announcements-table"
-        .isTrooper="${this.isTrooper}"
-        .announcements="${this.liveAnnouncements}"
-        @announcements-changed=${this._fetchLiveAnnouncements}
-      ></announcements-table>
       ${this.isTrooper ? html `
         <announcement-input
-          @announcement-created=${this._fetchLiveAnnouncements}
+          @announcement-created=${this._fetchAnnouncements}
         ></announcement-input>
       ` : ''}
+      <div class="table-area">
+        <div class="round-icon live small"><p>LIVE</p></div>
+        <announcements-table
+          id="live-announcements-table"
+          .isTrooper="${this.isTrooper}"
+          .announcements="${this.liveAnnouncements}"
+          @announcements-changed=${this._fetchAnnouncements}
+        ></announcements-table>
+        ${this._liveErrorMessage ? html`
+          <span class=error>${this._liveErrorMessage}</span>
+        ` : ''}
+      </div>
+      <div class="table-area">
+        <div class="round-icon retired small"><p>RETIRED</p></div>
+        <announcements-table
+          id="retired-announcements-table"
+          .isTrooper="${this.isTrooper}"
+          retired
+          .announcements="${this.retiredAnnouncements}"
+        ></announcements-table>
+        ${this._retiredErrorMessage ? html`
+          <span class=error>${this._retiredErrorMessage}</span>
+        ` : ''}
+        <span class="note small">*Showing most recent retired announcements</span>
+        <!--Add navigation for viewing older retired announcements. -->
+      </div>
     `;
   }
 
-  async _fetchLiveAnnouncements() {
-    const fetchLiveMessage = {
+  _fetchAnnouncements() {
+    this._fetchLiveAnnouncements();
+    this._fetchRetiredAnnouncements(0);
+  }
+
+  _fetchLiveAnnouncements() {
+    const message = {
       retired: false,
     };
-    const resp = await prpcClient.call(
-      'dashboard.ChopsAnnouncements', 'SearchAnnouncements', fetchLiveMessage);
-    this.liveAnnouncements = resp.announcements;
+    const promise = prpcClient.call(
+      'dashboard.ChopsAnnouncements', 'SearchAnnouncements', message);
+    promise.then((resp) => {
+      this.liveAnnouncements = resp.announcements;
+      this._liveErrorMessage = '';
+    }).catch((reason) => {
+      this._liveErrorMessage = `Failed to fetch live announcements: ${reason}`;
+    });
+  }
+
+  _fetchRetiredAnnouncements(offset) {
+    const message = {
+      retired: true,
+      offset: offset,
+      limit: 5,
+    };
+    const promise = prpcClient.call(
+      'dashboard.ChopsAnnouncements', 'SearchAnnouncements', message);
+    promise.then((resp) => {
+      this.retiredAnnouncements = resp.announcements;
+      this._retiredErrorMessage = '';
+    }).catch((reason) => {
+      this._retiredErrorMessage = `Failed to fetch retired announcements: ${reason}`;
+    });
   }
 }
 

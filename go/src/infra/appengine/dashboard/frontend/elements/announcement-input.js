@@ -5,6 +5,8 @@
 import {LitElement, html, css} from 'lit-element';
 import {prpcClient} from 'prpc.js';
 
+import {SHARED_STYLES} from 'shared-styles.js';
+
 /**
  * `<announcement-input>`
  *
@@ -25,7 +27,7 @@ export class AnnouncementInput extends LitElement {
   }
 
   static get styles() {
-    return css`
+    return [SHARED_STYLES, css`
       :host {
         font-family: Roboto, Noto, sans-serif;
       }
@@ -39,15 +41,15 @@ export class AnnouncementInput extends LitElement {
         padding: 0.25em 8px;
         margin: 0;
         margin-right: 4px;
+        float: right;
       }
       button:disabled {
         background-color: grey;
       }
-      .error {
-        color: red;
-        font-size: 12px;
+      textarea {
+        width: 100%;
       }
-    `;
+    `];
   }
 
   // TODO(jojwang): use chops-button when shared.
@@ -60,16 +62,14 @@ export class AnnouncementInput extends LitElement {
         rows="3"
         placeholder="Create a gerrit announcement"
       ></textarea>
-      <div>
-        <button
-          id="createButton"
-          ?disabled=${this.disabled}
-          @click="${this._createAnnouncementHandler}"
-        >ANNOUNCE</button>
-        ${this.errorMessage ? html`
-          <span class=error>${this.errorMessage}</span>
-        ` : ''}
-      </div>
+      <button
+        id="createButton"
+        ?disabled=${this.disabled}
+        @click="${this._createAnnouncementHandler}"
+      >ANNOUNCE</button>
+      ${this.errorMessage ? html`
+        <span class=error>${this.errorMessage}</span>
+      ` : ''}
     `;
   }
 

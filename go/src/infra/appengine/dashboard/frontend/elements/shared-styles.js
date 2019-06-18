@@ -8,4 +8,8 @@ export const SHARED_STYLES = css`
   .small {
     font-size: 12px;
   }
+  .error {
+    color: red;
+    font-size: 12px;
+  }
 `;

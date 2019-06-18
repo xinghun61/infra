@@ -53,18 +53,26 @@ suite('chops-announcements', () => {
     await element.updateComplete;
     await fetchPromise;
 
-    sinon.assert.calledOnce(prpcStub);
+    sinon.assert.calledTwice(prpcStub);
     let liveTable = element.shadowRoot.getElementById(
       'live-announcements-table');
     assert.equal(liveTable.isTrooper, true);
     assert.equal(liveTable.announcements, ANN);
     assert.equal(liveTable.retired, null);
+    let retiredTable = element.shadowRoot.getElementById(
+      'retired-announcements-table');
+    assert.equal(retiredTable.isTrooper, true);
+    assert.equal(retiredTable.announcements, ANN);
+    assert.equal(retiredTable.retired, true);
 
     element.isTrooper = false;
     await element.updateComplete;
 
     liveTable = element.shadowRoot.getElementById('live-announcements-table');
     assert.equal(liveTable.isTrooper, false);
+    retiredTable = element.shadowRoot.getElementById(
+      'retired-announcements-table');
+    assert.equal(retiredTable.isTrooper, false);
   });
 
   test('announcement fetched when announcements retired', async () => {
@@ -74,12 +82,15 @@ suite('chops-announcements', () => {
       'live-announcements-table');
     liveTable.dispatchEvent(new CustomEvent('announcements-changed'));
 
-    await element._fetchLiveAnnouncements;
+    await element._fetchAnnouncements;
 
-    sinon.assert.calledTwice(prpcStub);
-    sinon.assert.alwaysCalledWith(
+    sinon.assert.callCount(prpcStub, 4);
+    sinon.assert.calledWith(
       prpcStub, 'dashboard.ChopsAnnouncements', 'SearchAnnouncements',
       {retired: false});
+    sinon.assert.calledWith(
+      prpcStub, 'dashboard.ChopsAnnouncements', 'SearchAnnouncements',
+      {retired: true, offset: 0, limit: 5});
   });
 
   test('announcement fetched when announcement create', async () => {
@@ -91,12 +102,15 @@ suite('chops-announcements', () => {
       'announcement-input');
     annInput.dispatchEvent(new CustomEvent('announcement-created'));
 
-    await element._fetchLiveAnnoucements;
+    await element._fetchAnnoucements;
 
-    sinon.assert.calledTwice(prpcStub);
-    sinon.assert.alwaysCalledWith(
+    sinon.assert.callCount(prpcStub, 4);
+    sinon.assert.calledWith(
       prpcStub, 'dashboard.ChopsAnnouncements', 'SearchAnnouncements',
       {retired: false});
+    sinon.assert.calledWith(
+      prpcStub, 'dashboard.ChopsAnnouncements', 'SearchAnnouncements',
+      {retired: true, offset: 0, limit: 5});
   });
 
   test('announcement-input not shown when user not trooper', async () => {
@@ -105,6 +119,17 @@ suite('chops-announcements', () => {
     assert.isUndefined(element.isTrooper);
     const annInput = element.shadowRoot.querySelector('announcement-input');
     assert.isNull(annInput);
+  });
+
+  test('error messages empty after succesful requests', async () => {
+    await element.updateComplete;
+
+    element._retiredErrorMessage = 'error fetching retired announcements';
+    element._liveErrorMessage = 'error fetching live announcements';
+    await element._fetchAnnouncements();
+
+    assert.equal(element._retiredErrorMessage, '');
+    assert.equal(element._liveErrorMessage, '');
   });
 
 });

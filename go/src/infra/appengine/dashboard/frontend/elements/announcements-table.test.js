@@ -31,6 +31,27 @@ const ANN = [
     startTime: '2019-05-28T23:41:18.637847Z',
   }];
 
+const RETIRED_ANN = [
+  {
+    platforms: [{name: 'gerrit'}],
+    messageContent: 'chickens need feeding.',
+    creator: 'notchicken',
+    closer: 'chicken',
+    id: '12345',
+    startTime: '2019-05-28T23:41:18.637847Z',
+    endTime: '2019-05-29T23:41:18.637847Z',
+    retired: true,
+  },
+  {
+    messageContent: 'abandoned announcement.',
+    creator: 'fox',
+    closer: 'dog',
+    id: '223',
+    startTime: '2019-05-28T23:41:18.637847Z',
+    endTime: '2019-05-29T23:41:18.637847Z',
+    retired: true,
+  }];
+
 suite('announcements-table', () => {
   setup(() => {
     element = document.createElement('announcements-table');
@@ -68,6 +89,10 @@ suite('announcements-table', () => {
     assert.equal(tableRows.length, expectedNumRows);
     assert.equal(tableRows[0].cells.length, expectedNumCells);
     assert.equal(tableRows[1].cells.length, expectedNumCells);
+    // Assert only the creator is shown
+    const lastTSCell = tableRows[expectedNumRows-1].cells[expectedNumCells - 1];
+    assert.isTrue(lastTSCell.textContent.includes('fox'));
+    assert.isFalse(lastTSCell.textContent.includes('-'));
 
     // Assert announcements-changed fired and RetireAnnouncement called
     const listener = sinon.spy();
@@ -92,40 +117,50 @@ suite('announcements-table', () => {
     assert.equal(tableRows.length, expectedNumRows);
     assert.equal(tableRows[0].cells.length, expectedNumCells);
     assert.equal(tableRows[1].cells.length, expectedNumCells);
+    // Assert only the creator is shown
+    const lastTSCell = tableRows[expectedNumRows-1].cells[expectedNumCells - 1];
+    assert.isTrue(lastTSCell.textContent.includes('fox'));
+    assert.isFalse(lastTSCell.textContent.includes('-'));
 
     // Assert no buttons offered.
     assert.equal(element.shadowRoot.querySelector('button'), null);
   });
 
   test('retired announcements trooper', async () => {
-    element.announcements = ANN;
+    element.announcements = RETIRED_ANN;
     element.isTrooper = true;
     element.retired = true;
     await element.updateComplete;
     const tableRows = element.shadowRoot.querySelector('table').rows;
 
-    const expectedNumRows = ANN.length + 1;
+    const expectedNumRows = RETIRED_ANN.length + 1;
     const expectedNumCells = 3 + (element.isTrooper && !element.retired ? 1: 0);
     assert.equal(tableRows.length, expectedNumRows);
     assert.equal(tableRows[0].cells.length, expectedNumCells);
     assert.equal(tableRows[1].cells.length, expectedNumCells);
+    // Assert creator and closer are shown
+    const lastTSCell = tableRows[expectedNumRows-1].cells[expectedNumCells - 1];
+    assert.isTrue(lastTSCell.textContent.includes('fox - dog'));
 
     // Assert no buttons offered.
     assert.equal(element.shadowRoot.querySelector('button'), null);
   });
 
   test('retired announcements non-trooper', async () => {
-    element.announcements = ANN;
+    element.announcements = RETIRED_ANN;
     element.retired = true;
     await element.updateComplete;
     const tableRows = element.shadowRoot.querySelector('table').rows;
 
     assert.isUndefined(element.isTrooper);
-    const expectedNumRows = ANN.length + 1;
+    const expectedNumRows = RETIRED_ANN.length + 1;
     const expectedNumCells = 3 + (element.isTrooper && !element.retired ? 1: 0);
     assert.equal(tableRows.length, expectedNumRows);
     assert.equal(tableRows[0].cells.length, expectedNumCells);
     assert.equal(tableRows[1].cells.length, expectedNumCells);
+    // Assert creator and closer are shown
+    const lastTSCell = tableRows[expectedNumRows-1].cells[expectedNumCells - 1];
+    assert.isTrue(lastTSCell.textContent.includes('fox - dog'));
 
     // Assert no buttons offered.
     assert.equal(element.shadowRoot.querySelector('button'), null);

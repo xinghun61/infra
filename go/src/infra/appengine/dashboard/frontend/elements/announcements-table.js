@@ -7,6 +7,16 @@ import {prpcClient} from 'prpc.js';
 
 import {SHARED_STYLES} from 'shared-styles.js';
 
+const dateFormatter = new Intl.DateTimeFormat('en-US', {
+  year: 'numeric',
+  month: 'short',
+  day: 'numeric',
+  hour: 'numeric',
+  minute: '2-digit',
+  timeZoneName: 'short',
+  hour12: false,
+});
+
 /**
  * `<announcements-table>`
  *
@@ -96,9 +106,9 @@ export class AnnouncementsTable extends LitElement {
                 `}
               </td>
               <td class="announcement-content">${ann.messageContent}</td>
-              <td class="small">
-                <div class="date">${this._formatDate(ann.startTime)}</div>
-                <div class="creator">${ann.creator}</div>
+              <td class="small time-content">
+                <div class="date">${this._formatAnnTSRange(ann)}</div>
+                <div class="creator">${ann.creator}${ann.retired ? ` - ${ann.closer}`: ''}</div>
               </td>
             </tr>
           `) : html`
@@ -114,16 +124,15 @@ export class AnnouncementsTable extends LitElement {
   }
 
   // TODO(jojwang): use chops-timestamp when it's shared.
-  _formatDate(timeStr) {
-    const date = new Date(timeStr);
-    return new Intl.DateTimeFormat('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: 'numeric',
-      minute: '2-digit',
-      timeZoneName: 'short',
-    }).format(date);
+  _formatAnnTSRange(ann) {
+    const startDate = new Date(ann.startTime);
+    const startStr = dateFormatter.format(startDate);
+    if (ann.retired != true) {
+      return startStr;
+    }
+    const endDate = new Date(ann.endTime);
+    const endStr = dateFormatter.format(endDate);
+    return `${startStr} - ${endStr}`;
   }
 
   retireAnnouncement(event) {
