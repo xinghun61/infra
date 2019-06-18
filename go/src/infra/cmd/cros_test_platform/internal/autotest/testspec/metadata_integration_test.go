@@ -38,7 +38,12 @@ func TestLoadAndParseSimple(t *testing.T) {
 				{Name: "dummy_suite"},
 			},
 			Tests: []*api.AutotestTest{
-				{Name: "dummy_Pass", AllowRetries: true, MaxRetries: 1},
+				{
+					Name:                 "dummy_Pass",
+					AllowRetries:         true,
+					MaxRetries:           1,
+					ExecutionEnvironment: api.AutotestTest_EXECUTION_ENVIRONMENT_SERVER,
+				},
 			},
 		},
 	}

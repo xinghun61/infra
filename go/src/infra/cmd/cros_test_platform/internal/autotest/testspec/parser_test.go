@@ -53,6 +53,33 @@ func TestParseTestControlName(t *testing.T) {
 	}
 }
 
+func TestParseTestControlExecutionEnvironment(t *testing.T) {
+	var cases = []struct {
+		Tag  string
+		Text string
+		Want api.AutotestTest_ExecutionEnvironment
+	}{
+		{"default value", ``, api.AutotestTest_EXECUTION_ENVIRONMENT_UNSPECIFIED},
+		{"malformed value", `TEST_TYPE = "notclient"`, api.AutotestTest_EXECUTION_ENVIRONMENT_UNSPECIFIED},
+		{"client test", `TEST_TYPE = "client"`, api.AutotestTest_EXECUTION_ENVIRONMENT_CLIENT},
+		{"server test", `TEST_TYPE = 'server'`, api.AutotestTest_EXECUTION_ENVIRONMENT_SERVER},
+		{"server test mixed case", `TEST_TYPE = 'SeRvEr'`, api.AutotestTest_EXECUTION_ENVIRONMENT_SERVER},
+	}
+
+	for _, c := range cases {
+		t.Run(c.Tag, func(t *testing.T) {
+			as, err := parseTestControl(c.Text)
+			if err != nil {
+				t.Fatalf("parseTestControl: %s", err)
+			}
+			if as.ExecutionEnvironment != c.Want {
+				t.Errorf("ExecutionEnvironment differs for |%s|: got %s, want %s",
+					c.Text, as.ExecutionEnvironment.String(), c.Want.String())
+			}
+		})
+	}
+}
+
 func TestParseTestControlSyncCount(t *testing.T) {
 	var cases = []struct {
 		Tag                   string

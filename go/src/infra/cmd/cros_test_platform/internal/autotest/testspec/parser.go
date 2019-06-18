@@ -18,6 +18,7 @@ func parseTestControl(text string) (*testMetadata, error) {
 	var merr errors.MultiError
 	var tm testMetadata
 	parseTestName(text, &tm)
+	parseExecutionEnvironment(text, &tm)
 	merr = append(merr, parseSyncCount(text, &tm))
 	merr = append(merr, parseRetries(text, &tm))
 	merr = append(merr, parseDependencies(text, &tm))
@@ -42,6 +43,18 @@ func unwrapMultiErrorIfNil(merr errors.MultiError) error {
 func parseTestName(text string, tm *testMetadata) {
 	ms := findMatchesInAllLines(text, namePattern)
 	tm.Name = unwrapLastSubmatch(ms, "parseTestName")
+}
+
+func parseExecutionEnvironment(text string, tm *testMetadata) {
+	ms := findMatchesInAllLines(text, testTypePattern)
+	env := unwrapLastSubmatch(ms, "parseExecutionEnvironment")
+	env = strings.ToLower(env)
+	switch env {
+	case "client":
+		tm.ExecutionEnvironment = api.AutotestTest_EXECUTION_ENVIRONMENT_CLIENT
+	case "server":
+		tm.ExecutionEnvironment = api.AutotestTest_EXECUTION_ENVIRONMENT_SERVER
+	}
 }
 
 func findMatchesInAllLines(text string, re *regexp.Regexp) [][]string {
@@ -170,6 +183,7 @@ func parseChildDependencies(text string, as *api.AutotestSuite) {
 
 var (
 	namePattern              = regexp.MustCompile(`^\s*NAME\s*=\s*['"]([\w\.-]+)['"]\s*`)
+	testTypePattern          = regexp.MustCompile(`^\s*TEST_TYPE\s*=\s*['"](\w+)['"]\s*`)
 	syncCountPattern         = regexp.MustCompile(`^\s*SYNC_COUNT\s*=\s*(\d+)\s*`)
 	retriesPattern           = regexp.MustCompile(`^\s*JOB_RETRIES\s*=\s*(\d+)\s*`)
 	dependenciesPattern      = regexp.MustCompile(`^\s*DEPENDENCIES\s*=\s*['"]([\s\w\.,:-]+)['"]\s*`)
