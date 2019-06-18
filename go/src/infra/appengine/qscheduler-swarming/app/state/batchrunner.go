@@ -150,13 +150,10 @@ func (b *BatchRunner) runRequestsInBatches(store *Store) {
 		ctx := r.ctx
 		logging.Debugf(ctx, "request picked as batch master")
 
-		// If r's context is already dead, skip it and move on.
-		select {
-		case <-r.ctx.Done():
+		if !r.isActive() {
 			// Request is already cancelled, don't use it as a master.
 			logging.Debugf(ctx, "request already cancelled, dropped as batch master")
 			continue
-		default:
 		}
 
 		nb := &batch{}
@@ -179,6 +176,10 @@ func (b *BatchRunner) collectForBatch(ctx context.Context, nb *batch) {
 			if r == nil {
 				// Requests channel is closed, stop collecting.
 				return
+			}
+			if !r.isActive() {
+				logging.Debugf(r.ctx, "request already cancelled, ignored for batch")
+				continue
 			}
 			logging.Debugf(r.ctx, "request picked up as batch slave, will eventually execute")
 			nb.append(r)
@@ -227,6 +228,17 @@ type batchedOp struct {
 	// done is a buffered channel, that should have the error for this operation written to it
 	// or be closed if the operation completed without error.
 	done chan<- error
+}
+
+// isActive returns true if this operation is still active (its context is not
+// cancelled).
+func (b *batchedOp) isActive() bool {
+	select {
+	case <-b.ctx.Done():
+		return false
+	default:
+		return true
+	}
 }
 
 // batch encapsulates a batch of operations.
