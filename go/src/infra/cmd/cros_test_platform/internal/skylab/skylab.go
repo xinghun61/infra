@@ -43,6 +43,44 @@ type testRun struct {
 	attempts []attempt
 }
 
+func (t *testRun) RequestArgs() (request.Args, error) {
+	isClient, err := t.isClientTest()
+	if err != nil {
+		return request.Args{}, errors.Annotate(err, "create request args").Err()
+	}
+
+	// TODO(akeshet): Run cmd.Config() with correct environment.
+	cmd := &worker.Command{
+		TaskName:   t.test.Name,
+		ClientTest: isClient,
+	}
+
+	args := request.Args{
+		Cmd:               *cmd,
+		SchedulableLabels: toInventoryLabels(t.test.Dependencies),
+		// TODO(akeshet): Determine parent task ID correctly.
+		ParentTaskID: "",
+		// TODO(akeshet): Determine priority correctly.
+		Priority: 0,
+		// TODO(akeshet): Determine provisionable dimensions correctly.
+		ProvisionableDimensions: nil,
+		// TODO(akeshet): Determine tags correctly.
+		SwarmingTags: nil,
+		// TODO(akeshet): Determine timeout correctly.
+		Timeout: 0,
+	}
+
+	return args, nil
+}
+
+func (t *testRun) isClientTest() (bool, error) {
+	isClient, ok := isClientTest[t.test.ExecutionEnvironment]
+	if !ok {
+		return false, errors.Reason("unknown exec environment %s", t.test.ExecutionEnvironment).Err()
+	}
+	return isClient, nil
+}
+
 type attempt struct {
 	taskID    string
 	completed bool
@@ -91,43 +129,19 @@ var isClientTest = map[build_api.AutotestTest_ExecutionEnvironment]bool{
 
 func (r *TaskSet) launch(ctx context.Context, swarming Swarming) error {
 	for _, testRun := range r.testRuns {
-		t := testRun.test
-
-		// TODO(akeshet): move everything from here to args construction to a
-		// method on testRun.
-		isClient, ok := isClientTest[t.ExecutionEnvironment]
-		if !ok {
-			return errors.Reason("unknown exec environment %s for task named %s", t.ExecutionEnvironment, t.Name).Err()
+		args, err := testRun.RequestArgs()
+		if err != nil {
+			return errors.Annotate(err, "launch test named %s", testRun.test.Name).Err()
 		}
 
-		// TODO(akeshet): Run cmd.Config() with correct environment.
-		cmd := &worker.Command{
-			TaskName:   t.Name,
-			ClientTest: isClient,
-		}
-
-		args := request.Args{
-			Cmd:               *cmd,
-			SchedulableLabels: toInventoryLabels(t.Dependencies),
-			// TODO(akeshet): Determine parent task ID correctly.
-			ParentTaskID: "",
-			// TODO(akeshet): Determine priority correctly.
-			Priority: 0,
-			// TODO(akeshet): Determine provisionable dimensions correctly.
-			ProvisionableDimensions: nil,
-			// TODO(akeshet): Determine tags correctly.
-			SwarmingTags: nil,
-			// TODO(akeshet): Determine timeout correctly.
-			Timeout: 0,
-		}
 		req, err := request.New(args)
 		if err != nil {
-			return errors.Annotate(err, "launch test").Err()
+			return errors.Annotate(err, "launch test named %s", testRun.test.Name).Err()
 		}
 
 		resp, err := swarming.CreateTask(ctx, req)
 		if err != nil {
-			return errors.Annotate(err, "launch test").Err()
+			return errors.Annotate(err, "launch test named %s", testRun.test.Name).Err()
 		}
 
 		testRun.attempts = append(testRun.attempts, attempt{taskID: resp.TaskId})
