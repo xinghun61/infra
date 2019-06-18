@@ -197,23 +197,6 @@ def _buildbucket_property_legacy(build):
   }
 
 
-def _remove_if_tags(task):
-  """Removes '#if-tag's on JSON objects.
-
-  TODO(crbug.com/973721): remove this function.
-  """
-  tag_string = '#if-tag'
-
-  def walk(obj):
-    if isinstance(obj, dict):
-      return {k: walk(v) for k, v in obj.iteritems() if k != tag_string}
-    if isinstance(obj, list):
-      return [walk(i) for i in obj]
-    return obj
-
-  return walk(task)
-
-
 def _create_task_def(build, fake_build):
   """Creates a swarming task definition for the |build|."""
   assert isinstance(build, model.Build), type(build)
@@ -269,7 +252,6 @@ def _create_task_def(build, fake_build):
   task['tags'] = _calc_tags(
       build, extra_swarming_tags, task_template_rev, task.get('tags')
   )
-  task = _remove_if_tags(task)
 
   _setup_swarming_request_task_slices(build, extra_cipd_packages, task)
 
