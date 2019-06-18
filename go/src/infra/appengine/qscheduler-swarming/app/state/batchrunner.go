@@ -183,7 +183,7 @@ func (b *BatchRunner) collectForBatch(ctx context.Context, nb *batch) {
 			logging.Debugf(r.ctx, "request picked up as batch slave, will eventually execute")
 			nb.append(r)
 			<-b.tBatchWait
-		case <-clock.After(ctx, 100*time.Millisecond):
+		case <-clock.After(ctx, 10*time.Millisecond):
 			// Stop collecting, unless we are in a test test fixture and
 			// waiting for additional requests.
 			if !b.tWait {
