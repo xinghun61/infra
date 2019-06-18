@@ -117,16 +117,18 @@ func (b *BatchRunner) RunOperation(ctx context.Context, op types.Operation, prio
 		done:      dc,
 	}
 
-	// Attempt to join a batch, but bail out if context is cancelled.
-	select {
-	case b.requests <- bo:
-		break
-	case <-ctx.Done():
-		dc <- ctx.Err()
-		close(dc)
-	}
+	go func() {
+		// Attempt to join a batch, but bail out if context is cancelled.
+		select {
+		case <-ctx.Done():
+			dc <- ctx.Err()
+			close(dc)
+		case b.requests <- bo:
+		}
+	}()
 
 	return dc
+
 }
 
 // Close closes a batcher, and waits for it to finish closing.
