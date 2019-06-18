@@ -18,7 +18,7 @@ class ChromiumProjectAPITest(unittest.TestCase):
     log = step.logs.add()
     log.name = 'stdout'
     self.assertEqual(StepTypeEnum.COMPILE,
-                     ChromiumProjectAPI().ClassifyStepType(step))
+                     ChromiumProjectAPI().ClassifyStepType(None, step))
 
   def testTestStep(self):
     step = Step()
@@ -26,7 +26,7 @@ class ChromiumProjectAPITest(unittest.TestCase):
     log = step.logs.add()
     log.name = 'step_metadata'
     self.assertEqual(StepTypeEnum.TEST,
-                     ChromiumProjectAPI().ClassifyStepType(step))
+                     ChromiumProjectAPI().ClassifyStepType(None, step))
 
   def testInfraStep(self):
     step = Step()
@@ -34,4 +34,4 @@ class ChromiumProjectAPITest(unittest.TestCase):
     log = step.logs.add()
     log.name = 'report'
     self.assertEqual(StepTypeEnum.INFRA,
-                     ChromiumProjectAPI().ClassifyStepType(step))
+                     ChromiumProjectAPI().ClassifyStepType(None, step))

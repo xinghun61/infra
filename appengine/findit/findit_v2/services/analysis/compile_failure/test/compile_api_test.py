@@ -3,6 +3,7 @@
 # found in the LICENSE file.
 
 from datetime import datetime
+import json
 import mock
 
 from buildbucket_proto import common_pb2
@@ -55,6 +56,8 @@ class CompileApiTest(wf_testcase.TestCase):
         compile_failure_keys=[])
     self.analysis.Save()
 
+    self.compile_step_name = 'compile'
+
   def testAnalyzeCompileFailureBailoutChromium(self):
     context = Context(luci_project_name='chromium')
     self.assertFalse(compile_api.AnalyzeCompileFailure(context, None, None))
@@ -93,7 +96,7 @@ class CompileApiTest(wf_testcase.TestCase):
       'GetFirstFailuresInCurrentBuild',
       return_value={
           'failures': {
-              'install packages': {
+              'compile': {
                   'output_targets': ['target4', 'target1', 'target2']
               }
           }
@@ -122,7 +125,7 @@ class CompileApiTest(wf_testcase.TestCase):
   def testAnalyzeCompileFailure(self, mock_first_failure_in_build, *_):
     mock_first_failure_in_build.return_value = {
         'failures': {
-            'install packages': {
+            self.compile_step_name: {
                 'output_targets': ['target4', 'target1', 'target2']
             }
         }
@@ -151,11 +154,22 @@ class CompileApiTest(wf_testcase.TestCase):
     build.input.gitiles_commit.id = 'git_sha_6543221'
     build.create_time.FromDatetime(datetime(2019, 4, 9))
     step1 = Step(name='s1', status=common_pb2.SUCCESS)
-    step2 = Step(name='install packages', status=common_pb2.FAILURE)
+    step2 = Step(name=self.compile_step_name, status=common_pb2.FAILURE)
     build.steps.extend([step1, step2])
+    output_target = json.dumps({
+        'category': 'chromeos-base',
+        'packageName': 'target2'
+    })
+    build.output.properties['build_compile_failure_output'] = {
+        'failures': [{
+            'output_targets': [output_target],
+            'rule': 'emerge'
+        },],
+        'failed_step': self.compile_step_name
+    }
 
     mock_compile_failures.return_value = {
-        'install packages': {
+        self.compile_step_name: {
             'failures': {
                 frozenset(['target1.o', 'target2.o']): {
                     'rule': 'CXX',
@@ -196,8 +210,9 @@ class CompileApiTest(wf_testcase.TestCase):
             self.context, self.analyzed_build_id, build))
     rerun_build = CompileRerunBuild.get_by_id(
         build_id, parent=self.analysis.key)
-    self.assertItemsEqual(['target1.o', 'target2.o'],
-                          rerun_build.GetFailedTargets()['install packages'])
+    self.assertItemsEqual(
+        ['target1.o', 'target2.o'],
+        rerun_build.GetFailedTargets()[self.compile_step_name])
 
   def testProcessAndSaveRerunBuildResultAnalysisMissing(self):
     build_id = 8000000000123
@@ -269,7 +284,7 @@ class CompileApiTest(wf_testcase.TestCase):
     build.input.gitiles_commit.id = 'git_sha_6543221'
     build.create_time.FromDatetime(datetime(2019, 4, 9))
     step1 = Step(name='s1', status=common_pb2.SUCCESS)
-    step2 = Step(name='install packages', status=common_pb2.SUCCESS)
+    step2 = Step(name=self.compile_step_name, status=common_pb2.SUCCESS)
     build.steps.extend([step1, step2])
 
     CompileRerunBuild.Create(
@@ -299,7 +314,7 @@ class CompileApiTest(wf_testcase.TestCase):
   def testOnCompileFailureAnalysisResultRequested(self):
     build_id = 800000000123
     request = findit_result.BuildFailureAnalysisRequest(
-        build_id=build_id, failed_steps=['compile'])
+        build_id=build_id, failed_steps=[self.compile_step_name])
 
     build = LuciFailedBuild.Create(
         luci_project='chromium',
@@ -326,8 +341,8 @@ class CompileApiTest(wf_testcase.TestCase):
         self.context.gitiles_ref, culprit_id, culprit_commit_position)
     culprit.put()
 
-    compile_failure = CompileFailure.Create(build.key, 'compile', ['target1'],
-                                            'CXX')
+    compile_failure = CompileFailure.Create(build.key, self.compile_step_name,
+                                            ['target1'], 'CXX')
     compile_failure.culprit_commit_key = culprit.key
     compile_failure.first_failed_build_id = build.build_id
     compile_failure.failure_group_build_id = build.build_id
@@ -362,7 +377,7 @@ class CompileApiTest(wf_testcase.TestCase):
   def testOnCompileFailureAnalysisResultRequestedAnalysisRunning(self):
     build_id = 800000000123
     request = findit_result.BuildFailureAnalysisRequest(
-        build_id=build_id, failed_steps=['compile'])
+        build_id=build_id, failed_steps=[self.compile_step_name])
 
     build = LuciFailedBuild.Create(
         luci_project='chromium',
@@ -382,8 +397,8 @@ class CompileApiTest(wf_testcase.TestCase):
         build_failure_type=StepTypeEnum.COMPILE)
     build.put()
 
-    compile_failure = CompileFailure.Create(build.key, 'compile', ['target1'],
-                                            'CXX')
+    compile_failure = CompileFailure.Create(build.key, self.compile_step_name,
+                                            ['target1'], 'CXX')
     compile_failure.first_failed_build_id = build.build_id
     compile_failure.failure_group_build_id = build.build_id
     compile_failure.put()

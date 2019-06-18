@@ -53,30 +53,31 @@ class ChromeOSProjectAPITest(wf_testcase.TestCase):
         build_failure_type=StepTypeEnum.COMPILE)
     self.group_build.put()
 
-  def testCompileStep(self):
-    step = Step()
-    step.name = 'install packages'
-    log = step.logs.add()
-    log.name = 'stdout'
-    self.assertEqual(StepTypeEnum.COMPILE,
-                     ChromeOSProjectAPI().ClassifyStepType(step))
-
-  def testInfraStep(self):
-    step = Step()
-    step.name = 'Failure Reason'
-    log = step.logs.add()
-    log.name = 'reason'
-    self.assertEqual(StepTypeEnum.INFRA,
-                     ChromeOSProjectAPI().ClassifyStepType(step))
-
-  def testGetCompileFailures(self):
-    build_id = 8765432109123
-    build_number = 123
-    build = Build(id=build_id, number=123)
+  def _CreateBuildbucketBuild(self,
+                              build_id,
+                              build_number,
+                              output_targets=None,
+                              step_name=None):
+    build = Build(id=build_id, number=build_number)
     build.input.gitiles_commit.host = 'gitiles.host.com'
     build.input.gitiles_commit.project = 'project/name'
     build.input.gitiles_commit.ref = 'ref/heads/master'
     build.input.gitiles_commit.id = 'git_sha'
+
+    if output_targets:
+      build.output.properties['build_compile_failure_output'] = {
+          'failures': [{
+              'output_targets': output_targets,
+              'rule': 'emerge'
+          },],
+          'failed_step': step_name
+      }
+    return build
+
+  def testCompileStep(self):
+    compile_step_name = 'install packages|installation results'
+    build_id = 8765432109123
+    build_number = 123
     output_target1 = json.dumps({
         'category': 'chromeos-base',
         'packageName': 'target1'
@@ -85,14 +86,91 @@ class ChromeOSProjectAPITest(wf_testcase.TestCase):
         'category': 'chromeos-base',
         'packageName': 'target2'
     })
-    build.output.properties['build_compile_failure_output'] = {
-        'failures': [{
-            'output_targets': [output_target1, output_target2],
-            'rule': 'emerge'
-        },]
-    }
+    build = self._CreateBuildbucketBuild(
+        build_id,
+        build_number, [output_target1, output_target2],
+        step_name=compile_step_name)
     step = Step()
-    step.name = 'install packages'
+    step.name = compile_step_name
+    log = step.logs.add()
+    log.name = 'stdout'
+    self.assertEqual(StepTypeEnum.COMPILE,
+                     ChromeOSProjectAPI().ClassifyStepType(build, step))
+
+  def testInfraStepFromABuildWithCompileFailure(self):
+    compile_step_name = 'install packages|installation results'
+    build_id = 8765432109123
+    build_number = 123
+    output_target1 = json.dumps({
+        'category': 'chromeos-base',
+        'packageName': 'target1'
+    })
+    output_target2 = json.dumps({
+        'category': 'chromeos-base',
+        'packageName': 'target2'
+    })
+    build = self._CreateBuildbucketBuild(
+        build_id,
+        build_number, [output_target1, output_target2],
+        step_name=compile_step_name)
+    step = Step()
+    step.name = 'Failure Reason'
+    log = step.logs.add()
+    log.name = 'reason'
+    self.assertEqual(StepTypeEnum.INFRA,
+                     ChromeOSProjectAPI().ClassifyStepType(build, step))
+
+  def testInfraStepFromABuildWithCompileFailureNoFailedStep(self):
+    compile_step_name = 'install packages|installation results'
+    build_id = 8765432109123
+    build_number = 123
+    output_target1 = json.dumps({
+        'category': 'chromeos-base',
+        'packageName': 'target1'
+    })
+    output_target2 = json.dumps({
+        'category': 'chromeos-base',
+        'packageName': 'target2'
+    })
+    build = self._CreateBuildbucketBuild(build_id, build_number,
+                                         [output_target1, output_target2])
+    step = Step()
+    step.name = compile_step_name
+    log = step.logs.add()
+    log.name = 'reason'
+    self.assertEqual(StepTypeEnum.INFRA,
+                     ChromeOSProjectAPI().ClassifyStepType(build, step))
+
+  def testInfraStepFromABuildWithoutCompileFailure(self):
+    step_name = 'test step'
+    build_id = 8765432109123
+    build_number = 123
+    build = self._CreateBuildbucketBuild(build_id, build_number)
+    step = Step()
+    step.name = step_name
+    log = step.logs.add()
+    log.name = 'reason'
+    self.assertEqual(StepTypeEnum.INFRA,
+                     ChromeOSProjectAPI().ClassifyStepType(build, step))
+
+  def testGetCompileFailures(self):
+    step_name = 'install packages'
+    build_id = 8765432109123
+    build_number = 123
+    output_target1 = json.dumps({
+        'category': 'chromeos-base',
+        'packageName': 'target1'
+    })
+    output_target2 = json.dumps({
+        'category': 'chromeos-base',
+        'packageName': 'target2'
+    })
+    build = self._CreateBuildbucketBuild(
+        build_id,
+        build_number, [output_target1, output_target2],
+        step_name=step_name)
+    step = Step()
+    step.name = step_name
 
     expected_failures = {
         'install packages': {
@@ -119,31 +197,31 @@ class ChromeOSProjectAPITest(wf_testcase.TestCase):
     self.assertEqual(expected_failures,
                      ChromeOSProjectAPI().GetCompileFailures(build, [step]))
 
-  def testGetCompileFailuresNoFailure(self):
+  def testGetCompileFailuresNoFailedStep(self):
+    step_name = 'install packages'
     build_id = 8765432109123
     build_number = 123
-    build = Build(id=build_id, number=123)
-    build.input.gitiles_commit.host = 'gitiles.host.com'
-    build.input.gitiles_commit.project = 'project/name'
-    build.input.gitiles_commit.ref = 'ref/heads/master'
-    build.input.gitiles_commit.id = 'git_sha'
+    output_target = json.dumps({
+        'category': 'chromeos-base',
+        'packageName': 'target2'
+    })
+    build = self._CreateBuildbucketBuild(build_id, build_number,
+                                         [output_target])
     step = Step()
-    step.name = 'install packages'
+    step.name = step_name
 
-    expected_failures = {
-        'install packages': {
-            'failures': {},
-            'first_failed_build': {
-                'id': build_id,
-                'number': build_number,
-                'commit_id': 'git_sha'
-            },
-            'last_passed_build': None,
-        },
-    }
+    self.assertEqual({}, ChromeOSProjectAPI().GetCompileFailures(build, [step]))
 
-    self.assertEqual(expected_failures,
-                     ChromeOSProjectAPI().GetCompileFailures(build, [step]))
+  def testGetCompileFailuresNoFailure(self):
+    step_name = 'install packages'
+    build_id = 8765432109123
+    build_number = 123
+    build = self._CreateBuildbucketBuild(
+        build_id, build_number, [], step_name=step_name)
+    step = Step()
+    step.name = step_name
+
+    self.assertEqual({}, ChromeOSProjectAPI().GetCompileFailures(build, [step]))
 
   def testGetRerunBuilderId(self):
     build = Build(builder=self.builder)
@@ -179,18 +257,11 @@ class ChromeOSProjectAPITest(wf_testcase.TestCase):
             build, targets))
 
   def testGetCompileRerunBuildInputPropertiesOtherStep(self):
-    build_target = 'abc'
-    output_target1 = json.dumps({
-        'category': 'chromeos-base',
-        'packageName': 'target1'
-    })
-    targets = {'compile': [output_target1]}
-
     build = Build()
-    build.input.properties['build_target'] = {'name': build_target}
+    build.input.properties['build_target'] = {'name': 'abc'}
 
     self.assertIsNone(ChromeOSProjectAPI().GetCompileRerunBuildInputProperties(
-        build, targets))
+        build, {}))
 
   def testGetFailuresWithMatchingCompileFailureGroupsNoExistingGroup(self):
     build_id = 8000000000122

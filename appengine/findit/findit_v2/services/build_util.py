@@ -27,7 +27,7 @@ def GetFailedStepsInBuild(context, build):
   for step in build.steps:
     if step.status != common_pb2.FAILURE:
       continue
-    failure_type = project_api.ClassifyStepType(step)
+    failure_type = project_api.ClassifyStepType(build, step)
     failed_steps.append((step, failure_type))
 
   return failed_steps

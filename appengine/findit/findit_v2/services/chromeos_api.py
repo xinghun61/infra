@@ -12,18 +12,50 @@ from findit_v2.model.compile_failure import CompileFailureGroup
 from findit_v2.services.failure_type import StepTypeEnum
 from findit_v2.services.project_api import ProjectAPI
 
-_COMPILE_STEP_NAME = 'install packages'
+_COMPILE_FAILURE_OUTPUT_NAME = 'build_compile_failure_output'
 
 
 class ChromeOSProjectAPI(ProjectAPI):
 
-  def ClassifyStepType(self, step):
+  def _GetFailureOutput(self, build, output_name):
+    """Gets failure output from the build's output property."""
+    # Converts the Struct to standard dict, to use .get, .iteritems etc.
+    build_failure_output = json_format.MessageToDict(
+        build.output.properties).get(output_name)
+
+    return build_failure_output
+
+  def ClassifyStepType(self, build, step):
     """ Returns the failure type of the given build step.
 
+    In ChromeOS builds, if they have compile failures, they will produce an
+    output property called 'build_compile_failure_output', which includes the
+    failed step name. So that step will be classified as the compile step.
+
     Args:
+      build (buildbucket build.proto): ALL info about the build.
       step (buildbucket step.proto): ALL info about the build step.
     """
-    if step.name == _COMPILE_STEP_NAME:
+    compile_failure_output = self._GetFailureOutput(
+        build, _COMPILE_FAILURE_OUTPUT_NAME)
+    if not compile_failure_output:
+      # No compile failure in the build, so far classifies every failed step as
+      # infra failure and ignore them.
+      return StepTypeEnum.INFRA
+
+    failed_compile_step = compile_failure_output.get('failed_step')
+    if not failed_compile_step:
+      logging.error(
+          'No failed_step in build_compile_failure_output of ChromeOS'
+          ' build %d.', build.id)
+      return StepTypeEnum.INFRA
+
+    if step.name == failed_compile_step:
+      # Noted for ChromeOS the current supported compile step is nested.
+      # To be consistent with sheriff-o-matic, the matching step name is a leaf
+      # step. Although in reality the parent step also has 'FAILIURE' state and
+      # is a compile step, Findit will still return a StepTypeEnum.INFRA for it
+      # to intentionality ignore it.
       return StepTypeEnum.COMPILE
 
     return StepTypeEnum.INFRA
@@ -70,24 +102,29 @@ class ChromeOSProjectAPI(ProjectAPI):
         'commit_id': build.input.gitiles_commit.id
     }
 
+    build_compile_failure_output = self._GetFailureOutput(
+        build, _COMPILE_FAILURE_OUTPUT_NAME)
+
+    if not build_compile_failure_output:
+      logging.error('No %s for ChromeOS build %d.',
+                    _COMPILE_FAILURE_OUTPUT_NAME, build.id)
+      return {}
+
+    failed_step = build_compile_failure_output.get('failed_step')
+    if not failed_step:
+      logging.error(
+          'No failed_step in build_compile_failure_output of ChromeOS'
+          ' build %d.', build.id)
+      return {}
+
     detailed_compile_failures = {
-        _COMPILE_STEP_NAME: {
+        failed_step: {
             'failures': {},
             'first_failed_build': build_info,
             'last_passed_build': None,
         }
     }
-
-    # Convert the Struct to standard dict, to use .get, .iteritems etc.
-    build_compile_failure_output = json_format.MessageToDict(
-        build.output.properties).get('build_compile_failure_output')
-
-    if not build_compile_failure_output:
-      logging.debug('No build_compile_failure_output for ChromeOS build %d.',
-                    build.id)
-      return detailed_compile_failures
-
-    failures_dict = detailed_compile_failures[_COMPILE_STEP_NAME]['failures']
+    failures_dict = detailed_compile_failures[failed_step]['failures']
     for failure in build_compile_failure_output.get('failures', []):
       # In ChromeOS build, output_target is a json string like
       # "{\"category\": \"chromeos-base\", \"packageName\": \"cryptohome\"}"
@@ -138,7 +175,7 @@ class ChromeOSProjectAPI(ProjectAPI):
       the first time in current build.
       {
         'failures': {
-          _COMPILE_STEP_NAME: {
+          'install packages': {
             'output_targets': [
               frozenset(['target4']),
               frozenset(['target1', 'target2'])],
@@ -160,7 +197,7 @@ class ChromeOSProjectAPI(ProjectAPI):
       failures_with_existing_group (dict): A dict of failures from
         first_failures_in_current_build that found a matching group.
         {
-          _COMPILE_STEP_NAME: {
+          'install packages': {
             frozenset(['target4']):  8765432000,
           ]
         }
@@ -244,7 +281,9 @@ class ChromeOSProjectAPI(ProjectAPI):
         'Failed to get build_target for ChromeOS build {}'.format(
             referred_build.id))
 
-    targets = failed_targets.get(_COMPILE_STEP_NAME, [])
+    targets = []
+    for step_targets in failed_targets.itervalues():
+      targets.extend(step_targets)
     if not targets:
       return None
 
@@ -254,6 +293,6 @@ class ChromeOSProjectAPI(ProjectAPI):
             'name': build_target
         },
         '$chromeos/cros_bisect': {
-            'targets': targets
+            'targets': list(set(targets))
         },
     }

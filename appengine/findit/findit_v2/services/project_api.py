@@ -6,10 +6,11 @@
 
 class ProjectAPI(object):  # pragma: no cover.
 
-  def ClassifyStepType(self, step):
+  def ClassifyStepType(self, build, step):
     """ Returns the failure type of the given build step.
 
     Args:
+      build (buildbucket build.proto): ALL info about the build.
       step (buildbucket step.proto): ALL info about the build step.
 
     Returns:

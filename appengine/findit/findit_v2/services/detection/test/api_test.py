@@ -18,7 +18,7 @@ from findit_v2.services.project_api import ProjectAPI
 
 class DummyProjectAPI(ProjectAPI):
 
-  def ClassifyStepType(self, step):
+  def ClassifyStepType(self, _build, step):
     if step.name == 'compile':
       return StepTypeEnum.COMPILE
     return StepTypeEnum.INFRA

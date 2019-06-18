@@ -9,10 +9,12 @@ from findit_v2.services.project_api import ProjectAPI
 
 class ChromiumProjectAPI(ProjectAPI):
 
-  def ClassifyStepType(self, step):
+  def ClassifyStepType(self, _build, step):
     """ Returns the failure type of the given build step.
 
     Args:
+      _build (buildbucket build.proto): ALL info about the build. Itis added to
+        make the signature compatible with other project, but not used here.
       step (buildbucket step.proto): ALL info about the build step.
     """
     if step.name == 'compile':
