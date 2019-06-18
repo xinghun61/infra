@@ -16,16 +16,6 @@ import (
 	"go.chromium.org/luci/common/errors"
 )
 
-const (
-	// failedWithoutResponse is returned by a script that failed without
-	// producing a response.
-	failedWithoutResponse = 1
-
-	// retcodeFailedWithoutResponse is returned by a script that failed but
-	// nevertheless produced a response.
-	failedWithResponse = 2
-)
-
 var (
 	unmarshaller = jsonpb.Unmarshaler{AllowUnknownFields: true}
 	marshaller   = jsonpb.Marshaler{}

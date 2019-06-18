@@ -48,17 +48,14 @@ func (c *skylabExecuteRun) Run(a subcommands.Application, args []string, env sub
 	if err := c.validateArgs(); err != nil {
 		fmt.Fprintln(a.GetErr(), err.Error())
 		c.Flags.Usage()
-		return failedWithoutResponse
+		return exitCode(err)
 	}
 
-	if responded, err := c.innerRun(a, args, env); err != nil {
+	_, err := c.innerRun(a, args, env)
+	if err != nil {
 		fmt.Fprintf(a.GetErr(), "%s\n", err)
-		if responded {
-			return failedWithResponse
-		}
-		return failedWithoutResponse
 	}
-	return 0
+	return exitCode(err)
 }
 
 func (c *skylabExecuteRun) validateArgs() error {
