@@ -51,7 +51,7 @@ func (c *skylabExecuteRun) Run(a subcommands.Application, args []string, env sub
 		return exitCode(err)
 	}
 
-	_, err := c.innerRun(a, args, env)
+	err := c.innerRun(a, args, env)
 	if err != nil {
 		fmt.Fprintf(a.GetErr(), "%s\n", err)
 	}
@@ -70,37 +70,35 @@ func (c *skylabExecuteRun) validateArgs() error {
 	return nil
 }
 
-func (c *skylabExecuteRun) innerRun(a subcommands.Application, args []string, env subcommands.Env) (responded bool, err error) {
+func (c *skylabExecuteRun) innerRun(a subcommands.Application, args []string, env subcommands.Env) error {
 	request, err := readExecuteRequest(c.inputPath)
 	if err != nil {
-		return false, err
+		return err
 	}
 
 	if err := validateRequest(request); err != nil {
-		return false, err
+		return err
 	}
 
 	ctx := cli.GetContext(a, c, env)
 
 	hClient, err := httpClient(ctx, request.Config.SkylabSwarming)
 	if err != nil {
-		return false, err
+		return err
 	}
 
 	client, err := swarming.New(ctx, hClient, request.Config.SkylabSwarming.Server)
 	if err != nil {
-		return false, err
+		return err
 	}
 
 	response, err := c.handleRequest(ctx, a.GetErr(), request, client)
 	if err != nil && response == nil {
 		// Catastrophic error. There is no reasonable response to write.
-		return false, err
+		return err
 	}
 
-	err = writeResponse(c.outputPath, response, err)
-	// This bool expression is a refactoring kludge that will soon disapppear.
-	return exitCode(err) != 1, err
+	return writeResponse(c.outputPath, response, err)
 }
 
 func readExecuteRequest(path string) (*steps.ExecuteRequest, error) {
