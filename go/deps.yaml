@@ -136,6 +136,7 @@ import:
   - pubsub
   - storage
   - spanner
+  - profiler
 - package: google.golang.org/genproto
   version: master
   repo: https://chromium.googlesource.com/external/github.com/google/go-genproto.git
@@ -428,8 +429,8 @@ import:
   version: master
   repo: https://chromium.googlesource.com/external/github.com/go-warnings/warnings.git
 - package: go.skia.org/infra
-  repo: https://skia.googlesource.com/buildbot.git
   version: 326c4dc30d5cb08b5b0596796ad06c0d65a998d9
+  repo: https://skia.googlesource.com/buildbot.git
   subpackages:
   - gold-client/cmd/goldctl
 - package: github.com/flynn/json5
