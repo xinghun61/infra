@@ -57,13 +57,13 @@ func TestBatcherErrors(t *testing.T) {
 			wg.Add(2)
 
 			go func() {
-				done := batcher.RunOperation(ctx, goodOperation, 0)
+				done := batcher.EnqueueOperation(ctx, goodOperation, 0)
 				goodError = <-done
 				wg.Done()
 			}()
 
 			go func() {
-				done := batcher.RunOperation(ctx, badOperation, 0)
+				done := batcher.EnqueueOperation(ctx, badOperation, 0)
 				badError = <-done
 				wg.Done()
 			}()
@@ -109,12 +109,12 @@ func TestBatcherBehavior(t *testing.T) {
 			for i := 0; i < 10; i++ {
 				wg.Add(2)
 				go func() {
-					done := batcher.RunOperation(ctx, operationA, state.BatchPriorityNotify)
+					done := batcher.EnqueueOperation(ctx, operationA, state.BatchPriorityNotify)
 					<-done
 					wg.Done()
 				}()
 				go func() {
-					done := batcher.RunOperation(ctx, operationB, state.BatchPriorityAssign)
+					done := batcher.EnqueueOperation(ctx, operationB, state.BatchPriorityAssign)
 					<-done
 					wg.Done()
 				}()

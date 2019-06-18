@@ -100,14 +100,14 @@ func (b *BatchRunner) Start(store *Store) {
 	})
 }
 
-// RunOperation runs the given operation within a batch.
+// EnqueueOperation enqueues the given operation within a batch.
 //
 // Within a batch, operations are ordered by priority.
 //
-// RunOperation returns a channel that receives an error for the operation or
+// EnqueueOperation returns a channel that receives an error for the operation or
 // closes once the operation has completed after which it is safe to read its
 // result.
-func (b *BatchRunner) RunOperation(ctx context.Context, op types.Operation, priority BatchPriority) (wait <-chan error) {
+func (b *BatchRunner) EnqueueOperation(ctx context.Context, op types.Operation, priority BatchPriority) (wait <-chan error) {
 	// Use a buffered channel, so that writing back to this channel doesn't block.
 	dc := make(chan error, b.doneChannelSize)
 	bo := &batchedOp{

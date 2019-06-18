@@ -95,7 +95,7 @@ func (s *BatchedQSchedulerServer) AssignTasks(ctx context.Context, r *swarming.A
 	op, result := operations.AssignTasks(r)
 
 	batcher := s.getOrCreateBatcher(r.SchedulerId)
-	wait := batcher.RunOperation(ctx, op, state.BatchPriorityAssign)
+	wait := batcher.EnqueueOperation(ctx, op, state.BatchPriorityAssign)
 	select {
 	case err := <-wait:
 		if err != nil {
@@ -127,7 +127,7 @@ func (s *BatchedQSchedulerServer) NotifyTasks(ctx context.Context, r *swarming.N
 	op, result := operations.NotifyTasks(r)
 
 	batcher := s.getOrCreateBatcher(r.SchedulerId)
-	wait := batcher.RunOperation(ctx, op, state.BatchPriorityNotify)
+	wait := batcher.EnqueueOperation(ctx, op, state.BatchPriorityNotify)
 	select {
 	case err := <-wait:
 		if err != nil {
