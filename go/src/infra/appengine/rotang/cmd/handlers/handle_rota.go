@@ -171,9 +171,10 @@ func convertMembers(jm []jsonMember) ([]rotang.Member, error) {
 func (h *State) updateMembers(ctx context.Context, members []rotang.Member) error {
 	ms := h.memberStore(ctx)
 	for _, m := range members {
-		_, err := ms.Member(ctx, m.Email)
+		currentMember, err := ms.Member(ctx, m.Email)
 		switch {
 		case err == nil:
+			m.OOO = currentMember.OOO
 			if err := ms.UpdateMember(ctx, &m); err != nil {
 				return err
 			}
