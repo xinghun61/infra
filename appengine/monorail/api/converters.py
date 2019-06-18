@@ -377,7 +377,9 @@ def ConvertIssue(issue, users_by_id, related_refs, config):
       closed_timestamp=issue.closed_timestamp,
       modified_timestamp=issue.modified_timestamp,
       star_count=issue.star_count, is_spam=issue.is_spam,
-      attachment_count=issue.attachment_count,
+      # TODO(crbug.com/monorail/5665): Re-enable once the issues with
+      # attachment_count have been fixed.
+      # attachment_count=issue.attachment_count,
       approval_values=approval_values, phases=phases)
   return result
 
