@@ -30,6 +30,18 @@ func newAuthenticatedTransport(ctx context.Context, f *authcli.Flags) (http.Roun
 	return a.Transport()
 }
 
+func readRequest(inFile string, request proto.Message) error {
+	r, err := os.Open(inFile)
+	if err != nil {
+		return errors.Annotate(err, "read request").Err()
+	}
+	defer r.Close()
+	if err := unmarshaller.Unmarshal(r, request); err != nil {
+		return errors.Annotate(err, "read request").Err()
+	}
+	return nil
+}
+
 // exitCode computes the exit code for this tool.
 func exitCode(err error) int {
 	switch {

@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"os"
 
 	"github.com/maruel/subcommands"
 
@@ -71,12 +70,12 @@ func (c *skylabExecuteRun) validateArgs() error {
 }
 
 func (c *skylabExecuteRun) innerRun(a subcommands.Application, args []string, env subcommands.Env) error {
-	request, err := readExecuteRequest(c.inputPath)
-	if err != nil {
+	var request steps.ExecuteRequest
+	if err := readRequest(c.inputPath, &request); err != nil {
 		return err
 	}
 
-	if err := validateRequest(request); err != nil {
+	if err := validateRequest(&request); err != nil {
 		return err
 	}
 
@@ -92,28 +91,13 @@ func (c *skylabExecuteRun) innerRun(a subcommands.Application, args []string, en
 		return err
 	}
 
-	response, err := c.handleRequest(ctx, a.GetErr(), request, client)
+	response, err := c.handleRequest(ctx, a.GetErr(), &request, client)
 	if err != nil && response == nil {
 		// Catastrophic error. There is no reasonable response to write.
 		return err
 	}
 
 	return writeResponse(c.outputPath, response, err)
-}
-
-func readExecuteRequest(path string) (*steps.ExecuteRequest, error) {
-	input, err := os.Open(path)
-	if err != nil {
-		return nil, errors.Annotate(err, "read ExecuteRequest").Err()
-	}
-	defer input.Close()
-
-	request := &steps.ExecuteRequest{}
-	if err := unmarshaller.Unmarshal(input, request); err != nil {
-		return nil, errors.Annotate(err, "read ExecuteRequest").Err()
-	}
-
-	return request, nil
 }
 
 func validateRequest(request *steps.ExecuteRequest) error {

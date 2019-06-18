@@ -63,8 +63,8 @@ func (c *enumerateRun) innerRun(a subcommands.Application, args []string, env su
 	if err := c.processCLIArgs(args); err != nil {
 		return err
 	}
-	request, err := c.readRequest()
-	if err != nil {
+	var request steps.EnumerationRequest
+	if err := readRequest(c.inputPath, &request); err != nil {
 		return err
 	}
 
@@ -88,7 +88,7 @@ func (c *enumerateRun) innerRun(a subcommands.Application, args []string, env su
 		// Catastrophic error. There is no reasonable response to write.
 		return err
 	}
-	ts := c.enumerate(tm, request)
+	ts := c.enumerate(tm, &request)
 	resp := steps.EnumerationResponse{AutotestTests: ts}
 	return writeResponse(c.outputPath, &resp, err)
 }
@@ -104,20 +104,6 @@ func (c *enumerateRun) processCLIArgs(args []string) error {
 		return errors.Reason("-output_json not specified").Err()
 	}
 	return nil
-}
-
-func (c *enumerateRun) readRequest() (*steps.EnumerationRequest, error) {
-	r, err := os.Open(c.inputPath)
-	if err != nil {
-		return nil, errors.Annotate(err, "read request").Err()
-	}
-	defer r.Close()
-
-	request := steps.EnumerationRequest{}
-	if err := unmarshaller.Unmarshal(r, &request); err != nil {
-		return nil, errors.Annotate(err, "read request").Err()
-	}
-	return &request, nil
 }
 
 func (c *enumerateRun) downloadArtifacts(ctx context.Context, gsDir gs.Path, workspace string) (artifacts.LocalPaths, error) {
