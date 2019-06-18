@@ -96,16 +96,14 @@ func (c *skylabExecuteRun) innerRun(a subcommands.Application, args []string, en
 	}
 
 	response, err := c.handleRequest(ctx, a.GetErr(), request, client)
-	if response == nil {
+	if err != nil && response == nil {
+		// Catastrophic error. There is no reasonable response to write.
 		return false, err
 	}
 
-	writeErr := writeExecuteResponse(c.outputPath, response)
-	if writeErr != nil {
-		return false, writeErr
-	}
-
-	return true, err
+	err = writeResponse(c.outputPath, response, err)
+	// This bool expression is a refactoring kludge that will soon disapppear.
+	return exitCode(err) != 1, err
 }
 
 func readExecuteRequest(path string) (*steps.ExecuteRequest, error) {
@@ -134,20 +132,6 @@ func validateRequest(request *steps.ExecuteRequest) error {
 
 	if request.Config.SkylabSwarming == nil {
 		return fmt.Errorf("nil request.Config.SkylabSwarming")
-	}
-
-	return nil
-}
-
-func writeExecuteResponse(path string, response *steps.ExecuteResponse) error {
-	output, err := os.Create(path)
-	if err != nil {
-		return errors.Annotate(err, "write ExecuteResponse").Err()
-	}
-	defer output.Close()
-
-	if err := marshaller.Marshal(output, response); err != nil {
-		return errors.Annotate(err, "write ExecuteResponse").Err()
 	}
 
 	return nil
