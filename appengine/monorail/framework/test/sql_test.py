@@ -28,9 +28,12 @@ class MockSQLCnxn(object):
     self.lastrowid = None
     self.pool_key = instance + '/' + database
     self.is_bad = False
+    self.has_uncommitted = False
 
   def execute(self, stmt_str, args=None):
     self.last_executed = stmt_str % tuple(args or [])
+    if not stmt_str.startswith(('SET', 'SELECT')):
+      self.has_uncommitted = True
 
   def executemany(self, stmt_str, args):
     # We cannot format the string because args has many values for each %s.
@@ -48,10 +51,13 @@ class MockSQLCnxn(object):
     return self
 
   def commit(self):
-    pass
+    self.has_uncommitted = False
 
   def close(self):
-    pass
+    assert not self.has_uncommitted
+
+  def rollback(self):
+    self.has_uncommitted = False
 
   def ping(self):
     if self.is_bad:
@@ -172,6 +178,11 @@ class MonorailConnectionTest(unittest.TestCase):
 
     sql_cnxn2 = self.cnxn.GetConnectionForShard(1)
     self.assertIs(sql_cnxn2, sql_cnxn)
+
+  def testClose(self):
+    sql_cnxn = self.cnxn.GetMasterConnection()
+    self.cnxn.Close()
+    self.assertFalse(sql_cnxn.has_uncommitted)
 
 
 class TableManagerTest(unittest.TestCase):
