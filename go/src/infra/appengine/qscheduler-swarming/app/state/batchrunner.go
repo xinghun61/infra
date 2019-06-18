@@ -20,6 +20,7 @@ import (
 	"time"
 
 	"go.chromium.org/luci/common/clock"
+	"go.chromium.org/luci/common/logging"
 
 	"infra/appengine/qscheduler-swarming/app/state/types"
 	"infra/qscheduler/qslib/scheduler"
@@ -147,11 +148,13 @@ func (b *BatchRunner) runRequestsInBatches(store *Store) {
 
 		// Create a new batch that will run in r's context.
 		ctx := r.ctx
+		logging.Debugf(ctx, "request picked as batch master")
 
 		// If r's context is already dead, skip it and move on.
 		select {
 		case <-r.ctx.Done():
 			// Request is already cancelled, don't use it as a master.
+			logging.Debugf(ctx, "request already cancelled, dropped as batch master")
 			continue
 		default:
 		}
@@ -161,8 +164,9 @@ func (b *BatchRunner) runRequestsInBatches(store *Store) {
 		<-b.tBatchWait
 
 		b.collectForBatch(ctx, nb)
-
+		logging.Debugf(ctx, "batch of size %s collected, executing", nb.numOperations())
 		nb.executeAndClose(ctx, store)
+		logging.Debugf(ctx, "batch executed")
 	}
 	// No more requests, close batches channel.
 	close(b.closed)
@@ -176,6 +180,7 @@ func (b *BatchRunner) collectForBatch(ctx context.Context, nb *batch) {
 				// Requests channel is closed, stop collecting.
 				return
 			}
+			logging.Debugf(r.ctx, "request picked up as batch slave, will eventually execute")
 			nb.append(r)
 			<-b.tBatchWait
 		case <-clock.After(ctx, 100*time.Millisecond):
