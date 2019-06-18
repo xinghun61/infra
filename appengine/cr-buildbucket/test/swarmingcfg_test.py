@@ -652,26 +652,71 @@ class ProjectCfgTest(testing.AppengineTestCase):
 
 class ServiceCfgTest(testing.AppengineTestCase):
 
-  def cfg_test(self, swarming_text, expected_errors):
-    ctx = config_component.validation.Context()
+  def setUp(self):
+    super(ServiceCfgTest, self).setUp()
 
-    settings = service_config_pb2.SwarmingSettings()
-    protobuf.text_format.Merge(swarming_text, settings)
+    self.ctx = config_component.validation.Context()
 
-    swarmingcfg.validate_service_cfg(settings, ctx)
+  def assertErrors(self, expected_errors):
     self.assertEqual(
         map(config_test.errmsg, expected_errors),
-        ctx.result().messages
+        self.ctx.result().messages
     )
+
+  def cfg_test(self, swarming_text, expected_errors):
+    settings = service_config_pb2.SwarmingSettings()
+    protobuf.text_format.Merge(swarming_text, settings)
+    swarmingcfg.validate_service_cfg(settings, self.ctx)
+    self.assertErrors(expected_errors)
 
   def test_valid(self):
-    self.cfg_test('', [])
-
-  def test_schema_in_hostname(self):
     self.cfg_test(
         '''
-          milo_hostname: "https://milo.example.com"
-        ''', [
-            'milo_hostname: must not contain "://"',
-        ]
+        milo_hostname: "ci.example.com"
+        luci_runner_package {
+          package_name: "infra/luci_runner"
+          version: "stable"
+          version_canary: "canary"
+          builders {
+            regex: "infra/.+"
+          }
+        }
+        kitchen_package {
+          package_name: "infra/kitchen"
+          version: "stable"
+          version_canary: "canary"
+        }
+
+        user_packages {
+          package_name: "git"
+          version: "stable"
+          version_canary: "canary"
+        }
+      ''',
+        [],
     )
+
+  def test_hostname(self):
+    swarmingcfg._validate_hostname('https://milo.example.com', self.ctx)
+    self.assertErrors(['must not contain "://"'])
+
+  def test_package_name(self):
+    pkg = service_config_pb2.SwarmingSettings.Package(version='latest')
+    swarmingcfg._validate_package(pkg, self.ctx)
+    self.assertErrors(['package_name is required'])
+
+  def test_package_version(self):
+    pkg = service_config_pb2.SwarmingSettings.Package(package_name='infra/tool')
+    swarmingcfg._validate_package(pkg, self.ctx)
+    self.assertErrors(['version is required'])
+
+  def test_predicate(self):
+    predicate = service_config_pb2.BuilderPredicate(
+        regex=['a', ')'],
+        regex_exclude=['b', '('],
+    )
+    swarmingcfg._validate_builder_predicate(predicate, self.ctx)
+    self.assertErrors([
+        'regex u\')\': invalid: unbalanced parenthesis',
+        'regex_exclude u\'(\': invalid: unbalanced parenthesis',
+    ])

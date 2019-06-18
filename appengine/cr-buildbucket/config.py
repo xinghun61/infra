@@ -149,6 +149,9 @@ def validate_settings_cfg(cfg, ctx):  # pragma: no cover
     with ctx.prefix('swarming: '):
       swarmingcfg.validate_service_cfg(cfg.swarming, ctx)
 
+  if not cfg.logdog.hostname:
+    ctx.error('logdog: hostname is required')
+
 
 class Project(ndb.Model):
   """Parent entity for Bucket.

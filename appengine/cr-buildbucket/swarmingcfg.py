@@ -416,7 +416,44 @@ def validate_project_cfg(swarming, mixins, mixins_are_valid, ctx):
       validate_builder_cfg(merged, mixins, True, ctx)
 
 
+def _validate_package(package, ctx, allow_predicate=True):
+  if not package.package_name:
+    ctx.error('package_name is required')
+  if not package.version:
+    ctx.error('version is required')
+
+  if allow_predicate:
+    _validate_builder_predicate(package.builders, ctx)
+  elif package.HasField('builders'):  # pragma: no cover
+    ctx.error('builders is not allowed')
+
+
+def _validate_builder_predicate(predicate, ctx):
+  for regex in predicate.regex:
+    with ctx.prefix('regex %r: ', regex):
+      _validate_regex(regex, ctx)
+
+  for regex in predicate.regex_exclude:
+    with ctx.prefix('regex_exclude %r: ', regex):
+      _validate_regex(regex, ctx)
+
+
+def _validate_regex(regex, ctx):
+  try:
+    re.compile(regex)
+  except re.error as ex:
+    ctx.error('invalid: %s', ex)
+
+
 def validate_service_cfg(swarming, ctx):
-  if swarming.milo_hostname:
-    with ctx.prefix('milo_hostname: '):
-      _validate_hostname(swarming.milo_hostname, ctx)
+  with ctx.prefix('milo_hostname: '):
+    _validate_hostname(swarming.milo_hostname, ctx)
+
+  # Validate packages.
+  for i, p in enumerate(swarming.user_packages):
+    with ctx.prefix('user_package[%d]: ' % i):
+      _validate_package(p, ctx)
+  with ctx.prefix('luci_runner_package: '):
+    _validate_package(swarming.luci_runner_package, ctx)
+  with ctx.prefix('kitchen_package: '):
+    _validate_package(swarming.kitchen_package, ctx, allow_predicate=False)
