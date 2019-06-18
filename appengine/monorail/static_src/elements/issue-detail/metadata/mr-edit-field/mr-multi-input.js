@@ -6,12 +6,7 @@ import {LitElement, html, css} from 'lit-element';
 import deepEqual from 'deep-equal';
 
 import 'elements/chops/chops-button/chops-button.js';
-import {fieldTypes} from 'elements/shared/field-types.js';
 import {SHARED_STYLES} from 'elements/shared/shared-styles';
-
-const DELIMITER_REGEX = /[,;\s]/;
-const DELIMITABLE_TYPES = [fieldTypes.STR_TYPE, fieldTypes.URL_TYPE,
-  fieldTypes.DATE_TYPE];
 
 /**
  * `<mr-multi-input>`
@@ -71,11 +66,8 @@ export class MrMultiInput extends LitElement {
           type=${this.type}
           aria-label="${this.name} input #${i}"
           value=${value}
-          data-ac-type=${this.acType}
-          autocomplete=${this.autocomplete}
           @keyup=${this._onKeyup}
           @blur=${this._onBlur}
-          @focus=${this._runLegacyAcFocus}
         />
       `)}
       <chops-button @click=${this._addEntry} class="de-emphasized">
@@ -97,10 +89,7 @@ export class MrMultiInput extends LitElement {
       },
       immutableValues: {type: Array},
       type: {type: String},
-      acType: {type: String},
-      autocomplete: {type: String},
       addEntryText: {type: String},
-      delimiterRegex: {type: Object},
       _multiInputs: {type: Array},
     };
   }
@@ -109,7 +98,6 @@ export class MrMultiInput extends LitElement {
     super();
     this.immutableValues = [];
     this.initialValues = [];
-    this.delimiterRegex = DELIMITER_REGEX;
     this._multiInputs = [''];
     this.type = 'text';
     this.addEntryText = 'Add entry';
@@ -131,13 +119,7 @@ export class MrMultiInput extends LitElement {
     this.shadowRoot.querySelectorAll('input').forEach((input) => {
       const value = input.value.trim();
       if (value) {
-        if (!DELIMITABLE_TYPES.includes(this.type)) {
-          // Only split up values by comma for fields that use autocomplete.
-          valueList.push(
-            ...value.split(this.delimiterRegex).filter(Boolean));
-        } else {
-          valueList.push(value);
-        }
+        valueList.push(value);
       }
     });
     return valueList;
@@ -178,14 +160,6 @@ export class MrMultiInput extends LitElement {
     if (hardReset || values.length >= this._multiInputs.length) {
       // Add new input boxes if there aren't enough.
       this._multiInputs = values.concat(['']);
-    }
-  }
-
-  // TODO(zhangtiff): Delete this code once deprecating legacy autocomplete.
-  // See: http://crbug.com/monorail/5301
-  _runLegacyAcFocus(e) {
-    if (window._ac_onfocus) {
-      _ac_onfocus(e);
     }
   }
 }

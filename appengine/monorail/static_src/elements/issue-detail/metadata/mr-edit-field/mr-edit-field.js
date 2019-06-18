@@ -111,8 +111,6 @@ export class MrEditField extends LitElement {
             .name=${this.name}
             .addEntryText="Add ${this.name}"
             .type=${this._html5InputType}
-            .acType=${this.acType}
-            .autocomplete=${this._domAutocomplete}
             @change=${this._changeHandler}
             @blur=${this._changeHandler}
           ></mr-multi-input>
