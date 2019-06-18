@@ -1363,9 +1363,26 @@ class BizobjTest(unittest.TestCase):
         self.cnxn, self.services.issue, issue, delta, self.config)
 
     # Test amendments.
-    # TODO(jeffcarp): Update when storing ExtIssueRefs.
-    self.assertEqual(0, len(amendments))
+    self.assertEqual(2, len(amendments))
+    self.assertEqual(tracker_pb2.FieldID.BLOCKEDON, amendments[0].field)
+    self.assertEqual('-b/345 -b/456 b/123 b/234', amendments[0].newvalue)
+    self.assertEqual(tracker_pb2.FieldID.BLOCKING, amendments[1].field)
+    self.assertEqual('-b/789 -b/890 b/567 b/678', amendments[1].newvalue)
+
     self.assertEqual(0, len(impacted_iids))
+
+    # Issue refs are applied correctly and alphabetized.
+    self.assertEqual([
+          tracker_pb2.DanglingIssueRef(ext_issue_identifier='b/111'),
+          tracker_pb2.DanglingIssueRef(ext_issue_identifier='b/123'),
+          tracker_pb2.DanglingIssueRef(ext_issue_identifier='b/234'),
+        ], issue.dangling_blocked_on_refs)
+    self.assertEqual([
+          tracker_pb2.DanglingIssueRef(ext_issue_identifier='b/222'),
+          tracker_pb2.DanglingIssueRef(ext_issue_identifier='b/567'),
+          tracker_pb2.DanglingIssueRef(ext_issue_identifier='b/678'),
+        ], issue.dangling_blocking_refs)
+
 
   def testMakeAmendment(self):
     amendment = tracker_bizobj.MakeAmendment(

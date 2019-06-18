@@ -594,7 +594,7 @@ def IngestExtIssueRefs(issue_refs):
       ref.ext_identifier
       for ref in issue_refs
       if ref.ext_identifier
-      and federated.shortlink_is_valid(ref.ext_identifier)]
+      and federated.IsShortlinkValid(ref.ext_identifier)]
 
 
 def IngestIssueDelta(

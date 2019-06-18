@@ -268,7 +268,40 @@ class IssueRefViewTest(unittest.TestCase):
 
 
 class DanglingIssueRefViewTest(unittest.TestCase):
-  pass  # TODO(jrobbins): write tests
+
+  def testNormal(self):
+    ref = tracker_pb2.DanglingIssueRef(issue_id=123, project='rutabaga')
+    view = tracker_views.DanglingIssueRefView(ref)
+    self.assertTrue(view.visible)
+    self.assertTrue(view.is_open)
+    self.assertTrue(view.is_dangling)
+    self.assertEqual(view.url,
+      'https://code.google.com/p/rutabaga/issues/detail?id=123')
+    self.assertEqual(view.display_name,
+      'issue rutabaga:123')
+    self.assertEqual(view.short_name, 'issue rutabaga:123')
+    self.assertEqual(view.summary, 'Issue 123 in rutabaga.')
+    self.assertEqual(view.issue_ref, 'rutabaga:123')
+
+  def testFederatedIssue(self):
+    ref = tracker_pb2.DanglingIssueRef(ext_issue_identifier='b/5678')
+    view = tracker_views.DanglingIssueRefView(ref)
+    self.assertTrue(view.visible)
+    self.assertTrue(view.is_open)
+    self.assertTrue(view.is_dangling)
+    self.assertEqual(view.url,
+      'https://issuetracker.google.com/issues/5678')
+    self.assertEqual(view.display_name, 'b/5678')
+    self.assertEqual(view.short_name, 'b/5678')
+    self.assertEqual(view.summary, 'Google Issue Tracker issue 5678.')
+    self.assertEqual(view.issue_ref, 'b/5678')
+
+
+  def testDebugString(self):
+    ref = tracker_pb2.DanglingIssueRef(issue_id=123, project='rutabaga')
+    view = tracker_views.DanglingIssueRefView(ref)
+    self.assertEqual(view.DebugString(),
+        'DanglingIssueRefView(issue rutabaga:123)')
 
 
 class AttachmentViewTest(unittest.TestCase):

@@ -17,6 +17,7 @@ import urllib
 from google.appengine.api import app_identity
 from third_party import ezt
 
+from features import federated
 from framework import exceptions
 from framework import filecontent
 from framework import framework_bizobj
@@ -159,7 +160,7 @@ class IssueView(template_helpers.PBProxy):
               open_related, closed_related)
           for iid in blocked_on_iids]
       self.blocked_on.extend(
-          [DanglingIssueRefView(ref.project, ref.issue_id)
+          [DanglingIssueRefView(ref)
            for ref in issue.dangling_blocked_on_refs])
       # TODO(jrobbins): sort by irv project_name and local_id
 
@@ -169,7 +170,7 @@ class IssueView(template_helpers.PBProxy):
               open_related, closed_related)
           for iid in blocking_iids]
       self.blocking.extend(
-          [DanglingIssueRefView(ref.project, ref.issue_id)
+          [DanglingIssueRefView(ref)
            for ref in issue.dangling_blocking_refs])
       # TODO(jrobbins): sort by irv project_name and local_id
 
@@ -277,25 +278,35 @@ class IssueRefView(object):
 
 class DanglingIssueRefView(object):
 
-  def __init__(self, project_name, issue_id):
+  def __init__(self, issue_ref):
     """Makes a simple object to display a link to an issue still in Codesite.
 
     Satisfies the same API and internal data members as IssueRefView,
     except for the arguments to __init__.
 
     Args:
-      project_name: The name of the project on Codesite
-      issue_id: The local id of the issue in that project
+      issue_ref: The DanglingIssueRef.
     """
     self.visible = True
-    self.is_open = True  # TODO(agable) Make a call to Codesite to set this?
-    self.url = 'https://code.google.com/p/%s/issues/detail?id=%d' % (
-        project_name, issue_id)
-    self.display_name = 'issue %s:%d' % (project_name, issue_id)
-    self.short_name = 'issue %s:%d' % (project_name, issue_id)
-    self.summary = 'Issue %d in %s.' % (issue_id, project_name)
-    self.issue_ref = self.display_name[6:]
+    self.is_open = True
     self.is_dangling = ezt.boolean(True)
+
+    if issue_ref.ext_issue_identifier:
+      federated_issue = federated.FromShortlink(issue_ref.ext_issue_identifier)
+      self.url = federated_issue.ToURL()
+      self.display_name = federated_issue.shortlink
+      self.short_name = federated_issue.shortlink
+      self.summary = federated_issue.Summary()
+      self.issue_ref = federated_issue.shortlink
+    else:
+      issue_id = issue_ref.issue_id
+      project_name = issue_ref.project
+      self.url = 'https://code.google.com/p/%s/issues/detail?id=%d' % (
+          project_name, issue_id)
+      self.display_name = 'issue %s:%d' % (project_name, issue_id)
+      self.short_name = 'issue %s:%d' % (project_name, issue_id)
+      self.summary = 'Issue %d in %s.' % (issue_id, project_name)
+      self.issue_ref = self.display_name[6:]
 
   def DebugString(self):
     return 'DanglingIssueRefView(%s)' % self.display_name

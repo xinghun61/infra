@@ -1253,16 +1253,18 @@ class IssueService(object):
         blocking_rows.append((dst_issue_id, issue.issue_id, 'blockedon'))
       for dst_ref in issue.dangling_blocked_on_refs:
         if dst_ref.ext_issue_identifier:
-          # TODO(jeffcarp): Append here to enable storing ExtIssueRefs.
-          pass
+          dangling_relation_rows.append((
+              issue.issue_id, None, None,
+              dst_ref.ext_issue_identifier, 'blockedon'))
         else:
           dangling_relation_rows.append((
               issue.issue_id, dst_ref.project, dst_ref.issue_id,
               None, 'blockedon'))
       for dst_ref in issue.dangling_blocking_refs:
         if dst_ref.ext_issue_identifier:
-          # TODO(jeffcarp): Append here to enable storing ExtIssueRefs.
-          pass
+          dangling_relation_rows.append((
+              issue.issue_id, None, None,
+              dst_ref.ext_issue_identifier, 'blocking'))
         else:
           dangling_relation_rows.append((
               issue.issue_id, dst_ref.project, dst_ref.issue_id,
