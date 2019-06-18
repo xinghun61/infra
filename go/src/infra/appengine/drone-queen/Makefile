@@ -1,0 +1,30 @@
+# Copyright 2019 The LUCI Authors. All rights reserved.
+# Use of this source code is governed under the Apache License, Version 2.0
+# that can be found in the LICENSE file.
+
+.PHONY: default
+default:
+
+APP_DIR = appengine
+
+.PHONY: dev
+dev: $(APP_DIR)/devcfg/services/dev/config.cfg
+	gae.py devserver -A dev --app-dir $(APP_DIR) -- --host 0.0.0.0 --port 8082 --admin_port 7999 --log_level debug
+
+$(APP_DIR)/devcfg/services/dev/config.cfg:
+	@printf ">>> Creating dev config at %s.  You may want to edit this for your needs.\n" $@
+	cp $(APP_DIR)/devcfg/services/dev/config-template.cfg $@
+
+GCP_PROJECT_DEV = drone-queen-dev
+
+.PHONY: up-dev
+up-dev:
+	gae.py upload -A $(GCP_PROJECT_DEV) --app-dir $(APP_DIR)
+
+.PHONY: switch-dev
+switch-dev:
+	gae.py switch -A $(GCP_PROJECT_DEV) --app-dir $(APP_DIR)
+
+.PHONY: versions-cleanup-dev
+versions-cleanup-dev:
+	gae.py cleanup -A $(GCP_PROJECT_DEV) --app-dir $(APP_DIR)

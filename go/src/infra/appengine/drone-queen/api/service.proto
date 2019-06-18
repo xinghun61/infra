@@ -10,7 +10,7 @@ package drone_queen;
 
 option go_package = "api";
 
-service DroneQueen {
+service Drone {
   // ReportDrone is called by drones to report liveness and get DUT
   // assignments.
   //
@@ -20,7 +20,9 @@ service DroneQueen {
 
   // ReportDrone is called by drones to release ownership of DUTs.
   rpc ReleaseDuts(ReleaseDutsRequest) returns (ReleaseDutsResponse);
+}
 
+service InventoryProvider {
   // DeclareDuts tells the service all of the DUTs available to assign
   // to drones.
   rpc DeclareDuts(DeclareDutsRequest) returns (DeclareDutsResponse);

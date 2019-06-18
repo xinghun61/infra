@@ -1,0 +1,23 @@
+// Copyright 2019 The LUCI Authors. All rights reserved.
+// Use of this source code is governed under the Apache License, Version 2.0
+// that can be found in the LICENSE file.
+
+syntax = "proto3";
+
+package drone_queen.config;
+
+option go_package = "config";
+
+// Config is the configuration data served by luci-config for this app.
+message Config {
+  // AccessGroup is the luci-auth group controlling access to RPC endpoints.
+  AccessGroups access_groups = 1;
+}
+
+// AccessGroups holds access group configuration
+message AccessGroups {
+  // drones is the group for calling drone RPCs.
+  string drones = 1;
+  // inventory_providers is the group for calling inventory RPCs.
+  string inventory_providers = 2;
+}

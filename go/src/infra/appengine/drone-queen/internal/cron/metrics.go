@@ -12,9 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package api contains the drone queen service API.
-package api
+package cron
 
-//go:generate cproto
-//go:generate svcdec -type DroneServer
-//go:generate svcdec -type InventoryProviderServer
+import (
+	"go.chromium.org/luci/common/tsmon/field"
+	"go.chromium.org/luci/common/tsmon/metric"
+)
+
+var (
+	pruneExpiredTick = metric.NewCounter(
+		"chromeos/drone-queen/cron/prune-expired/success",
+		"prune-expired cron jobs",
+		nil,
+		field.Bool("success"),
+	)
+)

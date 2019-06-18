@@ -8,9 +8,9 @@ import (
 	proto "github.com/golang/protobuf/proto"
 )
 
-type DecoratedDroneQueen struct {
+type DecoratedInventoryProvider struct {
 	// Service is the service to decorate.
-	Service DroneQueenServer
+	Service InventoryProviderServer
 	// Prelude is called for each method before forwarding the call to Service.
 	// If Prelude returns an error, then the call is skipped and the error is
 	// processed via the Postlude (if one is defined), or it is returned directly.
@@ -23,41 +23,7 @@ type DecoratedDroneQueen struct {
 	Postlude func(c context.Context, methodName string, rsp proto.Message, err error) error
 }
 
-func (s *DecoratedDroneQueen) ReportDrone(c context.Context, req *ReportDroneRequest) (rsp *ReportDroneResponse, err error) {
-	if s.Prelude != nil {
-		var newCtx context.Context
-		newCtx, err = s.Prelude(c, "ReportDrone", req)
-		if err == nil {
-			c = newCtx
-		}
-	}
-	if err == nil {
-		rsp, err = s.Service.ReportDrone(c, req)
-	}
-	if s.Postlude != nil {
-		err = s.Postlude(c, "ReportDrone", rsp, err)
-	}
-	return
-}
-
-func (s *DecoratedDroneQueen) ReleaseDuts(c context.Context, req *ReleaseDutsRequest) (rsp *ReleaseDutsResponse, err error) {
-	if s.Prelude != nil {
-		var newCtx context.Context
-		newCtx, err = s.Prelude(c, "ReleaseDuts", req)
-		if err == nil {
-			c = newCtx
-		}
-	}
-	if err == nil {
-		rsp, err = s.Service.ReleaseDuts(c, req)
-	}
-	if s.Postlude != nil {
-		err = s.Postlude(c, "ReleaseDuts", rsp, err)
-	}
-	return
-}
-
-func (s *DecoratedDroneQueen) DeclareDuts(c context.Context, req *DeclareDutsRequest) (rsp *DeclareDutsResponse, err error) {
+func (s *DecoratedInventoryProvider) DeclareDuts(c context.Context, req *DeclareDutsRequest) (rsp *DeclareDutsResponse, err error) {
 	if s.Prelude != nil {
 		var newCtx context.Context
 		newCtx, err = s.Prelude(c, "DeclareDuts", req)
