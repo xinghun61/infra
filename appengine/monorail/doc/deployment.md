@@ -18,8 +18,13 @@ chat](http://chat/room/AAAACV9ZZ8k).
     1. `gclient sync`
 1. Update Schema
     1. Check for changes since last deploy: `tail -30 schema/alter-table-log.txt`
-    1. Copy and paste the new changes into the master DB in staging.
+    1. Copy and paste the new changes into the
+       [master DB](http://console.cloud.google.com/sql/instances/master-g2/overview?project=monorail-staging)
+       in staging.
        Please be careful when pasting into SQL prompt.
+    1. Also copy and paste updates to the
+       [master DB](http://console.cloud.google.com/sql/instances/master-g2/overview?project=monorail-dev)
+       in the `monorail-dev` project.
 1. Upload Staging Version
     1. `make deploy_staging`
 1. Test on Staging
