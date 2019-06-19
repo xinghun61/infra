@@ -167,7 +167,7 @@ var RuleMap = map[string]*RepoConfig{
 		Rules: map[string]RuleSet{
 			"autoroll-rules-skia": AutoRollRulesForFilesAndDirs("skia-autoroll@skia-public.iam.gserviceaccount.com", []string{fileDEPS}, dirsSKCMS),
 			"bookmaker":           AutoRollRulesAPIDocs("skia-bookmaker@skia-swarming-bots.iam.gserviceaccount.com"),
-			"recreate-skps":       AutoRollRulesSkiaAssets("skia-recreate-skps@skia-swarming-bots.iam.gserviceaccount.com", []string{"go_deps", "skp"}),
+			"recreate-skps":       AutoRollRulesForFilesAndDirs("skia-recreate-skps@skia-swarming-bots.iam.gserviceaccount.com", []string{SkiaAsset("go_deps"), SkiaAsset("skp"), "go.mod", "go.sum"}, []string{}),
 		},
 	},
 	"skia-lottie-ci": {

@@ -24,11 +24,18 @@ const (
 	fileFuchsiaSDKMac   = "build/fuchsia/mac.sdk.sha1"
 	fileSkiaManifest    = "manifest/skia"
 	fileSkiaTasks       = "infra/bots/tasks.json"
+
+	tmplSkiaAsset = "infra/bots/assets/%s/VERSION"
 )
 
 var (
 	dirsSKCMS = []string{"include/third_party/skcms", "third_party/skcms"}
 )
+
+// SkiaAsset returns the path to the named Skia asset version file.
+func SkiaAsset(asset string) string {
+	return fmt.Sprintf(tmplSkiaAsset, asset)
+}
 
 // AutoRollRulesForFilesAndDirs returns an AccountRules instance for an account
 // which should only modify the given set of files and directories.
@@ -91,17 +98,6 @@ func AutoRollRulesLayoutTests(account string) AccountRules {
 // should only modify ``site/user/api``.
 func AutoRollRulesAPIDocs(account string) AccountRules {
 	return AutoRollRulesForDirList(account, []string{dirSkiaAPIDocs})
-}
-
-// AutoRollRulesSkiaAssets returns an AccountRules instance for an account which
-// should only modify Skia assets.
-func AutoRollRulesSkiaAssets(account string, assets []string) AccountRules {
-	files := make([]string, 0, len(assets)+1)
-	for _, asset := range assets {
-		files = append(files, fmt.Sprintf("infra/bots/assets/%s/VERSION", asset))
-	}
-	files = append(files, fileSkiaTasks)
-	return AutoRollRulesForFileList(account, files)
 }
 
 // AutoRollRulesSkiaManifest returns an AccountRules instance for an account
