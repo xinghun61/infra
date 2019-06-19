@@ -50,7 +50,7 @@ def SortGridHeadings(col_name, heading_value_list, users_by_id, config,
   """
   decorated_list = []
   fd = tracker_bizobj.FindFieldDef(col_name, config)
-  if fd:  # Handle fields.
+  if fd and fd.field_type != tracker_pb2.FieldTypes.ENUM_TYPE:  # Handle fields.
     for value in heading_value_list:
       field_value = tracker_bizobj.GetFieldValueWithRawValue(
           fd.field_type, None, users_by_id, value)
@@ -66,8 +66,12 @@ def SortGridHeadings(col_name, heading_value_list, users_by_id, config,
                       for value in heading_value_list]
 
   else:  # Anything else is assumed to be a label prefix
-    wk_labels = [wkl.label.lower().split('-', 1)[-1]
-                 for wkl in config.well_known_labels]
+    col_name_dash = col_name + '-'
+    wk_labels = []
+    for wkl in config.well_known_labels:
+      lab_lower = wkl.label.lower()
+      if lab_lower.startswith(col_name_dash):
+        wk_labels.append(lab_lower.split('-', 1)[-1])
     decorated_list = [(_WKSortingValue(value.lower(), wk_labels), value)
                       for value in heading_value_list]
 

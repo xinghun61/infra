@@ -13,6 +13,7 @@ import unittest
 from framework import framework_constants
 from framework import framework_views
 from framework import grid_view_helpers
+from proto import tracker_pb2
 from testing import fake
 from tracker import tracker_bizobj
 
@@ -38,8 +39,12 @@ class GridViewHelpersTest(unittest.TestCase):
   def testSortGridHeadings(self):
     config = fake.MakeTestConfig(
         789, labels=('Priority-High Priority-Medium Priority-Low Hot Cold '
-                     'Milestone-Near Milestone-Far'),
+                     'Milestone-Near Milestone-Far '
+                     'Day-Sun Day-Mon Day-Tue Day-Wed Day-Thu Day-Fri Day-Sat'),
         statuses=('New Accepted Started Fixed WontFix Invalid Duplicate'))
+    config.field_defs = [
+        tracker_pb2.FieldDef(field_id=1, project_id=789, field_name='Day',
+                             field_type=tracker_pb2.FieldTypes.ENUM_TYPE)]
     asc_accessors = {
         'id': 'some function that is not called',
         'reporter': 'some function that is not called',
@@ -57,7 +62,7 @@ class GridViewHelpersTest(unittest.TestCase):
         sorted_headings,
         ['New', 'Accepted', 'Fixed', 'Duplicate', 'Limbo', 'OnHold'])
 
-    # Verify that special columns are sorted alphabetically.
+    # Verify that special columns are sorted alphabetically or numerically.
     col_name = 'id'
     headings = [1, 2, 5, 3, 4]
     sorted_headings = grid_view_helpers.SortGridHeadings(
@@ -73,6 +78,16 @@ class GridViewHelpersTest(unittest.TestCase):
         col_name, headings, self.users_by_id, config, asc_accessors)
     self.assertEqual(sorted_headings,
                      ['High', 'Medium', 'Low', 'dont-care'])
+
+    # Verify that enum headings are sorted according to the labels
+    # values defined in the config.
+    col_name = 'day'
+    headings = ['Tue', 'Fri', 'Sun', 'Dogday', 'Wed', 'Caturday', 'Low']
+    sorted_headings = grid_view_helpers.SortGridHeadings(
+        col_name, headings, self.users_by_id, config, asc_accessors)
+    self.assertEqual(sorted_headings,
+                     ['Sun', 'Tue', 'Wed', 'Fri',
+                      'Caturday', 'Dogday', 'Low'])
 
   def testGetArtifactAttr_Explicit(self):
     label_values = grid_view_helpers.MakeLabelValuesDict(self.art2)
