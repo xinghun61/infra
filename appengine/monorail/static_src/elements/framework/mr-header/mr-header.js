@@ -220,14 +220,15 @@ export class MrHeader extends LitElement {
   }
 
   async _fetchUserProjects(displayName) {
-    if (!displayName) return;
     // Only fetch projects for logged in users.
+    if (!displayName) return;
     // TODO(zhangtiff): Add this state to Redux. This is left out from
     //   Redux for now because this code is meant to run on non-SPA pages
     //   as well.
-    const userProjects = await prpcClient.call(
-      'monorail.Projects', 'GetUserProjects', {});
-    this.userProjects = userProjects;
+    const userRefs = [{displayName}];
+    const response = await prpcClient.call(
+      'monorail.Users', 'GetUsersProjects', {userRefs});
+    this.userProjects = response.usersProjects[0];
   }
 
   get _projectDropdownItems() {

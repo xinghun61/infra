@@ -37,7 +37,6 @@ window.prpcClient = new AutoRefreshPrpcClient(
 <script type="text/javascript" defer src="[version_base]/static/js/framework/framework-cues.js" nonce="[nonce]"></script>
 <script type="text/javascript" defer src="[version_base]/static/js/framework/framework-display.js" nonce="[nonce]"></script>
 <script type="text/javascript" defer src="[version_base]/static/js/framework/framework-menu.js" nonce="[nonce]"></script>
-<script type="text/javascript" defer src="[version_base]/static/js/framework/framework-myprojects.js" nonce="[nonce]"></script>
 <script type="text/javascript" defer src="[version_base]/static/js/framework/framework-myhotlists.js" nonce="[nonce]"></script>
 <script type="text/javascript" defer src="[version_base]/static/js/framework/framework-stars.js" nonce="[nonce]"></script>
 <script type="text/javascript" defer src="[version_base]/static/js/framework/project-name-check.js" nonce="[nonce]"></script>

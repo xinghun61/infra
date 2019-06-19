@@ -965,9 +965,11 @@ let TKR_optionsXmlHttp = undefined;
  */
 function TKR_fetchUserProjects(multiValue) {
   // Set a request token to prevent XSRF leaking of user project lists.
+  const userRefs = [{displayName: window.CS_env.loggedInUserEmail}];
   const userProjectsPromise = window.prpcClient.call(
-    'monorail.Projects', 'GetUserProjects', {});
-  userProjectsPromise.then((userProjects) => {
+    'monorail.Users', 'GetUsersProjects', {userRefs});
+  userProjectsPromise.then((response) => {
+    const userProjects = response.usersProjects[0];
     const projects = (userProjects.ownerOf || [])
       .concat(userProjects.memberOf || [])
       .concat(userProjects.contributorTo || []);
