@@ -14,7 +14,7 @@ import (
 	apb "infra/appengine/rotang/proto/rotangapi"
 )
 
-func TestRPCSchedule(t *testing.T) {
+func TestRPCShifts(t *testing.T) {
 	ctx := newTestContext()
 
 	tests := []struct {
@@ -108,6 +108,72 @@ func TestRPCSchedule(t *testing.T) {
 		name: "No rota name",
 		fail: true,
 		ctx:  ctx,
+	}, {
+		name: "Non existing rota",
+		fail: true,
+		ctx:  ctx,
+		in:   `name: "Non Exist"`,
+	}, {
+		name: "No Shifts",
+		in: `
+			name: "Test Rota"
+			start: {
+				seconds: 1143849600,
+			},
+			end:   {
+				seconds: 1144022400,
+			},
+		`,
+		time: midnight,
+		ctx:  ctx,
+		cfgs: []*rotang.Configuration{
+			{
+				Config: rotang.Config{
+					Name: "Test Rota",
+					Shifts: rotang.ShiftConfig{
+						Generator: "Fair",
+						Shifts: []rotang.Shift{
+							{
+								Name: "MTV All Day",
+							},
+						},
+					},
+				},
+				Members: []rotang.ShiftMember{
+					{
+						Email:     "mtv1@oncall.com",
+						ShiftName: "MTV All Day",
+					}, {
+						Email:     "mtv2@oncall.com",
+						ShiftName: "MTV All Day",
+					},
+				},
+			},
+		},
+		members: []rotang.Member{
+			{
+				Email: "mtv1@oncall.com",
+				Name:  "Mtv1 Mtvsson",
+				TZ:    *time.UTC,
+			}, {
+				Email: "mtv2@oncall.com",
+				Name:  "Mtv2 Mtvsson",
+				TZ:    *time.UTC,
+			},
+		},
+		shifts: []rotang.ShiftEntry{
+			{
+				Name:      "MTV All Day",
+				StartTime: midnight.Add(2 * fullDay),
+				EndTime:   midnight.Add(4 * fullDay),
+				OnCall: []rotang.ShiftMember{
+					{
+						Email:     "mtv1@oncall.com",
+						ShiftName: "MTV All Day",
+					},
+				},
+			},
+		},
 	}}
 
 	h := testSetup(t)
@@ -309,7 +375,62 @@ func TestRPCOncall(t *testing.T) {
 				end: {
 					seconds: 1144022400,
 				},
-			}`,
+			}
+			tz_consider: true`,
+	}, {
+		name: "Nobody OnCall",
+		in:   `name: "Test Rota"`,
+		time: midnight,
+		ctx:  ctx,
+		cfgs: []*rotang.Configuration{
+			{
+				Config: rotang.Config{
+					Name: "Test Rota",
+					Shifts: rotang.ShiftConfig{
+						Generator: "TZRecent",
+						Shifts: []rotang.Shift{
+							{
+								Name: "MTV All Day",
+							},
+						},
+					},
+				},
+				Members: []rotang.ShiftMember{
+					{
+						Email:     "mtv1@oncall.com",
+						ShiftName: "MTV All Day",
+					}, {
+						Email:     "mtv2@oncall.com",
+						ShiftName: "MTV All Day",
+					},
+				},
+			},
+		},
+		members: []rotang.Member{
+			{
+				Email: "mtv1@oncall.com",
+				Name:  "Mtv1 Mtvsson",
+				TZ:    *time.UTC,
+			}, {
+				Email: "mtv2@oncall.com",
+				Name:  "Mtv2 Mtvsson",
+				TZ:    *time.UTC,
+			},
+		},
+		shifts: []rotang.ShiftEntry{
+			{
+				Name:      "MTV All Day",
+				StartTime: midnight.Add(fullDay),
+				EndTime:   midnight.Add(2 * fullDay),
+				OnCall: []rotang.ShiftMember{
+					{
+						Email:     "mtv1@oncall.com",
+						ShiftName: "MTV All Day",
+					},
+				},
+			},
+		},
+		want: `tz_consider: true`,
 	}}
 
 	h := testSetup(t)

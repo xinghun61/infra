@@ -28,13 +28,22 @@ func (h *State) Oncall(ctx context.Context, req *apb.OncallRequest) (*apb.Oncall
 		return nil, status.Errorf(codes.Internal, "RotaConfig did not return 1 configuration, got: %d", len(cfg))
 	}
 
-	gen, err := h.generators.Fetch(cfg[0].Config.Shifts.Generator)
-	if err != nil {
-		return nil, err
+	var tzConsider bool
+	if !cfg[0].Config.External {
+		gen, err := h.generators.Fetch(cfg[0].Config.Shifts.Generator)
+		if err != nil {
+			return nil, err
+		}
+		tzConsider = gen.TZConsider()
 	}
 
 	shift, err := h.shiftStore(ctx).Oncall(ctx, clock.Now(ctx), req.Name)
 	if err != nil {
+		if status.Code(err) == codes.NotFound {
+			return &apb.OncallResponse{
+				TzConsider: tzConsider,
+			}, nil
+		}
 		return nil, err
 	}
 
@@ -48,7 +57,7 @@ func (h *State) Oncall(ctx context.Context, req *apb.OncallRequest) (*apb.Oncall
 
 	return &apb.OncallResponse{
 		Shift:      s[0],
-		TzConsider: gen.TZConsider(),
+		TzConsider: tzConsider,
 	}, nil
 }
 
@@ -82,6 +91,11 @@ func (h *State) Shifts(ctx context.Context, req *apb.ShiftsRequest) (*apb.Shifts
 	if req.GetName() == "" {
 		return nil, status.Errorf(codes.InvalidArgument, "rotation name is required")
 	}
+
+	if _, err := h.configStore(ctx).RotaConfig(ctx, req.Name); err != nil {
+		return nil, err
+	}
+
 	start, end := time.Time{}, time.Time{}
 	if ps := req.GetStart(); ps != nil {
 		s, err := ptypes.Timestamp(req.GetStart())
@@ -100,6 +114,9 @@ func (h *State) Shifts(ctx context.Context, req *apb.ShiftsRequest) (*apb.Shifts
 
 	shifts, err := h.shiftStore(ctx).ShiftsFromTo(ctx, req.GetName(), start, end)
 	if err != nil {
+		if status.Code(err) == codes.NotFound {
+			return &apb.ShiftsResponse{}, nil
+		}
 		return nil, err
 	}
 	res, err := h.shiftsToProto(ctx, shifts)

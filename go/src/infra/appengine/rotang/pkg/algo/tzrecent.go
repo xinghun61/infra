@@ -59,5 +59,5 @@ func (t *TZRecent) Name() string {
 
 // TZConsider indicates if the generator consideres the TimeZones of members.
 func (t *TZRecent) TZConsider() bool {
-	return false
+	return true
 }
