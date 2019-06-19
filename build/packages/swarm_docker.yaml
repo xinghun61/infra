@@ -2,6 +2,7 @@ package: infra/swarm_docker/${platform}
 description: Virtual environment + swarm docker python code with dependencies.
 platforms:
   - linux-amd64
+  - linux-arm64
 
 uses_python_env: true
 
