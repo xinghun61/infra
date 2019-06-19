@@ -163,7 +163,7 @@ func (b *BatchRunner) runRequestsInBatches(store *Store) {
 		<-b.tBatchWait
 
 		b.collectForBatch(ctx, nb)
-		logging.Debugf(ctx, "batch of size %s collected, executing", nb.numOperations())
+		logging.Debugf(ctx, "batch of size %d collected, executing", nb.numOperations())
 		nb.executeAndClose(ctx, store)
 		logging.Debugf(ctx, "batch executed")
 	}
