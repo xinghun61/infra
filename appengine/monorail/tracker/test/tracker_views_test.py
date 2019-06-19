@@ -27,6 +27,7 @@ from testing import fake
 from testing import testing_helpers
 from tracker import attachment_helpers
 from tracker import tracker_bizobj
+from tracker import tracker_constants
 from tracker import tracker_helpers
 from tracker import tracker_views
 
@@ -43,6 +44,12 @@ def _Issue(project_name, local_id, summary, status):
 
 def _MakeConfig():
   config = tracker_pb2.ProjectIssueConfig()
+  config.well_known_labels = [
+    tracker_pb2.LabelDef(
+        label='Priority-High', label_docstring='Must be resolved'),
+    tracker_pb2.LabelDef(
+        label='Priority-Low', label_docstring='Can be slipped'),
+    ]
   config.well_known_statuses.append(tracker_pb2.StatusDef(
       status='New', means_open=True))
   config.well_known_statuses.append(tracker_pb2.StatusDef(
@@ -871,3 +878,36 @@ class MakeFieldUserViewsTest(unittest.TestCase):
 
 class ConfigViewTest(unittest.TestCase):
   pass  # TODO(jrobbins): write tests
+
+
+class ConfigFunctionsTest(unittest.TestCase):
+
+  def setUp(self):
+    self.config = tracker_bizobj.MakeDefaultProjectIssueConfig(768)
+
+  def testStatusDefsAsText(self):
+    open_text, closed_text = tracker_views.StatusDefsAsText(self.config)
+
+    for wks in tracker_constants.DEFAULT_WELL_KNOWN_STATUSES:
+      status, doc, means_open, _deprecated = wks
+      if means_open:
+        self.assertIn(status, open_text)
+        self.assertIn(doc, open_text)
+      else:
+        self.assertIn(status, closed_text)
+        self.assertIn(doc, closed_text)
+
+    self.assertEqual(
+        len(tracker_constants.DEFAULT_WELL_KNOWN_STATUSES),
+        len(open_text.split('\n')) + len(closed_text.split('\n')))
+
+  def testLabelDefsAsText(self):
+    labels_text = tracker_views.LabelDefsAsText(self.config)
+
+    for wkl in tracker_constants.DEFAULT_WELL_KNOWN_LABELS:
+      label, doc, _deprecated = wkl
+      self.assertIn(label, labels_text)
+      self.assertIn(doc, labels_text)
+    self.assertEqual(
+        len(tracker_constants.DEFAULT_WELL_KNOWN_LABELS),
+        len(labels_text.split('\n')))

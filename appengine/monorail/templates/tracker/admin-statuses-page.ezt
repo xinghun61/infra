@@ -12,19 +12,21 @@
      <tr><td>
        <h4>Open Issue Status Values</h4>
        <div class="section">
-       <textarea name="predefinedopen" rows="6" cols="75"  style="tab-size:18">[for config.open_statuses]
-[config.open_statuses.commented][config.open_statuses.name_padded][if-any config.open_statuses.docstring]&#09;= [config.open_statuses.docstring][end][end]
-</textarea>
+         <textarea name="predefinedopen" rows="6" cols="75"  style="tab-size:18">[open_text]</textarea>
+         [if-any errors.open_statuses]
+           <div class="fielderror">[errors.open_statuses]</div>
+         [end]
        </div>
        <h4>Closed Issue Status Values</h4>
        <div class="section">
-       <textarea name="predefinedclosed" rows="6" cols="75"  style="tab-size:18">[for config.closed_statuses]
-[config.closed_statuses.commented][config.closed_statuses.name_padded][if-any config.closed_statuses.docstring]&#09;= [config.closed_statuses.docstring][end][end]
-</textarea><br><br>
+         <textarea name="predefinedclosed" rows="6" cols="75"  style="tab-size:18">[closed_text]</textarea><br><br>
+         [if-any errors.closed_statuses]
+           <div class="fielderror">[errors.closed_statuses]</div>
+         [end]
 
-       If an issue's status is being set to one of these values, offer to merge issues:<br>
-       <input type="text" size="75" name="statuses_offer_merge"
-         value="[for config.statuses_offer_merge][config.statuses_offer_merge][if-index config.statuses_offer_merge last][else], [end][end]">
+         If an issue's status is being set to one of these values, offer to merge issues:<br>
+         <input type="text" size="75" name="statuses_offer_merge"
+                value="[for config.statuses_offer_merge][config.statuses_offer_merge][if-index config.statuses_offer_merge last][else], [end][end]">
        </div>
       </td>
       <td style="padding-left:.7em">

@@ -961,3 +961,42 @@ class ConfigView(template_helpers.PBProxy):
 
     self.default_col_spec = (
         config.default_col_spec or tracker_constants.DEFAULT_COL_SPEC)
+
+
+def StatusDefsAsText(config):
+  """Return two strings for editing open and closed status definitions."""
+  open_lines = []
+  closed_lines = []
+  for wks in config.well_known_statuses:
+    line = '%s%s%s%s' % (
+      '#' if wks.deprecated else '',
+      wks.status.ljust(20),
+      '\t= ' if wks.status_docstring else '',
+      wks.status_docstring)
+
+    if tracker_helpers.MeansOpenInProject(wks.status, config):
+      open_lines.append(line)
+    else:
+      closed_lines.append(line)
+
+  open_text = '\n'.join(open_lines)
+  closed_text = '\n'.join(closed_lines)
+  logging.info('open_text is \n%s', open_text)
+  logging.info('closed_text is \n%s', closed_text)
+  return open_text, closed_text
+
+
+def LabelDefsAsText(config):
+  """Return a string for editing label definitions."""
+  label_def_lines = []
+  for wkl in config.well_known_labels:
+    line = '%s%s%s%s' % (
+      '#' if wkl.deprecated else '',
+      wkl.label.ljust(20),
+      '\t= ' if wkl.label_docstring else '',
+      wkl.label_docstring)
+    label_def_lines.append(line)
+
+  labels_text = '\n'.join(label_def_lines)
+  logging.info('labels_text is \n%s', labels_text)
+  return labels_text

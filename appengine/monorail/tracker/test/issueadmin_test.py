@@ -77,7 +77,8 @@ class IssueAdminBaseTest(TestBase):
     page_data = self.servlet.GatherPageData(self.mr)
     self.mox.VerifyAll()
 
-    self.assertItemsEqual(['admin_tab_mode', 'config'],
+    self.assertItemsEqual(
+        ['admin_tab_mode', 'config', 'open_text', 'closed_text', 'labels_text'],
         page_data.keys())
     config_view = page_data['config']
     self.assertEqual(789, config_view.project_id)
@@ -88,20 +89,28 @@ class AdminStatusesTest(TestBase):
   def setUp(self):
     super(AdminStatusesTest, self).setUpServlet(issueadmin.AdminStatuses)
 
-  def testProcessSubtabForm_MissingInput(self):
+  @patch('framework.servlet.Servlet.PleaseCorrect')
+  def testProcessSubtabForm_MissingInput(self, mock_pc):
     post_data = fake.PostData()
     next_url = self.servlet.ProcessSubtabForm(post_data, self.mr)
-    self.assertEqual(urls.ADMIN_STATUSES, next_url)
-    self.assertEqual([], self.config.well_known_statuses)
-    self.assertEqual([], self.config.statuses_offer_merge)
+    self.assertIsNone(next_url)
+    mock_pc.assert_called_once()
+    self.assertEqual(len(tracker_constants.DEFAULT_WELL_KNOWN_STATUSES),
+                     len(self.config.well_known_statuses))
+    self.assertEqual(tracker_constants.DEFAULT_STATUSES_OFFER_MERGE,
+                     self.config.statuses_offer_merge)
 
-  def testProcessSubtabForm_EmptyInput(self):
+  @patch('framework.servlet.Servlet.PleaseCorrect')
+  def testProcessSubtabForm_EmptyInput(self, mock_pc):
     post_data = fake.PostData(
         predefinedopen=[''], predefinedclosed=[''], statuses_offer_merge=[''])
     next_url = self.servlet.ProcessSubtabForm(post_data, self.mr)
-    self.assertEqual(urls.ADMIN_STATUSES, next_url)
-    self.assertEqual([], self.config.well_known_statuses)
-    self.assertEqual([], self.config.statuses_offer_merge)
+    self.assertIsNone(next_url)
+    mock_pc.assert_called_once()
+    self.assertEqual(len(tracker_constants.DEFAULT_WELL_KNOWN_STATUSES),
+                     len(self.config.well_known_statuses))
+    self.assertEqual(tracker_constants.DEFAULT_STATUSES_OFFER_MERGE,
+                     self.config.statuses_offer_merge)
 
   def testProcessSubtabForm_Normal(self):
     post_data = fake.PostData(
@@ -132,26 +141,35 @@ class AdminLabelsTest(TestBase):
     self.mox.VerifyAll()
 
     self.assertItemsEqual(
-        ['admin_tab_mode', 'config', 'field_defs'],
+        ['admin_tab_mode', 'config', 'field_defs',
+         'open_text', 'closed_text', 'labels_text'],
         page_data.keys())
     config_view = page_data['config']
     self.assertEqual(789, config_view.project_id)
     self.assertEqual([], page_data['field_defs'])
 
-  def testProcessSubtabForm_MissingInput(self):
+  @patch('framework.servlet.Servlet.PleaseCorrect')
+  def testProcessSubtabForm_MissingInput(self, mock_pc):
     post_data = fake.PostData()
     next_url = self.servlet.ProcessSubtabForm(post_data, self.mr)
-    self.assertEqual(urls.ADMIN_LABELS, next_url)
-    self.assertEqual([], self.config.well_known_labels)
-    self.assertEqual([], self.config.exclusive_label_prefixes)
+    self.assertIsNone(next_url)
+    mock_pc.assert_called_once()
+    self.assertEqual(len(tracker_constants.DEFAULT_WELL_KNOWN_LABELS),
+                     len(self.config.well_known_labels))
+    self.assertEqual(tracker_constants.DEFAULT_EXCL_LABEL_PREFIXES,
+                     self.config.exclusive_label_prefixes)
 
-  def testProcessSubtabForm_EmptyInput(self):
+  @patch('framework.servlet.Servlet.PleaseCorrect')
+  def testProcessSubtabForm_EmptyInput(self, mock_pc):
     post_data = fake.PostData(
         predefinedlabels=[''], excl_prefixes=[''])
     next_url = self.servlet.ProcessSubtabForm(post_data, self.mr)
-    self.assertEqual(urls.ADMIN_LABELS, next_url)
-    self.assertEqual([], self.config.well_known_labels)
-    self.assertEqual([], self.config.exclusive_label_prefixes)
+    self.assertIsNone(next_url)  # Because PleaseCorrect() was called.
+    mock_pc.assert_called_once()
+    self.assertEqual(len(tracker_constants.DEFAULT_WELL_KNOWN_LABELS),
+                     len(self.config.well_known_labels))
+    self.assertEqual(tracker_constants.DEFAULT_EXCL_LABEL_PREFIXES,
+                     self.config.exclusive_label_prefixes)
 
   def testProcessSubtabForm_Normal(self):
     post_data = fake.PostData(
@@ -253,7 +271,9 @@ class AdminComponentsTest(TestBase):
     self.mox.VerifyAll()
     self.assertItemsEqual(
         ['admin_tab_mode', 'failed_templ', 'component_defs', 'failed_perm',
-          'config', 'failed_subcomp'], page_data.keys())
+         'config', 'failed_subcomp',
+         'open_text', 'closed_text', 'labels_text'],
+        page_data.keys())
     config_view = page_data['config']
     self.assertEqual(789, config_view.project_id)
     self.assertEqual([], page_data['component_defs'])
@@ -318,7 +338,8 @@ class AdminViewsTest(TestBase):
 
     self.assertItemsEqual(
         ['canned_queries', 'admin_tab_mode', 'config', 'issue_notify',
-         'new_query_indexes', 'max_queries'],
+         'new_query_indexes', 'max_queries',
+         'open_text', 'closed_text', 'labels_text'],
         page_data.keys())
     config_view = page_data['config']
     self.assertEqual(789, config_view.project_id)
@@ -405,7 +426,7 @@ class AdminRulesTest(TestBase):
 
     self.assertItemsEqual(
         ['admin_tab_mode', 'config', 'rules', 'new_rule_indexes',
-         'max_rules'],
+         'max_rules', 'open_text', 'closed_text', 'labels_text'],
         page_data.keys())
     config_view = page_data['config']
     self.assertEqual(789, config_view.project_id)

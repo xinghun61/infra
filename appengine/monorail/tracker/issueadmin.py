@@ -58,9 +58,15 @@ class IssueAdminBase(servlet.Servlet):
     config = self.services.config.GetProjectConfig(mr.cnxn, mr.project_id)
     config_view = tracker_views.ConfigView(mr, self.services, config,
         template=None, load_all_templates=True)
+    open_text, closed_text = tracker_views.StatusDefsAsText(config)
+    labels_text = tracker_views.LabelDefsAsText(config)
+
     return {
         'admin_tab_mode': self._PROCESS_SUBTAB,
         'config': config_view,
+        'open_text': open_text,
+        'closed_text': closed_text,
+        'labels_text': labels_text,
         }
 
   def ProcessFormData(self, mr, post_data):
@@ -108,6 +114,8 @@ class AdminStatuses(IssueAdminBase):
     wks_open_tuples = [
         (status.lstrip('#'), docstring.strip(), True, status.startswith('#'))
         for status, docstring in wks_open_matches]
+    if not wks_open_tuples:
+      mr.errors.open_statuses = 'A project cannot have zero open statuses'
 
     wks_closed_text = post_data.get('predefinedclosed', '')
     wks_closed_matches = framework_constants.IDENTIFIER_DOCSTRING_RE.findall(
@@ -115,15 +123,21 @@ class AdminStatuses(IssueAdminBase):
     wks_closed_tuples = [
         (status.lstrip('#'), docstring.strip(), False, status.startswith('#'))
         for status, docstring in wks_closed_matches]
+    if not wks_closed_tuples:
+      mr.errors.closed_statuses = 'A project cannot have zero closed statuses'
 
     statuses_offer_merge_text = post_data.get('statuses_offer_merge', '')
     statuses_offer_merge = framework_constants.IDENTIFIER_RE.findall(
         statuses_offer_merge_text)
 
-    if not mr.errors.AnyErrors():
-      self.services.config.UpdateConfig(
-          mr.cnxn, mr.project, statuses_offer_merge=statuses_offer_merge,
-          well_known_statuses=wks_open_tuples + wks_closed_tuples)
+    if mr.errors.AnyErrors():
+      self.PleaseCorrect(
+          mr, open_text=wks_open_text, closed_text=wks_closed_text)
+      return
+
+    self.services.config.UpdateConfig(
+        mr.cnxn, mr.project, statuses_offer_merge=statuses_offer_merge,
+        well_known_statuses=wks_open_tuples + wks_closed_tuples)
 
     # TODO(jrobbins): define a "strict" mode that affects only statuses.
 
@@ -176,6 +190,8 @@ class AdminLabels(IssueAdminBase):
     wkl_tuples = [
         (label.lstrip('#'), docstring.strip(), label.startswith('#'))
         for label, docstring in wkl_matches]
+    if not wkl_tuples:
+      mr.errors.label_defs = 'A project cannot have zero labels'
 
     config = self.services.config.GetProjectConfig(mr.cnxn, mr.project_id)
     field_names = [fd.field_name for fd in config.field_defs
@@ -188,10 +204,13 @@ class AdminLabels(IssueAdminBase):
     excl_prefix_text = post_data.get('excl_prefixes', '')
     excl_prefixes = framework_constants.IDENTIFIER_RE.findall(excl_prefix_text)
 
-    if not mr.errors.AnyErrors():
-      self.services.config.UpdateConfig(
-          mr.cnxn, mr.project,
-          well_known_labels=wkl_tuples, excl_label_prefixes=excl_prefixes)
+    if mr.errors.AnyErrors():
+      self.PleaseCorrect(mr, labels_text=wkl_text)
+      return
+
+    self.services.config.UpdateConfig(
+        mr.cnxn, mr.project,
+        well_known_labels=wkl_tuples, excl_label_prefixes=excl_prefixes)
 
     # TODO(jrobbins): define a "strict" mode that affects only labels.
 

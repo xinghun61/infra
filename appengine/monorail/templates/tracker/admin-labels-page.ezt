@@ -13,9 +13,10 @@
   [if-any perms.EditProject]
     <table class="vt">
      <tr><td>
-       <textarea name="predefinedlabels" rows="12" cols="75" style="tab-size:18">[for config.issue_labels]
-[config.issue_labels.commented][config.issue_labels.name_padded][if-any config.issue_labels.docstring]&#09;= [config.issue_labels.docstring][end][end]
-</textarea><br><br>
+       <textarea name="predefinedlabels" rows="12" cols="75" style="tab-size:18">[labels_text]</textarea><br><br>
+       [if-any errors.label_defs]
+         <div class="fielderror">[errors.label_defs]</div>
+       [end]
 
        Each issue may have <b>at most one</b> label with each of these prefixes:<br>
        <input type="text" size="75" name="excl_prefixes"
