@@ -519,3 +519,8 @@ import:
 - package: github.com/mattn/go-isatty
   version: master
   repo: https://chromium.googlesource.com/external/github.com/mattn/go-isatty.git
+- package: github.com/google/pprof
+  repo: https://chromium.googlesource.com/external/github.com/google/pprof.git
+  version: master
+  subpackages:
+  - profile
