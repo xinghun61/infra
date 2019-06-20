@@ -192,8 +192,8 @@ export class MrApprovalCard extends connectStore(LitElement) {
             .fieldDefs=${this.fieldDefs}
             .statuses=${this._availableStatuses}
             .status=${this._status}
-            .error=${this.updateError && this.updateError.description}
-            ?disabled=${this.updatingApproval}
+            .error=${this.updateError && (this.updateError.description || this.updateError.message)}
+            ?saving=${this.updatingApproval}
             ?hasApproverPrivileges=${this._hasApproverPrivileges}
             isApproval
             @save=${this.save}
@@ -294,27 +294,35 @@ export class MrApprovalCard extends connectStore(LitElement) {
 
   async save() {
     const form = this.shadowRoot.querySelector('mr-edit-metadata');
+    const delta = form.delta;
 
-    const commentContent = form.getCommentContent();
-    const approvalDelta = form.delta;
-    if (approvalDelta.status) {
-      approvalDelta.status = TEXT_TO_STATUS_ENUM[approvalDelta.status];
+    if (delta.status) {
+      delta.status = TEXT_TO_STATUS_ENUM[delta.status];
     }
 
+    // TODO(ehmaldonado): Show snackbar on change, and prevent starring issues
+    // to resetting the form.
+
+    const message = {
+      issueRef: this.issueRef,
+      fieldRef: {
+        type: fieldTypes.APPROVAL_TYPE,
+        fieldName: this.fieldName,
+      },
+      approvalDelta: delta,
+      commentContent: form.getCommentContent(),
+      sendEmail: form.sendEmail,
+    };
+
+    // Add files to message.
     const uploads = await form.getAttachments();
-    if (commentContent || Object.keys(approvalDelta).length > 0 ||
-        uploads.length > 0) {
-      store.dispatch(issue.updateApproval({
-        issueRef: this.issueRef,
-        fieldRef: {
-          type: fieldTypes.APPROVAL_TYPE,
-          fieldName: this.fieldName,
-        },
-        sendEmail: form.sendEmail,
-        commentContent,
-        approvalDelta,
-        uploads,
-      }));
+
+    if (uploads && uploads.length) {
+      message.uploads = uploads;
+    }
+
+    if (message.commentContent || message.approvalDelta || message.uploads) {
+      store.dispatch(issue.updateApproval(message));
     }
   }
 

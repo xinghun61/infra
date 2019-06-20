@@ -56,7 +56,8 @@ export class MrEditIssue extends connectStore(LitElement) {
         .mergedInto=${issue.mergedIntoIssueRef}
         .labelNames=${this._labelNames}
         .derivedLabels=${this._derivedLabels}
-        .error=${this.updateIssueError && this.updateIssueError.description}
+        .error=${this.updateError && (this.updateError.description || this.updateError.message)}
+        ?saving=${this.updatingIssue}
         @save=${this.save}
         @discard=${this.reset}
         @change=${this._presubmitIssue}
@@ -75,7 +76,10 @@ export class MrEditIssue extends connectStore(LitElement) {
       projectConfig: {
         type: Object,
       },
-      updateIssueError: {
+      updatingIssue: {
+        type: Boolean,
+      },
+      updateError: {
         type: Object,
       },
       focusId: {
@@ -97,7 +101,8 @@ export class MrEditIssue extends connectStore(LitElement) {
     this.issue = issue.issue(state);
     this.issueRef = issue.issueRef(state);
     this.projectConfig = project.project(state).config;
-    this.updateIssueError = issue.requests(state).update.error;
+    this.updatingIssue = issue.requests(state).update.requesting;
+    this.updateError = issue.requests(state).update.error;
     this.focusId = ui.focusId(state);
     this._fieldDefs = issue.fieldDefs(state);
   }
@@ -133,6 +138,7 @@ export class MrEditIssue extends connectStore(LitElement) {
 
     this._issueUpdated = false;
     this._resetOnChange = true;
+
     const message = {
       issueRef: this.issueRef,
       delta: delta,
