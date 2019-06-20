@@ -35,6 +35,13 @@ import (
 	"infra/qscheduler/qslib/scheduler"
 )
 
+// ReadOnlyDatastore is set to true to forbid any writes to the datastore.
+var ReadOnlyDatastore = false
+
+// ErrReadOnlyDatastore is returned by functions that attempt to mutate
+// datastore if ReadOnlyDatastore is set to true.
+var ErrReadOnlyDatastore = errors.New("datastore is in read-only mode")
+
 // Store implements a persistent store for types.QScheduler state.
 type Store struct {
 	entityID string
@@ -64,6 +71,10 @@ func List(ctx context.Context) ([]string, error) {
 func Delete(ctx context.Context, entityID string) error {
 	e := datastoreEntity{
 		QSPoolID: entityID,
+	}
+	if ReadOnlyDatastore {
+		logging.Errorf(ctx, "Aborting datastore.Delete, writes are forbidden")
+		return ErrReadOnlyDatastore
 	}
 	return datastore.Delete(ctx, &e)
 }
@@ -95,6 +106,11 @@ func (s *Store) Save(ctx context.Context, q *types.QScheduler) error {
 	logging.Infof(ctx, "attempting to Put datastore entitiy for pool %s "+
 		"with (Scheduler(zip), Reconciler) size of (%d, %d) bytes",
 		entity.QSPoolID, len(entity.SchedulerDataZL), len(entity.ReconcilerData))
+
+	if ReadOnlyDatastore {
+		logging.Errorf(ctx, "Aborting datastore.Put, writes are forbidden")
+		return status.Error(codes.Internal, ErrReadOnlyDatastore.Error())
+	}
 
 	if err := datastore.Put(ctx, entity); err != nil {
 		e := errors.Wrap(err, "unable to Put scheduler state")

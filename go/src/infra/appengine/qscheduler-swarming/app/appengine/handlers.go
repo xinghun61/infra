@@ -23,6 +23,8 @@ import (
 	"infra/appengine/qscheduler-swarming/app/cron"
 	"infra/appengine/qscheduler-swarming/app/frontend"
 
+	"google.golang.org/appengine"
+
 	"go.chromium.org/luci/appengine/gaemiddleware/standard"
 	"go.chromium.org/luci/common/data/rand/mathrand"
 	"go.chromium.org/luci/server/router"
@@ -33,6 +35,9 @@ func init() {
 	// always set to 1, resulting in lots of presumably "random" IDs not being
 	// very random. Seed it with real randomness.
 	mathrand.SeedRandomly()
+
+	// Don't check groups when running on devserver, for simplicity.
+	frontend.SkipAuthorization = appengine.IsDevAppServer()
 
 	r := router.New()
 	mwBase := standard.Base().Extend(config.MiddlewareForGAE)

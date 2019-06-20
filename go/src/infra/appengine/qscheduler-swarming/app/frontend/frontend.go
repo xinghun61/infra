@@ -28,10 +28,12 @@ import (
 	"go.chromium.org/luci/server/auth"
 	"go.chromium.org/luci/server/router"
 	"golang.org/x/net/context"
-	"google.golang.org/appengine"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
+
+// SkipAuthorization is set to true when running in dev server locally.
+var SkipAuthorization = false
 
 type role int
 
@@ -90,7 +92,7 @@ func groupsFor(rs []role, auth *config.Auth) []string {
 // one of the given roles.
 func accessChecker(allowedRoles ...role) func(context.Context, string, proto.Message) (context.Context, error) {
 	checker := func(c context.Context, _ string, _ proto.Message) (context.Context, error) {
-		if appengine.IsDevAppServer() {
+		if SkipAuthorization {
 			return c, nil
 		}
 		config := config.Get(c)

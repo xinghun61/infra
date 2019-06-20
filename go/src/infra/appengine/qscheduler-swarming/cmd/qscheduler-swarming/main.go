@@ -22,6 +22,7 @@ import (
 
 	"infra/appengine/qscheduler-swarming/app/config"
 	"infra/appengine/qscheduler-swarming/app/frontend"
+	"infra/appengine/qscheduler-swarming/app/state"
 
 	"go.chromium.org/luci/common/data/rand/mathrand"
 	"go.chromium.org/luci/grpc/prpc"
@@ -53,6 +54,13 @@ func main() {
 	opts.Register(flag.CommandLine)
 	flag.Parse()
 	srv := server.New(opts)
+
+	// Don't check groups when running in dev mode, for simplicity.
+	frontend.SkipAuthorization = !opts.Prod
+
+	// Avoid writing to the datastore for now, the main instance of the service is
+	// still running on GAE.
+	state.ReadOnlyDatastore = true
 
 	// Load qscheduler service config form a local file (deployed via GKE),
 	// periodically reread it to pick up changes without full restart.
