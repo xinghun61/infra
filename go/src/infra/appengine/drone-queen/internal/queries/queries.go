@@ -33,6 +33,7 @@ func CreateNewDrone(ctx context.Context) (entities.DroneID, error) {
 				if i == maxAttempts {
 					return errors.Reason("max attempts finding unique ID").Err()
 				}
+				retryUniqueUUID.Add(ctx, 1)
 				continue
 			}
 			id = entities.DroneID(proposed)
