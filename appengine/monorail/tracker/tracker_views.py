@@ -988,8 +988,16 @@ def StatusDefsAsText(config):
 
 def LabelDefsAsText(config):
   """Return a string for editing label definitions."""
+  field_names = [fd.field_name for fd in config.field_defs
+                 if fd.field_type is tracker_pb2.FieldTypes.ENUM_TYPE
+                 and not fd.is_deleted]
+  masked_labels = tracker_helpers.LabelsMaskedByFields(config, field_names)
+  masked_set = set(masked.name for masked in masked_labels)
+
   label_def_lines = []
   for wkl in config.well_known_labels:
+    if wkl.label in masked_set:
+      continue
     line = '%s%s%s%s' % (
       '#' if wkl.deprecated else '',
       wkl.label.ljust(20),

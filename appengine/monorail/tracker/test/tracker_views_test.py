@@ -902,6 +902,12 @@ class ConfigFunctionsTest(unittest.TestCase):
         len(open_text.split('\n')) + len(closed_text.split('\n')))
 
   def testLabelDefsAsText(self):
+    # Note: Day-Monday will not be part of the result because it is masked.
+    self.config.field_defs.append(tracker_pb2.FieldDef(
+        field_id=1, field_name='Day',
+        field_type=tracker_pb2.FieldTypes.ENUM_TYPE))
+    self.config.well_known_labels.append(tracker_pb2.LabelDef(
+        label='Day-Monday'))
     labels_text = tracker_views.LabelDefsAsText(self.config)
 
     for wkl in tracker_constants.DEFAULT_WELL_KNOWN_LABELS:

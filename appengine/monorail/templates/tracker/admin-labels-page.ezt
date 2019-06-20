@@ -13,14 +13,15 @@
   [if-any perms.EditProject]
     <table class="vt">
      <tr><td>
-       <textarea name="predefinedlabels" rows="12" cols="75" style="tab-size:18">[labels_text]</textarea><br><br>
+       <textarea name="predefinedlabels" rows="12" cols="75" style="tab-size:18">[labels_text]</textarea>
        [if-any errors.label_defs]
          <div class="fielderror">[errors.label_defs]</div>
        [end]
-
-       Each issue may have <b>at most one</b> label with each of these prefixes:<br>
-       <input type="text" size="75" name="excl_prefixes"
-              value="[for config.excl_prefixes][config.excl_prefixes][if-index config.excl_prefixes last][else], [end][end]">
+       <div>
+         Each issue may have <b>at most one</b> label with each of these prefixes:<br>
+         <input type="text" size="75" name="excl_prefixes"
+                value="[for config.excl_prefixes][config.excl_prefixes][if-index config.excl_prefixes last][else], [end][end]">
+       </div>
       </td>
       <td style="padding-left:.7em">
        <div class="tip">

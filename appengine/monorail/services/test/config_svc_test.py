@@ -18,6 +18,7 @@ import mox
 from google.appengine.api import memcache
 from google.appengine.ext import testbed
 
+from framework import exceptions
 from framework import framework_constants
 from framework import sql
 from proto import tracker_pb2
@@ -703,15 +704,17 @@ class ConfigServiceTest(unittest.TestCase):
     self.SetUpUpdateWellKnownStatuses_Default(project_id)
     self.cnxn.Commit()
 
-  def SetUpUpdateWellKnownLabels_Default(self, project_id):
+  def SetUpUpdateWellKnownLabels_JustCache(self, project_id):
     by_id = {
         idx + 1: label for idx, (label, _, _) in enumerate(
             tracker_constants.DEFAULT_WELL_KNOWN_LABELS)}
     by_name = {name.lower(): label_id
                for label_id, name in by_id.iteritems()}
     label_dicts = by_id, by_name
-    self.config_service.label_cache.CacheAll({789: label_dicts})
+    self.config_service.label_cache.CacheAll({project_id: label_dicts})
 
+  def SetUpUpdateWellKnownLabels_Default(self, project_id):
+    self.SetUpUpdateWellKnownLabels_JustCache(project_id)
     update_labeldef_rows = [
         (idx + 1, project_id, idx, label, doc, deprecated)
         for idx, (label, doc, deprecated) in enumerate(
@@ -780,6 +783,19 @@ class ConfigServiceTest(unittest.TestCase):
     self.mox.ReplayAll()
     self.config_service._UpdateWellKnownLabels(self.cnxn, config)
     self.mox.VerifyAll()
+
+  def testUpdateWellKnownLabels_Duplicate(self):
+    config = tracker_bizobj.MakeDefaultProjectIssueConfig(789)
+    config.well_known_labels.append(config.well_known_labels[0])
+    self.SetUpUpdateWellKnownLabels_JustCache(789)
+
+    self.mox.ReplayAll()
+    with self.assertRaises(exceptions.InputException) as cm:
+      self.config_service._UpdateWellKnownLabels(self.cnxn, config)
+    self.mox.VerifyAll()
+    self.assertEqual(
+      'Defined label "Type-Defect" twice',
+      cm.exception.message)
 
   def testUpdateWellKnownStatuses(self):
     config = tracker_bizobj.MakeDefaultProjectIssueConfig(789)

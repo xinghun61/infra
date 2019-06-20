@@ -839,7 +839,12 @@ class ConfigService(object):
     """
     update_labeldef_rows = []
     new_labeldef_rows = []
+    labels_seen = set()
     for rank, wkl in enumerate(config.well_known_labels):
+      # Prevent duplicate key errors
+      if wkl.label in labels_seen:
+        raise exceptions.InputException('Defined label "%s" twice' % wkl.label)
+      labels_seen.add(wkl.label)
       # We must specify label ID when replacing, otherwise a new ID is made.
       label_id = self.LookupLabelID(
           cnxn, config.project_id, wkl.label, autocreate=False)

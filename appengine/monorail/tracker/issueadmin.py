@@ -81,9 +81,7 @@ class IssueAdminBase(servlet.Servlet):
     """
     page_url = self.ProcessSubtabForm(post_data, mr)
 
-    if mr.errors.AnyErrors():
-      self.PleaseCorrect(mr)  # TODO(jrobbins): echo more user-entered text.
-    else:
+    if page_url:
       return framework_helpers.FormatAbsoluteURL(
           mr, page_url, saved=1, ts=int(time.time()))
 
@@ -192,12 +190,22 @@ class AdminLabels(IssueAdminBase):
         for label, docstring in wkl_matches]
     if not wkl_tuples:
       mr.errors.label_defs = 'A project cannot have zero labels'
+    label_counter = collections.Counter(wkl[0] for wkl in wkl_tuples)
+    for lab, count in label_counter.items():
+      if count > 1:
+        mr.errors.label_defs = 'Duplicate label: %s' % lab
 
     config = self.services.config.GetProjectConfig(mr.cnxn, mr.project_id)
     field_names = [fd.field_name for fd in config.field_defs
                    if fd.field_type is tracker_pb2.FieldTypes.ENUM_TYPE
                    and not fd.is_deleted]
     masked_labels = tracker_helpers.LabelsMaskedByFields(config, field_names)
+    masked_set = set(masked.name for masked in masked_labels)
+    for wkl in wkl_tuples:
+      if wkl[0] in masked_set:
+        mr.errors.label_defs = (
+            'Label "%s" should be defined in enum "%s"' % (
+            wkl[0], wkl[0].split('-')[0]))
     wkl_tuples.extend([
         (masked.name, masked.docstring, False) for masked in masked_labels])
 
@@ -443,11 +451,14 @@ class AdminViews(IssueAdminBase):
 
     list_prefs = _ParseListPreferences(post_data)
 
-    if not mr.errors.AnyErrors():
-      self.services.config.UpdateConfig(
-          mr.cnxn, mr.project, list_prefs=list_prefs)
-      self.services.features.UpdateCannedQueries(
-          mr.cnxn, mr.project_id, canned_queries)
+    if mr.errors.AnyErrors():
+      self.PleaseCorrect(mr)
+      return
+
+    self.services.config.UpdateConfig(
+        mr.cnxn, mr.project, list_prefs=list_prefs)
+    self.services.features.UpdateCannedQueries(
+        mr.cnxn, mr.project_id, canned_queries)
 
     return urls.ADMIN_VIEWS
 
@@ -558,14 +569,17 @@ class AdminRules(IssueAdminBase):
         mr.cnxn, post_data, self.services.user, mr.errors, prefix='new_')
     rules.extend(new_rules)
 
-    if not mr.errors.AnyErrors():
-      config = self.services.features.UpdateFilterRules(
-          mr.cnxn, mr.project_id, rules)
+    if mr.errors.AnyErrors():
+      self.PleaseCorrect(mr)
+      return
 
-      if old_rules != rules:
-        logging.info('recomputing derived fields')
-        config = self.services.config.GetProjectConfig(mr.cnxn, mr.project_id)
-        filterrules_helpers.RecomputeAllDerivedFields(
-            mr.cnxn, self.services, mr.project, config)
+    config = self.services.features.UpdateFilterRules(
+        mr.cnxn, mr.project_id, rules)
+
+    if old_rules != rules:
+      logging.info('recomputing derived fields')
+      config = self.services.config.GetProjectConfig(mr.cnxn, mr.project_id)
+      filterrules_helpers.RecomputeAllDerivedFields(
+          mr.cnxn, self.services, mr.project, config)
 
     return urls.ADMIN_RULES
