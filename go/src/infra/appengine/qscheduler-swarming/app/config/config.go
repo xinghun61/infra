@@ -32,13 +32,16 @@ const configFile = "config.cfg"
 var contextKey = "qscheduler-swarming luci-config key"
 
 // Get returns the config in c, or panics.
-// See also Use and Middleware.
+// See also Use and MiddlewareForGAE.
 func Get(c context.Context) *Config {
-	return c.Value(contextKey).(*Config)
+	return c.Value(&contextKey).(*Config)
 }
 
-// Middleware loads the service config and installs it into the context.
-func Middleware(c *router.Context, next router.Handler) {
+// MiddlewareForGAE loads the service config and installs it into the context.
+//
+// Works only on GAE currently, since 'cfgclient' library is not yet supported
+// on GKE.
+func MiddlewareForGAE(c *router.Context, next router.Handler) {
 	var cfg Config
 	err := cfgclient.Get(
 		c.Context,
@@ -60,7 +63,7 @@ func Middleware(c *router.Context, next router.Handler) {
 
 // Use installs cfg into c.
 func Use(c context.Context, cfg *Config) context.Context {
-	return context.WithValue(c, contextKey, cfg)
+	return context.WithValue(c, &contextKey, cfg)
 }
 
 // SetupValidation adds validation rules for configuration data pushed via luci-config.

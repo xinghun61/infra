@@ -35,7 +35,7 @@ func init() {
 	mathrand.SeedRandomly()
 
 	r := router.New()
-	mwBase := standard.Base().Extend(config.Middleware)
+	mwBase := standard.Base().Extend(config.MiddlewareForGAE)
 
 	// Install auth, config and tsmon handlers.
 	standard.InstallHandlers(r)
