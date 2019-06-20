@@ -5,6 +5,13 @@ cron:
 - description: tsmon house keeping
   url: /internal/cron/ts_mon/housekeeping
   schedule: every 1 minutes
-- description: Prune expired assignemts
-  url: /internal/cron/ts_mon/prune-expired
+
+- description: Free invalid DUT assignments
+  url: /internal/cron/free-invalid-duts
+  schedule: every 5 minutes
+- description: Prune expired drones
+  url: /internal/cron/prune-expired-drones
+  schedule: every 1 hours
+- description: Prune drained DUTs
+  url: /internal/cron/prune-drained-duts
   schedule: every 1 hours

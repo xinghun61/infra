@@ -36,22 +36,38 @@ import (
 // These handlers can only be called by appengine's cron service.
 func InstallHandlers(r *router.Router, mw router.MiddlewareChain) {
 	mw = mw.Extend(gaemiddleware.RequireCron)
-	r.GET("/internal/cron/prune-expired", mw, errHandler(pruneExpired))
+	r.GET("/internal/cron/free-invalid-duts", mw, errHandler(freeInvalidDUTs))
+	r.GET("/internal/cron/prune-expired-drones", mw, errHandler(pruneExpiredDrones))
+	r.GET("/internal/cron/prune-drained-duts", mw, errHandler(pruneDrainedDUTs))
 }
 
 // errHandler wraps a handler function that returns errors.
 func errHandler(f func(*router.Context) error) router.Handler {
-	return func(ctx *router.Context) {
-		if err := f(ctx); err != nil {
-			logging.Errorf(ctx.Context, "handler returned error: %s", err)
-			http.Error(ctx.Writer, "Internal server error", http.StatusInternalServerError)
+	return func(c *router.Context) {
+		if err := f(c); err != nil {
+			logging.Errorf(c.Context, "handler returned error: %s", err)
+			http.Error(c.Writer, "Internal server error", http.StatusInternalServerError)
 		}
 	}
 }
 
-func pruneExpired(ctx *router.Context) (err error) {
+func freeInvalidDUTs(c *router.Context) (err error) {
 	defer func() {
-		pruneExpiredTick.Add(ctx.Context, 1, err == nil)
+		freeInvalidDUTsTick.Add(c.Context, 1, err == nil)
+	}()
+	return errors.New("not implemented")
+}
+
+func pruneExpiredDrones(c *router.Context) (err error) {
+	defer func() {
+		pruneExpiredDronesTick.Add(c.Context, 1, err == nil)
+	}()
+	return errors.New("not implemented")
+}
+
+func pruneDrainedDUTs(c *router.Context) (err error) {
+	defer func() {
+		pruneDrainedDUTsTick.Add(c.Context, 1, err == nil)
 	}()
 	return errors.New("not implemented")
 }
