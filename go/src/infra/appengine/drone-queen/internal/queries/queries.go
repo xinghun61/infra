@@ -13,6 +13,7 @@ import (
 	"golang.org/x/net/context"
 
 	"infra/appengine/drone-queen/api"
+	"infra/appengine/drone-queen/internal/config"
 	"infra/appengine/drone-queen/internal/entities"
 )
 
@@ -33,7 +34,7 @@ func CreateNewDrone(ctx context.Context) (entities.DroneID, error) {
 				if i == maxAttempts {
 					return errors.Reason("max attempts finding unique ID").Err()
 				}
-				retryUniqueUUID.Add(ctx, 1)
+				retryUniqueUUID.Add(ctx, 1, config.Instance(ctx))
 				continue
 			}
 			id = entities.DroneID(proposed)

@@ -84,3 +84,12 @@ func Middleware(ctx *router.Context, next router.Handler) {
 	ctx.Context = Use(ctx.Context, &cfg)
 	next(ctx)
 }
+
+// Instance returns the configured instance of the service.
+func Instance(ctx context.Context) string {
+	n := Get(ctx).GetInstance()
+	if n == "" {
+		return "unknown"
+	}
+	return n
+}

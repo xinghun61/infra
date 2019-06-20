@@ -25,6 +25,8 @@ import (
 	"errors"
 	"net/http"
 
+	"infra/appengine/drone-queen/internal/config"
+
 	"go.chromium.org/luci/appengine/gaemiddleware"
 	"go.chromium.org/luci/common/logging"
 	"go.chromium.org/luci/server/router"
@@ -53,21 +55,21 @@ func errHandler(f func(*router.Context) error) router.Handler {
 
 func freeInvalidDUTs(c *router.Context) (err error) {
 	defer func() {
-		freeInvalidDUTsTick.Add(c.Context, 1, err == nil)
+		freeInvalidDUTsTick.Add(c.Context, 1, config.Instance(c.Context), err == nil)
 	}()
 	return errors.New("not implemented")
 }
 
 func pruneExpiredDrones(c *router.Context) (err error) {
 	defer func() {
-		pruneExpiredDronesTick.Add(c.Context, 1, err == nil)
+		pruneExpiredDronesTick.Add(c.Context, 1, config.Instance(c.Context), err == nil)
 	}()
 	return errors.New("not implemented")
 }
 
 func pruneDrainedDUTs(c *router.Context) (err error) {
 	defer func() {
-		pruneDrainedDUTsTick.Add(c.Context, 1, err == nil)
+		pruneDrainedDUTsTick.Add(c.Context, 1, config.Instance(c.Context), err == nil)
 	}()
 	return errors.New("not implemented")
 }

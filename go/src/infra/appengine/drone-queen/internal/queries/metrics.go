@@ -5,6 +5,7 @@
 package queries
 
 import (
+	"go.chromium.org/luci/common/tsmon/field"
 	"go.chromium.org/luci/common/tsmon/metric"
 )
 
@@ -12,5 +13,7 @@ var (
 	retryUniqueUUID = metric.NewCounter(
 		"chromeos/drone-queen/irregular-event/retry-unique-uuid",
 		"retry when attempting to generate a unique drone UUID",
-		nil)
+		nil,
+		field.String("instance"),
+	)
 )
