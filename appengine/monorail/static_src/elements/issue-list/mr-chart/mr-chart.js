@@ -737,9 +737,9 @@ export default class MrChart extends LitElement {
         y:Math.max(Math.round(100 * generatedValues[i]) / 100, 0)});
     }
     for (let i = 0; i < predictedValues.length; i++) {
-      predictedData.push({x: predictedIndices[i], y: predictedValues[i]});
-      maxData.push({x: predictedIndices[i], y: maxValues[i]});
-      minData.push({x: predictedIndices[i], y: minValues[i]});
+      predictedData.push({x: predictedIndices[i], y: Math.max(predictedValues[i], 0)});
+      maxData.push({x: predictedIndices[i], y: Math.max(maxValues[i], 0)});
+      minData.push({x: predictedIndices[i], y: Math.max(minValues[i], 0)});
     }
     return [originalData, predictedData, maxData, minData]
   }
