@@ -44,4 +44,13 @@ message QuotaScheduler {
   // If specified (non-zero), this internal timeout is applied to all Notify and
   // Assign requests served by the app.
   google.protobuf.Duration handler_timeout = 1;
+
+  // If specified, the amount of time that a batch waits to collect requests
+  // before executing.
+  //
+  // If unspecified, defaults to 5ms.
+  //
+  // A higher value causes batches to be larger and hence more efficient in
+  // in terms of datastore operations, but adds overhead.
+  google.protobuf.Duration batch_construction_wait = 2;
 }

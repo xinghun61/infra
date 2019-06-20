@@ -19,9 +19,11 @@ import (
 	"sync"
 	"time"
 
+	"github.com/golang/protobuf/ptypes"
 	"go.chromium.org/luci/common/clock"
 	"go.chromium.org/luci/common/logging"
 
+	"infra/appengine/qscheduler-swarming/app/config"
 	"infra/appengine/qscheduler-swarming/app/state/types"
 	"infra/qscheduler/qslib/scheduler"
 )
@@ -186,7 +188,7 @@ func (b *BatchRunner) collectForBatch(ctx context.Context, nb *batch) {
 			logging.Debugf(r.ctx, "request picked up as batch slave, will eventually execute")
 			nb.append(r)
 			<-b.tBatchWait
-		case <-clock.After(ctx, 10*time.Millisecond):
+		case <-clock.After(ctx, waitToCollect(ctx)):
 			// Stop collecting, unless we are in a test test fixture and
 			// waiting for additional requests.
 			if !b.tWait {
@@ -194,6 +196,20 @@ func (b *BatchRunner) collectForBatch(ctx context.Context, nb *batch) {
 			}
 		}
 	}
+}
+
+const defaultConstructionWait = 5 * time.Millisecond
+
+func waitToCollect(ctx context.Context) time.Duration {
+	c := config.Get(ctx)
+	if c == nil || c.QuotaScheduler == nil || c.QuotaScheduler.BatchConstructionWait == nil {
+		return defaultConstructionWait
+	}
+	wait, err := ptypes.Duration(c.QuotaScheduler.BatchConstructionWait)
+	if err != nil {
+		return defaultConstructionWait
+	}
+	return wait
 }
 
 // closeFixtureChannels closes all the channels related to the test fixture
