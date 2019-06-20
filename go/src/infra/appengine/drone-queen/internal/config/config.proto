@@ -18,6 +18,10 @@ message Config {
   // assignment_duration is the duration before expiration for drone
   // assignments.
   google.protobuf.Duration assignment_duration = 2;
+
+  // instance identifies which instance of the service this is.  For
+  // example, this could be prod for the prod instance.
+  string instance = 3;
 }
 
 // AccessGroups holds access group configuration

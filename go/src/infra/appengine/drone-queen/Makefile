@@ -13,6 +13,10 @@ vet:
 test:
 	go test ./...
 
+.PHONY: generate
+generate:
+	go generate ./...
+
 APP_DIR = appengine
 
 # Development server
