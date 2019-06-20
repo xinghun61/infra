@@ -8,7 +8,7 @@ import {connectStore} from 'elements/reducers/base.js';
 import * as issue from 'elements/reducers/issue.js';
 
 
-const NULL_DISPLAY_NAME_VALUES = ['----', 'a deleted user'];
+const NULL_DISPLAY_NAME_VALUES = ['----', 'a_deleted_user'];
 
 /**
  * `<mr-user-link>`

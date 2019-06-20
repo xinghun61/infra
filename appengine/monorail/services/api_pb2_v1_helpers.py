@@ -91,10 +91,16 @@ def convert_template(template):
 
 
 def convert_person(user_id, cnxn, services, trap_exception=False):
-  """Convert user id to API AtomPerson PB."""
+  """Convert user id to API AtomPerson PB or None if user_id is None."""
 
   if not user_id:
+    # convert_person should handle 'converting' optional user values,
+    # like issue.owner, where user_id may be None.
     return None
+  if user_id == framework_constants.DELETED_USER_ID:
+    return api_pb2_v1.AtomPerson(
+        kind='monorail#issuePerson',
+        name=framework_constants.DELETED_USER_NAME)
   try:
     user = services.user.GetUser(cnxn, user_id)
   except exceptions.NoSuchUserException as ex:
@@ -459,13 +465,18 @@ def convert_approval_amendments(amendments, mar, services):
 def _get_user_email(user_service, cnxn, user_id):
   """Get user email."""
 
+  if user_id == framework_constants.DELETED_USER_ID:
+    return framework_constants.DELETED_USER_NAME
+  if not user_id:
+    # _get_user_email should handle getting emails for optional user values,
+    # like issue.owner where user_id may be None.
+    # TODO(jojwang): monorail:5740, this should return USER_NOT_FOUND.
+    return framework_constants.DELETED_USER_NAME
   try:
     user_email = user_service.LookupUserEmail(
             cnxn, user_id)
-    if not user_email:
-      user_email = framework_constants.DELETED_USER_NAME
   except exceptions.NoSuchUserException:
-    user_email = framework_constants.DELETED_USER_NAME
+    user_email = framework_constants.USER_NOT_FOUND_NAME
   return user_email
 
 

@@ -114,7 +114,7 @@ describe('mr-edit-issue', () => {
   it('Filter out empty or deleted user owners', () => {
     assert.equal(element._ownerDisplayName({displayName: '----'}), '');
     assert.equal(
-      element._ownerDisplayName({displayName: 'a deleted user'}),
+      element._ownerDisplayName({displayName: 'a_deleted_user'}),
       '');
     assert.equal(
       element._ownerDisplayName({

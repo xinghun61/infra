@@ -1398,7 +1398,7 @@ def AmendmentString(amendment, users_by_id):
 
   # Display new owner only
   if amendment.field == tracker_pb2.FieldID.OWNER:
-    if amendment.added_user_ids and amendment.added_user_ids[0] > 0:
+    if amendment.added_user_ids and amendment.added_user_ids[0]:
       uid = amendment.added_user_ids[0]
       result = users_by_id[uid].display_name
     else:
@@ -1437,11 +1437,10 @@ def AmendmentLinks(amendment, users_by_id, project_name):
     return [{'value': result, 'url': None}]
   # Display new owner only
   elif amendment.field == tracker_pb2.FieldID.OWNER:
-    if amendment.added_user_ids and amendment.added_user_ids[0] > 0:
+    if amendment.added_user_ids and amendment.added_user_ids[0]:
       uid = amendment.added_user_ids[0]
       return [{'value': users_by_id[uid].display_name, 'url': None}]
-    else:
-      return [{'value': framework_constants.NO_USER_NAME, 'url': None}]
+    return [{'value': framework_constants.NO_USER_NAME, 'url': None}]
   elif amendment.field in (tracker_pb2.FieldID.BLOCKEDON,
                            tracker_pb2.FieldID.BLOCKING,
                            tracker_pb2.FieldID.MERGEDINTO):

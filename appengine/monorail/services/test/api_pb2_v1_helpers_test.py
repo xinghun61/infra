@@ -89,8 +89,8 @@ class ApiV1HelpersTest(unittest.TestCase):
         project=fake.ProjectService(),
         config=fake.ConfigService(),
         issue_star=fake.IssueStarService())
-    self.services.user.TestAddUser('user@example.com', 1)
-    self.person_1 = api_pb2_v1_helpers.convert_person(1, None, self.services)
+    self.services.user.TestAddUser('user@example.com', 111)
+    self.person_1 = api_pb2_v1_helpers.convert_person(111, None, self.services)
 
   def testConvertTemplate(self):
     """Test convert_template."""
@@ -170,9 +170,20 @@ class ApiV1HelpersTest(unittest.TestCase):
 
   def testConvertPerson(self):
     """Test convert_person."""
-    result = api_pb2_v1_helpers.convert_person(1, None, self.services)
+    result = api_pb2_v1_helpers.convert_person(111, None, self.services)
     self.assertIsInstance(result, api_pb2_v1.AtomPerson)
     self.assertEquals('user@example.com', result.name)
+
+    none_user = api_pb2_v1_helpers.convert_person(None, '', self.services)
+    self.assertIsNone(none_user)
+
+    deleted_user = api_pb2_v1_helpers.convert_person(
+        framework_constants.DELETED_USER_ID, '', self.services)
+    self.assertEqual(
+        deleted_user,
+        api_pb2_v1.AtomPerson(
+            kind='monorail#issuePerson',
+            name=framework_constants.DELETED_USER_NAME))
 
   def testConvertIssueIDs(self):
     """Test convert_issue_ids."""
@@ -258,8 +269,8 @@ class ApiV1HelpersTest(unittest.TestCase):
         ]
     approval_values = [
         tracker_pb2.ApprovalValue(
-            approval_id=2, phase_id=3, approver_ids=[1]),
-        tracker_pb2.ApprovalValue(approval_id=4, approver_ids=[1])
+            approval_id=2, phase_id=3, approver_ids=[111]),
+        tracker_pb2.ApprovalValue(approval_id=4, approver_ids=[111])
     ]
     issue = fake.MakeTestIssue(
         12345, 1, 'one', 'New', 111, field_values=fvs,
@@ -332,7 +343,7 @@ class ApiV1HelpersTest(unittest.TestCase):
 
   def testConvertAmendments(self):
     """Test convert_amendments."""
-    self.services.user.TestAddUser('user2@example.com', 2)
+    self.services.user.TestAddUser('user2@example.com', 222)
     mar = mock.Mock()
     mar.cnxn = None
     issue = mock.Mock()
@@ -346,16 +357,16 @@ class ApiV1HelpersTest(unittest.TestCase):
         newvalue='new status')
     amendment_owner = tracker_pb2.Amendment(
         field=tracker_pb2.FieldID.OWNER,
-        added_user_ids=[1])
+        added_user_ids=[111])
     amendment_labels = tracker_pb2.Amendment(
         field=tracker_pb2.FieldID.LABELS,
         newvalue='label1 -label2')
     amendment_cc_add = tracker_pb2.Amendment(
         field=tracker_pb2.FieldID.CC,
-        added_user_ids=[1])
+        added_user_ids=[111])
     amendment_cc_remove = tracker_pb2.Amendment(
         field=tracker_pb2.FieldID.CC,
-        removed_user_ids=[2])
+        removed_user_ids=[222])
     amendment_blockedon = tracker_pb2.Amendment(
         field=tracker_pb2.FieldID.BLOCKEDON,
         newvalue='1')
@@ -409,10 +420,10 @@ class ApiV1HelpersTest(unittest.TestCase):
                                status='New', owner_id=1001)
 
     comment = tracker_pb2.IssueComment(
-        user_id=1,
+        user_id=111,
         content='test content',
         sequence=1,
-        deleted_by=1,
+        deleted_by=111,
         timestamp=1437700000,
     )
     result = api_pb2_v1_helpers.convert_comment(
@@ -437,10 +448,10 @@ class ApiV1HelpersTest(unittest.TestCase):
     issue = fake.MakeTestIssue(project_id=12345, local_id=1, summary='sum',
                                status='New', owner_id=1001)
     comment = tracker_pb2.IssueComment(
-        user_id=1,
+        user_id=111,
         content='test content',
         sequence=1,
-        deleted_by=1,
+        deleted_by=111,
         timestamp=1437700000,
     )
     result = api_pb2_v1_helpers.convert_approval_comment(
@@ -459,11 +470,21 @@ class ApiV1HelpersTest(unittest.TestCase):
 
 
   def testGetUserEmail(self):
-    email = api_pb2_v1_helpers._get_user_email(self.services.user, '', 1)
+    email = api_pb2_v1_helpers._get_user_email(self.services.user, '', 111)
     self.assertEquals('user@example.com', email)
 
-    no_email = api_pb2_v1_helpers._get_user_email(self.services.user, '', 2)
-    self.assertEquals(framework_constants.DELETED_USER_NAME, no_email)
+    no_user_found = api_pb2_v1_helpers._get_user_email(
+        self.services.user, '', 222)
+    self.assertEqual(framework_constants.USER_NOT_FOUND_NAME, no_user_found)
+
+    deleted = api_pb2_v1_helpers._get_user_email(
+        self.services.user, '', framework_constants.DELETED_USER_ID)
+    self.assertEqual(framework_constants.DELETED_USER_NAME, deleted)
+
+    # TODO(jojwang): monorail: 5740, change to NO_USER_NAME
+    none_user_id = api_pb2_v1_helpers._get_user_email(
+        self.services.user, '', None)
+    self.assertEqual(framework_constants.DELETED_USER_NAME, none_user_id)
 
   def testSplitRemoveAdd(self):
     """Test split_remove_add."""
@@ -570,7 +591,7 @@ class ApiV1HelpersTest(unittest.TestCase):
     self.assertEquals(
       [tracker_bizobj.MakeFieldValue(2, 4, None, None, None, None, False),
        tracker_bizobj.MakeFieldValue(3, None, 'Scout', None, None, None, False),
-       tracker_bizobj.MakeFieldValue(4, None, None, 1, None, None, False),
+       tracker_bizobj.MakeFieldValue(4, None, None, 111, None, None, False),
        tracker_bizobj.MakeFieldValue(
            5, None, None, None, 1512518400, None, False),
        tracker_bizobj.MakeFieldValue(
@@ -697,10 +718,10 @@ class ApiV1HelpersTest(unittest.TestCase):
     ]
     avs = [
         tracker_pb2.ApprovalValue(
-            approval_id=1, approver_ids=[1], setter_id=1,
+            approval_id=1, approver_ids=[111], setter_id=111,
             status=tracker_pb2.ApprovalStatus.NEEDS_REVIEW, set_on=ts),
         tracker_pb2.ApprovalValue(
-            approval_id=5, approver_ids=[1], phase_id=2)
+            approval_id=5, approver_ids=[111], phase_id=2)
     ]
     actual = api_pb2_v1_helpers.convert_approvals(
         cnxn, avs, self.services, config, phases)
@@ -727,7 +748,7 @@ class ApiV1HelpersTest(unittest.TestCase):
     ]
     phases = []
     avs = [
-        tracker_pb2.ApprovalValue(approval_id=1, approver_ids=[1]),
+        tracker_pb2.ApprovalValue(approval_id=1, approver_ids=[111]),
         # phase does not exist
         tracker_pb2.ApprovalValue(approval_id=2, phase_id=2),
         tracker_pb2.ApprovalValue(approval_id=3),  # field 3 is not an approval

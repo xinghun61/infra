@@ -414,6 +414,8 @@ class MonorailApi(remote.Service):
       updates_dict['status'] = request.updates.status
       updates_dict['is_description'] = request.updates.is_description
       if request.updates.owner:
+        # A current issue owner can be removed via the API with a
+        # NO_USER_NAME('----') input.
         if request.updates.owner == framework_constants.NO_USER_NAME:
           updates_dict['owner'] = framework_constants.NO_USER_SPECIFIED
         else:

@@ -1675,8 +1675,10 @@ class BizobjTest(unittest.TestCase):
 
   def testAmendmentString(self):
     users_by_id = {
-        111: framework_views.StuffUserView(111, 'username@gmail.com', True)
-        }
+        111: framework_views.StuffUserView(111, 'username@gmail.com', True),
+        framework_constants.DELETED_USER_ID: framework_views.StuffUserView(
+            framework_constants.DELETED_USER_ID, '', True),
+    }
     summary_amendment = tracker_bizobj.MakeSummaryAmendment('new summary', None)
     self.assertEqual(
         'new summary',
@@ -1698,11 +1700,18 @@ class BizobjTest(unittest.TestCase):
         'usern...@gmail.com',
         tracker_bizobj.AmendmentString(owner_amendment, users_by_id))
 
+    owner_amendment_deleted = tracker_bizobj.MakeOwnerAmendment(1, 0)
+    self.assertEqual(
+        framework_constants.DELETED_USER_NAME,
+        tracker_bizobj.AmendmentString(owner_amendment_deleted, users_by_id))
+
   def testAmendmentLinks(self):
     users_by_id = {
         111: framework_views.StuffUserView(111, 'foo@gmail.com', False),
         222: framework_views.StuffUserView(222, 'bar@gmail.com', False),
-        333: framework_views.StuffUserView(333, 'baz@gmail.com', False)
+        333: framework_views.StuffUserView(333, 'baz@gmail.com', False),
+        framework_constants.DELETED_USER_ID: framework_views.StuffUserView(
+            framework_constants.DELETED_USER_ID, '', True),
         }
     # SUMMARY
     summary_amendment = tracker_bizobj.MakeSummaryAmendment('new summary', None)
@@ -1782,6 +1791,14 @@ class BizobjTest(unittest.TestCase):
         {'value': 'bar@gmail.com', 'url': None},
         {'value': 'baz@gmail.com', 'url': None}],
         tracker_bizobj.AmendmentLinks(user_amendment, users_by_id, 'proj'))
+
+    # deleted users
+    cc_amendment_deleted = tracker_bizobj.MakeCcAmendment(
+        [framework_constants.DELETED_USER_ID], [])
+    self.assertEqual(
+        [{'value': framework_constants.DELETED_USER_NAME, 'url': None}],
+        tracker_bizobj.AmendmentLinks(
+            cc_amendment_deleted, users_by_id, 'proj'))
 
   def testGetAmendmentFieldName_Custom(self):
     amendment = tracker_bizobj.MakeAmendment(

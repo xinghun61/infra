@@ -123,9 +123,9 @@ class FakeFrontendSearchPipeline(object):
 
   def __init__(self):
     issue1 = fake.MakeTestIssue(
-        project_id=12345, local_id=1, owner_id=2, status='New', summary='sum')
+        project_id=12345, local_id=1, owner_id=222, status='New', summary='sum')
     issue2 = fake.MakeTestIssue(
-        project_id=12345, local_id=2, owner_id=2, status='New', summary='sum')
+        project_id=12345, local_id=2, owner_id=222, status='New', summary='sum')
     self.allowed_results = [issue1, issue2]
     self.visible_results = [issue1]
     self.total_count = len(self.allowed_results)
@@ -178,8 +178,8 @@ class MonorailApiTest(testing.EndpointsTestCase):
     self.config = None
     self.services = MakeFakeServiceManager()
     self.mock(api_svc_v1.MonorailApi, '_services', self.services)
-    self.services.user.TestAddUser('requester@example.com', 1)
-    self.services.user.TestAddUser('user@example.com', 2)
+    self.services.user.TestAddUser('requester@example.com', 111)
+    self.services.user.TestAddUser('user@example.com', 222)
     self.services.user.TestAddUser('group@example.com', 123)
     self.services.usergroup.TestAddGroupSettings(123, 'group@example.com')
     self.request = {
@@ -201,7 +201,8 @@ class MonorailApiTest(testing.EndpointsTestCase):
 
   def SetUpComponents(
       self, project_id, component_id, component_name, component_doc='doc',
-      deprecated=False, admin_ids=None, cc_ids=None, created=100000, creator=1):
+      deprecated=False, admin_ids=None, cc_ids=None, created=100000,
+      creator=111):
     admin_ids = admin_ids or []
     cc_ids = cc_ids or []
     self.config = self.services.config.GetProjectConfig(
@@ -230,10 +231,10 @@ class MonorailApiTest(testing.EndpointsTestCase):
     """The viewed user has no projects."""
 
     self.services.project.TestAddProject(
-        'public-project', owner_ids=[1])
+        'public-project', owner_ids=[111])
     resp = self.call_api('users_get', self.request).json_body
     expected = {
-        'id': '2',
+        'id': '222',
         'kind': 'monorail#user'}
     self.assertEqual(expected, resp)
 
@@ -242,7 +243,7 @@ class MonorailApiTest(testing.EndpointsTestCase):
     self.services.template.GetProjectTemplates.return_value = \
         testing_helpers.DefaultTemplates()
     self.services.project.TestAddProject(
-        'public-project', owner_ids=[2])
+        'public-project', owner_ids=[222])
     resp = self.call_api('users_get', self.request).json_body
 
     self.assertEqual(1, len(resp['projects']))
@@ -252,7 +253,7 @@ class MonorailApiTest(testing.EndpointsTestCase):
     """The viewed user has one project but the requester cannot view."""
 
     self.services.project.TestAddProject(
-        'private-project', owner_ids=[2],
+        'private-project', owner_ids=[222],
         access=project_pb2.ProjectAccess.MEMBERS_ONLY)
     resp = self.call_api('users_get', self.request).json_body
     self.assertNotIn('projects', resp)
@@ -262,9 +263,9 @@ class MonorailApiTest(testing.EndpointsTestCase):
     self.services.template.GetProjectTemplates.return_value = \
         testing_helpers.DefaultTemplates()
     self.services.project.TestAddProject(
-        'owner-project', owner_ids=[2])
+        'owner-project', owner_ids=[222])
     self.services.project.TestAddProject(
-        'member-project', owner_ids=[1], committer_ids=[2])
+        'member-project', owner_ids=[111], committer_ids=[222])
     resp = self.call_api('users_get', self.request).json_body
     self.assertEqual(2, len(resp['projects']))
 
@@ -277,7 +278,7 @@ class MonorailApiTest(testing.EndpointsTestCase):
     """Get the requested issue."""
 
     self.services.project.TestAddProject(
-        'test-project', owner_ids=[2],
+        'test-project', owner_ids=[222],
         project_id=12345)
     self.SetUpComponents(12345, 1, 'API')
     self.SetUpFieldDefs(1, 12345, 'Field1', tracker_pb2.FieldTypes.INT_TYPE)
@@ -286,8 +287,8 @@ class MonorailApiTest(testing.EndpointsTestCase):
         field_id=1,
         int_value=11)
     issue1 = fake.MakeTestIssue(
-        project_id=12345, local_id=1, owner_id=2, reporter_id=1, status='New',
-        summary='sum', component_ids=[1], field_values=[fv])
+        project_id=12345, local_id=1, owner_id=222, reporter_id=111,
+        status='New', summary='sum', component_ids=[1], field_values=[fv])
     self.services.issue.TestAddIssue(issue1)
 
     resp = self.call_api('issues_get', self.request).json_body
@@ -314,7 +315,7 @@ class MonorailApiTest(testing.EndpointsTestCase):
       'owner': {'name': 'notexist@example.com'}}
     self.request.update(issue_dict)
     self.services.project.TestAddProject(
-        'test-project', owner_ids=[2],
+        'test-project', owner_ids=[222],
         project_id=12345)
     with self.call_should_fail(400):
       self.call_api('issues_insert', self.request)
@@ -339,7 +340,7 @@ class MonorailApiTest(testing.EndpointsTestCase):
     self.request.update(issue_dict)
 
     self.services.project.TestAddProject(
-        'test-project', owner_ids=[2],
+        'test-project', owner_ids=[222],
         access=project_pb2.ProjectAccess.MEMBERS_ONLY,
         project_id=12345)
     with self.call_should_fail(403):
@@ -349,13 +350,13 @@ class MonorailApiTest(testing.EndpointsTestCase):
     """Create an issue as requested."""
 
     self.services.project.TestAddProject(
-        'test-project', owner_ids=[2],
+        'test-project', owner_ids=[222],
         project_id=12345)
     self.SetUpFieldDefs(1, 12345, 'Field1', tracker_pb2.FieldTypes.INT_TYPE)
 
     issue1 = fake.MakeTestIssue(
-        project_id=12345, local_id=1, owner_id=2, reporter_id=1, status='New',
-        summary='Test issue')
+        project_id=12345, local_id=1, owner_id=222, reporter_id=111,
+        status='New', summary='Test issue')
     self.services.issue.TestAddIssue(issue1)
 
     issue_dict = {
@@ -385,16 +386,16 @@ class MonorailApiTest(testing.EndpointsTestCase):
 
     starrers = self.services.issue_star.LookupItemStarrers(
         'fake cnxn', new_issue.issue_id)
-    self.assertIn(1, starrers)
+    self.assertIn(111, starrers)
 
   def testIssuesList_NoPermission(self):
     """No permission for additional projects."""
     self.services.project.TestAddProject(
-        'test-project', owner_ids=[2],
+        'test-project', owner_ids=[222],
         project_id=12345)
 
     self.services.project.TestAddProject(
-        'test-project2', owner_ids=[2],
+        'test-project2', owner_ids=[222],
         access=project_pb2.ProjectAccess.MEMBERS_ONLY,
         project_id=123456)
     self.request['additionalProject'] = ['test-project2']
@@ -412,7 +413,7 @@ class MonorailApiTest(testing.EndpointsTestCase):
               FakeFrontendSearchPipeline())
 
     self.services.project.TestAddProject(
-        'test-project', owner_ids=[1],  # requester
+        'test-project', owner_ids=[111],  # requester
         access=project_pb2.ProjectAccess.MEMBERS_ONLY,
         project_id=12345)
     resp = self.call_api('issues_list', self.request).json_body
@@ -424,17 +425,17 @@ class MonorailApiTest(testing.EndpointsTestCase):
     """Get comments of requested issue."""
 
     self.services.project.TestAddProject(
-        'test-project', owner_ids=[2],
+        'test-project', owner_ids=[222],
         project_id=12345)
 
     issue1 = fake.MakeTestIssue(
         project_id=12345, local_id=1, summary='test summary', status='New',
-        issue_id=10001, owner_id=2, reporter_id=1)
+        issue_id=10001, owner_id=222, reporter_id=111)
     self.services.issue.TestAddIssue(issue1)
 
     comment = tracker_pb2.IssueComment(
         id=123, issue_id=10001,
-        project_id=12345, user_id=2,
+        project_id=12345, user_id=222,
         content='this is a comment',
         timestamp=1437700000)
     self.services.issue.TestAddComment(comment, 1)
@@ -451,7 +452,7 @@ class MonorailApiTest(testing.EndpointsTestCase):
   def testIssuesCommentsInsert_ApprovalFields(self):
     """Attempts to update approval field values are blocked."""
     self.services.project.TestAddProject(
-        'test-project', owner_ids=[2],
+        'test-project', owner_ids=[222],
         access=project_pb2.ProjectAccess.MEMBERS_ONLY,
         project_id=12345)
 
@@ -476,7 +477,7 @@ class MonorailApiTest(testing.EndpointsTestCase):
     """No permission to comment an issue."""
 
     self.services.project.TestAddProject(
-        'test-project', owner_ids=[2],
+        'test-project', owner_ids=[222],
         access=project_pb2.ProjectAccess.MEMBERS_ONLY,
         project_id=12345)
 
@@ -493,7 +494,7 @@ class MonorailApiTest(testing.EndpointsTestCase):
         'test-project', owner_ids=[], project_id=12345)
 
     issue1 = fake.MakeTestIssue(
-        12345, 1, 'Issue 1', 'New', 2)
+        12345, 1, 'Issue 1', 'New', 222)
     self.services.issue.TestAddIssue(issue1)
 
     self.request['content'] = 'This is just a comment'
@@ -505,15 +506,15 @@ class MonorailApiTest(testing.EndpointsTestCase):
     """Insert comments with amendments."""
 
     self.services.project.TestAddProject(
-        'test-project', owner_ids=[1],
+        'test-project', owner_ids=[111],
         project_id=12345)
 
     issue1 = fake.MakeTestIssue(
-        12345, 1, 'Issue 1', 'New', 2, project_name='test-project')
+        12345, 1, 'Issue 1', 'New', 222, project_name='test-project')
     issue2 = fake.MakeTestIssue(
-        12345, 2, 'Issue 2', 'New', 2, project_name='test-project')
+        12345, 2, 'Issue 2', 'New', 222, project_name='test-project')
     issue3 = fake.MakeTestIssue(
-        12345, 3, 'Issue 3', 'New', 2, project_name='test-project')
+        12345, 3, 'Issue 3', 'New', 222, project_name='test-project')
     self.services.issue.TestAddIssue(issue1)
     self.services.issue.TestAddIssue(issue2)
     self.services.issue.TestAddIssue(issue3)
@@ -539,7 +540,7 @@ class MonorailApiTest(testing.EndpointsTestCase):
         'test-project', owner_ids=[], project_id=12345)
 
     issue1 = fake.MakeTestIssue(
-        12345, 1, 'Issue 1', 'New', 2, project_name='test-project')
+        12345, 1, 'Issue 1', 'New', 222, project_name='test-project')
     self.services.issue.TestAddIssue(issue1)
 
     self.request['updates'] = {
@@ -556,10 +557,10 @@ class MonorailApiTest(testing.EndpointsTestCase):
     """Can't set owner to someone who is not a project member."""
 
     _project1 = self.services.project.TestAddProject(
-        'test-project', owner_ids=[1], project_id=12345)
+        'test-project', owner_ids=[111], project_id=12345)
 
     issue1 = fake.MakeTestIssue(
-        12345, 1, 'Issue 1', 'New', 2, project_name='test-project')
+        12345, 1, 'Issue 1', 'New', 222, project_name='test-project')
     self.services.issue.TestAddIssue(issue1)
 
     self.request['updates'] = {
@@ -572,13 +573,13 @@ class MonorailApiTest(testing.EndpointsTestCase):
     """Insert comment that merges an issue into another issue."""
 
     self.services.project.TestAddProject(
-        'test-project', owner_ids=[2], committer_ids=[1],
+        'test-project', owner_ids=[222], committer_ids=[111],
         project_id=12345)
 
     issue1 = fake.MakeTestIssue(
-        12345, 1, 'Issue 1', 'New', 2, project_name='test-project')
+        12345, 1, 'Issue 1', 'New', 222, project_name='test-project')
     issue2 = fake.MakeTestIssue(
-        12345, 2, 'Issue 2', 'New', 2, project_name='test-project')
+        12345, 2, 'Issue 2', 'New', 222, project_name='test-project')
     self.services.issue.TestAddIssue(issue1)
     self.services.issue.TestAddIssue(issue2)
 
@@ -601,10 +602,10 @@ class MonorailApiTest(testing.EndpointsTestCase):
   def testIssuesCommentsInsert_CustomFields(self):
     """Update custom field values."""
     self.services.project.TestAddProject(
-        'test-project', owner_ids=[1],
+        'test-project', owner_ids=[111],
         project_id=12345)
     issue1 = fake.MakeTestIssue(
-        12345, 1, 'Issue 1', 'New', 2,
+        12345, 1, 'Issue 1', 'New', 222,
         project_name='test-project')
     self.services.issue.TestAddIssue(issue1)
     self.SetUpFieldDefs(
@@ -623,9 +624,9 @@ class MonorailApiTest(testing.EndpointsTestCase):
   def testIssuesCommentsInsert_IsDescription(self):
     """Add a new issue description."""
     self.services.project.TestAddProject(
-        'test-project', owner_ids=[1], project_id=12345)
+        'test-project', owner_ids=[111], project_id=12345)
     issue1 = fake.MakeTestIssue(
-        12345, 1, 'Issue 1', 'New', 2, project_name='test-project')
+        12345, 1, 'Issue 1', 'New', 222, project_name='test-project')
     self.services.issue.TestAddIssue(issue1)
     # Note: the initially issue description will be "Issue 1".
 
@@ -643,11 +644,11 @@ class MonorailApiTest(testing.EndpointsTestCase):
     self.services.project.TestAddProject(
         'test-project', owner_ids=[], project_id=12345)
     issue1 = fake.MakeTestIssue(
-        12345, 1, 'Issue 1', 'New', 2, labels=[],
+        12345, 1, 'Issue 1', 'New', 222, labels=[],
         project_name='test-project')
     self.services.issue.TestAddIssue(issue1)
     self.services.project.TestAddProject(
-        'test-project2', owner_ids=[1], project_id=12346)
+        'test-project2', owner_ids=[111], project_id=12346)
 
     # The user has no permission in test-project.
     self.request['projectId'] = 'test-project'
@@ -659,9 +660,9 @@ class MonorailApiTest(testing.EndpointsTestCase):
   def testIssuesCommentsInsert_MoveToProject_NoPermsDest(self):
     """Don't move issue to a different project where user has no perms."""
     self.services.project.TestAddProject(
-        'test-project', owner_ids=[1], project_id=12345)
+        'test-project', owner_ids=[111], project_id=12345)
     issue1 = fake.MakeTestIssue(
-        12345, 1, 'Issue 1', 'New', 2, labels=[],
+        12345, 1, 'Issue 1', 'New', 222, labels=[],
         project_name='test-project')
     self.services.issue.TestAddIssue(issue1)
     self.services.project.TestAddProject(
@@ -677,14 +678,14 @@ class MonorailApiTest(testing.EndpointsTestCase):
   def testIssuesCommentsInsert_MoveToProject_NoSuchProject(self):
     """Don't move issue to a different project that does not exist."""
     project1 = self.services.project.TestAddProject(
-        'test-project', owner_ids=[2], project_id=12345)
+        'test-project', owner_ids=[222], project_id=12345)
     issue1 = fake.MakeTestIssue(
-        12345, 1, 'Issue 1', 'New', 2, labels=[],
+        12345, 1, 'Issue 1', 'New', 222, labels=[],
         project_name='test-project')
     self.services.issue.TestAddIssue(issue1)
 
     # Project doesn't exist.
-    project1.owner_ids = [1, 2]
+    project1.owner_ids = [111, 222]
     self.request['updates'] = {
         'moveToProject': 'not exist'}
     with self.call_should_fail(400):
@@ -693,9 +694,9 @@ class MonorailApiTest(testing.EndpointsTestCase):
   def testIssuesCommentsInsert_MoveToProject_SameProject(self):
     """Don't move issue to the project it is already in."""
     self.services.project.TestAddProject(
-        'test-project', owner_ids=[1], project_id=12345)
+        'test-project', owner_ids=[111], project_id=12345)
     issue1 = fake.MakeTestIssue(
-        12345, 1, 'Issue 1', 'New', 2, labels=[],
+        12345, 1, 'Issue 1', 'New', 222, labels=[],
         project_name='test-project')
     self.services.issue.TestAddIssue(issue1)
 
@@ -708,13 +709,13 @@ class MonorailApiTest(testing.EndpointsTestCase):
   def testIssuesCommentsInsert_MoveToProject_Restricted(self):
     """Don't move restricted issue to a different project."""
     self.services.project.TestAddProject(
-        'test-project', owner_ids=[1], project_id=12345)
+        'test-project', owner_ids=[111], project_id=12345)
     issue1 = fake.MakeTestIssue(
-        12345, 1, 'Issue 1', 'New', 2, labels=['Restrict-View-Google'],
+        12345, 1, 'Issue 1', 'New', 222, labels=['Restrict-View-Google'],
         project_name='test-project')
     self.services.issue.TestAddIssue(issue1)
     self.services.project.TestAddProject(
-        'test-project2', owner_ids=[1],
+        'test-project2', owner_ids=[111],
         project_id=12346)
 
     #  Issue has restrict labels, so it cannot move.
@@ -727,16 +728,16 @@ class MonorailApiTest(testing.EndpointsTestCase):
   def testIssuesCommentsInsert_MoveToProject_Normal(self):
     """Move issue."""
     self.services.project.TestAddProject(
-        'test-project', owner_ids=[1, 2],
+        'test-project', owner_ids=[111, 222],
         project_id=12345)
     self.services.project.TestAddProject(
-        'test-project2', owner_ids=[1, 2],
+        'test-project2', owner_ids=[111, 222],
         project_id=12346)
     issue1 = fake.MakeTestIssue(
-        12345, 1, 'Issue 1', 'New', 2, project_name='test-project')
+        12345, 1, 'Issue 1', 'New', 222, project_name='test-project')
     self.services.issue.TestAddIssue(issue1)
     issue2 = fake.MakeTestIssue(
-        12346, 1, 'Issue 1', 'New', 2, project_name='test-project2')
+        12346, 1, 'Issue 1', 'New', 222, project_name='test-project2')
     self.services.issue.TestAddIssue(issue2)
 
     self.request['updates'] = {
@@ -749,11 +750,11 @@ class MonorailApiTest(testing.EndpointsTestCase):
 
   def testIssuesCommentsDelete_NoComment(self):
     self.services.project.TestAddProject(
-        'test-project', owner_ids=[2],
+        'test-project', owner_ids=[222],
         project_id=12345)
     issue1 = fake.MakeTestIssue(
         project_id=12345, local_id=1, summary='test summary',
-        issue_id=10001, status='New', owner_id=2, reporter_id=2)
+        issue_id=10001, status='New', owner_id=222, reporter_id=222)
     self.services.issue.TestAddIssue(issue1)
     self.request['commentId'] = 1
     with self.call_should_fail(404):
@@ -761,11 +762,11 @@ class MonorailApiTest(testing.EndpointsTestCase):
 
   def testIssuesCommentsDelete_NoDeletePermission(self):
     self.services.project.TestAddProject(
-        'test-project', owner_ids=[2],
+        'test-project', owner_ids=[222],
         project_id=12345)
     issue1 = fake.MakeTestIssue(
         project_id=12345, local_id=1, summary='test summary',
-        issue_id=10001, status='New', owner_id=2, reporter_id=2)
+        issue_id=10001, status='New', owner_id=222, reporter_id=222)
     self.services.issue.TestAddIssue(issue1)
     self.request['commentId'] = 0
     with self.call_should_fail(403):
@@ -773,15 +774,15 @@ class MonorailApiTest(testing.EndpointsTestCase):
 
   def testIssuesCommentsDelete_DeleteUndelete(self):
     self.services.project.TestAddProject(
-        'test-project', owner_ids=[2],
+        'test-project', owner_ids=[222],
         project_id=12345)
     issue1 = fake.MakeTestIssue(
         project_id=12345, local_id=1, summary='test summary',
-        issue_id=10001, status='New', owner_id=2, reporter_id=1)
+        issue_id=10001, status='New', owner_id=222, reporter_id=111)
     self.services.issue.TestAddIssue(issue1)
     comment = tracker_pb2.IssueComment(
         id=123, issue_id=10001,
-        project_id=12345, user_id=1,
+        project_id=12345, user_id=111,
         content='this is a comment',
         timestamp=1437700000)
     self.services.issue.TestAddComment(comment, 1)
@@ -790,7 +791,7 @@ class MonorailApiTest(testing.EndpointsTestCase):
     comments = self.services.issue.GetCommentsForIssue(None, 10001)
 
     self.call_api('issues_comments_delete', self.request)
-    self.assertEqual(1, comments[1].deleted_by)
+    self.assertEqual(111, comments[1].deleted_by)
 
     self.call_api('issues_comments_undelete', self.request)
     self.assertIsNone(comments[1].deleted_by)
@@ -811,7 +812,7 @@ class MonorailApiTest(testing.EndpointsTestCase):
         1, 12345, 'Legal-Review', tracker_pb2.FieldTypes.APPROVAL_TYPE)
 
     issue1 = fake.MakeTestIssue(
-        12345, 1, 'Issue 1', 'New', 2, approval_values=[approval],
+        12345, 1, 'Issue 1', 'New', 222, approval_values=[approval],
         labels=issue_labels)
     self.services.issue.TestAddIssue(issue1)
 
@@ -825,22 +826,22 @@ class MonorailApiTest(testing.EndpointsTestCase):
   def getFakeComments(self):
     return [
         tracker_pb2.IssueComment(
-            id=123, issue_id=1234501, project_id=12345, user_id=1,
+            id=123, issue_id=1234501, project_id=12345, user_id=111,
             content='1st comment', timestamp=1437700000, approval_id=1),
         tracker_pb2.IssueComment(
-            id=223, issue_id=1234501, project_id=12345, user_id=1,
+            id=223, issue_id=1234501, project_id=12345, user_id=111,
             content='2nd comment', timestamp=1437700000, approval_id=2),
         tracker_pb2.IssueComment(
-            id=323, issue_id=1234501, project_id=12345, user_id=1,
+            id=323, issue_id=1234501, project_id=12345, user_id=111,
             content='3rd comment', timestamp=1437700000, approval_id=1,
             is_description=True),
         tracker_pb2.IssueComment(
-            id=423, issue_id=1234501, project_id=12345, user_id=1,
+            id=423, issue_id=1234501, project_id=12345, user_id=111,
             content='4th comment', timestamp=1437700000)]
 
   def testApprovalsCommentsList_NoViewPermission(self):
     self.services.project.TestAddProject(
-        'test-project', owner_ids=[2],
+        'test-project', owner_ids=[222],
         project_id=12345)
 
     approval = tracker_pb2.ApprovalValue(approval_id=1)
@@ -852,7 +853,7 @@ class MonorailApiTest(testing.EndpointsTestCase):
 
   def testApprovalsCommentsList_NoApprovalFound(self):
     self.services.project.TestAddProject(
-        'test-project', owner_ids=[2],
+        'test-project', owner_ids=[222],
         project_id=12345)
 
     approval = tracker_pb2.ApprovalValue(approval_id=1)
@@ -865,7 +866,7 @@ class MonorailApiTest(testing.EndpointsTestCase):
   def testApprovalsCommentsList(self):
     """Get comments of requested issue approval."""
     self.services.project.TestAddProject(
-        'test-project', owner_ids=[2], project_id=12345)
+        'test-project', owner_ids=[222], project_id=12345)
     self.services.issue.GetCommentsForIssue = Mock(
         return_value=self.getFakeComments())
 
@@ -880,7 +881,7 @@ class MonorailApiTest(testing.EndpointsTestCase):
   def testApprovalsCommentsList_MaxResults(self):
     """get comments of requested issue approval with maxResults."""
     self.services.project.TestAddProject(
-        'test-project', owner_ids=[2], project_id=12345)
+        'test-project', owner_ids=[222], project_id=12345)
     self.services.issue.GetCommentsForIssue = Mock(
         return_value=self.getFakeComments())
 
@@ -898,7 +899,7 @@ class MonorailApiTest(testing.EndpointsTestCase):
   def testApprovalsCommentsList_StartIndex(self, mockGetComments):
     """get comments of requested issue approval with maxResults."""
     self.services.project.TestAddProject(
-        'test-project', owner_ids=[2], project_id=12345)
+        'test-project', owner_ids=[222], project_id=12345)
     mockGetComments.return_value = self.getFakeComments()
 
     approval = tracker_pb2.ApprovalValue(approval_id=1)
@@ -915,7 +916,7 @@ class MonorailApiTest(testing.EndpointsTestCase):
     """No permission to comment on an issue, including approvals."""
 
     self.services.project.TestAddProject(
-        'test-project', owner_ids=[2],
+        'test-project', owner_ids=[222],
         access=project_pb2.ProjectAccess.MEMBERS_ONLY,
         project_id=12345)
 
@@ -928,7 +929,7 @@ class MonorailApiTest(testing.EndpointsTestCase):
   def testApprovalsCommentsInsert_NoApprovalDefFound(self):
     """No approval with approvalName found."""
     self.services.project.TestAddProject(
-        'test-project', owner_ids=[2],
+        'test-project', owner_ids=[222],
         project_id=12345)
 
     approval = tracker_pb2.ApprovalValue(approval_id=1)
@@ -971,7 +972,7 @@ class MonorailApiTest(testing.EndpointsTestCase):
         1, 12345, 'Legal-Review', tracker_pb2.FieldTypes.APPROVAL_TYPE)
 
     # issue 1 does not contain the Legal-Review approval.
-    issue1 = fake.MakeTestIssue(12345, 1, 'Issue 1', 'New', 2)
+    issue1 = fake.MakeTestIssue(12345, 1, 'Issue 1', 'New', 222)
     self.services.issue.TestAddIssue(issue1)
 
     with self.call_should_fail(400):
@@ -980,7 +981,7 @@ class MonorailApiTest(testing.EndpointsTestCase):
   def testApprovalsCommentsInsert_FieldValueChanges_NotFound(self):
     """Approval's subfield value not found."""
     self.services.project.TestAddProject(
-        'test-project', owner_ids=[2],
+        'test-project', owner_ids=[222],
         project_id=12345)
     approval = tracker_pb2.ApprovalValue(approval_id=1)
 
@@ -1012,11 +1013,11 @@ class MonorailApiTest(testing.EndpointsTestCase):
     mock_time.return_value = test_time
     comment = tracker_pb2.IssueComment(
         id=123, issue_id=10001,
-        project_id=12345, user_id=1,
+        project_id=12345, user_id=111,
         content='cows moo',
         timestamp=143770000)
     self.services.project.TestAddProject(
-        'test-project', owner_ids=[2], project_id=12345)
+        'test-project', owner_ids=[222], project_id=12345)
     approval = tracker_pb2.ApprovalValue(
         approval_id=1, approver_ids=[444])
 
@@ -1049,10 +1050,10 @@ class MonorailApiTest(testing.EndpointsTestCase):
     labels_add = ['CowType-skim', 'CowType-milk']
     labels_remove = ['CowType-chocolate']
     approval_delta = tracker_bizobj.MakeApprovalDelta(
-        None, 1, [], [], fvs_add, [], [],
+        None, 111, [], [], fvs_add, [], [],
         labels_add, labels_remove, set_on=test_time)
     self.services.issue.DeltaUpdateIssueApproval.assert_called_with(
-        None, 1, self.config, issue, approval, approval_delta,
+        None, 111, self.config, issue, approval, approval_delta,
         comment_content=None, is_description=None)
     self.assertEqual(response['content'], comment.content)
 
@@ -1062,13 +1063,13 @@ class MonorailApiTest(testing.EndpointsTestCase):
     mock_time.return_value = test_time
     comment = tracker_pb2.IssueComment(
         id=123, issue_id=10001,
-        project_id=12345, user_id=1,  # requester
+        project_id=12345, user_id=111,  # requester
         content='this is a comment',
         timestamp=1437700000,
         amendments=[tracker_bizobj.MakeApprovalStatusAmendment(
             tracker_pb2.ApprovalStatus.REVIEW_REQUESTED)])
     self.services.project.TestAddProject(
-        'test-project', owner_ids=[2], project_id=12345)
+        'test-project', owner_ids=[222], project_id=12345)
     approval = tracker_pb2.ApprovalValue(
         approval_id=1, approver_ids=[444],
         status=tracker_pb2.ApprovalStatus.NOT_SET)
@@ -1079,10 +1080,10 @@ class MonorailApiTest(testing.EndpointsTestCase):
         comment=comment)
     response = self.call_api('approvals_comments_insert', request).json_body
     approval_delta = tracker_bizobj.MakeApprovalDelta(
-        tracker_pb2.ApprovalStatus.REVIEW_REQUESTED, 1, [], [], [], [], [],
+        tracker_pb2.ApprovalStatus.REVIEW_REQUESTED, 111, [], [], [], [], [],
         [], [], set_on=test_time)
     self.services.issue.DeltaUpdateIssueApproval.assert_called_with(
-        None, 1, self.config, issue, approval, approval_delta,
+        None, 111, self.config, issue, approval, approval_delta,
         comment_content=None, is_description=None)
 
     self.assertEqual(response['author']['name'], 'requester@example.com')
@@ -1094,7 +1095,7 @@ class MonorailApiTest(testing.EndpointsTestCase):
 
   def testApprovalsCommentsInsert_StatusChanges_NoPerms(self):
     self.services.project.TestAddProject(
-        'test-project', owner_ids=[2],
+        'test-project', owner_ids=[222],
         project_id=12345)
     approval = tracker_pb2.ApprovalValue(
         approval_id=1, approver_ids=[444],
@@ -1111,16 +1112,16 @@ class MonorailApiTest(testing.EndpointsTestCase):
     mock_time.return_value = test_time
     comment = tracker_pb2.IssueComment(
         id=123, issue_id=1234501,
-        project_id=12345, user_id=1,
+        project_id=12345, user_id=111,
         content='this is a comment',
         timestamp=1437700000,
         amendments=[tracker_bizobj.MakeApprovalStatusAmendment(
             tracker_pb2.ApprovalStatus.NOT_APPROVED)])
     self.services.project.TestAddProject(
-        'test-project', owner_ids=[2],
+        'test-project', owner_ids=[222],
         project_id=12345)
     approval = tracker_pb2.ApprovalValue(
-        approval_id=1, approver_ids=[1],  # requester
+        approval_id=1, approver_ids=[111],  # requester
         status=tracker_pb2.ApprovalStatus.NOT_SET)
     request, issue = self.approvalRequest(
         approval,
@@ -1129,10 +1130,10 @@ class MonorailApiTest(testing.EndpointsTestCase):
     response = self.call_api('approvals_comments_insert', request).json_body
 
     approval_delta = tracker_bizobj.MakeApprovalDelta(
-        tracker_pb2.ApprovalStatus.NOT_APPROVED, 1, [], [], [], [], [],
+        tracker_pb2.ApprovalStatus.NOT_APPROVED, 111, [], [], [], [], [],
         [], [], set_on=test_time)
     self.services.issue.DeltaUpdateIssueApproval.assert_called_with(
-        None, 1, self.config, issue, approval, approval_delta,
+        None, 111, self.config, issue, approval, approval_delta,
         comment_content=None, is_description=None)
     self.assertEqual(response['author']['name'], 'requester@example.com')
     self.assertEqual(response['content'], comment.content)
@@ -1143,7 +1144,7 @@ class MonorailApiTest(testing.EndpointsTestCase):
 
   def testApprovalsCommentsInsert_ApproverChanges_NoPerms(self):
     self.services.project.TestAddProject(
-        'test-project', owner_ids=[2],
+        'test-project', owner_ids=[222],
         project_id=12345)
 
     approval = tracker_pb2.ApprovalValue(
@@ -1162,17 +1163,17 @@ class MonorailApiTest(testing.EndpointsTestCase):
     mock_time.return_value = test_time
     comment = tracker_pb2.IssueComment(
         id=123, issue_id=1234501,
-        project_id=12345, user_id=1,
+        project_id=12345, user_id=111,
         content='this is a comment',
         timestamp=1437700000,
         amendments=[tracker_bizobj.MakeApprovalApproversAmendment(
-            [2], [123])])
+            [222], [123])])
     self.services.project.TestAddProject(
-        'test-project', owner_ids=[2],
+        'test-project', owner_ids=[222],
         project_id=12345)
 
     approval = tracker_pb2.ApprovalValue(
-        approval_id=1, approver_ids=[1],  # requester
+        approval_id=1, approver_ids=[111],  # requester
         status=tracker_pb2.ApprovalStatus.NOT_SET)
     request, issue = self.approvalRequest(
         approval,
@@ -1183,9 +1184,9 @@ class MonorailApiTest(testing.EndpointsTestCase):
     response = self.call_api('approvals_comments_insert', request).json_body
 
     approval_delta = tracker_bizobj.MakeApprovalDelta(
-        None, 1, [2], [123], [], [], [], [], [], set_on=test_time)
+        None, 111, [222], [123], [], [], [], [], [], set_on=test_time)
     self.services.issue.DeltaUpdateIssueApproval.assert_called_with(
-        None, 1, self.config, issue, approval, approval_delta,
+        None, 111, self.config, issue, approval, approval_delta,
         comment_content=None, is_description=None)
     self.assertEqual(response['author']['name'], 'requester@example.com')
     self.assertEqual(response['content'], comment.content)
@@ -1200,15 +1201,15 @@ class MonorailApiTest(testing.EndpointsTestCase):
     mock_time.return_value = test_time
     comment = tracker_pb2.IssueComment(
         id=123, issue_id=10001,
-        project_id=12345, user_id=1,
+        project_id=12345, user_id=111,
         content='this is a comment',
         timestamp=1437700000)
     self.services.project.TestAddProject(
-        'test-project', owner_ids=[2],
+        'test-project', owner_ids=[222],
         project_id=12345)
 
     approval = tracker_pb2.ApprovalValue(
-        approval_id=1, approver_ids=[1],  # requester
+        approval_id=1, approver_ids=[111],  # requester
         status=tracker_pb2.ApprovalStatus.NOT_SET)
     request, issue = self.approvalRequest(
         approval,
@@ -1217,9 +1218,9 @@ class MonorailApiTest(testing.EndpointsTestCase):
     response = self.call_api('approvals_comments_insert', request).json_body
 
     approval_delta = tracker_bizobj.MakeApprovalDelta(
-        None, 1, [], [], [], [], [], [], [], set_on=test_time)
+        None, 111, [], [], [], [], [], [], [], set_on=test_time)
     self.services.issue.DeltaUpdateIssueApproval.assert_called_with(
-        None, 1, self.config, issue, approval, approval_delta,
+        None, 111, self.config, issue, approval, approval_delta,
         comment_content='updated survey', is_description=True)
     self.assertEqual(response['author']['name'], 'requester@example.com')
     self.assertTrue(response['canDelete'])
@@ -1232,15 +1233,15 @@ class MonorailApiTest(testing.EndpointsTestCase):
     mock_time.return_value = test_time
     comment = tracker_pb2.IssueComment(
         id=123, issue_id=10001,
-        project_id=12345, user_id=1,
+        project_id=12345, user_id=111,
         content='this is a comment',
         timestamp=1437700000)
     self.services.project.TestAddProject(
-        'test-project', owner_ids=[2],
+        'test-project', owner_ids=[222],
         project_id=12345)
 
     approval = tracker_pb2.ApprovalValue(
-        approval_id=1, approver_ids=[1],  # requester
+        approval_id=1, approver_ids=[111],  # requester
         status=tracker_pb2.ApprovalStatus.NOT_SET)
     request, issue = self.approvalRequest(
         approval,
@@ -1253,9 +1254,9 @@ class MonorailApiTest(testing.EndpointsTestCase):
         issue.issue_id, approval.approval_id, ANY, comment.id, send_email=True)
 
     approval_delta = tracker_bizobj.MakeApprovalDelta(
-        None, 1, [], [], [], [], [], [], [], set_on=test_time)
+        None, 111, [], [], [], [], [], [], [], set_on=test_time)
     self.services.issue.DeltaUpdateIssueApproval.assert_called_with(
-        None, 1, self.config, issue, approval, approval_delta,
+        None, 111, self.config, issue, approval, approval_delta,
         comment_content=comment.content, is_description=None)
     self.assertEqual(response['author']['name'], 'requester@example.com')
     self.assertTrue(response['canDelete'])
@@ -1310,8 +1311,8 @@ class MonorailApiTest(testing.EndpointsTestCase):
   def testGroupsGet_Normal(self):
     request = self.SetUpGroupRequest('group@example.com',
                                      perms=permissions.ADMIN_PERMISSIONSET)
-    self.services.usergroup.TestAddMembers(123, [1], 'member')
-    self.services.usergroup.TestAddMembers(123, [2], 'owner')
+    self.services.usergroup.TestAddMembers(123, [111], 'member')
+    self.services.usergroup.TestAddMembers(123, [222], 'owner')
     resp = self.call_api('groups_get', request).json_body
     self.assertEqual(123, resp['groupID'])
     self.assertEqual(['requester@example.com'], resp['groupMembers'])
@@ -1336,7 +1337,7 @@ class MonorailApiTest(testing.EndpointsTestCase):
   def testComponentsList(self):
     """Get components for a project."""
     self.services.project.TestAddProject(
-        'test-project', owner_ids=[2],
+        'test-project', owner_ids=[222],
         project_id=12345)
     self.SetUpComponents(12345, 1, 'API')
     resp = self.call_api('components_list', self.request).json_body
@@ -1350,7 +1351,7 @@ class MonorailApiTest(testing.EndpointsTestCase):
 
   def testComponentsCreate_NoPermission(self):
     self.services.project.TestAddProject(
-        'test-project', owner_ids=[2],
+        'test-project', owner_ids=[222],
         project_id=12345)
     self.SetUpComponents(12345, 1, 'API')
 
@@ -1363,7 +1364,7 @@ class MonorailApiTest(testing.EndpointsTestCase):
 
   def testComponentsCreate_Invalid(self):
     self.services.project.TestAddProject(
-        'test-project', owner_ids=[1],
+        'test-project', owner_ids=[111],
         project_id=12345)
     self.SetUpComponents(12345, 1, 'API')
 
@@ -1392,7 +1393,7 @@ class MonorailApiTest(testing.EndpointsTestCase):
 
   def testComponentsCreate_Normal(self):
     self.services.project.TestAddProject(
-        'test-project', owner_ids=[1],
+        'test-project', owner_ids=[111],
         project_id=12345)
     self.SetUpComponents(12345, 1, 'API')
 
@@ -1418,7 +1419,7 @@ class MonorailApiTest(testing.EndpointsTestCase):
 
   def testComponentsDelete_Invalid(self):
     self.services.project.TestAddProject(
-        'test-project', owner_ids=[2],
+        'test-project', owner_ids=[222],
         project_id=12345)
     self.SetUpComponents(12345, 1, 'API')
 
@@ -1438,7 +1439,7 @@ class MonorailApiTest(testing.EndpointsTestCase):
 
     # The user tries to delete component that had subcomponents
     self.services.project.TestAddProject(
-        'test-project2', owner_ids=[1],
+        'test-project2', owner_ids=[111],
         project_id=123456)
     self.SetUpComponents(123456, 1, 'Parent')
     self.SetUpComponents(123456, 2, 'Parent>Child')
@@ -1451,7 +1452,7 @@ class MonorailApiTest(testing.EndpointsTestCase):
 
   def testComponentsDelete_Normal(self):
     self.services.project.TestAddProject(
-        'test-project', owner_ids=[1],
+        'test-project', owner_ids=[111],
         project_id=12345)
     self.SetUpComponents(12345, 1, 'API')
 
@@ -1463,10 +1464,10 @@ class MonorailApiTest(testing.EndpointsTestCase):
 
   def testComponentsUpdate_Invalid(self):
     self.services.project.TestAddProject(
-        'test-project', owner_ids=[2],
+        'test-project', owner_ids=[222],
         project_id=12345)
     self.SetUpComponents(12345, 1, 'API')
-    self.SetUpComponents(12345, 2, 'Test', admin_ids=[1])
+    self.SetUpComponents(12345, 2, 'Test', admin_ids=[111])
 
     # Fail to update a non-existent component
     cd_dict = {
@@ -1500,7 +1501,7 @@ class MonorailApiTest(testing.EndpointsTestCase):
 
   def testComponentsUpdate_Normal(self):
     self.services.project.TestAddProject(
-        'test-project', owner_ids=[1],
+        'test-project', owner_ids=[111],
         project_id=12345)
     self.SetUpComponents(12345, 1, 'API')
     self.SetUpComponents(12345, 2, 'Parent')
@@ -1518,7 +1519,7 @@ class MonorailApiTest(testing.EndpointsTestCase):
         'API', self.config)
     self.assertIsNotNone(component_def)
     self.assertEqual('', component_def.docstring)
-    self.assertEqual([1L, 2L], component_def.cc_ids)
+    self.assertEqual([111, 222], component_def.cc_ids)
     self.assertTrue(component_def.deprecated)
 
     cd_dict = {
@@ -1555,9 +1556,9 @@ class AllBaseChecksTest(unittest.TestCase):
 
   def setUp(self):
     self.services = MakeFakeServiceManager()
-    self.services.user.TestAddUser('test@example.com', 1)
+    self.services.user.TestAddUser('test@example.com', 111)
     self.services.project.TestAddProject(
-        'test-project', owner_ids=[1], project_id=123,
+        'test-project', owner_ids=[111], project_id=123,
         access=project_pb2.ProjectAccess.MEMBERS_ONLY)
     self.auth_client_ids = ['123456789.apps.googleusercontent.com']
     oauth.get_client_id = Mock(return_value=self.auth_client_ids[0])
@@ -1582,7 +1583,7 @@ class AllBaseChecksTest(unittest.TestCase):
 
   def testBannedUser(self):
     banned_email = 'banned@example.com'
-    self.services.user.TestAddUser(banned_email, 2, banned=True)
+    self.services.user.TestAddUser(banned_email, 222, banned=True)
     requester = RequesterMock(email=banned_email)
     with self.assertRaises(permissions.BannedUserException):
       api_svc_v1.api_base_checks(
@@ -1599,7 +1600,7 @@ class AllBaseChecksTest(unittest.TestCase):
   def testNonLiveProject(self):
     archived_project = 'archived-project'
     self.services.project.TestAddProject(
-        archived_project, owner_ids=[1],
+        archived_project, owner_ids=[111],
         state=project_pb2.ProjectState.ARCHIVED)
     request = RequestMock()
     request.projectId = archived_project
@@ -1610,7 +1611,7 @@ class AllBaseChecksTest(unittest.TestCase):
 
   def testNoViewProjectPermission(self):
     nonmember_email = 'nonmember@example.com'
-    self.services.user.TestAddUser(nonmember_email, 2)
+    self.services.user.TestAddUser(nonmember_email, 222)
     requester = RequesterMock(email=nonmember_email)
     request = RequestMock()
     request.projectId = 'test-project'
@@ -1641,7 +1642,7 @@ class AllBaseChecksTest(unittest.TestCase):
     request.issueId = 1
     issue1 = fake.MakeTestIssue(
         project_id=123, local_id=1, summary='test summary',
-        status='New', owner_id=1, reporter_id=1)
+        status='New', owner_id=111, reporter_id=111)
     issue1.deleted = True
     self.services.issue.TestAddIssue(issue1)
     with self.assertRaises(permissions.PermissionException):

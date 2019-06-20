@@ -39,8 +39,9 @@ MAX_POST_BODY_SIZE = 10 * 1024 * 1024   # = 10 MB
 NO_USER_SPECIFIED = 0
 NO_SESSION_SPECIFIED = 0
 NO_USER_NAME = '----'
-DELETED_USER_NAME = 'a deleted user'
+DELETED_USER_NAME = 'a_deleted_user'
 DELETED_USER_ID = 1
+USER_NOT_FOUND_NAME = 'user_not_found'
 
 # We remember the time of each user's last page view, but to reduce the
 # number of database writes, we only update it if it is newer by an hour.

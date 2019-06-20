@@ -803,7 +803,7 @@ describe('mr-edit-metadata', () => {
   it('filter out deleted users', async () => {
     element.cc = [
       {displayName: 'test@example.com', userId: '1234'},
-      {displayName: 'a deleted user'},
+      {displayName: 'a_deleted_user'},
       {displayName: 'someone@example.com', userId: '5678'},
     ];
 

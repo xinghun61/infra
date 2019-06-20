@@ -162,6 +162,14 @@ class UserViewTest(unittest.TestCase):
     self.assertEquals('Last visit > 30 days ago', user_view.avail_message)
     self.assertEquals('none', user_view.avail_state)
 
+  def testDeletedUser(self):
+    deleted_user = user_pb2.User(user_id=1)
+    user_view = framework_views.UserView(deleted_user)
+    self.assertEqual(
+        user_view.display_name, framework_constants.DELETED_USER_NAME)
+    self.assertEqual(user_view.email, '')
+    self.assertEqual(user_view.obscure_email, '')
+    self.assertEqual(user_view.profile_url, '')
 
 class RevealEmailsToMembersTest(unittest.TestCase):
 
