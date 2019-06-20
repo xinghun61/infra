@@ -23,6 +23,11 @@ let TKR_hotlistsStore;
 let TKR_labelStore;
 
 /**
+ * Like TKR_labelStore but stores only label prefixes.
+ */
+let TKR_labelPrefixStore;
+
+/**
  * Like TKR_labelStore but adds a trailing comma instead of replacing.
  */
 let TKR_labelMultiStore;
@@ -773,12 +778,18 @@ let TKR_labelWords = [];
  */
 function TKR_setUpLabelStore(labelDefs) {
   TKR_labelWords = [];
+  const TKR_labelPrefixes = [];
+  const labelPrefs = new Set();
   let docdict = {};
   for (let i = 0; i < labelDefs.length; i++) {
     let label = labelDefs[i];
     TKR_labelWords.push(label.name);
+    TKR_labelPrefixes.push(label.name.split('-')[0]);
     docdict[label.name] = label.doc;
+    labelPrefs.add(label.name.split('-')[0]);
   }
+  const labelPrefArray = Array.from(labelPrefs);
+  const labelPrefDefs = labelPrefArray.map((s) => ({name: s, doc: ''}));
 
   TKR_labelStore = new _AC_SimpleStore(TKR_labelWords, docdict);
 
@@ -788,18 +799,26 @@ function TKR_setUpLabelStore(labelDefs) {
     return completion.value;
   };
 
+  TKR_labelPrefixStore = new _AC_SimpleStore(TKR_labelPrefixes);
+
+  TKR_labelPrefixStore.commaCompletes = false;
+  TKR_labelPrefixStore.substitute =
+  function(inputValue, cursor, completable, completion) {
+    return completion.value;
+  };
+
   TKR_labelMultiStore = new _AC_SimpleStore(TKR_labelWords, docdict);
 
   TKR_labelMultiStore.substitute = TKR_acSubstituteWithComma;
 
   const completable = function(inputValue, cursor) {
-    if (cursor == 0) {
+    if (cursor === 0) {
       return '*label'; // Show every well-known label that is not redundant.
     }
     let start = 0;
     for (let i = cursor; --i >= 0;) {
       let c = inputValue.charAt(i);
-      if (c == ' ' || c == ',') {
+      if (c === ' ' || c === ',') {
         start = i + 1;
         break;
       }
@@ -828,47 +847,53 @@ function TKR_setUpLabelStore(labelDefs) {
     return result;
   };
 
-  const completions = function(prefix, tofilter) {
-    let comps = TKR_fullComplete(prefix, labelDefs);
-    if (comps == null) {
-      comps = _AC_SimpleStore.prototype.completions.call(
-        this, prefix, tofilter);
-    }
+  const completions = function(labeldic) {
+    return function(prefix, tofilter) {
+      let comps = TKR_fullComplete(prefix, labeldic);
+      if (comps === null) {
+        comps = _AC_SimpleStore.prototype.completions.call(
+          this, prefix, tofilter);
+      }
 
-    let filtered_comps = [];
-    for (let i = 0; i < comps.length; i++) {
-      let prefix_parts = comps[i].value.split('-');
-      let label_prefix = prefix_parts[0].toLowerCase();
-      if (FindInArray(TKR_exclPrefixes, label_prefix) == -1 ||
-          TKR_usedPrefixes[label_prefix] == undefined ||
-          TKR_usedPrefixes[label_prefix].length == 0 ||
-          (TKR_usedPrefixes[label_prefix].length == 1 &&
-           TKR_usedPrefixes[label_prefix][0] == ac_focusedInput)) {
-        let uniq = true;
-        for (let p in TKR_usedPrefixes) {
-          let textFields = TKR_usedPrefixes[p];
-          for (let j = 0; j < textFields.length; j++) {
-            let tf = textFields[j];
-            if (tf.value.toLowerCase() == comps[i].value.toLowerCase() &&
-                tf != ac_focusedInput) {
-              uniq = false;
+      const filteredComps = [];
+      let labelPrefix;
+      let tf;
+      for (let i = 0; i < comps.length; i++) {
+        const prefixParts = comps[i].value.split('-');
+        labelPrefix = prefixParts[0].toLowerCase();
+        if (FindInArray(TKR_exclPrefixes, labelPrefix) === -1 ||
+            TKR_usedPrefixes[labelPrefix] === undefined ||
+            TKR_usedPrefixes[labelPrefix].length === 0 ||
+            (TKR_usedPrefixes[labelPrefix].length === 1 &&
+             TKR_usedPrefixes[labelPrefix][0] === ac_focusedInput)) {
+          let uniq = true;
+          TKR_usedPrefixes.forEach((textFields, p, map) => {
+            for (let j = 0; j < textFields.length; j++) {
+              tf = textFields[j];
+              if (tf.value.toLowerCase() === comps[i].value.toLowerCase() &&
+                  tf !== ac_focusedInput) {
+                uniq = false;
+              }
             }
+          });
+          if (uniq) {
+            filteredComps.push(comps[i]);
           }
         }
-        if (uniq) {
-          filtered_comps.push(comps[i]);
-        }
       }
-    }
 
-    return filtered_comps;
+      return filteredComps;
+    };
   };
 
   TKR_labelStore.completable = completable;
-  TKR_labelStore.completions = completions;
+  TKR_labelStore.completions = completions(labelDefs);
+
+  TKR_labelPrefixStore.completable = completable;
+  TKR_labelPrefixStore.completions = completions(labelPrefDefs);
 
   TKR_labelMultiStore.completable = completable;
-  TKR_labelMultiStore.completions = completions;
+  TKR_labelMultiStore.completions = completions(labelDefs);
 }
 
 

@@ -26,6 +26,7 @@ function TKR_onload() {
       return TKR_projectQueryStore;
     }
     if (input.id.startsWith('cmd')) return TKR_quickEditStore;
+    if (input.id.startsWith('labelPrefix')) return TKR_labelPrefixStore;
     if (input.id.startsWith('label')) return TKR_labelStore;
     if (input.dataset.acType === 'label') return TKR_labelMultiStore;
     if (input.id.startsWith('component') || input.dataset.acType === 'component') return TKR_componentListStore;
