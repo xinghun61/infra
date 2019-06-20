@@ -60,13 +60,19 @@ export class MrEditIssue extends connectStore(LitElement) {
         ?saving=${this.updatingIssue}
         @save=${this.save}
         @discard=${this.reset}
-        @change=${this._presubmitIssue}
+        @change=${this._onChange}
       ></mr-edit-metadata>
     `;
   }
 
   static get properties() {
     return {
+      comments: {
+        type: Array,
+      },
+      descriptionList: {
+        type: Array,
+      },
       issue: {
         type: Object,
       },
@@ -83,6 +89,9 @@ export class MrEditIssue extends connectStore(LitElement) {
         type: Object,
       },
       focusId: {
+        type: String,
+      },
+      _commentsText: {
         type: String,
       },
       _issueUpdated: {
@@ -122,6 +131,14 @@ export class MrEditIssue extends connectStore(LitElement) {
         this._issueUpdated = true;
         this.reset();
       }
+    }
+
+    if (changedProperties.has('comments') ||
+        changedProperties.has('descriptionList')) {
+      this._commentsText = (this.descriptionList || []).map(
+        (description) => description.content).join('\n').trim();
+      this._commentsText += '\n' + (this.comments || []).map(
+        (comment) => comment.content).join('\n').trim();
     }
   }
 
@@ -182,14 +199,40 @@ export class MrEditIssue extends connectStore(LitElement) {
     return (ownerRef && ownerRef.userId) ? ownerRef.displayName : '';
   }
 
-  _presubmitIssue(evt) {
-    if (Object.keys(evt.detail.delta).length) {
+  _presubmitIssue(issueDelta) {
+    if (Object.keys(issueDelta).length) {
       const message = {
+        issueDelta,
         issueRef: this.issueRef,
-        issueDelta: evt.detail.delta,
       };
       store.dispatch(issue.presubmit(message));
     }
+  }
+
+  _predictComponent(issueDelta, commentContent) {
+    // Component prediction is only done on Chromium issues.
+    if (this.issueRef.projectName !== 'chromium') return;
+
+    let text = this._commentsText;
+    if (issueDelta.summary) {
+      text += '\n' + summary;
+    } else if (this.issue.summary) {
+      text += '\n' + this.issue.summary;
+    }
+    if (commentContent) {
+      text += '\n' + commentContent.trim();
+    }
+
+    const message = {
+      text,
+      projectName: 'chromium',
+    };
+    store.dispatch(issue.predictComponent(message));
+  }
+
+  _onChange(evt) {
+    this._presubmitIssue(evt.detail.delta);
+    this._predictComponent(evt.detail.delta, evt.detail.commentContent);
   }
 
   _availableStatuses(statusDefsArg, currentStatusRef) {

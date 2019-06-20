@@ -816,4 +816,22 @@ describe('mr-edit-metadata', () => {
       'someone@example.com',
     ]);
   });
+
+  it('renders predicted component if it exists', async () => {
+    await element.updateComplete;
+    assert.isNull(element.shadowRoot.querySelector('.predicted-component'));
+
+    element.predictedComponent = 'Test';
+
+    await element.updateComplete;
+    assert.isNotNull(element.shadowRoot.querySelector('.predicted-component'));
+  });
+
+  it('does not show predicted component if already selected', async () => {
+    element.components = [{path: 'Test'}];
+    element.predictedComponent = 'Test';
+
+    await element.updateComplete;
+    assert.isNull(element.shadowRoot.querySelector('.predicted-component'));
+  });
 });

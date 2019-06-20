@@ -37,6 +37,10 @@ const PRESUBMIT_START = 'PRESUBMIT_START';
 const PRESUBMIT_SUCCESS = 'PRESUBMIT_SUCCESS';
 const PRESUBMIT_FAILURE = 'PRESUBMIT_FAILURE';
 
+const PREDICT_COMPONENT_START = 'PREDICT_COMPONENT_START';
+const PREDICT_COMPONENT_SUCCESS = 'PREDICT_COMPONENT_SUCCESS';
+const PREDICT_COMPONENT_FAILURE = 'PREDICT_COMPONENT_FAILURE';
+
 const FETCH_IS_STARRED_START = 'FETCH_IS_STARRED_START';
 const FETCH_IS_STARRED_SUCCESS = 'FETCH_IS_STARRED_SUCCESS';
 const FETCH_IS_STARRED_FAILURE = 'FETCH_IS_STARRED_FAILURE';
@@ -91,6 +95,7 @@ const UPDATE_APPROVAL_FAILURE = 'UPDATE_APPROVAL_FAILURE';
   isStarred: Boolean,
   permissions: Array,
   presubmitResponse: Object,
+  predictedComponent: String,
 
   requests: {
     fetch: Object,
@@ -98,6 +103,7 @@ const UPDATE_APPROVAL_FAILURE = 'UPDATE_APPROVAL_FAILURE';
     fetchPermissions: Object,
     star: Object,
     presubmit: Object,
+    predictComponent: Object,
     fetchComments: Object,
     fetchCommentReferences: Object,
     fetchRelatedIssues: Object,
@@ -192,6 +198,10 @@ const presubmitResponseReducer = createReducer({}, {
   [PRESUBMIT_SUCCESS]: (_state, action) => action.presubmitResponse,
 });
 
+const predictedComponentReducer = createReducer('', {
+  [PREDICT_COMPONENT_SUCCESS]: (_state, action) => action.component,
+});
+
 const permissionsReducer = createReducer([], {
   [FETCH_PERMISSIONS_SUCCESS]: (_state, action) => action.permissions,
 });
@@ -209,6 +219,10 @@ const requestsReducer = combineReducers({
     STAR_START, STAR_SUCCESS, STAR_FAILURE),
   presubmit: createRequestReducer(
     PRESUBMIT_START, PRESUBMIT_SUCCESS, PRESUBMIT_FAILURE),
+  predictComponent: createRequestReducer(
+    PREDICT_COMPONENT_START,
+    PREDICT_COMPONENT_SUCCESS,
+    PREDICT_COMPONENT_FAILURE),
   fetchComments: createRequestReducer(
     FETCH_COMMENTS_START, FETCH_COMMENTS_SUCCESS, FETCH_COMMENTS_FAILURE),
   fetchCommentReferences: createRequestReducer(
@@ -256,6 +270,7 @@ export const reducer = combineReducers({
   isStarred: isStarredReducer,
   permissions: permissionsReducer,
   presubmitResponse: presubmitResponseReducer,
+  predictedComponent: predictedComponentReducer,
 
   requests: requestsReducer,
 });
@@ -279,6 +294,7 @@ export const hotlists = (state) => state.issue.hotlists;
 export const issueLoaded = (state) => state.issue.issueLoaded;
 export const permissions = (state) => state.issue.permissions;
 export const presubmitResponse = (state) => state.issue.presubmitResponse;
+export const predictedComponent = (state) => state.issue.predictedComponent;
 export const relatedIssues = (state) => state.issue.relatedIssues;
 export const referencedUsers = (state) => state.issue.referencedUsers;
 export const usersProjects = (state) => state.issue.usersProjects;
@@ -710,6 +726,21 @@ export const presubmit = (message) => async (dispatch) => {
     dispatch({type: PRESUBMIT_SUCCESS, presubmitResponse: resp});
   } catch (error) {
     dispatch({type: PRESUBMIT_FAILURE, error: error});
+  }
+};
+
+export const predictComponent = (message) => async (dispatch) => {
+  dispatch({type: PREDICT_COMPONENT_START});
+
+  try {
+    const response = await prpcClient.call(
+      'monorail.Features', 'PredictComponent', message);
+    const component = response.componentRef && response.componentRef.path ?
+      response.componentRef.path :
+      '';
+    dispatch({type: PREDICT_COMPONENT_SUCCESS, component});
+  } catch (error) {
+    dispatch({type: PREDICT_COMPONENT_FAILURE, error: error});
   }
 };
 

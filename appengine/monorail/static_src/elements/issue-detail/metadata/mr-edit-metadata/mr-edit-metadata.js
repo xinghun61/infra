@@ -9,6 +9,7 @@ import debounce from 'debounce';
 import 'elements/chops/chops-button/chops-button.js';
 import 'elements/framework/mr-upload/mr-upload.js';
 import 'elements/chops/chops-checkbox/chops-checkbox.js';
+import 'elements/chops/chops-chip/chops-chip.js';
 import 'elements/framework/mr-error/mr-error.js';
 import 'elements/framework/mr-warning/mr-warning.js';
 import 'elements/help/mr-cue/mr-cue.js';
@@ -180,6 +181,9 @@ export class MrEditMetadata extends connectStore(LitElement) {
         }
         .star-line i.material-icons[starred] {
           color: cornflowerblue;
+        }
+        .predicted-component {
+          cursor: pointer;
         }
       `,
     ];
@@ -417,6 +421,35 @@ export class MrEditMetadata extends connectStore(LitElement) {
         @change=${this._processChanges}
         multi
       ></mr-edit-field>
+      ${this._renderPredictedComponent()}
+    `;
+  }
+
+  _renderPredictedComponent() {
+    if (!this.predictedComponent) return '';
+
+    const componentsInput = this.shadowRoot.getElementById('componentsInput');
+    const components = componentsInput ?
+      [...componentsInput.values] :
+      componentRefsToStrings(this.components);
+    if (components.includes(this.predictedComponent)) {
+      return '';
+    }
+
+    return html`
+      <span></span>
+      <div>
+        <i>Suggested:</i>
+        <chops-chip
+          class="predicted-component"
+          title="Click to add ${this.predictedComponent} to components"
+          @keyup=${this._addPredictedComponent}
+          @click=${this._addPredictedComponent}
+          focusable
+        >
+          ${this.predictedComponent}
+        </chops-chip>
+      </div>
     `;
   }
 
@@ -581,6 +614,7 @@ export class MrEditMetadata extends connectStore(LitElement) {
       error: {type: String},
       sendEmail: {type: Boolean},
       presubmitResponse: {type: Object},
+      predictedComponent: {type: String},
       fieldValueMap: {type: Object},
       issueType: {type: String},
       optionsPerEnumField: {type: String},
@@ -683,6 +717,7 @@ export class MrEditMetadata extends connectStore(LitElement) {
     this.issueType = issue.type(state);
     this.issueRef = issue.issueRef(state);
     this.presubmitResponse = issue.presubmitResponse(state);
+    this.predictedComponent = issue.predictedComponent(state);
     this.projectConfig = project.project(state).config;
     this.projectName = issue.issueRef(state).projectName;
     this.issuePermissions = issue.permissions(state);
@@ -897,14 +932,27 @@ export class MrEditMetadata extends connectStore(LitElement) {
         const attachmentsElement = this.shadowRoot.querySelector('mr-upload');
         const isDirty = !isEmptyObject(delta) || Boolean(commentContent) ||
           attachmentsElement.hasAttachments;
+
         this.disabled = !isDirty;
         store.dispatch(ui.reportDirtyForm(this.formName, isDirty));
-        this.dispatchEvent(new CustomEvent('change', {detail: {delta}}));
+        this.dispatchEvent(new CustomEvent('change', {
+          detail: {
+            delta,
+            commentContent,
+          },
+        }));
       }, DEBOUNCED_PRESUBMIT_TIME_OUT);
     }
     this._debouncedProcessChanges();
   }
 
+  _addPredictedComponent(e) {
+    if (e instanceof MouseEvent || e.code === 'Enter') {
+      const components = this.shadowRoot.getElementById('componentsInput');
+      if (!components) return;
+      components.setValue(components.values.concat([this.predictedComponent]));
+    }
+  }
 
   // This function exists because <label for="inputId"> doesn't work for custom
   // input elements.

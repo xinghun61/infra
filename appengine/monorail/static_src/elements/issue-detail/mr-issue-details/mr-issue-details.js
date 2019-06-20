@@ -61,7 +61,10 @@ export class MrIssueDetails extends connectStore(LitElement) {
         .comments=${comments}
         .commentsShownCount=${this.commentsShownCount}
       >
-        <mr-edit-issue></mr-edit-issue>
+        <mr-edit-issue
+          .comments=${this.comments}
+          .descriptionList=${this._descriptions}
+        ></mr-edit-issue>
       </mr-comment-list>
     `;
   }
