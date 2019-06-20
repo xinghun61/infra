@@ -93,7 +93,11 @@ func accessChecker(allowedRoles ...role) func(context.Context, string, proto.Mes
 		if appengine.IsDevAppServer() {
 			return c, nil
 		}
-		a := config.Get(c).Auth
+		config := config.Get(c)
+		if config == nil {
+			return c, status.Errorf(codes.PermissionDenied, "no auth configured: permission denied")
+		}
+		a := config.Auth
 		if a == nil {
 			return c, status.Errorf(codes.PermissionDenied, "no auth configured: permission denied")
 		}

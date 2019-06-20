@@ -6,6 +6,8 @@ syntax = "proto3";
 
 package qscheduler.config;
 
+import "google/protobuf/duration.proto";
+
 option go_package = "config";
 
 // Note: docstrings use generated go style variable names.
@@ -38,4 +40,8 @@ message Auth {
 }
 
 // QuotaScheduler contains configuration information for the QuotaScheduler app.
-message QuotaScheduler {}
+message QuotaScheduler {
+  // If specified (non-zero), this internal timeout is applied to all Notify and
+  // Assign requests served by the app.
+  google.protobuf.Duration handler_timeout = 1;
+}

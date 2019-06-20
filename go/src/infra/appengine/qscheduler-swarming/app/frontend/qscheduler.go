@@ -43,6 +43,13 @@ func (s *BasicQSchedulerServer) AssignTasks(ctx context.Context, r *swarming.Ass
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 
+	dur := getHandlerTimeout(ctx)
+	var cancel context.CancelFunc
+	if dur != 0 {
+		ctx, cancel = context.WithTimeout(ctx, dur)
+		defer cancel()
+	}
+
 	op, result := operations.AssignTasks(r)
 
 	store := state.NewStore(r.SchedulerId)
@@ -83,6 +90,13 @@ func (s *BasicQSchedulerServer) NotifyTasks(ctx context.Context, r *swarming.Not
 	}()
 	if err := r.Validate(); err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+
+	dur := getHandlerTimeout(ctx)
+	var cancel context.CancelFunc
+	if dur != 0 {
+		ctx, cancel = context.WithTimeout(ctx, dur)
+		defer cancel()
 	}
 
 	op, result := operations.NotifyTasks(r)

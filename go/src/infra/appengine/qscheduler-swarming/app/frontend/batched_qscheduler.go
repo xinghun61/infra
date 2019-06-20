@@ -92,6 +92,13 @@ func (s *BatchedQSchedulerServer) AssignTasks(ctx context.Context, r *swarming.A
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 
+	dur := getHandlerTimeout(ctx)
+	var cancel context.CancelFunc
+	if dur != 0 {
+		ctx, cancel = context.WithTimeout(ctx, dur)
+		defer cancel()
+	}
+
 	op, result := operations.AssignTasks(r)
 
 	batcher := s.getOrCreateBatcher(r.SchedulerId)
@@ -122,6 +129,13 @@ func (s *BatchedQSchedulerServer) NotifyTasks(ctx context.Context, r *swarming.N
 	}()
 	if err := r.Validate(); err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+
+	dur := getHandlerTimeout(ctx)
+	var cancel context.CancelFunc
+	if dur != 0 {
+		ctx, cancel = context.WithTimeout(ctx, dur)
+		defer cancel()
 	}
 
 	op, result := operations.NotifyTasks(r)

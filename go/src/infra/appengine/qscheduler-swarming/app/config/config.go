@@ -31,10 +31,11 @@ const configFile = "config.cfg"
 // unique key used to store and retrieve context.
 var contextKey = "qscheduler-swarming luci-config key"
 
-// Get returns the config in c, or panics.
+// Get returns the config in c if it exists, or nil.
 // See also Use and MiddlewareForGAE.
 func Get(c context.Context) *Config {
-	return c.Value(&contextKey).(*Config)
+	config, _ := c.Value(&contextKey).(*Config)
+	return config
 }
 
 // MiddlewareForGAE loads the service config and installs it into the context.
