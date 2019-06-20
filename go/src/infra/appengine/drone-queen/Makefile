@@ -3,9 +3,19 @@
 # that can be found in the LICENSE file.
 
 .PHONY: default
-default:
+default: vet test
+
+.PHONY: vet
+vet:
+	go vet -all ./...
+
+.PHONY: test
+test:
+	go test ./...
 
 APP_DIR = appengine
+
+# Development server
 
 .PHONY: dev
 dev: $(APP_DIR)/devcfg/services/dev/config.cfg
@@ -14,6 +24,8 @@ dev: $(APP_DIR)/devcfg/services/dev/config.cfg
 $(APP_DIR)/devcfg/services/dev/config.cfg:
 	@printf ">>> Creating dev config at %s.  You may want to edit this for your needs.\n" $@
 	cp $(APP_DIR)/devcfg/services/dev/config-template.cfg $@
+
+# Uploading
 
 GCP_PROJECT_DEV = drone-queen-dev
 
