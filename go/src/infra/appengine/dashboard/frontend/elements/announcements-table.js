@@ -107,7 +107,7 @@ export class AnnouncementsTable extends LitElement {
               </td>
               <td class="announcement-content">${ann.messageContent}</td>
               <td class="small time-content">
-                <div class="date">${this._formatAnnTSRange(ann)}</div>
+                <div class="date">${this._formatAnnouncementTimeRange(ann)}</div>
                 <div class="creator">${ann.creator}${ann.retired ? ` - ${ann.closer}`: ''}</div>
               </td>
             </tr>
@@ -124,7 +124,7 @@ export class AnnouncementsTable extends LitElement {
   }
 
   // TODO(jojwang): use chops-timestamp when it's shared.
-  _formatAnnTSRange(ann) {
+  _formatAnnouncementTimeRange(ann) {
     const startDate = new Date(ann.startTime);
     const startStr = dateFormatter.format(startDate);
     if (ann.retired != true) {

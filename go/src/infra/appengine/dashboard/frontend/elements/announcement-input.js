@@ -49,12 +49,44 @@ export class AnnouncementInput extends LitElement {
       textarea {
         width: 100%;
       }
+      .tooltip {
+        position: relative;
+        float: right;
+      }
+      .tooltip .tooltip-text {
+        visibility: hidden;
+        width: 350px;
+        padding: 5px;
+        background-color: grey;
+        color: white;
+        text-align: center
+        margin: 10px;
+        border-radius: 6px;
+        position: absolute;
+        z-index: 1;
+
+        right: 105%;
+        top: -25px;
+      }
+      .tooltip:hover .tooltip-text {
+        visibility: visible;
+      }
     `];
   }
 
   // TODO(jojwang): use chops-button when shared.
   render() {
     return html`
+      <div class="tooltip">
+        <span class="tooltip-text">
+          Announce a Gerrit service disruption by creating an
+          announcement below to have it displayed to all
+          users in chromium-review.googlesource.com.
+          When the disruption is over, 'retire' the announcement,
+          so it is no longer shown to our users.
+        </span>
+        &#9432;
+      </div>
       <textarea
         id="announcementInput"
         @input="${this._disabledUpdateButton}"
