@@ -20,10 +20,10 @@ import (
 	"time"
 
 	. "github.com/smartystreets/goconvey/convey"
-	"go.chromium.org/gae/service/taskqueue"
 	"go.chromium.org/luci/appengine/gaetesting"
 
 	qscheduler "infra/appengine/qscheduler-swarming/api/qscheduler/v1"
+	"infra/appengine/qscheduler-swarming/app/eventlog"
 	"infra/appengine/qscheduler-swarming/app/frontend"
 	"infra/qscheduler/qslib/protos"
 	"infra/qscheduler/qslib/tutils"
@@ -49,8 +49,7 @@ func TestAssignTasks(t *testing.T) {
 
 			Convey("in a testing context with a scheduler pool", func() {
 				ctx := gaetesting.TestingContext()
-				tq := taskqueue.GetTestable(ctx)
-				tq.CreatePullQueue("flush-events")
+				ctx = eventlog.Use(ctx, &eventlog.NullBQInserter{})
 
 				poolID := "Pool1"
 				admin := &frontend.QSchedulerAdminServerImpl{}

@@ -18,31 +18,65 @@ import (
 	"context"
 
 	"cloud.google.com/go/bigquery"
-	"go.chromium.org/luci/appengine/bqlog"
 	"go.chromium.org/luci/common/bq"
+	"go.chromium.org/luci/common/logging"
+	"go.chromium.org/luci/server/router"
 
 	"infra/qscheduler/qslib/protos/metrics"
 )
 
-// tasks is the BigQuery logger for metrics.TaskEvent entries.
-var tasks = &bqlog.Log{
-	QueueName: "flush-events",
-	DatasetID: "qs_events",
-	TableID:   "task_events",
-}
+const (
+	// DatasetID is name of BQ dataset.
+	DatasetID = "qs_events"
+	// TableID is name of BQ table.
+	TableID = "task_events"
+)
 
-// TaskEvents logs the given TaskEvents to a bigquery table, on a separate
-// taskqueue call (and is aware of datastore transactions).
+// TaskEvents logs the given TaskEvents to a bigquery table asynchronously.
 func TaskEvents(ctx context.Context, events ...*metrics.TaskEvent) error {
 	rows := make([]bigquery.ValueSaver, len(events))
 	for i, v := range events {
 		rows[i] = &bq.Row{Message: v}
 	}
-	return tasks.Insert(ctx, rows...)
+	return get(ctx).Insert(ctx, rows...)
 }
 
-// FlushEvents flushes task events to bigquery. This is called by cron.
-func FlushEvents(ctx context.Context) error {
-	_, err := tasks.Flush(ctx)
-	return err
+// AsyncBqInserter defines what eventlog package expects from BQ inserting
+// library.
+type AsyncBqInserter interface {
+	Insert(ctx context.Context, rows ...bigquery.ValueSaver) error
+}
+
+// NullBQInserter implements AsyncBqInserter and just logs "inserted" events.
+type NullBQInserter struct {
+}
+
+// Insert implements AsyncBqInserter interface.
+func (n *NullBQInserter) Insert(ctx context.Context, rows ...bigquery.ValueSaver) error {
+	for row := range rows {
+		logging.Debugf(ctx, "nullBQInserter is ignoring row %s", row)
+	}
+	return nil
+}
+
+// Install returns a middleware that injects BQ inserter that just
+// dismisses incoming events.
+func (n *NullBQInserter) Install() router.Middleware {
+	return func(c *router.Context, next router.Handler) {
+		c.Context = Use(c.Context, n)
+		next(c)
+	}
+}
+
+var contextKey = "eventlog"
+
+// Use installs inserter into c.
+func Use(c context.Context, inserter AsyncBqInserter) context.Context {
+	return context.WithValue(c, &contextKey, inserter)
+}
+
+// get returns the BqInserter in c, or panics.
+// See also Use.
+func get(c context.Context) AsyncBqInserter {
+	return c.Value(&contextKey).(AsyncBqInserter)
 }

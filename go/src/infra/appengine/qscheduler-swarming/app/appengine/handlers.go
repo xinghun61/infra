@@ -21,10 +21,12 @@ import (
 
 	"infra/appengine/qscheduler-swarming/app/config"
 	"infra/appengine/qscheduler-swarming/app/cron"
+	"infra/appengine/qscheduler-swarming/app/eventlog"
 	"infra/appengine/qscheduler-swarming/app/frontend"
 
 	"google.golang.org/appengine"
 
+	"go.chromium.org/luci/appengine/bqlog"
 	"go.chromium.org/luci/appengine/gaemiddleware/standard"
 	"go.chromium.org/luci/common/data/rand/mathrand"
 	"go.chromium.org/luci/server/router"
@@ -42,10 +44,20 @@ func init() {
 	r := router.New()
 	mwBase := standard.Base().Extend(config.MiddlewareForGAE)
 
+	bqlogTasks := &bqlog.Log{
+		QueueName: "flush-events",
+		DatasetID: eventlog.DatasetID,
+		TableID:   eventlog.TableID,
+	}
+	mwBase = mwBase.Extend(func(c *router.Context, next router.Handler) {
+		c.Context = eventlog.Use(c.Context, bqlogTasks)
+		next(c)
+	})
+
 	// Install auth, config and tsmon handlers.
 	standard.InstallHandlers(r)
 	frontend.InstallHandlers(r, mwBase)
-	cron.InstallHandlers(r, mwBase)
+	cron.InstallHandlers(r, mwBase, bqlogTasks)
 
 	config.SetupValidation()
 

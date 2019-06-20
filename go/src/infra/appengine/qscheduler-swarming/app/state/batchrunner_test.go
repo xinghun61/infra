@@ -25,6 +25,7 @@ import (
 	. "github.com/smartystreets/goconvey/convey"
 	"go.chromium.org/luci/appengine/gaetesting"
 
+	"infra/appengine/qscheduler-swarming/app/eventlog"
 	"infra/appengine/qscheduler-swarming/app/state"
 	"infra/appengine/qscheduler-swarming/app/state/types"
 	"infra/qscheduler/qslib/scheduler"
@@ -33,6 +34,7 @@ import (
 func TestBatcherErrors(t *testing.T) {
 	Convey("Given a testing context with a scheduler pool, and a batcher for that pool", t, func() {
 		ctx := gaetesting.TestingContext()
+		ctx = eventlog.Use(ctx, &eventlog.NullBQInserter{})
 		poolID := "pool 1"
 		store := state.NewStore(poolID)
 		s := types.NewQScheduler(poolID, time.Now(), scheduler.NewConfig())
@@ -83,6 +85,7 @@ func TestBatcherErrors(t *testing.T) {
 func TestBatcherBehavior(t *testing.T) {
 	Convey("Given a testing context with a scheduler pool, and a batcher for that pool", t, func() {
 		ctx := gaetesting.TestingContext()
+		ctx = eventlog.Use(ctx, &eventlog.NullBQInserter{})
 		poolID := "pool 1"
 		store := state.NewStore(poolID)
 		s := types.NewQScheduler(poolID, time.Now(), scheduler.NewConfig())

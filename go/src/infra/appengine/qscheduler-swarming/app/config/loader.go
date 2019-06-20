@@ -92,11 +92,11 @@ func (l *Loader) ReloadLoop(c context.Context) {
 	}
 }
 
-// InjectConfig returns a middleware that injects the latest good config into
+// Install returns a middleware that injects the latest good config into
 // the request context.
 //
 // Fails requests with internal error if there's no config available.
-func (l *Loader) InjectConfig() router.Middleware {
+func (l *Loader) Install() router.Middleware {
 	return func(c *router.Context, next router.Handler) {
 		if cfg := l.Config(); cfg != nil {
 			c.Context = Use(c.Context, cfg)

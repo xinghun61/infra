@@ -21,6 +21,7 @@ import (
 	"os"
 
 	"infra/appengine/qscheduler-swarming/app/config"
+	"infra/appengine/qscheduler-swarming/app/eventlog"
 	"infra/appengine/qscheduler-swarming/app/frontend"
 	"infra/appengine/qscheduler-swarming/app/state"
 
@@ -69,8 +70,10 @@ func main() {
 	}
 	srv.RunInBackground("qscheduler.config", cfgLoader.ReloadLoop)
 
+	nullBQInserter := eventlog.NullBQInserter{}
+	base := router.NewMiddlewareChain(cfgLoader.Install(), nullBQInserter.Install())
+
 	// Install qscheduler HTTP routes.
-	base := router.NewMiddlewareChain(cfgLoader.InjectConfig())
 	frontend.InstallHandlers(srv.Routes, base)
 
 	// Start the serving loop.

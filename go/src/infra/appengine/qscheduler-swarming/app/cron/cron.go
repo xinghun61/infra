@@ -19,13 +19,13 @@ import (
 	"net/http"
 	"time"
 
-	"infra/appengine/qscheduler-swarming/app/eventlog"
 	"infra/appengine/qscheduler-swarming/app/frontend"
 	"infra/appengine/qscheduler-swarming/app/state"
 	swarming "infra/swarming"
 
 	"github.com/pkg/errors"
 
+	"go.chromium.org/luci/appengine/bqlog"
 	"go.chromium.org/luci/appengine/gaemiddleware"
 	"go.chromium.org/luci/server/router"
 
@@ -36,10 +36,13 @@ import (
 //
 // All handlers serve paths under /internal/cron/*
 // These handlers can only be called by appengine's cron service.
-func InstallHandlers(r *router.Router, mwBase router.MiddlewareChain) {
+func InstallHandlers(r *router.Router, mwBase router.MiddlewareChain, bqlogTasks *bqlog.Log) {
 	mwCron := mwBase.Extend(gaemiddleware.RequireCron)
 	r.GET("/internal/cron/refresh-schedulers", mwCron, logAndSetHTTPError(refreshSchedulers))
-	r.GET("/internal/cron/flush-bq-events", mwCron, logAndSetHTTPError(flushEventLogs))
+	r.GET("/internal/cron/flush-bq-events", mwCron, logAndSetHTTPError(func(c *router.Context) error {
+		_, err := bqlogTasks.Flush(c.Context)
+		return err
+	}))
 }
 
 func logAndSetHTTPError(f func(c *router.Context) error) func(*router.Context) {
@@ -70,9 +73,4 @@ func refreshSchedulers(c *router.Context) error {
 	}
 
 	return nil
-}
-
-func flushEventLogs(c *router.Context) error {
-	ctx := c.Context
-	return eventlog.FlushEvents(ctx)
 }
