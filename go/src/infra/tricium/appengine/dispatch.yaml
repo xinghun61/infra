@@ -12,9 +12,6 @@ dispatch:
 - url: "*/launcher/*"
   module: backend
 
-- url: "*/push-handlers/notify"
-  module: backend
-
 - url: "*/rpcexplorer/*"
   module: default
 

@@ -23,8 +23,8 @@ const (
 	// Topic/subscription name.
 	name = "worker-completion"
 	// The dispatcher can't route _ah URLs. To work around this limitation,
-	// we address the module directly in the pubsub push URL.
-	pushURLFormat = "https://driver-dot-%s.appspot.com/_ah/push-handlers/notify"
+	// we address the relevant service directly in the pubsub push URL.
+	pushURLFormat = "https://backend-dot-%s.appspot.com/_ah/push-handlers/notify"
 )
 
 // PubSubAPI defines the interface to the pubsub server.
