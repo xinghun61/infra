@@ -348,6 +348,11 @@ class ChartService(object):
       stmt.AddGroupByTerms(group_by)
     stmt.SetLimitAndOffset(limit=settings.chart_query_max_rows, offset=0)
     stmt_str, stmt_args = stmt.Generate()
-    count_stmt = 'SELECT COUNT(results.issue_id) FROM (%s) AS results' % (
+    # TODO(weihanl): Add support for other group by values
+    if group_by:
+      count_stmt = ('SELECT results.label, COUNT(results.issue_id)' \
+        'FROM (%s) AS results' % stmt_str)
+    else:
+      count_stmt = 'SELECT COUNT(results.issue_id) FROM (%s) AS results' % (
         stmt_str)
     return count_stmt, stmt_args

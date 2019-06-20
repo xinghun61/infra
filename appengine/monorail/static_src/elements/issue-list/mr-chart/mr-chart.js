@@ -56,6 +56,10 @@ const CHART_OPTIONS = {
     }],
   },
 };
+const COLOR_CHOICES = ['#00838F', '#B71C1C', '#2E7D32', '#00659C',
+  '#5D4037', '#558B2F', '#FF6F00', '#6A1B9A'];
+const BG_COLOR_CHOICES = ['#B2EBF2', '#EF9A9A', '#C8E6C9', '#B2DFDB',
+  '#D7CCC8', '#DCEDC8', '#FFECB3', '#E1BEE7'];
 
 export default class MrChart extends LitElement {
   static get properties() {
@@ -90,24 +94,42 @@ export default class MrChart extends LitElement {
         font-weight: bold;
         color: orange;
       }
-      div#options .align {
+      div.align {
         display: flex;
       }
-      div#options .align #frequency {
+      div.align #frequency {
         display: inline-block;
         width: 40%;
       }
-      div#options .align #frequency #two-toggle {
+      div.align #frequency #two-toggle {
         font-size: 95%;
         text-align: center;
         margin-bottom: 5px;
       }
-      div#options .align .time {
+      div.align #time {
         display: inline-block;
         width: 60%;
       }
-      div#options .align #prediction {
+      div.align #prediction {
         width: 100%;
+      }
+      div.groupBy {
+        margin-top: 2rem;
+      }
+      div.section {
+        display: inline-block;
+        text-align: center;
+      }
+      div.section.input {
+        padding: 4px 10px;
+      }
+      .choice.hidden {
+        background: white;
+        border-color: var(--chops-choice-color);
+        border-radius: 4px;
+      }
+      .choice.shown {
+        background: var(--chops-blue-50);
       }
       .choice {
         padding: 4px 10px;
@@ -137,7 +159,7 @@ export default class MrChart extends LitElement {
       }
       progress::-webkit-progress-value {
         transition: width 1s;
-        background-color: rgb(54, 162, 235);
+        background-color: #00838F;
       }
     `;
   }
@@ -145,6 +167,38 @@ export default class MrChart extends LitElement {
   render() {
     const doneLoading = this.progress === 1;
     return html`
+      <div class="groupBy">
+        <label>Group by label prefix:</label>
+        <div class="section input">
+          <input
+            ?disabled=${!doneLoading}
+            id="labelPrefixInput"
+            type='text'
+            autocomplete=''
+            placeholder=''
+            @focus=${(e) => {
+              if (window._ac_onfocus) {
+                _ac_onfocus(e);
+              }}}
+            @keyup=${this._setLabelPrefix}
+            @blur=${this._setLabelPrefix}
+            @change=${this._setLabelPrefix}
+          />
+        </div>
+        <div class="section">
+          <chops-button class='choice shown' ?disabled=${!doneLoading}
+            @click=${this._fetchData}>Apply</chops-button>
+        </div>
+        <div class="section">
+          <chops-button class='choice hidden'
+            ?disabled=${!doneLoading}
+            @click=${() => {
+              this.shadowRoot.querySelector('#labelPrefixInput').value = '';
+              this.groupBy = '';
+              this._fetchData();
+          }}>Clear</chops-button>
+        </div>
+      </div>
       <chops-chart
         type="line"
         .options=${CHART_OPTIONS}
@@ -189,7 +243,7 @@ export default class MrChart extends LitElement {
               </chops-button>
             </div>
           </div>
-          <div class="time">
+          <div id="time">
             <label for="start-date">Choose start and end date:</label>
             <br />
             <input
@@ -209,7 +263,7 @@ export default class MrChart extends LitElement {
               @change=${(e) => this.endDate = MrChart.dateStringToDate(e.target.value)}
             />
             <chops-button @click="${this._onDateChanged}" class=choice>
-              Submit
+              Apply
             </chops-button>
           </div>
         </div>
@@ -249,6 +303,8 @@ export default class MrChart extends LitElement {
     this.endDate = MrChart.getEndDate();
     this.startDate = MrChart.getStartDate(this.endDate, DEFAULT_NUM_DAYS);
     this.predRange = predRangeType.HIDE;
+    this.groupBy = '';
+    this.labelPrefix = '';
   }
 
   async connectedCallback() {
@@ -351,64 +407,128 @@ export default class MrChart extends LitElement {
     const params = MrChart.getSearchParams();
     const query = params.get('q');
     const cannedQuery = params.get('can');
-    const message = {
+    let message = {
       timestamp: timestamp,
       projectName: this.projectName,
       query: query,
       cannedQuery: cannedQuery,
     };
+    if (this.groupBy !== '') {
+      message['groupBy'] = this.groupBy;
+      if (this.groupBy === 'label') {
+        message['labelPrefix'] = this.labelPrefix;
+      }
+    }
     const response = await prpcClient.call('monorail.Issues',
       'IssueSnapshot', message);
+    const issues = response.snapshotCount.reduce((map, curr) => {
+        if (curr.dimension !== undefined) {
+          if (this.groupBy === '') {
+            map.set('Issue Count', curr.count);
+          } else {
+            map.set(curr.dimension, curr.count);
+          }
+        }
+        return map;
+      }, new Map());
     return {
       date: timestamp * 1000,
-      issues: response.snapshotCount[0].count || 0,
+      issues: issues,
       unsupportedField: response.unsupportedField,
       searchLimitReached: response.searchLimitReached,
     };
   }
 
   _chartData(indices, values) {
-    // Hide prediction.
-    if (this.predRange === predRangeType.HIDE) {
+    // Generate a map of each data line with type {dimension:string, value:array}.
+    let mapValues = new Map();
+    for (let i = 0; i < values.length; i++) {
+      if (values[i] !== undefined) {
+        values[i].forEach((value, key, map) => {
+          mapValues.set(key, []);}
+        );
+      }
+    }
+    // Count the number of 0 or undefined data points.
+    let count = 0;
+    for (let i = 0; i < values.length; i++) {
+      if (values[i] !== undefined) {
+        if (values[i].size === 0) {
+          count++;
+        }
+        // Set none-existing data points 0.
+        mapValues.forEach((value, key, map) => {
+          mapValues.set(key, value.concat([values[i].get(key) || 0]));
+        });
+      } else {
+        count++;
+      }
+    }
+    // Check if any positive valued data exist, if not, draw an array of zeros.
+    if (count === values.length) {
       return {
         type: 'line',
         labels: indices,
         datasets: [{
-          label: 'Issue count',
-          backgroundColor: 'rgb(54, 162, 235)',
-          borderColor: 'rgb(54, 162, 235)',
-          data: values,
+          label: this.labelPrefix,
+          data: Array(indices.length).fill(0),
+          backgroundColor: COLOR_CHOICES[0],
+          borderColor: COLOR_CHOICES[0],
           showLine: true,
           fill: false,
         }],
       };
     }
+    // Convert map to a dataset of lines.
+    let arrayValues = [];
+    mapValues.forEach((value, key, map) => {
+      arrayValues.push({
+        label: key,
+        data: value,
+        backgroundColor: COLOR_CHOICES[arrayValues.length % COLOR_CHOICES.length],
+        borderColor: COLOR_CHOICES[arrayValues.length % COLOR_CHOICES.length],
+        showLine: true,
+        fill: false,
+      });
+    });
+    if (this.predRange === predRangeType.HIDE) {
+      return {
+        type: 'line',
+        labels: indices,
+        datasets: arrayValues,
+      };
+    }
 
-    const [originalData, predictedData, maxData, minData] =
-      MrChart.getAllData(indices, values, this.dateRange, this.predRange, this.frequency);
-
-    return {
-      type: 'scatter',
-      datasets: [{
-        label: 'Issue count',
-        backgroundColor: 'rgb(54, 162, 235)',
-        borderColor: 'rgb(54, 162, 235)',
+    let predictedValues = [];
+    let originalData, predictedData, maxData, minData;
+    let currColor;
+    let currBGColor;
+    for (let i = 0; i < arrayValues.length; i++) {
+      [originalData, predictedData, maxData, minData] =
+        MrChart.getAllData(indices, arrayValues[i]['data'], this.dateRange,
+          this.predRange, this.frequency);
+      currColor = COLOR_CHOICES[i % COLOR_CHOICES.length];
+      currBGColor = BG_COLOR_CHOICES[i % COLOR_CHOICES.length];
+      predictedValues = predictedValues.concat([{
+        label: arrayValues[i]['label'],
+        backgroundColor: currColor,
+        borderColor: currColor,
         data: originalData,
         showLine: true,
         fill: false,
       },{
-        label: 'Issue count prediction',
-        backgroundColor: 'rgb(54, 162, 235)',
-        borderColor: 'rgb(54, 162, 235)',
+        label: arrayValues[i]['label'].concat(' prediction'),
+        backgroundColor: currColor,
+        borderColor: currColor,
         borderDash: [5, 5],
         data: predictedData,
         pointRadius: 0,
         showLine: true,
         fill: false,
       },{
-        label: 'Issue count lower error',
-        backgroundColor: 'rgb(210, 228, 239)',
-        borderColor: 'rgb(54, 162, 235)',
+        label: arrayValues[i]['label'].concat(' lower error'),
+        backgroundColor: currBGColor,
+        borderColor: currBGColor,
         borderDash: [5, 5],
         data: minData,
         pointRadius: 0,
@@ -416,17 +536,32 @@ export default class MrChart extends LitElement {
         hidden: true,
         fill: false,
       },{
-        label: 'Issue count upper error',
-        backgroundColor: 'rgb(210, 228, 239)',
-        borderColor: 'rgb(54, 162, 235)',
+        label: arrayValues[i]['label'].concat(' upper error'),
+        backgroundColor: currBGColor,
+        borderColor: currBGColor,
         borderDash: [5, 5],
         data: maxData,
         pointRadius: 0,
         showLine: true,
         hidden: true,
-        fill: '2',
-      }],
+        fill: '-1',
+      }]);
+    }
+    return {
+      type: 'scatter',
+      datasets: predictedValues,
     };
+  }
+
+  // Change label prefix based on input field value.
+  _setLabelPrefix(e) {
+    if (e.target.value !== '') {
+      this.groupBy = 'label';
+      this.labelPrefix = e.target.value;
+    } else {
+      this.groupBy = '';
+    }
+    this.dispatchEvent(new CustomEvent('change'));
   }
 
   // Change date range and frequency based on button clicked.

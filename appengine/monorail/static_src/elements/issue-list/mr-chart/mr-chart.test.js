@@ -97,7 +97,9 @@ describe('mr-chart', () => {
 
     it('makes a series of XHR calls', async () => {
       await dataLoadedPromise;
-      assert.deepEqual(element.values, [8, 8, 8, 8, 8, 8]);
+      for (let i = 0; i < 6; i++) {
+        assert.deepEqual(element.values[i], {});
+      }
     });
 
     it('sets indices and correctly re-orders values', async () => {
@@ -108,7 +110,7 @@ describe('mr-chart', () => {
         [1541203199, 4], [1541289599, 5],
       ]);
       sinon.stub(MrChart.prototype, '_fetchDataAtTimestamp').callsFake(
-        async (ts) => ({issues: timestampMap.get(ts)}));
+        async (ts) => ({issues: {'Issue Count': timestampMap.get(ts)}}));
 
       element.endDate = new Date(Date.UTC(2018, 10, 3, 23, 59, 59));
       await element._fetchData();
@@ -117,8 +119,9 @@ describe('mr-chart', () => {
         '10/29/2018', '10/30/2018', '10/31/2018',
         '11/1/2018', '11/2/2018', '11/3/2018',
       ]);
-      assert.deepEqual(element.values, [0, 1, 2, 3, 4, 5]);
-
+      for (let i = 0; i < 6; i++) {
+        assert.deepEqual(element.values[i], {'Issue Count': i});
+      }
       MrChart.prototype._fetchDataAtTimestamp.restore();
     });
 
@@ -138,7 +141,24 @@ describe('mr-chart', () => {
       });
 
       await element._fetchData(new Date());
-      assert.deepEqual(element.values, [0, 0, 0]);
+      assert.deepEqual(element.values[0], {});
+    });
+
+    it('Retrieve data under groupby feature', async () => {
+      const data = new Map([['Type-1', 0], ['Type-2', 1]]);
+      sinon.stub(MrChart.prototype, '_fetchDataAtTimestamp').callsFake(
+        () => ({issues: data}));
+
+      element = beforeEachElement();
+      await new Promise((resolve) => {
+        element.addEventListener('allDataLoaded', resolve);
+      });
+
+      await element._fetchData(new Date());
+      for (let i = 0; i < 3; i++) {
+        assert.deepEqual(element.values[i], data);
+      }
+      MrChart.prototype._fetchDataAtTimestamp.restore();
     });
   });
 

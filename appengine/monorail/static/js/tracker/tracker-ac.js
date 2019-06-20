@@ -857,6 +857,7 @@ function TKR_setUpLabelStore(labelDefs) {
 
       const filteredComps = [];
       let labelPrefix;
+      let textFields;
       let tf;
       for (let i = 0; i < comps.length; i++) {
         const prefixParts = comps[i].value.split('-');
@@ -867,7 +868,8 @@ function TKR_setUpLabelStore(labelDefs) {
             (TKR_usedPrefixes[labelPrefix].length === 1 &&
              TKR_usedPrefixes[labelPrefix][0] === ac_focusedInput)) {
           let uniq = true;
-          TKR_usedPrefixes.forEach((textFields, p, map) => {
+          for (p in TKR_usedPrefixes) {
+            textFields = TKR_usedPrefixes[p];
             for (let j = 0; j < textFields.length; j++) {
               tf = textFields[j];
               if (tf.value.toLowerCase() === comps[i].value.toLowerCase() &&
@@ -875,7 +877,7 @@ function TKR_setUpLabelStore(labelDefs) {
                 uniq = false;
               }
             }
-          });
+          };
           if (uniq) {
             filteredComps.push(comps[i]);
           }
