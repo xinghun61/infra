@@ -27,9 +27,10 @@ const (
 
 func TestRun(t *testing.T) {
 	r := &runner.Runner{
-		Path:   findShellCheckBin(),
-		Dir:    testInputDir,
-		Logger: runnerLogger,
+		Path:        findShellCheckBin(),
+		Dir:         testInputDir,
+		Logger:      runnerLogger,
+		UsesShflags: true,
 	}
 	version, err := r.Version()
 	if err != nil {
@@ -65,18 +66,28 @@ func TestRun(t *testing.T) {
 		})
 
 		Convey("There should be two comments", func() {
-			So(len(comments), ShouldEqual, 2)
+			So(len(comments), ShouldEqual, 3)
 		})
 
 		Convey("Comments should have specific contents", func() {
 			So(comments, ShouldResemble, []map[string]interface{}{
 				{
 					"category":  "ShellCheck/SC2034",
-					"message":   "warning: unused appears unused. Verify use (or export if used externally).",
+					"message":   "warning: FLAGS_flag appears unused. Verify use (or export if used externally).",
 					"url":       "https://github.com/koalaman/shellcheck/wiki/SC2034",
 					"path":      "bad.sh",
 					"startLine": float64(3),
 					"endLine":   float64(3),
+					"startChar": float64(11),
+					"endChar":   float64(15),
+				},
+				{
+					"category":  "ShellCheck/SC2034",
+					"message":   "warning: unused appears unused. Verify use (or export if used externally).",
+					"url":       "https://github.com/koalaman/shellcheck/wiki/SC2034",
+					"path":      "bad.sh",
+					"startLine": float64(5),
+					"endLine":   float64(5),
 					"startChar": float64(1),
 					"endChar":   float64(7),
 				},
@@ -85,8 +96,8 @@ func TestRun(t *testing.T) {
 					"message":   "error: Braces are required for positionals over 9, e.g. ${10}.",
 					"url":       "https://github.com/koalaman/shellcheck/wiki/SC1037",
 					"path":      "bad.sh",
-					"startLine": float64(4),
-					"endLine":   float64(4),
+					"startLine": float64(6),
+					"endLine":   float64(6),
 					"startChar": float64(6),
 					"endChar":   float64(6),
 				},

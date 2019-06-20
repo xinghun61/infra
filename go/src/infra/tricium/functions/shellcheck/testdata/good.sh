@@ -1,3 +1,5 @@
 #!/bin/bash
 
-echo 'Nothing to see here!'
+DEFINE_string flag "" "Help"
+
+echo "${FLAGS_flag}: Nothing to see here!"
