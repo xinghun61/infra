@@ -8,6 +8,7 @@ instance_class: F1
 automatic_scaling:
   min_idle_instances: 1
 
+
 handlers:
 # Endpoints handler.
 - url: /_ah/api/.*
