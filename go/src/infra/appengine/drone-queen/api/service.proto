@@ -18,13 +18,13 @@ service Drone {
   // follow.
   rpc ReportDrone(ReportDroneRequest) returns (ReportDroneResponse);
 
-  // ReportDrone is called by drones to release ownership of DUTs.
+  // ReleaseDuts is called by drones to release ownership of DUTs.
   rpc ReleaseDuts(ReleaseDutsRequest) returns (ReleaseDutsResponse);
 }
 
 service InventoryProvider {
-  // DeclareDuts tells the service all of the DUTs available to assign
-  // to drones.
+  // DeclareDuts tells the service about all of the DUTs available to
+  // assign to drones.
   rpc DeclareDuts(DeclareDutsRequest) returns (DeclareDutsResponse);
 }
 
@@ -65,13 +65,15 @@ message ReportDroneResponse {
 message ReleaseDutsRequest {
   // drone_uuid is the UUID assigned to the drone.
   string drone_uuid = 1;
-  // duts to release.
+  // duts to release.  It is not an error if a DUT is not assigned to
+  // the drone.
   repeated string duts = 2;
 }
 message ReleaseDutsResponse {}
 
 message DeclareDutsRequest {
-  // duts is all of the DUTs to be made available to drones.
+  // duts is all of the DUTs to be made available to drones.  DUTs
+  // omitted from this list will be drained and deleted.
   repeated string duts = 1;
 }
 message DeclareDutsResponse {}

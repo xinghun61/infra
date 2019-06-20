@@ -4,14 +4,20 @@
 
 syntax = "proto3";
 
+import "google/protobuf/duration.proto";
+
 package drone_queen.config;
 
 option go_package = "config";
 
 // Config is the configuration data served by luci-config for this app.
 message Config {
-  // AccessGroup is the luci-auth group controlling access to RPC endpoints.
+  // access_groups are the luci-auth groups controlling access to RPC endpoints.
   AccessGroups access_groups = 1;
+
+  // assignment_duration is the duration before expiration for drone
+  // assignments.
+  google.protobuf.Duration assignment_duration = 2;
 }
 
 // AccessGroups holds access group configuration

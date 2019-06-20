@@ -229,7 +229,8 @@ func (m *ReportDroneResponse) GetDrainingDuts() []string {
 type ReleaseDutsRequest struct {
 	// drone_uuid is the UUID assigned to the drone.
 	DroneUuid string `protobuf:"bytes,1,opt,name=drone_uuid,json=droneUuid,proto3" json:"drone_uuid,omitempty"`
-	// duts to release.
+	// duts to release.  It is not an error if a DUT is not assigned to
+	// the drone.
 	Duts                 []string `protobuf:"bytes,2,rep,name=duts,proto3" json:"duts,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
@@ -307,7 +308,8 @@ func (m *ReleaseDutsResponse) XXX_DiscardUnknown() {
 var xxx_messageInfo_ReleaseDutsResponse proto.InternalMessageInfo
 
 type DeclareDutsRequest struct {
-	// duts is all of the DUTs to be made available to drones.
+	// duts is all of the DUTs to be made available to drones.  DUTs
+	// omitted from this list will be drained and deleted.
 	Duts                 []string `protobuf:"bytes,1,rep,name=duts,proto3" json:"duts,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
@@ -446,7 +448,7 @@ type DroneClient interface {
 	// See the README for details on the contract that the drone must
 	// follow.
 	ReportDrone(ctx context.Context, in *ReportDroneRequest, opts ...grpc.CallOption) (*ReportDroneResponse, error)
-	// ReportDrone is called by drones to release ownership of DUTs.
+	// ReleaseDuts is called by drones to release ownership of DUTs.
 	ReleaseDuts(ctx context.Context, in *ReleaseDutsRequest, opts ...grpc.CallOption) (*ReleaseDutsResponse, error)
 }
 type dronePRPCClient struct {
@@ -509,7 +511,7 @@ type DroneServer interface {
 	// See the README for details on the contract that the drone must
 	// follow.
 	ReportDrone(context.Context, *ReportDroneRequest) (*ReportDroneResponse, error)
-	// ReportDrone is called by drones to release ownership of DUTs.
+	// ReleaseDuts is called by drones to release ownership of DUTs.
 	ReleaseDuts(context.Context, *ReleaseDutsRequest) (*ReleaseDutsResponse, error)
 }
 
@@ -585,8 +587,8 @@ var _Drone_serviceDesc = grpc.ServiceDesc{
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type InventoryProviderClient interface {
-	// DeclareDuts tells the service all of the DUTs available to assign
-	// to drones.
+	// DeclareDuts tells the service about all of the DUTs available to
+	// assign to drones.
 	DeclareDuts(ctx context.Context, in *DeclareDutsRequest, opts ...grpc.CallOption) (*DeclareDutsResponse, error)
 }
 type inventoryProviderPRPCClient struct {
@@ -625,8 +627,8 @@ func (c *inventoryProviderClient) DeclareDuts(ctx context.Context, in *DeclareDu
 
 // InventoryProviderServer is the server API for InventoryProvider service.
 type InventoryProviderServer interface {
-	// DeclareDuts tells the service all of the DUTs available to assign
-	// to drones.
+	// DeclareDuts tells the service about all of the DUTs available to
+	// assign to drones.
 	DeclareDuts(context.Context, *DeclareDutsRequest) (*DeclareDutsResponse, error)
 }
 
