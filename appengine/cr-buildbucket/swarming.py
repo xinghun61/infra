@@ -34,6 +34,7 @@ import json
 import logging
 import posixpath
 import random
+import re
 import string
 import uuid
 
@@ -79,25 +80,10 @@ _CACHE_DIR = 'cache'
 # are either checked out, or installed via CIPD package.
 _KITCHEN_CHECKOUT = 'kitchen-checkout'
 
-# TODO(crbug.com/973721): remove this blacklist
-VPYTHON_NATIVE_BLACKLIST_OF_LUCI_PROJECTS = {
-    'angle',
-    'boringssl',
-    'cast-chromecast-internal',
-    'celab',
-    'chromeos',
-    'dawn',
-    'franky',
-    'gazoo',
-    'gn',
-    'goma-client',
-    'goma-client-internal',
-    'goma-server',
-    'infra-experimental',
-    'infra-internal',
-    'openscreen',
-    'tricium',
-}
+# Directory where user-available packages are installed, such as git.
+# Relative to swarming task cwd.
+# USER_PACKAGE_DIR and USER_PACKAGE_DIR/bin are prepended to $PATH.
+USER_PACKAGE_DIR = 'cipd_bin_packages'
 
 ################################################################################
 # Creation/cancellation of tasks.
@@ -197,7 +183,7 @@ def _buildbucket_property_legacy(build):
   }
 
 
-def _create_task_def(build, fake_build):
+def _create_task_def(build, settings, fake_build):
   """Creates a swarming task definition for the |build|."""
   assert isinstance(build, model.Build), type(build)
   assert build.key and build.key.id(), build.key
@@ -222,10 +208,8 @@ def _create_task_def(build, fake_build):
       'swarming_hostname': build.proto.infra.swarming.hostname,
   }
   extra_swarming_tags = []
-  extra_cipd_packages = []
   if 'recipe' in bp.input.properties.fields:
-    (extra_swarming_tags, extra_cipd_packages,
-     extra_task_template_params) = _setup_recipes(build)
+    extra_swarming_tags, extra_task_template_params = _setup_recipes(build)
     task_template_params.update(extra_task_template_params)
 
   # Render task template.
@@ -253,7 +237,7 @@ def _create_task_def(build, fake_build):
       build, extra_swarming_tags, task_template_rev, task.get('tags')
   )
 
-  _setup_swarming_request_task_slices(build, extra_cipd_packages, task)
+  _setup_swarming_request_task_slices(build, settings, task)
 
   if not fake_build:  # pragma: no branch | covered by swarmbucketapi_test.py
     _setup_swarming_request_pubsub(task, build)
@@ -265,7 +249,7 @@ def _setup_recipes(build):
   """Initializes a build request using recipes.
 
   Returns:
-    extra_swarming_tags, extra_cipd_packages, extra_task_template_params
+    extra_swarming_tags, extra_task_template_params
   """
   exe = build.proto.exe
   props = copy.copy(build.proto.input.properties)
@@ -310,13 +294,8 @@ def _setup_recipes(build):
       'recipe_name:%s' % recipe,
       'recipe_package:%s' % exe.cipd_package,
   ]
-  extra_cipd_packages = [{
-      'path': _KITCHEN_CHECKOUT,
-      'package_name': exe.cipd_package,
-      'version': exe.cipd_version,
-  }]
 
-  return extra_swarming_tags, extra_cipd_packages, extra_task_template_params
+  return extra_swarming_tags, extra_task_template_params
 
 
 def _calc_tags(build, extra_swarming_tags, task_template_rev, tags):
@@ -334,7 +313,7 @@ def _calc_tags(build, extra_swarming_tags, task_template_rev, tags):
   return sorted(tags)
 
 
-def _setup_swarming_request_task_slices(build, extra_cipd_packages, task):
+def _setup_swarming_request_task_slices(build, settings, task):
   """Mutate the task request with named cache, CIPD packages and (soon) expiring
   dimensions.
   """
@@ -364,9 +343,7 @@ def _setup_swarming_request_task_slices(build, extra_cipd_packages, task):
 
   # Now take a look to generate a fallback! This is done by inspecting the
   # Build named caches for field "wait_for_warm_cache".
-  dims = _setup_swarming_props(
-      build, extra_cipd_packages, base_slice[u'properties']
-  )
+  dims = _setup_swarming_props(build, settings, base_slice[u'properties'])
 
   if dims:
     assert len(dims) <= 6
@@ -403,7 +380,7 @@ def _setup_swarming_request_task_slices(build, extra_cipd_packages, task):
       props[u'dimensions'].sort(key=lambda x: (x[u'key'], x[u'value']))
 
 
-def _setup_swarming_props(build, extra_cipd_packages, props):
+def _setup_swarming_props(build, settings, props):
   """Fills a TaskProperties.
 
   Updates props; a python format of TaskProperties.
@@ -427,18 +404,7 @@ def _setup_swarming_props(build, extra_cipd_packages, props):
       'key': 'BUILDBUCKET_EXPERIMENTAL',
       'value': str(build.experimental).upper(),
   })
-  packages = props.setdefault('cipd_input', {}).setdefault('packages', [])
-  packages.extend(extra_cipd_packages)
-
-  vpython_native_blacklisted = (
-      build.proto.builder.project in VPYTHON_NATIVE_BLACKLIST_OF_LUCI_PROJECTS
-  )
-  if vpython_native_blacklisted:  # pragma: no cover
-    packages[:] = [
-        p for p in packages
-        if p['package_name'] != 'infra/tools/luci/vpython-native/${platform}'
-    ]
-
+  props['cipd_input'] = _compute_cipd_input(build, settings)
   props['execution_timeout_secs'] = str(build.proto.execution_timeout.seconds)
 
   props['caches'], cache_fallbacks = _setup_named_caches(build)
@@ -457,6 +423,39 @@ def _setup_swarming_props(build, extra_cipd_packages, props):
   props[u'dimensions'] = out.pop(0, [])
   props[u'dimensions'].sort(key=lambda x: (x[u'key'], x[u'value']))
   return out
+
+
+def _compute_cipd_input(build, settings):
+  """Returns swarming task CIPD input."""
+
+  def convert(path, pkg):
+    """Converts a package from settings to swarming."""
+    version = pkg.version
+    if pkg.version_canary and build.proto.canary:
+      version = pkg.version_canary
+    return {
+        'package_name': pkg.package_name,
+        'path': path,
+        'version': version,
+    }
+
+  packages = [
+      convert('.', settings.luci_runner_package),
+      convert('.', settings.kitchen_package),
+      {
+          'package_name': build.proto.exe.cipd_package,
+          'path': _KITCHEN_CHECKOUT,
+          'version': build.proto.exe.cipd_version,
+      },
+  ]
+  packages += [
+      convert(USER_PACKAGE_DIR, up)
+      for up in settings.user_packages
+      if _builder_matches(build.proto.builder, up.builders)
+  ]
+  return {
+      'packages': packages,
+  }
 
 
 def _setup_named_caches(build):
@@ -526,7 +525,7 @@ def prepare_task_def(build, settings, fake_build=False):
   Returns a task_def dict.
   """
   build.url = _generate_build_url(settings.milo_hostname, build)
-  task_def = _create_task_def(build, fake_build)
+  task_def = _create_task_def(build, settings, fake_build)
   return task_def
 
 
@@ -1131,3 +1130,20 @@ def _end_build(build_id, status, summary_markdown='', end_time=None):
   build = txn()
   if build:  # pragma: no branch
     events.on_build_completed(build)
+
+
+def _builder_matches(builder_id, predicate):
+  bs = config.builder_id_string(builder_id)
+
+  def matches(regex_list):
+    for r in regex_list:
+      try:
+        if re.match('^%s$' % r, bs):
+          return True
+      except re.error:  # pragma: no cover
+        logging.exception('Regex %r failed on %r', r, bs)
+    return False
+
+  if matches(predicate.regex_exclude):
+    return False
+  return not predicate.regex or matches(predicate.regex)

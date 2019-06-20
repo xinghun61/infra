@@ -66,7 +66,26 @@ class BaseTest(testing.AppengineTestCase):
     )
 
     self.settings = service_config_pb2.SettingsCfg(
-        swarming=dict(milo_hostname='milo.example.com'),
+        swarming=dict(
+            milo_hostname='milo.example.com',
+            luci_runner_package=dict(
+                package_name='infra/tools/luci_runner',
+                version='luci-runner-version',
+                version_canary='luci-runner-version-canary',
+            ),
+            kitchen_package=dict(
+                package_name='infra/tools/kitchen',
+                version='kitchen-version',
+                version_canary='kitchen-version-canary',
+            ),
+            user_packages=[
+                dict(
+                    package_name='infra/tools/git',
+                    version='git-version',
+                    version_canary='git-version-canary',
+                ),
+            ],
+        ),
     )
     self.patch(
         'config.get_settings_async',
@@ -103,20 +122,6 @@ class TaskDefTest(BaseTest):
                     '-logdog-project',
                     '${project}',
                 ],
-                'cipd_input': {
-                    'packages': [
-                        {
-                            'package_name': 'infra/test/bar/${os_ver}',
-                            'path': '.',
-                            'version': 'latest',
-                        },
-                        {
-                            'package_name': 'infra/test/foo/${platform}',
-                            'path': 'third_party',
-                            'version': 'stable',
-                        },
-                    ],
-                },
             },
             'wait_for_capacity': False,
         },],
@@ -270,6 +275,19 @@ class TaskDefTest(BaseTest):
     self.assertEqual(1, len(slices))
     self.assertEqual(slices[0]['expiration_secs'], '120')
 
+  def test_compute_cipd_input_canary(self):
+    build = self._test_build(canary=True)
+    cipd_input = swarming._compute_cipd_input(build, self.settings.swarming)
+    packages = {p['package_name']: p for p in cipd_input['packages']}
+    self.assertEqual(
+        packages['infra/tools/luci_runner']['version'],
+        'luci-runner-version-canary',
+    )
+    self.assertEqual(
+        packages['infra/tools/git']['version'],
+        'git-version-canary',
+    )
+
   def test_properties(self):
     self.patch(
         'components.auth.get_current_identity',
@@ -314,7 +332,7 @@ class TaskDefTest(BaseTest):
         ),
     )
 
-    _, _, extra_task_template_params = swarming._setup_recipes(build)
+    _, extra_task_template_params = swarming._setup_recipes(build)
     actual = json.loads(extra_task_template_params['properties_json'])
 
     expected = {
@@ -464,7 +482,7 @@ class TaskDefTest(BaseTest):
             'recipe',
             '-properties',
             # Properties are tested by test_properties() above.
-            swarming._setup_recipes(build)[2]['properties_json'],
+            swarming._setup_recipes(build)[1]['properties_json'],
             '-logdog-project',
             'chromium',
         ],
@@ -477,19 +495,24 @@ class TaskDefTest(BaseTest):
         'cipd_input': {
             'packages': [
                 {
-                    'package_name': 'infra/test/bar/${os_ver}',
+                    'package_name': 'infra/tools/luci_runner',
                     'path': '.',
-                    'version': 'latest',
+                    'version': 'luci-runner-version',
                 },
                 {
-                    'package_name': 'infra/test/foo/${platform}',
-                    'path': 'third_party',
-                    'version': 'stable',
+                    'package_name': 'infra/tools/kitchen',
+                    'path': '.',
+                    'version': 'kitchen-version',
                 },
                 {
                     'package_name': 'infra/recipe_bundle',
                     'path': 'kitchen-checkout',
                     'version': 'refs/heads/master',
+                },
+                {
+                    'package_name': 'infra/tools/git',
+                    'path': swarming.USER_PACKAGE_DIR,
+                    'version': 'git-version',
                 },
             ],
         },
@@ -573,6 +596,25 @@ class TaskDefTest(BaseTest):
         swarming._generate_build_url(None, build),
         ('https://swarming.example.com/task?id=deadbeef')
     )
+
+  @parameterized.expand([
+      ([], [], True),
+      ([], ['chromium/.+'], False),
+      ([], ['v8/.+'], True),
+      (['chromium/.+'], [], True),
+      (['v8/.+'], [], False),
+  ])
+  def test_builder_matches(self, regex, regex_exclude, expected):
+    predicate = service_config_pb2.BuilderPredicate(
+        regex=regex, regex_exclude=regex_exclude
+    )
+    builder_id = build_pb2.BuilderID(
+        project='chromium',
+        bucket='try',
+        builder='linux-rel',
+    )
+    actual = swarming._builder_matches(builder_id, predicate)
+    self.assertEqual(expected, actual)
 
 
 class CreateTaskTest(BaseTest):

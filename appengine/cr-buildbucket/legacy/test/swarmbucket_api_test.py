@@ -17,6 +17,7 @@ from test.test_util import future
 import config
 import model
 import sequence
+import swarming
 import user
 
 
@@ -149,6 +150,23 @@ class SwarmbucketApiTest(testing.EndpointsTestCase):
     )
 
     self.settings = service_config_pb2.SettingsCfg(
+        swarming=dict(
+            milo_hostname='milo.example.com',
+            luci_runner_package=dict(
+                package_name='infra/tools/luci_runner',
+                version='luci-runner-version',
+            ),
+            kitchen_package=dict(
+                package_name='infra/tools/kitchen',
+                version='kitchen-version',
+            ),
+            user_packages=[
+                dict(
+                    package_name='infra/tools/git',
+                    version='git-version',
+                ),
+            ],
+        ),
         logdog=dict(hostname='logdog.example.com'),
     )
     self.patch(
@@ -284,12 +302,12 @@ class SwarmbucketApiTest(testing.EndpointsTestCase):
     resp = self.call_api('get_task_def', req).json_body
     actual_task_def = json.loads(resp['task_definition'])
     props_def = {
-        u'env': [{u'key': u'BUILDBUCKET_EXPERIMENTAL', u'value': u'FALSE'}],
-        u'extra_args': [
-            u'cook',
-            u'-recipe',
-            u'presubmit',
-            u'-properties',
+        'env': [{'key': 'BUILDBUCKET_EXPERIMENTAL', 'value': 'FALSE'}],
+        'extra_args': [
+            'cook',
+            '-recipe',
+            'presubmit',
+            '-properties',
             api_common.properties_to_json({
                 'recipe': 'presubmit',
                 'buildbucket': {
@@ -373,65 +391,70 @@ class SwarmbucketApiTest(testing.EndpointsTestCase):
                 'buildername': 'linux',
                 'buildnumber': 1,
             }),
-            u'-logdog-project',
-            u'chromium',
+            '-logdog-project',
+            'chromium',
         ],
-        u'execution_timeout_secs':
-            u'10800',
-        u'cipd_input': {
-            u'packages': [
+        'execution_timeout_secs':
+            '10800',
+        'cipd_input': {
+            'packages': [
                 {
-                    u'path': u'.',
-                    u'package_name': u'infra/test/bar/${os_ver}',
-                    u'version': u'latest',
+                    'package_name': 'infra/tools/luci_runner',
+                    'path': '.',
+                    'version': 'luci-runner-version',
                 },
                 {
-                    u'path': u'third_party',
-                    u'package_name': u'infra/test/foo/${platform}',
-                    u'version': u'stable',
+                    'package_name': 'infra/tools/kitchen',
+                    'path': '.',
+                    'version': 'kitchen-version',
                 },
                 {
-                    u'path': u'kitchen-checkout',
-                    u'package_name': u'infra/recipe_bundle',
-                    u'version': u'refs/heads/master',
+                    'package_name': 'infra/recipe_bundle',
+                    'path': 'kitchen-checkout',
+                    'version': 'refs/heads/master',
+                },
+                {
+                    'package_name': 'infra/tools/git',
+                    'path': swarming.USER_PACKAGE_DIR,
+                    'version': 'git-version',
                 },
             ],
         },
-        u'dimensions': [
-            {u'key': u'baz', u'value': u'baz'},
-            {u'key': u'builder', u'value': u'linux'},
-            {u'key': u'foo', u'value': u'bar'},
+        'dimensions': [
+            {'key': 'baz', 'value': 'baz'},
+            {'key': 'builder', 'value': 'linux'},
+            {'key': 'foo', 'value': 'bar'},
         ],
-        u'caches': [{
-            u'path': u'cache/builder',
-            u'name': u'builder_cache_name',
+        'caches': [{
+            'path': 'cache/builder',
+            'name': 'builder_cache_name',
         }],
     }
     expected_task_def = {
-        u'name':
-            u'bb-1-chromium-linux',
-        u'tags': [
-            u'buildbucket_bucket:chromium/try',
-            u'buildbucket_build_id:1',
-            u'buildbucket_hostname:cr-buildbucket.appspot.com',
-            u'buildbucket_template_canary:0',
-            u'buildbucket_template_revision:rev',
-            u'builder:linux',
-            u'recipe_name:presubmit',
-            u'recipe_package:infra/recipe_bundle',
+        'name':
+            'bb-1-chromium-linux',
+        'tags': [
+            'buildbucket_bucket:chromium/try',
+            'buildbucket_build_id:1',
+            'buildbucket_hostname:cr-buildbucket.appspot.com',
+            'buildbucket_template_canary:0',
+            'buildbucket_template_revision:rev',
+            'builder:linux',
+            'recipe_name:presubmit',
+            'recipe_package:infra/recipe_bundle',
         ],
-        u'priority':
-            u'30',
-        u'pool_task_template':
-            u'CANARY_NEVER',
-        u'task_slices': [{
-            u'expiration_secs': u'21600',
-            u'properties': props_def,
-            u'wait_for_capacity': False,
+        'priority':
+            '30',
+        'pool_task_template':
+            'CANARY_NEVER',
+        'task_slices': [{
+            'expiration_secs': '21600',
+            'properties': props_def,
+            'wait_for_capacity': False,
         }],
     }
     self.assertEqual(actual_task_def, expected_task_def)
-    self.assertEqual(resp['swarming_host'], u'swarming.example.com')
+    self.assertEqual(resp['swarming_host'], 'swarming.example.com')
 
   def test_get_task_def_bad_request(self):
     req = {
