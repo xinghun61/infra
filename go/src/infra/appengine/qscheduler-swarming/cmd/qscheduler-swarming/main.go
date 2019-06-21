@@ -33,6 +33,8 @@ import (
 	"go.chromium.org/luci/server/router"
 )
 
+var allowWrites = flag.Bool("qscheduler-allow-writes", false, "Enable writes to datastore")
+
 func main() {
 	mathrand.SeedRandomly()
 
@@ -59,9 +61,9 @@ func main() {
 	// Don't check groups when running in dev mode, for simplicity.
 	frontend.SkipAuthorization = !opts.Prod
 
-	// Avoid writing to the datastore for now, the main instance of the service is
-	// still running on GAE.
-	state.ReadOnlyDatastore = true
+	// Permit writing to the datastore only when asked, the main instance of the
+	// service is still running on GAE.
+	state.ReadOnlyDatastore = !*allowWrites
 
 	// Load qscheduler service config form a local file (deployed via GKE),
 	// periodically reread it to pick up changes without full restart.

@@ -39,6 +39,7 @@ gen:
 run-local:
 	go run $(projdir)/cmd/qscheduler-swarming/main.go \
 		-qscheduler-config $(projdir)/app/appengine/devcfg/services/dev/config.cfg \
+		-cloud-project qscheduler-swarming-dev \
 		-http-addr "0.0.0.0:8082" \
 		-admin-addr "0.0.0.0:8900"
 
