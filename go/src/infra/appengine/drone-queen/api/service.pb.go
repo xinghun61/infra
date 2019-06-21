@@ -30,6 +30,10 @@ const _ = proto.ProtoPackageIsVersion3 // please upgrade the proto package
 type ReportDroneResponse_Status int32
 
 const (
+	// UNKNOWN_ERROR should not be used normally.  It is the default
+	// value if the status is missing or unknown.  For example, if the
+	// service uses a new enum value that the client does not know
+	// about yet, the client will use the default value.
 	ReportDroneResponse_UNKNOWN_ERROR ReportDroneResponse_Status = 0
 	ReportDroneResponse_OK            ReportDroneResponse_Status = 1
 	ReportDroneResponse_UNKNOWN_UUID  ReportDroneResponse_Status = 2

@@ -45,6 +45,10 @@ message ReportDroneResponse {
   // this for errors.
   Status status = 1;
   enum Status {
+    // UNKNOWN_ERROR should not be used normally.  It is the default
+    // value if the status is missing or unknown.  For example, if the
+    // service uses a new enum value that the client does not know
+    // about yet, the client will use the default value.
     UNKNOWN_ERROR = 0;
     OK = 1;
     UNKNOWN_UUID = 2;
