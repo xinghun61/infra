@@ -21,9 +21,9 @@ import (
 func CreateNewDrone(ctx context.Context) (entities.DroneID, error) {
 	const maxAttempts = 10
 	var id entities.DroneID
-	f := func(ctx context.Context) error {
-	findID:
-		for i := 1; ; i++ {
+	retry := errors.New("retry")
+	for i := 1; ; i++ {
+		f := func(ctx context.Context) error {
 			proposed := uuid.New().String()
 			key := datastore.MakeKey(ctx, entities.DroneKind, proposed)
 			res, err := datastore.Exists(ctx, key)
@@ -34,24 +34,26 @@ func CreateNewDrone(ctx context.Context) (entities.DroneID, error) {
 				if i == maxAttempts {
 					return errors.Reason("max attempts finding unique ID").Err()
 				}
+				return retry
+			}
+			id = entities.DroneID(proposed)
+			drone := entities.Drone{
+				ID: id,
+			}
+			if err := datastore.Put(ctx, &drone); err != nil {
+				return err
+			}
+			return nil
+		}
+		if err := datastore.RunInTransaction(ctx, f, nil); err != nil {
+			if err == retry {
 				retryUniqueUUID.Add(ctx, 1, config.Instance(ctx))
 				continue
 			}
-			id = entities.DroneID(proposed)
-			break findID
+			return "", errors.Annotate(err, "create new drone").Err()
 		}
-		drone := entities.Drone{
-			ID: id,
-		}
-		if err := datastore.Put(ctx, &drone); err != nil {
-			return err
-		}
-		return nil
+		return id, nil
 	}
-	if err := datastore.RunInTransaction(ctx, f, nil); err != nil {
-		return "", errors.Annotate(err, "create new drone").Err()
-	}
-	return id, nil
 }
 
 // GetDroneDUTs gets the DUTs assigned to a drone.  This does not have
