@@ -3150,6 +3150,23 @@ class IssueService(object):
     self.issue2notify_tbl.Delete(
         cnxn, email=emails_by_id.values(), commit=commit)
 
+    # Remove users in issue snapshots.
+    self.issuesnapshot_tbl.Update(
+        cnxn,
+        {'owner_id': framework_constants.DELETED_USER_ID},
+        owner_id=user_ids,
+        commit=commit, limit=limit)
+    self.issuesnapshot_tbl.Update(
+        cnxn,
+        {'reporter_id': framework_constants.DELETED_USER_ID},
+        reporter_id=user_ids,
+        commit=commit, limit=limit)
+    self.issuesnapshot2cc_tbl.Update(
+        cnxn,
+        {'cc_id': framework_constants.DELETED_USER_ID},
+        cc_id=user_ids,
+        commit=commit, limit=limit)
+
 
 def _UpdateClosedTimestamp(config, issue, old_effective_status):
   """Sets or unsets the closed_timestamp based based on status changes.
