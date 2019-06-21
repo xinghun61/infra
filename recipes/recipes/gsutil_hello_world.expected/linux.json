@@ -11,7 +11,11 @@
       "[TMP_BASE]/access_test"
     ],
     "infra_step": true,
-    "name": "write access_test"
+    "name": "write access_test",
+    "~followup_annotations": [
+      "@@@STEP_LOG_LINE@access_test@1337000001.5@@@",
+      "@@@STEP_LOG_END@access_test@@@"
+    ]
   },
   {
     "cmd": [

@@ -133,7 +133,13 @@
       "[CACHE]/codesearch_update_submodules_mirror/src/.gitmodules"
     ],
     "infra_step": true,
-    "name": "Write .gitmodules file"
+    "name": "Write .gitmodules file",
+    "~followup_annotations": [
+      "@@@STEP_LOG_LINE@.gitmodules@[submodule \"v8\"]@@@",
+      "@@@STEP_LOG_LINE@.gitmodules@\tpath = v8@@@",
+      "@@@STEP_LOG_LINE@.gitmodules@\turl = https://chromium.googlesource.com/v8/v8.git@@@",
+      "@@@STEP_LOG_END@.gitmodules@@@"
+    ]
   },
   {
     "cmd": [

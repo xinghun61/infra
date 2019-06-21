@@ -1133,7 +1133,9 @@
     "infra_step": true,
     "name": "provision SSL.write ssl.py",
     "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@1@@@"
+      "@@@STEP_NEST_LEVEL@1@@@",
+      "@@@STEP_LOG_LINE@ssl.py@@@@",
+      "@@@STEP_LOG_END@ssl.py@@@"
     ]
   },
   {

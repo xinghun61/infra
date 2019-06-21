@@ -1202,7 +1202,9 @@
     "infra_step": true,
     "name": "python.provision SSL.write ssl.py",
     "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@2@@@"
+      "@@@STEP_NEST_LEVEL@2@@@",
+      "@@@STEP_LOG_LINE@ssl.py@@@@",
+      "@@@STEP_LOG_END@ssl.py@@@"
     ]
   },
   {
@@ -2055,7 +2057,16 @@
     "infra_step": true,
     "name": "git.Makefile specialization",
     "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@1@@@"
+      "@@@STEP_NEST_LEVEL@1@@@",
+      "@@@STEP_LOG_LINE@config.mak@RUNTIME_PREFIX=YesPlease@@@",
+      "@@@STEP_LOG_LINE@config.mak@gitexecdir=libexec/git-core@@@",
+      "@@@STEP_LOG_LINE@config.mak@template_dir=share/git-core/templates@@@",
+      "@@@STEP_LOG_LINE@config.mak@sysconfdir=etc@@@",
+      "@@@STEP_LOG_LINE@config.mak@NO_INSTALL_HARDLINKS=YesPlease@@@",
+      "@@@STEP_LOG_LINE@config.mak@NO_GECOS_IN_PWENT=YesPlease@@@",
+      "@@@STEP_LOG_LINE@config.mak@NO_CURL=@@@",
+      "@@@STEP_LOG_LINE@config.mak@EXTLIBS = -lz -lcurl -ldl -lpthread -lz -lidn2 -lssl -lcrypto -lpcre2-8@@@",
+      "@@@STEP_LOG_END@config.mak@@@"
     ]
   },
   {
@@ -2073,7 +2084,9 @@
     "infra_step": true,
     "name": "git.Version file",
     "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@1@@@"
+      "@@@STEP_NEST_LEVEL@1@@@",
+      "@@@STEP_LOG_LINE@version@v2.12.2.2.chromium16@@@",
+      "@@@STEP_LOG_END@version@@@"
     ]
   },
   {
@@ -2337,7 +2350,13 @@
     "infra_step": true,
     "name": "gcloud.write instance config",
     "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@1@@@"
+      "@@@STEP_NEST_LEVEL@1@@@",
+      "@@@STEP_LOG_LINE@properties@[core]@@@",
+      "@@@STEP_LOG_LINE@properties@disable_usage_reporting = True@@@",
+      "@@@STEP_LOG_LINE@properties@@@@",
+      "@@@STEP_LOG_LINE@properties@[component_manager]@@@",
+      "@@@STEP_LOG_LINE@properties@disable_update_check = true@@@",
+      "@@@STEP_LOG_END@properties@@@"
     ]
   },
   {

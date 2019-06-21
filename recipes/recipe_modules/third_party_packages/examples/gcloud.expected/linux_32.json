@@ -101,7 +101,15 @@
       "[START_DIR]/gcloud_linux_32/google-cloud-sdk/properties"
     ],
     "infra_step": true,
-    "name": "write instance config"
+    "name": "write instance config",
+    "~followup_annotations": [
+      "@@@STEP_LOG_LINE@properties@[core]@@@",
+      "@@@STEP_LOG_LINE@properties@disable_usage_reporting = True@@@",
+      "@@@STEP_LOG_LINE@properties@@@@",
+      "@@@STEP_LOG_LINE@properties@[component_manager]@@@",
+      "@@@STEP_LOG_LINE@properties@disable_update_check = true@@@",
+      "@@@STEP_LOG_END@properties@@@"
+    ]
   },
   {
     "cmd": [

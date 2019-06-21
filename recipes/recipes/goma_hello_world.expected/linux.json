@@ -11,7 +11,20 @@
       "[TMP_BASE]/hello_world.cpp"
     ],
     "infra_step": true,
-    "name": "write hello_world.cpp"
+    "name": "write hello_world.cpp",
+    "~followup_annotations": [
+      "@@@STEP_LOG_LINE@hello_world.cpp@@@@",
+      "@@@STEP_LOG_LINE@hello_world.cpp@#include <iostream>@@@",
+      "@@@STEP_LOG_LINE@hello_world.cpp@@@@",
+      "@@@STEP_LOG_LINE@hello_world.cpp@int get_number();@@@",
+      "@@@STEP_LOG_LINE@hello_world.cpp@@@@",
+      "@@@STEP_LOG_LINE@hello_world.cpp@int main() {@@@",
+      "@@@STEP_LOG_LINE@hello_world.cpp@  std::cout << \"Hello, world!\" << std::endl;@@@",
+      "@@@STEP_LOG_LINE@hello_world.cpp@  std::cout << \"Non-static part \" << get_number() << std::endl;@@@",
+      "@@@STEP_LOG_LINE@hello_world.cpp@  return 0;@@@",
+      "@@@STEP_LOG_LINE@hello_world.cpp@}@@@",
+      "@@@STEP_LOG_END@hello_world.cpp@@@"
+    ]
   },
   {
     "cmd": [
@@ -25,7 +38,14 @@
       "[TMP_BASE]/module.cpp"
     ],
     "infra_step": true,
-    "name": "write module.cpp"
+    "name": "write module.cpp",
+    "~followup_annotations": [
+      "@@@STEP_LOG_LINE@module.cpp@@@@",
+      "@@@STEP_LOG_LINE@module.cpp@int get_number() {@@@",
+      "@@@STEP_LOG_LINE@module.cpp@  return 1337000001;@@@",
+      "@@@STEP_LOG_LINE@module.cpp@}@@@",
+      "@@@STEP_LOG_END@module.cpp@@@"
+    ]
   },
   {
     "cmd": [],

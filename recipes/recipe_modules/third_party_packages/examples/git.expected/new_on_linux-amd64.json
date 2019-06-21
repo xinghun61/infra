@@ -646,7 +646,18 @@
     ],
     "cwd": "[START_DIR]/git/checkout",
     "infra_step": true,
-    "name": "Makefile specialization"
+    "name": "Makefile specialization",
+    "~followup_annotations": [
+      "@@@STEP_LOG_LINE@config.mak@RUNTIME_PREFIX=YesPlease@@@",
+      "@@@STEP_LOG_LINE@config.mak@gitexecdir=libexec/git-core@@@",
+      "@@@STEP_LOG_LINE@config.mak@template_dir=share/git-core/templates@@@",
+      "@@@STEP_LOG_LINE@config.mak@sysconfdir=etc@@@",
+      "@@@STEP_LOG_LINE@config.mak@NO_INSTALL_HARDLINKS=YesPlease@@@",
+      "@@@STEP_LOG_LINE@config.mak@NO_GECOS_IN_PWENT=YesPlease@@@",
+      "@@@STEP_LOG_LINE@config.mak@NO_CURL=@@@",
+      "@@@STEP_LOG_LINE@config.mak@EXTLIBS = -lz -lcurl -ldl -lpthread -lz -lidn2 -lssl -lcrypto -lpcre2-8@@@",
+      "@@@STEP_LOG_END@config.mak@@@"
+    ]
   },
   {
     "cmd": [
@@ -661,7 +672,11 @@
     ],
     "cwd": "[START_DIR]/git/checkout",
     "infra_step": true,
-    "name": "Version file"
+    "name": "Version file",
+    "~followup_annotations": [
+      "@@@STEP_LOG_LINE@version@v2.12.2.2.chromium16@@@",
+      "@@@STEP_LOG_END@version@@@"
+    ]
   },
   {
     "cmd": [
