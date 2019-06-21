@@ -62,8 +62,14 @@ class ClientConfigServiceTest(unittest.TestCase):
   def testGetDisplayNames(self):
     display_names_map = self.client_config_svc.GetDisplayNames()
     self.assertIn(self.client_email, display_names_map)
-    self.assertEquals('johndoe@example.com',
-                      display_names_map[self.client_email])
+    self.assertEqual('johndoe@example.com',
+                     display_names_map[self.client_email])
+
+  def testGetQPMDict(self):
+    qpm_map = self.client_config_svc.GetQPM()
+    self.assertIn(self.client_email, qpm_map)
+    self.assertEqual(1, qpm_map[self.client_email])
+    self.assertNotIn('bugdroid1@chromium.org', qpm_map)
 
   def testGetClientIDEmails(self):
     auth_client_ids, auth_emails = self.client_config_svc.GetClientIDEmails()
@@ -94,4 +100,24 @@ class ClientConfigServiceTest(unittest.TestCase):
     self.client_config_svc.load_time = NOW
     self.client_config_svc.GetConfigs(
         use_cache=True, cur_time=NOW + EXPIRES_IN - 1)
-    self.assertEquals(NOW, self.client_config_svc.load_time)
+    self.assertEqual(NOW, self.client_config_svc.load_time)
+
+
+class ClientConfigServiceFunctionsTest(unittest.TestCase):
+
+  def setUp(self):
+    self.client_email = '123456789@developer.gserviceaccount.com'
+
+  def testGetServiceAccountMap(self):
+    service_account_map = client_config_svc.GetServiceAccountMap()
+    self.assertIn(self.client_email, service_account_map)
+    self.assertEqual(
+        'johndoe@example.com',
+        service_account_map[self.client_email])
+    self.assertNotIn('bugdroid1@chromium.org', service_account_map)
+
+  def testGetQPMDict(self):
+    qpm_map = client_config_svc.GetQPMDict()
+    self.assertIn(self.client_email, qpm_map)
+    self.assertEqual(1, qpm_map[self.client_email])
+    self.assertNotIn('bugdroid1@chromium.org', qpm_map)

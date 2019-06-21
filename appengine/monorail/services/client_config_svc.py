@@ -53,6 +53,8 @@ class LoadApiClientConfigs(webapp2.RequestHandler):
       [ts_mon.BooleanField('success'), ts_mon.StringField('type')])
 
   def get(self):
+    global service_account_map
+    global qpm_dict
     authorization_token, _ = app_identity.get_access_token(
       framework_constants.OAUTH_SCOPE)
     response = urlfetch.fetch(
@@ -76,6 +78,8 @@ class LoadApiClientConfigs(webapp2.RequestHandler):
     configs = ClientConfig(configs=content_text,
                             key_name='api_client_configs')
     configs.put()
+    service_account_map = None
+    qpm_dict = None
     self.config_loads.increment({'success': True, 'type': 'success'})
 
   def _process_response(self, response):
@@ -188,7 +192,7 @@ class ClientConfigService(object):
     self.GetConfigs(use_cache=True)
     qpm_map = {}
     for client in self.client_configs.clients:
-      if client.display_name:
+      if client.HasField('qpm_limit'):
         qpm_map[client.client_email] = client.qpm_limit
     return qpm_map
 
