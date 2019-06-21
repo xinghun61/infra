@@ -19,12 +19,18 @@ import (
 
 // CreateNewDrone creates a new Drone datastore entity with a unique ID.
 func CreateNewDrone(ctx context.Context) (entities.DroneID, error) {
+	return createNewDrone(ctx, func() string { return uuid.New().String() })
+}
+
+// createNewDrone creates a new Drone datastore entity with a unique
+// ID.  An ID generator function must be provided.
+func createNewDrone(ctx context.Context, generator func() string) (entities.DroneID, error) {
 	const maxAttempts = 10
 	var id entities.DroneID
 	retry := errors.New("retry")
 	for i := 1; ; i++ {
 		f := func(ctx context.Context) error {
-			proposed := uuid.New().String()
+			proposed := generator()
 			key := datastore.MakeKey(ctx, entities.DroneKind, proposed)
 			res, err := datastore.Exists(ctx, key)
 			if err != nil {
