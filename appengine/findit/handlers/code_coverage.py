@@ -97,7 +97,8 @@ def _GetSameOrMostRecentReportForEachPlatform(host, project, ref, revision):
 
   The intent of this function is to help the UI list the platforms that are
   available, and let the user switch. If a report with the same revision exists
-  use it, otherwise use the most recent one.
+  and is supposed to be visible to the public users, use it, otherwise use the
+  most recent visible one.
   """
   result = {}
   platforms = _POSTSUBMIT_PLATFORM_INFO_MAP.keys()
@@ -108,6 +109,7 @@ def _GetSameOrMostRecentReportForEachPlatform(host, project, ref, revision):
     if (_POSTSUBMIT_PLATFORM_INFO_MAP[platform].get('hidden') and
         not users.is_current_user_admin()):
       continue
+
     bucket = _POSTSUBMIT_PLATFORM_INFO_MAP[platform]['bucket']
     builder = _POSTSUBMIT_PLATFORM_INFO_MAP[platform]['builder']
     same_report = PostsubmitReport.Get(
@@ -117,18 +119,21 @@ def _GetSameOrMostRecentReportForEachPlatform(host, project, ref, revision):
         revision=revision,
         bucket=bucket,
         builder=builder)
-    if same_report:
+    if same_report and same_report.visible:
       result[platform] = same_report
       continue
+
     query = PostsubmitReport.query(
         PostsubmitReport.gitiles_commit.server_host == host,
         PostsubmitReport.gitiles_commit.project == project,
-        PostsubmitReport.bucket == bucket, PostsubmitReport.builder ==
-        builder).order(-PostsubmitReport.commit_position).order(
-            -PostsubmitReport.commit_timestamp)
+        PostsubmitReport.bucket == bucket, PostsubmitReport.builder == builder,
+        PostsubmitReport.visible == True).order(
+            -PostsubmitReport.commit_position).order(
+                -PostsubmitReport.commit_timestamp)
     entities = query.fetch(limit=1)
     if entities:
       result[platform] = entities[0]
+
   return result
 
 
