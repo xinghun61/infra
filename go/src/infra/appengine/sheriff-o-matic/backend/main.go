@@ -16,11 +16,14 @@ import (
 	"infra/appengine/sheriff-o-matic/som/handler"
 	"infra/appengine/sheriff-o-matic/som/model"
 
+	"github.com/golang/protobuf/proto"
+
 	"golang.org/x/net/context"
 
 	"go.chromium.org/gae/service/info"
 	"go.chromium.org/luci/appengine/gaeauth/server"
 	"go.chromium.org/luci/appengine/gaemiddleware/standard"
+	bbpb "go.chromium.org/luci/buildbucket/proto"
 	"go.chromium.org/luci/common/logging"
 	"go.chromium.org/luci/server/auth"
 	"go.chromium.org/luci/server/router"
@@ -67,6 +70,35 @@ func getTrees(c context.Context) map[string]*model.BuildBucketTree {
 	ret := map[string]*model.BuildBucketTree{}
 	for _, tcfg := range cfg.Trees {
 		ret[tcfg.TreeName] = tcfg
+	}
+
+	// Now load CrOS' buildbucket config.
+	b, err = client.GetGitilesCached(c, "https://chrome-internal.googlesource.com/chromeos/infra/config/+/refs/heads/master/luci/cr-buildbucket.cfg?format=text")
+	if err != nil {
+		panic(err.Error())
+	}
+
+	bbcfg := &bbpb.BuildbucketCfg{}
+	err = proto.UnmarshalText(string(b), bbcfg)
+	if err != nil {
+		panic(err.Error())
+	}
+
+	// Append postsubmit builders to whatever is already in the json config.
+	// As of this writing, it's just an Annealing builder.
+	crosTree := ret["chromeos"]
+	for _, bucket := range bbcfg.Buckets {
+		if bucket.Name != "postsubmit" {
+			continue
+		}
+		tb := &model.TreeBuilder{
+			Project: "chromeos",
+			Bucket:  bucket.Name,
+		}
+		for _, builder := range bucket.Swarming.Builders {
+			tb.Builders = append(tb.Builders, builder.Name)
+		}
+		crosTree.TreeBuilders = append(crosTree.TreeBuilders, tb)
 	}
 	return ret
 }
