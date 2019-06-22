@@ -7,6 +7,7 @@ import {LitElement, html, css} from 'lit-element';
 
 import {connectStore} from 'elements/reducers/base.js';
 import * as issue from 'elements/reducers/issue.js';
+import 'elements/framework/mr-autocomplete/mr-autocomplete.js';
 import 'elements/chops/chops-button/chops-button.js';
 import 'elements/chops/chops-dialog/chops-dialog.js';
 import {SHARED_STYLES} from 'elements/shared/shared-styles.js';
@@ -49,7 +50,9 @@ export class MrMoveCopyIssue extends connectStore(LitElement) {
           <h3 class="medium-heading">${this._action} issue</h3>
           <div class="input-grid">
             <label for="targetProjectInput">Target project:</label>
-            <input id="targetProjectInput" />
+            <mr-autocomplete vocabularyName="project">
+              <input id="targetProjectInput" />
+            </mr-autocomplete>
           </div>
 
           ${this._targetProjectError ? html`

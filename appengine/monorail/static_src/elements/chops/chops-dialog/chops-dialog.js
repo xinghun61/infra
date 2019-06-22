@@ -4,8 +4,6 @@
 
 import {LitElement, html, css} from 'lit-element';
 
-const ESC_KEYCODE = 27;
-
 /**
  * `<chops-dialog>` displays a modal/dialog overlay.
  *
@@ -41,7 +39,6 @@ export class ChopsDialog extends LitElement {
       .dialog {
         background: none;
         border: 0;
-        overflow: auto;
         max-width: 90%;
       }
       .dialog-content {
@@ -95,13 +92,6 @@ export class ChopsDialog extends LitElement {
         type: Object,
       },
       /**
-       * Allow people to exit the dialog using keyboard shortcuts. Defaults
-       * to the escape key.
-       */
-      exitKeys: {
-        type: Array,
-      },
-      /**
        * When True, disables exiting keys and closing on outside clicks.
        * Forces the user to interact with the dialog rather than just dismissing
        * it.
@@ -123,7 +113,6 @@ export class ChopsDialog extends LitElement {
 
     this.opened = false;
     this.closeOnOutsideClick = false;
-    this.exitKeys = [ESC_KEYCODE];
     this.forced = false;
     this._boundKeydownHandler = this._keydownHandler.bind(this);
   }
@@ -161,11 +150,9 @@ export class ChopsDialog extends LitElement {
 
   _keydownHandler(event) {
     if (!this.opened) return;
-    const keyCode = event.keyCode;
-
-    // Handle closing hot keys.
-    if (this.exitKeys.includes(keyCode) && !this.forced) {
-      this.close();
+    if (event.key === 'Escape' && this.forced) {
+      // Stop users from using the Escape key in a forced dialog.
+      e.preventDefault();
     }
   }
 

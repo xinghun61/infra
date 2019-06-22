@@ -541,6 +541,7 @@ export const fetchReferencedUsers = (issue) => async (dispatch) => {
   }
 };
 
+// TODO(zhangtiff): Combine this user project code in user.js.
 export const fetchUsersProjects = (userRefs) => async (dispatch) => {
   if (!userRefs || !userRefs.length) return;
   dispatch({type: FETCH_USERS_PROJECTS_START});
