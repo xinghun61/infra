@@ -1,4 +1,8 @@
-[define title]Issue [local_id][end]
+[if-any local_id]
+  [define title]Issue [local_id][end]
+[else]
+  [define title]Monorail[end]
+[end]
 [include "../framework/polymer-header.ezt"]
 
 [include "../webpack-out/mr-app.ezt"]
@@ -13,11 +17,13 @@
 
 [include "../framework/polymer-footer.ezt"]
 
-<script type="text/javascript" nonce="[nonce]">
-  window.addEventListener('load', () => {
-    window.getTSMonClient().recordIssueDetailSpaTiming();
-  });
-</script>
+[if-any local_id]
+  <script type="text/javascript" nonce="[nonce]">
+    window.addEventListener('load', () => {
+      window.getTSMonClient().recordIssueDetailSpaTiming();
+    });
+  </script>
+[end]
 
 <script type="text/javascript" nonce="[nonce]">
   runOnLoad(function() {

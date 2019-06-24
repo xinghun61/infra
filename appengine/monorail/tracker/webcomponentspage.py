@@ -3,11 +3,10 @@
 # license that can be found in the LICENSE file or at
 # https://developers.google.com/open-source/licenses/bsd
 
-"""Classes that implement the web components issue detail page.
+"""Classes that implement a web components page.
 
 Summary of classes:
-  IssueDetail: Show one issue in detail w/ all metadata and comments, and
-               process additional comments or metadata changes on it.
+ WebComponentsPage: Show one web components page.
 """
 from __future__ import print_function
 from __future__ import division
@@ -21,13 +20,13 @@ from framework import framework_helpers
 from framework import urls
 
 
-class IssueDetail(servlet.Servlet):
+class WebComponentsPage(servlet.Servlet):
 
-  _PAGE_TEMPLATE = 'tracker/issue-approval-page.ezt'
+  _PAGE_TEMPLATE = 'tracker/web-components-page.ezt'
 
   def AssertBasePermission(self, mr):
     """Check that the user has permission to visit this page."""
-    super(IssueDetail, self).AssertBasePermission(mr)
+    super(WebComponentsPage, self).AssertBasePermission(mr)
 
   def GatherPageData(self, mr):
     """Build up a dictionary of data values to use when rendering the page.

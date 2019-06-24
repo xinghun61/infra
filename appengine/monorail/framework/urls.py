@@ -93,6 +93,7 @@ HOTLIST_RERANK_JSON = '/rerank'
 # URLs of issue tracker project pages
 ISSUE_APPROVAL = '/issues/approval'
 ISSUE_LIST = '/issues/list'
+ISSUE_NEW_GRID = '/issues/list_new'
 ISSUE_DETAIL = '/issues/detail'
 ISSUE_DETAIL_LEGACY = '/issues/detail_ezt'
 ISSUE_DETAIL_FLIPPER_NEXT = '/issues/detail/next'

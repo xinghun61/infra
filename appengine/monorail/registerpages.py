@@ -82,7 +82,7 @@ from tracker import issueadvsearch
 from tracker import issueattachment
 from tracker import issueattachmenttext
 from tracker import issuebulkedit
-from tracker import issuedetail
+from tracker import webcomponentspage
 from tracker import issuedetailezt
 from tracker import issueentry
 from tracker import issueentryafterlogin
@@ -224,8 +224,9 @@ class ServletRegistry(object):
         })
 
     self._SetupProjectServlets({
-        urls.ISSUE_APPROVAL: issuedetail.IssueDetailRedirect,
+        urls.ISSUE_APPROVAL: webcomponentspage.IssueDetailRedirect,
         urls.ISSUE_LIST: issuelist.IssueList,
+        urls.ISSUE_NEW_GRID: webcomponentspage.WebComponentsPage,
         urls.ISSUE_LIST_CSV: issuelistcsv.IssueListCsv,
         urls.ISSUE_REINDEX: issuereindex.IssueReindex,
         urls.ISSUE_DETAIL_FLIPPER_NEXT: issuedetailezt.FlipperNext,
@@ -265,7 +266,7 @@ class ServletRegistry(object):
     # are handled by the EZT servlet.
     base = '/p/<project_name:%s>' % self._PROJECT_NAME_REGEX
     self._AddRoute(base + urls.ISSUE_DETAIL,
-                   issuedetail.IssueDetail, 'GET')
+                   webcomponentspage.WebComponentsPage, 'GET')
     self._AddRoute(base + urls.ISSUE_DETAIL + '.do',
                    issuedetailezt.IssueDetailEzt, 'POST')
     self._AddRoute(base + urls.ISSUE_DETAIL_LEGACY,

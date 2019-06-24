@@ -138,6 +138,7 @@ export class MrApp extends connectStore(LitElement) {
 
       next();
     });
+    page('/p/:project/issues/list_new', this._loadGridPage.bind(this));
     page('/p/:project/issues/detail', this._loadIssuePage.bind(this));
     page();
   }
@@ -179,6 +180,17 @@ export class MrApp extends connectStore(LitElement) {
       'issueEntryUrl': this.issueEntryUrl,
       'queryParams': ctx.params,
       'loginUrl': this.loginUrl,
+    });
+  }
+
+  async _loadGridPage(ctx, next) {
+    store.dispatch(issue.setIssueRef(
+      Number.parseInt(ctx.query.id), ctx.params.project));
+
+    this.projectName = ctx.params.project;
+
+    await import(/* webpackChunkName: "mr-grid-page" */'../issue-list/mr-grid-page/mr-grid-page.js');
+    this.loadWebComponent('mr-grid-page', {
     });
   }
 
