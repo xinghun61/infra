@@ -70,7 +70,7 @@ func TestMergeApprovalRules(t *testing.T) {
 			}
 			rc.CommitMessage = "This change has a valid bug ID with merge approval label in comment history \nBUG:123456"
 			// Run rule
-			rr := OnlyMergeApprovedChange(ctx, ap, rc, testClients)
+			rr := OnlyMergeApprovedChange{}.Run(ctx, ap, rc, testClients)
 			// Check result code
 			So(rr.RuleResultStatus, ShouldEqual, rulePassed)
 		})
@@ -97,7 +97,7 @@ func TestMergeApprovalRules(t *testing.T) {
 			}
 			rc.CommitMessage = "This change has a valid bug ID with merge approval label in comment history \nBug: chromium:123456"
 			// Run rule
-			rr := OnlyMergeApprovedChange(ctx, ap, rc, testClients)
+			rr := OnlyMergeApprovedChange{}.Run(ctx, ap, rc, testClients)
 			// Check result code
 			So(rr.RuleResultStatus, ShouldEqual, rulePassed)
 		})
@@ -124,7 +124,7 @@ func TestMergeApprovalRules(t *testing.T) {
 			}
 			rc.CommitMessage = "This change to commit has multiple bugs including an invalid one \nBUG:123456, 654321"
 			// Run rule
-			rr := OnlyMergeApprovedChange(ctx, ap, rc, testClients)
+			rr := OnlyMergeApprovedChange{}.Run(ctx, ap, rc, testClients)
 			// Check result code
 			So(rr.RuleResultStatus, ShouldEqual, rulePassed)
 		})
@@ -148,7 +148,7 @@ func TestMergeApprovalRules(t *testing.T) {
 			}
 			rc.CommitMessage = "Change to commit has an invalid bug and a valid one with no merge approval label \nBug: 265485, 123456"
 			// Run rule
-			rr := OnlyMergeApprovedChange(ctx, ap, rc, testClients)
+			rr := OnlyMergeApprovedChange{}.Run(ctx, ap, rc, testClients)
 			// Check result code
 			So(rr.RuleResultStatus, ShouldEqual, ruleFailed)
 		})
@@ -164,7 +164,7 @@ func TestMergeApprovalRules(t *testing.T) {
 			}
 			rc.CommitMessage = "All bugs listed on this change to commit are all invalid \nBug: 654321, 587469"
 			// Run rule
-			rr := OnlyMergeApprovedChange(ctx, ap, rc, testClients)
+			rr := OnlyMergeApprovedChange{}.Run(ctx, ap, rc, testClients)
 			// Check result code
 			So(rr.RuleResultStatus, ShouldEqual, ruleFailed)
 		})
@@ -172,7 +172,7 @@ func TestMergeApprovalRules(t *testing.T) {
 			rc.CommitMessage = "This change's author is a Chrome TPM"
 			rc.AuthorAccount = "cmasso@chromium.org"
 			// Run rule
-			rr := OnlyMergeApprovedChange(ctx, ap, rc, testClients)
+			rr := OnlyMergeApprovedChange{}.Run(ctx, ap, rc, testClients)
 			// Check result code
 			So(rr.RuleResultStatus, ShouldEqual, rulePassed)
 
@@ -181,7 +181,7 @@ func TestMergeApprovalRules(t *testing.T) {
 			rc.CommitMessage = "This change's committer is a Chrome TPM"
 			rc.CommitterAccount = "cmasso@chromium.org"
 			// Run rule
-			rr := OnlyMergeApprovedChange(ctx, ap, rc, testClients)
+			rr := OnlyMergeApprovedChange{}.Run(ctx, ap, rc, testClients)
 			// Check result code
 			So(rr.RuleResultStatus, ShouldEqual, rulePassed)
 
@@ -190,7 +190,7 @@ func TestMergeApprovalRules(t *testing.T) {
 			rc.CommitMessage = "This change's author is Chrome release bot"
 			rc.AuthorAccount = "chrome-release-bot@chromium.org"
 			// Run rule
-			rr := OnlyMergeApprovedChange(ctx, ap, rc, testClients)
+			rr := OnlyMergeApprovedChange{}.Run(ctx, ap, rc, testClients)
 			// Check result code
 			So(rr.RuleResultStatus, ShouldEqual, rulePassed)
 
@@ -199,7 +199,7 @@ func TestMergeApprovalRules(t *testing.T) {
 			rc.CommitMessage = "This change does not have a bug ID field"
 			rc.CommitHash = "a1b2c3d4e5f6"
 			// Run rule
-			rr := OnlyMergeApprovedChange(ctx, ap, rc, testClients)
+			rr := OnlyMergeApprovedChange{}.Run(ctx, ap, rc, testClients)
 			// Check result code
 			So(rr.RuleResultStatus, ShouldEqual, ruleFailed)
 			//Check result message
@@ -210,7 +210,7 @@ func TestMergeApprovalRules(t *testing.T) {
 			rc.CommitMessage = "This change has an invalid bug ID \nBug=none"
 			rc.CommitHash = "a1b2c3d4e5f6"
 			// Run rule
-			rr := OnlyMergeApprovedChange(ctx, ap, rc, testClients)
+			rr := OnlyMergeApprovedChange{}.Run(ctx, ap, rc, testClients)
 			// Check result code
 			So(rr.RuleResultStatus, ShouldEqual, ruleFailed)
 			//Check result message

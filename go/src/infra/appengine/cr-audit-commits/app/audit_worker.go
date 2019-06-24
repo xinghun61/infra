@@ -167,14 +167,15 @@ func runRules(ctx context.Context, rc *RelevantCommit, ap AuditParams, wp *worke
 		ars := rs.(AccountRules)
 		if rs.MatchesRelevantCommit(rc) {
 			ap.TriggeringAccount = ars.Account
-			for _, f := range ars.Funcs {
+			for _, r := range ars.Rules {
 				select {
 				case <-ctx.Done():
 					rc.Retries++
 					wp.audited <- rc
 					return
 				default:
-					currentRuleResult := *f(ctx, &ap, rc, wp.clients)
+					currentRuleResult := *r.Run(ctx, &ap, rc, wp.clients)
+					currentRuleResult.RuleName = r.GetName()
 					rc.Result = append(rc.Result, currentRuleResult)
 					if (currentRuleResult.RuleResultStatus == ruleFailed) || (currentRuleResult.RuleResultStatus == notificationRequired) {
 						rc.Status = auditCompletedWithActionRequired

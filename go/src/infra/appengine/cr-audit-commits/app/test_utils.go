@@ -102,3 +102,19 @@ func (c mockMonorailClient) GetIssue(ctx context.Context, in *mr.GetIssueRequest
 func (c mockMonorailClient) ListComments(ctx context.Context, in *mr.ListCommentsRequest, opts ...grpc.CallOption) (*mr.ListCommentsResponse, error) {
 	return c.cl, c.e
 }
+
+// DummyRule is a rule that always returns the value of the result field when run.
+type DummyRule struct {
+	name   string
+	result *RuleResult
+}
+
+// GetName returns the name of the rule.
+func (rule DummyRule) GetName() string {
+	return rule.name
+}
+
+// Run returns the result struct field.
+func (rule DummyRule) Run(c context.Context, ap *AuditParams, rc *RelevantCommit, cs *Clients) *RuleResult {
+	return rule.result
+}

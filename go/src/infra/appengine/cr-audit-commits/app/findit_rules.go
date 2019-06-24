@@ -100,12 +100,19 @@ func countAuthoredBy(ctx context.Context, rc *RelevantCommit, cutoff time.Time, 
 	return countRelevantCommits(ctx, rc, cutoff, account, Author)
 }
 
-// AutoCommitsPerDay is a RuleFunc that verifies that at most
+// AutoCommitsPerDay is a Rule that verifies that at most
 // MaxAutoCommitsPerDay commits in the 24 hours preceding the triggering commit
 // were committed by the triggering account.
-func AutoCommitsPerDay(ctx context.Context, ap *AuditParams, rc *RelevantCommit, cs *Clients) *RuleResult {
+type AutoCommitsPerDay struct{}
+
+// GetName returns the name of the rule
+func (rule AutoCommitsPerDay) GetName() string {
+	return "AutoCommitsPerDay"
+}
+
+// Run executes the rule.
+func (rule AutoCommitsPerDay) Run(ctx context.Context, ap *AuditParams, rc *RelevantCommit, cs *Clients) *RuleResult {
 	result := &RuleResult{}
-	result.RuleName = "AutoCommitsPerDay"
 	cutoff := rc.CommitTime.Add(time.Duration(-24) * time.Hour)
 	autoCommits := countCommittedBy(ctx, rc, cutoff, ap.TriggeringAccount)
 	if autoCommits > MaxAutoCommitsPerDay {
@@ -119,12 +126,19 @@ func AutoCommitsPerDay(ctx context.Context, ap *AuditParams, rc *RelevantCommit,
 	return result
 }
 
-// AutoRevertsPerDay is a RuleFunc that verifies that at most
+// AutoRevertsPerDay is a Rule that verifies that at most
 // MaxAutoRevertsPerDay commits in the 24 hours preceding the triggering commit
 // were authored by the triggering account.
-func AutoRevertsPerDay(ctx context.Context, ap *AuditParams, rc *RelevantCommit, cs *Clients) *RuleResult {
+type AutoRevertsPerDay struct{}
+
+// GetName returns the name of the rule
+func (rule AutoRevertsPerDay) GetName() string {
+	return "AutoRevertsPerDay"
+}
+
+// Run executes the rule.
+func (rule AutoRevertsPerDay) Run(ctx context.Context, ap *AuditParams, rc *RelevantCommit, cs *Clients) *RuleResult {
 	result := &RuleResult{}
-	result.RuleName = "AutoRevertsPerDay"
 	cutoff := rc.CommitTime.Add(time.Duration(-24) * time.Hour)
 	autoReverts := countAuthoredBy(ctx, rc, cutoff, ap.TriggeringAccount)
 	if autoReverts > MaxAutoRevertsPerDay {
@@ -138,11 +152,18 @@ func AutoRevertsPerDay(ctx context.Context, ap *AuditParams, rc *RelevantCommit,
 	return result
 }
 
-// CulpritAge is a RuleFunc that verifies that the culprit being reverted is
+// CulpritAge is a Rule that verifies that the culprit being reverted is
 // less than 24 hours older than the revert.
-func CulpritAge(ctx context.Context, ap *AuditParams, rc *RelevantCommit, cs *Clients) *RuleResult {
+type CulpritAge struct{}
+
+// GetName returns the name of the rule
+func (rule CulpritAge) GetName() string {
+	return "CulpritAge"
+}
+
+// Run executes the rule.
+func (rule CulpritAge) Run(ctx context.Context, ap *AuditParams, rc *RelevantCommit, cs *Clients) *RuleResult {
 	result := &RuleResult{}
-	result.RuleName = "CulpritAge"
 
 	_, culprit := getRevertAndCulpritChanges(ctx, ap, rc, cs)
 	if culprit == nil {
@@ -185,11 +206,18 @@ func CulpritAge(ctx context.Context, ap *AuditParams, rc *RelevantCommit, cs *Cl
 	return result
 }
 
-// CulpritInBuild is a RuleFunc that verifies that the culprit is included in
+// CulpritInBuild is a Rule that verifies that the culprit is included in
 // the list of changes of the failed build.
-func CulpritInBuild(ctx context.Context, ap *AuditParams, rc *RelevantCommit, cs *Clients) *RuleResult {
+type CulpritInBuild struct{}
+
+// GetName returns the name of the rule
+func (rule CulpritInBuild) GetName() string {
+	return "CulpritInBuild"
+}
+
+// Run executes the rule.
+func (rule CulpritInBuild) Run(ctx context.Context, ap *AuditParams, rc *RelevantCommit, cs *Clients) *RuleResult {
 	result := &RuleResult{}
-	result.RuleName = "CulpritInBuild"
 
 	if isFlakeRevert(rc.CommitMessage) {
 		// Bypass this rule for reverts of culprits of flake failures.
@@ -267,11 +295,18 @@ func getRevertAndCulpritChanges(ctx context.Context, ap *AuditParams, rc *Releva
 	return revert, culprit
 }
 
-// FailedBuildIsAppropriateFailure is a RuleFunc that verifies that the referred
+// FailedBuildIsAppropriateFailure is a Rule that verifies that the referred
 // build contains a failed step appropriately named.
-func FailedBuildIsAppropriateFailure(ctx context.Context, ap *AuditParams, rc *RelevantCommit, cs *Clients) *RuleResult {
+type FailedBuildIsAppropriateFailure struct{}
+
+// GetName returns the name of the rule
+func (rule FailedBuildIsAppropriateFailure) GetName() string {
+	return "FailedBuildIsAppropriateFailure"
+}
+
+// Run executes the rule.
+func (rule FailedBuildIsAppropriateFailure) Run(ctx context.Context, ap *AuditParams, rc *RelevantCommit, cs *Clients) *RuleResult {
 	result := &RuleResult{}
-	result.RuleName = "FailedBuildIsAppropriateFailure"
 	failableStepName := getFailedSteps(rc.CommitMessage)
 
 	buildURL, failedBuildInfo := getFailedBuild(ctx, cs.milo, rc)
@@ -300,11 +335,18 @@ func FailedBuildIsAppropriateFailure(ctx context.Context, ap *AuditParams, rc *R
 	return result
 }
 
-// RevertOfCulprit is a RuleFunc that verifies that the reverting commit is a
+// RevertOfCulprit is a Rule that verifies that the reverting commit is a
 // revert of the named culprit.
-func RevertOfCulprit(ctx context.Context, ap *AuditParams, rc *RelevantCommit, cs *Clients) *RuleResult {
+type RevertOfCulprit struct{}
+
+// GetName returns the name of the rule
+func (rule RevertOfCulprit) GetName() string {
+	return "RevertOfCulprit"
+}
+
+// Run executes the rule.
+func (rule RevertOfCulprit) Run(ctx context.Context, ap *AuditParams, rc *RelevantCommit, cs *Clients) *RuleResult {
 	result := &RuleResult{}
-	result.RuleName = "RevertOfCulprit"
 	result.RuleResultStatus = ruleFailed
 
 	revert, culprit := getRevertAndCulpritChanges(ctx, ap, rc, cs)
@@ -334,11 +376,18 @@ func RevertOfCulprit(ctx context.Context, ap *AuditParams, rc *RelevantCommit, c
 	return result
 }
 
-// OnlyCommitsOwnChange is a RuleFunc that verifies that commits landed by the
+// OnlyCommitsOwnChange is a Rule that verifies that commits landed by the
 // service account were also authored by that service account.
-func OnlyCommitsOwnChange(ctx context.Context, ap *AuditParams, rc *RelevantCommit, cs *Clients) *RuleResult {
+type OnlyCommitsOwnChange struct{}
+
+// GetName returns the name of the rule
+func (rule OnlyCommitsOwnChange) GetName() string {
+	return "OnlyCommitsOwnChange"
+}
+
+// Run executes the rule.
+func (rule OnlyCommitsOwnChange) Run(ctx context.Context, ap *AuditParams, rc *RelevantCommit, cs *Clients) *RuleResult {
 	result := &RuleResult{}
-	result.RuleName = "OnlyCommitsOwnChange"
 	result.RuleResultStatus = ruleFailed
 	if rc.CommitterAccount == ap.TriggeringAccount {
 		if rc.CommitterAccount != rc.AuthorAccount {

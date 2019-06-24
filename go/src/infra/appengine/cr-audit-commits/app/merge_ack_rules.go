@@ -9,10 +9,17 @@ import (
 	"golang.org/x/net/context"
 )
 
-// AcknowledgeMerge is a RuleFunc that acknowledges any merge into a release branch.
-func AcknowledgeMerge(ctx context.Context, ap *AuditParams, rc *RelevantCommit, cs *Clients) *RuleResult {
+// AcknowledgeMerge is a Rule that acknowledges any merge into a release branch.
+type AcknowledgeMerge struct{}
+
+// GetName returns the name of the rule.
+func (rule AcknowledgeMerge) GetName() string {
+	return "AcknowledgeMerge"
+}
+
+// Run executes the rule.
+func (rule AcknowledgeMerge) Run(ctx context.Context, ap *AuditParams, rc *RelevantCommit, cs *Clients) *RuleResult {
 	result := &RuleResult{}
-	result.RuleName = "AcknowledgeMerge"
 	result.RuleResultStatus = ruleSkipped
 	bugID, err := bugIDFromCommitMessage(rc.CommitMessage)
 	if err != nil {

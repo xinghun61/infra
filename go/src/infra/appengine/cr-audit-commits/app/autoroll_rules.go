@@ -7,8 +7,6 @@ package crauditcommits
 import (
 	"fmt"
 	"strings"
-
-	"golang.org/x/net/context"
 )
 
 const (
@@ -42,10 +40,11 @@ func SkiaAsset(asset string) string {
 func AutoRollRulesForFilesAndDirs(account string, files, dirs []string) AccountRules {
 	return AccountRules{
 		Account: account,
-		Funcs: []RuleFunc{
-			func(ctx context.Context, ap *AuditParams, rc *RelevantCommit, cs *Clients) *RuleResult {
-				ruleName := fmt.Sprintf("OnlyModifies_%s", strings.Join(append(files, dirs...), "+"))
-				return OnlyModifiesFilesAndDirsRule(ctx, ap, rc, cs, ruleName, files, dirs)
+		Rules: []Rule{
+			OnlyModifiesFilesAndDirsRule{
+				name:  fmt.Sprintf("OnlyModifies_%s", strings.Join(append(files, dirs...), "+")),
+				files: files,
+				dirs:  dirs,
 			},
 		},
 		notificationFunction: fileBugForAutoRollViolation,

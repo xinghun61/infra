@@ -20,69 +20,36 @@ const (
 	typeFile = "file"
 )
 
-// OnlyModifiesReleaseFiles is a RuleFunc that verifies that only
-// release-related files are modified by the audited CL.
-func OnlyModifiesReleaseFiles(ctx context.Context, ap *AuditParams, rc *RelevantCommit, cs *Clients) *RuleResult {
-	files := []string{
-		"chrome/MAJOR_BRANCH_DATE",
-		"chrome/VERSION",
-	}
-	return OnlyModifiesFilesRule(ctx, ap, rc, cs, "OnlyModifiesReleaseFiles", files)
-}
-
-// OnlyModifiesFileRule is a shared implementation for RuleFuncs which verify
-// that only one file is modified by the audited CL.
-func OnlyModifiesFileRule(ctx context.Context, ap *AuditParams, rc *RelevantCommit, cs *Clients, ruleName, file string) *RuleResult {
-	return OnlyModifiesPathsRule(ctx, ap, rc, cs, ruleName, []*Path{
-		{
-			Name: file,
-			Type: typeFile,
-		},
-	})
-}
-
-// OnlyModifiesFilesRule is a shared implementation for RuleFuncs which verify
-// that only the given files are modified by the audited CL.
-func OnlyModifiesFilesRule(ctx context.Context, ap *AuditParams, rc *RelevantCommit, cs *Clients, ruleName string, files []string) *RuleResult {
-	paths := make([]*Path, 0, len(files))
-	for _, f := range files {
-		paths = append(paths, &Path{
-			Name: f,
-			Type: typeFile,
-		})
-	}
-	return OnlyModifiesPathsRule(ctx, ap, rc, cs, ruleName, paths)
-}
-
-// OnlyModifiesDirRule is a shared implementation for RuleFuncs which verify
-// that only files within the given directory are modified by the audited CL.
-func OnlyModifiesDirRule(ctx context.Context, ap *AuditParams, rc *RelevantCommit, cs *Clients, ruleName, dir string) *RuleResult {
-	return OnlyModifiesPathsRule(ctx, ap, rc, cs, ruleName, []*Path{
-		{
-			Name: dir,
-			Type: typeDir,
-		},
-	})
-}
-
-// OnlyModifiesFilesAndDirsRule is a shared implementation for RuleFuncs which
+// OnlyModifiesFilesAndDirsRule is a shared implementation for Rules which
 // verify that only the given files and directories are modified by the audited
 // CL.
-func OnlyModifiesFilesAndDirsRule(ctx context.Context, ap *AuditParams, rc *RelevantCommit, cs *Clients, ruleName string, files, dirs []string) *RuleResult {
-	paths := make([]*Path, 0, len(files)+len(dirs))
-	for _, f := range files {
+type OnlyModifiesFilesAndDirsRule struct {
+	name  string
+	files []string
+	dirs  []string
+}
+
+// GetName returns the name of the rule, from the struct field 'name'.
+func (rule OnlyModifiesFilesAndDirsRule) GetName() string {
+	return rule.name
+}
+
+// Run executes the rule as configured by the struct fields 'files' and 'dirs'.
+func (rule OnlyModifiesFilesAndDirsRule) Run(ctx context.Context, ap *AuditParams, rc *RelevantCommit, cs *Clients) *RuleResult {
+	paths := make([]*Path, 0, len(rule.files)+len(rule.dirs))
+	for _, f := range rule.files {
 		paths = append(paths, &Path{
 			Name: f,
 			Type: typeFile,
 		})
 	}
-	for _, d := range dirs {
+	for _, d := range rule.dirs {
 		paths = append(paths, &Path{
 			Name: d,
 			Type: typeDir,
 		})
 	}
-	return OnlyModifiesPathsRule(ctx, ap, rc, cs, ruleName, paths)
+	return OnlyModifiesPathsRuleImpl(ctx, ap, rc, cs, paths)
 }
 
 // Path is a struct describing a file or directory within the git repo.
@@ -91,9 +58,9 @@ type Path struct {
 	Type string
 }
 
-// OnlyModifiesPathsRule is a shared implementation for RuleFuncs which verify
+// OnlyModifiesPathsRuleImpl is a shared implementation for Rules which verify
 // that only the given path(s) are modified by the audited CL.
-func OnlyModifiesPathsRule(ctx context.Context, ap *AuditParams, rc *RelevantCommit, cs *Clients, ruleName string, paths []*Path) *RuleResult {
+func OnlyModifiesPathsRuleImpl(ctx context.Context, ap *AuditParams, rc *RelevantCommit, cs *Clients, paths []*Path) *RuleResult {
 	// Find the diff.
 	host, project, err := gitiles.ParseRepoURL(ap.RepoCfg.BaseRepoURL)
 	if err != nil {
@@ -156,7 +123,6 @@ func OnlyModifiesPathsRule(ctx context.Context, ap *AuditParams, rc *RelevantCom
 
 	// Report results.
 	result := &RuleResult{
-		RuleName:         ruleName,
 		RuleResultStatus: ruleFailed,
 	}
 	if ok {

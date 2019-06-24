@@ -47,9 +47,12 @@ func TestNotifier(t *testing.T) {
 				NotifierEmail:   "notifier@cr-audit-commits-test.appspotmail.com",
 				Rules: map[string]RuleSet{"rules": AccountRules{
 					Account: "author@test.com",
-					Funcs: []RuleFunc{func(c context.Context, ap *AuditParams, rc *RelevantCommit, cs *Clients) *RuleResult {
-						return &RuleResult{"Dummy rule", rulePassed, "", "label:Random-Label"}
-					}},
+					Rules: []Rule{
+						DummyRule{
+							name:   "Dummy rule",
+							result: &RuleResult{"Dummy rule", rulePassed, "", "label:Random-Label"},
+						},
+					},
 					notificationFunction: fileBugForFinditViolation,
 				}},
 			}
@@ -182,9 +185,12 @@ func TestNotifier(t *testing.T) {
 				NotifierEmail:   "notifier@cr-audit-commits-test.appspotmail.com",
 				Rules: map[string]RuleSet{"rulesAck": AccountRules{
 					Account: "author@test.com",
-					Funcs: []RuleFunc{func(c context.Context, ap *AuditParams, rc *RelevantCommit, cs *Clients) *RuleResult {
-						return &RuleResult{"Dummy rule", notificationRequired, "", "BugNumbers:8675389"}
-					}},
+					Rules: []Rule{
+						DummyRule{
+							name:   "Dummy rule",
+							result: &RuleResult{"Dummy rule", notificationRequired, "", "BugNumbers:8675389"},
+						},
+					},
 					notificationFunction: commentOnBugToAcknowledgeMerge,
 				}},
 				Metadata: "MilestoneNumber:70",
@@ -233,9 +239,12 @@ func TestNotifier(t *testing.T) {
 				NotifierEmail:   "notifier@cr-audit-commits-test.appspotmail.com",
 				Rules: map[string]RuleSet{"rulesEmail": AccountRules{
 					Account: "author@test.com",
-					Funcs: []RuleFunc{func(c context.Context, ap *AuditParams, rc *RelevantCommit, cs *Clients) *RuleResult {
-						return &RuleResult{"Dummy rule", rulePassed, "", ""}
-					}},
+					Rules: []Rule{
+						DummyRule{
+							name:   "Dummy rule",
+							result: &RuleResult{"Dummy rule", rulePassed, "", ""},
+						},
+					},
 					notificationFunction: sendEmailForFinditViolation,
 				}},
 			}

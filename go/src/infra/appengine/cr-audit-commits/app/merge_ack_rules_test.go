@@ -55,7 +55,7 @@ func TestMergeAckRules(t *testing.T) {
 			}
 			rc.CommitMessage = "This change has a valid bug ID \nBUG:123456"
 			// Run rule
-			rr := AcknowledgeMerge(ctx, ap, rc, testClients)
+			rr := AcknowledgeMerge{}.Run(ctx, ap, rc, testClients)
 			So(rr.RuleResultStatus, ShouldEqual, notificationRequired)
 		})
 		Convey("Change to commit has no bug", func() {
@@ -66,7 +66,7 @@ func TestMergeAckRules(t *testing.T) {
 			}
 			rc.CommitMessage = "This change has no bug attached"
 			// Run rule
-			rr := AcknowledgeMerge(ctx, ap, rc, testClients)
+			rr := AcknowledgeMerge{}.Run(ctx, ap, rc, testClients)
 			So(rr.RuleResultStatus, ShouldEqual, ruleSkipped)
 		})
 	})

@@ -111,21 +111,27 @@ var RuleMap = map[string]*RepoConfig{
 			"autoroll-rules-wpt":               AutoRollRulesLayoutTests("wpt-autoroller@chops-service-accounts.iam.gserviceaccount.com"),
 			"findit-rules": AccountRules{
 				Account: "findit-for-me@appspot.gserviceaccount.com",
-				Funcs: []RuleFunc{
-					AutoCommitsPerDay,
-					AutoRevertsPerDay,
-					CulpritAge,
-					CulpritInBuild,
-					FailedBuildIsAppropriateFailure,
-					RevertOfCulprit,
-					OnlyCommitsOwnChange,
+				Rules: []Rule{
+					AutoCommitsPerDay{},
+					AutoRevertsPerDay{},
+					CulpritAge{},
+					CulpritInBuild{},
+					FailedBuildIsAppropriateFailure{},
+					RevertOfCulprit{},
+					OnlyCommitsOwnChange{},
 				},
 				notificationFunction: fileBugForFinditViolation,
 			},
 			"release-bot-rules": AccountRules{
 				Account: "chrome-release-bot@chromium.org",
-				Funcs: []RuleFunc{
-					OnlyModifiesReleaseFiles,
+				Rules: []Rule{
+					OnlyModifiesFilesAndDirsRule{
+						name: "OnlyModifiesReleaseFiles",
+						files: []string{
+							"chrome/MAJOR_BRANCH_DATE",
+							"chrome/VERSION",
+						},
+					},
 				},
 				notificationFunction: fileBugForReleaseBotViolation,
 			},
@@ -140,15 +146,15 @@ var RuleMap = map[string]*RepoConfig{
 		Rules: map[string]RuleSet{
 			"merge-approval-rules": AccountRules{
 				Account: "*",
-				Funcs: []RuleFunc{
-					OnlyMergeApprovedChange,
+				Rules: []Rule{
+					OnlyMergeApprovedChange{},
 				},
 				notificationFunction: fileBugForMergeApprovalViolation,
 			},
 			"merge-ack-rules": AccountRules{
 				Account: "*",
-				Funcs: []RuleFunc{
-					AcknowledgeMerge,
+				Rules: []Rule{
+					AcknowledgeMerge{},
 				},
 				notificationFunction: commentOnBugToAcknowledgeMerge,
 			},
@@ -213,7 +219,7 @@ type RuleSet interface {
 // account as either its author or its committer.
 type AccountRules struct {
 	Account              string
-	Funcs                []RuleFunc
+	Rules                []Rule
 	notificationFunction NotificationFunc
 }
 
@@ -243,17 +249,27 @@ type AuditParams struct {
 	RepoState         *RepoState
 }
 
-// RuleFunc is the function type for audit rules.
+// Rule is an audit rule.
 //
-// They are expected to accept a context, an AuditParams, a Clients struct with
-// connections to external services configured and ready, and the datastore
-// entity to be audited.
-//
-// Rules are expected to panic if they cannot determine whether a policy has
-// been broken or not.
-//
-// Rules should return a reference to a RuleResult
-type RuleFunc func(context.Context, *AuditParams, *RelevantCommit, *Clients) *RuleResult
+// It has a name getter and a rule implementation.
+type Rule interface {
+	// GetName returns the name of the rule as a string. It is expected to be unique in
+	// each repository it applies to.
+	GetName() string
+	// Run performs a check according to the Rule.
+	//
+	// This could be called multiple times on the same commit if the rule fails,
+	// and needs to be retried or if the rule ran previously and resulted in a
+	// non-final state. Rules should self-limit the frequency with which they poll
+	// external systems for a given commit.
+	//
+	// Rules are expected to panic if they cannot determine whether a policy has
+	// been broken or not. Note, this is expected to change soon as per bug below
+	// TODO(crbug.com/978167): Stop using panics for this.
+	//
+	// Run methods should return a reference to a RuleResult
+	Run(context.Context, *AuditParams, *RelevantCommit, *Clients) *RuleResult
+}
 
 // ReleaseConfig is the skeleton of a function to get the ref and milestone
 // dynamically.

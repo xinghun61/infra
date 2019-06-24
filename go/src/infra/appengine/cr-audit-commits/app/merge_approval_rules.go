@@ -37,10 +37,17 @@ var chromeTPMs = []string{"cmasso@chromium.org", "cmasso@google.com",
 	"djmm@chromium.org", "djmm@google.com",
 	"dgagnon@chromium.org", "dgagnon@google.com"}
 
-// OnlyMergeApprovedChange is a RuleFunc that verifies that only approved changes are merged into a release branch.
-func OnlyMergeApprovedChange(ctx context.Context, ap *AuditParams, rc *RelevantCommit, cs *Clients) *RuleResult {
+// OnlyMergeApprovedChange is a Rule that verifies that only approved changes are merged into a release branch.
+type OnlyMergeApprovedChange struct{}
+
+// GetName returns the name of the rule.
+func (rule OnlyMergeApprovedChange) GetName() string {
+	return "OnlyMergeApprovedChange"
+}
+
+// Run executes the rule.
+func (rule OnlyMergeApprovedChange) Run(ctx context.Context, ap *AuditParams, rc *RelevantCommit, cs *Clients) *RuleResult {
 	result := &RuleResult{}
-	result.RuleName = "OnlyMergeApprovedChange"
 	result.RuleResultStatus = ruleFailed
 
 	// Exclude Chrome release bot changes

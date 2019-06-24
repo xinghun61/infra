@@ -60,9 +60,12 @@ func TestStatusPage(t *testing.T) {
 				StartingCommit: "000000",
 				Rules: map[string]RuleSet{"rules": AccountRules{
 					Account: "new@test.com",
-					Funcs: []RuleFunc{func(c context.Context, ap *AuditParams, rc *RelevantCommit, cs *Clients) *RuleResult {
-						return &RuleResult{"Dummy rule", rulePassed, "", ""}
-					}},
+					Rules: []Rule{
+						DummyRule{
+							name:   "DummyRule",
+							result: &RuleResult{"Dummy rule", rulePassed, "", ""},
+						},
+					},
 				}},
 			}
 			Convey("No interesting revisions", func() {

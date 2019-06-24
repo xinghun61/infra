@@ -74,7 +74,10 @@ func TestOnlyModifiesPaths(t *testing.T) {
 				},
 			}, nil)
 			// Run rule
-			rr := OnlyModifiesFileRule(ctx, ap, rc, testClients, "ruleName", "somefile")
+			rr := OnlyModifiesFilesAndDirsRule{
+				name:  "ruleName",
+				files: []string{"somefile"},
+			}.Run(ctx, ap, rc, testClients)
 			// Check result code
 			So(rr.RuleResultStatus, ShouldEqual, rulePassed)
 			So(rr.Message, ShouldEqual, "")
@@ -106,7 +109,10 @@ func TestOnlyModifiesPaths(t *testing.T) {
 				},
 			}, nil)
 			// Run rule
-			rr := OnlyModifiesDirRule(ctx, ap, rc, testClients, "ruleName", "somedir")
+			rr := OnlyModifiesFilesAndDirsRule{
+				name: "ruleName",
+				dirs: []string{"somedir"},
+			}.Run(ctx, ap, rc, testClients)
 			// Check result code
 			So(rr.RuleResultStatus, ShouldEqual, rulePassed)
 			So(rr.Message, ShouldEqual, "")
@@ -143,16 +149,11 @@ func TestOnlyModifiesPaths(t *testing.T) {
 				},
 			}, nil)
 			// Run rule
-			rr := OnlyModifiesPathsRule(ctx, ap, rc, testClients, "ruleName", []*Path{
-				{
-					Name: "a.txt",
-					Type: typeFile,
-				},
-				{
-					Name: "mydir",
-					Type: typeDir,
-				},
-			})
+			rr := OnlyModifiesFilesAndDirsRule{
+				name:  "ruleName",
+				dirs:  []string{"mydir"},
+				files: []string{"a.txt"},
+			}.Run(ctx, ap, rc, testClients)
 			// Check result code
 			So(rr.RuleResultStatus, ShouldEqual, rulePassed)
 			So(rr.Message, ShouldEqual, "")
@@ -189,16 +190,11 @@ func TestOnlyModifiesPaths(t *testing.T) {
 				},
 			}, nil)
 			// Run rule
-			rr := OnlyModifiesPathsRule(ctx, ap, rc, testClients, "ruleName", []*Path{
-				{
-					Name: "a.txt",
-					Type: typeFile,
-				},
-				{
-					Name: "mydir",
-					Type: typeDir,
-				},
-			})
+			rr := OnlyModifiesFilesAndDirsRule{
+				name:  "ruleName",
+				dirs:  []string{"mydir"},
+				files: []string{"a.txt"},
+			}.Run(ctx, ap, rc, testClients)
 			// Check result code
 			So(rr.RuleResultStatus, ShouldEqual, ruleFailed)
 		})
@@ -233,16 +229,11 @@ func TestOnlyModifiesPaths(t *testing.T) {
 				},
 			}, nil)
 			// Run rule
-			rr := OnlyModifiesPathsRule(ctx, ap, rc, testClients, "ruleName", []*Path{
-				{
-					Name: "a.txt",
-					Type: typeFile,
-				},
-				{
-					Name: "mydir",
-					Type: typeDir,
-				},
-			})
+			rr := OnlyModifiesFilesAndDirsRule{
+				name:  "ruleName",
+				dirs:  []string{"mydir"},
+				files: []string{"a.txt"},
+			}.Run(ctx, ap, rc, testClients)
 			// Check result code
 			So(rr.RuleResultStatus, ShouldEqual, ruleFailed)
 		})
@@ -272,7 +263,10 @@ func TestOnlyModifiesPaths(t *testing.T) {
 				},
 			}, nil)
 			// Run rule
-			rr := OnlyModifiesDirRule(ctx, ap, rc, testClients, "ruleName", "somedir")
+			rr := OnlyModifiesFilesAndDirsRule{
+				name: "ruleName",
+				dirs: []string{"somedir"},
+			}.Run(ctx, ap, rc, testClients)
 			// Check result code
 			So(rr.RuleResultStatus, ShouldEqual, rulePassed)
 			So(rr.Message, ShouldEqual, "")
@@ -303,7 +297,10 @@ func TestOnlyModifiesPaths(t *testing.T) {
 				},
 			}, nil)
 			// Run rule
-			rr := OnlyModifiesDirRule(ctx, ap, rc, testClients, "ruleName", "somedir")
+			rr := OnlyModifiesFilesAndDirsRule{
+				name: "ruleName",
+				dirs: []string{"somedir"},
+			}.Run(ctx, ap, rc, testClients)
 			// Check result code
 			So(rr.RuleResultStatus, ShouldEqual, rulePassed)
 			So(rr.Message, ShouldEqual, "")
@@ -366,7 +363,13 @@ func TestReleaseBotRules(t *testing.T) {
 				},
 			}, nil)
 			// Run rule
-			rr := OnlyModifiesReleaseFiles(ctx, ap, rc, testClients)
+			rr := OnlyModifiesFilesAndDirsRule{
+				name: "OnlyModifiesReleaseFiles",
+				files: []string{
+					"chrome/MAJOR_BRANCH_DATE",
+					"chrome/VERSION",
+				},
+			}.Run(ctx, ap, rc, testClients)
 			// Check result code
 			So(rr.RuleResultStatus, ShouldEqual, rulePassed)
 			So(rr.Message, ShouldEqual, "")
@@ -403,7 +406,13 @@ func TestReleaseBotRules(t *testing.T) {
 					},
 				}, nil)
 				// Run rule
-				rr := OnlyModifiesReleaseFiles(ctx, ap, rc, testClients)
+				rr := OnlyModifiesFilesAndDirsRule{
+					name: "OnlyModifiesReleaseFiles",
+					files: []string{
+						"chrome/MAJOR_BRANCH_DATE",
+						"chrome/VERSION",
+					},
+				}.Run(ctx, ap, rc, testClients)
 				// Check result code
 				So(rr.RuleResultStatus, ShouldEqual, ruleFailed)
 			})
@@ -432,7 +441,13 @@ func TestReleaseBotRules(t *testing.T) {
 					},
 				}, nil)
 				// Run rule
-				rr := OnlyModifiesReleaseFiles(ctx, ap, rc, testClients)
+				rr := OnlyModifiesFilesAndDirsRule{
+					name: "OnlyModifiesReleaseFiles",
+					files: []string{
+						"chrome/MAJOR_BRANCH_DATE",
+						"chrome/VERSION",
+					},
+				}.Run(ctx, ap, rc, testClients)
 				// Check result code
 				So(rr.RuleResultStatus, ShouldEqual, ruleFailed)
 			})

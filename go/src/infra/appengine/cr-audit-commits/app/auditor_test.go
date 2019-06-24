@@ -25,6 +25,21 @@ import (
 	"go.chromium.org/luci/server/router"
 )
 
+type panicRule struct{}
+
+// GetName returns the name of the rule.
+func (rule panicRule) GetName() string {
+	return "Dummy Rule"
+}
+
+// Run panics if the commit hasn't been audited.
+func (rule panicRule) Run(c context.Context, ap *AuditParams, rc *RelevantCommit, cs *Clients) *RuleResult {
+	if rc.Status == auditScheduled {
+		panic("This always panics")
+	}
+	return &RuleResult{"Dummy rule", ruleFailed, "", ""}
+}
+
 func mustGitilesTime(v string) *google_protobuf.Timestamp {
 	var t time.Time
 	t, err := time.Parse(time.ANSIC, v)
@@ -79,9 +94,12 @@ func TestAuditor(t *testing.T) {
 				StartingCommit: "000000",
 				Rules: map[string]RuleSet{"rules": AccountRules{
 					Account: "dummy@test.com",
-					Funcs: []RuleFunc{func(c context.Context, ap *AuditParams, rc *RelevantCommit, cs *Clients) *RuleResult {
-						return &RuleResult{"Dummy rule", rulePassed, "", ""}
-					}},
+					Rules: []Rule{
+						DummyRule{
+							name:   "Dummy rule",
+							result: &RuleResult{"Dummy rule", rulePassed, "", ""},
+						},
+					},
 					notificationFunction: dummyNotifier,
 				}},
 			}
@@ -224,9 +242,8 @@ func TestAuditor(t *testing.T) {
 						}
 					})
 					Convey("Some fail", func() {
-						RuleMap["dummy-repo"].Rules["rules"].(AccountRules).Funcs[0] = func(c context.Context, ap *AuditParams, rc *RelevantCommit, cs *Clients) *RuleResult {
-							return &RuleResult{"Dummy rule", ruleFailed, "", ""}
-						}
+						dummyRuleTmp := RuleMap["dummy-repo"].Rules["rules"].(AccountRules).Rules[0].(DummyRule)
+						dummyRuleTmp.result.RuleResultStatus = ruleFailed
 						resp, err := client.Get(srv.URL + auditorPath + "?refUrl=" + escapedRepoURL)
 						So(err, ShouldBeNil)
 						So(resp.StatusCode, ShouldEqual, 200)
@@ -241,12 +258,7 @@ func TestAuditor(t *testing.T) {
 						}
 					})
 					Convey("Some panic", func() {
-						RuleMap["dummy-repo"].Rules["rules"].(AccountRules).Funcs[0] = func(c context.Context, ap *AuditParams, rc *RelevantCommit, cs *Clients) *RuleResult {
-							if rc.Status == auditScheduled {
-								panic("This always panics")
-							}
-							return &RuleResult{"Dummy rule", ruleFailed, "", ""}
-						}
+						RuleMap["dummy-repo"].Rules["rules"].(AccountRules).Rules[0] = panicRule{}
 						resp, err := client.Get(srv.URL + auditorPath + "?refUrl=" + escapedRepoURL)
 						So(err, ShouldBeNil)
 						So(resp.StatusCode, ShouldEqual, 200)
