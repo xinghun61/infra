@@ -35,8 +35,6 @@
 
       flush(() => {
         assert(element.shadowRoot.querySelector('div').textContent.includes('398901 - 398946')) 
-        assert.isFalse(element.$.loadingMessage.hidden);
-        assert.isFalse(element.$.collapse.opened);
         done();
       });
     });
@@ -56,8 +54,6 @@
 
       flush(() => {
         assert(element.shadowRoot.querySelector('div').textContent.includes('398901 - 398946'))
-        assert.isFalse(element.$.loadingMessage.hidden);
-        assert.isFalse(element.$.collapse.opened);
         done();
       });
     });
@@ -77,8 +73,6 @@
 
         flush(() => {
           assert(element.shadowRoot.querySelector('div').textContent.includes('abc1234 - abf4234'));
-        assert.isFalse(element.$.loadingMessage.hidden);
-        assert.isFalse(element.$.collapse.opened);
         done();
       });
     });
@@ -128,55 +122,6 @@
         done();
       });
     });
-
-    test('toggle revisions display', function(done) {
-      element.range = {
-        positions: [
-          "refs/heads/master@{#398901}",
-          "refs/heads/master@{#398913}",
-          "refs/heads/master@{#398921}",
-          "refs/heads/master@{#398942}",
-          "refs/heads/master@{#398946}"
-        ],
-        repo: "chromium",
-      };
-
-      element._revs = [{
-        'commit': 'fa3d958da6046d3ba59724b98befed3f1cca1430',
-        'tree': '0cbc7b26cfa809d17fa7aa3173934de71ef30d51',
-        'parents': [
-          'd0449180418b1563c16df01320d2ba79796e7055'
-        ],
-        'author': {
-          'name': 'dcastagna',
-          'email': 'dcastagna@chromium.org',
-          'time': 'Thu Jun 09 17:25:57 2016'
-        },
-        'committer': {
-          'name': 'Commit bot',
-          'email': 'commit-bot@chromium.org',
-          'time': 'Thu Jun 09 17:30:11 2016'
-        },
-        'message': 'gl: Test YV12 buffer drm import.'
-      }],
-
-      assert.equal(false, element.$.collapse.opened);
-      element._toggleCollapse();
-      assert.equal(true, element.$.collapse.opened);
-
-      flush( () => {
-        assert.equal('Regression ranges:\n        \n        \n          '
-            + 'chromium:\n        \n        398901 - 398946'
-            + '\n        \n          Click to see less information.',
-            element.shadowRoot.querySelector('div').textContent.trim());
-        assert.equal('(dcastagna):\n          '
-            + 'gl: Test YV12 buffer drm import.',
-            element.shadowRoot.querySelector('.commit').textContent.trim());
-        assert.equal(true, element.$.collapse.opened);
-        done();
-      });
-    });
-
   });
 })();
 </script>

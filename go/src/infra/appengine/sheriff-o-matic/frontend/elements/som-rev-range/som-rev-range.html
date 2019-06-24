@@ -6,46 +6,11 @@
 <dom-module id="som-rev-range">
   <template>
     <style>
-      .rev-list {
-        width: 100%;
-        max-height: 200px;
-        overflow-y: auto;
-        padding-right: 20px;
-      }
-      .commit {
-        font-family: monospace;
-        font-size: 9pt;
-        margin: 1em;
-      }
-      .suspect-cl {
-        color: #ff8c00;
-        font-weight: bold;
-      }
-      .collapse {
-        cursor: pointer;
-      }
-      .header {
-        color: #fff;
-      }
-      .header {
-        color: #000;
-      }
       .padding-right {
         padding-right: 0.5em;
       }
-      .error {
-        color: #e75d54;
-      }
     </style>
     <div>
-      <template is="dom-if" if="[[_haveError(range)]]">
-        <div class="error collapse" on-tap="_toggleErrorCollapse">
-          Error: "[[range.error]]". Click to see [[_errorCollapseMessage]].
-        </div>
-        <iron-collapse id="errorCollapse" no-animation>
-          [[range.explanation]]
-        </iron-collapse>
-      </template>
       <template is="dom-if" if="[[!_haveError(range)]]">
         <div class="title">
           Regression ranges:
@@ -54,23 +19,8 @@
           [[range.repo]]:
         </span>
         <a class="padding-right" target="_blank" href$="[[_regressionRangeLink(range)]]">[[_regressionRange(range)]]</a>
-        <div class="collapse" on-tap="_toggleCollapse">
-          Click to see [[_collapseMessage]] information.
-          <iron-icon icon="[[_iconName]]"></iron-icon>
-        </div>
       </template>
     </div>
-    <iron-collapse id="collapse" class="rev-list" no-animation>
-      <template is="dom-repeat" items="[[_revs]]" as="rev">
-        <div class="commit">
-          <a href$="https://chromium.googlesource.com/chromium/src/+/[[rev.commit]]"
-             target="_blank"><span class$="[[_calulateClass(rev, range)]]">[[_parseCommitPosition(rev.message)]]</span></a>
-          (<a href$="mailto:[[rev.author.email]]">[[rev.author.name]]</a>):
-          [[_firstLine(rev.message)]]
-        </div>
-      </template>
-      <div id="loadingMessage" hidden>Loading revisions...</div>
-    </iron-collapse>
-  </template>
+ </template>
   <script src="som-rev-range.js"></script>
 </dom-module>

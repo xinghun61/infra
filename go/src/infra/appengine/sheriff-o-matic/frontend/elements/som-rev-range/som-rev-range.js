@@ -17,101 +17,15 @@ class SomRevRange extends Polymer.Element {
         type: Object,
         value: null,
       },
-      _collapseMessage: {
-        type: String,
-        value: 'more',
-      },
-      _errorCollapseMessage: {
-        type: String,
-        value: 'more',
-      },
       _revs: {
         type: Array,
         value: null,
-      },
-      _iconName: {
-        type: String,
-        value: 'icons:unfold-more',
       },
     };
   }
 
   ready() {
     super.ready();
-
-    this._fetchData();
-  }
-
-  _fetchData() {
-    if (this.range && this.range.positions) {
-      this.range.positions.sort();
-    }
-    let startRev = '0';
-    let endRev = '0';
-    let startPos = '0';
-    let endPos = '0';
-    let host;
-    let repo;
-    let url;
-    // Note: For now, if the range.host is NOT empty, we can assume the range
-    // data was filled using builds' inputs in buildbucket_analyzer.go. Range
-    // data from build inputs have reliable host/repo values but do not have
-    // commit positions data, so start and end are revision numbers instead.
-    // An empty range host means range data was NOT filled using builds'
-    // inputs, and therefore, do not have reliable repo and revision values.
-    // So commit positions are used as start and end values instead and we can
-    // assume these ranges are for chromium builds.
-    if (this.range.host && this.range.host.length > 0) {
-      let matches;
-      while ((matches = HOST_URL_RE.exec(this.range.host)) !== null) {
-        host = matches[HOST_NAME_GROUP];
-      }
-      // We cannot add '/' to a param value in the url, so we replace them
-      // with '.' and the backend will parse and add '/'s back.
-      repo = this.range.repo.replace('/', '.');
-      startRev = this._regressionRevStart(this.range);
-      endRev = this._regressionRevEnd(this.range);
-      url = `/api/v1/revrange/${host}/${repo}` +
-        `?startRev=${startRev}&endRev=${endRev}`;
-    } else {
-      host = CHROMIUM_HOST;
-      repo = CHROMIUM_REPO;
-      startPos = this._regressionStart(this.range);
-      endPos = this._regressionEnd(this.range);
-      url = `/api/v1/revrange/${host}/${repo}` +
-        `?startPos=${startPos}&endPos=${endPos}`;
-    }
-    this.$.loadingMessage.hidden = false;
-    fetch(url).then(
-        (resp) => {
-          resp.text().then(
-              (bodyJson) => {
-                // remove the )]}' on the first line.
-                bodyJson = bodyJson.substr(')]}\'\n'.length);
-                let body = JSON.parse(bodyJson);
-                this._revs = body.log;
-                this.$.loadingMessage.hidden = true;
-              },
-              (reject) => {
-                console.error(reject);
-              });
-        },
-        (reject) => {
-          console.error(reject);
-        });
-  }
-
-  _toggleCollapse() {
-    this.$.collapse.toggle();
-    this._iconName =
-        this.$.collapse.opened ? 'icons:unfold-less' : 'icons:unfold-more';
-    this._collapseMessage = this.$.collapse.opened ? 'less' : 'more';
-  }
-
-  _toggleErrorCollapse() {
-    let elem = Polymer.dom(this.root).querySelector('#errorCollapse');
-    elem.toggle();
-    this._errorCollapseMessage = elem.opened ? 'less' : 'more';
   }
 
   _shortHash(hash) {
@@ -196,6 +110,9 @@ class SomRevRange extends Polymer.Element {
       const start = range.revisions[0];
       const revLength = range.revisions.length;
       const end = range.revisions[revLength - 1];
+      if (range.host.indexOf('https://') == 0) {
+        range.host = range.host.substr('https://'.length);
+      }
       return `https://${range.host}/${range.repo}/+log/${start}^..${end}`;
     } else if (range.positions && range.positions.length > 0) {
       // _checkUseRangeRevisions determined that range.revisions
