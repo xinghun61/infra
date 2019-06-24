@@ -344,6 +344,17 @@ class DetectFlakesOccurrencesTest(WaterfallTestCase):
     }, detect_flake_occurrences._GetChromiumWATCHLISTS())
 
   @mock.patch.object(
+      time_util, 'GetDateDaysBeforeNow', return_value=datetime(2019, 1, 1))
+  def testUpdateTestLocationAndTagsRecentlyUpdated(self, _):
+    flake = Flake(
+        normalized_test_name='suite.test',
+        tags=['gerrit_project::chromium/src'],
+    )
+    flake.last_test_location_based_tag_update_time = datetime(2019, 6, 1)
+    self.assertFalse(
+        detect_flake_occurrences._UpdateTestLocationAndTags(flake, [], {}, {}))
+
+  @mock.patch.object(
       detect_flake_occurrences,
       '_GetTestLocation',
       return_value=NDBTestLocation(file_path='unknown/path.cc',))
