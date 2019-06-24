@@ -22,12 +22,15 @@ import (
 	"net/url"
 	"time"
 
+	"github.com/golang/protobuf/ptypes"
 	"go.chromium.org/gae/service/memcache"
 	"go.chromium.org/gae/service/urlfetch"
+	"go.chromium.org/luci/common/errors"
 	"go.chromium.org/luci/common/logging"
 
 	"infra/appengine/arquebus/app/backend/model"
 	"infra/appengine/arquebus/app/config"
+	"infra/appengine/rotang/proto/rotangapi"
 	"infra/monorailv2/api/api_proto"
 )
 
@@ -107,7 +110,7 @@ func setShiftCache(c context.Context, key string, shift *oncallShift) error {
 	return memcache.Set(c, item)
 }
 
-func findShift(c context.Context, task *model.Task, rotation string) (*oncallShift, error) {
+func findLegacyShift(c context.Context, task *model.Task, rotation string) (*oncallShift, error) {
 	var shift oncallShift
 	u := fmt.Sprintf(
 		"https://%s/legacy/%s.json", config.Get(c).RotangHostname,
@@ -123,7 +126,6 @@ func findShift(c context.Context, task *model.Task, rotation string) (*oncallShi
 		return &shift, nil
 	}
 
-	// TODO(crbug/967523), use RotaNG PRPC APIs instead.
 	req, err := http.NewRequest(http.MethodGet, u, nil)
 	if err != nil {
 		return nil, err
@@ -141,6 +143,11 @@ func findShift(c context.Context, task *model.Task, rotation string) (*oncallShi
 		return nil, err
 	}
 	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		task.WriteLog(c, "HTTP request failed: %s", resp.Status)
+		return nil, errors.Reason("HTTP request failed: %s", resp.Status).Err()
+	}
+
 	decoder := json.NewDecoder(resp.Body)
 	if err := decoder.Decode(&shift); err != nil {
 		return nil, err
@@ -155,10 +162,55 @@ func findShift(c context.Context, task *model.Task, rotation string) (*oncallShi
 	return &shift, nil
 }
 
-func findOncallers(c context.Context, task *model.Task, oncall *config.Oncall) ([]*monorail.UserRef, error) {
-	shift, err := findShift(c, task, oncall.Rotation)
+func findShift(c context.Context, task *model.Task, rotation string) (*oncallShift, error) {
+	var oc oncallShift
+	switch err := getCachedShift(c, rotation, &oc); {
+	case err != nil:
+		if err != memcache.ErrCacheMiss {
+			task.WriteLog(c, "Shift cache lookup failed: %s", err.Error())
+		}
+	default:
+		return &oc, nil
+	}
+
+	rota := getRotaNGClient(c)
+	resp, err := rota.Oncall(c, &rotangapi.OncallRequest{Name: rotation})
 	if err != nil {
 		return nil, err
+	}
+
+	if shift := resp.GetShift(); shift != nil {
+		nOncallers := len(shift.Oncallers)
+		if nOncallers > 0 {
+			oc.Primary = shift.Oncallers[0].Email
+		}
+		if nOncallers > 1 {
+			for _, oncaller := range shift.Oncallers[1:] {
+				oc.Secondaries = append(oc.Secondaries, oncaller.Email)
+			}
+		}
+		started, _ := ptypes.Timestamp(shift.Start)
+		oc.Started = started.Unix()
+	}
+
+	if err := setShiftCache(c, rotation, &oc); err != nil {
+		// ignore cache save failures, but log the error.
+		msg := fmt.Sprintf("Failed to cache the shift; %s", err.Error())
+		task.WriteLog(c, msg)
+		logging.Errorf(c, msg)
+	}
+
+	return &oc, nil
+}
+
+func findOncallers(c context.Context, task *model.Task, oncall *config.Oncall) ([]*monorail.UserRef, error) {
+	shift, err := findLegacyShift(c, task, oncall.Rotation)
+	if err != nil {
+		// if it failed to retrieve the shift information via the legacy
+		// interface, retry it via the pRPC interface.
+		if shift, err = findShift(c, task, oncall.Rotation); err != nil {
+			return nil, err
+		}
 	}
 
 	var oncallers []*monorail.UserRef

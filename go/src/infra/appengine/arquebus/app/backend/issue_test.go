@@ -30,7 +30,7 @@ func TestSearchAndUpdateIssues(t *testing.T) {
 		So(tasks, ShouldNotBeNil)
 		task := tasks[0]
 
-		c = mockListIssues(
+		mockListIssues(
 			c, &monorail.Issue{ProjectName: "test", LocalId: 123},
 			&monorail.Issue{ProjectName: "test", LocalId: 456},
 		)
@@ -42,14 +42,14 @@ func TestSearchAndUpdateIssues(t *testing.T) {
 
 			req := getIssueUpdateRequests(c, "test", 123)
 			So(req, ShouldNotBeNil)
-			So(req.Delta.OwnerRef.DisplayName, ShouldEqual, mockShifts["rotation1"].Primary)
+			So(req.Delta.OwnerRef.DisplayName, ShouldEqual, mockLegacyShifts["rotation1"].Primary)
 			req = getIssueUpdateRequests(c, "test", 456)
 			So(req, ShouldNotBeNil)
-			So(req.Delta.OwnerRef.DisplayName, ShouldEqual, mockShifts["rotation1"].Primary)
+			So(req.Delta.OwnerRef.DisplayName, ShouldEqual, mockLegacyShifts["rotation1"].Primary)
 		})
 
 		Convey("no issues are updated", func() {
-			c = mockListIssues(
+			mockListIssues(
 				c, &monorail.Issue{ProjectName: "test", LocalId: 123},
 			)
 
@@ -80,7 +80,7 @@ func TestSearchAndUpdateIssues(t *testing.T) {
 				assigner.CCsRaw = createRawUserSources(
 					emailUserSource("bar@example.net"),
 				)
-				c = mockListIssues(
+				mockListIssues(
 					c, &monorail.Issue{
 						ProjectName: "test", LocalId: 123,
 						OwnerRef: monorailUser("foo@example.org"),
@@ -102,7 +102,7 @@ func TestSearchAndUpdateIssues(t *testing.T) {
 				assigner.CCsRaw = createRawUserSources(
 					emailUserSource("bar@example.net"),
 				)
-				c = mockListIssues(
+				mockListIssues(
 					c, &monorail.Issue{ProjectName: "test", LocalId: 123},
 				)
 				nUpdated, err := searchAndUpdateIssues(c, assigner, task)

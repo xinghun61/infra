@@ -32,6 +32,7 @@ import (
 	"infra/appengine/arquebus/app/backend/model"
 	"infra/appengine/arquebus/app/config"
 	"infra/appengine/arquebus/app/util"
+	"infra/appengine/rotang/proto/rotangapi"
 	"infra/monorailv2/api/api_proto"
 )
 
@@ -52,13 +53,22 @@ var (
 )
 
 var ctxKeyMonorailClient = "monorail client"
+var ctxKeyRotaNGClient = "rotang client"
 
 func setMonorailClient(c context.Context, mc monorail.IssuesClient) context.Context {
 	return context.WithValue(c, &ctxKeyMonorailClient, mc)
 }
 
+func setRotaNGClient(c context.Context, rc rotangapi.OncallInfoClient) context.Context {
+	return context.WithValue(c, &ctxKeyRotaNGClient, rc)
+}
+
 func getMonorailClient(c context.Context) monorail.IssuesClient {
 	return c.Value(&ctxKeyMonorailClient).(monorail.IssuesClient)
+}
+
+func getRotaNGClient(c context.Context) rotangapi.OncallInfoClient {
+	return c.Value(&ctxKeyRotaNGClient).(rotangapi.OncallInfoClient)
 }
 
 func createMonorailClient(c context.Context) (monorail.IssuesClient, error) {
@@ -74,16 +84,29 @@ func createMonorailClient(c context.Context) (monorail.IssuesClient, error) {
 	), nil
 }
 
+func createRotaNGClient(c context.Context) (rotangapi.OncallInfoClient, error) {
+	transport, err := auth.GetRPCTransport(c, auth.AsSelf)
+	if err != nil {
+		return nil, err
+	}
+	return rotangapi.NewOncallInfoPRPCClient(
+		&prpc.Client{
+			C:    &http.Client{Transport: transport},
+			Host: config.Get(c).RotangHostname,
+		},
+	), nil
+}
+
 // InstallHandlers installs TaskQueue handlers into a given task queue.
 func InstallHandlers(r *router.Router, dispatcher *tq.Dispatcher, m router.MiddlewareChain) {
 	registerTaskHandlers(dispatcher)
 
-	// install the dispatcher and monorail client into the context so that
+	// install the dispatcher and RPC clients into the context so that
 	// they can be accessed via the context and overwritten in unit tests.
 	m = m.Extend(func(rc *router.Context, next router.Handler) {
 		rc.Context = util.SetDispatcher(rc.Context, dispatcher)
 
-		mc, err := createMonorailClient(rc.Context)
+		monorailClient, err := createMonorailClient(rc.Context)
 		if err != nil {
 			util.ErrStatus(
 				rc, http.StatusInternalServerError,
@@ -91,7 +114,17 @@ func InstallHandlers(r *router.Router, dispatcher *tq.Dispatcher, m router.Middl
 			)
 			return
 		}
-		rc.Context = setMonorailClient(rc.Context, mc)
+		rc.Context = setMonorailClient(rc.Context, monorailClient)
+
+		rotaNGClient, err := createRotaNGClient(rc.Context)
+		if err != nil {
+			util.ErrStatus(
+				rc, http.StatusInternalServerError,
+				"failed to create an RPC channel for RotaNG: %s", err,
+			)
+			return
+		}
+		rc.Context = setRotaNGClient(rc.Context, rotaNGClient)
 		next(rc)
 	})
 	dispatcher.InstallRoutes(r, m)
