@@ -30,7 +30,7 @@ old_sumfile="${old_archive}.sum"
 sdk_version=$(
 	curl -s 'https://chromium.googlesource.com/chromiumos/overlays/chromiumos-overlay/+/master/chromeos/binhost/host/sdk_version.conf?format=TEXT' |
 	base64 -d - |
-	grep SDK_LATEST_VERSION |
+	grep '^SDK_LATEST_VERSION=' |
         grep -o '[0-9.]*'
 )
 [[ -n "${sdk_version}" ]] || die "Unable to get current sdk version"
