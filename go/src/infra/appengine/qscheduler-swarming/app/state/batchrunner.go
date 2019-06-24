@@ -281,7 +281,7 @@ func (b *batch) numOperations() int {
 // executeAndClose executes and closes the given batch.
 func (b *batch) executeAndClose(ctx context.Context, store *Store) {
 	success := true
-	if err := store.RunOperationInTransaction(ctx, b.getRunner(store)); err != nil {
+	if err := store.RunOperationInTransaction(ctx, b.getRunner()); err != nil {
 		// A batch-wide error occurred. Store it on all results.
 		b.allResultsError(err)
 		success = false
@@ -293,7 +293,7 @@ func (b *batch) executeAndClose(ctx context.Context, store *Store) {
 
 // getRunner gets a runner function to be used in a datastore transaction
 // to execute the batch.
-func (b *batch) getRunner(store *Store) types.Operation {
+func (b *batch) getRunner() types.Operation {
 	return func(ctx context.Context, state *types.QScheduler, events scheduler.EventSink) error {
 		// Modify
 		for _, opSlice := range b.operations {
