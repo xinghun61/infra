@@ -1,16 +1,17 @@
-#!/bin/sh -x
+#!/bin/bash -ex
+# Copyright 2019 The Chromium Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
 date=$(/bin/date +"%Y-%m-%d_%H-%M")
-IMAGE=swarm_docker
-DOCKER_BIN_PATH=/usr/bin/docker
+par_dir="$(dirname "${0}")"
 
-if [ "$1" = "-n" ]; then
-  cache="--no-cache=true"
-  shift
-else
-  cache="--no-cache=false"
-fi
+echo "Building for swarm_docker..."
+/usr/bin/docker build \
+  --no-cache=true \
+  --pull \
+  -t "swarm_docker:${date}" \
+  -t swarm_docker:latest \
+  "${par_dir}"
 
-par_dir=$(dirname $0)
-$DOCKER_BIN_PATH build $cache -t ${IMAGE}:${date} ${par_dir}
-$DOCKER_BIN_PATH tag ${IMAGE}:$date ${IMAGE}:latest
 exit 0

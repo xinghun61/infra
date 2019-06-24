@@ -1,4 +1,7 @@
-#!/bin/sh -x
+#!/bin/bash -ex
+# Copyright 2019 The Chromium Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
 
 # This script will build two docker images, android_docker and cros_docker.
 # Both will be tagged with "latest". The root Dockerfile here is used for both,
@@ -6,25 +9,22 @@
 # tweaks can be applied per device.
 
 date=$(/bin/date +"%Y-%m-%d_%H-%M")
-DOCKER_BIN_PATH=/usr/bin/docker
-
-if [ "$1" = "-n" ]; then
-  cache="--no-cache=true"
-  shift
-else
-  cache="--no-cache=false"
-fi
-
-par_dir=$(dirname $0)
+par_dir=$(/usr/bin/dirname "${0}")
 
 # Build separate cros_docker and android_docker images. Context directory is
 # specific to each device type.
-for device in "android" "cros"; do
-  image=$device"_docker"
-  context_dir=$par_dir"/"$device
-  docker_file=$context_dir"/"Dockerfile
-  $DOCKER_BIN_PATH build $cache -t ${image}:${date} ${context_dir} -f ${docker_file}
-  $DOCKER_BIN_PATH tag ${image}:$date ${image}:latest
+for device in android cros; do
+  image="${device}_docker"
+  context_dir="${par_dir}/${device}"
+
+  echo "Building for ${device}..."
+  /usr/bin/docker build \
+    --no-cache=true \
+    --pull \
+    -t "${image}:${date}" \
+    -t "${image}:latest" \
+    "${context_dir}" \
+    -f "${context_dir}/Dockerfile"
 done
 
 exit 0
