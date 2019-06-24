@@ -1743,13 +1743,8 @@ class WorkEnv(object):
     user_ids = user_ids_by_email.values()
     limit = 10000
 
-    # Spam verdict and report tables have user_id columns that do not
-    # reference User. No limit will be applied.
-    self.services.spam.ExpungeUsersInSpam(self.mc.cnxn, user_ids)
-
-    self.services.issue.ExpungeUsersInIssues(
-        self.mc.cnxn, user_ids, limit=limit)
-
+    # The operations made in the methods below can be limited.
+    # We can adjust 'limit' as necessary to avoid timing out.
     self.services.issue_star.ExpungeUsersInStars(
         self.mc.cnxn, user_ids, limit=limit)
     self.services.project_star.ExpungeUsersInStars(
@@ -1767,24 +1762,45 @@ class WorkEnv(object):
     self.services.features.ExpungeUsersInSavedQueries(
         self.mc.cnxn, user_ids, limit=limit)
 
-    # No limit will be applied for expunging in hotlists.
-    self.services.features.ExpungeUsersInHotlists(
-        self.mc.cnxn, user_ids, self.services.hotlist_star, self.services.user)
-
     self.services.template.ExpungeUsersInTemplates(
         self.mc.cnxn, user_ids, limit=limit)
     self.services.config.ExpungeUsersInConfigs(
         self.mc.cnxn, user_ids, limit=limit)
 
+    # The upcoming operations cannot be limited with 'limit'.
+    # So it's possible that these operations below may lead to timing out
+    # and ExpungeUsers will have to run again to fully delete all users.
+    # We commit the above operations here, so if a failure does happen
+    # below, the second run of ExpungeUsers will have less work to do.
+    self.mc.cnxn.Commit()
+
+    self.services.issue.ExpungeUsersInIssues(
+        self.mc.cnxn, user_ids, limit=limit)
+    # Commit ExpungeUsersInIssues here, as it has many operations
+    # and at least one operation that cannot be limited.
+    self.mc.cnxn.Commit()
+
+    # Spam verdict and report tables have user_id columns that do not
+    # reference User. No limit will be applied.
+    self.services.spam.ExpungeUsersInSpam(self.mc.cnxn, user_ids)
+    self.mc.cnxn.Commit()
+
+    # No limit will be applied for expunging in hotlists.
+    self.services.features.ExpungeUsersInHotlists(
+        self.mc.cnxn, user_ids, self.services.hotlist_star, self.services.user)
+    self.mc.cnxn.Commit()
+
     # No limit will be applied for expunging in UserGroups.
     self.services.usergroup.ExpungeUsersInGroups(
         self.mc.cnxn, user_ids, limit=limit)
+    self.mc.cnxn.Commit()
 
     # No limit will be applied for expunging in FilterRules.
     deleted_rules_by_project = self.services.features.ExpungeFilterRulesByUser(
         self.mc.cnxn, user_ids_by_email)
     rule_strs_by_project = filterrules_helpers.BuildRedactedFilterRuleStrings(
         self.mc.cnxn, deleted_rules_by_project, self.services.user, emails)
+    self.mc.cnxn.Commit()
 
     # We will attempt to expunge all given users here. Limiting the users we
     # delete should be done before work_env.ExpungeUsers is called.

@@ -2927,7 +2927,7 @@ class WorkEnvTest(unittest.TestCase):
     self.services.user.ExpungeUsers.assert_called_once_with(
         self.mr.cnxn, user_ids)
 
-    self.mr.cnxn.Commit.assert_called_once()
+    self.assertEqual(7, len(self.mr.cnxn.Commit.call_args_list))
     self.services.usergroup.group_dag.MarkObsolete.assert_called_once()
 
     fake_pasdfrn.assert_has_calls(
