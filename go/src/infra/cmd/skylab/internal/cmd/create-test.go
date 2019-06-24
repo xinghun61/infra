@@ -196,9 +196,7 @@ func (c *createTestRun) getLabels() inventory.SchedulableLabels {
 
 func (c *createTestRun) getDimensions() []string {
 	userDimensions := c.Flags.Args()[1:]
-	dimensions := []string{"pool:ChromeOSSkylab", "dut_state:ready"}
-	dimensions = append(dimensions, userDimensions...)
-	return dimensions
+	return userDimensions
 }
 
 func (c *createTestRun) getProvisionableDimensions() []string {
