@@ -9,7 +9,7 @@ cron:
 
 - description: Refresh update time of all schedulers
   url: /internal/cron/refresh-schedulers
-  schedule: every 1 minutes
+  schedule: every 20 minutes
 
 - description: Flush events to bigquery tables.
   url: /internal/cron/flush-bq-events
