@@ -1640,6 +1640,20 @@ wheel: <
 * *windows-x64*
 * *windows-x86*
 
+## **libusb1**
+
+### 1.5.3
+
+```protobuf
+wheel: <
+  name: "infra/python/wheels/libusb1-py2_py3"
+  version: "version:1.5.3"
+>
+```
+
+
+* *universal*
+
 ## **lxml**
 
 ### 4.2.5
