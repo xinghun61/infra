@@ -234,7 +234,7 @@ class IssueDetailTest(unittest.TestCase):
     issue_view = testing_helpers.Blank(
         is_spam=False,
         owner=testing_helpers.Blank(user_id=111, avail_message='On vacation'),
-        derived_owner=testing_helpers.Blank(user_id=0L, avail_message=''),
+        derived_owner=testing_helpers.Blank(user_id=0, avail_message=''),
         cc=[testing_helpers.Blank(user_id=222, avail_message='')],
         derived_cc=[testing_helpers.Blank(user_id=333, avail_message='')])
     page_data = {'issue': issue_view}
@@ -245,8 +245,8 @@ class IssueDetailTest(unittest.TestCase):
     # No help cue is shown.
     issue_view = testing_helpers.Blank(
         is_spam=False,
-        owner=testing_helpers.Blank(user_id=0L, avail_message='Never visited'),
-        derived_owner=testing_helpers.Blank(user_id=0L, avail_message=''),
+        owner=testing_helpers.Blank(user_id=0, avail_message='Never visited'),
+        derived_owner=testing_helpers.Blank(user_id=0, avail_message=''),
         cc=[testing_helpers.Blank(user_id=222, avail_message='')],
         derived_cc=[testing_helpers.Blank(user_id=333, avail_message='')])
     page_data = {'issue': issue_view}
@@ -397,12 +397,12 @@ class IssueDetailFunctionsTest(unittest.TestCase):
     self.assertEquals('invalid owner', ret)
 
   def testValidateCC(self):
-    cc_ids = [1L, 2L]
+    cc_ids = [1, 2]
     cc_names = ['user1@example', 'user2@example']
     res = self.servlet._ValidateCC(cc_ids, cc_names)
     self.assertIsNone(res)
 
-    cc_ids = [None, 2L]
+    cc_ids = [None, 2]
     res = self.servlet._ValidateCC(cc_ids, cc_names)
     self.assertEqual(res, 'Invalid Cc username: user1@example')
 

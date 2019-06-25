@@ -62,9 +62,9 @@ class AST2SelectTest(unittest.TestCase):
     fd = BUILTIN_ISSUE_FIELDS['blocking_id']
     txt_cond = ast_pb2.MakeCond(
         ast_pb2.QueryOp.EQ, [fd], ['1'], [])
-    num_cond = ast_pb2.MakeCond(ast_pb2.QueryOp.EQ, [fd], [], [1L])
+    num_cond = ast_pb2.MakeCond(ast_pb2.QueryOp.EQ, [fd], [], [1])
 
-    for cond, expected in ((txt_cond, '1'), (num_cond, 1L)):
+    for cond, expected in ((txt_cond, '1'), (num_cond, 1)):
       left_joins, where, unsupported = ast2select._ProcessBlockingIDCond(
           cond, 'Cond1', 'Issue1', snapshot_mode=False)
       self.assertEqual(
@@ -83,9 +83,9 @@ class AST2SelectTest(unittest.TestCase):
     fd = BUILTIN_ISSUE_FIELDS['blocking_id']
     txt_cond = ast_pb2.MakeCond(
         ast_pb2.QueryOp.NE, [fd], ['1'], [])
-    num_cond = ast_pb2.MakeCond(ast_pb2.QueryOp.NE, [fd], [], [1L])
+    num_cond = ast_pb2.MakeCond(ast_pb2.QueryOp.NE, [fd], [], [1])
 
-    for cond, expected in ((txt_cond, '1'), (num_cond, 1L)):
+    for cond, expected in ((txt_cond, '1'), (num_cond, 1)):
       left_joins, where, unsupported = ast2select._ProcessBlockingIDCond(
           cond, 'Cond1', 'Issue1', snapshot_mode=False)
       self.assertEqual(
@@ -104,10 +104,10 @@ class AST2SelectTest(unittest.TestCase):
     fd = BUILTIN_ISSUE_FIELDS['blocking_id']
     txt_cond = ast_pb2.MakeCond(
         ast_pb2.QueryOp.EQ, [fd], ['1', '2', '3'], [])
-    num_cond = ast_pb2.MakeCond(ast_pb2.QueryOp.EQ, [fd], [], [1L, 2L, 3L])
+    num_cond = ast_pb2.MakeCond(ast_pb2.QueryOp.EQ, [fd], [], [1, 2, 3])
 
     for cond, expected in ((txt_cond, ['1', '2', '3']),
-                           (num_cond, [1L, 2L, 3L])):
+                           (num_cond, [1, 2, 3])):
       left_joins, where, unsupported = ast2select._ProcessBlockingIDCond(
           cond, 'Cond1', 'Issue1', snapshot_mode=False)
       self.assertEqual(
@@ -126,10 +126,10 @@ class AST2SelectTest(unittest.TestCase):
     fd = BUILTIN_ISSUE_FIELDS['blocking_id']
     txt_cond = ast_pb2.MakeCond(
         ast_pb2.QueryOp.NE, [fd], ['1', '2', '3'], [])
-    num_cond = ast_pb2.MakeCond(ast_pb2.QueryOp.NE, [fd], [], [1L, 2L, 3L])
+    num_cond = ast_pb2.MakeCond(ast_pb2.QueryOp.NE, [fd], [], [1, 2, 3])
 
     for cond, expected in ((txt_cond, ['1', '2', '3']),
-                           (num_cond, [1L, 2L, 3L])):
+                           (num_cond, [1, 2, 3])):
       left_joins, where, unsupported = ast2select._ProcessBlockingIDCond(
           cond, 'Cond1', 'Issue1', snapshot_mode=False)
       self.assertEqual(
@@ -159,9 +159,9 @@ class AST2SelectTest(unittest.TestCase):
     fd = BUILTIN_ISSUE_FIELDS['blockedon_id']
     txt_cond = ast_pb2.MakeCond(
         ast_pb2.QueryOp.EQ, [fd], ['1'], [])
-    num_cond = ast_pb2.MakeCond(ast_pb2.QueryOp.EQ, [fd], [], [1L])
+    num_cond = ast_pb2.MakeCond(ast_pb2.QueryOp.EQ, [fd], [], [1])
 
-    for cond, expected in ((txt_cond, '1'), (num_cond, 1L)):
+    for cond, expected in ((txt_cond, '1'), (num_cond, 1)):
       left_joins, where, unsupported = ast2select._ProcessBlockedOnIDCond(
           cond, 'Cond1', 'Issue1', snapshot_mode=False)
       self.assertEqual(
@@ -180,9 +180,9 @@ class AST2SelectTest(unittest.TestCase):
     fd = BUILTIN_ISSUE_FIELDS['blockedon_id']
     txt_cond = ast_pb2.MakeCond(
         ast_pb2.QueryOp.NE, [fd], ['1'], [])
-    num_cond = ast_pb2.MakeCond(ast_pb2.QueryOp.NE, [fd], [], [1L])
+    num_cond = ast_pb2.MakeCond(ast_pb2.QueryOp.NE, [fd], [], [1])
 
-    for cond, expected in ((txt_cond, '1'), (num_cond, 1L)):
+    for cond, expected in ((txt_cond, '1'), (num_cond, 1)):
       left_joins, where, unsupported = ast2select._ProcessBlockedOnIDCond(
           cond, 'Cond1', 'Issue1', snapshot_mode=False)
       self.assertEqual(
@@ -201,10 +201,10 @@ class AST2SelectTest(unittest.TestCase):
     fd = BUILTIN_ISSUE_FIELDS['blockedon_id']
     txt_cond = ast_pb2.MakeCond(
         ast_pb2.QueryOp.EQ, [fd], ['1', '2', '3'], [])
-    num_cond = ast_pb2.MakeCond(ast_pb2.QueryOp.EQ, [fd], [], [1L, 2L, 3L])
+    num_cond = ast_pb2.MakeCond(ast_pb2.QueryOp.EQ, [fd], [], [1, 2, 3])
 
     for cond, expected in ((txt_cond, ['1', '2', '3']),
-                           (num_cond, [1L, 2L, 3L])):
+                           (num_cond, [1, 2, 3])):
       left_joins, where, unsupported = ast2select._ProcessBlockedOnIDCond(
           cond, 'Cond1', 'Issue1', snapshot_mode=False)
       self.assertEqual(
@@ -223,10 +223,10 @@ class AST2SelectTest(unittest.TestCase):
     fd = BUILTIN_ISSUE_FIELDS['blockedon_id']
     txt_cond = ast_pb2.MakeCond(
         ast_pb2.QueryOp.NE, [fd], ['1', '2', '3'], [])
-    num_cond = ast_pb2.MakeCond(ast_pb2.QueryOp.NE, [fd], [], [1L, 2L, 3L])
+    num_cond = ast_pb2.MakeCond(ast_pb2.QueryOp.NE, [fd], [], [1, 2, 3])
 
     for cond, expected in ((txt_cond, ['1', '2', '3']),
-                           (num_cond, [1L, 2L, 3L])):
+                           (num_cond, [1, 2, 3])):
       left_joins, where, unsupported = ast2select._ProcessBlockedOnIDCond(
           cond, 'Cond1', 'Issue1', snapshot_mode=False)
       self.assertEqual(
@@ -256,10 +256,10 @@ class AST2SelectTest(unittest.TestCase):
     fd = BUILTIN_ISSUE_FIELDS['mergedinto_id']
     txt_cond = ast_pb2.MakeCond(
         ast_pb2.QueryOp.EQ, [fd], ['1', '2', '3'], [])
-    num_cond = ast_pb2.MakeCond(ast_pb2.QueryOp.EQ, [fd], [], [1L, 2L, 3L])
+    num_cond = ast_pb2.MakeCond(ast_pb2.QueryOp.EQ, [fd], [], [1, 2, 3])
 
     for cond, expected in ((txt_cond, ['1', '2', '3']),
-                           (num_cond, [1L, 2L, 3L])):
+                           (num_cond, [1, 2, 3])):
       left_joins, where, unsupported = ast2select._ProcessMergedIntoIDCond(
           cond, 'Cond1', 'Issue1', snapshot_mode=False)
       self.assertEqual(

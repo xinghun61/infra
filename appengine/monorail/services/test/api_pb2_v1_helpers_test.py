@@ -770,7 +770,7 @@ class ApiV1HelpersTest(unittest.TestCase):
     phases = [
         tracker_pb2.Phase(name="JustAPhase", rank=1),
         tracker_pb2.Phase(name="Can'tPhaseMe", rank=4),
-        tracker_pb2.Phase(phase_id=11L, rank=5),
+        tracker_pb2.Phase(phase_id=11, rank=5),
         tracker_pb2.Phase(rank=3),
         tracker_pb2.Phase(name="Phase"),
     ]

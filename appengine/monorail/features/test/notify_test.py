@@ -446,9 +446,9 @@ class NotifyTaskHandleRequestTest(unittest.TestCase):
 
   def testNotifyRulesDeletedTask(self):
     self.services.project.TestAddProject(
-        'proj', owner_ids=[777L, 888L], project_id=789)
-    self.services.user.TestAddUser('owner1@test.com', 777L)
-    self.services.user.TestAddUser('cow@test.com', 888L)
+        'proj', owner_ids=[777, 888], project_id=789)
+    self.services.user.TestAddUser('owner1@test.com', 777)
+    self.services.user.TestAddUser('cow@test.com', 888)
     task = notify.NotifyRulesDeletedTask(
         request=None, response=None, services=self.services)
     params = {'project_id': 789,

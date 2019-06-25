@@ -62,7 +62,7 @@ class SearchHelpersTest(unittest.TestCase):
       self.cnxn,
       self.user,
       self.config_service,
-      effective_ids=[10L, 20L],
+      effective_ids=[10, 20],
       project=fake.Project(project_id=789),
       perms=permissions.READ_ONLY_PERMISSIONSET)
     self.mox.VerifyAll()
@@ -84,7 +84,7 @@ class SearchHelpersTest(unittest.TestCase):
       self.cnxn,
       self.user,
       self.config_service,
-      effective_ids=[10L, 20L],
+      effective_ids=[10, 20],
       project=fake.Project(project_id=789),
       perms=permissions.USER_PERMISSIONSET)
     self.mox.VerifyAll()
@@ -107,7 +107,7 @@ class SearchHelpersTest(unittest.TestCase):
       self.cnxn,
       self.user,
       self.config_service,
-      effective_ids=[10L, 20L],
+      effective_ids=[10, 20],
       project=fake.Project(project_id=789),
       perms=perms)
     self.mox.VerifyAll()
@@ -122,7 +122,7 @@ class SearchHelpersTest(unittest.TestCase):
       self.cnxn,
       self.user,
       self.config_service,
-      effective_ids=[10L, 20L],
+      effective_ids=[10, 20],
       project=fake.Project(project_id=789),
       perms=permissions.ADMIN_PERMISSIONSET)
     self.mox.VerifyAll()

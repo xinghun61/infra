@@ -674,7 +674,7 @@ def ComputeNewQuotaBytesUsed(project, attachments):
   Raises:
     OverAttachmentQuota: If project would go over quota.
   """
-  total_attach_size = 0L
+  total_attach_size = 0
   for _filename, content, _mimetype in attachments:
     total_attach_size += len(content)
 

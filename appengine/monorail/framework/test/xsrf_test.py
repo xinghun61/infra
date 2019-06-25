@@ -32,7 +32,7 @@ class XsrfTest(unittest.TestCase):
     self.testbed.deactivate()
 
   def testGenerateToken_AnonUserGetsAToken(self):
-    self.assertNotEqual('', xsrf.GenerateToken(0L, '/path'))
+    self.assertNotEqual('', xsrf.GenerateToken(0, '/path'))
 
   def testGenerateToken_DifferentUsersGetDifferentTokens(self):
     self.assertNotEqual(
@@ -41,7 +41,7 @@ class XsrfTest(unittest.TestCase):
 
     self.assertNotEqual(
         xsrf.GenerateToken(111, '/path'),
-        xsrf.GenerateToken(0L, '/path'))
+        xsrf.GenerateToken(0, '/path'))
 
   def testGenerateToken_DifferentPathsGetDifferentTokens(self):
     self.assertNotEqual(
@@ -113,7 +113,7 @@ class XsrfTest(unittest.TestCase):
     mockTime.return_value = test_time + xsrf.TOKEN_TIMEOUT_SEC + 1
     self.assertRaises(
       xsrf.TokenIncorrect,
-      xsrf.ValidateToken, token, 11L, '/path')
+      xsrf.ValidateToken, token, 11, '/path')
 
   @patch('time.time')
   def testGetRoundedTime(self, mockTime):

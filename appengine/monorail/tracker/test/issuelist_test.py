@@ -121,7 +121,7 @@ class IssueListUnitTest(unittest.TestCase):
     self.assertEqual('dit_keystrokes', help_data['cue'])
 
     # Anon users do not see the cue.
-    mr.auth.user_id = 0L
+    mr.auth.user_id = 0
     help_data = servlet.GatherHelpData(mr, page_data)
     self.assertEqual(None, help_data['cue'])
 

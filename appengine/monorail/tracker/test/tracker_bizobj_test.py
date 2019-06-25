@@ -928,7 +928,7 @@ class BizobjTest(unittest.TestCase):
         reporter_id=333, owner_id=444, derived_cc_ids=[222, 444])
     issue2.field_values = [tracker_pb2.FieldValue(user_id=555)]
     self.assertEqual(
-        set([0L, 111, 222, 333, 444, 555, 666, 777, 888]),
+        set([0, 111, 222, 333, 444, 555, 666, 777, 888]),
         tracker_bizobj.UsersInvolvedInIssues([issue1, issue2]))
 
   def testUsersInvolvedInTemplate_Empty(self):

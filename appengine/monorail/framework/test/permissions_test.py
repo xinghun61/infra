@@ -1130,21 +1130,21 @@ class RestrictionLabelsTest(unittest.TestCase):
 
   def testGetRestrictions(self):
     art = fake.MakeTestIssue(
-        789, 1, self.ORIG_SUMMARY, 'New', 0L, labels=self.ORIG_LABELS)
+        789, 1, self.ORIG_SUMMARY, 'New', 0, labels=self.ORIG_LABELS)
     self.assertEquals([], permissions.GetRestrictions(art))
 
     art = fake.MakeTestIssue(
-        789, 1, self.ORIG_SUMMARY, 'New', 0L,
+        789, 1, self.ORIG_SUMMARY, 'New', 0,
         labels=['Restrict-MissingThirdPart', 'Hot'])
     self.assertEquals([], permissions.GetRestrictions(art))
 
     art = fake.MakeTestIssue(
-        789, 1, self.ORIG_SUMMARY, 'New', 0L,
+        789, 1, self.ORIG_SUMMARY, 'New', 0,
         labels=['Restrict-View-Core', 'Hot'])
     self.assertEquals(['restrict-view-core'], permissions.GetRestrictions(art))
 
     art = fake.MakeTestIssue(
-        789, 1, self.ORIG_SUMMARY, 'New', 0L,
+        789, 1, self.ORIG_SUMMARY, 'New', 0,
         labels=['Restrict-View-Core', 'Hot'],
         derived_labels=['Color-Red', 'Restrict-EditIssue-GoldMembers'])
     self.assertEquals(
@@ -1152,7 +1152,7 @@ class RestrictionLabelsTest(unittest.TestCase):
         permissions.GetRestrictions(art))
 
     art = fake.MakeTestIssue(
-        789, 1, self.ORIG_SUMMARY, 'New', 0L,
+        789, 1, self.ORIG_SUMMARY, 'New', 0,
         labels=['restrict-view-core', 'hot'],
         derived_labels=['Color-Red', 'RESTRICT-EDITISSUE-GOLDMEMBERS'])
     self.assertEquals(

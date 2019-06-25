@@ -374,7 +374,7 @@ class FilterRulesHelpersTest(unittest.TestCase):
 
     # No components.
     issue = fake.MakeTestIssue(
-        789, 1, ORIG_SUMMARY, 'New', 0L, labels=ORIG_LABELS)
+        789, 1, ORIG_SUMMARY, 'New', 0, labels=ORIG_LABELS)
     self.assertEquals(
         (0, '', [], [], [], {}, [], []),
         filterrules_helpers._ComputeDerivedFields(
@@ -383,7 +383,7 @@ class FilterRulesHelpersTest(unittest.TestCase):
     # One component, no CCs or labels added
     issue.component_ids = [20]
     issue = fake.MakeTestIssue(
-        789, 1, ORIG_SUMMARY, 'New', 0L, labels=ORIG_LABELS)
+        789, 1, ORIG_SUMMARY, 'New', 0, labels=ORIG_LABELS)
     self.assertEquals(
         (0, '', [], [], [], {}, [], []),
         filterrules_helpers._ComputeDerivedFields(
@@ -391,7 +391,7 @@ class FilterRulesHelpersTest(unittest.TestCase):
 
     # One component, some CCs and labels added
     issue = fake.MakeTestIssue(
-        789, 1, ORIG_SUMMARY, 'New', 0L, labels=ORIG_LABELS,
+        789, 1, ORIG_SUMMARY, 'New', 0, labels=ORIG_LABELS,
         component_ids=[10])
     traces = {
       (tracker_pb2.FieldID.CC, TEST_ID_MAP['db@example.com']):
@@ -413,7 +413,7 @@ class FilterRulesHelpersTest(unittest.TestCase):
 
     # One component, CCs and labels not added because of labels on the issue.
     issue = fake.MakeTestIssue(
-        789, 1, ORIG_SUMMARY, 'New', 0L, labels=['Priority-Low', 'i18n'],
+        789, 1, ORIG_SUMMARY, 'New', 0, labels=['Priority-Low', 'i18n'],
         component_ids=[10])
     issue.cc_ids = [TEST_ID_MAP['db@example.com']]
     traces = {
@@ -431,7 +431,7 @@ class FilterRulesHelpersTest(unittest.TestCase):
     # Multiple components, added CCs treated as a set, exclusive labels in later
     # components take priority over earlier ones.
     issue = fake.MakeTestIssue(
-        789, 1, ORIG_SUMMARY, 'New', 0L, labels=ORIG_LABELS,
+        789, 1, ORIG_SUMMARY, 'New', 0, labels=ORIG_LABELS,
         component_ids=[10, 30])
     traces = {
       (tracker_pb2.FieldID.CC, TEST_ID_MAP['db@example.com']):
@@ -485,14 +485,14 @@ class FilterRulesHelpersTest(unittest.TestCase):
 
     # No rules fire.
     issue = fake.MakeTestIssue(
-        789, 1, ORIG_SUMMARY, 'New', 0L, labels=ORIG_LABELS)
+        789, 1, ORIG_SUMMARY, 'New', 0, labels=ORIG_LABELS)
     self.assertEquals(
         (0, '', [], [], [], {}, [], []),
         filterrules_helpers._ComputeDerivedFields(
             cnxn, self.services, issue, config, rules, predicate_asts))
 
     issue = fake.MakeTestIssue(
-        789, 1, ORIG_SUMMARY, 'New', 0L, labels=['foo', 'bar'])
+        789, 1, ORIG_SUMMARY, 'New', 0, labels=['foo', 'bar'])
     self.assertEquals(
         (0, '', [], [], [], {}, [], []),
         filterrules_helpers._ComputeDerivedFields(
@@ -500,7 +500,7 @@ class FilterRulesHelpersTest(unittest.TestCase):
 
     # One rule fires.
     issue = fake.MakeTestIssue(
-        789, 1, ORIG_SUMMARY, 'New', 0L, labels=['Size-L'])
+        789, 1, ORIG_SUMMARY, 'New', 0, labels=['Size-L'])
     traces = {
         (tracker_pb2.FieldID.OWNER, 444):
             'Added by rule: IF Size=L THEN SET DEFAULT OWNER',
@@ -512,7 +512,7 @@ class FilterRulesHelpersTest(unittest.TestCase):
 
     # One rule fires, but no effect because of explicit fields.
     issue = fake.MakeTestIssue(
-        789, 1, ORIG_SUMMARY, 'New', 0L,
+        789, 1, ORIG_SUMMARY, 'New', 0,
         labels=['HasWorkaround', 'Priority-Critical'])
     traces = {}
     self.assertEquals(
@@ -522,7 +522,7 @@ class FilterRulesHelpersTest(unittest.TestCase):
 
     # One rule fires, another has no effect because of explicit exclusive label.
     issue = fake.MakeTestIssue(
-        789, 1, ORIG_SUMMARY, 'New', 0L,
+        789, 1, ORIG_SUMMARY, 'New', 0,
         labels=['Security', 'Priority-Critical'])
     traces = {
         (tracker_pb2.FieldID.LABELS, 'Private'):
@@ -536,7 +536,7 @@ class FilterRulesHelpersTest(unittest.TestCase):
 
     # Multiple rules have cumulative effect.
     issue = fake.MakeTestIssue(
-        789, 1, ORIG_SUMMARY, 'New', 0L, labels=['HasWorkaround', 'Size-L'])
+        789, 1, ORIG_SUMMARY, 'New', 0, labels=['HasWorkaround', 'Size-L'])
     traces = {
         (tracker_pb2.FieldID.LABELS, 'Priority-Low'):
             'Added by rule: IF label:HasWorkaround THEN ADD LABEL',
@@ -551,7 +551,7 @@ class FilterRulesHelpersTest(unittest.TestCase):
 
     # Multiple rules have cumulative warnings.
     issue = fake.MakeTestIssue(
-        789, 1, ORIG_SUMMARY, 'New', 0L, labels=['Size-XL'])
+        789, 1, ORIG_SUMMARY, 'New', 0, labels=['Size-XL'])
     traces = {
         (tracker_pb2.FieldID.WARNING, 'It will take too long'):
             'Added by rule: IF Size=XL THEN ADD WARNING',
@@ -559,14 +559,14 @@ class FilterRulesHelpersTest(unittest.TestCase):
             'Added by rule: IF Size=XL THEN ADD WARNING',
         }
     self.assertEquals(
-        (0L, '', [], [], [], traces,
+        (0, '', [], [], [], traces,
          ['It will take too long', 'It will cost too much'], []),
         filterrules_helpers._ComputeDerivedFields(
             cnxn, self.services, issue, config, rules, predicate_asts))
 
     # Two rules fire, second overwrites the first.
     issue = fake.MakeTestIssue(
-        789, 1, ORIG_SUMMARY, 'New', 0L, labels=['HasWorkaround', 'Security'])
+        789, 1, ORIG_SUMMARY, 'New', 0, labels=['HasWorkaround', 'Security'])
     traces = {
         (tracker_pb2.FieldID.LABELS, 'Priority-Low'):
             'Added by rule: IF label:HasWorkaround THEN ADD LABEL',
@@ -583,7 +583,7 @@ class FilterRulesHelpersTest(unittest.TestCase):
 
     # Two rules fire, second triggered by the first.
     issue = fake.MakeTestIssue(
-        789, 1, ORIG_SUMMARY, 'New', 0L, labels=['Security', 'Regression'])
+        789, 1, ORIG_SUMMARY, 'New', 0, labels=['Security', 'Regression'])
     traces = {
         (tracker_pb2.FieldID.LABELS, 'Priority-High'):
             'Added by rule: IF label:Security THEN ADD LABEL',
@@ -714,11 +714,11 @@ class FilterRulesHelpersTest(unittest.TestCase):
 
   def testCompareIssueRefs_Normal(self):
     self.services.issue.TestAddIssue(fake.MakeTestIssue(
-        789, 1, 'summary', 'New', 0L, issue_id=123))
+        789, 1, 'summary', 'New', 0, issue_id=123))
     self.services.issue.TestAddIssue(fake.MakeTestIssue(
-        789, 2, 'summary', 'New', 0L, issue_id=124))
+        789, 2, 'summary', 'New', 0, issue_id=124))
     self.services.issue.TestAddIssue(fake.MakeTestIssue(
-        890, 1, 'other summary', 'New', 0L, issue_id=125))
+        890, 1, 'other summary', 'New', 0, issue_id=125))
 
     # EQ and NE, implict references to the current project.
     self.assertTrue(filterrules_helpers._CompareIssueRefs(
@@ -846,19 +846,19 @@ class FilterRulesHelpersTest(unittest.TestCase):
 
   def testOwnerCcsInvolvedInFilterRules(self):
     rules = [
-        tracker_pb2.FilterRule(add_cc_ids=[111L, 333L], default_owner_id=999L),
-        tracker_pb2.FilterRule(default_owner_id=888L),
-        tracker_pb2.FilterRule(add_cc_ids=[999L, 777L]),
+        tracker_pb2.FilterRule(add_cc_ids=[111, 333], default_owner_id=999),
+        tracker_pb2.FilterRule(default_owner_id=888),
+        tracker_pb2.FilterRule(add_cc_ids=[999, 777]),
         tracker_pb2.FilterRule(),
         ]
     actual_user_ids = filterrules_helpers.OwnerCcsInvolvedInFilterRules(rules)
-    self.assertItemsEqual([111L, 333L, 777L, 888L, 999L], actual_user_ids)
+    self.assertItemsEqual([111, 333, 777, 888, 999], actual_user_ids)
 
   def testBuildFilterRuleStrings(self):
     rules = [
         tracker_pb2.FilterRule(
-            predicate='label:machu', add_cc_ids=[111L, 333L, 999L]),
-        tracker_pb2.FilterRule(predicate='label:pichu', default_owner_id=222L),
+            predicate='label:machu', add_cc_ids=[111, 333, 999]),
+        tracker_pb2.FilterRule(predicate='label:pichu', default_owner_id=222),
         tracker_pb2.FilterRule(
             predicate='owner:farmer@test.com',
             add_labels=['cows-farting', 'chicken', 'machu-pichu']),
@@ -868,7 +868,7 @@ class FilterRulesHelpersTest(unittest.TestCase):
             add_notify_addrs=['cake@test.com', 'pie@test.com']),
     ]
     emails_by_id = {
-        111L: 'cow@test.com', 222L: 'fox@test.com', 333L: 'llama@test.com'}
+        111: 'cow@test.com', 222: 'fox@test.com', 333: 'llama@test.com'}
     rule_strs = filterrules_helpers.BuildFilterRuleStrings(rules, emails_by_id)
 
     self.assertItemsEqual(
@@ -886,9 +886,9 @@ class FilterRulesHelpersTest(unittest.TestCase):
     rules_by_project = {
         16: [
             tracker_pb2.FilterRule(
-                predicate='label:machu', add_cc_ids=[111L, 333L, 999L]),
+                predicate='label:machu', add_cc_ids=[111, 333, 999]),
             tracker_pb2.FilterRule(
-                predicate='label:pichu', default_owner_id=222L)],
+                predicate='label:pichu', default_owner_id=222)],
         19: [
             tracker_pb2.FilterRule(
                 predicate='owner:farmer@test.com',
@@ -898,9 +898,9 @@ class FilterRulesHelpersTest(unittest.TestCase):
                 add_notify_addrs=['cake@test.com', 'pie@test.com'])],
         }
     deleted_emails = ['farmer@test.com', 'pie@test.com', 'fox@test.com']
-    self.services.user.TestAddUser('cow@test.com', 111L)
-    self.services.user.TestAddUser('fox@test.com', 222L)
-    self.services.user.TestAddUser('llama@test.com', 333L)
+    self.services.user.TestAddUser('cow@test.com', 111)
+    self.services.user.TestAddUser('fox@test.com', 222)
+    self.services.user.TestAddUser('llama@test.com', 333)
     actual = filterrules_helpers.BuildRedactedFilterRuleStrings(
         self.cnxn, rules_by_project, self.services.user, deleted_emails)
 

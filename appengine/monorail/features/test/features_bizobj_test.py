@@ -17,7 +17,7 @@ from testing import fake
 class FeaturesBizobjTest(unittest.TestCase):
 
   def setUp(self):
-    self.local_ids = [1L, 2L, 3L, 4L, 5L]
+    self.local_ids = [1, 2, 3, 4, 5]
     self.issues = [fake.MakeTestIssue(1000, local_id, '', 'New', 111)
                    for local_id in self.local_ids]
     self.hotlistitems = [features_pb2.MakeHotlistItem(
@@ -31,7 +31,7 @@ class FeaturesBizobjTest(unittest.TestCase):
       self.assertTrue(features_bizobj.IssueIsInHotlist(hotlist, issue.issue_id))
 
     self.assertFalse(features_bizobj.IssueIsInHotlist(
-        hotlist, fake.MakeTestIssue(1000, 9L, '', 'New', 111)))
+        hotlist, fake.MakeTestIssue(1000, 9, '', 'New', 111)))
 
   def testSplitHotlistIssueRanks(self):
     iid_rank_tuples = [(issue.issue_id, issue.rank)

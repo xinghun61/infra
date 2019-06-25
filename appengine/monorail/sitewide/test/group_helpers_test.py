@@ -29,7 +29,7 @@ class GroupHelpersTest(unittest.TestCase):
     self.assertEqual('Group Owners', gvv_owners.name)
 
   def testGroupMemberView(self):
-    user = user_pb2.MakeUser(1L, email='test@example.com')
+    user = user_pb2.MakeUser(1, email='test@example.com')
     gmv = group_helpers.GroupMemberView(user, 888, 'member')
     self.assertEqual(888, gmv.group_id)
     self.assertEqual('member', gmv.role)

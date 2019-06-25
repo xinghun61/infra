@@ -57,9 +57,9 @@ class IssueEntryTest(unittest.TestCase):
     response = webapp2.Response()
     self.servlet = issueentry.IssueEntry(
         request, response, services=self.services)
-    self.user = self.services.user.TestAddUser('to_pass_tests', 0L)
+    self.user = self.services.user.TestAddUser('to_pass_tests', 0)
     self.services.features.TestAddHotlist(
-        name='dontcare', summary='', owner_ids=[0L])
+        name='dontcare', summary='', owner_ids=[0])
     self.template = testing_helpers.DefaultTemplates()[1]
     self.services.template.GetTemplateByName = Mock(return_value=self.template)
     self.services.template.GetTemplateSetForProject = Mock(

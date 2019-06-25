@@ -27,7 +27,7 @@ class BannedTest(unittest.TestCase):
     servlet = banned.Banned('request', 'response', services=self.services)
 
     mr = monorailrequest.MonorailRequest(self.services)
-    mr.auth.user_id = 0L  # Anon user cannot see banned page.
+    mr.auth.user_id = 0  # Anon user cannot see banned page.
     with self.assertRaises(webapp2.HTTPException) as cm:
       servlet.AssertBasePermission(mr)
     self.assertEquals(404, cm.exception.code)

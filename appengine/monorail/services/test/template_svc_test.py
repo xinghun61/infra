@@ -443,7 +443,7 @@ class ExpungeUsersInTemplatesTest(TemplateServiceTest):
     self.template_service.template_tbl.Update = Mock()
 
   def testExpungeUsersInTemplates(self):
-    user_ids = [111L, 222L]
+    user_ids = [111, 222]
     self.template_service.ExpungeUsersInTemplates(self.cnxn, user_ids, limit=60)
 
     self.template_service.template2admin_tbl.Delete.assert_called_once_with(

@@ -849,7 +849,7 @@ class ConfigServiceTest(unittest.TestCase):
     self.config_service.fielddef2admin_tbl.Delete = mock.Mock()
     self.config_service.approvaldef2approver_tbl.Delete = mock.Mock()
 
-    user_ids = [111L, 222L, 333L]
+    user_ids = [111, 222, 333]
     self.config_service.ExpungeUsersInConfigs(self.cnxn, user_ids, limit=50)
 
     self.config_service.component2admin_tbl.Delete.assert_called_once_with(

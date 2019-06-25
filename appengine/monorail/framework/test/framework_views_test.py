@@ -225,7 +225,7 @@ class RevealEmailsToMembersTest(unittest.TestCase):
     self.CheckRevealAllToMember(100001, True)
 
   def testRevealAllEmailsToMembers_Collaborators(self):
-    self.CheckRevealAllToMember(0L, False)
+    self.CheckRevealAllToMember(0, False)
     self.CheckRevealAllToMember(111, True)
     self.CheckRevealAllToMember(222, True)
     self.CheckRevealAllToMember(333, True)

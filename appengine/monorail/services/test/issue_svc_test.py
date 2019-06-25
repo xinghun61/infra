@@ -895,14 +895,14 @@ class IssueServiceTest(unittest.TestCase):
         local_id=1, issue_id=78901, owner_id=111, summary='sum', status='New',
         project_id=789)
     issue_shard = issue.issue_id % settings.num_logical_shards
-    fv1 = tracker_bizobj.MakeFieldValue(345, 679, '', 0L, None, None, False)
+    fv1 = tracker_bizobj.MakeFieldValue(345, 679, '', 0, None, None, False)
     issue.field_values.append(fv1)
-    fv2 = tracker_bizobj.MakeFieldValue(346, 0, 'Blue', 0L, None, None, True)
+    fv2 = tracker_bizobj.MakeFieldValue(346, 0, 'Blue', 0, None, None, True)
     issue.field_values.append(fv2)
-    fv3 = tracker_bizobj.MakeFieldValue(347, 0, '', 0L, 1234567890, None, True)
+    fv3 = tracker_bizobj.MakeFieldValue(347, 0, '', 0, 1234567890, None, True)
     issue.field_values.append(fv3)
     fv4 = tracker_bizobj.MakeFieldValue(
-        348, 0, '', 0L, None, 'www.google.com', True, phase_id=14)
+        348, 0, '', 0, None, 'www.google.com', True, phase_id=14)
     issue.field_values.append(fv4)
     self.SetUpUpdateIssuesFields(issue2fieldvalue_rows=[
         (issue.issue_id, fv1.field_id, fv1.int_value, fv1.str_value,
@@ -2434,7 +2434,7 @@ class IssueServiceTest(unittest.TestCase):
     self.services.issue.issuesnapshot2cc_tbl.Update = Mock()
 
     emails = ['cow@farm.com', 'pig@farm.com', 'chicken@farm.com']
-    user_ids = [222L, 888L, 444L]
+    user_ids = [222, 888, 444]
     emails_by_id = {user_id: email for user_id, email in zip(user_ids, emails)}
     commit = False
     limit = 50

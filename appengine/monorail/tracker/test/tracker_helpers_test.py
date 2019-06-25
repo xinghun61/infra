@@ -520,9 +520,9 @@ class HelpersTest(unittest.TestCase):
 
   def testIsValidIssueOwner(self):
     project = project_pb2.Project()
-    project.owner_ids.extend([1L, 2L])
-    project.committer_ids.extend([3L])
-    project.contributor_ids.extend([4L, 999])
+    project.owner_ids.extend([1, 2])
+    project.committer_ids.extend([3])
+    project.contributor_ids.extend([4, 999])
 
     valid, _ = tracker_helpers.IsValidIssueOwner(
         'fake cnxn', project, framework_constants.NO_USER_SPECIFIED,
@@ -530,24 +530,24 @@ class HelpersTest(unittest.TestCase):
     self.assertTrue(valid)
 
     valid, _ = tracker_helpers.IsValidIssueOwner(
-        'fake cnxn', project, 1L,
+        'fake cnxn', project, 1,
         self.services)
     self.assertTrue(valid)
     valid, _ = tracker_helpers.IsValidIssueOwner(
-        'fake cnxn', project, 2L,
+        'fake cnxn', project, 2,
         self.services)
     self.assertTrue(valid)
     valid, _ = tracker_helpers.IsValidIssueOwner(
-        'fake cnxn', project, 3L,
+        'fake cnxn', project, 3,
         self.services)
     self.assertTrue(valid)
     valid, _ = tracker_helpers.IsValidIssueOwner(
-        'fake cnxn', project, 4L,
+        'fake cnxn', project, 4,
         self.services)
     self.assertTrue(valid)
 
     valid, _ = tracker_helpers.IsValidIssueOwner(
-        'fake cnxn', project, 7L,
+        'fake cnxn', project, 7,
         self.services)
     self.assertFalse(valid)
 
@@ -774,7 +774,7 @@ class HelpersTest(unittest.TestCase):
     source_issue.cc_ids.append(111)
     # Issue without owner
     source_issue_2 = fake.MakeTestIssue(
-        789, 101, 'Source issue 2', 'New', 0L)
+        789, 101, 'Source issue 2', 'New', 0)
 
     self.services.issue.TestAddIssue(target_issue)
     self.services.issue.TestAddIssue(source_issue)
@@ -809,7 +809,7 @@ class HelpersTest(unittest.TestCase):
             self.services, mr, source_issue_2, updated_target_issue))
     updated_target_issue = self.services.issue.GetIssueByLocalID(
         'fake cnxn', 789, 10)
-    self.assertNotIn(0L, updated_target_issue.cc_ids)
+    self.assertNotIn(0, updated_target_issue.cc_ids)
 
   def testMergeCCsAndAddComment_RestrictedSourceIssue(self):
     target_issue = fake.MakeTestIssue(

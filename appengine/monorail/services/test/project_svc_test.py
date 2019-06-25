@@ -488,7 +488,7 @@ class ProjectServiceTest(unittest.TestCase):
     self.project_service.membernotes_tbl.Delete = mock.Mock()
     self.project_service.user2project_tbl.Delete = mock.Mock()
 
-    user_ids = [111L, 222L]
+    user_ids = [111, 222]
     self.project_service.ExpungeUsersInProjects(self.cnxn, user_ids)
 
     call = [mock.call(self.cnxn, user_id=user_ids, commit=False)]

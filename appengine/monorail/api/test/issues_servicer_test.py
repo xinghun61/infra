@@ -184,8 +184,8 @@ class IssuesServicerTest(unittest.TestCase):
   def testGetIssue_Moved(self):
     """We can get a moved issue."""
     self.services.project.TestAddProject(
-        'other', project_id=987, owner_ids=[111L], contrib_ids=[111L])
-    issue = fake.MakeTestIssue(987, 200, 'sum', 'New', 111L, issue_id=1010)
+        'other', project_id=987, owner_ids=[111], contrib_ids=[111])
+    issue = fake.MakeTestIssue(987, 200, 'sum', 'New', 111, issue_id=1010)
     self.services.issue.TestAddIssue(issue)
     self.services.issue.TestAddMovedIssueRef(789, 404, 987, 200)
 

@@ -41,7 +41,7 @@ class UserSettingsTest(unittest.TestCase):
     self.servlet.AssertBasePermission(mr)
 
     # No logged in user means anonymous access, should raise error.
-    mr.auth.user_id = 0L
+    mr.auth.user_id = 0
     self.assertRaises(permissions.PermissionException,
                       self.servlet.AssertBasePermission, mr)
 
@@ -49,7 +49,7 @@ class UserSettingsTest(unittest.TestCase):
     self.mox.StubOutWithMock(
         framework_helpers.UserSettings, 'GatherUnifiedSettingsPageData')
     framework_helpers.UserSettings.GatherUnifiedSettingsPageData(
-        0L, None, mox.IsA(user_pb2.User), mox.IsA(user_pb2.UserPrefs)
+        0, None, mox.IsA(user_pb2.User), mox.IsA(user_pb2.UserPrefs)
         ).AndReturn({'unified': None})
     self.mox.ReplayAll()
 

@@ -317,7 +317,7 @@ class UserServiceTest(unittest.TestCase):
 
   def testExpungeUsersHotlistsHistory(self):
     self.user_service.hotlistvisithistory_tbl.Delete = mock.Mock()
-    user_ids = [111L, 222L]
+    user_ids = [111, 222]
     self.user_service.ExpungeUsersHotlistsHistory(
         self.cnxn, user_ids, commit=False)
     self.user_service.hotlistvisithistory_tbl.Delete.assert_called_once_with(
@@ -519,7 +519,7 @@ class UserServiceTest(unittest.TestCase):
     self.user_service.userprefs_tbl.Delete = mock.Mock()
     self.user_service.user_tbl.Delete = mock.Mock()
 
-    user_ids = [222L, 444L]
+    user_ids = [222, 444]
     self.user_service.ExpungeUsers(self.cnxn, user_ids)
 
     calls = [mock.call(self.cnxn, user_id=user_ids, commit=False)]

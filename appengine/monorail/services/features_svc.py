@@ -752,7 +752,7 @@ class FeaturesService(object):
       items_sorted = sorted(hotlist.items, key=lambda item: item.rank)
       rank_base = items_sorted[-1].rank + 10
     else:
-      rank_base = 1L
+      rank_base = 1
     insert_rows = [
         (hotlist_id, issue_id, rank*10 + rank_base, user_id, ts, note)
         for (rank, (issue_id, user_id, ts, note)) in enumerate(added_tuples)

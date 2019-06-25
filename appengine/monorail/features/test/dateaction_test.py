@@ -257,7 +257,7 @@ class IssueDateActionTaskTest(unittest.TestCase):
   def testMakeEmailTasks_Starrer(self):
     """Users who starred the issue are notified iff they opt in."""
     issue = fake.MakeTestIssue(
-        789, 1, 'summary', 'New', 0L, issue_id=78901)
+        789, 1, 'summary', 'New', 0, issue_id=78901)
     self.services.issue.TestAddIssue(issue)
     now = int(time.time())
     self.SetUpFieldValues(issue, now)

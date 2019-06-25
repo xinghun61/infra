@@ -2187,7 +2187,7 @@ class FeaturesService(object):
       items_sorted = sorted(hotlist.items, key=lambda item: item.rank)
       rank_base = items_sorted[-1].rank + 10
     else:
-      rank_base = 1L
+      rank_base = 1
 
     new_hotlist_items = [
         features_pb2.MakeHotlistItem(
