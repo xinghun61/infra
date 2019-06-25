@@ -21,8 +21,10 @@ func TestRunSuite(t *testing.T) {
 			Model:     "foo-model",
 			Pool:      "foo-pool",
 			SuiteName: "foo-suite",
+			SuiteArgs: map[string]int{"arg1": 1},
 		}
-		req := proxy.NewRunSuite(args)
+		req, err := proxy.NewRunSuite(args)
+		So(err, ShouldBeNil)
 		So(req, ShouldNotBeNil)
 		So(req.TaskSlices, ShouldHaveLength, 1)
 		Convey("the correct commandline args are present.", func() {
@@ -33,6 +35,14 @@ func TestRunSuite(t *testing.T) {
 			So(flatCmd, ShouldContainSubstring, "--model foo-model")
 			So(flatCmd, ShouldContainSubstring, "--pool foo-pool")
 			So(flatCmd, ShouldContainSubstring, "--suite_name foo-suite")
+
+			So(slice.Properties.Command, ShouldContain, "--suite_args_json")
+			for i, v := range slice.Properties.Command {
+				if v == "--suite_args_json" {
+					So(slice.Properties.Command[i+1], ShouldEqual, "{\"arg1\":1}")
+					break
+				}
+			}
 		})
 	})
 }
