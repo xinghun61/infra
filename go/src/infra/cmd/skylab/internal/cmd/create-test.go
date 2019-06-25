@@ -163,10 +163,13 @@ func (c *createTestRun) innerRun(a subcommands.Application, args []string, env s
 		return err
 	}
 
-	ctx, cf := context.WithTimeout(ctx, 60*time.Second)
+	ctx, cf := context.WithTimeout(ctx, 120*time.Second)
 	defer cf()
 	resp, err := client.CreateTask(ctx, req)
 	if err != nil {
+		if err == context.DeadlineExceeded {
+			return errors.Reason("timed out while attempting to create swarming task").Err()
+		}
 		return errors.Annotate(err, "create test").Err()
 	}
 
