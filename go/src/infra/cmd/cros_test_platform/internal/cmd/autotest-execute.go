@@ -8,6 +8,8 @@ import (
 	"fmt"
 
 	"github.com/maruel/subcommands"
+
+	"go.chromium.org/chromiumos/infra/proto/go/test_platform/steps"
 )
 
 // AutotestExecute subcommand: Run a set of enumerated tests against autotest backend.
@@ -43,5 +45,25 @@ func (c *autotestExecuteRun) Run(a subcommands.Application, args []string, env s
 }
 
 func (c *autotestExecuteRun) innerRun(a subcommands.Application, args []string, env subcommands.Env) error {
+	request, err := c.readRequest(c.inputPath)
+	if err != nil {
+		return err
+	}
+
+	if err := c.validateRequest(request); err != nil {
+		return err
+	}
+
 	return fmt.Errorf("not yet implemented")
+}
+
+func (c *autotestExecuteRun) validateRequest(request *steps.ExecuteRequest) error {
+	if err := c.validateRequest(request); err != nil {
+		return err
+	}
+
+	// TODO(akeshet): Once the swarming proxy config message is defined, assert
+	// that it is non-nil here for this request.
+
+	return nil
 }

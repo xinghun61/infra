@@ -55,12 +55,12 @@ func (c *skylabExecuteRun) Run(a subcommands.Application, args []string, env sub
 }
 
 func (c *skylabExecuteRun) innerRun(a subcommands.Application, args []string, env subcommands.Env) error {
-	var request steps.ExecuteRequest
-	if err := readRequest(c.inputPath, &request); err != nil {
+	request, err := c.readRequest(c.inputPath)
+	if err != nil {
 		return err
 	}
 
-	if err := validateRequest(&request); err != nil {
+	if err := c.validateRequest(request); err != nil {
 		return err
 	}
 
@@ -76,7 +76,7 @@ func (c *skylabExecuteRun) innerRun(a subcommands.Application, args []string, en
 		return err
 	}
 
-	response, err := c.handleRequest(ctx, a.GetErr(), &request, client)
+	response, err := c.handleRequest(ctx, a.GetErr(), request, client)
 	if err != nil && response == nil {
 		// Catastrophic error. There is no reasonable response to write.
 		return err
@@ -85,13 +85,9 @@ func (c *skylabExecuteRun) innerRun(a subcommands.Application, args []string, en
 	return writeResponse(c.outputPath, response, err)
 }
 
-func validateRequest(request *steps.ExecuteRequest) error {
-	if request == nil {
-		return fmt.Errorf("nil request")
-	}
-
-	if request.Config == nil {
-		return fmt.Errorf("nil request.Config")
+func (c *skylabExecuteRun) validateRequest(request *steps.ExecuteRequest) error {
+	if err := c.validateRequest(request); err != nil {
+		return err
 	}
 
 	if request.Config.SkylabSwarming == nil {

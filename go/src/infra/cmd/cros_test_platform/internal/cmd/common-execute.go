@@ -8,6 +8,8 @@ import (
 	"fmt"
 
 	"github.com/maruel/subcommands"
+
+	"go.chromium.org/chromiumos/infra/proto/go/test_platform/steps"
 )
 
 type commonExecuteRun struct {
@@ -28,6 +30,26 @@ func (c *commonExecuteRun) validateArgs() error {
 
 	if c.outputPath == "" {
 		return fmt.Errorf("-output_json not specified")
+	}
+
+	return nil
+}
+
+func (c *commonExecuteRun) readRequest(inputPath string) (*steps.ExecuteRequest, error) {
+	var request steps.ExecuteRequest
+	if err := readRequest(inputPath, &request); err != nil {
+		return nil, err
+	}
+	return &request, nil
+}
+
+func (c *commonExecuteRun) validateRequest(request *steps.ExecuteRequest) error {
+	if request == nil {
+		return fmt.Errorf("nil request")
+	}
+
+	if request.Config == nil {
+		return fmt.Errorf("nil request.Config")
 	}
 
 	return nil
