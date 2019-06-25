@@ -783,6 +783,20 @@ wheel: <
 * *manylinux-x86*
 * *manylinux-x86-ucs2*
 
+## **crontab**
+
+### 0.22.0
+
+```protobuf
+wheel: <
+  name: "infra/python/wheels/crontab-py2_py3"
+  version: "version:0.22.0"
+>
+```
+
+
+* *universal*
+
 ## **cryptography**
 
 ### 2.0.3
