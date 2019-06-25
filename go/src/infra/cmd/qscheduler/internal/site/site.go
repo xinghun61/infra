@@ -20,12 +20,12 @@ type Environment struct {
 
 // Prod is the environment for prod.
 var Prod = Environment{
-	QSchedulerHost: "qscheduler-swarming.appspot.com",
+	QSchedulerHost: "qscheduler-prod.chromium.org",
 }
 
 // Dev is the environment for dev.
 var Dev = Environment{
-	QSchedulerHost: "qscheduler-swarming-dev.appspot.com",
+	QSchedulerHost: "qscheduler-dev.chromium.org",
 }
 
 // DefaultAuthOptions is an auth.Options struct prefilled with chrome-infra
