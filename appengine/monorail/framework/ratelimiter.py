@@ -30,7 +30,7 @@ from services import client_config_svc
 N_MINUTES = 5
 EXPIRE_AFTER_SECS = 60 * 60
 DEFAULT_LIMIT = 60 * N_MINUTES  # 300 page requests in 5 minutes is 1 QPS.
-DEFAULT_API_QPM = 450  # For example, chromiumdash uses ~80 per page.
+DEFAULT_API_QPM = 1000  # For example, chromiumdash uses ~64 per page, 8s each.
 
 ANON_USER = 'anon'
 
@@ -193,27 +193,25 @@ class RateLimiter(object):
     based on keys created from start_time instead of now.
     now and start_time are float seconds.
     """
-    if (modules.get_current_module_name() not in MODULE_WHITELIST or
-        not settings.ratelimiting_cost_enabled):
+    if (modules.get_current_module_name() not in MODULE_WHITELIST):
       return
 
-    elapsed_ms = (now - start_time) * 1000
+    elapsed_ms = int((now - start_time) * 1000)
     # Would it kill the python lib maintainers to have timedelta.total_ms()?
-    if elapsed_ms < settings.ratelimiting_cost_thresh_ms:
-      return
+    penalty = elapsed_ms // settings.ratelimiting_ms_per_count - 1
+    if penalty >= 1:
+      # TODO: Look into caching the keys instead of generating them twice
+      # for every request. Say, return them from CheckStart so they can
+      # be passed back in here later.
+      keysets, country, ip, user_email = _CacheKeys(request, start_time)
 
-    # TODO: Look into caching the keys instead of generating them twice
-    # for every request. Say, return them from CheckStart so they can
-    # be bassed back in here later.
-    keysets, country, ip, user_email  = _CacheKeys(request, start_time)
+      self._AuxCheckEnd(
+          keysets,
+          'Rate Limit Cost Threshold Exceeded: %s, %s, %s' % (
+              country, ip, user_email),
+          penalty)
 
-    self._AuxCheckEnd(
-        keysets,
-        'Rate Limit Cost Threshold Exceeded: %s, %s, %s' % (
-            country, ip, user_email),
-        settings.ratelimiting_cost_penalty)
-
-  def _AuxCheckEnd(self, keysets, log_str, ratelimiting_cost_penalty):
+  def _AuxCheckEnd(self, keysets, log_str, penalty):
     self.cost_thresh_exceeded.increment()
     for keys in keysets:
       logging.info(log_str)
@@ -221,7 +219,7 @@ class RateLimiter(object):
       # Only update the latest *time* bucket for each prefix (reverse chron).
       k = keys[0]
       memcache.add(k, 0, time=EXPIRE_AFTER_SECS)
-      memcache.incr(k, delta=ratelimiting_cost_penalty, initial_value=0)
+      memcache.incr(k, delta=penalty, initial_value=0)
 
 
 class ApiRateLimiter(RateLimiter):
@@ -261,20 +259,17 @@ class ApiRateLimiter(RateLimiter):
 
   #pylint: disable=arguments-differ
   def CheckEnd(self, client_id, client_email, now, start_time):
-    if not settings.ratelimiting_cost_enabled:
-      return
 
-    elapsed_ms = (now - start_time) * 1000
+    elapsed_ms = int((now - start_time) * 1000)
+    penalty = elapsed_ms // settings.ratelimiting_ms_per_count - 1
 
-    if elapsed_ms < settings.api_ratelimiting_cost_thresh_ms:
-      return
-
-    keysets = _CreateApiCacheKeys(client_id, client_email, start_time)
-    self._AuxCheckEnd(
-        keysets,
-        'API Rate Limit Cost Threshold Exceeded: %s, %s' % (
-            client_id, client_email),
-        settings.api_ratelimiting_cost_penalty)
+    if penalty >= 1:
+      keysets = _CreateApiCacheKeys(client_id, client_email, start_time)
+      self._AuxCheckEnd(
+          keysets,
+          'API Rate Limit Cost Threshold Exceeded: %s, %s' % (
+              client_id, client_email),
+          penalty)
 
 
 class RateLimitExceeded(Exception):

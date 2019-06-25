@@ -399,31 +399,12 @@ component_ml_bucket = classifier_project_id + '-mlengine'
 
 ratelimiting_enabled = False
 
-# Enable cost-based rate limiting. This only applies if
-# ratelimiting_enabled = True
-ratelimiting_cost_enabled = True
-
-# Requests that take longer than this are hit with extra
-# counts added to their bucket at the end of the request.
-ratelimiting_cost_thresh_ms = 2000
-
-# Requests that hit ratelimiting_cost_thresh_sec get this
-# extra amount added to their bucket at the end of the request.
-ratelimiting_cost_penalty = 1
+# Requests that hit ratelimiting_cost_thresh_sec get one extra count
+# added to their bucket at the end of the request for each additional
+# multiple of this latency.
+ratelimiting_ms_per_count = 1000
 
 api_ratelimiting_enabled = True
-
-# Enable cost-based api rate limiting. This only applies if
-# api_ratelimiting_enabled = True
-api_ratelimiting_cost_enabled = True
-
-# API requests that take longer than this are hit with extra
-# counts added to their bucket at the end of the request.
-api_ratelimiting_cost_thresh_ms = 5000
-
-# API requests that hit ratelimiting_cost_thresh_sec get this
-# extra amount added to their bucket at the end of the request.
-api_ratelimiting_cost_penalty = 1
 
 # When we post an auto-ping comment, it is posted by this user @ the preferred
 # domain name.  E.g., 'monorail@bugs.chromium.org'.

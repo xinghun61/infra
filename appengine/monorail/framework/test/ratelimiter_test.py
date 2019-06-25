@@ -46,7 +46,6 @@ class RateLimiterTest(unittest.TestCase):
     ratelimiter.COUNTRY_LIMITS = {}
     os.environ['USER_EMAIL'] = ''
     settings.ratelimiting_enabled = True
-    settings.ratelimiting_cost_enabled = True
     ratelimiter.DEFAULT_LIMIT = 10
 
   def tearDown(self):
@@ -240,7 +239,8 @@ class RateLimiterTest(unittest.TestCase):
         # the whole country, regardless of IP.
         now = now + 0.001
 
-  def testCheckEnd_overCostThresh(self):
+  def testCheckEnd_SlowRequest(self):
+    """We count one request for each 1000ms."""
     request, _ = testing_helpers.GetRequestObjects(
       project=self.project)
     request.headers[ratelimiter.COUNTRY_HEADER] = 'US'
@@ -262,10 +262,10 @@ class RateLimiterTest(unittest.TestCase):
     self.ratelimiter.CheckStart(request, start_time)
 
     # Take longer than the threshold to process the request.
-    now = start_time + (settings.ratelimiting_cost_thresh_ms + 1) // 1000
+    elapsed_ms = settings.ratelimiting_ms_per_count * 2
+    now = start_time + elapsed_ms / 1000
 
-    # The request finished, taking longer than the cost
-    # threshold.
+    # The request finished, taking long enough to count as two.
     self.ratelimiter.CheckEnd(request, now, start_time)
 
     with self.assertRaises(ratelimiter.RateLimitExceeded):
@@ -273,40 +273,7 @@ class RateLimiterTest(unittest.TestCase):
       # throw an excpetion.
       self.ratelimiter.CheckStart(request, start_time)
 
-  def testCheckEnd_overCostThreshButDisabled(self):
-    request, _ = testing_helpers.GetRequestObjects(
-      project=self.project)
-    request.headers[ratelimiter.COUNTRY_HEADER] = 'US'
-    request.remote_addr = '192.168.1.1'
-    start_time = 0.0
-    settings.ratelimiting_cost_enabled = False
-
-    # Send some requests, all under the limit.
-    for _ in range(ratelimiter.DEFAULT_LIMIT-1):
-      start_time = start_time + 0.001
-      self.ratelimiter.CheckStart(request, start_time)
-      now = start_time + 0.010
-      self.ratelimiter.CheckEnd(request, now, start_time)
-
-    # Now issue some more request, this time taking long
-    # enough to get the cost threshold penalty.
-    # Fast forward enough to impact a later bucket than the
-    # previous requests.
-    start_time = now + 120.0
-    self.ratelimiter.CheckStart(request, start_time)
-
-    # Take longer than the threshold to process the request.
-    now = start_time + (settings.ratelimiting_cost_thresh_ms + 10)/1000
-
-    # The request finished, taking longer than the cost
-    # threshold.
-    self.ratelimiter.CheckEnd(request, now, start_time)
-
-    # One more request after the expensive query should
-    # throw an excpetion, but cost thresholds are disabled.
-    self.ratelimiter.CheckStart(request, start_time)
-
-  def testCheckEnd_underCostThresh(self):
+  def testCheckEnd_FastRequest(self):
     request, _ = testing_helpers.GetRequestObjects(
       project=self.project)
     request.headers[ratelimiter.COUNTRY_HEADER] = 'asdasd'
@@ -421,10 +388,11 @@ class ApiRateLimiterTest(unittest.TestCase):
     # No extra cost charged
     self.assertEqual(0, count)
 
-    now = start_time + settings.api_ratelimiting_cost_thresh_ms / 1000.0 + 1
+    elapsed_ms = settings.ratelimiting_ms_per_count * 2
+    now = start_time + elapsed_ms / 1000
     self.ratelimiter.CheckEnd(
         self.client_id, self.client_email, now, start_time)
     counters = memcache.get_multi(keysets[0])
     count = sum(counters.values())
     # Extra cost charged
-    self.assertEqual(settings.api_ratelimiting_cost_penalty, count)
+    self.assertEqual(1, count)
