@@ -251,10 +251,27 @@ func TestDroneQueenImpl_ReleaseDuts(t *testing.T) {
 	})
 }
 
-func TestDroneQueenImpl(t *testing.T) {
+func TestDroneQueenImpl_ReportDrone(t *testing.T) {
+	t.Run("unknown UUID", func(t *testing.T) {
+		t.Parallel()
+		ctx := gaetesting.TestingContextWithAppID("go-test")
+		datastore.GetTestable(ctx).Consistent(true)
+		d := DroneQueenImpl{}
+		res, err := d.ReportDrone(ctx, &api.ReportDroneRequest{
+			DroneUuid: "unicorn",
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if s := res.Status; s != api.ReportDroneResponse_UNKNOWN_UUID {
+			t.Errorf("Got report status %v; want UNKNOWN_UUID", s)
+		}
+	})
+}
+
+func TestDroneQueenImpl_workflows(t *testing.T) {
 	t.Parallel()
 	t.Run("happy path", testHappyPath)
-	t.Run("unknown UUID", testUnknownUUID)
 }
 
 func testHappyPath(t *testing.T) {
@@ -303,22 +320,6 @@ func testHappyPath(t *testing.T) {
 	}
 	if e := goTime(res.ExpirationTime); !e.After(now) {
 		t.Errorf("Got expiration time %v; expected time after %v", e, now)
-	}
-}
-
-func testUnknownUUID(t *testing.T) {
-	t.Parallel()
-	ctx := gaetesting.TestingContextWithAppID("go-test")
-	datastore.GetTestable(ctx).Consistent(true)
-	d := DroneQueenImpl{}
-	res, err := d.ReportDrone(ctx, &api.ReportDroneRequest{
-		DroneUuid: "unicorn",
-	})
-	if err != nil {
-		t.Fatal(err)
-	}
-	if s := res.Status; s != api.ReportDroneResponse_UNKNOWN_UUID {
-		t.Errorf("Got report status %v; want UNKNOWN_UUID", s)
 	}
 }
 
