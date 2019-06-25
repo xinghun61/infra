@@ -20,6 +20,11 @@ deployed_node_modules
 elements/mock-data/*\.json
 !elements/mock-data/gates-mock.json
 app.yaml
+app.prod.yaml
 module-besearch.yaml
+besearch.prod.yaml
+besearch.yaml
 module-latency-insensitive.yaml
+latency-insensitive.prod.yaml
+latency-insensitive.yaml
 templates/webpack-out
