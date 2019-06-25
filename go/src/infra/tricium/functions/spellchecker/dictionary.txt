@@ -2061,6 +2061,12 @@ autimatically->automatically
 autmatically->automatically
 auto-dependancies->auto-dependencies
 auto-destrcut->auto-destruct
+auto-detet->auto-detect, auto-delete,
+auto-deteted->auto-detected, auto-deleted,
+auto-detetes->auto-deletes, auto-detects,
+auto-deteting->auto-detecting, auto-deleting,
+auto-detetion->auto-detection, auto-deletion,
+auto-detets->auto-detects, auto-deletes,
 auto-realease->auto-release
 auto-realeased->auto-released
 autochtonous->autochthonous
@@ -2429,6 +2435,7 @@ besed->based
 beseige->besiege
 beseiged->besieged
 beseiging->besieging
+besure->be sure
 beteeen->between
 beteen->between
 beteween->between
@@ -2506,7 +2513,7 @@ boads->boards
 boaut->bout, boat, about,
 bobard->board, bombard,
 boddy->body
-bodgy->body
+bodgy->body, disabled because one might want to allow informal spelling
 bodydbuilder->bodybuilder
 bofore->before
 boggus->bogus
@@ -2552,6 +2559,7 @@ bottlneck->bottleneck
 bottomborde->bottomborder
 bottome->bottom
 botton->bottom, button,
+bottons->bottoms, buttons,
 botttom->bottom
 boudaries->boundaries
 boudary->boundary
@@ -2662,6 +2670,8 @@ builters->builders
 buipd->build
 buisness->business
 buisnessman->businessman
+buissiness->business
+buissinesses->businesses
 buit->built
 buitin->builtin
 buitins->builtins
@@ -3096,7 +3106,11 @@ chacacters->characters
 chache->cache
 chached->cached
 chack->check, chalk,
+chaeck->check
+chaecked->checked
+chaecker->checker
 chaecking->checking
+chaecks->checks
 chage->change, charge,
 chaged->changed, charged,
 chages->changes, charges,
@@ -5911,10 +5925,13 @@ determinstic->deterministic
 determinstically->deterministically
 determintes->determines
 determnine->determine
-detet->detect
-deteted->detected
-detetion->detection
+detet->detect, delete,
+deteted->detected, deleted,
+detetes->deletes, detects,
+deteting->detecting, deleting,
+detetion->detection, deletion,
 detetmine->determine
+detets->detects, deletes,
 detination->destination
 detremental->detrimental
 detremining->determining
@@ -6020,7 +6037,6 @@ dialgo->dialog
 dialgos->dialogs
 dialig->dialog
 dialigs->dialogs
-dialogbox->dialog box
 diamater->diameter
 diamaters->diameters
 diamon->diamond
@@ -6216,6 +6232,9 @@ dirctly->directly
 dirctories->directories
 dirctory->directory
 direccion->direction
+direcctory->directory
+direcctorys->directories
+direcctries->directories
 direclty->directly
 direcly->directly
 direcories->directories
@@ -7744,8 +7763,11 @@ exibitions->exhibitions
 exicting->exciting
 exinct->extinct
 exising->existing
+exisit->exist
+exisited->existed
 exisitent->existent
 exisiting->existing
+exisitng->existing
 exisits->exists
 existance->existence
 existant->existent
@@ -8127,6 +8149,8 @@ fedality->fidelity
 fedreally->federally
 feeback->feedback
 feeded->fed
+feek->feel
+feeks->feels
 feetur->feature
 feeture->feature
 feld->field
@@ -8934,8 +8958,13 @@ halp->help
 halpoints->halfpoints
 hammmer->hammer
 hampster->hamster
+handel->handle
 handeld->handled, handheld,
 handeled->handled, handheld,
+handeler->handler
+handeles->handles
+handeling->handling
+handels->handles
 hander->handler
 handfull->handful
 handhake->handshake
@@ -10022,6 +10051,8 @@ inforce->enforce
 inforced->enforced
 informaion->information
 informaiton->information
+informatation->information
+informatations->information
 informatikon->information
 informatiom->information
 informations->information
@@ -11787,6 +11818,7 @@ minumum->minimum
 minuts->minutes
 miplementation->implementation
 mirconesia->micronesia
+mircosoft->Microsoft
 mirgate->migrate
 mirgated->migrated
 mirgates->migrates
@@ -13149,7 +13181,6 @@ parameteras->parameters
 parametere->parameter, parameters,
 parameterical->parametrical
 parameterizes->parametrizes
-parameterset->parameter set
 parameterts->parameters
 parametes->parameters
 parametic->parametric, paramedic,
@@ -13872,6 +13903,10 @@ pre-procesing->pre-processing
 pre-realease->pre-release
 pre-registeres->pre-registers
 preallocationg->preallocating
+prealocate->preallocate
+prealocated->preallocated
+prealocates->preallocates
+prealocating->preallocating
 preambule->preamble
 preample->preamble
 preaorocessing->preprocessing
@@ -16173,6 +16208,9 @@ selctions->selections
 seldomly->seldom
 seleced->selected
 selecetd->selected
+selecgt->select
+selecgted->selected
+selecgting->selecting
 selecing->selecting
 selectd->selected
 selecte->selected, select,
@@ -16452,6 +16490,7 @@ shreak->shriek
 shreshold->threshold
 shriks->shrinks
 shrinked->shrunk
+shuld->should
 shure->sure
 shurely->surely
 shutdownm->shutdown
@@ -16563,6 +16602,7 @@ singe->singe, single,
 singed->signed, singled, singed,
 singelton->singleton
 singificand->significand, significant,
+singlar->singular
 single-threded->single-threaded
 singls->single
 singlton->singleton
@@ -16727,6 +16767,11 @@ somwhere->somewhere
 somwho->somehow
 somwhow->somehow
 sonething->something
+songlar->singular
+songle->single, dongle,
+songled->singled, dongled,
+songles->singles, dongles,
+songling->singling, dongling,
 sooaside->suicide
 soodonim->pseudonym
 sooit->suet, suit,
@@ -19106,7 +19151,15 @@ unsable->unusable, usable, unstable,
 unsccessful->unsuccessful
 unsearcahble->unsearchable
 unsed->unused, used,
-unselect->deselect
+unselcted->unselected
+unselctes->unselects
+unselcting->unselecting
+unselcts->unselects
+unselecgt->unselect
+unselecgted->unselected
+unselecgtes->unselects
+unselecgting->unselecting
+unselecgts->unselects
 unsepcified->unspecified
 unser->under, unset, user,
 unsettin->unsetting
@@ -19863,6 +19916,8 @@ workarround->workaround
 workarrounds->workarounds
 workarund->workaround
 workbanch->workbench
+workbennch->workbench
+workbennches->workbenches
 workboos->workbooks
 workes->works
 workpsace->workspace

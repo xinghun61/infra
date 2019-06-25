@@ -55,10 +55,12 @@ var (
 		"backed",     // as in "backed by"
 		"cas",        // abbr. for Content Addressed Storage
 		"copyable",   // Valid usage, and used in C++, e.g. is_trivially_copyable
+		"crate",      // Rust keyword
 		"ect",        // abbr. for effective connection type
 		"gae",        // abbr. for Google App Engine
 		"ith",        // ordinal form of variable i, like nth
 		"lightening", // present participle of "to lighten"
+		"mut",        // Rust keyword
 		"seeked",     // JS event
 		"tast",       // Name of a ChromeOS test
 		"wontfix",    // Monorail bug status
