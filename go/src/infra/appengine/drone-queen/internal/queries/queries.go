@@ -120,6 +120,26 @@ func AssignNewDUTs(ctx context.Context, d entities.DroneID, li *api.ReportDroneR
 	return currentDUTs, nil
 }
 
+// PruneDrainedDUTs deletes DUTs that are draining and not assigned to
+// any drone.  This function does not need to be called in a
+// transaction.
+func PruneDrainedDUTs(ctx context.Context) error {
+	var d []entities.DUT
+	q := datastore.NewQuery(entities.DUTKind)
+	q = q.Ancestor(entities.DUTGroupKey(ctx))
+	q = q.Eq(entities.DrainingField, true)
+	q = q.Eq(entities.AssignedDroneField, "")
+	if err := datastore.GetAll(ctx, q, &d); err != nil {
+		return errors.Annotate(err, "get draining DUTs").Err()
+	}
+	for _, d := range d {
+		if err := datastore.Delete(ctx, &d); err != nil {
+			return errors.Annotate(err, "delete DUT %v", d.ID).Err()
+		}
+	}
+	return nil
+}
+
 // uint32ToInt converts a uint32 to an int.  In case of overflow, panic.
 func uint32ToInt(a uint32) int {
 	b := int(a)

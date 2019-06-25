@@ -26,6 +26,7 @@ import (
 	"net/http"
 
 	"infra/appengine/drone-queen/internal/config"
+	"infra/appengine/drone-queen/internal/queries"
 
 	"go.chromium.org/luci/appengine/gaemiddleware"
 	"go.chromium.org/luci/common/logging"
@@ -71,5 +72,5 @@ func pruneDrainedDUTs(c *router.Context) (err error) {
 	defer func() {
 		pruneDrainedDUTsTick.Add(c.Context, 1, config.Instance(c.Context), err == nil)
 	}()
-	return errors.New("not implemented")
+	return queries.PruneDrainedDUTs(c.Context)
 }

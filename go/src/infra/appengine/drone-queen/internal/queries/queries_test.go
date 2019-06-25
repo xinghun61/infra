@@ -319,6 +319,59 @@ func TestAssignNewDUTs(t *testing.T) {
 	}
 }
 
+func TestPruneDrainedDUTs(t *testing.T) {
+	t.Parallel()
+	cases := []struct {
+		desc    string
+		initial []*entities.DUT
+		want    []*entities.DUT
+	}{
+		{
+			desc:    "prune draining and unassigned",
+			initial: []*entities.DUT{{ID: "ionasal", Draining: true}},
+			want:    nil,
+		},
+		{
+			desc:    "ignore draining and assigned",
+			initial: []*entities.DUT{{ID: "ionasal", Draining: true, AssignedDrone: "earthes"}},
+			want:    []*entities.DUT{{ID: "ionasal", Draining: true, AssignedDrone: "earthes"}},
+		},
+		{
+			desc:    "ignore not draining and unassigned",
+			initial: []*entities.DUT{{ID: "ionasal"}},
+			want:    []*entities.DUT{{ID: "ionasal"}},
+		},
+		{
+			desc:    "ignore not draining and assigned",
+			initial: []*entities.DUT{{ID: "ionasal", AssignedDrone: "earthes"}},
+			want:    []*entities.DUT{{ID: "ionasal", AssignedDrone: "earthes"}},
+		},
+	}
+	for _, c := range cases {
+		c := c
+		t.Run(c.desc, func(t *testing.T) {
+			t.Parallel()
+			ctx := gaetesting.TestingContextWithAppID("go-test")
+			datastore.GetTestable(ctx).Consistent(true)
+			applyGroup(ctx, c.initial)
+			if err := datastore.Put(ctx, c.initial); err != nil {
+				t.Fatal(err)
+			}
+			if err := PruneDrainedDUTs(ctx); err != nil {
+				t.Fatal(err)
+			}
+			var duts []*entities.DUT
+			q := datastore.NewQuery(entities.DUTKind)
+			q = q.Ancestor(entities.DUTGroupKey(ctx))
+			if err := datastore.GetAll(ctx, q, &duts); err != nil {
+				t.Fatal(err)
+			}
+			applyGroup(ctx, c.want)
+			assertSameDUTs(t, c.want, duts)
+		})
+	}
+}
+
 func applyGroup(ctx context.Context, d []*entities.DUT) {
 	k := entities.DUTGroupKey(ctx)
 	for _, d := range d {
