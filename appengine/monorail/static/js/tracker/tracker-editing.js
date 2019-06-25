@@ -1408,6 +1408,8 @@ function TKR_toggleColumnUpdate(colIndex) {
   TKR_getColspecElement().value = filteredCols.join(' ');
   TKR_getSearchColspecElement().value = filteredCols.join(' ');
   TKR_toggleColumn('hide_col_' + colIndex);
+  _ctxArgs = _formatContextQueryArgs();
+  window.history.replaceState({}, '', '?' + _ctxArgs);
 }
 
 

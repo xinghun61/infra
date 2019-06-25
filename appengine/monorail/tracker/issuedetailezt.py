@@ -1323,6 +1323,12 @@ class FlipperList(servlet.Servlet):
           pass
 
       config = we.GetProjectConfig(self.mr.project_id)
+
+      if hotlist:
+        self.mr.ComputeColSpec(hotlist)
+      else:
+        self.mr.ComputeColSpec(config)
+
       url = _ComputeBackToListURL(self.mr, current_issue, config,
                                                hotlist, self.services)
     self.redirect(url)
@@ -1361,6 +1367,12 @@ class FlipperIndex(jsonfeed.JsonFeed):
             ) = we.FindIssuePositionInSearch(issue)
 
       config = we.GetProjectConfig(self.mr.project_id)
+
+      if hotlist:
+        mr.ComputeColSpec(hotlist)
+      else:
+        mr.ComputeColSpec(config)
+
       list_url = _ComputeBackToListURL(mr, issue, config, hotlist,
         self.services)
 
