@@ -159,12 +159,14 @@ def MakeGridData(
 
   # Convert the dictionary to a list-of-lists so that EZT can iterate over it.
   grid_data = []
+  i = 0
   for y in y_headings:
     cells_in_row = []
     for x in x_headings:
       tiles = x_y_data[x, y]
-      for i, tile in enumerate(tiles):
+      for tile in tiles:
         tile.data_idx = i
+        i += 1
 
       drill_down = ''
       if x_attr != '--':
