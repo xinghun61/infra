@@ -30,6 +30,9 @@ import (
 	gc "infra/tricium/appengine/common/gerrit"
 )
 
+// Commit message footer values that tell Tricium to skip.
+var skipValues = [...]string{"disable", "skip", "no", "none", "false"}
+
 // Datastore schema diagram for tracked Gerrit projects and CLs:
 //
 //    +------------------+
@@ -360,20 +363,21 @@ func isOpen(change gr.ChangeInfo) bool {
 func filterChanges(c context.Context, repo *tricium.RepoDetails, changes []gr.ChangeInfo) []gr.ChangeInfo {
 	var toProcess []gr.ChangeInfo
 	for _, change := range changes {
-		if hasSkipCommand(change) {
+		curRev := change.Revisions[change.CurrentRevision]
+		if hasSkipCommand(&curRev) {
 			logging.Fields{
 				"changeID": change.ID,
 			}.Infof(c, "Skipping change with skip footer.")
 			continue
 		}
-		if change.Revisions[change.CurrentRevision].Kind != "REWORK" {
+		if curRev.Kind != "REWORK" {
 			// REWORK is the revision kind that involves code change.
 			// For other possible values of Kind, see:
 			// https://gerrit-review.googlesource.com/Documentation/rest-api-changes.html#revision-info
 			logging.Fields{
 				"changeID": change.ID,
 				"revision": change.CurrentRevision,
-				"kind":     change.Revisions[change.CurrentRevision].Kind,
+				"kind":     curRev.Kind,
 			}.Infof(c, "Skipping revision with no code change.")
 			continue
 		}
@@ -504,13 +508,15 @@ func isAuthorAllowed(c context.Context, change gr.ChangeInfo, whitelist []string
 
 // hasSkipCommand checks whether the CL description contains a footer flag that
 // indicates that this change should be skipped.
-func hasSkipCommand(change gr.ChangeInfo) bool {
-	var skipValues = []string{"disable", "skip", "no", "none", "false"}
-	var flags map[string]string
-	if change.Revisions[change.CurrentRevision].Commit != nil {
-		flags = extractFooterFlags(change.Revisions[change.CurrentRevision].Commit.Message)
+func hasSkipCommand(rev *gr.RevisionInfo) bool {
+	if rev.Commit == nil {
+		return false
 	}
-	triciumValue, _ := flags["tricium"]
+	flags := extractFooterFlags(rev.Commit.Message)
+	triciumValue, ok := flags["tricium"]
+	if !ok {
+		return false
+	}
 	for _, skipValue := range skipValues {
 		if triciumValue == skipValue {
 			return true
@@ -519,11 +525,17 @@ func hasSkipCommand(change gr.ChangeInfo) bool {
 	return false
 }
 
-// extractFooterFlags extracts the Flag: Value and Flag=Value footers from the CL description.
-// returns a map of flag to its value in footer with both flag and value converted to lower-case.
+// extractFooterFlags extracts the key: value footers from the commit message.
+//
+// The return value is a map flag flags to value where both flag and value are
+// converted to lower-case. Each flag key is expected to appear once, but if
+// a flag key appears twice, then value from the earliest line is retained.
 func extractFooterFlags(commitMessage string) map[string]string {
 	flags := map[string]string{}
-	lines := strings.Split(commitMessage, "\n")
+	// The commit message generally has a trailing \n; we want the lines
+	// processed below to be to be actual lines with content rather than
+	// including an empty string as the last "line".
+	lines := strings.Split(strings.TrimSuffix(commitMessage, "\n"), "\n")
 
 	// Going in reverse to stop as soon as a non flag line is reached.
 	for i := len(lines) - 1; i >= 0; i-- {

@@ -499,6 +499,42 @@ func TestPollProjectBasicBehavior(t *testing.T) {
 
 func TestPollProjectDescriptionFlagBehavior(t *testing.T) {
 
+	Convey("Private helper functions behave as expected", t, func() {
+
+		Convey("Footer flags can be extracted with newline at end", func() {
+			So(extractFooterFlags("summary\n\none: ei\nTWO: bee\nThree: sea\n"), ShouldResemble, map[string]string{
+				"one":   "ei",
+				"two":   "bee",
+				"three": "sea",
+			})
+		})
+
+		Convey("Footer flags can be extracted with no newline at end", func() {
+			So(extractFooterFlags("summary\n\none: ei\nTWO: bee\nThree: sea"), ShouldResemble, map[string]string{
+				"one":   "ei",
+				"two":   "bee",
+				"three": "sea",
+			})
+		})
+
+		Convey("Commit message with no flags has no skip command", func() {
+			So(hasSkipCommand(&gr.RevisionInfo{
+				Files:  map[string]*gr.FileInfo{"README.md": {}},
+				Commit: &gr.CommitInfo{Message: "one two three"},
+				Kind:   "REWORK",
+			}), ShouldBeFalse)
+		})
+
+		Convey("Commit message with skip flag has skip command", func() {
+			So(hasSkipCommand(&gr.RevisionInfo{
+				Files:  map[string]*gr.FileInfo{"README.md": {}},
+				Commit: &gr.CommitInfo{Message: "Summary line\n\nTricium: Skip\nChange-Id: I01234\n"},
+				Kind:   "REWORK",
+			}), ShouldBeTrue)
+		})
+
+	})
+
 	// generateRevisionInfo generates a map of revisionID to RevisionInfo.
 	//
 	// It takes commitMessage as input and adds that to the "curRev" revision.
