@@ -17,8 +17,10 @@ package config
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/golang/protobuf/proto"
+	"github.com/golang/protobuf/ptypes"
 	"go.chromium.org/luci/common/logging"
 	"go.chromium.org/luci/config/server/cfgclient"
 	"go.chromium.org/luci/config/server/cfgclient/textproto"
@@ -92,4 +94,18 @@ func Instance(ctx context.Context) string {
 		return "unknown"
 	}
 	return n
+}
+
+// AssignmentDuration returns the configured drone assignment duration.
+func AssignmentDuration(ctx context.Context) time.Duration {
+	pd := Get(ctx).GetAssignmentDuration()
+	if pd == nil {
+		const defaultDuration = 10 * time.Minute
+		return defaultDuration
+	}
+	gd, err := ptypes.Duration(pd)
+	if err != nil {
+		panic(err)
+	}
+	return gd
 }

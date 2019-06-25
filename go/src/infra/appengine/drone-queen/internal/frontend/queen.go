@@ -60,9 +60,7 @@ func (q *DroneQueenImpl) ReportDrone(ctx context.Context, req *api.ReportDroneRe
 			}
 			return errors.Annotate(err, "get drone %s", id).Err()
 		}
-		if err := extendExpiration(ctx, &d, q.now()); err != nil {
-			return err
-		}
+		d.Expiration = q.now().Add(config.AssignmentDuration(ctx)).UTC()
 		if err := datastore.Put(ctx, &d); err != nil {
 			return errors.Annotate(err, "refresh drone expiration").Err()
 		}
@@ -206,30 +204,4 @@ func (q *DroneQueenImpl) now() time.Time {
 		return q.nowFunc()
 	}
 	return time.Now()
-}
-
-// extendExpiration extends the expiration time on the drone entity
-// based on the configured assignment duration.
-func extendExpiration(ctx context.Context, d *entities.Drone, now time.Time) error {
-	td, err := getAssignmentDuration(ctx)
-	if err != nil {
-		return errors.Annotate(err, "extend drone %s expiration", d.ID).Err()
-	}
-	d.Expiration = now.Add(td).UTC()
-	return nil
-}
-
-// getAssignmentDuration gets the configured drone assignment duration.
-func getAssignmentDuration(ctx context.Context) (time.Duration, error) {
-	c := config.Get(ctx)
-	pd := c.GetAssignmentDuration()
-	if pd == nil {
-		const defaultDuration = 10 * time.Minute
-		return defaultDuration, nil
-	}
-	gd, err := ptypes.Duration(pd)
-	if err != nil {
-		return 0, errors.Annotate(err, "get assignment duration from config").Err()
-	}
-	return gd, nil
 }
