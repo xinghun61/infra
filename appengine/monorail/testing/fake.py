@@ -1554,7 +1554,7 @@ class IssueService(object):
     if blocked_on:
       issue.blocked_on_iids.extend(blocked_on)
       issue.blocked_on_ranks.extend(
-          range(sys.maxint - 1, sys.maxint - len(blocked_on) - 1, -1))
+          list(range(sys.maxint - 1, sys.maxint - len(blocked_on) - 1, -1)))
     if blocking:
       issue.blocking.extend(blocking)
 
@@ -1710,7 +1710,7 @@ class IssueService(object):
     if issue.blocked_on_ranks:
       next_rank = issue.blocked_on_ranks[-1] - 1
     issue.blocked_on_ranks.extend(
-        range(next_rank, next_rank - len(blocked_on), -1))
+        list(range(next_rank, next_rank - len(blocked_on), -1)))
 
     issue.blocking_iids.extend(blocking)
     issue.dangling_blocked_on_refs.extend(dangling_blocked_on_refs)
@@ -1966,7 +1966,8 @@ class IssueService(object):
   def ApplyIssueRerank(
       self, cnxn, parent_id, relations_to_change, commit=True, invalidate=True):
     issue = self.GetIssue(cnxn, parent_id)
-    relations_dict = dict(zip(issue.blocked_on_iids, issue.blocked_on_ranks))
+    relations_dict = dict(
+        list(zip(issue.blocked_on_iids, issue.blocked_on_ranks)))
     relations_dict.update(relations_to_change)
     issue.blocked_on_ranks = sorted(issue.blocked_on_ranks, reverse=True)
     issue.blocked_on_iids = sorted(

@@ -61,7 +61,7 @@ def RecomputeAllDerivedFields(cnxn, services, project, config):
     return  # No work to do.
 
   # Enqueue work items for blocks of issues to recompute.
-  steps = range(1, highest_id + 1, BLOCK)
+  steps = list(range(1, highest_id + 1, BLOCK))
   steps.reverse()  # Update higher numbered issues sooner, old issues last.
   # Cycle through shard_ids just to load-balance among the replicas.  Each
   # block includes all issues in that local_id range, not just 1/10 of them.
@@ -96,7 +96,7 @@ def RecomputeAllDerivedFieldsNow(
   """
   if lower_bound is not None and upper_bound is not None:
     issues = services.issue.GetIssuesByLocalIDs(
-        cnxn, project.project_id, range(lower_bound, upper_bound),
+        cnxn, project.project_id, list(range(lower_bound, upper_bound)),
         use_cache=False)
   else:
     issues = services.issue.GetAllIssuesInProject(
@@ -683,7 +683,7 @@ def ParseRules(cnxn, post_data, user_service, errors, prefix=''):
   # the filter rules section, not directly on the rule that had the error :(.
   error_list = []
 
-  for i in xrange(1, MAX_RULES + 1):
+  for i in range(1, MAX_RULES + 1):
     if ('%spredicate%s' % (prefix, i)) not in post_data:
       continue  # skip any entries that are blank or have no predicate.
     predicate = post_data['%spredicate%s' % (prefix, i)].strip()

@@ -550,7 +550,7 @@ def MurmurHash3_x86_32(key, seed=0x0):
   c2 = 0x1b873593
 
   # body
-  for block_start in xrange(0, nblocks * 4, 4):
+  for block_start in range(0, nblocks * 4, 4):
     k1 = key[ block_start + 3 ] << 24 | \
          key[ block_start + 2 ] << 16 | \
          key[ block_start + 1 ] <<  8 | \

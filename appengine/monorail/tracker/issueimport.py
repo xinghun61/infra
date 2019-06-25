@@ -298,7 +298,7 @@ class IssueImport(servlet.Servlet):
       dst_iids = [i.issue_id for i in self.services.issue.GetIssuesByLocalIDs(
           cnxn, project_id, [rel[0] for rel in rels])]
       kinds = [rel[1] for rel in rels]
-      global_relations_dict[src_iid] = zip(dst_iids, kinds)
+      global_relations_dict[src_iid] = list(zip(dst_iids, kinds))
     self.services.issue.RelateIssues(cnxn, global_relations_dict)
 
     self.services.issue.SetUsedLocalID(cnxn, project_id)

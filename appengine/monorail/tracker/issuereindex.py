@@ -67,7 +67,7 @@ class IssueReindex(servlet.Servlet):
                      int(post_data['num'])))
 
     issues = self.services.issue.GetIssuesByLocalIDs(
-        mr.cnxn, mr.project_id, range(start, start + num))
+        mr.cnxn, mr.project_id, list(range(start, start + num)))
     logging.info('got %d issues to index', len(issues))
     if issues:
       tracker_fulltext.IndexIssues(

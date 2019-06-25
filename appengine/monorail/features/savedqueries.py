@@ -44,8 +44,8 @@ class SavedQueries(servlet.Servlet):
     page_data = {
         'canned_queries': saved_query_views,
         'new_query_indexes': (
-            range(len(saved_queries) + 1,
-                  savedqueries_helpers.MAX_QUERIES + 1)),
+            list(range(len(saved_queries) + 1,
+                  savedqueries_helpers.MAX_QUERIES + 1))),
         'max_queries': savedqueries_helpers.MAX_QUERIES,
         'user_tab_mode': 'st4',
         'viewing_user_page': ezt.boolean(True),

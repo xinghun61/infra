@@ -1958,7 +1958,7 @@ class BizobjTest(unittest.TestCase):
     issue = tracker_pb2.Issue()
     issue.blocked_on_iids = [78902, 78903, 78904]
     issue.blocked_on_ranks = [10, 20, 30]
-    rank_rows = zip(issue.blocked_on_iids, issue.blocked_on_ranks)
+    rank_rows = list(zip(issue.blocked_on_iids, issue.blocked_on_ranks))
     rank_rows.reverse()
     ret = tracker_bizobj.SplitBlockedOnRanks(
         issue, 78903, False, issue.blocked_on_iids)
@@ -1968,7 +1968,7 @@ class BizobjTest(unittest.TestCase):
     issue = tracker_pb2.Issue()
     issue.blocked_on_iids = [78902, 78903, 78904]
     issue.blocked_on_ranks = [10, 20, 30]
-    rank_rows = zip(issue.blocked_on_iids, issue.blocked_on_ranks)
+    rank_rows = list(zip(issue.blocked_on_iids, issue.blocked_on_ranks))
     rank_rows.reverse()
     ret = tracker_bizobj.SplitBlockedOnRanks(
         issue, 78999, False, issue.blocked_on_iids)

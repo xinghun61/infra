@@ -1575,7 +1575,7 @@ class IssueServiceTest(unittest.TestCase):
     self.mox.ReplayAll()
     local_id_range = self.services.issue.GetAllLocalIDsInProject(self.cnxn, 789)
     self.mox.VerifyAll()
-    self.assertEqual(range(1, 15), local_id_range)
+    self.assertEqual(list(range(1, 15)), local_id_range)
 
   ### Comments
 
@@ -2394,7 +2394,7 @@ class IssueServiceTest(unittest.TestCase):
 
   def testApplyIssueRerank(self):
     blocker_ids = [78902, 78903]
-    relations_to_change = zip(blocker_ids, [20, 10])
+    relations_to_change = list(zip(blocker_ids, [20, 10]))
     self.services.issue.issuerelation_tbl.Delete(
         self.cnxn, issue_id=78901, dst_issue_id=blocker_ids, commit=False)
     insert_rows = [(78901, blocker_id, 'blockedon', rank)

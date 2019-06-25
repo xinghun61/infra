@@ -211,7 +211,7 @@ class AbstractTwoLevelCache(object):
       start = 0
     if end is None:
       end = len(keys)
-    for i in xrange(start, end):
+    for i in range(start, end):
       key = keys[i]
       if self.cache.HasItem(key):
         return self.cache.GetItem(key)

@@ -79,7 +79,7 @@ class IssueExportJSON(jsonfeed.JsonFeed):
       issues = self.services.issue.GetAllIssuesInProject(
           mr.cnxn, mr.project.project_id)
     else:
-      local_id_range = range(mr.start, mr.start + mr.num)
+      local_id_range = list(range(mr.start, mr.start + mr.num))
       issues = self.services.issue.GetIssuesByLocalIDs(
           mr.cnxn, mr.project.project_id, local_id_range)
 

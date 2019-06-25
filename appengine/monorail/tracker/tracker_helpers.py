@@ -295,7 +295,7 @@ def _ParseIssueRequestAttachments(post_data):
   """
   # TODO(jrobbins): change from numbered fields to a multi-valued field.
   attachments = []
-  for i in xrange(1, 16):
+  for i in range(1, 16):
     if 'file%s' % i in post_data:
       item = post_data['file%s' % i]
       if isinstance(item, basestring):

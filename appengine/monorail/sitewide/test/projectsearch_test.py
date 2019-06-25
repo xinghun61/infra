@@ -79,7 +79,7 @@ class ProjectSearchTest(unittest.TestCase):
   def SetUpTwoPageResults(self):
     self.services.project.GetVisibleLiveProjects(
         mox.IgnoreArg(), mox.IgnoreArg(), mox.IgnoreArg(),
-        use_cache=True).AndReturn(range(1, 106))
+        use_cache=True).AndReturn(list(range(1, 106)))
 
   def testTwoPageResults(self):
     """Test more than one pagination page of results."""

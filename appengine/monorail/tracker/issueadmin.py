@@ -423,8 +423,8 @@ class AdminViews(IssueAdminBase):
 
     page_data.update({
         'canned_queries': canned_query_views,
-        'new_query_indexes': range(
-            len(canned_queries) + 1, savedqueries_helpers.MAX_QUERIES + 1),
+        'new_query_indexes': list(range(
+            len(canned_queries) + 1, savedqueries_helpers.MAX_QUERIES + 1)),
         'issue_notify': mr.project.issue_notify_address,
         'max_queries': savedqueries_helpers.MAX_QUERIES,
         })
@@ -547,7 +547,7 @@ class AdminRules(IssueAdminBase):
     page_data.update({
         'rules': rule_views,
         'new_rule_indexes': (
-            range(len(rules) + 1, filterrules_helpers.MAX_RULES + 1)),
+            list(range(len(rules) + 1, filterrules_helpers.MAX_RULES + 1))),
         'max_rules': filterrules_helpers.MAX_RULES,
         })
     return page_data

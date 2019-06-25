@@ -48,7 +48,7 @@ def GetInsertRankings(lower, higher, moved_ids):
   slot_count = higher_rank - lower_rank - 1
   if slot_count >= len(moved_ids):
     new_ranks = _DistributeRanks(lower_rank, higher_rank, len(moved_ids))
-    return zip(moved_ids, new_ranks)
+    return list(zip(moved_ids, new_ranks))
   else:
     new_lower, new_higher, new_moved_ids = _ResplitRanks(
         lower, higher, moved_ids)
@@ -62,7 +62,7 @@ def _DistributeRanks(low, high, rank_count):
   """Compute evenly distributed ranks in a range"""
   bucket_size = (high - low) // rank_count
   first_rank = low + (bucket_size + 1) // 2
-  return range(first_rank, high, bucket_size)
+  return list(range(first_rank, high, bucket_size))
 
 
 def _ResplitRanks(lower, higher, moved_ids):

@@ -28,7 +28,7 @@ MAX_QUERIES = 100
 def ParseSavedQueries(cnxn, post_data, project_service, prefix=''):
   """Parse form data for the Saved Queries part of an admin form."""
   saved_queries = []
-  for i in xrange(1, MAX_QUERIES + 1):
+  for i in range(1, MAX_QUERIES + 1):
     if ('%ssavedquery_name_%s' % (prefix, i)) not in post_data:
       continue  # skip any entries that are blank or have no predicate.
 

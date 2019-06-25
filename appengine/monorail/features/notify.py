@@ -994,7 +994,7 @@ class OutboundEmailTask(jsonfeed.InternalTask):
       logging.info('Sending message "%s" in test mode.', message.subject)
     else:
       retry_count = 3
-      for i in xrange(retry_count):
+      for i in range(retry_count):
         try:
           message.send()
           break

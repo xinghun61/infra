@@ -49,7 +49,7 @@ def IndexIssues(cnxn, issues, user_service, issue_service, config_service):
   issues = list(issues)
   config_dict = config_service.GetProjectConfigs(
       cnxn, {issue.project_id for issue in issues})
-  for start in xrange(0, len(issues), _INDEX_BATCH_SIZE):
+  for start in range(0, len(issues), _INDEX_BATCH_SIZE):
     logging.info('indexing issues: %d remaining', len(issues) - start)
     _IndexIssueBatch(
         cnxn, issues[start:start + _INDEX_BATCH_SIZE], user_service,

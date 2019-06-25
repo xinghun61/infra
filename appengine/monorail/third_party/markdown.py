@@ -377,7 +377,7 @@ class _Markdown:
     def _DoHeaders(self, text):
         def findheader(text, c, n):
             textl = text.split('\n')
-            for i in xrange(len(textl)):
+            for i in range(len(textl)):
                 if i >= len(textl): continue
                 count = textl[i].strip().count(c)
                 if count > 0 and count == len(textl[i].strip()) and textl[i+1].strip() == '' and textl[i-1].strip() != '':
@@ -557,7 +557,7 @@ class _Markdown:
         text = text.strip("\n")
         grafs = self.r_multiline.split(text)
 
-        for g in xrange(len(grafs)):
+        for g in range(len(grafs)):
             t = grafs[g].strip() #@@?
             if not self.html_blocks.has_key(t):
                 t = self._RunSpanGamut(t)
@@ -565,7 +565,7 @@ class _Markdown:
                 t += "</p>"
                 grafs[g] = t
 
-        for g in xrange(len(grafs)):
+        for g in range(len(grafs)):
             t = grafs[g].strip()
             if self.html_blocks.has_key(t):
                 grafs[g] = self.html_blocks[t]

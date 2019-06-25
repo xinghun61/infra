@@ -2195,7 +2195,7 @@ class IssueService(object):
     if not min_local_id:
       min_local_id = 1
     highest_local_id = self.GetHighestLocalID(cnxn, project_id)
-    return range(min_local_id, highest_local_id + 1)
+    return list(range(min_local_id, highest_local_id + 1))
 
   def ExpungeLocalIDCounters(self, cnxn, project_id):
     """Delete history of local ids that were in this project."""
@@ -2406,7 +2406,7 @@ class IssueService(object):
 
     comments = sorted(comment_dict.values(), key=lambda x: x.timestamp)
 
-    for i in xrange(len(comment_ids)):
+    for i in range(len(comment_ids)):
       comments[i].sequence = sequences[i]
 
     return comments

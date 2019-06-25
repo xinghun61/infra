@@ -517,7 +517,7 @@ class IssueDetailEzt(issuepeek.IssuePeek):
       pagination.visible = ezt.boolean(False)
 
     visible_comment_ids = all_comment_ids[pagination.last - 1:pagination.start]
-    visible_comment_seqs = range(pagination.last, pagination.start + 1)
+    visible_comment_seqs = list(range(pagination.last, pagination.start + 1))
     visible_comments = self.services.issue.GetCommentsByID(
           mr.cnxn, visible_comment_ids, visible_comment_seqs)
 

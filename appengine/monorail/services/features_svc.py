@@ -875,7 +875,7 @@ class FeaturesService(object):
         [(name.lower(), owner_id)
          for name in hotlist_names for owner_id in owner_ids])
     if missed_keys:
-      missed_names, missed_owners = map(list, zip(*missed_keys))
+      missed_names, missed_owners = map(list, list(zip(*missed_keys)))
       hotlist_rows = self.hotlist_tbl.Select(
           cnxn, cols=['id', 'name'], is_deleted=False, name=missed_names)
       if hotlist_rows:

@@ -123,7 +123,7 @@ def store_component_conversion(job_dir, data):
 
   else:
     paths = job_dir.split('/')
-    for y, _ in enumerate(range(1, len(paths)), 1):
+    for y, _ in enumerate(list(range(1, len(paths))), 1):
       if not os.path.exists("/".join(paths[:y+1])):
         os.makedirs('/'.join(paths[:y+1]))
     with open(job_dir + '/component_index.json', 'w') as f:
