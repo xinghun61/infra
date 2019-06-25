@@ -31,16 +31,13 @@ var SkylabExecute = &subcommands.Command{
 	Placeholder only, not yet implemented.`,
 	CommandRun: func() subcommands.CommandRun {
 		c := &skylabExecuteRun{}
-		c.Flags.StringVar(&c.inputPath, "input_json", "", "Path to JSON ExecuteRequest to read.")
-		c.Flags.StringVar(&c.outputPath, "output_json", "", "Path to JSON ExecuteResponse to write.")
+		c.addFlags()
 		return c
 	},
 }
 
 type skylabExecuteRun struct {
-	subcommands.CommandRunBase
-	inputPath  string
-	outputPath string
+	commonExecuteRun
 }
 
 func (c *skylabExecuteRun) Run(a subcommands.Application, args []string, env subcommands.Env) int {
@@ -55,18 +52,6 @@ func (c *skylabExecuteRun) Run(a subcommands.Application, args []string, env sub
 		fmt.Fprintf(a.GetErr(), "%s\n", err)
 	}
 	return exitCode(err)
-}
-
-func (c *skylabExecuteRun) validateArgs() error {
-	if c.inputPath == "" {
-		return fmt.Errorf("-input_json not specified")
-	}
-
-	if c.outputPath == "" {
-		return fmt.Errorf("-output_json not specified")
-	}
-
-	return nil
 }
 
 func (c *skylabExecuteRun) innerRun(a subcommands.Application, args []string, env subcommands.Env) error {
