@@ -464,6 +464,20 @@ wheel: <
 
 * *universal*
 
+## **backports.ssl_match_hostname**
+
+### 3.5.0.1
+
+```protobuf
+wheel: <
+  name: "infra/python/wheels/backports_ssl_match_hostname-py2_py3"
+  version: "version:3.5.0.1"
+>
+```
+
+
+* *universal*
+
 ## **bcrypt**
 
 ### 3.1.4
@@ -816,6 +830,34 @@ wheel: <
 * *manylinux-x86-ucs2*
 * *windows-x64*
 * *windows-x86*
+
+## **docker**
+
+### 2.7.0
+
+```protobuf
+wheel: <
+  name: "infra/python/wheels/docker-py2_py3"
+  version: "version:2.7.0"
+>
+```
+
+
+* *universal*
+
+## **docker-pycreds**
+
+### 0.2.1
+
+```protobuf
+wheel: <
+  name: "infra/python/wheels/docker-pycreds-py2_py3"
+  version: "version:0.2.1"
+>
+```
+
+
+* *universal*
 
 ## **enum34**
 
@@ -3078,6 +3120,20 @@ wheel: <
 wheel: <
   name: "infra/python/wheels/webencodings-py2_py3"
   version: "version:0.5.1"
+>
+```
+
+
+* *universal*
+
+## **websocket_client**
+
+### 0.40.0
+
+```protobuf
+wheel: <
+  name: "infra/python/wheels/websocket_client-py2_py3"
+  version: "version:0.40.0"
 >
 ```
 
