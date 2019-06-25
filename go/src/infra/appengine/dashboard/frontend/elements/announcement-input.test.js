@@ -27,15 +27,22 @@ suite('announcement-input', () => {
     assert.instanceOf(element, AnnouncementInput);
   });
 
-  test('test button updated on input', async () => {
+  test('test button updated on input and checkbox clicks', async () => {
     await element.updateComplete;
 
     const input = element.shadowRoot.querySelector('textarea');
+    const checkboxChromium = element.shadowRoot.querySelector(
+      '#chromium-review');
     const button = element.shadowRoot.querySelector('button');
     assert.isTrue(button.disabled);
 
     input.value = 'new announcement';
     input.dispatchEvent(new Event('input'));
+    await element.updateComplete; // element.disabled update
+
+    assert.isTrue(button.disabled);
+
+    checkboxChromium.click();
     await element.updateComplete; // element.disabled update
 
     assert.isNotTrue(button.disabled);
@@ -54,11 +61,14 @@ suite('announcement-input', () => {
     await element.updateComplete;
 
     const input = element.shadowRoot.querySelector('textarea');
+    const checkboxChrome = element.shadowRoot.querySelector(
+      '#chrome-internal-review');
     const button = element.shadowRoot.querySelector('button');
 
     element.errorMessage = 'error message from previous attempt.';
     input.value = 'new announcement';
     input.dispatchEvent(new Event('input'));
+    checkboxChrome.click();
     await element.updateComplete; // element.disabled update
     assert.isNotTrue(button.disabled);
 
@@ -68,8 +78,13 @@ suite('announcement-input', () => {
     await element.updateComplete; // element.disabled update
 
     sinon.assert.calledOnce(prpcStub);
+    const expectedMessage = {
+      messageContent: 'new announcement',
+      platforms: [{name: 'chrome-internal-review'}],
+    };
     sinon.assert.calledWith(
-      prpcStub, 'dashboard.ChopsAnnouncements', 'CreateLiveAnnouncement');
+      prpcStub, 'dashboard.ChopsAnnouncements', 'CreateLiveAnnouncement',
+      expectedMessage);
 
     assert.equal(input.value, '');
     assert.equal(element.errorMessage, '');

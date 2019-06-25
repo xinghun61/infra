@@ -18,12 +18,15 @@ export class AnnouncementInput extends LitElement {
     return {
       errorMessage: {type: String},
       disabled: {type: Boolean},
+      platformNames: {type: Array},
     };
   }
 
   constructor() {
     super();
     this.disabled = true;
+    // TODO(jojwang): Fetch platforms from luci-config when that is set up.
+    this.platformNames = ['chromium-review', 'chrome-internal-review'];
   }
 
   static get styles() {
@@ -79,11 +82,11 @@ export class AnnouncementInput extends LitElement {
     return html`
       <div class="tooltip">
         <span class="tooltip-text">
-          Announce a Gerrit service disruption by creating an
-          announcement below to have it displayed to all
-          users in chromium-review.googlesource.com.
-          When the disruption is over, 'retire' the announcement,
-          so it is no longer shown to our users.
+          Announce a service disruption by creating an
+          announcement message and selecting one or more of the ChOps owned
+          services listed below. Users will see the message when using
+          the selected service(s). When the disruption is over,
+          'retire' the announcement, so it is no longer visible to users.
         </span>
         &#9432;
       </div>
@@ -92,8 +95,16 @@ export class AnnouncementInput extends LitElement {
         @input="${this._disabledUpdateButton}"
         cols="80"
         rows="3"
-        placeholder="Create a gerrit announcement"
+        placeholder="Create an announcement"
       ></textarea>
+      <span>
+        ${this.platformNames.map((name) => html`
+          <input
+            @click="${this._disabledUpdateButton}"
+            class="small" type="checkbox" id="${name}" value="${name}"
+          ><label for="${name}">${name}</label></input>
+        `)}
+      </span>
       <button
         id="createButton"
         ?disabled=${this.disabled}
@@ -105,8 +116,17 @@ export class AnnouncementInput extends LitElement {
     `;
   }
 
+  _getCheckedPlatforms() {
+    return this.shadowRoot.querySelectorAll('input[type=checkbox]:checked');
+  }
+
   _disabledUpdateButton() {
     if (this.shadowRoot.getElementById('announcementInput').value == '') {
+      this.disabled = true;
+      return;
+    }
+    const checkedPlatforms = this._getCheckedPlatforms();
+    if (!checkedPlatforms || checkedPlatforms.length == 0) {
       this.disabled = true;
     } else {
       this.disabled = false;
@@ -119,11 +139,12 @@ export class AnnouncementInput extends LitElement {
   }
 
   async _createAnnouncementHandler() {
+    const checkedPlatforms = this._getCheckedPlatforms();
+    const platforms = Array.from(checkedPlatforms).map(
+      (checked) => ({name: checked.value}));
     const message = {
       messageContent: this.shadowRoot.getElementById('announcementInput').value,
-      platforms: [
-        {name: 'gerrit'},
-      ],
+      platforms: platforms,
     };
     const respPromise = prpcClient.call(
       'dashboard.ChopsAnnouncements', 'CreateLiveAnnouncement', message);
