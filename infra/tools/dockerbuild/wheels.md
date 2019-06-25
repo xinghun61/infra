@@ -1798,6 +1798,18 @@ wheel: <
 
 * *universal*
 
+### 1.1.0
+
+```protobuf
+wheel: <
+  name: "infra/python/wheels/mozinfo-py2_py3"
+  version: "version:1.1.0"
+>
+```
+
+
+* *universal*
+
 ## **mozlog**
 
 ### 3.8
@@ -1806,6 +1818,18 @@ wheel: <
 wheel: <
   name: "infra/python/wheels/mozlog-py2_py3"
   version: "version:3.8"
+>
+```
+
+
+* *universal*
+
+### 4.1
+
+```protobuf
+wheel: <
+  name: "infra/python/wheels/mozlog-py2_py3"
+  version: "version:4.1"
 >
 ```
 
@@ -2121,6 +2145,22 @@ wheel: <
 wheel: <
   name: "infra/python/wheels/pillow/${vpython_platform}"
   version: "version:5.4.1"
+>
+```
+
+
+* *mac-x64*
+* *manylinux-x64*
+* *manylinux-x86*
+* *windows-x64*
+* *windows-x86*
+
+### 6.0.0
+
+```protobuf
+wheel: <
+  name: "infra/python/wheels/pillow/${vpython_platform}"
+  version: "version:6.0.0"
 >
 ```
 
