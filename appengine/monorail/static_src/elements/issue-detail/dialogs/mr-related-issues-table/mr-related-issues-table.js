@@ -175,6 +175,10 @@ export class MrRelatedIssuesTable extends connectStore(LitElement) {
     if (!blockedOn) return [];
     return blockedOn.map((issue) => {
       const isClosed = issue.statusRef ? !issue.statusRef.meansOpen : false;
+      let summary = issue.summary;
+      if (issue.extIdentifier) {
+        summary = '(not available)';
+      }
       const row = {
         draggable: !isClosed,
         cells: [
@@ -185,7 +189,7 @@ export class MrRelatedIssuesTable extends connectStore(LitElement) {
           },
           {
             type: 'text',
-            content: issue.summary,
+            content: summary,
           },
         ],
       };

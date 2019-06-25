@@ -13,6 +13,7 @@ import 'elements/framework/mr-comment-content/mr-attachment.js';
 import 'elements/framework/mr-dropdown/mr-dropdown.js';
 import 'elements/framework/links/mr-issue-link/mr-issue-link.js';
 import 'elements/framework/links/mr-user-link/mr-user-link.js';
+import {isShortlinkValid} from 'elements/shared/federated.js';
 import {prpcClient} from 'prpc-client-instance.js';
 
 // Match: projectName:localIdFormat
@@ -321,6 +322,7 @@ function _issuesForAmendment(delta, projectName) {
       issue: {
         projectName: matches[1] ? matches[1] : projectName,
         localId: matches[2],
+        extIdentifier: isShortlinkValid(issueRef) ? issueRef : null,
       },
       text: issueRef,
     };

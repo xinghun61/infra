@@ -72,6 +72,18 @@ describe('mr-issue-link', () => {
     assert.equal(link.title, '');
   });
 
+  it('shows links for federated issues', async () => {
+    element.issue = {
+      extIdentifier: 'b/5678',
+    };
+
+    await element.updateComplete;
+
+    const link = element.shadowRoot.querySelector('#bugLink');
+    assert.include(link.href.trim(), 'https://issuetracker.google.com/issues/5678');
+    assert.equal(link.title, '');
+  });
+
   it('shows title when summary is defined', async () => {
     element.issue = {
       projectName: 'test',

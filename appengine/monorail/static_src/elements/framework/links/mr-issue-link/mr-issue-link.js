@@ -5,6 +5,7 @@
 import {LitElement, html, css} from 'lit-element';
 import {ifDefined} from 'lit-html/directives/if-defined';
 import {issueRefToString} from 'elements/shared/converters.js';
+import {fromShortlink} from 'elements/shared/federated.js';
 
 /**
  * `<mr-issue-link>`
@@ -52,6 +53,15 @@ export class MrIssueLink extends LitElement {
     const issue = this.issue;
     if (!issue) return '';
 
+    if (issue.extIdentifier) {
+      const extRef = fromShortlink(issue.extIdentifier);
+      if (!extRef) {
+        console.error(`No tracker found for reference: ${issue.extIdentifier}`);
+        return '';
+      }
+      return extRef.toURL();
+    }
+
     return `/p/${issue.projectName}/issues/detail?id=${issue.localId}`;
   }
 
@@ -60,6 +70,11 @@ export class MrIssueLink extends LitElement {
     const issue = this.issue;
     const text = this.text;
     if (text) return text;
+
+    if (issue && issue.extIdentifier) {
+      return issue.extIdentifier;
+    }
+
     return `Issue ${issueRefToString(issue, projectName)}`;
   }
 }

@@ -34,6 +34,16 @@ export class MrEditIssue extends connectStore(LitElement) {
 
   render() {
     const issue = this.issue || {};
+    let blockedOnRefs = issue.blockedOnIssueRefs || [];
+    if (issue.danglingBlockedOnRefs && issue.danglingBlockedOnRefs.length) {
+      blockedOnRefs = blockedOnRefs.concat(issue.danglingBlockedOnRefs);
+    }
+
+    let blockingRefs = issue.blockingIssueRefs || [];
+    if (issue.danglingBlockingRefs && issue.danglingBlockingRefs.length) {
+      blockingRefs = blockingRefs.concat(issue.danglingBlockingRefs);
+    }
+
     return html`
       <h2 id="makechanges" class="medium-heading">
         <a href="#makechanges">Add a comment and make changes</a>
@@ -51,8 +61,8 @@ export class MrEditIssue extends connectStore(LitElement) {
         .components=${issue.componentRefs}
         .fieldDefs=${this._fieldDefs}
         .fieldValues=${issue.fieldValues}
-        .blockedOn=${issue.blockedOnIssueRefs}
-        .blocking=${issue.blockingIssueRefs}
+        .blockedOn=${blockedOnRefs}
+        .blocking=${blockingRefs}
         .mergedInto=${issue.mergedIntoIssueRef}
         .labelNames=${this._labelNames}
         .derivedLabels=${this._derivedLabels}

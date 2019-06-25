@@ -102,6 +102,21 @@ describe('issue', () => {
         {localId: 1, projectName: 'proj', labelRefs: [{label: 'label'}]},
         {localId: 332, projectName: 'chromium', labelRefs: []},
       ]);
+
+    const stateIssuesWithFederatedReferences = {issue: {
+      currentIssue: {
+        blockingIssueRefs: [
+          {localId: 1, projectName: 'proj'},
+          {extIdentifier: 'b/1234'},
+        ],
+      },
+      relatedIssues: relatedIssues,
+    }};
+    assert.deepEqual(issue.blockingIssues(stateIssuesWithFederatedReferences),
+      [
+        {localId: 1, projectName: 'proj', labelRefs: [{label: 'label'}]},
+        {extIdentifier: 'b/1234'},
+      ]);
   });
 
   it('blockedOnIssues', () => {
@@ -144,6 +159,21 @@ describe('issue', () => {
       [
         {localId: 1, projectName: 'proj', labelRefs: [{label: 'label'}]},
         {localId: 332, projectName: 'chromium', labelRefs: []},
+      ]);
+
+    const stateIssuesWithFederatedReferences = {issue: {
+      currentIssue: {
+        blockedOnIssueRefs: [
+          {localId: 1, projectName: 'proj'},
+          {extIdentifier: 'b/1234'},
+        ],
+      },
+      relatedIssues: relatedIssues,
+    }};
+    assert.deepEqual(issue.blockedOnIssues(stateIssuesWithFederatedReferences),
+      [
+        {localId: 1, projectName: 'proj', labelRefs: [{label: 'label'}]},
+        {extIdentifier: 'b/1234'},
       ]);
   });
 

@@ -381,32 +381,48 @@ export const isOpen = createSelector(
   issue,
   (issue) => issue && issue.statusRef && issue.statusRef.meansOpen || false);
 
-const blockingIssueRefs = createSelector(
-  issue, (issue) => issue && issue.blockingIssueRefs || []);
-
-const blockedOnIssueRefs = createSelector(
-  issue, (issue) => issue && issue.blockedOnIssueRefs || []);
+// Returns a function that, given an issue and its related issues,
+// returns a combined list of issue ref strings including related issues,
+// blocking or blocked on issues, and federated references.
+const mapRefsWithRelated = (blocking) => {
+  return (issue, relatedIssues) => {
+    let refs = [];
+    if (blocking) {
+      if (issue.blockingIssueRefs) {
+        refs = refs.concat(issue.blockingIssueRefs);
+      }
+      if (issue.danglingBlockingRefs) {
+        refs = refs.concat(issue.danglingBlockingRefs);
+      }
+    } else {
+      if (issue.blockedOnIssueRefs) {
+        refs = refs.concat(issue.blockedOnIssueRefs);
+      }
+      if (issue.danglingBlockedOnRefs) {
+        refs = refs.concat(issue.danglingBlockedOnRefs);
+      }
+    }
+    if (issue.relatedIssues) {
+      refs = refs.concat(issue.relatedIssues);
+    }
+    return refs.map((ref) => {
+      const key = issueRefToString(ref);
+      if (relatedIssues.has(key)) {
+        return relatedIssues.get(key);
+      }
+      return ref;
+    });
+  };
+};
 
 export const blockingIssues = createSelector(
-  blockingIssueRefs, relatedIssues,
-  (blockingRefs, relatedIssues) => blockingRefs.map((ref) => {
-    const key = issueRefToString(ref);
-    if (relatedIssues.has(key)) {
-      return relatedIssues.get(key);
-    }
-    return ref;
-  })
+  issue, relatedIssues,
+  mapRefsWithRelated(true)
 );
 
 export const blockedOnIssues = createSelector(
-  blockedOnIssueRefs, relatedIssues,
-  (blockedOnRefs, relatedIssues) => blockedOnRefs.map((ref) => {
-    const key = issueRefToString(ref);
-    if (relatedIssues.has(key)) {
-      return relatedIssues.get(key);
-    }
-    return ref;
-  })
+  issue, relatedIssues,
+  mapRefsWithRelated(false)
 );
 
 export const mergedInto = createSelector(
