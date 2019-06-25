@@ -189,8 +189,12 @@ export class MrApp extends connectStore(LitElement) {
 
     this.projectName = ctx.params.project;
 
-    await import(/* webpackChunkName: "mr-grid-page" */'../issue-list/mr-grid-page/mr-grid-page.js');
-    this.loadWebComponent('mr-grid-page', {
+    await import('../issue-list/mr-grid-page/mr-grid-page.js');
+    this.loadWebComponent(/* webpackChunkName: "mr-grid-page" */ 'mr-grid-page', {
+      'projectName': ctx.params.project,
+      'userDisplayName': this.userDisplayName,
+      'issueEntryUrl': this.issueEntryUrl,
+      'queryParams': this.queryParams,
     });
   }
 
