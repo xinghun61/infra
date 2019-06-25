@@ -18,6 +18,7 @@ import (
 	"go.chromium.org/luci/common/errors"
 	"go.chromium.org/luci/swarming/proto/jsonrpc"
 
+	"infra/cmd/cros_test_platform/internal/execution/swarming"
 	"infra/libs/skylab/inventory"
 	"infra/libs/skylab/inventory/autotest/labels"
 	"infra/libs/skylab/request"
@@ -87,14 +88,6 @@ type attempt struct {
 	state     jsonrpc.TaskState
 }
 
-// Swarming defines an interface used to interact with a swarming service.
-// It is implemented by infra/libs/skylab/swarming.Client
-type Swarming interface {
-	CreateTask(context.Context, *swarming_api.SwarmingRpcsNewTaskRequest) (*swarming_api.SwarmingRpcsTaskRequestMetadata, error)
-	GetResults(ctx context.Context, IDs []string) ([]*swarming_api.SwarmingRpcsTaskResult, error)
-	GetTaskURL(taskID string) string
-}
-
 // NewTaskSet creates a new TaskSet.
 func NewTaskSet(tests []*build_api.AutotestTest, params *test_platform.Request_Params) *TaskSet {
 	testRuns := make([]*testRun, len(tests))
@@ -114,7 +107,7 @@ func NewTaskSet(tests []*build_api.AutotestTest, params *test_platform.Request_P
 // If the supplied context is cancelled prior to completion, or some other error
 // is encountered, this method returns whatever partial execution response
 // was visible to it prior to that error.
-func (r *TaskSet) LaunchAndWait(ctx context.Context, swarming Swarming) error {
+func (r *TaskSet) LaunchAndWait(ctx context.Context, swarming swarming.Client) error {
 	if err := r.launch(ctx, swarming); err != nil {
 		return err
 	}
@@ -127,7 +120,7 @@ var isClientTest = map[build_api.AutotestTest_ExecutionEnvironment]bool{
 	build_api.AutotestTest_EXECUTION_ENVIRONMENT_SERVER: false,
 }
 
-func (r *TaskSet) launch(ctx context.Context, swarming Swarming) error {
+func (r *TaskSet) launch(ctx context.Context, swarming swarming.Client) error {
 	for _, testRun := range r.testRuns {
 		args, err := testRun.RequestArgs()
 		if err != nil {
@@ -149,7 +142,7 @@ func (r *TaskSet) launch(ctx context.Context, swarming Swarming) error {
 	return nil
 }
 
-func (r *TaskSet) wait(ctx context.Context, swarming Swarming) error {
+func (r *TaskSet) wait(ctx context.Context, swarming swarming.Client) error {
 	for {
 		complete, err := r.tick(ctx, swarming)
 		if complete || err != nil {
@@ -164,7 +157,7 @@ func (r *TaskSet) wait(ctx context.Context, swarming Swarming) error {
 	}
 }
 
-func (r *TaskSet) tick(ctx context.Context, swarming Swarming) (complete bool, err error) {
+func (r *TaskSet) tick(ctx context.Context, swarming swarming.Client) (complete bool, err error) {
 	complete = true
 
 	for _, testRun := range r.testRuns {
@@ -246,7 +239,7 @@ var taskStateToLifeCycle = map[jsonrpc.TaskState]test_platform.TaskState_LifeCyc
 
 // Response constructs a response based on the current state of the
 // TaskSet.
-func (r *TaskSet) Response(swarming Swarming) *steps.ExecuteResponse {
+func (r *TaskSet) Response(swarming swarming.Client) *steps.ExecuteResponse {
 	resp := &steps.ExecuteResponse{}
 	for _, test := range r.testRuns {
 		for _, attempt := range test.attempts {

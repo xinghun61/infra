@@ -18,7 +18,7 @@ import (
 	"go.chromium.org/luci/common/cli"
 	"go.chromium.org/luci/common/errors"
 
-	"infra/cmd/cros_test_platform/internal/skylab"
+	"infra/cmd/cros_test_platform/internal/execution"
 	"infra/libs/skylab/swarming"
 )
 
@@ -112,7 +112,7 @@ func httpClient(ctx context.Context, c *config.Config_Swarming) (*http.Client, e
 }
 
 func (c *skylabExecuteRun) handleRequest(ctx context.Context, output io.Writer, req *steps.ExecuteRequest, t *swarming.Client) (*steps.ExecuteResponse, error) {
-	run := skylab.NewTaskSet(req.Enumeration.AutotestTests, req.RequestParams)
+	run := execution.NewSkylabRunner(req.Enumeration.AutotestTests, req.RequestParams)
 	err := run.LaunchAndWait(ctx, t)
 	return run.Response(t), err
 }

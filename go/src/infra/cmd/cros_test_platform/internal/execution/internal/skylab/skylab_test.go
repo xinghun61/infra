@@ -18,7 +18,7 @@ import (
 	swarming_api "go.chromium.org/luci/common/api/swarming/swarming/v1"
 	"go.chromium.org/luci/swarming/proto/jsonrpc"
 
-	"infra/cmd/cros_test_platform/internal/skylab"
+	"infra/cmd/cros_test_platform/internal/execution/internal/skylab"
 )
 
 // fakeSwarming implements skylab.Swarming
