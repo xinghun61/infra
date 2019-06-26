@@ -102,7 +102,7 @@ class UserView(object):
     elif not self.email:
       # TODO(jojwang): monorail:5740, remove this. We only expect
       # users with DELETED_USER_ID to have missing emails.
-      self.display_name = framework_constants.DELETED_USER_ID
+      self.display_name = framework_constants.DELETED_USER_NAME
       self.obscure_email = ''
       self.profile_url = ''
     elif self.email in client_config_svc.GetServiceAccountMap():
