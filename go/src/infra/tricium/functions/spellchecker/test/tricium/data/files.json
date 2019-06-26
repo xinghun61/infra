@@ -1,5 +1,5 @@
 {
-	"commit_message": "Updat the cod coments\n\nBug: ABC",
+	"commitMessage": "Updat the cod coments\n\nBug: ABC",
 	"files": [
 		{ "path": "example.c" },
 		{ "path": "example.txt" },

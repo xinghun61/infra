@@ -5,5 +5,6 @@
 		{ "path": "appengine/components/components/config/proto/Makefile" },
 		{ "path": "appengine/components/components/config/proto/project_config_pb2.py" },
 		{ "path": "appengine/components/components/config/proto/service_config_pb2.py" }
-	]
+	],
+	"commitMessage": "The commit message\n\nBug: 123"
 }

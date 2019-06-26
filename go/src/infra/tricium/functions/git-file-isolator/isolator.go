@@ -92,7 +92,8 @@ func main() {
 	// Copy files to output directory for isolation.
 	log.Printf("Copying from %q to %q.", tempDir, *outputDir)
 	output := &tricium.Data_Files{
-		Files: copyFiles(tempDir, *outputDir, files),
+		Files:         copyFiles(tempDir, *outputDir, files),
+		CommitMessage: input.CommitMessage,
 	}
 
 	// Write Tricium output FILES data.

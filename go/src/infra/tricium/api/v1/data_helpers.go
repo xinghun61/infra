@@ -50,6 +50,10 @@ func WriteDataType(prefix string, t proto.Message) (string, error) {
 	// The jsonpb marshaler produces a different output than the standard
 	// "encoding/json" package would. The JSON marshaler used must be
 	// consistent with the one used to create the initial isolated data.
+	//
+	// Specifically, the jsonpb marshaler uses camelCase field names for
+	// proto structs, whereas the encoding/json marshaler uses lowercase
+	// with underscores.
 	json, err := (&jsonpb.Marshaler{}).MarshalToString(t)
 	if err != nil {
 		return "", fmt.Errorf("failed to marshal: %v", err)
