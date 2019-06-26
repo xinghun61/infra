@@ -146,7 +146,7 @@ func TestGetUnassignedDUTs(t *testing.T) {
 		if err := datastore.Put(ctx, duts); err != nil {
 			t.Fatal(err)
 		}
-		got, err := GetUnassignedDUTs(ctx, 10)
+		got, err := getUnassignedDUTs(ctx, 10)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -173,7 +173,7 @@ func TestGetUnassignedDUTs(t *testing.T) {
 		if err := datastore.Put(ctx, duts); err != nil {
 			t.Fatal(err)
 		}
-		got, err := GetUnassignedDUTs(ctx, 3)
+		got, err := getUnassignedDUTs(ctx, 3)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -191,7 +191,7 @@ func TestGetUnassignedDUTs(t *testing.T) {
 		if err := datastore.Put(ctx, duts); err != nil {
 			t.Fatal(err)
 		}
-		got, err := GetUnassignedDUTs(ctx, 0)
+		got, err := getUnassignedDUTs(ctx, 0)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -211,7 +211,7 @@ func TestGetUnassignedDUTs(t *testing.T) {
 		if err := datastore.Put(ctx, duts); err != nil {
 			t.Fatal(err)
 		}
-		got, err := GetUnassignedDUTs(ctx, -1)
+		got, err := getUnassignedDUTs(ctx, -1)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -234,7 +234,7 @@ func TestGetUnassignedDUTs(t *testing.T) {
 		if err := datastore.Put(ctx, duts); err != nil {
 			t.Fatal(err)
 		}
-		got, err := GetUnassignedDUTs(ctx, 10)
+		got, err := getUnassignedDUTs(ctx, 10)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -259,7 +259,7 @@ func TestGetUnassignedDUTs(t *testing.T) {
 		if err := datastore.Put(ctx, duts); err != nil {
 			t.Fatal(err)
 		}
-		got, err := GetUnassignedDUTs(ctx, 1)
+		got, err := getUnassignedDUTs(ctx, 1)
 		if err != nil {
 			t.Fatal(err)
 		}

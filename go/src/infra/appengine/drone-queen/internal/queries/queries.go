@@ -79,11 +79,11 @@ func getDroneDUTs(ctx context.Context, d entities.DroneID) ([]*entities.DUT, err
 	return duts, nil
 }
 
-// GetUnassignedDUTs gets at most the specified number of unassigned
+// getUnassignedDUTs gets at most the specified number of unassigned
 // DUTs.  Draining DUTs are ignored.  This does not have to be run in
 // a transaction, but caveat emptor.  If n is less than zero, return
 // no DUTs.
-func GetUnassignedDUTs(ctx context.Context, n int32) ([]*entities.DUT, error) {
+func getUnassignedDUTs(ctx context.Context, n int32) ([]*entities.DUT, error) {
 	if n < 0 {
 		return nil, nil
 	}
@@ -110,7 +110,7 @@ func AssignNewDUTs(ctx context.Context, d entities.DroneID, li *api.ReportDroneR
 		return nil, errors.Annotate(err, "assign new DUTs to %v", d).Err()
 	}
 	dutsNeeded := uint32ToInt(li.GetDutCapacity()) - len(currentDUTs)
-	newDUTs, err := GetUnassignedDUTs(ctx, int32(dutsNeeded))
+	newDUTs, err := getUnassignedDUTs(ctx, int32(dutsNeeded))
 	if err != nil {
 		return nil, errors.Annotate(err, "assign new DUTs to %v", d).Err()
 	}
