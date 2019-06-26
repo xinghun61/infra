@@ -35,12 +35,9 @@ GCP_PROJECT_DEV = drone-queen-dev
 
 .PHONY: up-dev
 up-dev:
-	gae.py upload -A $(GCP_PROJECT_DEV) --app-dir $(APP_DIR)
+	gae.py upload -A $(GCP_PROJECT_DEV) --app-dir $(APP_DIR) -f
+	gae.py switch -A $(GCP_PROJECT_DEV) --app-dir $(APP_DIR) -f
 
-.PHONY: switch-dev
-switch-dev:
-	gae.py switch -A $(GCP_PROJECT_DEV) --app-dir $(APP_DIR)
-
-.PHONY: versions-cleanup-dev
-versions-cleanup-dev:
+.PHONY: cleanup-dev
+cleanup-dev:
 	gae.py cleanup -A $(GCP_PROJECT_DEV) --app-dir $(APP_DIR)
