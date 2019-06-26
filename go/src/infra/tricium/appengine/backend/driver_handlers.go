@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"time"
 
 	"github.com/golang/protobuf/proto"
 	ds "go.chromium.org/gae/service/datastore"
@@ -201,14 +202,14 @@ func handlePubSubMessage(c context.Context, msg *pubsub.PubsubMessage) error {
 		// PubSub message with no further action.
 		return nil
 	}
-	// Enqueue collect request.
+	// Enqueue a new collect request to be executed immediately.
 	err = enqueueCollectRequest(c, &admin.CollectRequest{
 		RunId:             tr.RunId,
 		IsolatedInputHash: tr.IsolatedInputHash,
 		Worker:            tr.Worker,
 		TaskId:            taskID,
 		BuildId:           buildID,
-	})
+	}, 0)
 	if err != nil {
 		return err
 	}
@@ -219,13 +220,19 @@ func handlePubSubMessage(c context.Context, msg *pubsub.PubsubMessage) error {
 	return nil
 }
 
-func enqueueCollectRequest(c context.Context, request *admin.CollectRequest) error {
+// enqueueCollectRequest enqueue a collect request to execute after a delay.
+//
+// Besides being used to enqueue the initial collect request after receiving a
+// PubSub message, this may also be used to retry collect requests for workers
+// that are not yet finished.
+func enqueueCollectRequest(c context.Context, request *admin.CollectRequest, delay time.Duration) error {
 	b, err := proto.Marshal(request)
 	if err != nil {
 		return errors.Annotate(err, "failed to marshal collect request").Err()
 	}
 	t := tq.NewPOSTTask("/driver/internal/collect", nil)
 	t.Payload = b
+	t.Delay = delay
 	if err := tq.Add(c, common.DriverQueue, t); err != nil {
 		return errors.Annotate(err, "failed to enqueue collect request").Err()
 	}

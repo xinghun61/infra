@@ -6,6 +6,7 @@ package main
 
 import (
 	"context"
+	"time"
 
 	"github.com/golang/protobuf/proto"
 	tq "go.chromium.org/gae/service/taskqueue"
@@ -19,7 +20,11 @@ import (
 	"infra/tricium/appengine/common/config"
 )
 
-// Collect processes one collect request to the Tricium driver.
+// Collect tries to collect results for a worker.
+//
+// This request may be for either buildbucket or swarming. If the worker is not
+// yet finished, another task should be enqueued; if the worker is finished,
+// then a worker-done task will be enqueued.
 func (*driverServer) Collect(c context.Context, req *admin.CollectRequest) (res *admin.CollectResponse, err error) {
 	defer func() {
 		err = grpcutil.GRPCifyAndLogErr(c, err)
@@ -34,7 +39,8 @@ func (*driverServer) Collect(c context.Context, req *admin.CollectRequest) (res 
 			Tag(grpcutil.InvalidArgumentTag).Err()
 	}
 
-	if err := collect(c, req, config.WorkflowCache, common.SwarmingServer, common.BuildbucketServer, common.IsolateServer); err != nil {
+	if err := collect(c, req, config.WorkflowCache, common.SwarmingServer,
+		common.BuildbucketServer, common.IsolateServer); err != nil {
 		return nil, err
 	}
 	return &admin.CollectResponse{}, nil
@@ -86,7 +92,10 @@ func collect(c context.Context, req *admin.CollectRequest,
 	}
 
 	if result.State == common.Pending {
-		if err = enqueueCollectRequest(c, req); err != nil {
+		// Retry again after a delay; taskqueue also has retry functionality
+		// built in, but only when tasks "fail". If we explicitly enqueue tasks
+		// to retry for pending workers, we can still return status 200 OK.
+		if err = enqueueCollectRequest(c, req, 30*time.Second); err != nil {
 			return err
 		}
 		return nil
@@ -121,7 +130,7 @@ func collect(c context.Context, req *admin.CollectRequest,
 		return errors.Annotate(err, "failed to enqueue track request").Err()
 	}
 
-	// Abort here if worker failed and mark descendants as failures.
+	// Abort here if worker, failed and mark descendants as failures.
 	if workerState == tricium.State_FAILURE {
 		logging.Fields{
 			"worker": req.Worker,

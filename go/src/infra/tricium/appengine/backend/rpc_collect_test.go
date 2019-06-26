@@ -7,9 +7,11 @@ package main
 import (
 	"context"
 	"testing"
+	"time"
 
 	. "github.com/smartystreets/goconvey/convey"
 	tq "go.chromium.org/gae/service/taskqueue"
+	"go.chromium.org/luci/common/clock"
 
 	admin "infra/tricium/api/admin/v1"
 	tricium "infra/tricium/api/v1"
@@ -109,19 +111,21 @@ func TestCollectRequest(t *testing.T) {
 			Convey("Enqueues no driver request", func() {
 				So(len(tq.GetTestable(ctx).GetScheduledTasks()[common.DriverQueue]), ShouldEqual, 0)
 			})
+		})
 
-			Convey("Driver collect request for incomplete worker without successors", func() {
-				err := collect(ctx, &admin.CollectRequest{
-					RunId:  runID,
-					Worker: "Hello",
-				}, workflowProvider, mockSwarming{
-					State: common.Pending,
-				}, common.MockTaskServerAPI, common.MockIsolator)
-				So(err, ShouldBeNil)
+		Convey("Driver collect request for incomplete worker without successors", func() {
+			err := collect(ctx, &admin.CollectRequest{
+				RunId:  runID,
+				Worker: "Hello",
+			}, workflowProvider, mockSwarming{
+				State: common.Pending,
+			}, common.MockTaskServerAPI, common.MockIsolator)
+			So(err, ShouldBeNil)
 
-				Convey("Re-enqueues the a driver (collect) request", func() {
-					So(len(tq.GetTestable(ctx).GetScheduledTasks()[common.DriverQueue]), ShouldEqual, 1)
-				})
+			Convey("Re-enqueues the a driver (collect) request", func() {
+				So(len(tq.GetTestable(ctx).GetScheduledTasks()[common.DriverQueue]), ShouldEqual, 1)
+				task := tq.GetTestable(ctx).GetScheduledTasks()[common.DriverQueue]["5023444679101355902"]
+				So(task.ETA, ShouldEqual, clock.Now(ctx).Add(30*time.Second))
 			})
 		})
 	})

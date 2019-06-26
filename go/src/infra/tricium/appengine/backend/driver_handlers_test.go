@@ -7,12 +7,15 @@ package main
 import (
 	"fmt"
 	"testing"
+	"time"
 
 	. "github.com/smartystreets/goconvey/convey"
 	ds "go.chromium.org/gae/service/datastore"
 	tq "go.chromium.org/gae/service/taskqueue"
+	"go.chromium.org/luci/common/clock"
 	"google.golang.org/api/pubsub/v1"
 
+	admin "infra/tricium/api/admin/v1"
 	"infra/tricium/appengine/common"
 	"infra/tricium/appengine/common/triciumtest"
 )
@@ -43,9 +46,27 @@ func TestDecodePubsubMessage(t *testing.T) {
 	})
 }
 
+func TestEnqueueCollectRequest(t *testing.T) {
+	Convey("Test Environment", t, func() {
+		ctx := triciumtest.Context()
+
+		Convey("Enqueued task shouldn't start until after delay time is up", func() {
+			So(enqueueCollectRequest(ctx, &admin.CollectRequest{}, 7*time.Minute), ShouldBeNil)
+
+			task := tq.GetTestable(ctx).GetScheduledTasks()[common.DriverQueue]["5023444679101355902"]
+			// ETA is the earliest time that the task should execute; an ETA of now
+			// + delay means that the task should start after a delay. When ETA is set
+			// on the task, then Delay is unset.
+			So(task.ETA, ShouldEqual, clock.Now(ctx).Add(7*time.Minute))
+			So(task.Delay, ShouldEqual, time.Duration(0))
+		})
+	})
+}
+
 func TestHandlePubSubMessage(t *testing.T) {
 	Convey("Test Environment", t, func() {
 		ctx := triciumtest.Context()
+
 		Convey("Enqueues collect task", func() {
 			So(len(tq.GetTestable(ctx).GetScheduledTasks()[common.DriverQueue]), ShouldEqual, 0)
 			received := &ReceivedPubSubMessage{ID: fmt.Sprintf("%s:%d", taskID, runID)}
@@ -55,6 +76,7 @@ func TestHandlePubSubMessage(t *testing.T) {
 			So(ds.Get(ctx, received), ShouldBeNil)
 			So(len(tq.GetTestable(ctx).GetScheduledTasks()[common.DriverQueue]), ShouldEqual, 1)
 		})
+
 		Convey("Enqueues buildbucket collect task", func() {
 			So(len(tq.GetTestable(ctx).GetScheduledTasks()[common.DriverQueue]), ShouldEqual, 0)
 			received := &ReceivedPubSubMessage{ID: fmt.Sprintf("%d:%d", buildID, runID)}
@@ -64,6 +86,7 @@ func TestHandlePubSubMessage(t *testing.T) {
 			So(ds.Get(ctx, received), ShouldBeNil)
 			So(len(tq.GetTestable(ctx).GetScheduledTasks()[common.DriverQueue]), ShouldEqual, 1)
 		})
+
 		Convey("Avoids duplicate processing", func() {
 			So(handlePubSubMessage(ctx, msg), ShouldBeNil)
 			So(handlePubSubMessage(ctx, msg), ShouldBeNil)
