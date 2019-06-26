@@ -182,6 +182,34 @@ class AdminLabelsTest(TestBase):
     self.assertEqual('Pri-4', self.config.well_known_labels[1].label)
     self.assertEqual(['pri'], self.config.exclusive_label_prefixes)
 
+  @patch('framework.servlet.Servlet.PleaseCorrect')
+  def testProcessSubtabForm_Duplicates(self, mock_pc):
+    post_data = fake.PostData(
+        predefinedlabels=['Pri-0\nPri-4\npri-0'],
+        excl_prefixes=['pri'])
+    next_url = self.servlet.ProcessSubtabForm(post_data, self.mr)
+    self.assertIsNone(next_url)
+    mock_pc.assert_called_once()
+    self.assertEqual(
+        'Duplicate label: pri-0',
+        self.mr.errors.label_defs)
+
+  @patch('framework.servlet.Servlet.PleaseCorrect')
+  def testProcessSubtabForm_Conflict(self, mock_pc):
+    post_data = fake.PostData(
+        predefinedlabels=['Multi-Part-One\nPri-4\npri-0'],
+        excl_prefixes=['pri'])
+    self.config.field_defs = [
+        tracker_pb2.FieldDef(
+            field_name='Multi-Part',
+            field_type=tracker_pb2.FieldTypes.ENUM_TYPE)]
+    next_url = self.servlet.ProcessSubtabForm(post_data, self.mr)
+    self.assertIsNone(next_url)
+    mock_pc.assert_called_once()
+    self.assertEqual(
+        'Label "Multi-Part-One" should be defined in enum "multi-part"',
+        self.mr.errors.label_defs)
+
 
 class AdminTemplatesTest(TestBase):
 

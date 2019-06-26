@@ -190,7 +190,7 @@ class AdminLabels(IssueAdminBase):
         for label, docstring in wkl_matches]
     if not wkl_tuples:
       mr.errors.label_defs = 'A project cannot have zero labels'
-    label_counter = collections.Counter(wkl[0] for wkl in wkl_tuples)
+    label_counter = collections.Counter(wkl[0].lower() for wkl in wkl_tuples)
     for lab, count in label_counter.items():
       if count > 1:
         mr.errors.label_defs = 'Duplicate label: %s' % lab
@@ -200,12 +200,12 @@ class AdminLabels(IssueAdminBase):
                    if fd.field_type is tracker_pb2.FieldTypes.ENUM_TYPE
                    and not fd.is_deleted]
     masked_labels = tracker_helpers.LabelsMaskedByFields(config, field_names)
-    masked_set = set(masked.name for masked in masked_labels)
+    field_names_lower = [field_name.lower() for field_name in field_names]
     for wkl in wkl_tuples:
-      if wkl[0] in masked_set:
+      conflict = tracker_bizobj.LabelIsMaskedByField(wkl[0], field_names_lower)
+      if conflict:
         mr.errors.label_defs = (
-            'Label "%s" should be defined in enum "%s"' % (
-            wkl[0], wkl[0].split('-')[0]))
+            'Label "%s" should be defined in enum "%s"' % (wkl[0], conflict))
     wkl_tuples.extend([
         (masked.name, masked.docstring, False) for masked in masked_labels])
 
