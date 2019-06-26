@@ -62,9 +62,11 @@ type Function struct {
 	// The name of the function.
 	//
 	// This name is used for selection, customization and reporting of
-	// progress/results. The name must be unique among Tricium functions
-	// within a Tricium instance, is expected to be CamelCase
-	// (no spaces, underscores, etc.)
+	// progress/results. The name must be unique among Tricium functions within a
+	// Tricium instance.
+	//
+	// The name is expected to be CamelCase; no spaces, underscores or dashes are
+	// allowed.
 	//
 	// This field is required.
 	Name string `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`

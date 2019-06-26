@@ -8,11 +8,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"path/filepath"
+	"strings"
 
 	"go.chromium.org/luci/common/errors"
 
 	admin "infra/tricium/api/admin/v1"
-	"infra/tricium/api/v1"
+	tricium "infra/tricium/api/v1"
 )
 
 // Generate generates a Tricium workflow based on the provided configs and
@@ -173,16 +174,19 @@ func includeFunction(f *tricium.Function, files []*tricium.Data_File) (bool, err
 // service config.
 //
 // The provided function is assumed to be verified.
-func createWorker(s *tricium.Selection, sc *tricium.ServiceConfig, f *tricium.Function, gitRef, gitURL string) (*admin.Worker, error) {
+func createWorker(s *tricium.Selection, sc *tricium.ServiceConfig, f *tricium.Function,
+	gitRef, gitURL string) (*admin.Worker, error) {
 	i := tricium.LookupImplForPlatform(f, s.Platform) // If verified, there should be an Impl.
 	p := tricium.LookupPlatform(sc, s.Platform)       // If verified, the platform should be known.
-	// TODO(qyearsley): The character that's used as a separator in worker
-	// names should be explicitly disallowed from function and platform
-	// names. Currently the character is "_"; a check could be added that
-	// the function and worker do not contain "_". If this is not feasible,
-	// the separator character could be changed.
+	// The separator character for worker names is underscore, so this
+	// character shouldn't appear in function or platform names. This
+	// is also checked in config validation.
+	workerName := fmt.Sprintf("%s_%s", s.Function, s.Platform)
+	if strings.Contains(s.Function, "_") || strings.Contains(s.Platform.String(), "_") {
+		return nil, errors.Reason("invalid name when making worker %q", workerName).Err()
+	}
 	w := &admin.Worker{
-		Name:                fmt.Sprintf("%s_%s", s.Function, s.Platform),
+		Name:                workerName,
 		Needs:               f.Needs,
 		Provides:            f.Provides,
 		NeedsForPlatform:    i.NeedsForPlatform,

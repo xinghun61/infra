@@ -6,6 +6,7 @@ package config
 
 import (
 	"fmt"
+	"strings"
 
 	"go.chromium.org/luci/common/errors"
 
@@ -41,6 +42,10 @@ func Validate(sc *tricium.ServiceConfig, pc *tricium.ProjectConfig) error {
 		f := functions[name]
 		if err := tricium.ValidateFunction(f, sc); err != nil {
 			return errors.Annotate(err, "function is not valid").Err()
+		}
+		if strings.Contains(s.Platform.String(), "_") {
+			// Underscore is used as a separator character in worker names.
+			return errors.Reason("platform %q should not contain underscore character", s.Platform).Err()
 		}
 		if !tricium.SupportsPlatform(f, s.Platform) {
 			return errors.Reason("no support for platform %s by function %s", s.Platform, name).Err()
