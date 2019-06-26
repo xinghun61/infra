@@ -267,6 +267,31 @@ func TestDroneQueenImpl_ReportDrone(t *testing.T) {
 			t.Errorf("Got report status %v; want UNKNOWN_UUID", s)
 		}
 	})
+	t.Run("expired drone", func(t *testing.T) {
+		t.Parallel()
+		ctx := gaetesting.TestingContextWithAppID("go-test")
+		datastore.GetTestable(ctx).Consistent(true)
+		now := time.Date(2000, 1, 2, 3, 4, 5, 6, time.UTC)
+		d := DroneQueenImpl{
+			nowFunc: staticTime(now),
+		}
+		dr := entities.Drone{
+			ID:         "nelo",
+			Expiration: now.Add(-10 * time.Second),
+		}
+		if err := datastore.Put(ctx, &dr); err != nil {
+			t.Fatal(err)
+		}
+		res, err := d.ReportDrone(ctx, &api.ReportDroneRequest{
+			DroneUuid: "nelo",
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if s := res.Status; s != api.ReportDroneResponse_UNKNOWN_UUID {
+			t.Errorf("Got report status %v; want UNKNOWN_UUID", s)
+		}
+	})
 }
 
 func TestDroneQueenImpl_workflows(t *testing.T) {

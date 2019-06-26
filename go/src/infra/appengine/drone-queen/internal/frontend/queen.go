@@ -60,6 +60,10 @@ func (q *DroneQueenImpl) ReportDrone(ctx context.Context, req *api.ReportDroneRe
 			}
 			return errors.Annotate(err, "get drone %s", id).Err()
 		}
+		if q.now().After(d.Expiration) {
+			res.Status = api.ReportDroneResponse_UNKNOWN_UUID
+			return errors.Reason("drone expired").Err()
+		}
 		d.Expiration = q.now().Add(config.AssignmentDuration(ctx)).UTC()
 		if err := datastore.Put(ctx, &d); err != nil {
 			return errors.Annotate(err, "refresh drone expiration").Err()
