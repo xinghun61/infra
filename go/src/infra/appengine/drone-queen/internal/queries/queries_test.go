@@ -49,26 +49,57 @@ func TestCreateNewDrone(t *testing.T) {
 
 func TestCreateNewDrone_with_generator(t *testing.T) {
 	t.Parallel()
-	ctx := gaetesting.TestingContextWithAppID("go-test")
-	if err := datastore.Put(ctx, &entities.Drone{ID: "drone1"}); err != nil {
-		t.Fatal(err)
-	}
-	i := 0
-	generator := func() string {
-		i++
-		return fmt.Sprintf("drone%d", i)
-	}
-	id, err := createNewDrone(ctx, time.Time{}, generator)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if id != "drone2" {
-		t.Errorf("Got drone id %v; expected drone2", id)
-	}
-	d := entities.Drone{ID: id}
-	if err := datastore.Get(ctx, &d); err != nil {
-		t.Errorf("Could not get drone entity %v missing: %v", id, err)
-	}
+	t.Run("retry uuid generation", func(t *testing.T) {
+		t.Parallel()
+		ctx := gaetesting.TestingContextWithAppID("go-test")
+		if err := datastore.Put(ctx, &entities.Drone{ID: "drone1"}); err != nil {
+			t.Fatal(err)
+		}
+		i := 0
+		generator := func() string {
+			i++
+			return fmt.Sprintf("drone%d", i)
+		}
+		id, err := createNewDrone(ctx, time.Time{}, generator)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if id != "drone2" {
+			t.Errorf("Got drone id %v; expected drone2", id)
+		}
+		d := entities.Drone{ID: id}
+		if err := datastore.Get(ctx, &d); err != nil {
+			t.Errorf("Could not get drone entity %v missing: %v", id, err)
+		}
+	})
+	t.Run("retry uuid generation when uuid used by expired drone", func(t *testing.T) {
+		t.Parallel()
+		ctx := gaetesting.TestingContextWithAppID("go-test")
+		now := time.Date(2000, 1, 2, 3, 4, 5, 7006, time.UTC)
+		d := entities.Drone{
+			ID:         "drone1",
+			Expiration: now.Add(-time.Minute),
+		}
+		if err := datastore.Put(ctx, &d); err != nil {
+			t.Fatal(err)
+		}
+		i := 0
+		generator := func() string {
+			i++
+			return fmt.Sprintf("drone%d", i)
+		}
+		id, err := createNewDrone(ctx, time.Time{}, generator)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if id != "drone2" {
+			t.Errorf("Got drone id %v; expected drone2", id)
+		}
+		d = entities.Drone{ID: id}
+		if err := datastore.Get(ctx, &d); err != nil {
+			t.Errorf("Could not get drone entity %v missing: %v", id, err)
+		}
+	})
 }
 
 func TestGetDroneDUTs(t *testing.T) {
