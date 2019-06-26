@@ -46,6 +46,21 @@ func workflowLaunched(c context.Context, req *admin.WorkflowLaunchedRequest, wp 
 	}
 	// Prepare function and worker invocation tracking entries to store.
 	fw, functions := extractFunctionWorkerStructure(c, wf)
+
+	// In most cases, when a workflow is launched, we update the state of
+	// the workflow and the analyze request to RUNNING.
+	newState := tricium.State_RUNNING
+
+	// However, if there are no functions (rare edge case), then the workflow
+	// is trivially considered "done" and is marked as such immediately.
+	if len(fw) == 0 && len(functions) == 0 {
+		if err != nil {
+			return errors.Annotate(err, "failed to read workflow config").Err()
+		}
+		logging.Warningf(c, "No functions found in workflow, nothing to do")
+		newState = tricium.State_SUCCESS
+	}
+
 	logging.Debugf(c, "Extracted function/worker entries for tracking: %#v", fw)
 	requestKey := ds.NewKey(c, "AnalyzeRequest", "", req.RunId, nil)
 	if err := ds.RunInTransaction(c, func(c context.Context) (err error) {
@@ -64,12 +79,12 @@ func workflowLaunched(c context.Context, req *admin.WorkflowLaunchedRequest, wp 
 		runKey := ds.KeyForObj(c, workflowRun)
 		return parallel.FanOutIn(func(taskC chan<- func() error) {
 
-			// Update AnalyzeRequestResult to RUNNING.
+			// Update AnalyzeRequestResult.
 			taskC <- func() error {
 				r := &track.AnalyzeRequestResult{
 					ID:     1,
 					Parent: requestKey,
-					State:  tricium.State_RUNNING,
+					State:  newState,
 				}
 				if err := ds.Put(c, r); err != nil {
 					return errors.Annotate(err, "failed to mark request as launched").Err()
@@ -77,12 +92,12 @@ func workflowLaunched(c context.Context, req *admin.WorkflowLaunchedRequest, wp 
 				return nil
 			}
 
-			// Update WorkflowRun state to RUNNING.
+			// Update WorkflowRunResult.
 			taskC <- func() error {
 				r := &track.WorkflowRunResult{
 					ID:     1,
 					Parent: runKey,
-					State:  tricium.State_RUNNING,
+					State:  newState,
 				}
 				if err := ds.Put(c, r); err != nil {
 					return errors.Annotate(err, "failed to mark workflow as launched").Err()

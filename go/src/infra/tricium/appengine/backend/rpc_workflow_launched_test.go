@@ -47,6 +47,42 @@ func TestWorkflowLaunchedRequest(t *testing.T) {
 			},
 		}
 
+		Convey("Trivial workflow with no analyzers is marked done immediately", func() {
+			request := &track.AnalyzeRequest{}
+			So(ds.Put(ctx, request), ShouldBeNil)
+			requestKey := ds.KeyForObj(ctx, request)
+			run := &track.WorkflowRun{ID: 1, Parent: requestKey}
+			So(ds.Put(ctx, run), ShouldBeNil)
+			runKey := ds.KeyForObj(ctx, run)
+			runResult := &track.WorkflowRunResult{
+				ID:     1,
+				Parent: runKey,
+				State:  tricium.State_PENDING,
+			}
+			So(ds.Put(ctx, runResult), ShouldBeNil)
+
+			// Use a mock workflow with no workers (and thus no functions).
+			emptyWorkflowProvider := &mockWorkflowProvider{
+				Workflow: &admin.Workflow{Workers: nil},
+			}
+
+			// Call workflowLaunched.
+			err := workflowLaunched(ctx, &admin.WorkflowLaunchedRequest{
+				RunId: request.ID,
+			}, emptyWorkflowProvider)
+			So(err, ShouldBeNil)
+
+			Convey("Marks workflow run as (trivially) done", func() {
+				So(ds.Get(ctx, runResult), ShouldBeNil)
+				So(runResult.State, ShouldEqual, tricium.State_SUCCESS)
+			})
+
+			Convey("There are no functions in this fun", func() {
+				So(ds.Get(ctx, run), ShouldBeNil)
+				So(len(run.Functions), ShouldEqual, 0)
+			})
+		})
+
 		Convey("Workflow request", func() {
 			// Add pending workflow run entity.
 			request := &track.AnalyzeRequest{}
@@ -71,7 +107,6 @@ func TestWorkflowLaunchedRequest(t *testing.T) {
 			name, _, err := track.ExtractFunctionPlatform(fileIsolator)
 
 			Convey("Marks workflow run as launched", func() {
-				// Run entry is marked as launched.
 				So(ds.Get(ctx, runResult), ShouldBeNil)
 				So(runResult.State, ShouldEqual, tricium.State_RUNNING)
 			})
