@@ -24,6 +24,7 @@ package cron
 import (
 	"errors"
 	"net/http"
+	"time"
 
 	"infra/appengine/drone-queen/internal/config"
 	"infra/appengine/drone-queen/internal/queries"
@@ -65,7 +66,7 @@ func pruneExpiredDrones(c *router.Context) (err error) {
 	defer func() {
 		pruneExpiredDronesTick.Add(c.Context, 1, config.Instance(c.Context), err == nil)
 	}()
-	return errors.New("not implemented")
+	return queries.PruneExpiredDrones(c.Context, time.Now())
 }
 
 func pruneDrainedDUTs(c *router.Context) (err error) {

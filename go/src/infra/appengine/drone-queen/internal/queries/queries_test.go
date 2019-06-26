@@ -365,6 +365,32 @@ func TestAssignNewDUTs(t *testing.T) {
 	}
 }
 
+func TestPruneExpiredDrones(t *testing.T) {
+	t.Parallel()
+	ctx := gaetesting.TestingContextWithAppID("go-test")
+	datastore.GetTestable(ctx).Consistent(true)
+	now := time.Date(2000, 1, 2, 3, 4, 5, 0, time.UTC)
+	d := []*entities.Drone{
+		{ID: "shurelia", Expiration: now.Add(-time.Minute)},
+		{ID: "jakuri", Expiration: now},
+		{ID: "harvestasha", Expiration: now.Add(time.Minute)},
+	}
+	if err := datastore.Put(ctx, d); err != nil {
+		t.Fatal(err)
+	}
+	if err := PruneExpiredDrones(ctx, now); err != nil {
+		t.Fatal(err)
+	}
+	d = nil
+	if err := datastore.GetAll(ctx, datastore.NewQuery(entities.DroneKind), &d); err != nil {
+		t.Fatal(err)
+	}
+	want := []*entities.Drone{
+		{ID: "harvestasha", Expiration: now.Add(time.Minute)},
+	}
+	assertSameDrones(t, want, d)
+}
+
 func TestPruneDrainedDUTs(t *testing.T) {
 	t.Parallel()
 	cases := []struct {
@@ -436,6 +462,19 @@ func assertSubsetDUTs(t *testing.T, all, got []*entities.DUT) {
 			t.Errorf("Got DUT %v not in expected set %v", d, entities.FormatDUTs(all))
 		}
 	}
+}
+
+func assertSameDrones(t *testing.T, want, got []*entities.Drone) {
+	t.Helper()
+	sortDrones(want)
+	sortDrones(got)
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("Unexpected DUTs (-want +got):\n%s", diff)
+	}
+}
+
+func sortDrones(d []*entities.Drone) {
+	sort.Slice(d, func(i, j int) bool { return d[i].ID < d[j].ID })
 }
 
 func assertSameDUTs(t *testing.T, want, got []*entities.DUT) {

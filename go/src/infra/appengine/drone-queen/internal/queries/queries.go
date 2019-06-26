@@ -123,6 +123,25 @@ func AssignNewDUTs(ctx context.Context, d entities.DroneID, li *api.ReportDroneR
 	return currentDUTs, nil
 }
 
+// PruneExpiredDrones deletes Drones that have expired.  This function
+// cannot be called in a transaction.
+func PruneExpiredDrones(ctx context.Context, now time.Time) error {
+	var d []entities.Drone
+	q := datastore.NewQuery(entities.DroneKind)
+	if err := datastore.GetAll(ctx, q, &d); err != nil {
+		return errors.Annotate(err, "prune expired drones: get drones").Err()
+	}
+	for _, d := range d {
+		if d.Expiration.After(now) {
+			continue
+		}
+		if err := datastore.Delete(ctx, &d); err != nil {
+			return errors.Annotate(err, "prune expired drones: delete drone %v", d.ID).Err()
+		}
+	}
+	return nil
+}
+
 // PruneDrainedDUTs deletes DUTs that are draining and not assigned to
 // any drone.  This function does not need to be called in a
 // transaction.
