@@ -48,7 +48,7 @@ run-local:
 	mkdir -p $(bindir)
 
 build-server-binary: .setup-bindir
-	CGO=0 GOOS=linux GOARCH=amd64 go build -v \
+	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -v \
 		-o $(servercmd) \
 		$(projdir)/cmd/qscheduler-swarming \
 
