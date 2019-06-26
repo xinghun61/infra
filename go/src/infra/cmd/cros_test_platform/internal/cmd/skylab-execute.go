@@ -5,21 +5,14 @@
 package cmd
 
 import (
-	"context"
 	"fmt"
-	"io"
-	"net/http"
 
 	"github.com/maruel/subcommands"
 
-	"go.chromium.org/chromiumos/infra/proto/go/test_platform/config"
 	"go.chromium.org/chromiumos/infra/proto/go/test_platform/steps"
-	"go.chromium.org/luci/auth"
 	"go.chromium.org/luci/common/cli"
-	"go.chromium.org/luci/common/errors"
 
 	"infra/cmd/cros_test_platform/internal/execution"
-	"infra/libs/skylab/swarming"
 )
 
 // SkylabExecute subcommand: Run a set of enumerated tests against skylab backend.
@@ -66,17 +59,14 @@ func (c *skylabExecuteRun) innerRun(a subcommands.Application, args []string, en
 
 	ctx := cli.GetContext(a, c, env)
 
-	hClient, err := httpClient(ctx, request.Config.SkylabSwarming)
+	client, err := swarmingClient(ctx, request.Config.SkylabSwarming)
 	if err != nil {
 		return err
 	}
 
-	client, err := swarming.New(ctx, hClient, request.Config.SkylabSwarming.Server)
-	if err != nil {
-		return err
-	}
+	runner := execution.NewSkylabRunner(request.Enumeration.AutotestTests, request.RequestParams)
 
-	response, err := c.handleRequest(ctx, a.GetErr(), request, client)
+	response, err := c.handleRequest(ctx, runner, client)
 	if err != nil && response == nil {
 		// Catastrophic error. There is no reasonable response to write.
 		return err
@@ -86,7 +76,7 @@ func (c *skylabExecuteRun) innerRun(a subcommands.Application, args []string, en
 }
 
 func (c *skylabExecuteRun) validateRequest(request *steps.ExecuteRequest) error {
-	if err := c.validateRequest(request); err != nil {
+	if err := c.validateRequestCommon(request); err != nil {
 		return err
 	}
 
@@ -95,24 +85,4 @@ func (c *skylabExecuteRun) validateRequest(request *steps.ExecuteRequest) error 
 	}
 
 	return nil
-}
-
-func httpClient(ctx context.Context, c *config.Config_Swarming) (*http.Client, error) {
-	// TODO(akeshet): Specify ClientID and ClientSecret fields.
-	options := auth.Options{
-		ServiceAccountJSONPath: c.AuthJsonPath,
-		Scopes:                 []string{auth.OAuthScopeEmail},
-	}
-	a := auth.NewAuthenticator(ctx, auth.OptionalLogin, options)
-	h, err := a.Client()
-	if err != nil {
-		return nil, errors.Annotate(err, "create http client").Err()
-	}
-	return h, nil
-}
-
-func (c *skylabExecuteRun) handleRequest(ctx context.Context, output io.Writer, req *steps.ExecuteRequest, t *swarming.Client) (*steps.ExecuteResponse, error) {
-	run := execution.NewSkylabRunner(req.Enumeration.AutotestTests, req.RequestParams)
-	err := run.LaunchAndWait(ctx, t)
-	return run.Response(t), err
 }

@@ -12,6 +12,7 @@ import (
 	"go.chromium.org/chromiumos/infra/proto/go/test_platform"
 	"go.chromium.org/chromiumos/infra/proto/go/test_platform/steps"
 
+	"infra/cmd/cros_test_platform/internal/execution/internal/autotest"
 	"infra/cmd/cros_test_platform/internal/execution/internal/skylab"
 	"infra/cmd/cros_test_platform/internal/execution/swarming"
 )
@@ -27,4 +28,10 @@ type Runner interface {
 // the skylab environment.
 func NewSkylabRunner(tests []*build_api.AutotestTest, params *test_platform.Request_Params) Runner {
 	return skylab.NewTaskSet(tests, params)
+}
+
+// NewAutotestRunner returns a Runner that will execute the given tests in
+// the autotest environment.
+func NewAutotestRunner(tests []*build_api.AutotestTest, params *test_platform.Request_Params) Runner {
+	return autotest.New(tests, params)
 }

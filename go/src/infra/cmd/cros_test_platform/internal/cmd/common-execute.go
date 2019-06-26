@@ -5,11 +5,19 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
+	"net/http"
 
 	"github.com/maruel/subcommands"
 
+	"go.chromium.org/chromiumos/infra/proto/go/test_platform/config"
 	"go.chromium.org/chromiumos/infra/proto/go/test_platform/steps"
+	"go.chromium.org/luci/auth"
+	"go.chromium.org/luci/common/errors"
+
+	"infra/cmd/cros_test_platform/internal/execution"
+	"infra/libs/skylab/swarming"
 )
 
 type commonExecuteRun struct {
@@ -43,7 +51,7 @@ func (c *commonExecuteRun) readRequest(inputPath string) (*steps.ExecuteRequest,
 	return &request, nil
 }
 
-func (c *commonExecuteRun) validateRequest(request *steps.ExecuteRequest) error {
+func (c *commonExecuteRun) validateRequestCommon(request *steps.ExecuteRequest) error {
 	if request == nil {
 		return fmt.Errorf("nil request")
 	}
@@ -53,4 +61,38 @@ func (c *commonExecuteRun) validateRequest(request *steps.ExecuteRequest) error 
 	}
 
 	return nil
+}
+
+func (c *commonExecuteRun) handleRequest(ctx context.Context, runner execution.Runner, t *swarming.Client) (*steps.ExecuteResponse, error) {
+
+	err := runner.LaunchAndWait(ctx, t)
+	return runner.Response(t), err
+}
+
+func httpClient(ctx context.Context, c *config.Config_Swarming) (*http.Client, error) {
+	// TODO(akeshet): Specify ClientID and ClientSecret fields.
+	options := auth.Options{
+		ServiceAccountJSONPath: c.AuthJsonPath,
+		Scopes:                 []string{auth.OAuthScopeEmail},
+	}
+	a := auth.NewAuthenticator(ctx, auth.OptionalLogin, options)
+	h, err := a.Client()
+	if err != nil {
+		return nil, errors.Annotate(err, "create http client").Err()
+	}
+	return h, nil
+}
+
+func swarmingClient(ctx context.Context, c *config.Config_Swarming) (*swarming.Client, error) {
+	hClient, err := httpClient(ctx, c)
+	if err != nil {
+		return nil, err
+	}
+
+	client, err := swarming.New(ctx, hClient, c.Server)
+	if err != nil {
+		return nil, err
+	}
+
+	return client, nil
 }

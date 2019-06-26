@@ -9,7 +9,10 @@ import (
 
 	"github.com/maruel/subcommands"
 
+	"infra/cmd/cros_test_platform/internal/execution"
+
 	"go.chromium.org/chromiumos/infra/proto/go/test_platform/steps"
+	"go.chromium.org/luci/common/cli"
 )
 
 // AutotestExecute subcommand: Run a set of enumerated tests against autotest backend.
@@ -54,16 +57,32 @@ func (c *autotestExecuteRun) innerRun(a subcommands.Application, args []string, 
 		return err
 	}
 
-	return fmt.Errorf("not yet implemented")
-}
+	ctx := cli.GetContext(a, c, env)
 
-func (c *autotestExecuteRun) validateRequest(request *steps.ExecuteRequest) error {
-	if err := c.validateRequest(request); err != nil {
+	client, err := swarmingClient(ctx, request.Config.AutotestProxy)
+	if err != nil {
 		return err
 	}
 
-	// TODO(akeshet): Once the swarming proxy config message is defined, assert
-	// that it is non-nil here for this request.
+	runner := execution.NewAutotestRunner(request.Enumeration.AutotestTests, request.RequestParams)
+
+	response, err := c.handleRequest(ctx, runner, client)
+	if err != nil && response == nil {
+		// Catastrophic error. There is no reasonable response to write.
+		return err
+	}
+
+	return writeResponse(c.outputPath, response, err)
+}
+
+func (c *autotestExecuteRun) validateRequest(request *steps.ExecuteRequest) error {
+	if err := c.validateRequestCommon(request); err != nil {
+		return err
+	}
+
+	if request.Config.AutotestProxy == nil {
+		return fmt.Errorf("nil request.Config.AutotestProxy")
+	}
 
 	return nil
 }
