@@ -25,7 +25,8 @@ func CreateNewDrone(ctx context.Context, now time.Time) (entities.DroneID, error
 }
 
 // createNewDrone creates a new Drone datastore entity with a unique
-// ID.  An ID generator function must be provided.
+// ID.  An ID generator function must be provided.  This function
+// cannot be called in a transaction.
 func createNewDrone(ctx context.Context, now time.Time, generator func() string) (entities.DroneID, error) {
 	const maxAttempts = 10
 	var id entities.DroneID
@@ -79,8 +80,9 @@ func GetDroneDUTs(ctx context.Context, d entities.DroneID) ([]*entities.DUT, err
 }
 
 // GetUnassignedDUTs gets at most the specified number of unassigned
-// DUTs.  This does not have to be run in a transaction, but caveat
-// emptor.  If n is less than zero, return no DUTs.
+// DUTs.  Draining DUTs are ignored.  This does not have to be run in
+// a transaction, but caveat emptor.  If n is less than zero, return
+// no DUTs.
 func GetUnassignedDUTs(ctx context.Context, n int32) ([]*entities.DUT, error) {
 	if n < 0 {
 		return nil, nil
