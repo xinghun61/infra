@@ -6,6 +6,8 @@
 package queries
 
 import (
+	"time"
+
 	"github.com/google/uuid"
 	"go.chromium.org/gae/service/datastore"
 	"go.chromium.org/luci/common/errors"
@@ -18,13 +20,13 @@ import (
 )
 
 // CreateNewDrone creates a new Drone datastore entity with a unique ID.
-func CreateNewDrone(ctx context.Context) (entities.DroneID, error) {
-	return createNewDrone(ctx, func() string { return uuid.New().String() })
+func CreateNewDrone(ctx context.Context, now time.Time) (entities.DroneID, error) {
+	return createNewDrone(ctx, now, func() string { return uuid.New().String() })
 }
 
 // createNewDrone creates a new Drone datastore entity with a unique
 // ID.  An ID generator function must be provided.
-func createNewDrone(ctx context.Context, generator func() string) (entities.DroneID, error) {
+func createNewDrone(ctx context.Context, now time.Time, generator func() string) (entities.DroneID, error) {
 	const maxAttempts = 10
 	var id entities.DroneID
 	retry := errors.New("retry")
@@ -44,7 +46,8 @@ func createNewDrone(ctx context.Context, generator func() string) (entities.Dron
 			}
 			id = entities.DroneID(proposed)
 			drone := entities.Drone{
-				ID: id,
+				ID:         id,
+				Expiration: now.Add(config.AssignmentDuration(ctx)).UTC(),
 			}
 			if err := datastore.Put(ctx, &drone); err != nil {
 				return err

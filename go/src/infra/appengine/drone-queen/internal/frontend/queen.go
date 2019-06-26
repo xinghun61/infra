@@ -45,7 +45,7 @@ func (q *DroneQueenImpl) ReportDrone(ctx context.Context, req *api.ReportDroneRe
 	id := entities.DroneID(req.GetDroneUuid())
 	// Assign a new UUID if needed.
 	if id == "" {
-		id, err = queries.CreateNewDrone(ctx)
+		id, err = queries.CreateNewDrone(ctx, q.now())
 		if err != nil {
 			return nil, err
 		}

@@ -8,13 +8,16 @@ import (
 	"fmt"
 	"sort"
 	"testing"
+	"time"
 
+	"github.com/golang/protobuf/ptypes"
 	"github.com/google/go-cmp/cmp"
 	"go.chromium.org/gae/service/datastore"
 	"go.chromium.org/luci/appengine/gaetesting"
 	"golang.org/x/net/context"
 
 	"infra/appengine/drone-queen/api"
+	"infra/appengine/drone-queen/internal/config"
 	"infra/appengine/drone-queen/internal/entities"
 	"infra/appengine/drone-queen/internal/testlogger"
 )
@@ -22,13 +25,25 @@ import (
 func TestCreateNewDrone(t *testing.T) {
 	t.Parallel()
 	ctx := gaetesting.TestingContextWithAppID("go-test")
-	id, err := CreateNewDrone(ctx)
+	const dur = 1 * time.Minute
+	ctx = config.Use(ctx, &config.Config{
+		AssignmentDuration: ptypes.DurationProto(dur),
+	})
+	now := time.Date(2000, 1, 2, 3, 4, 5, 7006, time.UTC)
+	id, err := CreateNewDrone(ctx, now)
 	if err != nil {
 		t.Fatal(err)
 	}
 	d := entities.Drone{ID: id}
 	if err := datastore.Get(ctx, &d); err != nil {
 		t.Errorf("Could not get drone entity %v missing: %v", id, err)
+	}
+	want := entities.Drone{
+		ID:         id,
+		Expiration: now.Add(dur).Truncate(time.Microsecond),
+	}
+	if diff := cmp.Diff(want, d); diff != "" {
+		t.Errorf("Unexpected drone (-want +got):\n%s", diff)
 	}
 }
 
@@ -43,7 +58,7 @@ func TestCreateNewDrone_with_generator(t *testing.T) {
 		i++
 		return fmt.Sprintf("drone%d", i)
 	}
-	id, err := createNewDrone(ctx, generator)
+	id, err := createNewDrone(ctx, time.Time{}, generator)
 	if err != nil {
 		t.Fatal(err)
 	}
