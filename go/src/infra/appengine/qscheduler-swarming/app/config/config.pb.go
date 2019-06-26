@@ -5,10 +5,9 @@ package config
 
 import (
 	fmt "fmt"
-	math "math"
-
 	proto "github.com/golang/protobuf/proto"
 	duration "github.com/golang/protobuf/ptypes/duration"
+	math "math"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -152,10 +151,10 @@ type QuotaScheduler struct {
 	// If specified, the amount of time that a batch waits to collect requests
 	// before executing.
 	//
+	// If unspecified, defaults to 300ms.
+	//
 	// A higher value causes batches to be larger and hence more efficient in
 	// in terms of datastore operations, but adds overhead.
-	//
-	// Default: 5 ms.
 	BatchConstructionWait *duration.Duration `protobuf:"bytes,2,opt,name=batch_construction_wait,json=batchConstructionWait,proto3" json:"batch_construction_wait,omitempty"`
 	XXX_NoUnkeyedLiteral  struct{}           `json:"-"`
 	XXX_unrecognized      []byte             `json:"-"`

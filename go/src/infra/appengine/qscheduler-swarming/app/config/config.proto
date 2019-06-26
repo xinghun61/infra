@@ -48,7 +48,7 @@ message QuotaScheduler {
   // If specified, the amount of time that a batch waits to collect requests
   // before executing.
   //
-  // If unspecified, defaults to 5ms.
+  // If unspecified, defaults to 300ms.
   //
   // A higher value causes batches to be larger and hence more efficient in
   // in terms of datastore operations, but adds overhead.

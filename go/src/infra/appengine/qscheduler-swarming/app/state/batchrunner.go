@@ -174,6 +174,7 @@ func (b *BatchRunner) runRequestsInBatches(store *Store) {
 }
 
 func (b *BatchRunner) collectForBatch(ctx context.Context, nb *batch) {
+	timer := clock.After(ctx, waitToCollect(ctx))
 	for {
 		select {
 		case r := <-b.requests:
@@ -188,7 +189,7 @@ func (b *BatchRunner) collectForBatch(ctx context.Context, nb *batch) {
 			logging.Debugf(r.ctx, "request picked up as batch slave, will eventually execute")
 			nb.append(r)
 			<-b.tBatchWait
-		case <-clock.After(ctx, waitToCollect(ctx)):
+		case <-timer:
 			// Stop collecting, unless we are in a test test fixture and
 			// waiting for additional requests.
 			if !b.tWait {
@@ -198,7 +199,7 @@ func (b *BatchRunner) collectForBatch(ctx context.Context, nb *batch) {
 	}
 }
 
-const defaultConstructionWait = 5 * time.Millisecond
+const defaultConstructionWait = 300 * time.Millisecond
 
 func waitToCollect(ctx context.Context) time.Duration {
 	c := config.Get(ctx)
