@@ -101,6 +101,7 @@ type cookRun struct {
 type kitchenProperties struct {
 	GitAuth      bool `json:"git_auth"`
 	DevShell     bool `json:"devshell"`
+	EmulateGCE   bool `json:"emulate_gce"`
 	DockerAuth   bool `json:"docker_auth"`
 	FirebaseAuth bool `json:"firebase_auth"`
 }
@@ -292,6 +293,7 @@ func (c *cookRun) prepareProperties(env environ.Env) (map[string]interface{}, *k
 	kitchenProps := &kitchenProperties{
 		GitAuth:      true,
 		DevShell:     true,
+		EmulateGCE:   false, // TODO(vadimsh): Make it 'true' if it works reliably.
 		DockerAuth:   true,
 		FirebaseAuth: false,
 	}
@@ -305,6 +307,11 @@ func (c *cookRun) prepareProperties(env environ.Env) (map[string]interface{}, *k
 		}
 	}
 	delete(props, "$kitchen")
+
+	// EmulateGCE supersedes DevShell.
+	if kitchenProps.EmulateGCE {
+		kitchenProps.DevShell = false
+	}
 
 	return props, kitchenProps, nil
 }
@@ -410,7 +417,7 @@ func (c *cookRun) run(ctx context.Context, args []string, env environ.Env) *buil
 
 	// Create systemAuth and recipeAuth authentication contexts, since we are
 	// about to start making authenticated requests now.
-	if err := c.setupAuth(ctx, c.kitchenProps.GitAuth, c.kitchenProps.DevShell, c.kitchenProps.DockerAuth, c.kitchenProps.FirebaseAuth); err != nil {
+	if err := c.setupAuth(ctx); err != nil {
 		return fail(errors.Annotate(err, "failed to setup auth").Err())
 	}
 	defer c.recipeAuth.Close()
@@ -555,7 +562,7 @@ func (c *cookRun) reportProperties(ctx context.Context, realm string, props inte
 // context the kitchen starts with by default. On Swarming this will be the
 // context associated with service account specified in the Swarming task
 // definition.
-func (c *cookRun) setupAuth(ctx context.Context, enableGitAuth, enableDevShell, enableDockerAuth, enableFirebaseAuth bool) error {
+func (c *cookRun) setupAuth(ctx context.Context) error {
 	// Construct authentication option with the set of scopes to be used through
 	// out Kitchen. This is superset of all scopes we might need. It is more
 	// efficient to create a single token with all the scopes than make a bunch of
@@ -574,7 +581,7 @@ func (c *cookRun) setupAuth(ctx context.Context, enableGitAuth, enableDevShell, 
 		"https://www.googleapis.com/auth/cloud-platform",
 		"https://www.googleapis.com/auth/userinfo.email",
 	}
-	if enableFirebaseAuth {
+	if c.kitchenProps.FirebaseAuth {
 		authOpts.Scopes = append(authOpts.Scopes, "https://www.googleapis.com/auth/firebase")
 	}
 
@@ -595,10 +602,11 @@ func (c *cookRun) setupAuth(ctx context.Context, enableGitAuth, enableDevShell, 
 	systemAuth := &authctx.Context{
 		ID:                 "system",
 		Options:            authOpts,
-		EnableGitAuth:      enableGitAuth,
-		EnableDevShell:     enableDevShell,
-		EnableDockerAuth:   enableDockerAuth,
-		EnableFirebaseAuth: enableFirebaseAuth,
+		EnableGitAuth:      c.kitchenProps.GitAuth,
+		EnableDevShell:     c.kitchenProps.DevShell,
+		EnableGCEEmulation: c.kitchenProps.EmulateGCE,
+		EnableDockerAuth:   c.kitchenProps.DockerAuth,
+		EnableFirebaseAuth: c.kitchenProps.FirebaseAuth,
 		KnownGerritHosts:   c.KnownGerritHost,
 	}
 	if _, err := systemAuth.Launch(systemCtx, c.TempDir); err != nil {
@@ -610,10 +618,11 @@ func (c *cookRun) setupAuth(ctx context.Context, enableGitAuth, enableDevShell, 
 	recipeAuth := &authctx.Context{
 		ID:                 "task",
 		Options:            authOpts,
-		EnableGitAuth:      enableGitAuth,
-		EnableDevShell:     enableDevShell,
-		EnableDockerAuth:   enableDockerAuth,
-		EnableFirebaseAuth: enableFirebaseAuth,
+		EnableGitAuth:      c.kitchenProps.GitAuth,
+		EnableDevShell:     c.kitchenProps.DevShell,
+		EnableGCEEmulation: c.kitchenProps.EmulateGCE,
+		EnableDockerAuth:   c.kitchenProps.DockerAuth,
+		EnableFirebaseAuth: c.kitchenProps.FirebaseAuth,
 		KnownGerritHosts:   c.KnownGerritHost,
 	}
 	if _, err := recipeAuth.Launch(ctx, c.TempDir); err != nil {

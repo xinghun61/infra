@@ -133,8 +133,8 @@ func TestCook(t *testing.T) {
 						"mocked_result_path": mockedRecipeResultPath,
 					},
 					"$kitchen": map[string]interface{}{
-						"git_auth": true,
-						"devshell": true,
+						"git_auth":    true,
+						"emulate_gce": true,
 					},
 				})
 				So(err, ShouldBeNil)
@@ -169,7 +169,7 @@ func TestCook(t *testing.T) {
 				// Check parsed kitchen own properties.
 				So(cook.kitchenProps, ShouldResemble, &kitchenProperties{
 					GitAuth:      true,
-					DevShell:     true,
+					EmulateGCE:   true,
 					DockerAuth:   true,
 					FirebaseAuth: false,
 				})
