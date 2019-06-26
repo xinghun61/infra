@@ -155,6 +155,24 @@ adhoc_builder(
     },
     triggered_by = [infra.poller()],
 )
+adhoc_builder(
+    name = 'build-proto-experiment-linux',
+    os = 'Ubuntu',
+    executable = luci.recipe(
+      name = 'futures:examples/background_helper',
+      cipd_package = 'infra/recipe_bundles/chromium.googlesource.com/infra/luci/recipes-py'
+    ),
+    schedule = 'with 10m interval',
+)
+adhoc_builder(
+    name = 'build-proto-experiment-win',
+    os = 'Windows-10',
+    executable = luci.recipe(
+      name = 'futures:examples/background_helper',
+      cipd_package = 'infra/recipe_bundles/chromium.googlesource.com/infra/luci/recipes-py'
+    ),
+    schedule = 'with 10m interval',
+)
 
 
 luci.notifier(
