@@ -117,7 +117,7 @@ func TestGetDroneDUTs(t *testing.T) {
 	if err := datastore.Put(ctx, duts); err != nil {
 		t.Fatal(err)
 	}
-	got, err := GetDroneDUTs(ctx, "earthes")
+	got, err := getDroneDUTs(ctx, "earthes")
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -66,9 +66,9 @@ func createNewDrone(ctx context.Context, now time.Time, generator func() string)
 	}
 }
 
-// GetDroneDUTs gets the DUTs assigned to a drone.  This does not have
+// getDroneDUTs gets the DUTs assigned to a drone.  This does not have
 // to be run in a transaction, but caveat emptor.
-func GetDroneDUTs(ctx context.Context, d entities.DroneID) ([]*entities.DUT, error) {
+func getDroneDUTs(ctx context.Context, d entities.DroneID) ([]*entities.DUT, error) {
 	q := datastore.NewQuery(entities.DUTKind)
 	q = q.Eq(entities.AssignedDroneField, d)
 	q = q.Ancestor(entities.DUTGroupKey(ctx))
@@ -105,7 +105,7 @@ func GetUnassignedDUTs(ctx context.Context, n int32) ([]*entities.DUT, error) {
 //
 // This function needs to be run within a datastore transaction.
 func AssignNewDUTs(ctx context.Context, d entities.DroneID, li *api.ReportDroneRequest_LoadIndicators) ([]*entities.DUT, error) {
-	currentDUTs, err := GetDroneDUTs(ctx, d)
+	currentDUTs, err := getDroneDUTs(ctx, d)
 	if err != nil {
 		return nil, errors.Annotate(err, "assign new DUTs to %v", d).Err()
 	}
