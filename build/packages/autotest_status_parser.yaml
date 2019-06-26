@@ -1,0 +1,10 @@
+package: chromiumos/infra/autotest_status_parser/${platform}
+description: Results parser for Skylab-execute.
+platforms:
+  - linux-amd64
+go_packages:
+  - infra/cros/cmd/autotest_status_parser
+root: ../../go/bin
+data:
+  - file: autotest_status_parser${exe_suffix}
+  - version_file: .versions/autotest_status_parser${exe_suffix}.cipd_version
