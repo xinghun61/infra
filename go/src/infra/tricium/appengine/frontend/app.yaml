@@ -4,34 +4,34 @@ api_version: go1
 
 handlers:
 
-- url: /internal/.*
-  script: _go_app
-  secure: always
-  login: admin
+ - url: /internal/.*
+   script: _go_app
+   secure: always
+   login: admin
 
-- url: /_ah/push-handlers/.*
-  script: _go_app
-  secure: always
-  login: admin
+ - url: /_ah/push-handlers/.*
+   script: _go_app
+   secure: always
+   login: admin
 
-- url: /src
-  static_dir: ui/build/default/src/
-  secure: always
+ - url: /src
+   static_dir: ui/build/default/src/
+   secure: always
 
-- url: /static
-  static_dir: static
-  secure: always
+ - url: /static
+   static_dir: static
+   secure: always
 
-- url: /node_modules
-  static_dir: ui/build/default/node_modules/
-  secure: always
+ - url: /node_modules
+   static_dir: ui/build/default/node_modules/
+   secure: always
 
-- url: /.*
-  script: _go_app
-  secure: always
+ - url: /.*
+   script: _go_app
+   secure: always
 
 includes:
-- common
+ - common
 
 skip_files:
-  - ui/node_modules/
+ - ui/node_modules/
