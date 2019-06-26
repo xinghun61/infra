@@ -3,10 +3,12 @@
 // found in the LICENSE file.
 
 import {LitElement, html} from 'lit-element';
-import {prpcClient} from 'prpc-client-instance.js';
+import {store, connectStore} from 'elements/reducers/base.js';
+import * as issue from 'elements/reducers/issue.js';
 import 'elements/framework/links/mr-issue-link/mr-issue-link.js';
 
-export class MrGridPage extends LitElement {
+
+export class MrGridPage extends connectStore(LitElement) {
   render() {
     return html`
       ${this.issues.map((issue) => html`
@@ -33,32 +35,19 @@ export class MrGridPage extends LitElement {
     this.issues = [];
   };
 
-  static get styles() {
-    // define css file.
-  };
-
   updated(changedProperties) {
     if (changedProperties.has('projectName') ||
         changedProperties.has('queryParams')) {
-      this._fetchListIssues(this.queryParams, this.projectName);
+      store.dispatch(issue.fetchIssueList(this.queryParams, this.projectName));
     }
   }
 
-  async _fetchListIssues(queryParams, projectName) {
-    // TODO(juliacordero): call the API using Redux
-    if (queryParams && projectName) {
-      const issues = await prpcClient.call(
-        'monorail.Issues', 'ListIssues', {
-          query: queryParams.q,
-          cannedQuery: queryParams.can,
-          projectNames: [projectName],
-          pagination: {},
-          groupBySpec: queryParams.groupby,
-          sortSpec: queryParams.sort,
-        }
-      );
-      this.issues = issues.issues;
-    }
+  stateChanged(state) {
+    this.issues = (issue.issueList(state) || []);
+  }
+
+  static get styles() {
+    // define css file.
   };
-}
+};
 customElements.define('mr-grid-page', MrGridPage);

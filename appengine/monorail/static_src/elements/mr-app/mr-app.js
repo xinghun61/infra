@@ -184,9 +184,6 @@ export class MrApp extends connectStore(LitElement) {
   }
 
   async _loadGridPage(ctx, next) {
-    store.dispatch(issue.setIssueRef(
-      Number.parseInt(ctx.query.id), ctx.params.project));
-
     this.projectName = ctx.params.project;
 
     await import('../issue-list/mr-grid-page/mr-grid-page.js');

@@ -25,6 +25,10 @@ const FETCH_HOTLISTS_START = 'FETCH_HOTLISTS_START';
 const FETCH_HOTLISTS_SUCCESS = 'FETCH_HOTLISTS_SUCCESS';
 const FETCH_HOTLISTS_FAILURE = 'FETCH_HOTLISTS_FAILURE';
 
+const FETCH_ISSUE_LIST_START = 'FETCH_ISSUE_LIST_START';
+const FETCH_ISSUE_LIST_SUCCESS = 'FETCH_ISSUE_LIST_SUCCESS';
+const FETCH_ISSUE_LIST_FAILURE = 'FETCH_ISSUE_LIST_FAILURE';
+
 const FETCH_PERMISSIONS_START = 'FETCH_PERMISSIONS_START';
 const FETCH_PERMISSIONS_SUCCESS = 'FETCH_PERMISSIONS_SUCCESS';
 const FETCH_PERMISSIONS_FAILURE = 'FETCH_PERMISSIONS_FAILURE';
@@ -87,6 +91,7 @@ const UPDATE_APPROVAL_FAILURE = 'UPDATE_APPROVAL_FAILURE';
   currentIssue: Object,
 
   hotlists: Array,
+  issueList: Array,
   comments: Array,
   commentReferences: Map,
   relatedIssues: Map,
@@ -100,6 +105,7 @@ const UPDATE_APPROVAL_FAILURE = 'UPDATE_APPROVAL_FAILURE';
   requests: {
     fetch: Object,
     fetchHotlists: Object,
+    fetchIssueList: Object,
     fetchPermissions: Object,
     star: Object,
     presubmit: Object,
@@ -152,6 +158,10 @@ const currentIssueReducer = createReducer({}, {
 
 const hotlistsReducer = createReducer([], {
   [FETCH_HOTLISTS_SUCCESS]: (_, action) => action.hotlists,
+});
+
+const issueListReducer = createReducer([], {
+  [FETCH_ISSUE_LIST_SUCCESS]: (_state, action) => action.issueList,
 });
 
 const commentsReducer = createReducer([], {
@@ -211,6 +221,10 @@ const requestsReducer = combineReducers({
     FETCH_START, FETCH_SUCCESS, FETCH_FAILURE),
   fetchHotlists: createRequestReducer(
     FETCH_HOTLISTS_START, FETCH_HOTLISTS_SUCCESS, FETCH_HOTLISTS_FAILURE),
+  fetchIssueList: createRequestReducer(
+    FETCH_ISSUE_LIST_START,
+    FETCH_ISSUE_LIST_SUCCESS,
+    FETCH_ISSUE_LIST_FAILURE),
   fetchPermissions: createRequestReducer(
     FETCH_PERMISSIONS_START,
     FETCH_PERMISSIONS_SUCCESS,
@@ -262,6 +276,7 @@ export const reducer = combineReducers({
   currentIssue: currentIssueReducer,
 
   hotlists: hotlistsReducer,
+  issueList: issueListReducer,
   comments: commentsReducer,
   commentReferences: commentReferencesReducer,
   relatedIssues: relatedIssuesReducer,
@@ -291,6 +306,7 @@ export const comments = (state) => state.issue.comments;
 export const commentsLoaded = (state) => state.issue.commentsLoaded;
 export const commentReferences = (state) => state.issue.commentReferences;
 export const hotlists = (state) => state.issue.hotlists;
+export const issueList = (state) => state.issue.issueList;
 export const issueLoaded = (state) => state.issue.issueLoaded;
 export const permissions = (state) => state.issue.permissions;
 export const presubmitResponse = (state) => state.issue.presubmitResponse;
@@ -665,6 +681,28 @@ export const fetchHotlists = (issue) => async (dispatch) => {
     dispatch({type: FETCH_HOTLISTS_FAILURE, error});
   };
 };
+
+export const fetchIssueList = (params, projectName) =>
+  async (dispatch) => {
+    dispatch({type: FETCH_ISSUE_LIST_START});
+
+    try {
+      const resp = await prpcClient.call(
+        'monorail.Issues', 'ListIssues', {
+          query: params.q,
+          cannedQuery: params.can,
+          projectNames: [projectName],
+          pagination: {},
+          groupBySpec: params.groupby,
+          sortSpec: params.sort,
+        });
+
+      const issueList = (resp.issues || []);
+      dispatch({type: FETCH_ISSUE_LIST_SUCCESS, issueList});
+    } catch (error) {
+      dispatch({type: FETCH_ISSUE_LIST_FAILURE, error});
+    };
+  };
 
 export const fetchPermissions = (message) => async (dispatch) => {
   dispatch({type: FETCH_PERMISSIONS_START});
