@@ -23,6 +23,9 @@
       background: #f8f8f8;
       font-size: 14px;
     }
+    .disabled-link {
+      color: darkgray;
+    }
   </style>
   <script src="/bower_components/webcomponentsjs/webcomponents-lite.js"></script>
   <link rel="import" href="/ui/elements/cats-app.html">
@@ -117,6 +120,16 @@
         {% endfor %}
         </tbody>
       </table>
+      {% if prev_cursor != '' %}
+        <a href="/p/chromium/coverage/dir?host={{host}}&project={{project}}&ref={{ref}}&platform={{platform}}&list_reports=true&direction=previous&cursor={{prev_cursor}}">Previous</a>
+      {% else %}
+        <span class="disabled-link">Previous</span>
+      {% endif %}
+      {% if next_cursor != '' %}
+        <a href="/p/chromium/coverage/dir?host={{host}}&project={{project}}&ref={{ref}}&platform={{platform}}&list_reports=true&direction=next&cursor={{next_cursor}}">Next</a>
+      {% else %}
+        <span class="disabled-link">Next</span>
+      {% endif %}
     </div>
   </cats-app>
 </body>

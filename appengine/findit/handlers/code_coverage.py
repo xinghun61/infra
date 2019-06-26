@@ -23,6 +23,7 @@ from common.findit_http_client import FinditHttpClient
 from common.waterfall.buildbucket_client import GetV2Build
 from gae_libs.appengine_util import IsInternalInstance
 from gae_libs.caches import PickledMemCache
+from gae_libs.dashboard_util import GetPagedResults
 from gae_libs.handlers.base_handler import BaseHandler, Permission
 from gae_libs.gitiles.cached_gitiles_repository import CachedGitilesRepository
 from libs.cache_decorator import Cached
@@ -972,7 +973,6 @@ def _SplitLineIntoRegions(line, uncovered_blocks):
 
   return regions
 
-
 class ServeCodeCoverageData(BaseHandler):
   PERMISSION_LEVEL = Permission.ANYONE
 
@@ -989,6 +989,15 @@ class ServeCodeCoverageData(BaseHandler):
     data_type = self.request.get('data_type')
     platform = self.request.get('platform', 'linux')
     list_reports = self.request.get('list_reports', False)
+    if isinstance(list_reports, str):
+      list_reports = (list_reports.lower() == 'true')
+
+    cursor = self.request.get('cursor', None)
+    page_size = int(self.request.get('page_size', 100))
+    direction = self.request.get('direction', 'next').lower()
+
+    next_cursor = ''
+    prev_cursor = ''
 
     if not data_type and path:
       if path.endswith('/'):
@@ -1078,10 +1087,12 @@ class ServeCodeCoverageData(BaseHandler):
         query = PostsubmitReport.query(
             PostsubmitReport.gitiles_commit.server_host == host,
             PostsubmitReport.gitiles_commit.project == project,
-            PostsubmitReport.bucket == bucket, PostsubmitReport.builder ==
-            builder).order(-PostsubmitReport.commit_position).order(
-                -PostsubmitReport.commit_timestamp)
-        entities, _, _ = query.fetch_page(100)
+            PostsubmitReport.bucket == bucket,
+            PostsubmitReport.builder == builder)
+        order_props = [(PostsubmitReport.commit_position, 'desc'),
+                       (PostsubmitReport.commit_timestamp, 'desc')]
+        entities, prev_cursor, next_cursor = GetPagedResults(
+            query, order_props, cursor, direction, page_size)
 
         # TODO(crbug.com/926237): Move the conversion to client side and use
         # local timezone.
@@ -1276,6 +1287,10 @@ class ServeCodeCoverageData(BaseHandler):
                   _GetBanner(project),
               'warning':
                   warning,
+              'next_cursor':
+                  next_cursor,
+              'prev_cursor':
+                  prev_cursor,
           },
           'template': template,
       }
