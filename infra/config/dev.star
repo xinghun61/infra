@@ -68,8 +68,8 @@ luci.logdog(gs_bucket = 'chromium-luci-logdog')
 
 luci.bucket(name = 'ci')
 
-luci.builder.defaults.swarming_tags.set(['vpython:native-python-wrapper'])
 luci.builder.defaults.execution_timeout.set(30 * time.minute)
+luci.builder.defaults.properties.set({'$kitchen': {'emulate_gce' : True}})
 
 
 def ci_builder(
