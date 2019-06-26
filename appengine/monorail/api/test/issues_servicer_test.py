@@ -1356,8 +1356,8 @@ class IssuesServicerTest(unittest.TestCase):
   def testSnapshotCounts_GroupByComponent(self, mockSnapshotCountsQuery):
     """Tests grouping by component with a query and a canned_query."""
     request = issues_pb2.IssueSnapshotRequest(timestamp=1531334109,
-        project_name='proj', group_by='component', query='rutabaga:rutabaga',
-        canned_query=2)
+        project_name='proj', group_by='component',
+        query='rutabaga:rutabaga', canned_query=2)
     mc = monorailcontext.MonorailContext(
         self.services, cnxn=self.cnxn, requester='owner@example.com')
     mockSnapshotCountsQuery.return_value = (
@@ -1378,6 +1378,63 @@ class IssuesServicerTest(unittest.TestCase):
     mockSnapshotCountsQuery.assert_called_once_with(self.project, 1531334109,
         'component', label_prefix='', query='rutabaga:rutabaga',
         canned_query='is:open')
+
+  @patch('businesslogic.work_env.WorkEnv.SnapshotCountsQuery')
+  def testSnapshotCounts_GroupByOpen(self, mockSnapshotCountsQuery):
+    """Tests grouping by open with a query."""
+    request = issues_pb2.IssueSnapshotRequest(
+        timestamp=1531334109, project_name='proj', group_by='open')
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='owner@example.com')
+    mockSnapshotCountsQuery.return_value = (
+        {'Opened': 100, 'Closed': 23}, [], True)
+
+    response = self.CallWrapped(self.issues_svcr.IssueSnapshot, mc, request)
+
+    self.assertEqual(2, len(response.snapshot_count))
+    self.assertEqual('Opened', response.snapshot_count[0].dimension)
+    self.assertEqual(100, response.snapshot_count[0].count)
+    self.assertEqual('Closed', response.snapshot_count[1].dimension)
+    self.assertEqual(23, response.snapshot_count[1].count)
+    mockSnapshotCountsQuery.assert_called_once_with(self.project, 1531334109,
+        'open', label_prefix='', query=None, canned_query=None)
+
+  @patch('businesslogic.work_env.WorkEnv.SnapshotCountsQuery')
+  def testSnapshotCounts_GroupByStatus(self, mockSnapshotCountsQuery):
+    """Tests grouping by status with a query."""
+    request = issues_pb2.IssueSnapshotRequest(
+        timestamp=1531334109, project_name='proj', group_by='status')
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='owner@example.com')
+    mockSnapshotCountsQuery.return_value = (
+        {'Accepted': 100, 'Fixed': 23}, [], True)
+
+    response = self.CallWrapped(self.issues_svcr.IssueSnapshot, mc, request)
+
+    self.assertEqual(2, len(response.snapshot_count))
+    self.assertEqual('Fixed', response.snapshot_count[0].dimension)
+    self.assertEqual(23, response.snapshot_count[0].count)
+    self.assertEqual('Accepted', response.snapshot_count[1].dimension)
+    self.assertEqual(100, response.snapshot_count[1].count)
+    mockSnapshotCountsQuery.assert_called_once_with(self.project, 1531334109,
+        'status', label_prefix='', query=None, canned_query=None)
+
+  @patch('businesslogic.work_env.WorkEnv.SnapshotCountsQuery')
+  def testSnapshotCounts_GroupByOwner(self, mockSnapshotCountsQuery):
+    """Tests grouping by status with a query."""
+    request = issues_pb2.IssueSnapshotRequest(
+        timestamp=1531334109, project_name='proj', group_by='owner')
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='owner@example.com')
+    mockSnapshotCountsQuery.return_value = ({111: 100}, [], True)
+
+    response = self.CallWrapped(self.issues_svcr.IssueSnapshot, mc, request)
+
+    self.assertEqual(1, len(response.snapshot_count))
+    self.assertEqual('owner@example.com', response.snapshot_count[0].dimension)
+    self.assertEqual(100, response.snapshot_count[0].count)
+    mockSnapshotCountsQuery.assert_called_once_with(self.project, 1531334109,
+        'owner', label_prefix='', query=None, canned_query=None)
 
   def AddField(self, name, field_type_str):
     kwargs = {

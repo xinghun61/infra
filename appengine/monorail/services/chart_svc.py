@@ -169,10 +169,22 @@ class ChartService(object):
       # ensure regex is case-insensitive.
       where.append(('LOWER(Lab.label) LIKE %s', [label_prefix.lower() + '-%']))
       group_by = ['Lab.label']
+    elif group_by == 'open':
+      cols = ['IssueSnapshot.is_open', 'IssueSnapshot.issue_id']
+      group_by = ['IssueSnapshot.is_open']
+    elif group_by == 'status':
+      left_joins.append(('StatusDef AS Stats ON ' \
+        'Stats.id = IssueSnapshot.status_id', []))
+      cols = ['Stats.status', 'IssueSnapshot.issue_id']
+      group_by = ['Stats.status']
+    elif group_by == 'owner':
+      cols = ['IssueSnapshot.owner_id', 'IssueSnapshot.issue_id']
+      group_by = ['IssueSnapshot.owner_id']
     elif not group_by:
       cols = ['IssueSnapshot.issue_id']
     else:
-      raise ValueError('`group_by` must be label, component, or None.')
+      raise ValueError('`group_by` must be label, component, ' \
+        'open, status, owner or None.')
 
     if query_left_joins:
       left_joins.extend(query_left_joins)
@@ -348,10 +360,26 @@ class ChartService(object):
       stmt.AddGroupByTerms(group_by)
     stmt.SetLimitAndOffset(limit=settings.chart_query_max_rows, offset=0)
     stmt_str, stmt_args = stmt.Generate()
-    # TODO(weihanl): Add support for other group by values
     if group_by:
-      count_stmt = ('SELECT results.label, COUNT(results.issue_id)' \
-        'FROM (%s) AS results' % stmt_str)
+      if group_by[0] == 'Lab.label':
+        count_stmt = ('SELECT results.label, COUNT(results.issue_id)' \
+          'FROM (%s) AS results' % stmt_str)
+      elif group_by[0] == 'Comp.path':
+        count_stmt = ('SELECT results.path, COUNT(results.issue_id)' \
+          'FROM (%s) AS results' % stmt_str)
+      elif group_by[0] == 'IssueSnapshot.is_open':
+        count_stmt = ('SELECT IF(results.is_open = 1, "Opened", "Closed")' \
+          'AS bool_open, COUNT(results.issue_id)' \
+          'FROM (%s) AS results' % stmt_str)
+      elif group_by[0] == 'IssueSnapshot.owner_id':
+        count_stmt = ('SELECT results.owner_id, COUNT(results.issue_id)' \
+          'FROM (%s) AS results' % stmt_str)
+      elif group_by[0] == 'Stats.status':
+        count_stmt = ('SELECT results.status, COUNT(results.issue_id)' \
+          'FROM (%s) AS results' % stmt_str)
+      else:
+        raise ValueError('Group by only supports label,' \
+          'component, open, status and owner')
     else:
       count_stmt = 'SELECT COUNT(results.issue_id) FROM (%s) AS results' % (
         stmt_str)

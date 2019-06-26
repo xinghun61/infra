@@ -57,6 +57,29 @@ class ChartServiceTest(unittest.TestCase):
     settings.num_logical_shards = 1
     self.mox.StubOutWithMock(self.services.chart, '_currentTime')
 
+    self.defaultLeftJoins = [
+      ('Issue ON IssueSnapshot.issue_id = Issue.id', []),
+      ('Issue2Label AS Forbidden_label'
+       ' ON Issue.id = Forbidden_label.issue_id'
+       ' AND Forbidden_label.label_id IN (%s,%s)', [91, 81]),
+      ('Issue2Cc AS I2cc'
+       ' ON Issue.id = I2cc.issue_id'
+       ' AND I2cc.cc_id IN (%s,%s)', [10L, 20L]),
+    ]
+    self.defaultWheres = [
+      ('IssueSnapshot.period_start <= %s', [1514764800]),
+      ('IssueSnapshot.period_end > %s', [1514764800]),
+      ('IssueSnapshot.project_id = %s', [789]),
+      ('Issue.is_spam = %s', [False]),
+      ('Issue.deleted = %s', [False]),
+      ('(Issue.reporter_id IN (%s,%s)'
+       ' OR Issue.owner_id IN (%s,%s)'
+       ' OR I2cc.cc_id IS NOT NULL'
+       ' OR Forbidden_label.label_id IS NULL)',
+       [10L, 20L, 10L, 20L]
+      ),
+    ]
+
   def tearDown(self):
     self.testbed.deactivate()
     self.mox.UnsetStubs()
@@ -136,33 +159,14 @@ class ChartServiceTest(unittest.TestCase):
 
     cols = [
       'Comp.path',
-      'IssueSnapshot.issue_id',
+      'IssueSnapshot.issue_id'
     ]
-    left_joins = [
-      ('Issue ON IssueSnapshot.issue_id = Issue.id', []),
-      ('Issue2Label AS Forbidden_label'
-       ' ON Issue.id = Forbidden_label.issue_id'
-       ' AND Forbidden_label.label_id IN (%s,%s)', [91, 81]),
-      ('Issue2Cc AS I2cc'
-       ' ON Issue.id = I2cc.issue_id'
-       ' AND I2cc.cc_id IN (%s,%s)', [10, 20]),
+    left_joins = self.defaultLeftJoins + [
       ('IssueSnapshot2Component AS Is2c'
        ' ON Is2c.issuesnapshot_id = IssueSnapshot.id', []),
       ('ComponentDef AS Comp ON Comp.id = Is2c.component_id', [])
     ]
-    where = [
-      ('IssueSnapshot.period_start <= %s', [1514764800]),
-      ('IssueSnapshot.period_end > %s', [1514764800]),
-      ('IssueSnapshot.project_id = %s', [789]),
-      ('Issue.is_spam = %s', [False]),
-      ('Issue.deleted = %s', [False]),
-      ('(Issue.reporter_id IN (%s,%s)'
-       ' OR Issue.owner_id IN (%s,%s)'
-       ' OR I2cc.cc_id IS NOT NULL'
-       ' OR Forbidden_label.label_id IS NULL)',
-       [10, 20, 10, 20]
-      ),
-    ]
+    where = self.defaultWheres
     group_by = ['Comp.path']
     stmt, stmt_args = self.services.chart._BuildSnapshotQuery(cols, where,
         left_joins, group_by, shard_id=0)
@@ -192,30 +196,12 @@ class ChartServiceTest(unittest.TestCase):
       'Lab.label',
       'IssueSnapshot.issue_id',
     ]
-    left_joins = [
-      ('Issue ON IssueSnapshot.issue_id = Issue.id', []),
-      ('Issue2Label AS Forbidden_label'
-       ' ON Issue.id = Forbidden_label.issue_id'
-       ' AND Forbidden_label.label_id IN (%s,%s)', [91, 81]),
-      ('Issue2Cc AS I2cc'
-       ' ON Issue.id = I2cc.issue_id'
-       ' AND I2cc.cc_id IN (%s,%s)', [10, 20]),
+    left_joins = self.defaultLeftJoins + [
       ('IssueSnapshot2Label AS Is2l'
        ' ON Is2l.issuesnapshot_id = IssueSnapshot.id', []),
       ('LabelDef AS Lab ON Lab.id = Is2l.label_id', [])
     ]
-    where = [
-      ('IssueSnapshot.period_start <= %s', [1514764800]),
-      ('IssueSnapshot.period_end > %s', [1514764800]),
-      ('IssueSnapshot.project_id = %s', [789]),
-      ('Issue.is_spam = %s', [False]),
-      ('Issue.deleted = %s', [False]),
-      ('(Issue.reporter_id IN (%s,%s)'
-       ' OR Issue.owner_id IN (%s,%s)'
-       ' OR I2cc.cc_id IS NOT NULL'
-       ' OR Forbidden_label.label_id IS NULL)',
-       [10, 20, 10, 20]
-      ),
+    where = self.defaultWheres + [
       ('LOWER(Lab.label) LIKE %s', ['foo-%']),
     ]
     group_by = ['Lab.label']
@@ -235,8 +221,9 @@ class ChartServiceTest(unittest.TestCase):
         perms=perms, group_by='label', label_prefix='Foo')
     self.mox.VerifyAll()
 
-  def testQueryIssueSnapshots_NoGroupBy(self):
-    """Test a burndown query from a regular user with no grouping."""
+  def testQueryIssueSnapshots_Open(self):
+    """Test a burndown query from a regular user grouping
+        by status is open or closed."""
     project = fake.Project(project_id=789)
     perms = permissions.PermissionSet(['BarPerm'])
     search_helpers.GetPersonalAtRiskLabelIDs(self.cnxn, None,
@@ -244,30 +231,106 @@ class ChartServiceTest(unittest.TestCase):
         perms).AndReturn([91, 81])
 
     cols = [
+      'IssueSnapshot.is_open',
       'IssueSnapshot.issue_id',
     ]
-    left_joins = [
-      ('Issue ON IssueSnapshot.issue_id = Issue.id', []),
-      ('Issue2Label AS Forbidden_label'
-       ' ON Issue.id = Forbidden_label.issue_id'
-       ' AND Forbidden_label.label_id IN (%s,%s)', [91, 81]),
-      ('Issue2Cc AS I2cc'
-       ' ON Issue.id = I2cc.issue_id'
-       ' AND I2cc.cc_id IN (%s,%s)', [10, 20]),
+
+    left_joins = self.defaultLeftJoins
+    where = self.defaultWheres
+    group_by = ['IssueSnapshot.is_open']
+    stmt, stmt_args = self.services.chart._BuildSnapshotQuery(cols, where,
+        left_joins, group_by, shard_id=0)
+
+    self.services.chart._QueryToWhere(mox.IgnoreArg(), mox.IgnoreArg(),
+        mox.IgnoreArg(), mox.IgnoreArg(), mox.IgnoreArg(),
+        mox.IgnoreArg()).AndReturn(([], [], []))
+    self.cnxn.Execute(stmt, stmt_args, shard_id=0).AndReturn([])
+
+    self._verifySQL(cols, left_joins, where, group_by)
+
+    self.mox.ReplayAll()
+    self.services.chart.QueryIssueSnapshots(self.cnxn, self.services,
+        unixtime=1514764800, effective_ids=[10L, 20L], project=project,
+        perms=perms, group_by='open')
+    self.mox.VerifyAll()
+
+  def testQueryIssueSnapshots_Status(self):
+    """Test a burndown query from a regular user grouping by open status."""
+    project = fake.Project(project_id=789)
+    perms = permissions.PermissionSet(['BarPerm'])
+    search_helpers.GetPersonalAtRiskLabelIDs(self.cnxn, None,
+        self.config_service, [10L, 20L], project,
+        perms).AndReturn([91, 81])
+
+    cols = [
+      'Stats.status',
+      'IssueSnapshot.issue_id',
     ]
-    where = [
-      ('IssueSnapshot.period_start <= %s', [1514764800]),
-      ('IssueSnapshot.period_end > %s', [1514764800]),
-      ('IssueSnapshot.project_id = %s', [789]),
-      ('Issue.is_spam = %s', [False]),
-      ('Issue.deleted = %s', [False]),
-      ('(Issue.reporter_id IN (%s,%s)'
-       ' OR Issue.owner_id IN (%s,%s)'
-       ' OR I2cc.cc_id IS NOT NULL'
-       ' OR Forbidden_label.label_id IS NULL)',
-       [10, 20, 10, 20]
-      ),
+    left_joins = self.defaultLeftJoins + [
+        ('StatusDef AS Stats ON ' \
+        'Stats.id = IssueSnapshot.status_id', [])
     ]
+    where = self.defaultWheres
+    group_by = ['Stats.status']
+    stmt, stmt_args = self.services.chart._BuildSnapshotQuery(cols, where,
+        left_joins, group_by, shard_id=0)
+
+    self.services.chart._QueryToWhere(mox.IgnoreArg(), mox.IgnoreArg(),
+        mox.IgnoreArg(), mox.IgnoreArg(), mox.IgnoreArg(),
+        mox.IgnoreArg()).AndReturn(([], [], []))
+    self.cnxn.Execute(stmt, stmt_args, shard_id=0).AndReturn([])
+
+    self._verifySQL(cols, left_joins, where, group_by)
+
+    self.mox.ReplayAll()
+    self.services.chart.QueryIssueSnapshots(self.cnxn, self.services,
+        unixtime=1514764800, effective_ids=[10L, 20L], project=project,
+        perms=perms, group_by='status')
+    self.mox.VerifyAll()
+
+  def testQueryIssueSnapshots_Owner(self):
+    """Test a burndown query from a regular user grouping by owner."""
+    project = fake.Project(project_id=789)
+    perms = permissions.PermissionSet(['BarPerm'])
+    search_helpers.GetPersonalAtRiskLabelIDs(self.cnxn, None,
+        self.config_service, [10L, 20L], project,
+        perms).AndReturn([91, 81])
+    cols = [
+      'IssueSnapshot.owner_id',
+      'IssueSnapshot.issue_id',
+    ]
+    left_joins = self.defaultLeftJoins
+    where = self.defaultWheres
+    group_by = ['IssueSnapshot.owner_id']
+    stmt, stmt_args = self.services.chart._BuildSnapshotQuery(cols, where,
+        left_joins, group_by, shard_id=0)
+
+    self.services.chart._QueryToWhere(mox.IgnoreArg(), mox.IgnoreArg(),
+        mox.IgnoreArg(), mox.IgnoreArg(), mox.IgnoreArg(),
+        mox.IgnoreArg()).AndReturn(([], [], []))
+    self.cnxn.Execute(stmt, stmt_args, shard_id=0).AndReturn([])
+
+    self._verifySQL(cols, left_joins, where, group_by)
+
+    self.mox.ReplayAll()
+    self.services.chart.QueryIssueSnapshots(self.cnxn, self.services,
+        unixtime=1514764800, effective_ids=[10L, 20L], project=project,
+        perms=perms, group_by='owner')
+    self.mox.VerifyAll()
+
+  def testQueryIssueSnapshots_NoGroupBy(self):
+    """Test a burndown query from a regular user with no grouping."""
+    project = fake.Project(project_id=789)
+    perms = permissions.PermissionSet(['BarPerm'])
+    search_helpers.GetPersonalAtRiskLabelIDs(self.cnxn, None,
+        self.config_service, [10L, 20L], project,
+        perms).AndReturn([91, 81])
+
+    cols = [
+      'IssueSnapshot.issue_id',
+    ]
+    left_joins = self.defaultLeftJoins
+    where = self.defaultWheres
     group_by = None
     stmt, stmt_args = self.services.chart._BuildSnapshotQuery(cols, where,
         left_joins, group_by, shard_id=0)

@@ -1476,7 +1476,8 @@ class WorkEnv(object):
       return self.services.chart.QueryIssueSnapshots(
         self.mc.cnxn, self.services, timestamp, self.mc.auth.effective_ids,
         project, self.mc.perms, group_by=group_by,
-        label_prefix=label_prefix, query=query, canned_query=canned_query)
+        label_prefix=label_prefix,
+        query=query, canned_query=canned_query)
 
   ### User methods
 
