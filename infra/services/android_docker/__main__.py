@@ -6,6 +6,7 @@ import argparse
 import logging
 import os
 import subprocess
+import sys
 import threading
 
 from infra.services.android_docker import containers
@@ -198,4 +199,5 @@ def main():
 
 
 if __name__ == '__main__':
-  main_helpers.main_wrapper(main)
+  with main_helpers.main_wrapper():
+    sys.exit(main())

@@ -5,6 +5,7 @@
 import argparse
 import logging
 import os
+import sys
 
 from infra.services.swarm_docker import containers
 from infra.services.swarm_docker import main_helpers
@@ -42,4 +43,5 @@ def main():
 
 
 if __name__ == '__main__':
-  main_helpers.main_wrapper(main)
+  with main_helpers.main_wrapper():
+    sys.exit(main())

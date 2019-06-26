@@ -2,6 +2,8 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+from __future__ import print_function
+
 import argparse
 import contextlib
 import datetime
@@ -362,12 +364,13 @@ def configure_logging(log_filename, log_prefix, verbose):  # pragma: no cover
   urllib3_logger.setLevel(logging.WARNING)
 
 
-def main_wrapper(main_func):  # pragma: no cover
+@contextlib.contextmanager
+def main_wrapper():  # pragma: no cover
   if sys.platform != 'linux2':
-    print 'Only supported on linux.'
+    print('Only supported on linux.', file=sys.stderr)
     sys.exit(1)
   try:
-    sys.exit(main_func())
+    yield
   except containers.FrozenEngineError:
     logging.exception('Docker engine frozen, triggering host reboot.')
     # Skipping updates since something is very wrong with docker here.

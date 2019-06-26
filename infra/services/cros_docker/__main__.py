@@ -6,6 +6,7 @@ import argparse
 import json
 import logging
 import os
+import sys
 
 from infra.services.cros_docker import containers
 from infra.services.cros_docker import host
@@ -47,4 +48,5 @@ def main():
 
 
 if __name__ == '__main__':
-  main_helpers.main_wrapper(main)
+  with main_helpers.main_wrapper():
+    sys.exit(main())
