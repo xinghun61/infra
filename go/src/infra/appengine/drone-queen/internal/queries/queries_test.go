@@ -365,6 +365,102 @@ func TestAssignNewDUTs(t *testing.T) {
 	}
 }
 
+func TestFreeInvalidDUTs(t *testing.T) {
+	t.Parallel()
+	now := time.Date(2000, 1, 2, 3, 4, 5, 0, time.UTC)
+	dr := []*entities.Drone{
+		{ID: "shurelia", Expiration: now.Add(-time.Minute)},
+		{ID: "harvestasha", Expiration: now.Add(time.Minute)},
+	}
+	cases := []struct {
+		desc string
+		dut  entities.DUT
+		want entities.DUT
+	}{
+		{
+			desc: "unassigned DUT",
+			dut:  entities.DUT{ID: "jakuri"},
+			want: entities.DUT{ID: "jakuri"},
+		},
+		{
+			desc: "DUT assigned to expired drone",
+			dut:  entities.DUT{ID: "jakuri", AssignedDrone: "shurelia"},
+			want: entities.DUT{ID: "jakuri"},
+		},
+	}
+	for _, c := range cases {
+		c := c
+		t.Run(c.desc, func(t *testing.T) {
+			t.Parallel()
+			ctx := gaetesting.TestingContextWithAppID("go-test")
+			datastore.GetTestable(ctx).Consistent(true)
+			if err := datastore.Put(ctx, dr); err != nil {
+				t.Fatal(err)
+			}
+			dut := c.dut
+			dut.Group = entities.DUTGroupKey(ctx)
+			if err := datastore.Put(ctx, &dut); err != nil {
+				t.Fatal(err)
+			}
+			if err := FreeInvalidDUTs(ctx, now); err != nil {
+				t.Fatal(err)
+			}
+			if err := datastore.Get(ctx, &dut); err != nil {
+				t.Fatal(err)
+			}
+			want := c.want
+			want.Group = entities.DUTGroupKey(ctx)
+			if diff := cmp.Diff(want, dut); diff != "" {
+				t.Errorf("Unexpected DUT (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestIsDroneValid(t *testing.T) {
+	t.Parallel()
+	ctx := gaetesting.TestingContextWithAppID("go-test")
+	datastore.GetTestable(ctx).Consistent(true)
+	now := time.Date(2000, 1, 2, 3, 4, 5, 0, time.UTC)
+	d := []*entities.Drone{
+		{ID: "shurelia", Expiration: now.Add(-time.Minute)},
+		{ID: "harvestasha", Expiration: now.Add(time.Minute)},
+	}
+	if err := datastore.Put(ctx, d); err != nil {
+		t.Fatal(err)
+	}
+	t.Run("valid drone", func(t *testing.T) {
+		t.Parallel()
+		ok, err := isDroneValid(ctx, "harvestasha", now)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !ok {
+			t.Errorf("Got isDroneValid = %v; want true", ok)
+		}
+	})
+	t.Run("expired drone", func(t *testing.T) {
+		t.Parallel()
+		ok, err := isDroneValid(ctx, "shurelia", now)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if ok {
+			t.Errorf("Got isDroneValid = %v; want false", ok)
+		}
+	})
+	t.Run("unknown drone", func(t *testing.T) {
+		t.Parallel()
+		ok, err := isDroneValid(ctx, "jakuri", now)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if ok {
+			t.Errorf("Got isDroneValid = %v; want false", ok)
+		}
+	})
+}
+
 func TestPruneExpiredDrones(t *testing.T) {
 	t.Parallel()
 	ctx := gaetesting.TestingContextWithAppID("go-test")

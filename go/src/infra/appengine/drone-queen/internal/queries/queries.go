@@ -125,6 +125,59 @@ func AssignNewDUTs(ctx context.Context, d entities.DroneID, li *api.ReportDroneR
 	return currentDUTs, nil
 }
 
+// FreeInvalidDUTs unassigns DUTs that are assigned to a missing or
+// expired drone.  This function cannot be called in a transaction.
+func FreeInvalidDUTs(ctx context.Context, now time.Time) error {
+	var d []entities.DUT
+	q := datastore.NewQuery(entities.DUTKind)
+	q = q.Ancestor(entities.DUTGroupKey(ctx))
+	q = q.KeysOnly(true)
+	if err := datastore.GetAll(ctx, q, &d); err != nil {
+		return errors.Annotate(err, "free invalid DUTs: get all DUTs").Err()
+	}
+	for _, d := range d {
+		f := func(ctx context.Context) error {
+			if err := datastore.Get(ctx, &d); err != nil {
+				return errors.Annotate(err, "get DUT %v", d.ID).Err()
+			}
+			if d.AssignedDrone == "" {
+				return nil
+			}
+			ok, err := isDroneValid(ctx, d.AssignedDrone, now)
+			if err != nil {
+				return err
+			}
+			if ok {
+				return nil
+			}
+			d.AssignedDrone = ""
+			if err := datastore.Put(ctx, &d); err != nil {
+				return errors.Annotate(err, "put DUT %v", d.ID).Err()
+			}
+			return nil
+		}
+		o := datastore.TransactionOptions{XG: true}
+		if err := datastore.RunInTransaction(ctx, f, &o); err != nil {
+			return errors.Annotate(err, "free invalid DUTs").Err()
+		}
+	}
+	return nil
+}
+
+// isDroneValid returns whether the drone is valid (exists and not
+// expired).  This does not have to be run in a transaction, but
+// caveat emptor.
+func isDroneValid(ctx context.Context, d entities.DroneID, now time.Time) (bool, error) {
+	dr := entities.Drone{ID: d}
+	if err := datastore.Get(ctx, &dr); err != nil {
+		if datastore.IsErrNoSuchEntity(err) {
+			return false, nil
+		}
+		return false, errors.Annotate(err, "is drone %v valid", d).Err()
+	}
+	return dr.Expiration.After(now), nil
+}
+
 // PruneExpiredDrones deletes Drones that have expired.  This function
 // cannot be called in a transaction.
 func PruneExpiredDrones(ctx context.Context, now time.Time) error {

@@ -22,7 +22,6 @@
 package cron
 
 import (
-	"errors"
 	"net/http"
 	"time"
 
@@ -59,7 +58,7 @@ func freeInvalidDUTs(c *router.Context) (err error) {
 	defer func() {
 		freeInvalidDUTsTick.Add(c.Context, 1, config.Instance(c.Context), err == nil)
 	}()
-	return errors.New("not implemented")
+	return queries.FreeInvalidDUTs(c.Context, time.Now())
 }
 
 func pruneExpiredDrones(c *router.Context) (err error) {
