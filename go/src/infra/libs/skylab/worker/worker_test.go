@@ -29,6 +29,16 @@ func TestCommand_Args_default_path(t *testing.T) {
 	}
 }
 
+func TestCommand_Args_isolated_output(t *testing.T) {
+	t.Parallel()
+	c := Command{TaskName: "name", OutputToIsolate: true}
+	got := c.Args()
+	want := []string{DefaultPath, "-task-name", "name", "-isolated-outdir", "${ISOLATED_OUTDIR}"}
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("c.Args() = %#v; want %#v", got, want)
+	}
+}
+
 type basicEnv struct {
 	luciProject string
 	logDogHost  string

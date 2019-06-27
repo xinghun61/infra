@@ -16,6 +16,12 @@ import (
 // DefaultPath is the default path for skylab_swarming_worker.
 const DefaultPath = "/opt/infra-tools/skylab_swarming_worker"
 
+// isolateOutdirMagicVal is a magic cmd argument that gets replaced by
+// Swarming with the path to the isolated output directory inside the
+// Swarming bot. Anything written by the worker to the isolated output
+// directory is automatically uploaded to the Isolate server.
+const isolatedOutdirMagicVal = "${ISOLATED_OUTDIR}"
+
 // Command is a constructor for skylab_swarming_worker commands.
 type Command struct {
 	// Path to skylab_swarming_worker.  The default is DefaultPath.
@@ -31,6 +37,8 @@ type Command struct {
 	Keyvals             map[string]string
 	TestArgs            string
 	Actions             string
+	// If true, pass the magic var ${ISOLATED_OUTDIR} to the worker.
+	OutputToIsolate bool
 }
 
 // Args returns the arg strings for running the command.
@@ -69,6 +77,9 @@ func (c *Command) Args() []string {
 	}
 	if c.Actions != "" {
 		args = append(args, "-actions", c.Actions)
+	}
+	if c.OutputToIsolate {
+		args = append(args, "-isolated-outdir", isolatedOutdirMagicVal)
 	}
 	return args
 }
