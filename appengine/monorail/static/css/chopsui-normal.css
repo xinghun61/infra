@@ -28,7 +28,7 @@
   --chops-primary-icon-color: var(--chops-gray-800);
   --chops-text-color: #222;
 
-  --chops-normal-border: 1px solid hsl(0, 0%, 88%);
+  --chops-normal-border: 1px solid hsl(0, 0%, 83%);
   /* Border color for situations when contrast is important. */
   --chops-accessible-border: 1px solid var(--chops-gray-400);
   --chops-radius: 6px;

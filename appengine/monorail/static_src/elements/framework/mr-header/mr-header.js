@@ -70,7 +70,7 @@ export class MrHeader extends LitElement {
           height: auto;
           margin: 0 8px;
           border: 0;
-          height: 26px;
+          height: 30px;
         }
         mr-search-bar {
           margin-left: 8px;

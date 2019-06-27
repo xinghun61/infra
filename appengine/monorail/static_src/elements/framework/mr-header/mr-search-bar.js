@@ -43,9 +43,9 @@ export class MrSearchBar extends LitElement {
       :host {
         --mr-search-bar-background: white;
         --mr-search-bar-border-radius: 4px;
-        --mr-search-bar-border: var(--chops-accessible-border);
+        --mr-search-bar-border: var(--chops-normal-border);
         --mr-search-bar-chip-color: var(--chops-gray-200);
-        height: 26px;
+        height: 30px;
         font-size: var(--chops-large-font-size);
       }
       input#searchq {
