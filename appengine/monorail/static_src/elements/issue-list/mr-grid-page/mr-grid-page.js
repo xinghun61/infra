@@ -7,11 +7,13 @@ import {store, connectStore} from 'elements/reducers/base.js';
 import * as issue from 'elements/reducers/issue.js';
 import * as project from 'elements/reducers/project.js';
 import 'elements/framework/links/mr-issue-link/mr-issue-link.js';
+import './mr-grid-controls.js';
 
 
 export class MrGridPage extends connectStore(LitElement) {
   render() {
     return html`
+    <mr-grid-controls></mr-grid-controls>
       ${this.issues.map((issue) => html`
         <mr-issue-link
           .projectName=${this.projectName}
