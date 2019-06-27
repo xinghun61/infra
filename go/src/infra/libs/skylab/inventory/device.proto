@@ -88,9 +88,8 @@ message CommonDeviceSpecs {
   optional bool useless_switch = 11;
 }
 
-// RemovalReason describes the reason for a DUT being removed from running tasks.
-// See also go/skylab-dut-removal-reason
-// NEXT TAG: 4
+// RemovalReason describes the reason for a DUT being removed from running
+// tasks. See also go/skylab-dut-removal-reason NEXT TAG: 4
 message RemovalReason {
   // bug is a link to a bug in crbug.com or other bug tracker.  Required.
   optional string bug = 1;
@@ -122,14 +121,14 @@ message PhysicalLab {
 // device and services involved.
 // NEXT TAG: 6
 message DeviceLock {
-  required bool lock = 1 [deprecated=true];
+  required bool lock = 1 [deprecated = true];
   // This field is informational only. Do not assume this as a real user
   // identity in any auth domain.
   required string locked_by = 2;
   required string lock_reason = 3;
   required Timestamp begin_time = 4;
   required Timestamp expire_time = 5;
-  required int32 lock_id = 6 [deprecated=true];
+  required int32 lock_id = 6 [deprecated = true];
   required string id = 7;
 }
 
@@ -144,7 +143,7 @@ message Shard {
 //
 // Keep sorted by field name.
 //
-// NEXT TAG: 25
+// NEXT TAG: 26
 message SchedulableLabels {
   // Whether this device supports ARC execution environment.
   optional bool arc = 20;
@@ -207,6 +206,8 @@ message SchedulableLabels {
   optional ECType ec_type = 10;
 
   optional string model = 13;
+
+  optional string sku = 25;
 
   // NEXT TAG: 4
   enum OSType {
@@ -302,7 +303,6 @@ message HardwareCapabilities {
     VIDEO_ACCELERATION_ENC_VP9_2 = 8;
   }
   repeated VideoAcceleration video_acceleration = 11;
-
 }
 
 // Peripherals list peripherals connected to the device in the lab.

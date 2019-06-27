@@ -47,6 +47,7 @@ peripherals: {
 }
 os_type: 2
 model: "modelval"
+sku: "skuval"
 ec_type: 1
 cts_cpu: 1
 cts_cpu: 2
@@ -99,6 +100,7 @@ var fullLabels = []string{
 	"cts_cpu_arm",
 	"cts_cpu_x86",
 	"detachablebase",
+	"device-sku:skuval",
 	"ec:cros",
 	"flashrom",
 	"gpu_family:gpufamilyval",

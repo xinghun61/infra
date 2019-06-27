@@ -46,6 +46,7 @@ peripherals: {
 }
 os_type: 2
 model: "modelval"
+sku: "skuval"
 ec_type: 1
 cts_cpu: 1
 cts_cpu: 2
@@ -116,6 +117,7 @@ var fullDimensions = Dimensions{
 	"label-reference_design":      {"reef"},
 	"label-touchpad":              {"True"},
 	"label-servo":                 {"True"},
+	"label-sku":                   {"skuval"},
 	"label-storage":               {"storageval"},
 	"label-stylus":                {"True"},
 	"label-telephony":             {"telephonyval"},

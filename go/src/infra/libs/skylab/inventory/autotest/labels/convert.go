@@ -67,6 +67,7 @@ func newScheduableLabels() *inventory.SchedulableLabels {
 		Cr50Phase: new(inventory.SchedulableLabels_CR50_Phase),
 		EcType:    new(inventory.SchedulableLabels_ECType),
 		Model:     new(string),
+		Sku:       new(string),
 		OsType:    new(inventory.SchedulableLabels_OSType),
 		Peripherals: &inventory.Peripherals{
 			AudioBoard:          new(bool),
