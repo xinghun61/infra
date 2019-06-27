@@ -69,6 +69,7 @@ type args struct {
 	xProvisionLabels    []string
 	xTestArgs           string
 	deployActions       string
+	isolatedOutdir      string
 }
 
 func parseArgs() *args {
@@ -92,6 +93,8 @@ func parseArgs() *args {
 		"Test args (meaning depends on test)")
 	flag.StringVar(&a.deployActions, "actions", "",
 		"Actions to execute for a deploytask")
+	flag.StringVar(&a.isolatedOutdir, "isolated-outdir", "",
+		"Not yet implemented.")
 	flag.Parse()
 
 	return a
