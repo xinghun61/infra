@@ -362,6 +362,11 @@ def configure_logging(log_filename, log_prefix, verbose):  # pragma: no cover
   cmd_helper_logger.setLevel(logging.ERROR)
   urllib3_logger = logging.getLogger('requests.packages.urllib3.connectionpool')
   urllib3_logger.setLevel(logging.WARNING)
+  # urllib3's module path is different when invoked via vpython.
+  # TODO(crbug.com/977627): Remove the old path when we tear out infra VENV
+  # support.
+  vypy_urllib3_logger = logging.getLogger('urllib3.connectionpool')
+  vypy_urllib3_logger.setLevel(logging.WARNING)
 
 
 @contextlib.contextmanager
