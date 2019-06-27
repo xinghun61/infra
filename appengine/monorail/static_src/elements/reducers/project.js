@@ -19,13 +19,19 @@ const FETCH_TEMPLATES_START = 'project/FETCH_TEMPLATES_START';
 const FETCH_TEMPLATES_SUCCESS = 'project/FETCH_TEMPLATES_SUCCESS';
 const FETCH_TEMPLATES_FAILURE = 'project/FETCH_TEMPLATES_FAILURE';
 
+const FETCH_FIELDS_LIST_START = 'project/FETCH_FIELDS_LIST_START';
+const FETCH_FIELDS_LIST_SUCCESS = 'project/FETCH_FIELDS_LIST_SUCCESS';
+const FETCH_FIELDS_LIST_FAILURE = 'project/FECTH_FIELDS_LIST_FAILURE';
+
 /* State Shape
 {
   config: Object,
   templates: Array,
+  fieldsList: Array,
   requests: {
     fetchConfig: Object,
     fetchTemplates: Object,
+    fetchFieldsList: Object,
   },
 }
 */
@@ -43,21 +49,31 @@ const templatesReducer = createReducer([], {
   },
 });
 
+const fieldsListReducer = createReducer([], {
+  [FETCH_FIELDS_LIST_SUCCESS]: (_state, action) => action.fieldsList,
+});
+
 const requestsReducer = combineReducers({
   fetchConfig: createRequestReducer(
     FETCH_CONFIG_START, FETCH_CONFIG_SUCCESS, FETCH_CONFIG_FAILURE),
   fetchTemplates: createRequestReducer(
     FETCH_TEMPLATES_START, FETCH_TEMPLATES_SUCCESS, FETCH_TEMPLATES_FAILURE),
+  fetchFieldsList: createRequestReducer(
+    FETCH_FIELDS_LIST_START,
+    FETCH_FIELDS_LIST_SUCCESS,
+    FETCH_FIELDS_LIST_FAILURE),
 });
 
 export const reducer = combineReducers({
   config: configReducer,
   templates: templatesReducer,
   requests: requestsReducer,
+  fieldsList: fieldsListReducer,
 });
 
 // Selectors
 export const project = (state) => state.project;
+export const fieldsList = (state) => state.project.fieldsList;
 export const config = createSelector(project, (project) => project.config);
 
 // Look up components by path.
@@ -192,5 +208,22 @@ const fetchTemplates = (projectName) => async (dispatch) => {
     dispatch({type: FETCH_TEMPLATES_SUCCESS, projectTemplates: resp});
   } catch (error) {
     dispatch({type: FETCH_TEMPLATES_FAILURE, error});
+  }
+};
+
+export const fetchFieldsList = (projectName) => async (dispatch) => {
+  dispatch({type: FETCH_FIELDS_LIST_START});
+
+  try {
+    const resp = await prpcClient.call(
+      'monorail.Projects', 'ListFields', {
+        projectName: projectName,
+        includeUserChoices: true,
+      }
+    );
+    const fieldsList = (resp.fieldDefs || []);
+    dispatch({type: FETCH_FIELDS_LIST_SUCCESS, fieldsList});
+  } catch (error) {
+    dispatch({type: FETCH_FIELDS_LIST_FAILURE});
   }
 };

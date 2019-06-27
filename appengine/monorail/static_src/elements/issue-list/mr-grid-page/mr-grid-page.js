@@ -5,6 +5,7 @@
 import {LitElement, html} from 'lit-element';
 import {store, connectStore} from 'elements/reducers/base.js';
 import * as issue from 'elements/reducers/issue.js';
+import * as project from 'elements/reducers/project.js';
 import 'elements/framework/links/mr-issue-link/mr-issue-link.js';
 
 
@@ -17,6 +18,9 @@ export class MrGridPage extends connectStore(LitElement) {
           .issue=${issue}
           .text=${issue.localId}
         ></mr-issue-link>`)}
+      <br>
+      ${this.fields.map((field) => html`
+        <p>${field.fieldRef.fieldName}</p>`)}
       `;
   }
 
@@ -27,23 +31,27 @@ export class MrGridPage extends connectStore(LitElement) {
       queryParams: {type: Object},
       userDisplayName: {type: String},
       issues: {type: Array},
+      fields: {type: Array},
     };
   };
 
   constructor() {
     super();
     this.issues = [];
+    this.fields = [];
   };
 
   updated(changedProperties) {
     if (changedProperties.has('projectName') ||
         changedProperties.has('queryParams')) {
       store.dispatch(issue.fetchIssueList(this.queryParams, this.projectName));
+      store.dispatch(project.fetchFieldsList(this.projectName));
     }
   }
 
   stateChanged(state) {
     this.issues = (issue.issueList(state) || []);
+    this.fields = (project.fieldsList(state) || []);
   }
 
   static get styles() {
