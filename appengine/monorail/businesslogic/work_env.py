@@ -1747,21 +1747,21 @@ class WorkEnv(object):
 
     # The operations made in the methods below can be limited.
     # We can adjust 'limit' as necessary to avoid timing out.
-    self.services.issue_star.ExpungeUsersInStars(
+    self.services.issue_star.ExpungeStarsByUsers(
         self.mc.cnxn, user_ids, limit=limit)
-    self.services.project_star.ExpungeUsersInStars(
+    self.services.project_star.ExpungeStarsByUsers(
         self.mc.cnxn, user_ids, limit=limit)
-    self.services.hotlist_star.ExpungeUsersInStars(
+    self.services.hotlist_star.ExpungeStarsByUsers(
         self.mc.cnxn, user_ids, limit=limit)
-    self.services.user_star.ExpungeUsersInStars(
+    self.services.user_star.ExpungeStarsByUsers(
         self.mc.cnxn, user_ids, limit=limit)
     for user_id in user_ids:
       self.services.user_star.ExpungeStars(
           self.mc.cnxn, user_id, commit=False, limit=limit)
 
-    self.services.features.ExpungeUsersInQuickEdits(
+    self.services.features.ExpungeQuickEditsByUsers(
         self.mc.cnxn, user_ids, limit=limit)
-    self.services.features.ExpungeUsersInSavedQueries(
+    self.services.features.ExpungeSavedQueriesByUsers(
         self.mc.cnxn, user_ids, limit=limit)
 
     self.services.template.ExpungeUsersInTemplates(
@@ -1777,7 +1777,7 @@ class WorkEnv(object):
     self.mc.cnxn.Commit()
 
     self.services.issue.ExpungeUsersInIssues(
-        self.mc.cnxn, user_ids, limit=limit)
+        self.mc.cnxn, user_ids_by_email, limit=limit)
     # Commit ExpungeUsersInIssues here, as it has many operations
     # and at least one operation that cannot be limited.
     self.mc.cnxn.Commit()
@@ -1794,7 +1794,7 @@ class WorkEnv(object):
 
     # No limit will be applied for expunging in UserGroups.
     self.services.usergroup.ExpungeUsersInGroups(
-        self.mc.cnxn, user_ids, limit=limit)
+        self.mc.cnxn, user_ids)
     self.mc.cnxn.Commit()
 
     # No limit will be applied for expunging in FilterRules.

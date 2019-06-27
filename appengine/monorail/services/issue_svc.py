@@ -3061,7 +3061,7 @@ class IssueService(object):
       self.InvalidateIIDs(cnxn, [parent_id])
 
   # Expunge Users from Issues system.
-  def ExpungeUsersInIssues(self, cnxn, emails_by_id, limit=None):
+  def ExpungeUsersInIssues(self, cnxn, user_ids_by_email, limit=None):
     """Removes all references to given users from issue DB tables.
 
     This method will not commit the operations. This method will
@@ -3069,12 +3069,13 @@ class IssueService(object):
 
     Args:
       cnxn: connection to SQL database.
-      emails_by_id: dict of {user_id: email} of all users we want
+      user_ids_by_email: dict of {email: user_id} of all users we want
         to expunge.
       limit: Optional, the limit for each operation.
     """
     commit = False
-    user_ids = list(emails_by_id.keys())
+    user_ids = list(user_ids_by_email.values())
+    user_emails = list(user_ids_by_email.keys())
 
     # Reassign commenter_id and delete inbound_messages.
     shard_id = sql.RandomShardID()
@@ -3148,7 +3149,7 @@ class IssueService(object):
 
     # Remove users in issue notify.
     self.issue2notify_tbl.Delete(
-        cnxn, email=emails_by_id.values(), commit=commit)
+        cnxn, email=user_emails, commit=commit)
 
     # Remove users in issue snapshots.
     self.issuesnapshot_tbl.Update(

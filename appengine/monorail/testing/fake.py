@@ -15,6 +15,7 @@ import sys
 import time
 
 import settings
+from features import filterrules_helpers
 from framework import exceptions
 from framework import framework_bizobj
 from framework import framework_helpers
@@ -189,6 +190,9 @@ class UserGroupService(object):
   """Fake UserGroupService class for testing other code."""
 
   def __init__(self):
+    # Test-only sequence of expunged users.
+    self.expunged_users_in_groups = []
+
     self.group_settings = {}
     self.group_members = {}
     self.group_addrs = {}
@@ -418,6 +422,9 @@ class UserGroupService(object):
     else:
       return result, None
 
+  def ExpungeUsersInGroups(self, cnxn, ids):
+    self.expunged_users_in_groups.extend(ids)
+
 
 class CacheManager(object):
 
@@ -448,12 +455,12 @@ class UserService(object):
 
   def __init__(self):
     """Creates a test-appropriate UserService object."""
-    self.users_by_email = {}
-    self.users_by_id = {}
-    self.test_users = {}
-    self.visited_hotlists = {} # user_id:[(hotlist_id, viewed), ...]
-    self.invite_rows = []
-    self.linked_account_rows = []
+    self.users_by_email = {}  # {email: user_id, ...}
+    self.users_by_id = {}  # {user_id: email, ...}
+    self.test_users = {}  # {user_id: user_pb, ...}
+    self.visited_hotlists = {}  # user_id:[(hotlist_id, viewed), ...]
+    self.invite_rows = []  # (parent_id, child_id)
+    self.linked_account_rows = []  # (parent_id, child_id)
     self.prefs_dict = {}  # {user_id: UserPrefs}
 
   def TestAddUser(self, email, user_id, add_user=True, banned=False):
@@ -658,6 +665,20 @@ class UserService(object):
                        if upv.name not in names_to_overwrite]
     userprefs.prefs.extend(pref_values)
 
+  def ExpungeUsers(self, cnxn, user_ids):
+    for user_id in user_ids:
+      self.test_users.pop(user_id, None)
+      self.prefs_dict.pop(user_id, None)
+      email = self.users_by_id.pop(user_id, None)
+      if email:
+        self.users_by_email.pop(email, None)
+
+    self.invite_rows = [row for row in self.invite_rows
+                        if row[0] not in user_ids and row[1] not in user_ids]
+    self.linked_account_rows = [
+        row for row in self.linked_account_rows
+        if row[0] not in user_ids and row[1] not in user_ids]
+
   def GetRecentlyVisitedHotlists(self, _cnxn, user_id):
     try:
       return self.visited_hotlists[user_id]
@@ -672,6 +693,11 @@ class UserService(object):
     except KeyError:
       self.visited_hotlists[user_id] = []
     self.visited_hotlists[user_id].append(hotlist_id)
+
+  def ExpungeUsersHotlistsHistory(self, cnxn, user_ids, commit=True):
+    for user_id in user_ids:
+      self.visited_hotlists.pop(user_id, None)
+
 
 class AbstractStarService(object):
   """Fake StarService."""
@@ -1015,6 +1041,7 @@ class ConfigService(object):
     self.next_component_id = 345
     self.next_template_id = 23
     self.expunged_configs = []
+    self.expunged_users_in_configs = []
     self.component_ids_to_templates = {}
     self.label_to_id = {}
     self.id_to_label = {}
@@ -1028,6 +1055,9 @@ class ConfigService(object):
 
   def ExpungeConfig(self, _cnxn, project_id):
     self.expunged_configs.append(project_id)
+
+  def ExpungeUsersInConfigs(self, _cnxn, user_ids, limit=None):
+    self.expunged_users_in_configs.extend(user_ids)
 
   def GetLabelDefRows(self, cnxn, project_id, use_cache=True):
     """This always returns empty results.  Mock it to test other cases."""
@@ -1275,6 +1305,7 @@ class IssueService(object):
     self.expunged_issues = []
     self.expunged_former_locations = []
     self.expunged_local_ids = []
+    self.expunged_users_in_issues = []
 
     # Test-only indicators that methods were called.
     self.get_all_issues_in_project_called = False
@@ -1976,6 +2007,47 @@ class IssueService(object):
   def SplitRanks(self, cnxn, parent_id, target_id, open_ids, split_above=False):
     pass
 
+  def ExpungeUsersInIssues(self, cnxn, user_ids_by_email, limit=None):
+    user_ids = list(user_ids_by_email.values())
+    self.expunged_users_in_issues.extend(user_ids)
+
+
+class TemplateService(object):
+  """Fake version of TemplateService that just works in-RAM."""
+
+  def __init__(self):
+    self.templates_by_id = {}  # template_id: template_pb
+    self.templates_by_project_id = {}  # project_id: template_id
+
+  def TestAddIssueTemplateDef(
+      self, template_id, project_id, name, content="", summary="",
+      summary_must_be_edited=False, status='New', members_only=False,
+      owner_defaults_to_member=False, component_required=False, owner_id=None,
+      labels=None, component_ids=None, admin_ids=None, field_values=None,
+      phases=None, approval_values=None):
+    template = tracker_bizobj.MakeIssueTemplate(
+        name, summary, status, owner_id, content, labels,
+        field_values or [], admin_ids or [],
+        component_ids, summary_must_be_edited=summary_must_be_edited,
+        owner_defaults_to_member=owner_defaults_to_member,
+        component_required=component_required,
+        members_only=members_only, phases=phases)
+    template.template_id = template_id
+    self.templates_by_id[template_id] = template
+    self.templates_by_project_id[project_id] = template_id
+    return template
+
+  def GetTemplateById(self, cnxn, template_id):
+    return self.templates_by_id.get(template_id)
+
+  def ExpungeUsersInTemplates(self, cnxn, user_ids, limit=None):
+    for _, template in self.templates_by_id.iteritems():
+      template.admin_ids = [user_id for user_id in template.admin_ids
+                            if user_id not in user_ids]
+      if template.owner_id in user_ids:
+        template.owner_id = None
+      template.field_values = [fv for fv in template.field_values
+                               if fv.user_id in user_ids]
 
 class SpamService(object):
   """Fake version of SpamService that just works in-RAM."""
@@ -1986,6 +2058,7 @@ class SpamService(object):
     self.comment_reports_by_issue_id = collections.defaultdict(dict)
     self.manual_verdicts_by_issue_id = collections.defaultdict(dict)
     self.manual_verdicts_by_comment_id = collections.defaultdict(dict)
+    self.expunged_users_in_spam = []
 
   def LookupIssuesFlaggers(self, cnxn, issue_ids):
     return {
@@ -2040,14 +2113,26 @@ class SpamService(object):
             'outputMulti': [{'label': 'ham', 'score': '1.0'}],
             'failed_open': False}
 
+  def ExpungeUsersInSpam(self, cnxn, user_ids):
+    self.expunged_users_in_spam.extend(user_ids)
+
 
 class FeaturesService(object):
   """A fake implementation of FeaturesService."""
   def __init__(self):
-    # Test-only sequence of expunged projects.
+    # Test-only sequence of expunged projects and users.
     self.expunged_saved_queries = []
+    self.expunged_users_in_saved_queries = []
     self.expunged_filter_rules = []
+    self.expunged_users_in_filter_rules = []
     self.expunged_quick_edit = []
+    self.expunged_users_in_quick_edits = []
+    self.expunged_hotlist_ids = []
+    self.expunged_users_in_hotlists = []
+
+    # filter rules, project_id => filterrule_pb
+    self.test_rules = collections.defaultdict(list)
+
 
     # hotlists
     self.test_hotlists = {}  # hotlist_name => hotlist_pb
@@ -2057,6 +2142,18 @@ class FeaturesService(object):
 
     # saved queries
     self.saved_queries = []  # [(pid, uid, sq), ...]
+
+  def TestAddFilterRule(
+      self, project_id, predicate, default_status=None, default_owner_id=None,
+      add_cc_ids=None, add_labels=None, add_notify=None, warning=None,
+      error=None):
+    rule = filterrules_helpers.MakeRule(
+        predicate, default_status=default_status,
+        default_owner_id=default_owner_id, add_cc_ids=add_cc_ids,
+        add_labels=add_labels, add_notify=add_notify, warning=warning,
+        error=error)
+    self.test_rules[project_id].append(rule)
+    return rule
 
   def TestAddHotlist(self, name, summary='', owner_ids=None, editor_ids=None,
                      follower_ids=None, description=None, hotlist_id=None,
@@ -2334,6 +2431,12 @@ class FeaturesService(object):
         except (ValueError, KeyError):
           pass
 
+  def ExpungeHotlists(self, cnxn, hotlist_ids, star_svc, user_svc):
+    self.expunged_hotlist_ids.extend(hotlist_ids)
+
+  def ExpungeUsersInHotlists(self, cnxn, user_ids, star_svc, user_svc):
+    self.expunged_users_in_hotlists.extend(user_ids)
+
   # end of Hotlist functions
 
   def GetRecentCommands(self, cnxn, user_id, project_id):
@@ -2342,11 +2445,40 @@ class FeaturesService(object):
   def ExpungeSavedQueriesExecuteInProject(self, _cnxn, project_id):
     self.expunged_saved_queries.append(project_id)
 
+  def ExpungeSavedQueriesByUsers(self, cnxn, user_ids, limit=None):
+    self.expunged_users_in_saved_queries.extend(user_ids)
+
   def ExpungeFilterRules(self, _cnxn, project_id):
     self.expunged_filter_rules.append(project_id)
 
+  def ExpungeFilterRulesByUser(self, cnxn, user_ids_by_email):
+    emails = user_ids_by_email.keys()
+    user_ids = user_ids_by_email.values()
+    project_rules_dict = collections.defaultdict(list)
+    for project_id, rules in self.test_rules.iteritems():
+      for rule in rules:
+        if rule.default_owner_id in user_ids:
+          project_rules_dict[project_id].append(rule)
+          continue
+        if any(cc_id in user_ids for cc_id in rule.add_cc_ids):
+          project_rules_dict[project_id].append(rule)
+          continue
+        if any(addr in emails for addr in rule.add_notify_addrs):
+          project_rules_dict[project_id].append(rule)
+          continue
+        if any((email in rule.predicate) for email in emails):
+          project_rules_dict[project_id].append(rule)
+          continue
+      self.test_rules[project_id] = [
+          rule for rule in rules
+          if rule not in project_rules_dict[project_id]]
+    return project_rules_dict
+
   def ExpungeQuickEditHistory(self, _cnxn, project_id):
     self.expunged_quick_edit.append(project_id)
+
+  def ExpungeQuickEditsByUsers(self, cnxn, user_ids, limit=None):
+    self.expunged_users_in_quick_edits.extend(user_ids)
 
   def GetFilterRules(self, cnxn, project_id):
     return []

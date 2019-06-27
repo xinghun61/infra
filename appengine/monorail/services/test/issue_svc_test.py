@@ -2435,12 +2435,13 @@ class IssueServiceTest(unittest.TestCase):
 
     emails = ['cow@farm.com', 'pig@farm.com', 'chicken@farm.com']
     user_ids = [222, 888, 444]
-    emails_by_id = {user_id: email for user_id, email in zip(user_ids, emails)}
+    user_ids_by_email = {
+        email: user_id for user_id, email in zip(user_ids, emails)}
     commit = False
     limit = 50
 
     self.services.issue.ExpungeUsersInIssues(
-        self.cnxn, emails_by_id, limit=limit)
+        self.cnxn, user_ids_by_email, limit=limit)
 
     self.services.issue.comment_tbl.Select.assert_called_once()
     _cnxn, kwargs = self.services.issue.comment_tbl.Select.call_args
