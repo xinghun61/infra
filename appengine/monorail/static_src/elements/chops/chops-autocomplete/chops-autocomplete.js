@@ -200,10 +200,9 @@ export class ChopsAutocomplete extends LitElement {
   /**
    * Computes autocomplete values matching the current input in the field.
    *
-   * @param {boolean} includeDefault - Whether to include non-matching values.
    * @return {boolean} Whether any completions were found.
    */
-  showCompletions(includeDefault) {
+  showCompletions() {
     if (!this._forRef) {
       this.hideCompletions();
       return false;
@@ -215,7 +214,6 @@ export class ChopsAutocomplete extends LitElement {
 
     const matchDict = {};
     const accepted = [];
-    const rejected = [];
     matchDict;
     for (let i = 0; i < this.strings.length
         && accepted.length < this.max; i++) {
@@ -233,22 +231,12 @@ export class ChopsAutocomplete extends LitElement {
       }
       if (matches) {
         accepted.push(s);
-      } else if (rejected.length < this.max) {
-        rejected.push(s);
       }
     }
 
     this._matchDict = matchDict;
 
-    if (includeDefault) {
-      const maxRejected = this.max - accepted.length;
-      if (rejected.length > maxRejected) {
-        rejected = rejected.slice(0, maxRejected);
-      }
-      this.completions = [...accepted, ...rejected];
-    } else {
-      this.completions = accepted;
-    }
+    this.completions = accepted;
 
     return !!this.completions.length;
   }
@@ -304,7 +292,7 @@ export class ChopsAutocomplete extends LitElement {
 
     // Check if the input is focused or not.
     if (target.matches(':focus')) {
-      this.showCompletions(true);
+      this.showCompletions();
     } else {
       this.hideCompletions();
     }

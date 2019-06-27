@@ -149,30 +149,6 @@ describe('chops-autocomplete', () => {
     ]);
   });
 
-  it('showCompletions appends rejects when inludeDefault is true', async () => {
-    element.strings = [
-      'test-one',
-      'test-two',
-      'default',
-      'hello',
-      'woah-test',
-      'i-am-a-tester',
-    ];
-    input.value = 'test';
-    await element.updateComplete;
-
-    element.showCompletions(true);
-
-    assert.deepEqual(element.completions, [
-      'test-one',
-      'test-two',
-      'woah-test',
-      'i-am-a-tester',
-      'default',
-      'hello',
-    ]);
-  });
-
   it('hideCompletions hides completions', async () => {
     element.completions = [
       'test-one',
