@@ -38,6 +38,7 @@ func getApplication() *cli.Application {
 			subcommands.Section("Steps"),
 			cmd.Enumerate,
 			cmd.AutotestExecute,
+			cmd.SchedulerTrafficSplit,
 			cmd.SkylabExecute,
 		},
 	}
