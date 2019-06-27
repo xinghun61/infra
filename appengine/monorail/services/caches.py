@@ -153,7 +153,7 @@ class ValueCentricRamCache(RamCache):
     """Use the specified value to drop entries from the local cache."""
     keys_to_drop = []
     # Loop through and collect all keys with the specified value.
-    for k, v in self.cache.iteritems():
+    for k, v in self.cache.items():
       if v == value:
         keys_to_drop.append(k)
     for k in keys_to_drop:
@@ -265,7 +265,7 @@ class AbstractTwoLevelCache(object):
         [self._KeyToStr(key) for key in keys], key_prefix=self.memcache_prefix,
         namespace=settings.memcache_namespace)
 
-    for key_str, serialized_value in cached_dict.iteritems():
+    for key_str, serialized_value in cached_dict.items():
       value = self._StrToValue(serialized_value)
       key = self._StrToKey(key_str)
       if self._CheckCompatibility(value):
@@ -287,7 +287,7 @@ class AbstractTwoLevelCache(object):
     """Write entries for each key-value pair to memcache.  Encode PBs."""
     strs_to_cache = {
         self._KeyToStr(key): self._ValueToStr(value)
-        for key, value in retrieved_dict.iteritems()}
+        for key, value in retrieved_dict.items()}
 
     try:
       memcache.add_multi(
@@ -299,7 +299,7 @@ class AbstractTwoLevelCache(object):
       # values are left, then bail out.
       logging.error('Got memcache error: %r', e)
       memcache.delete_multi(
-          strs_to_cache.keys(), seconds=5,
+          list(strs_to_cache.keys()), seconds=5,
           key_prefix=self.memcache_prefix,
           namespace=settings.memcache_namespace)
       return

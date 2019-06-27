@@ -79,7 +79,7 @@ class IssueAdminBaseTest(TestBase):
 
     self.assertItemsEqual(
         ['admin_tab_mode', 'config', 'open_text', 'closed_text', 'labels_text'],
-        page_data.keys())
+        list(page_data.keys()))
     config_view = page_data['config']
     self.assertEqual(789, config_view.project_id)
 
@@ -143,7 +143,7 @@ class AdminLabelsTest(TestBase):
     self.assertItemsEqual(
         ['admin_tab_mode', 'config', 'field_defs',
          'open_text', 'closed_text', 'labels_text'],
-        page_data.keys())
+        list(page_data.keys()))
     config_view = page_data['config']
     self.assertEqual(789, config_view.project_id)
     self.assertEqual([], page_data['field_defs'])
@@ -301,7 +301,7 @@ class AdminComponentsTest(TestBase):
         ['admin_tab_mode', 'failed_templ', 'component_defs', 'failed_perm',
          'config', 'failed_subcomp',
          'open_text', 'closed_text', 'labels_text'],
-        page_data.keys())
+        list(page_data.keys()))
     config_view = page_data['config']
     self.assertEqual(789, config_view.project_id)
     self.assertEqual([], page_data['component_defs'])
@@ -368,7 +368,7 @@ class AdminViewsTest(TestBase):
         ['canned_queries', 'admin_tab_mode', 'config', 'issue_notify',
          'new_query_indexes', 'max_queries',
          'open_text', 'closed_text', 'labels_text'],
-        page_data.keys())
+        list(page_data.keys()))
     config_view = page_data['config']
     self.assertEqual(789, config_view.project_id)
 
@@ -455,7 +455,7 @@ class AdminRulesTest(TestBase):
     self.assertItemsEqual(
         ['admin_tab_mode', 'config', 'rules', 'new_rule_indexes',
          'max_rules', 'open_text', 'closed_text', 'labels_text'],
-        page_data.keys())
+        list(page_data.keys()))
     config_view = page_data['config']
     self.assertEqual(789, config_view.project_id)
     self.assertEqual([], page_data['rules'])

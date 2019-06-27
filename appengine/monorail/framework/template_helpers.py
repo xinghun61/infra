@@ -282,7 +282,7 @@ class EZTItem(object):
 
   def __repr__(self):
     fields = ', '.join('%r: %r' % (k, v) for k, v in
-                       sorted(vars(self).iteritems()))
+                       sorted(vars(self).items()))
     return '%s({%s})' % (self.__class__.__name__, fields)
 
 

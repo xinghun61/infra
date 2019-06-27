@@ -886,7 +886,7 @@ def ApplyLabelChanges(issue, config, labels_add, labels_remove):
 def ApplyFieldValueChanges(issue, config, fvs_add, fvs_remove, fields_clear):
   """Updates the PB issue's field_values and returns an amendments list."""
   phase_names_dict = {phase.phase_id: phase.name for phase in issue.phases}
-  phase_ids = phase_names_dict.keys()
+  phase_ids = list(phase_names_dict.keys())
   (field_vals, update_fields_add,
    update_fields_remove) = MergeFields(
        issue.field_values,
@@ -903,7 +903,7 @@ def ApplyFieldValueChanges(issue, config, fvs_add, fvs_remove, fields_clear):
       for fv in update_fields_add:
         if fv.field_id == fd.field_id:
           fd_added_values_by_phase[fv.phase_id].append(fv)
-      for phase_id, fvs in fd_added_values_by_phase.iteritems():
+      for phase_id, fvs in fd_added_values_by_phase.items():
         amendments.append(MakeFieldAmendment(
             fd.field_id, config,
             [GetFieldValue(fv, {})
@@ -916,7 +916,7 @@ def ApplyFieldValueChanges(issue, config, fvs_add, fvs_remove, fields_clear):
       for fv in update_fields_remove:
         if fv.field_id == fd.field_id:
           fd_removed_values_by_phase[fv.phase_id].append(fv)
-      for phase_id, fvs in fd_removed_values_by_phase.iteritems():
+      for phase_id, fvs in fd_removed_values_by_phase.items():
         amendments.append(MakeFieldAmendment(
             fd.field_id, config, [],
             old_values=[GetFieldValue(fv, {})

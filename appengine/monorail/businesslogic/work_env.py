@@ -107,7 +107,7 @@ class WorkEnv(object):
     """Filter out projects the user doesn't have permission to view."""
     return {
         key: proj
-        for key, proj in projects.iteritems()
+        for key, proj in projects.items()
         if self._UserCanViewProject(proj)}
 
   def _AssertPermInProject(self, perm, project):
@@ -469,12 +469,12 @@ class WorkEnv(object):
     # is listed under owner projects, not under member_projects.
     archived_projects = [
         project
-        for project in owner_projects.itervalues()
+        for project in owner_projects.values()
         if project.state == project_pb2.ProjectState.ARCHIVED]
 
     contrib_projects = [
         project
-        for pid, project in contrib_projects.iteritems()
+        for pid, project in contrib_projects.items()
         if pid not in owner_projects
         and pid not in member_projects
         and project.state != project_pb2.ProjectState.DELETABLE
@@ -482,14 +482,14 @@ class WorkEnv(object):
 
     member_projects = [
         project
-        for pid, project in member_projects.iteritems()
+        for pid, project in member_projects.items()
         if pid not in owner_projects
         and project.state != project_pb2.ProjectState.DELETABLE
         and project.state != project_pb2.ProjectState.ARCHIVED]
 
     owner_projects = [
         project
-        for pid, project in owner_projects.iteritems()
+        for pid, project in owner_projects.items()
         if project.state != project_pb2.ProjectState.DELETABLE
         and project.state != project_pb2.ProjectState.ARCHIVED]
 
@@ -654,7 +654,8 @@ class WorkEnv(object):
       configs = self.services.config.GetProjectConfigs(
           self.mc.cnxn, project_ids, use_cache=use_cache)
 
-    projects = self._FilterVisibleProjectsDict(self.GetProjects(configs.keys()))
+    projects = self._FilterVisibleProjectsDict(
+        self.GetProjects(list(configs.keys())))
     configs = {project_id: configs[project_id] for project_id in projects}
 
     return configs
@@ -933,7 +934,7 @@ class WorkEnv(object):
 
     issues = {
         issue_id: issue
-        for issue_id, issue in issues.iteritems()
+        for issue_id, issue in issues.items()
         if self._UserCanViewIssue(issue, allow_viewing_deleted)[-1]}
     return issues
 
@@ -1530,8 +1531,8 @@ class WorkEnv(object):
       user_id_dict = self.services.user.LookupExistingUserIDs(
           self.mc.cnxn, emails)
       users_by_id = self.services.user.GetUsersByIDs(
-          self.mc.cnxn, user_id_dict.values())
-      user_list = users_by_id.values()
+          self.mc.cnxn, list(user_id_dict.values()))
+      user_list = list(users_by_id.values())
 
       linked_user_ids = []
       for user in user_list:
@@ -1742,7 +1743,7 @@ class WorkEnv(object):
 
     user_ids_by_email = self.services.user.LookupExistingUserIDs(
         self.mc.cnxn, emails)
-    user_ids = user_ids_by_email.values()
+    user_ids = list(user_ids_by_email.values())
     limit = 10000
 
     # The operations made in the methods below can be limited.
@@ -1812,7 +1813,7 @@ class WorkEnv(object):
     self.services.usergroup.group_dag.MarkObsolete()
 
     hostport = framework_helpers.GetHostPort()
-    for project_id, filter_rule_strs in rule_strs_by_project.iteritems():
+    for project_id, filter_rule_strs in rule_strs_by_project.items():
       send_notifications.PrepareAndSendDeletedFilterRulesNotification(
           project_id, hostport, filter_rule_strs)
 

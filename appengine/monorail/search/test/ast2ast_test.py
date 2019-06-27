@@ -683,7 +683,7 @@ class AST2ASTTest(unittest.TestCase):
     self.assertEqual(ast_pb2.QueryOp.NE,
                      ast2ast._TextOpToIntOp(ast_pb2.QueryOp.NOT_TEXT_HAS))
 
-    for enum_name, _enum_id in ast_pb2.QueryOp.to_dict().iteritems():
+    for enum_name, _enum_id in ast_pb2.QueryOp.to_dict().items():
       no_change_op = ast_pb2.QueryOp(enum_name)
       if no_change_op not in (
           ast_pb2.QueryOp.TEXT_HAS,

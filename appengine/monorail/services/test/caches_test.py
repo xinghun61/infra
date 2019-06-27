@@ -190,7 +190,7 @@ class AbstractTwoLevelCacheTest(unittest.TestCase):
     # The RAM cache now has items found in memcache and DB.
     self.assertItemsEqual(
         [123, 124, 125, 333, 444],
-        self.testable_cache.cache.cache.keys())
+        list(self.testable_cache.cache.cache.keys()))
 
   def testGetAll_FetchGetsItFromDB(self):
     self.testable_cache.CacheItem(123, 12300)

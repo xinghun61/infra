@@ -175,18 +175,18 @@ class FeaturesServicer(monorail_servicer.MonorailServicer):
       issues = we.GetIssuesDict(issue_ids)
 
       projects = we.GetProjectsByName([
-          issue.project_name for issue in issues.itervalues()])
+          issue.project_name for issue in issues.values()])
       configs = we.GetProjectConfigs([
-          project.project_id for project in projects.itervalues()])
+          project.project_id for project in projects.values()])
       configs = {
           project.project_name: configs[project.project_id]
-          for project in projects.itervalues()}
-      related_refs = we.GetRelatedIssueRefs(issues.itervalues())
+          for project in projects.values()}
+      related_refs = we.GetRelatedIssueRefs(iter(issues.values()))
 
     with mc.profiler.Phase('making user views'):
       users_involved = set(item.adder_id for item in hotlist_items)
       users_involved.update(
-          tracker_bizobj.UsersInvolvedInIssues(issues.itervalues()))
+          tracker_bizobj.UsersInvolvedInIssues(iter(issues.values())))
       users_by_id = framework_views.MakeAllUserViews(
           mc.cnxn, self.services.user, users_involved)
       framework_views.RevealAllEmailsToMembers(mc.auth, None, users_by_id)

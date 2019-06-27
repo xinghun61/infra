@@ -104,7 +104,7 @@ class UserTwoLevelCacheTest(unittest.TestCase):
     self.mox.ReplayAll()
     user_dict = self.user_service.user_2lc.FetchItems(self.cnxn, [333])
     self.mox.VerifyAll()
-    self.assertEqual([333], user_dict.keys())
+    self.assertEqual([333], list(user_dict.keys()))
     self.assertEqual('c@example.com', user_dict[333].email)
     self.assertFalse(user_dict[333].is_site_admin)
     self.assertEqual('Spammer', user_dict[333].banned)

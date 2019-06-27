@@ -50,7 +50,7 @@ class UserProfile(servlet.Servlet):
       group_settings = self.services.usergroup.GetAllGroupSettings(
           mr.cnxn, mr.viewed_user_auth.effective_ids)
       member_ids, owner_ids = self.services.usergroup.LookupAllMembers(
-          mr.cnxn, group_settings.keys())
+          mr.cnxn, list(group_settings.keys()))
       friend_project_ids = [] # TODO(issue 4202): implement this.
       visible_group_ids = []
       for group_id in group_settings:
@@ -62,7 +62,7 @@ class UserProfile(servlet.Servlet):
       user_group_views = framework_views.MakeAllUserViews(
           mr.cnxn, self.services.user, visible_group_ids)
       user_group_views = sorted(
-          user_group_views.values(), key=lambda ugv: ugv.email)
+          list(user_group_views.values()), key=lambda ugv: ugv.email)
 
     with mr.profiler.Phase('Getting linked accounts'):
       linked_parent = None
@@ -110,7 +110,7 @@ class UserProfile(servlet.Servlet):
         mr.cnxn, mr.viewed_user_auth.user_id)
     starred_user_dict = framework_views.MakeAllUserViews(
         mr.cnxn, self.services.user, starred_user_ids)
-    starred_users = starred_user_dict.values()
+    starred_users = list(starred_user_dict.values())
     starred_users_json = json.dumps(
       [uv.display_name for uv in starred_users])
 

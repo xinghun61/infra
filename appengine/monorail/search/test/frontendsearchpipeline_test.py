@@ -222,7 +222,7 @@ class FrontendSearchPipelineTest(unittest.TestCase):
     self.assertEqual(
       [self.issue_1, self.issue_3, self.issue_2],  # high, medium, low.
       pipeline.allowed_results)
-    self.assertEqual([0, 111], pipeline.users_by_id.keys())
+    self.assertEqual([0, 111], list(pipeline.users_by_id.keys()))
 
   def testDetermineIssuePosition_Normal(self):
     pipeline = frontendsearchpipeline.FrontendSearchPipeline(
@@ -445,10 +445,10 @@ class FrontendSearchPipelineTest(unittest.TestCase):
         project=self.project)
 
     pipeline._LookupNeededUsers([])
-    self.assertEqual([], pipeline.users_by_id.keys())
+    self.assertEqual([], list(pipeline.users_by_id.keys()))
 
     pipeline._LookupNeededUsers([self.issue_1, self.issue_2, self.issue_3])
-    self.assertEqual([0, 111], pipeline.users_by_id.keys())
+    self.assertEqual([0, 111], list(pipeline.users_by_id.keys()))
 
   def testPaginate_Grid(self):
     self.mr.mode = 'grid'
@@ -620,8 +620,8 @@ class FrontendSearchPipelineMethodsTest(unittest.TestCase):
     nonviewable_iids = {}  # Nothing should accumulate here in this case.
     processed_invalidations_up_to = 12345
     frontendsearchpipeline._GetNonviewableIIDs(
-        [789], 111, unfiltered_iids_dict.keys(), rpc_tuples, nonviewable_iids,
-        {}, processed_invalidations_up_to, True)
+        [789], 111, list(unfiltered_iids_dict.keys()), rpc_tuples,
+        nonviewable_iids, {}, processed_invalidations_up_to, True)
     self.assertEqual([], rpc_tuples)
     self.assertEqual({}, nonviewable_iids)
 
@@ -644,8 +644,9 @@ class FrontendSearchPipelineMethodsTest(unittest.TestCase):
       (789, 2): 0,  # not stale
       }
     frontendsearchpipeline._GetNonviewableIIDs(
-        [789], 111, unfiltered_iids_dict.keys(), rpc_tuples, nonviewable_iids,
-        project_shard_timestamps, processed_invalidations_up_to, True)
+        [789], 111, list(unfiltered_iids_dict.keys()), rpc_tuples,
+        nonviewable_iids, project_shard_timestamps,
+        processed_invalidations_up_to, True)
     self.assertEqual([], rpc_tuples)
     self.assertEqual({1: {10001, 10031}, 2: {10002, 10042}}, nonviewable_iids)
 
@@ -666,8 +667,8 @@ class FrontendSearchPipelineMethodsTest(unittest.TestCase):
     self.mox.ReplayAll()
 
     frontendsearchpipeline._GetNonviewableIIDs(
-        [789], 111, unfiltered_iids_dict.keys(), rpc_tuples, nonviewable_iids,
-        {}, processed_invalidations_up_to, True)
+        [789], 111, list(unfiltered_iids_dict.keys()), rpc_tuples,
+        nonviewable_iids, {}, processed_invalidations_up_to, True)
     self.mox.VerifyAll()
     _, sid_0, rpc_0 = rpc_tuples[0]
     self.assertEqual(2, sid_0)
@@ -1083,7 +1084,7 @@ class FrontendSearchPipelineShardMethodsTest(unittest.TestCase):
   def testTrimShardedIIDs_NoSamples(self):
     """If there are no samples, we don't trim off any IIDs."""
     orig_sharded_iids = {
-      shard_id: iids[:] for shard_id, iids in self.sharded_iids.iteritems()}
+      shard_id: iids[:] for shard_id, iids in self.sharded_iids.items()}
     num_trimmed = frontendsearchpipeline._TrimEndShardedIIDs(
         self.sharded_iids, [], 12)
     self.assertEqual(0, num_trimmed)

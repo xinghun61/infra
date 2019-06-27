@@ -230,7 +230,7 @@ class FilterRulesHelpersTest(unittest.TestCase):
     self.project = self.services.project.TestAddProject('proj', project_id=789)
     self.other_project = self.services.project.TestAddProject(
         'otherproj', project_id=890)
-    for email, user_id in TEST_ID_MAP.iteritems():
+    for email, user_id in TEST_ID_MAP.items():
       self.services.user.TestAddUser(email, user_id)
     self.services.config.TestAddLabelsDict(TEST_LABEL_IDS)
 

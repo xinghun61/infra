@@ -175,11 +175,11 @@ def _GetIssueIDsFromLocalIdsCond(cnxn, cond, project_ids, services):
   """Returns global IDs from the local IDs provided in the cond."""
   # Get {project_name: project} for all projects in project_ids.
   ids_to_projects = services.project.GetProjects(cnxn, project_ids)
-  ref_projects = {pb.project_name: pb for pb in ids_to_projects.itervalues()}
+  ref_projects = {pb.project_name: pb for pb in ids_to_projects.values()}
   # Populate default_project_name if there is only one project id provided.
   default_project_name = None
   if len(ref_projects) == 1:
-    default_project_name = ref_projects.values()[0].project_name
+    default_project_name = list(ref_projects.values())[0].project_name
 
   # Populate refs with (project_name, local_id) pairs.
   refs = []
@@ -461,8 +461,8 @@ def _PreprocessHotlistCond(
       user_hotlist_ids = [hotlist.hotlist_id for hotlist in user_hotlists if
                           user_id in hotlist.owner_ids]
     else:
-      user_hotlist_ids = services.features.LookupHotlistIDs(
-          cnxn, hotlists, [user_id]).values()
+      user_hotlist_ids = list(services.features.LookupHotlistIDs(
+          cnxn, hotlists, [user_id]).values())
     for hotlist_id in user_hotlist_ids:
       hotlist_ids.add(hotlist_id)
   return ast_pb2.Condition(

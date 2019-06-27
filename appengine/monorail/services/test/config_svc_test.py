@@ -214,7 +214,7 @@ class ConfigRowTwoLevelCacheTest(unittest.TestCase):
         self.component2admin_rows, self.component2cc_rows,
         self.component2label_rows, self.approvaldef2approver_rows,
         self.approvaldef2survey_rows)
-    self.assertItemsEqual([789], config_dict.keys())
+    self.assertItemsEqual([789], list(config_dict.keys()))
     config = config_dict[789]
     self.assertEqual(789, config.project_id)
     self.assertEqual(['Duplicate'], config.statuses_offer_merge)
@@ -277,7 +277,7 @@ class ConfigRowTwoLevelCacheTest(unittest.TestCase):
     self.mox.ReplayAll()
     config_dict = self.config_2lc._FetchConfigs(self.cnxn, keys)
     self.mox.VerifyAll()
-    self.assertItemsEqual(keys, config_dict.keys())
+    self.assertItemsEqual(keys, list(config_dict.keys()))
 
   def testFetchItems(self):
     keys = [678, 789]
@@ -285,7 +285,7 @@ class ConfigRowTwoLevelCacheTest(unittest.TestCase):
     self.mox.ReplayAll()
     config_dict = self.config_2lc.FetchItems(self.cnxn, keys)
     self.mox.VerifyAll()
-    self.assertItemsEqual(keys, config_dict.keys())
+    self.assertItemsEqual(keys, list(config_dict.keys()))
 
 
 class ConfigServiceTest(unittest.TestCase):
@@ -709,7 +709,7 @@ class ConfigServiceTest(unittest.TestCase):
         idx + 1: label for idx, (label, _, _) in enumerate(
             tracker_constants.DEFAULT_WELL_KNOWN_LABELS)}
     by_name = {name.lower(): label_id
-               for label_id, name in by_id.iteritems()}
+               for label_id, name in by_id.items()}
     label_dicts = by_id, by_name
     self.config_service.label_cache.CacheAll({project_id: label_dicts})
 
@@ -732,7 +732,7 @@ class ConfigServiceTest(unittest.TestCase):
         idx + 1: status for idx, (status, _, _, _) in enumerate(
             tracker_constants.DEFAULT_WELL_KNOWN_STATUSES)}
     by_name = {name.lower(): label_id
-               for label_id, name in by_id.iteritems()}
+               for label_id, name in by_id.items()}
     closed_ids = [
         idx + 1 for idx, (_, _, means_open, _) in enumerate(
             tracker_constants.DEFAULT_WELL_KNOWN_STATUSES)

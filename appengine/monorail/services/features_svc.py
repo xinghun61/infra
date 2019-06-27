@@ -562,7 +562,7 @@ class FeaturesService(object):
       Rules that will be deleted for containing the given emails.
     """
     where_conds = []
-    for email, user_id in user_ids_by_email.iteritems():
+    for email, user_id in user_ids_by_email.items():
       fmt_email = '%%%s%%' % email
       notify_str = '%%add_notify:%s%%' % email
       cc_id_str = '%%add_cc_id:%s%%' % user_id
@@ -943,14 +943,14 @@ class FeaturesService(object):
     hotlist_id_dict = self.LookupUserHotlists(cnxn, [user_id])
     hotlists = self.GetHotlists(
         cnxn, hotlist_id_dict.get(user_id, []), use_cache=use_cache)
-    return hotlists.values()
+    return list(hotlists.values())
 
   def GetHotlistsByIssueID(self, cnxn, issue_id, use_cache=True):
     """Get a list of hotlist PBs for a given issue."""
     hotlist_id_dict = self.LookupIssueHotlists(cnxn, [issue_id])
     hotlists = self.GetHotlists(
         cnxn, hotlist_id_dict.get(issue_id, []), use_cache=use_cache)
-    return hotlists.values()
+    return list(hotlists.values())
 
   def GetHotlist(self, cnxn, hotlist_id, use_cache=True):
     """Returns hotlist PB."""
@@ -1055,7 +1055,7 @@ class FeaturesService(object):
     # Transfer hotlist ownership to editors, if possible.
     hotlists_by_id = self.LookupUserHotlists(cnxn, user_ids)
     hotlists_to_delete = []
-    for hotlist_id, hotlist in hotlists_by_id.iteritems():
+    for hotlist_id, hotlist in hotlists_by_id.items():
       # One of the users to be deleted is an owner of hotlist.
       if not set(hotlist.owner_ids).isdisjoint(user_ids):
         hotlists_to_delete.append(hotlist_id)

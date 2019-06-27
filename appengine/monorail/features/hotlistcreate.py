@@ -87,7 +87,7 @@ class HotlistCreate(servlet.Servlet):
           email.strip() for email in editors.split(',')]
       try:
         editor_dict = self.services.user.LookupUserIDs(mr.cnxn, editor_emails)
-        editor_ids = editor_dict.values()
+        editor_ids = list(editor_dict.values())
       except exceptions.NoSuchUserException:
         mr.errors.editors = _MSG_INVALID_MEMBERS_INPUT
       # In case the logged-in user specifies themselves as an editor, ignore it.

@@ -97,7 +97,7 @@ class HelperFunctionsTest(unittest.TestCase):
 
   def testFilterViewableProjects_CantViewArchived(self):
     projects = list(sitewide_helpers.FilterViewableProjects(
-        self.services.project.test_projects.values(),
+        list(self.services.project.test_projects.values()),
         self.regular_user, {REGULAR_USER_ID}))
     self.assertProjectsAnyOrder(
         projects, self.regular_owner_live, self.regular_committer_live,
@@ -106,7 +106,7 @@ class HelperFunctionsTest(unittest.TestCase):
 
   def testFilterViewableProjects_NonMemberCantViewMembersOnly(self):
     projects = list(sitewide_helpers.FilterViewableProjects(
-        self.services.project.test_projects.values(),
+        list(self.services.project.test_projects.values()),
         self.other_user, {OTHER_USER_ID}))
     self.assertProjectsAnyOrder(
         projects, self.regular_owner_live, self.regular_committer_live,
@@ -114,7 +114,7 @@ class HelperFunctionsTest(unittest.TestCase):
 
   def testFilterViewableProjects_AdminCanViewAny(self):
     projects = list(sitewide_helpers.FilterViewableProjects(
-        self.services.project.test_projects.values(),
+        list(self.services.project.test_projects.values()),
         self.admin_user, {ADMIN_USER_ID}))
     self.assertProjectsAnyOrder(
         projects, self.regular_owner_live, self.regular_committer_live,

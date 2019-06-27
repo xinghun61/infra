@@ -87,13 +87,13 @@ class IssueExportJSON(jsonfeed.JsonFeed):
 
     comments_dict = self.services.issue.GetCommentsForIssues(
         mr.cnxn, [issue.issue_id for issue in issues])
-    for comment_list in comments_dict.itervalues():
+    for comment_list in comments_dict.values():
       user_id_set.update(
         tracker_bizobj.UsersInvolvedInCommentList(comment_list))
 
     starrers_dict = self.services.issue_star.LookupItemsStarrers(
         mr.cnxn, [issue.issue_id for issue in issues])
-    for starrer_id_list in starrers_dict.itervalues():
+    for starrer_id_list in starrers_dict.values():
       user_id_set.update(starrer_id_list)
 
     # The value 0 indicates "no user", e.g., that an issue has no owner.
@@ -121,7 +121,7 @@ class IssueExportJSON(jsonfeed.JsonFeed):
         'issues': issues_json,
         # This list could be derived from the 'issues', but we provide it for
         # ease of processing.
-        'emails': email_dict.values(),
+        'emails': list(email_dict.values()),
     }
     return json_data
 

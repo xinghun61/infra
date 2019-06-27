@@ -312,7 +312,7 @@ class WorkEnvTest(unittest.TestCase):
         'deletable': project_pb2.ProjectState.DELETABLE}
 
     projects = {}
-    for name, state in project_states.iteritems():
+    for name, state in project_states.items():
       projects['owner-'+name] = self.services.project.TestAddProject(
           'owner-' + name, state=state, owner_ids=[222])
       projects['committer-'+name] = self.services.project.TestAddProject(
@@ -338,13 +338,13 @@ class WorkEnvTest(unittest.TestCase):
     by_name = lambda project: project.project_name
     self.assertEqual(
         [projects['owner-live']],
-        sorted(owner.values(), key=by_name))
+        sorted(list(owner.values()), key=by_name))
     self.assertEqual(
         [projects['committer-live']],
-        sorted(member.values(), key=by_name))
+        sorted(list(member.values()), key=by_name))
     self.assertEqual(
         [projects['contributor-live']],
-        sorted(contrib.values(), key=by_name))
+        sorted(list(contrib.values()), key=by_name))
 
   def testGetUserRolesInAllProjects_OwnUser(self):
     """We can get the projects in which the user has a role."""
@@ -358,13 +358,13 @@ class WorkEnvTest(unittest.TestCase):
     self.assertEqual(
         [projects['members-only'], projects['owner-archived'],
          projects['owner-live']],
-        sorted(owner.values(), key=by_name))
+        sorted(list(owner.values()), key=by_name))
     self.assertEqual(
         [projects['committer-archived'], projects['committer-live']],
-        sorted(member.values(), key=by_name))
+        sorted(list(member.values()), key=by_name))
     self.assertEqual(
         [projects['contributor-archived'], projects['contributor-live']],
-        sorted(contrib.values(), key=by_name))
+        sorted(list(contrib.values()), key=by_name))
 
   def testGetUserRolesInAllProjects_Admin(self):
     """We can get the projects in which the user has a role."""
@@ -378,15 +378,15 @@ class WorkEnvTest(unittest.TestCase):
     self.assertEqual(
         [projects['members-only'], projects['owner-archived'],
          projects['owner-deletable'], projects['owner-live']],
-        sorted(owner.values(), key=by_name))
+        sorted(list(owner.values()), key=by_name))
     self.assertEqual(
         [projects['committer-archived'], projects['committer-deletable'],
          projects['committer-live']],
-        sorted(member.values(), key=by_name))
+        sorted(list(member.values()), key=by_name))
     self.assertEqual(
         [projects['contributor-archived'], projects['contributor-deletable'],
          projects['contributor-live']],
-        sorted(contrib.values(), key=by_name))
+        sorted(list(contrib.values()), key=by_name))
 
   def testGetUserProjects_OnlyLiveOfOtherUsers(self):
     """Regular users should only see live projects of other users."""
@@ -2824,7 +2824,7 @@ class WorkEnvTest(unittest.TestCase):
     user_4 = self.services.user.TestAddUser('random@test.com', 888)
     ids_by_email = {user_1.email: user_1.user_id, user_2.email: user_2.user_id,
                     user_3.email: user_3.user_id}
-    user_ids = ids_by_email.values()
+    user_ids = list(ids_by_email.values())
 
     # set up testing data
     starred_project_id = 19

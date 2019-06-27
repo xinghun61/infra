@@ -73,7 +73,7 @@ class ProjectTwoLevelCacheTest(unittest.TestCase):
     project_dict = self.project_service.project_2lc._DeserializeProjects(
         project_rows, role_rows, extraperm_rows)
 
-    self.assertItemsEqual([123, 234], project_dict.keys())
+    self.assertItemsEqual([123, 234], list(project_dict.keys()))
     self.assertEqual(123, project_dict[123].project_id)
     self.assertEqual('proj1', project_dict[123].project_name)
     self.assertEqual(NOW, project_dict[123].recent_activity)
@@ -176,7 +176,7 @@ class ProjectServiceTest(unittest.TestCase):
     project_dict = self.project_service.GetProjects(
         self.cnxn, [123, 234])
     self.mox.VerifyAll()
-    self.assertItemsEqual([123, 234], project_dict.keys())
+    self.assertItemsEqual([123, 234], list(project_dict.keys()))
     self.assertEqual('proj1', project_dict[123].project_name)
     self.assertEqual('proj2', project_dict[234].project_name)
 
@@ -186,7 +186,7 @@ class ProjectServiceTest(unittest.TestCase):
     self.mox.ReplayAll()
     project_dict = self.project_service.GetProjects(self.cnxn, [234])
     self.mox.VerifyAll()
-    self.assertItemsEqual([234], project_dict.keys())
+    self.assertItemsEqual([234], list(project_dict.keys()))
     self.assertEqual(
         [project_pb2.Project.ExtraPerms(
              member_id=111, perms=['FooPerm']),
@@ -335,7 +335,7 @@ class ProjectServiceTest(unittest.TestCase):
     project_dict = self.project_service.GetProjectsByName(
         self.cnxn, ['proj1', 'proj2'])
     self.mox.VerifyAll()
-    self.assertItemsEqual(['proj1', 'proj2'], project_dict.keys())
+    self.assertItemsEqual(['proj1', 'proj2'], list(project_dict.keys()))
     self.assertEqual(123, project_dict['proj1'].project_id)
     self.assertEqual(234, project_dict['proj2'].project_id)
 

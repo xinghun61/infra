@@ -59,7 +59,7 @@ class InboundEmail(webapp2.RequestHandler):
     super(InboundEmail, self).__init__(request, response, *args, **kwargs)
     self.services = services or self.app.config.get('services')
     self._templates = {}
-    for name, template_path in MSG_TEMPLATES.iteritems():
+    for name, template_path in MSG_TEMPLATES.items():
       self._templates[name] = template_helpers.MonorailTemplate(
           TEMPLATE_PATH_BASE + template_path,
           compress_whitespace=False, base_format=ezt.FORMAT_RAW)

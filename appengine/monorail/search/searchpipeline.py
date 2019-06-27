@@ -46,7 +46,7 @@ def _AccumulateIssueProjectsAndConfigs(
     the corresponding configs.
   """
   new_ids = {issue.project_id for issue in issues}
-  new_ids.difference_update(project_dict.iterkeys())
+  new_ids.difference_update(iter(project_dict.keys()))
   new_projects_dict = services.project.GetProjects(cnxn, new_ids)
   project_dict.update(new_projects_dict)
   new_configs_dict = services.config.GetProjectConfigs(cnxn, new_ids)

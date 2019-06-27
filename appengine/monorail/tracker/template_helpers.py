@@ -151,8 +151,8 @@ def _GetPhasesAndApprovalsFromParsed(
     mr.errors.phase_approvals = 'Duplicate gate names.'
     return phases, approvals
   valid_phase_idxs = [idx for idx, name in enumerate(phase_names) if name]
-  if set(valid_phase_idxs) != set(
-      [idx for idx in approvals_to_phase_idx.values() if idx is not None]):
+  if set(valid_phase_idxs) != set([
+      idx for idx in approvals_to_phase_idx.values() if idx is not None]):
     mr.errors.phase_approvals = 'Defined gates must have assigned approvals.'
     return phases, approvals
 
@@ -165,7 +165,7 @@ def _GetPhasesAndApprovalsFromParsed(
       phase = tracker_pb2.Phase(name=phase_name, rank=idx, phase_id=idx)
       phases.append(phase)
 
-  for approval_id, phase_idx in approvals_to_phase_idx.iteritems():
+  for approval_id, phase_idx in approvals_to_phase_idx.items():
     av = tracker_pb2.ApprovalValue(
         approval_id=approval_id, phase_id=phase_idx)
     if approval_id in required_approval_ids:
@@ -219,7 +219,7 @@ def GatherApprovalsPageData(approval_values, tmpl_phases, config):
 
 def GetCheckedApprovalsFromParsed(approvals_to_phase_idx):
   checked_approvals = []
-  for approval_id, phs_idx in approvals_to_phase_idx.iteritems():
+  for approval_id, phs_idx in approvals_to_phase_idx.items():
     if phs_idx is not None:
       checked_approvals.append('%d_phase_%d' % (approval_id, phs_idx))
     else:

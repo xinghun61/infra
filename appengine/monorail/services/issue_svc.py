@@ -152,7 +152,7 @@ class IssueIDTwoLevelCache(caches.AbstractTwoLevelCache):
       local_ids_by_pid[project_id].append(local_id)
 
     where = []  # We OR per-project pairs of conditions together.
-    for project_id, local_ids_in_project in local_ids_by_pid.iteritems():
+    for project_id, local_ids_in_project in local_ids_by_pid.items():
       term_str = ('(Issue.project_id = %%s AND Issue.local_id IN (%s))' %
                   sql.PlaceHolders(local_ids_in_project))
       where.append((term_str, [project_id] + local_ids_in_project))
@@ -321,7 +321,7 @@ class IssueTwoLevelCache(caches.AbstractTwoLevelCache):
         if phase not in issue_phases:
           issue_phases.append(phase)
     # Order issue phases
-    for issue in results_dict.itervalues():
+    for issue in results_dict.values():
       if issue.phases:
         issue.phases.sort(key=lambda phase: phase.rank)
 
@@ -1097,7 +1097,7 @@ class IssueService(object):
           'is_spam': issue.is_spam,
           }
       if update_cols is not None:
-        delta = {key: val for key, val in delta.iteritems()
+        delta = {key: val for key, val in delta.items()
                  if key in update_cols}
       self.issue_tbl.Update(cnxn, delta, id=issue.issue_id, commit=False)
 
@@ -1692,14 +1692,14 @@ class IssueService(object):
       # Passing {} because I just want the user_id, not the email address.
       old_field_values[ofv.field_id].append(
           tracker_bizobj.GetFieldValue(ofv, {}))
-    for field_id, values in old_field_values.iteritems():
+    for field_id, values in old_field_values.items():
       old_field_values[field_id] = sorted(values)
 
     new_field_values = collections.defaultdict(list)
     for nfv in field_values:
       new_field_values[nfv.field_id].append(
           tracker_bizobj.GetFieldValue(nfv, {}))
-    for field_id, values in new_field_values.iteritems():
+    for field_id, values in new_field_values.items():
       new_field_values[field_id] = sorted(values)
 
     field_ids_added = {fv.field_id for fv in field_values
@@ -1929,7 +1929,7 @@ class IssueService(object):
     paired with the kind of relationship connecting the two.
     """
     relation_rows = []
-    for src_iid, dests in issue_relation_dict.iteritems():
+    for src_iid, dests in issue_relation_dict.items():
       for dst_iid, kind in dests:
         if kind == 'blocking':
           relation_rows.append((dst_iid, src_iid, 'blockedon', 0))
@@ -2254,10 +2254,10 @@ class IssueService(object):
     for amendment in amendments:
       key = amendment.field, amendment.custom_field_name
       fields_dict.setdefault(key, []).append(amendment)
-    for (field, _custom_name), amendments in sorted(fields_dict.iteritems()):
+    for (field, _custom_name), sorted_amendments in sorted(fields_dict.items()):
       new_amendment = tracker_pb2.Amendment()
       new_amendment.field = field
-      for amendment in amendments:
+      for amendment in sorted_amendments:
         if amendment.newvalue is not None:
           new_amendment.newvalue = amendment.newvalue
         if amendment.oldvalue is not None:
@@ -2404,7 +2404,7 @@ class IssueService(object):
     comment_dict, _missed_comments = self.comment_2lc.GetAll(cnxn, comment_ids,
           use_cache=use_cache, shard_id=shard_id)
 
-    comments = sorted(comment_dict.values(), key=lambda x: x.timestamp)
+    comments = sorted(list(comment_dict.values()), key=lambda x: x.timestamp)
 
     for i in range(len(comment_ids)):
       comments[i].sequence = sequences[i]
@@ -2518,7 +2518,7 @@ class IssueService(object):
         'is_spam': comment.is_spam,
         }
     if update_cols is not None:
-      delta = {key: val for key, val in delta.iteritems()
+      delta = {key: val for key, val in delta.items()
                if key in update_cols}
 
     self.comment_tbl.Update(cnxn, delta, id=comment.id)
@@ -2850,7 +2850,7 @@ class IssueService(object):
         'deleted': bool(attach.deleted),
         }
     if update_cols is not None:
-      delta = {key: val for key, val in delta.iteritems()
+      delta = {key: val for key, val in delta.items()
                if key in update_cols}
 
     self.attachment_tbl.Update(cnxn, delta, id=attach.attachment_id)

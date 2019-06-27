@@ -37,7 +37,7 @@ class FakeMetaTest(unittest.TestCase):
 
   def testFunctionsHaveSameSignatures(self):
     """Verify that the fake class methods match the real ones."""
-    for fake_cls, real_cls in fake_class_map.iteritems():
+    for fake_cls, real_cls in fake_class_map.items():
       fake_attrs = set(dir(fake_cls))
       real_attrs = set(dir(real_cls))
       both_attrs = fake_attrs.intersection(real_attrs)

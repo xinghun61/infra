@@ -57,8 +57,8 @@ class GroupAdmin(servlet.Servlet):
 
     if group_settings.friend_projects:
       initial_friendprojects = ', '.join(
-          self.services.project.LookupProjectNames(
-              mr.cnxn, group_settings.friend_projects).values())
+          list(self.services.project.LookupProjectNames(
+              mr.cnxn, group_settings.friend_projects).values()))
     else:
       initial_friendprojects = ''
 

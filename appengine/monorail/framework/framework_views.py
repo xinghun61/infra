@@ -134,7 +134,7 @@ def MakeAllUserViews(
   group_ids = kw.get('group_ids', [])
   user_dict = user_service.GetUsersByIDs(cnxn, distinct_user_ids)
   return {user_id: UserView(user_pb, is_group=user_id in group_ids)
-          for user_id, user_pb in user_dict.iteritems()}
+          for user_id, user_pb in user_dict.items()}
 
 
 def MakeUserView(cnxn, user_service, user_id):
@@ -216,7 +216,7 @@ def RevealAllEmailsToMembers(auth, project, users_by_id):
     Nothing, but the UserViews in users_by_id may be modified to
     publish email address.
   """
-  for user_view in users_by_id.itervalues():
+  for user_view in users_by_id.values():
     if _ShouldRevealEmail(auth, project, user_view.email):
       user_view.RevealEmail()
 
@@ -234,7 +234,7 @@ def RevealAllEmails(users_by_id):
     Nothing, but the UserViews in users_by_id may be modified to
     publish email address.
   """
-  for user_view in users_by_id.itervalues():
+  for user_view in users_by_id.values():
     user_view.RevealEmail()
 
 

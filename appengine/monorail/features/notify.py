@@ -255,7 +255,7 @@ class NotifyBlockingChangeTask(notify_helpers.NotifyTaskBase):
     upstream_projects = tracker_helpers.GetAllIssueProjects(
         mr.cnxn, upstream_issues, self.services.project)
     upstream_configs = self.services.config.GetProjectConfigs(
-        mr.cnxn, upstream_projects.keys())
+        mr.cnxn, list(upstream_projects.keys()))
 
     users_by_id = framework_views.MakeAllUserViews(
         mr.cnxn, self.services.user, [commenter_id])
@@ -540,7 +540,7 @@ class NotifyBulkChangeTask(notify_helpers.NotifyTaskBase):
         non_member_ids_to_notify_of_issue[user_id] = user_issues
       omit_addrs.add(users_by_id[user_id].email)
 
-    for addr, addr_issues in additional_addrs_to_notify_of_issue.iteritems():
+    for addr, addr_issues in additional_addrs_to_notify_of_issue.items():
       auth = None
       try:
         auth = authdata.AuthData.FromEmail(cnxn, addr, self.services)
@@ -557,7 +557,7 @@ class NotifyBulkChangeTask(notify_helpers.NotifyTaskBase):
         non_member_additional_addrs[addr] = addr_issues
       omit_addrs.add(addr)
 
-    for user_id, user_issues in non_member_ids_to_notify_of_issue.iteritems():
+    for user_id, user_issues in non_member_ids_to_notify_of_issue.items():
       email = self._FormatBulkIssuesEmail(
           users_by_id[user_id].email, user_issues, users_by_id,
           commenter_view, hostport, comment_text, amendments, config, project,
@@ -567,7 +567,7 @@ class NotifyBulkChangeTask(notify_helpers.NotifyTaskBase):
                    users_by_id[user_id].email, user_id,
                    [issue.local_id for issue in user_issues])
 
-    for addr, addr_issues in non_member_additional_addrs.iteritems():
+    for addr, addr_issues in non_member_additional_addrs.items():
       email = self._FormatBulkIssuesEmail(
           addr, addr_issues, users_by_id, commenter_view, hostport,
           comment_text, amendments, config, project, False)
@@ -578,7 +578,7 @@ class NotifyBulkChangeTask(notify_helpers.NotifyTaskBase):
     framework_views.RevealAllEmails(users_by_id)
     commenter_view.RevealEmail()
 
-    for user_id, user_issues in member_ids_to_notify_of_issue.iteritems():
+    for user_id, user_issues in member_ids_to_notify_of_issue.items():
       email = self._FormatBulkIssuesEmail(
           users_by_id[user_id].email, user_issues, users_by_id,
           commenter_view, hostport, comment_text, amendments, config, project,
@@ -588,7 +588,7 @@ class NotifyBulkChangeTask(notify_helpers.NotifyTaskBase):
                    users_by_id[user_id].email, user_id,
                    [issue.local_id for issue in user_issues])
 
-    for addr, addr_issues in member_additional_addrs.iteritems():
+    for addr, addr_issues in member_additional_addrs.items():
       email = self._FormatBulkIssuesEmail(
           addr, addr_issues, users_by_id, commenter_view, hostport,
           comment_text, amendments, config, project, True)

@@ -124,10 +124,11 @@ def CurryGetReferencedUsers(services):
       A dictionary {email: user_pb} including all existing users.
     """
     user_id_dict = services.user.LookupExistingUserIDs(mr.cnxn, emails)
-    users_by_id = services.user.GetUsersByIDs(mr.cnxn, user_id_dict.values())
+    users_by_id = services.user.GetUsersByIDs(mr.cnxn,
+        list(user_id_dict.values()))
     users_by_email = {
       email: users_by_id[user_id]
-      for email, user_id in user_id_dict.iteritems()}
+      for email, user_id in user_id_dict.items()}
     return users_by_email
 
   return GetReferencedUsers
@@ -494,7 +495,7 @@ class Autolink(object):
       return _SKIP_LOOKUPS
 
     all_referenced_artifacts = {}
-    for comp, (lookup, match_to_refs, re_dict) in self.registry.iteritems():
+    for comp, (lookup, match_to_refs, re_dict) in self.registry.items():
       refs = set()
       for comment_text in comment_text_list:
         for regex in re_dict:
@@ -520,14 +521,14 @@ class Autolink(object):
       List of text runs for the entire user comment, some of which may have
       attribures that cause them to render as links in render-rich-text.ezt.
     """
-    items = self.registry.items()
+    items = list(self.registry.items())
     items.sort()  # Process components in determinate alphabetical order.
     for component, (_lookup, _match_ref, re_subst_dict) in items:
       if all_referenced_artifacts == _SKIP_LOOKUPS:
         component_ref_artifacts = None
       else:
         component_ref_artifacts = all_referenced_artifacts[component]
-      for regex, subst_fun in re_subst_dict.iteritems():
+      for regex, subst_fun in re_subst_dict.items():
         text_runs = self._ApplySubstFunctionToRuns(
             text_runs, regex, subst_fun, mr, component_ref_artifacts)
 

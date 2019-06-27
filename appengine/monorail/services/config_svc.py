@@ -497,7 +497,7 @@ class ConfigService(object):
         in def_rows}
     label_name_to_id = {
         label.lower(): label_id
-        for label_id, label in label_id_to_name.iteritems()}
+        for label_id, label in label_id_to_name.items()}
 
     return label_id_to_name, label_name_to_id
 
@@ -605,7 +605,7 @@ class ConfigService(object):
     self._EnsureLabelCacheEntry(cnxn, project_id)
     label_id_to_name, _label_name_to_id = self.label_cache.GetItem(
         project_id)
-    result = [label_id for label_id, label in label_id_to_name.iteritems()
+    result = [label_id for label_id, label in label_id_to_name.items()
               if regex.match(label)]
 
     return result
@@ -659,7 +659,7 @@ class ConfigService(object):
              _doc, _deprecated) in def_rows}
     status_name_to_id = {
         status.lower(): status_id
-        for status_id, status in status_id_to_name.iteritems()}
+        for status_id, status in status_id_to_name.items()}
     closed_status_ids = [
         status_id
         for (status_id, _pid, _rank, _status, means_open,
@@ -1102,7 +1102,7 @@ class ConfigService(object):
         for field_id, _pid, _rank, field, _doc in def_rows}
     field_name_to_id = {
         field.lower(): field_id
-        for field_id, field in field_id_to_name.iteritems()}
+        for field_id, field in field_id_to_name.items()}
 
     return field_id_to_name, field_name_to_id
 

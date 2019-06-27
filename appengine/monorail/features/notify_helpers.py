@@ -135,7 +135,7 @@ def _MergeLinkedAccountReasons(addr_reasons_dict):
   merged_ids = set()
 
   result = {}
-  for addr_perm, reasons in addr_reasons_dict.iteritems():
+  for addr_perm, reasons in addr_reasons_dict.items():
     parent_id = addr_perm.user.linked_parent_id if addr_perm.user else None
     if parent_id and parent_id in all_ids:
       # The current user is a child account and the parent would be notified,
@@ -144,7 +144,7 @@ def _MergeLinkedAccountReasons(addr_reasons_dict):
     else:
       result[addr_perm] = reasons
 
-  for addr_perm, reasons in result.iteritems():
+  for addr_perm, reasons in result.items():
     if addr_perm.user and addr_perm.user.user_id in merged_ids:
       reasons.append(notify_reasons.REASON_LINKED_ACCOUNT)
 
@@ -184,7 +184,7 @@ def MakeBulletedEmailWorkItems(
   addr_reasons_dict = _MergeLinkedAccountReasons(addr_reasons_dict)
 
   email_tasks = []
-  for memb_addr_perm, reasons in addr_reasons_dict.iteritems():
+  for memb_addr_perm, reasons in addr_reasons_dict.items():
     email_tasks.append(_MakeEmailWorkItem(
         memb_addr_perm, reasons, issue, body_for_non_members,
         body_for_members, project, hostport, commenter_view, detail_url,

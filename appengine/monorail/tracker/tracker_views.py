@@ -697,7 +697,7 @@ def MakeBounceFieldValueViews(field_vals, phase_field_vals, config):
           fd, config, val_items, [], None, applicable=True))
     elif fd.field_id in phase_field_vals:
       vals_by_phase_name = phase_field_vals.get(fd.field_id)
-      for phase_name, values in vals_by_phase_name.iteritems():
+      for phase_name, values in vals_by_phase_name.items():
         val_items = [
             template_helpers.EZTItem(val=v, docstring='', idx=idx)
             for idx, v in enumerate(values)]
@@ -824,8 +824,8 @@ class IssueTemplateView(template_helpers.PBProxy):
     if self.owner_view:
       self.ownername = self.owner_view.email
 
-    self.admin_views = framework_views.MakeAllUserViews(
-        mr.cnxn, user_service, template.admin_ids).values()
+    self.admin_views = list(framework_views.MakeAllUserViews(
+        mr.cnxn, user_service, template.admin_ids).values())
     self.admin_names = ', '.join(sorted([
         admin_view.email for admin_view in self.admin_views]))
 

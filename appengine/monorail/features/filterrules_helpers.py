@@ -555,7 +555,8 @@ def _CompareUserIDs(op, rule_values, issue_values):
 
 def _CompareEmails(cnxn, user_service, op, rule_values, issue_values):
   """Compare users based on email addresses."""
-  issue_emails = user_service.LookupUserEmails(cnxn, issue_values).values()
+  issue_emails = list(
+      user_service.LookupUserEmails(cnxn, issue_values).values())
 
   if op == ast_pb2.QueryOp.TEXT_HAS:
     return any(_HasText(rv, issue_emails) for rv in rule_values)
@@ -830,7 +831,7 @@ def BuildRedactedFilterRuleStrings(
   rule_strs_by_project = {}
   prohibited_re = re.compile(
       r'\b%s\b' % r'\b|\b'.join(map(re.escape, hide_emails)))
-  for project_id, rules in rules_by_project.iteritems():
+  for project_id, rules in rules_by_project.items():
     user_ids_in_rules = OwnerCcsInvolvedInFilterRules(rules)
     emails_by_id = user_service.LookupUserEmails(
         cnxn, user_ids_in_rules, ignore_missed=True)

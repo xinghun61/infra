@@ -149,7 +149,7 @@ def store_eval(job_dir, results):
     bucket_obj = bucket.Bucket(client_obj, bucket_name)
 
     bucket_obj.blob = blob.Blob(job_name + '/eval_data.json', bucket_obj)
-    for key, value in results[0].iteritems():
+    for key, value in results[0].items():
       if isinstance(value, np.float32):
         results[0][key] = value.item()
 

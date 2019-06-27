@@ -111,8 +111,8 @@ class FrontendSearchPipeline(object):
       self.project_name = project.project_name
     self.query_projects = []
     if query_project_names:
-      consider_projects = services.project.GetProjectsByName(
-        self.cnxn, query_project_names).values()
+      consider_projects = list(services.project.GetProjectsByName(
+        self.cnxn, query_project_names).values())
       self.query_projects = [
           p for p in consider_projects
           if permissions.UserCanViewProject(
@@ -130,7 +130,7 @@ class FrontendSearchPipeline(object):
     config_dict = self.services.config.GetProjectConfigs(
         self.cnxn, self.query_project_ids)
     self.harmonized_config = tracker_bizobj.HarmonizeConfigs(
-        config_dict.values())
+        list(config_dict.values()))
 
     # The following fields are filled in as the pipeline progresses.
     # The value None means that we still need to compute that value.
@@ -216,7 +216,7 @@ class FrontendSearchPipeline(object):
       if not self.grid_mode:
         self._NarrowFilteredIIDs()
       self.allowed_iids = []
-      for filtered_shard_iids in self.filtered_iids.itervalues():
+      for filtered_shard_iids in self.filtered_iids.values():
         self.allowed_iids.extend(filtered_shard_iids)
 
     # The grid view is not paginated, so limit the results shown to avoid
@@ -265,7 +265,7 @@ class FrontendSearchPipeline(object):
         self.filtered_iids)
     sample_issues = []
     for issue_dict in samples_by_shard.values():
-      sample_issues.extend(issue_dict.values())
+      sample_issues.extend(list(issue_dict.values()))
 
     self._LookupNeededUsers(sample_issues)
     sample_issues = _SortIssues(
@@ -307,7 +307,7 @@ class FrontendSearchPipeline(object):
     """
     # 1. If the current issue is not in the results at all, then exit.
     if not any(issue.issue_id in filtered_shard_iids
-               for filtered_shard_iids in self.filtered_iids.itervalues()):
+               for filtered_shard_iids in self.filtered_iids.values()):
       return None, None, None
 
     # 2. Choose and retrieve sample issues in each shard.
@@ -327,7 +327,7 @@ class FrontendSearchPipeline(object):
         next_candidates.append(next_candidate)
 
     # 4. Combine the results.
-    index = sum(preceeding_counts.itervalues())
+    index = sum(preceeding_counts.values())
     prev_candidates = _SortIssues(
         prev_candidates, self.harmonized_config, self.users_by_id,
         self.group_by_spec, self.sort_spec)
@@ -348,7 +348,7 @@ class FrontendSearchPipeline(object):
     filtered_shard_iids = self.filtered_iids[shard_key]
 
     # 1. Select a sample of issues, leveraging ones we have in RAM already.
-    issues_on_hand = sample_dict.values()
+    issues_on_hand = list(sample_dict.values())
     if issue.issue_id not in sample_dict:
       issues_on_hand.append(issue)
 
@@ -420,7 +420,7 @@ class FrontendSearchPipeline(object):
 
     retrieved_samples = self.services.issue.GetIssuesDict(
         self.cnxn, all_needed_iids)
-    for retrieved_iid, retrieved_issue in retrieved_samples.iteritems():
+    for retrieved_iid, retrieved_issue in retrieved_samples.items():
       retr_shard_key = sample_iids_to_shard[retrieved_iid]
       samples_by_shard[retr_shard_key][retrieved_iid] = retrieved_issue
 
@@ -457,7 +457,7 @@ class FrontendSearchPipeline(object):
       additional_user_views_by_id = (
           tracker_helpers.MakeViewsForUsersInIssues(
               self.cnxn, issues, self.services.user,
-              omit_ids=self.users_by_id.keys()))
+              omit_ids=list(self.users_by_id.keys())))
       self.users_by_id.update(additional_user_views_by_id)
 
   def Paginate(self):
@@ -694,7 +694,7 @@ def _GetProjectTimestamps(query_project_ids, needed_shard_keys):
 
   timestamps_for_project = memcache.get_multi(
       keys=keys, namespace=settings.memcache_namespace)
-  for key, timestamp in timestamps_for_project.iteritems():
+  for key, timestamp in timestamps_for_project.items():
     pid_str, sid_str = key.split(';')
     if pid_str == 'all':
       project_shard_timestamps['all', int(sid_str)] = timestamp
@@ -1038,7 +1038,7 @@ def _HandleBackendNonviewableResponse(
 
 def _TotalLength(sharded_iids):
   """Return the total length of all issue_iids lists."""
-  return sum(len(issue_iids) for issue_iids in sharded_iids.itervalues())
+  return sum(len(issue_iids) for issue_iids in sharded_iids.values())
 
 
 def _ReverseShards(sharded_iids):
@@ -1071,7 +1071,7 @@ def _TrimEndShardedIIDs(sharded_iids, sample_iid_tuples, num_needed):
   for i in range(len(sample_positions)):
     _sample_iid, sample_shard_key, pos = sample_positions[i]
     lower_bound_per_shard[sample_shard_key] = pos
-    overall_lower_bound = sum(lower_bound_per_shard.itervalues())
+    overall_lower_bound = sum(lower_bound_per_shard.values())
     if overall_lower_bound >= num_needed:
       excess_samples = sample_positions[i + 1:]
       break

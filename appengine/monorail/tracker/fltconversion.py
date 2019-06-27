@@ -74,7 +74,8 @@ VALUE_TO_STATUS = {
 # This works in the Browser and OS process because
 # BROWSER_APPROVALS_TO_LABELS and OS_APPROVALS_TO_LABELS have the same values.
 # Adding '^' before each label prefix to ensure Blah-Launch-UI-Yes is ignored
-REVIEW_LABELS_RE = re.compile('^' + '|^'.join(OS_APPROVALS_TO_LABELS.values()))
+REVIEW_LABELS_RE = re.compile('^' + '|^'.join(
+    list(OS_APPROVALS_TO_LABELS.values())))
 
 # Maps template phases to channel names in 'Launch-M-Target-80-[Channel]' labels
 BROWSER_PHASE_MAP = {
@@ -84,7 +85,7 @@ BROWSER_PHASE_MAP = {
     'stable-exp': 'stable-exp',
     }
 
-PHASE_PAT = '$|'.join(BROWSER_PHASE_MAP.values())
+PHASE_PAT = '$|'.join(list(BROWSER_PHASE_MAP.values()))
 # Matches launch milestone labels, eg. Launch-M-Target-70-Stable-Exp
 BROWSER_M_LABELS_RE = re.compile(
     r'^Launch-M-(?P<type>Approved|Target)-(?P<m>\d\d)-'
@@ -406,8 +407,9 @@ class FLTConvertTask(jsonfeed.InternalTask):
         template.approval_values, template.phases, config)
     assert approval_values and phases, (
         'no approvals or phases in %s' % template_name)
-    assert all(phase.name.lower() in phase_map.keys() for phase in phases), (
-        'one or more phases not recognized')
+    assert all(phase.name.lower() in list(
+        phase_map.keys()) for phase in phases), (
+          'one or more phases not recognized')
     if launch in ['finch', 'os', 'os-finch']:
       assert all(
           av.status is tracker_pb2.ApprovalStatus.NEEDS_REVIEW
@@ -417,7 +419,7 @@ class FLTConvertTask(jsonfeed.InternalTask):
     approval_fds = {fd.field_id: fd.field_name for fd in config.field_defs
                     if fd.field_type is tracker_pb2.FieldTypes.APPROVAL_TYPE}
     assert all(
-        approval_fds.get(av.approval_id) in approvals_to_labels.keys()
+        approval_fds.get(av.approval_id) in list(approvals_to_labels.keys())
         for av in approval_values
         if approval_fds.get(av.approval_id) != 'ChromeOS-Enterprise'), (
             'one or more approvals not recognized')

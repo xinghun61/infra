@@ -894,7 +894,7 @@ class _ContextDebugCollection(object):
   def __init__(self, title, collection):
     self.title = title
     self.collection = [_ContextDebugItem(key, collection[key])
-                       for key in sorted(collection.iterkeys())]
+                       for key in sorted(collection.keys())]
 
 
 def _ProjectIsRestricted(mr):

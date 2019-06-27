@@ -62,8 +62,8 @@ class BackendSearchPipeline(object):
     self.services = services
     self.default_results_per_page = default_results_per_page
 
-    self.query_project_list = services.project.GetProjectsByName(
-        mr.cnxn, query_project_names).values()
+    self.query_project_list = list(services.project.GetProjectsByName(
+        mr.cnxn, query_project_names).values())
     self.query_project_ids = [
         p.project_id for p in self.query_project_list]
 
@@ -83,7 +83,7 @@ class BackendSearchPipeline(object):
     config_dict = self.services.config.GetProjectConfigs(
         self.mr.cnxn, self.query_project_ids)
     self.harmonized_config = tracker_bizobj.HarmonizeConfigs(
-        config_dict.values())
+        list(config_dict.values()))
 
     self.canned_query = savedqueries_helpers.SavedQueryIDToCond(
         self.mr.cnxn, self.services.features, self.mr.can)

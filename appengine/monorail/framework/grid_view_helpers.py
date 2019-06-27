@@ -434,7 +434,7 @@ def GetGridViewData(
   for bad_axis in tracker_constants.NOT_USED_IN_GRID_AXES:
     if bad_axis in grid_axis_choice_dict:
       del grid_axis_choice_dict[bad_axis]
-  grid_axis_choices = grid_axis_choice_dict.keys()
+  grid_axis_choices = list(grid_axis_choice_dict.keys())
   grid_axis_choices.sort()
 
   grid_cell_mode = mr.cells

@@ -70,8 +70,8 @@ class IssueBulkEditTest(unittest.TestCase):
   def tearDown(self):
     """Restore mocked objects of other modules."""
     self.testbed.deactivate()
-    for obj, items in self.mocked_methods.iteritems():
-        for member, previous_value in items.iteritems():
+    for obj, items in self.mocked_methods.items():
+        for member, previous_value in items.items():
           setattr(obj, member, previous_value)
 
   def testAssertBasePermission(self):

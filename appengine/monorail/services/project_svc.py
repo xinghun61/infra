@@ -117,10 +117,10 @@ class ProjectTwoLevelCache(caches.AbstractTwoLevelCache):
     for project_id, user_id, perm in extraperm_rows:
       perms.setdefault(project_id, {}).setdefault(user_id, []).append(perm)
 
-    for project_id, perms_by_user in perms.iteritems():
+    for project_id, perms_by_user in perms.items():
       project = project_dict[project_id]
       project.extra_perms_are_sorted = True
-      for user_id, extra_perms in sorted(perms_by_user.iteritems()):
+      for user_id, extra_perms in sorted(perms_by_user.items()):
         project.extra_perms.append(project_pb2.Project.ExtraPerms(
             member_id=user_id, perms=extra_perms))
 
@@ -256,7 +256,7 @@ class ProjectService(object):
     """Lookup the names of the projects with the given IDs."""
     projects_dict = self.GetProjects(cnxn, project_ids)
     return {p.project_id: p.project_name
-            for p in projects_dict.itervalues()}
+            for p in projects_dict.values()}
 
   ### Retrieving projects
 
@@ -315,7 +315,7 @@ class ProjectService(object):
 
     # Also, update the project name cache.
     self.project_names_to_ids.CacheAll(
-        {p.project_name: p.project_id for p in project_dict.itervalues()})
+        {p.project_name: p.project_id for p in project_dict.values()})
 
     if missed_ids:
       raise exceptions.NoSuchProjectException()
@@ -338,9 +338,9 @@ class ProjectService(object):
     Returns:
       A dict mapping names to the corresponding Project protocol buffers.
     """
-    project_ids = self.LookupProjectIDs(cnxn, project_names).values()
+    project_ids = list(self.LookupProjectIDs(cnxn, project_names).values())
     projects = self.GetProjects(cnxn, project_ids, use_cache=use_cache)
-    return {p.project_name: p for p in projects.itervalues()}
+    return {p.project_name: p for p in projects.values()}
 
   def GetProjectByName(self, cnxn, project_name, use_cache=True):
     """Load the specified project from the database, None if does not exist."""

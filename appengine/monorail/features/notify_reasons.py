@@ -220,7 +220,7 @@ def EvaluateSubscriptions(
   label_set = set(lower_labels)
 
   subscribers_to_notify = []
-  for uid, saved_queries in users_to_queries.iteritems():
+  for uid, saved_queries in users_to_queries.items():
     for sq in saved_queries:
       if sq.subscription_mode != 'immediate':
         continue
@@ -246,8 +246,9 @@ def GetNonOmittedSubscriptions(cnxn, services, project_ids, omit_addrs):
   """Get a dict of users w/ subscriptions in those projects."""
   users_to_queries = services.features.GetSubscriptionsInProjects(
       cnxn, project_ids)
-  user_emails = services.user.LookupUserEmails(cnxn, users_to_queries.keys())
-  for user_id, email in user_emails.iteritems():
+  user_emails = services.user.LookupUserEmails(
+      cnxn, list(users_to_queries.keys()))
+  for user_id, email in user_emails.items():
     if email in omit_addrs:
       del users_to_queries[user_id]
   return users_to_queries

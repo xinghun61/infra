@@ -269,11 +269,11 @@ def ConvertFieldValues(
       if fd.field_type == tracker_pb2.FieldTypes.ENUM_TYPE}
 
   labels_by_prefix = tracker_bizobj.LabelsByPrefix(
-      labels, enum_names_by_lower.keys())
+      labels, list(enum_names_by_lower.keys()))
   der_labels_by_prefix = tracker_bizobj.LabelsByPrefix(
-      derived_labels, enum_names_by_lower.keys())
+      derived_labels, list(enum_names_by_lower.keys()))
 
-  for lower_field_name, values in labels_by_prefix.iteritems():
+  for lower_field_name, values in labels_by_prefix.items():
     field_name = enum_names_by_lower.get(lower_field_name)
     if not field_name:
       continue
@@ -283,7 +283,7 @@ def ConvertFieldValues(
             tracker_pb2.FieldTypes.ENUM_TYPE)
          for value in values])
 
-  for lower_field_name, values in der_labels_by_prefix.iteritems():
+  for lower_field_name, values in der_labels_by_prefix.items():
     field_name = enum_names_by_lower.get(lower_field_name)
     if not field_name:
       continue

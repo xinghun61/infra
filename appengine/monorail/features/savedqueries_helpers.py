@@ -46,8 +46,8 @@ def ParseSavedQueries(cnxn, post_data, project_service, prefix=''):
     project_names = [pn.strip().lower()
                      for pn in re.split('[],;\s]+', project_names_str)
                      if pn.strip()]
-    project_ids = project_service.LookupProjectIDs(
-        cnxn, project_names).values()
+    project_ids = list(project_service.LookupProjectIDs(
+        cnxn, project_names).values())
 
     base_id = int(post_data['%ssavedquery_base_%s' % (prefix, i)])
     query = post_data['%ssavedquery_query_%s' % (prefix, i)].strip()

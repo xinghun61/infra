@@ -274,7 +274,7 @@ class MonorailConnection(object):
 
   def Close(self):
     """Safely close any connections that are still open."""
-    for sql_cnxn in self.sql_cnxns.itervalues():
+    for sql_cnxn in self.sql_cnxns.values():
       try:
         sql_cnxn.rollback()  # Abandon any uncommitted changes.
         cnxn_pool.release(sql_cnxn)
@@ -569,10 +569,10 @@ class Statement(object):
   def MakeUpdate(cls, table_name, delta):
     """Constuct an UPDATE statement."""
     assert _IsValidTableName(table_name)
-    assert all(_IsValidColumnName(col) for col in delta.iterkeys())
+    assert all(_IsValidColumnName(col) for col in delta.keys())
     update_strs = []
     update_args = []
-    for col, val in delta.iteritems():
+    for col, val in delta.items():
       update_strs.append(col + '=%s')
       update_args.append(val)
 

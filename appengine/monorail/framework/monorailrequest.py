@@ -430,7 +430,7 @@ class MonorailRequest(MonorailRequestBase):
 
     # Only keep the overrides that were actually provided in the query string.
     self.form_overrides.update(
-        (k, v) for (k, v) in allowed_overrides.iteritems()
+        (k, v) for (k, v) in allowed_overrides.items()
         if v is not None)
 
   def _LookupViewedUser(self, services):

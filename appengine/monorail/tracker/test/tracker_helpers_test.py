@@ -69,7 +69,7 @@ class HelpersTest(unittest.TestCase):
         user=fake.UserService(),
         usergroup=fake.UserGroupService())
 
-    for email, user_id in TEST_ID_MAP.iteritems():
+    for email, user_id in TEST_ID_MAP.items():
       self.services.user.TestAddUser(email, user_id)
 
     self.services.project.TestAddProject('testproj', project_id=789)
@@ -966,7 +966,7 @@ class MakeViewsForUsersInIssuesTest(unittest.TestCase):
     users_by_id = tracker_helpers.MakeViewsForUsersInIssues(
         'fake cnxn', issue_list, self.user)
     self.assertItemsEqual([0, 1, 1001, 1002, 1003, 2001, 2002, 3002],
-                          users_by_id.keys())
+                          list(users_by_id.keys()))
     for user_id in [1001, 1002, 1003, 2001]:
       self.assertEqual(users_by_id[user_id].user_id, user_id)
 
@@ -974,7 +974,8 @@ class MakeViewsForUsersInIssuesTest(unittest.TestCase):
     issue_list = [self.issue1, self.issue2, self.issue3]
     users_by_id = tracker_helpers.MakeViewsForUsersInIssues(
         'fake cnxn', issue_list, self.user, omit_ids=[1001, 1003])
-    self.assertItemsEqual([0, 1, 1002, 2001, 2002, 3002], users_by_id.keys())
+    self.assertItemsEqual([0, 1, 1002, 2001, 2002, 3002],
+        list(users_by_id.keys()))
     for user_id in [1002, 2001, 2002, 3002]:
       self.assertEqual(users_by_id[user_id].user_id, user_id)
 
@@ -982,7 +983,7 @@ class MakeViewsForUsersInIssuesTest(unittest.TestCase):
     issue_list = []
     users_by_id = tracker_helpers.MakeViewsForUsersInIssues(
         'fake cnxn', issue_list, self.user)
-    self.assertItemsEqual([], users_by_id.keys())
+    self.assertItemsEqual([], list(users_by_id.keys()))
 
 
 class GetAllIssueProjectsTest(unittest.TestCase):

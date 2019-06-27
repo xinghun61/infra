@@ -74,7 +74,7 @@ class HotlistTwoLevelCacheTest(unittest.TestCase):
     hotlist_dict = self.features_service.hotlist_2lc._DeserializeHotlists(
         hotlist_rows, issue_rows, role_rows)
 
-    self.assertItemsEqual([123, 234], hotlist_dict.keys())
+    self.assertItemsEqual([123, 234], list(hotlist_dict.keys()))
     self.assertEqual(123, hotlist_dict[123].hotlist_id)
     self.assertEqual('hot1', hotlist_dict[123].name)
     self.assertItemsEqual([111, 444], hotlist_dict[123].owner_ids)
@@ -756,7 +756,7 @@ assert_called_once_with(self.cnxn, user_id=user_ids, commit=commit, limit=50)
     hotlist_dict = self.features_service.GetHotlists(
         self.cnxn, [123, 456])
     self.mox.VerifyAll()
-    self.assertItemsEqual([123, 456], hotlist_dict.keys())
+    self.assertItemsEqual([123, 456], list(hotlist_dict.keys()))
     self.assertEqual('hotlist1', hotlist_dict[123].name)
     self.assertEqual('hotlist2', hotlist_dict[456].name)
 

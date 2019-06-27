@@ -130,8 +130,8 @@ class IssueIDTwoLevelCacheTest(unittest.TestCase):
     issue_dict = self.issue_id_2lc.FetchItems(
         self.cnxn, project_local_ids_list)
     self.mox.VerifyAll()
-    self.assertItemsEqual(project_local_ids_list, issue_dict.keys())
-    self.assertItemsEqual(issue_ids, issue_dict.values())
+    self.assertItemsEqual(project_local_ids_list, list(issue_dict.keys()))
+    self.assertItemsEqual(issue_ids, list(issue_dict.values()))
 
   def testKeyToStr(self):
     self.assertEqual('789,1', self.issue_id_2lc._KeyToStr((789, 1)))
@@ -220,7 +220,7 @@ class IssueTwoLevelCacheTest(unittest.TestCase):
         self.component_rows, self.cc_rows, self.notify_rows,
         self.fieldvalue_rows, self.relation_rows, self.dangling_relation_rows,
         self.phase_rows, self.approvalvalue_rows, self.av_approver_rows)
-    self.assertItemsEqual([78901], issue_dict.keys())
+    self.assertItemsEqual([78901], list(issue_dict.keys()))
     issue = issue_dict[78901]
     self.assertEqual(len(issue.phases), 2)
     self.assertIsNotNone(tracker_bizobj.FindPhaseByID(1, issue.phases))
@@ -334,7 +334,7 @@ class IssueTwoLevelCacheTest(unittest.TestCase):
     self.mox.ReplayAll()
     issue_dict = self.issue_2lc.FetchItems(self.cnxn, issue_ids)
     self.mox.VerifyAll()
-    self.assertItemsEqual(issue_ids, issue_dict.keys())
+    self.assertItemsEqual(issue_ids, list(issue_dict.keys()))
 
 
 class IssueServiceTest(unittest.TestCase):

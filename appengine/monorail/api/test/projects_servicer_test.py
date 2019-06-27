@@ -794,7 +794,7 @@ class ProjectsServicerTest(unittest.TestCase):
         'archived': project_pb2.ProjectState.ARCHIVED,
         'deletable': project_pb2.ProjectState.DELETABLE}
 
-    for name, state in project_states.iteritems():
+    for name, state in project_states.items():
       self.services.project.TestAddProject(
           'owner-' + name, state=state, owner_ids=[222])
       self.services.project.TestAddProject(

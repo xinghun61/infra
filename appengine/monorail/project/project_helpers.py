@@ -49,7 +49,7 @@ def BuildProjectMembers(cnxn, project, user_service):
       'owners': owner_proxies,
       'committers': committer_proxies,
       'contributors': contributor_proxies,
-      'all_members': users_by_id.values(),
+      'all_members': list(users_by_id.values()),
       }
 
 
@@ -190,22 +190,22 @@ def UsersWithPermsInProject(project, perms_needed, users_by_id,
   # have to search the extra perms more than once for each user.
   for extra_perm_pb in project.extra_perms:
     extra_perms = set(perm.lower() for perm in extra_perm_pb.perms)
-    for perm, users in direct_users_for_perm.iteritems():
+    for perm, users in direct_users_for_perm.items():
       if perm.lower() in extra_perms:
         users.add(extra_perm_pb.member_id)
 
   # Then, iterate over all users, but don't compute extra permissions.
-  for user_id, user_view in users_by_id.iteritems():
+  for user_id, user_view in users_by_id.items():
     effective_ids = effective_ids_by_user[user_id].union([user_id])
     user_perms = permissions.GetPermissions(
         user_view.user, effective_ids, project)
-    for perm, users in direct_users_for_perm.iteritems():
+    for perm, users in direct_users_for_perm.items():
       if not effective_ids.isdisjoint(users):
         indirect_users_for_perm[perm].add(user_id)
       if user_perms.HasPerm(perm, None, None, []):
         users.add(user_id)
 
-  for perm, users in direct_users_for_perm.iteritems():
+  for perm, users in direct_users_for_perm.items():
     users.update(indirect_users_for_perm[perm])
 
   return direct_users_for_perm

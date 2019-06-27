@@ -94,7 +94,7 @@ class ProjectExportJSON(jsonfeed.JsonFeed):
         'config': config_json,
         # This list could be derived from the others, but we provide it for
         # ease of processing.
-        'emails': email_dict.values(),
+        'emails': list(email_dict.values()),
     }
     return json_data
 

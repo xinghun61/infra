@@ -440,7 +440,7 @@ def PairDerivedValuesWithRuleExplanations(
 
   derived_users_by_id = {
       user_id: user_view.display_name
-      for user_id, user_view in derived_users_by_id.iteritems()
+      for user_id, user_view in derived_users_by_id.items()
       if user_view.display_name}
 
   derived_owner_and_why = []
@@ -525,7 +525,8 @@ def GetAllowedOpenedAndClosedIssues(mr, issue_ids, services):
       mr.cnxn, issue_ids)
   project_dict = GetAllIssueProjects(
       mr.cnxn, open_issues + closed_issues, services.project)
-  config_dict = services.config.GetProjectConfigs(mr.cnxn, project_dict.keys())
+  config_dict = services.config.GetProjectConfigs(mr.cnxn,
+      list(project_dict.keys()))
   allowed_open_issues = FilterOutNonViewableIssues(
       mr.auth.effective_ids, mr.auth.user_pb, project_dict, config_dict,
       open_issues)
@@ -617,7 +618,7 @@ def FormatIssueListURL(
     kwargs['projects'] = ','.join(sorted(project_names))
 
   param_strings = ['%s=%s' % (k, urllib.quote((u'%s' % v).encode('utf-8')))
-                   for k, v in kwargs.iteritems()]
+                   for k, v in kwargs.items()]
   if param_strings:
     url += '?' + '&'.join(sorted(param_strings))
   if absolute:
@@ -734,10 +735,10 @@ def FilterOutNonViewableIssues(
     effective_ids, user, project_dict, config_dict, issues):
   """Return a filtered list of issues that the user can view."""
   perms_dict = GetPermissionsInAllProjects(
-      user, effective_ids, project_dict.values())
+      user, effective_ids, list(project_dict.values()))
 
   denied_project_ids = {
-      pid for pid, p in project_dict.iteritems()
+      pid for pid, p in project_dict.items()
       if not permissions.CanView(effective_ids, perms_dict[pid], p, [])}
 
   results = []

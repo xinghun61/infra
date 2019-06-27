@@ -46,7 +46,7 @@ class MembershipTwoLevelCacheTest(unittest.TestCase):
     memberships_rows = [(111, 777), (111, 888), (222, 888)]
     actual = self.usergroup_service.memberships_2lc._DeserializeMemberships(
         memberships_rows)
-    self.assertItemsEqual([111, 222], actual.keys())
+    self.assertItemsEqual([111, 222], list(actual.keys()))
     self.assertItemsEqual([777, 888], actual[111])
     self.assertItemsEqual([888], actual[222])
 
@@ -292,7 +292,7 @@ class UserGroupServiceTest(unittest.TestCase):
   def SetUpLookupMembers(self, group_member_dict):
     mock_membership_rows = []
     group_ids = []
-    for gid, members in group_member_dict.iteritems():
+    for gid, members in group_member_dict.items():
       group_ids.append(gid)
       mock_membership_rows.extend([(uid, gid, 'member') for uid in members])
     group_ids.sort()

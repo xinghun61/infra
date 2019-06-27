@@ -19,7 +19,8 @@ def GetViewableStarredProjects(
   """Returns a list of viewable starred projects."""
   starred_project_ids = services.project_star.LookupStarredItemIDs(
       cnxn, viewed_user_id)
-  projects = services.project.GetProjects(cnxn, starred_project_ids).values()
+  projects = list(
+      services.project.GetProjects(cnxn, starred_project_ids).values())
   viewable_projects = FilterViewableProjects(
       projects, logged_in_user, effective_ids)
   return viewable_projects

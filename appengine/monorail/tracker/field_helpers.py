@@ -233,7 +233,7 @@ def ParseFieldValues(cnxn, user_service, field_val_strs, phase_field_val_strs,
     if fd.is_phase_field and (
         fd.field_id in phase_field_val_strs) and phase_ids_by_name:
       fvs_by_phase_name = phase_field_val_strs.get(fd.field_id, {})
-      for phase_name, val_strs in fvs_by_phase_name.iteritems():
+      for phase_name, val_strs in fvs_by_phase_name.items():
         phase_ids = phase_ids_by_name.get(phase_name)
         if not phase_ids:
           continue

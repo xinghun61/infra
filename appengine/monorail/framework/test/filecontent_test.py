@@ -31,14 +31,14 @@ class MimeTest(unittest.TestCase):
 
   def testCommonExtensions(self):
     """Tests some common extensions for their expected content types."""
-    for ext, ctype in self._TEST_EXTENSIONS_TO_CTYPES.iteritems():
+    for ext, ctype in self._TEST_EXTENSIONS_TO_CTYPES.items():
       self.assertEqual(
           filecontent.GuessContentTypeFromFilename('file.%s' % ext),
           ctype)
 
   def testCaseDoesNotMatter(self):
     """Ensure that case (upper/lower) of extension does not matter."""
-    for ext, ctype in self._TEST_EXTENSIONS_TO_CTYPES.iteritems():
+    for ext, ctype in self._TEST_EXTENSIONS_TO_CTYPES.items():
       ext = ext.upper()
       self.assertEqual(
           filecontent.GuessContentTypeFromFilename('file.%s' % ext),

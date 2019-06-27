@@ -59,7 +59,7 @@ class UserSettingsTest(unittest.TestCase):
     self.assertItemsEqual(
         ['logged_in_user_pb', 'unified', 'user_tab_mode',
          'viewed_user', 'offer_saved_queries_subtab', 'viewing_self'],
-        page_data.keys())
+        list(page_data.keys()))
     self.assertEqual(template_helpers.PBProxy(mr.auth.user_pb),
                      page_data['logged_in_user_pb'])
 

@@ -233,7 +233,7 @@ class UserGroupService(object):
 
   def LookupMemberships(self, _cnxn, user_id):
     memberships = {
-        group_id for group_id, member_ids in self.group_members.iteritems()
+        group_id for group_id, member_ids in self.group_members.items()
         if user_id in member_ids}
     return memberships
 
@@ -273,11 +273,11 @@ class UserGroupService(object):
   def DeleteGroups(self, cnxn, group_ids):
     member_ids_dict, owner_ids_dict = self.LookupMembers(cnxn, group_ids)
     citizens_id_dict = collections.defaultdict(list)
-    for g_id, user_ids in member_ids_dict.iteritems():
+    for g_id, user_ids in member_ids_dict.items():
       citizens_id_dict[g_id].extend(user_ids)
-    for g_id, user_ids in owner_ids_dict.iteritems():
+    for g_id, user_ids in owner_ids_dict.items():
       citizens_id_dict[g_id].extend(user_ids)
-    for g_id, citizen_ids in citizens_id_dict.iteritems():
+    for g_id, citizen_ids in citizens_id_dict.items():
       # Remove group members, friend projects and settings
       self.RemoveMembers(cnxn, g_id, citizen_ids)
       self.group_settings.pop(g_id, None)
@@ -326,9 +326,9 @@ class UserGroupService(object):
             _cnxn, group_ids)
         child_members = set()
         child_owners = set()
-        for _, children in indirect_members.iteritems():
+        for _, children in indirect_members.items():
           child_members.update(children)
-        for _, children in indirect_owners.iteritems():
+        for _, children in indirect_owners.items():
           child_owners.update(children)
         members_dict[gid].extend(list(child_members))
         owners_dict[gid].extend(list(child_owners))
@@ -375,7 +375,7 @@ class UserGroupService(object):
     member_ids_dict, owner_ids_dict = self.LookupAllMembers(cnxn, group_ids)
     indirect_ids = set()
     direct_ids = {uid for uid in user_ids if uid not in group_ids}
-    for gid, group_settings in group_settings_dict.iteritems():
+    for gid, group_settings in group_settings_dict.items():
       if group_settings.notify_members:
         indirect_ids.update(member_ids_dict.get(gid, set()))
         indirect_ids.update(owner_ids_dict.get(gid, set()))
@@ -387,7 +387,7 @@ class UserGroupService(object):
   def LookupVisibleMembers(
       self, cnxn, group_id_list, perms, effective_ids, services):
     settings_dict = self.GetAllGroupSettings(cnxn, group_id_list)
-    group_ids = settings_dict.keys()
+    group_ids = list(settings_dict.keys())
 
     direct_member_ids_dict, direct_owner_ids_dict = self.LookupMembers(
         cnxn, group_ids)
@@ -881,7 +881,7 @@ class ProjectService(object):
   def LookupProjectNames(self, cnxn, project_ids):
     projects_dict = self.GetProjects(cnxn, project_ids)
     return {p.project_id: p.project_name
-            for p in projects_dict.itervalues()}
+            for p in projects_dict.values()}
 
   def CreateProject(
       self, _cnxn, project_name, owner_ids, committer_ids,
@@ -920,7 +920,7 @@ class ProjectService(object):
 
   def GetVisibleLiveProjects(self, _cnxn, logged_in_user, effective_ids,
                              use_cache=True):
-    project_ids = self.projects_by_id.keys()
+    project_ids = list(self.projects_by_id.keys())
     visible_project_ids = [
         pid for pid in project_ids
         if permissions.UserCanViewProject(
@@ -1021,7 +1021,7 @@ class ProjectService(object):
     membered_project_ids = set()
     contrib_project_ids = set()
 
-    for project in self.projects_by_id.itervalues():
+    for project in self.projects_by_id.values():
       if not effective_ids.isdisjoint(project.owner_ids):
         owned_project_ids.add(project.project_id)
       elif not effective_ids.isdisjoint(project.committer_ids):
@@ -1051,7 +1051,7 @@ class ConfigService(object):
     self.label_to_id = label_to_id
     self.id_to_label = {
         label_id: label
-        for label, label_id in self.label_to_id.items()}
+        for label, label_id in list(self.label_to_id.items())}
 
   def ExpungeConfig(self, _cnxn, project_id):
     self.expunged_configs.append(project_id)
@@ -1466,7 +1466,7 @@ class IssueService(object):
       self, _cnxn, project_id, min_local_id=None, use_cache=True):
     self.get_all_issues_in_project_called = True
     if project_id in self.issues_by_project:
-      return self.issues_by_project[project_id].values()
+      return list(self.issues_by_project[project_id].values())
     else:
       return []
 
@@ -1706,7 +1706,7 @@ class IssueService(object):
       return self.next_id - 1
     else:
       issue_dict = self.issues_by_project.get(project_id, {})
-      highest = max([0] + [issue.local_id for issue in issue_dict.itervalues()])
+      highest = max([0] + [issue.local_id for issue in issue_dict.values()])
       return highest
 
   def ApplyIssueComment(
@@ -1974,7 +1974,7 @@ class IssueService(object):
     self.comments_by_cid[comment.id] = comment
 
   def DeleteComponentReferences(self, _cnxn, component_id):
-    for _, issue in self.issues_by_iid.iteritems():
+    for _, issue in self.issues_by_iid.items():
       issue.component_ids = [
           cid for cid in issue.component_ids if cid != component_id]
 
@@ -2368,14 +2368,14 @@ class FeaturesService(object):
     hotlist_id_dict = self.LookupUserHotlists(cnxn, [user_id])
     hotlists = self.GetHotlists(cnxn, hotlist_id_dict.get(
         user_id, []), use_cache=use_cache)
-    return hotlists.values()
+    return list(hotlists.values())
 
   def GetHotlistsByIssueID(self, cnxn, issue_id, use_cache=True):
     """Get a list of hotlist PBs for a given issue."""
     hotlist_id_dict = self.LookupIssueHotlists(cnxn, [issue_id])
     hotlists = self.GetHotlists(cnxn, hotlist_id_dict.get(
         issue_id, []), use_cache=use_cache)
-    return hotlists.values()
+    return list(hotlists.values())
 
   def GetHotlist(self, cnxn, hotlist_id, use_cache=True):
     """Return hotlist PB."""
@@ -2542,7 +2542,7 @@ class PostData(object):
 
   def keys(self):
     """Return the keys in the POST data."""
-    return self.dictionary.keys()
+    return list(self.dictionary.keys())
 
 
 class FakeFile:

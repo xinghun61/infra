@@ -72,7 +72,7 @@ NEGATED_OPS = {
 # operators, such as =, 1=, >, and <.  Longer ones listed first so that the
 # shorter ones don't cause premature matches.
 OPS_PATTERN = '|'.join(
-    map(re.escape, sorted(OPS.keys(), key=lambda op: -len(op))))
+    map(re.escape, sorted(list(OPS.keys()), key=lambda op: -len(op))))
 
 # This RE extracts search terms from a subquery string.
 TERM_RE = re.compile(
@@ -228,7 +228,7 @@ def ParseUserQuery(
   # Make a dictionary of all fields: built-in + custom in each project.
   combined_fields = collections.defaultdict(
       list, {field_name: [field_def]
-             for field_name, field_def in builtin_fields.iteritems()})
+             for field_name, field_def in builtin_fields.items()})
   for fd in harmonized_config.field_defs:
     if fd.field_type != tracker_pb2.FieldTypes.ENUM_TYPE:
       # Only do non-enum fields because enums are stored as labels

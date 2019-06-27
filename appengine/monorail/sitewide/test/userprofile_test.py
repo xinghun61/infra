@@ -71,12 +71,12 @@ class UserProfileTest(unittest.TestCase):
 
     for user in ['regular', 'other']:
       for relation in ['owner', 'member']:
-        for state_name, state in STATES.iteritems():
+        for state_name, state in STATES.items():
           services.project.TestAddProject(
               '%s-%s-%s' % (user, relation, state_name), state=state)
 
     # Add projects
-    for state_name, state in STATES.iteritems():
+    for state_name, state in STATES.items():
       services.project.TestAddProject(
           'regular-owner-%s' % state_name, state=state,
           owner_ids=[REGULAR_USER_ID])

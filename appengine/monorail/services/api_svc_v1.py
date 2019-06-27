@@ -428,10 +428,10 @@ class MonorailApi(remote.Service):
           updates_dict['owner'] = new_owner_id
       updates_dict['cc_add'], updates_dict['cc_remove'] = (
           api_pb2_v1_helpers.split_remove_add(request.updates.cc))
-      updates_dict['cc_add'] = self._services.user.LookupUserIDs(
-          mar.cnxn, updates_dict['cc_add'], autocreate=True).values()
-      updates_dict['cc_remove'] = self._services.user.LookupUserIDs(
-          mar.cnxn, updates_dict['cc_remove']).values()
+      updates_dict['cc_add'] = list(self._services.user.LookupUserIDs(
+          mar.cnxn, updates_dict['cc_add'], autocreate=True).values())
+      updates_dict['cc_remove'] = list(self._services.user.LookupUserIDs(
+          mar.cnxn, updates_dict['cc_remove']).values())
       updates_dict['labels_add'], updates_dict['labels_remove'] = (
           api_pb2_v1_helpers.split_remove_add(request.updates.labels))
       blocked_on_add_strs, blocked_on_remove_strs = (
@@ -719,10 +719,12 @@ class MonorailApi(remote.Service):
               'User is not allowed to update approvers')
         approvers_add, approvers_remove = api_pb2_v1_helpers.split_remove_add(
             request.approvalUpdates.approvers)
-        updates_dict['approver_ids_add'] = self._services.user.LookupUserIDs(
-            mar.cnxn, approvers_add, autocreate=True).values()
-        updates_dict['approver_ids_remove'] = self._services.user.LookupUserIDs(
-            mar.cnxn, approvers_remove, autocreate=True).values()
+        updates_dict['approver_ids_add'] = list(
+            self._services.user.LookupUserIDs(mar.cnxn, approvers_add,
+              autocreate=True).values())
+        updates_dict['approver_ids_remove'] = list(
+            self._services.user.LookupUserIDs(mar.cnxn, approvers_remove,
+              autocreate=True).values())
       if request.approvalUpdates.status:
         status = tracker_pb2.ApprovalStatus(
             api_pb2_v1.ApprovalStatus(request.approvalUpdates.status).number)
@@ -859,9 +861,9 @@ class MonorailApi(remote.Service):
 
       cc_ids = []
       if request.cc:
-        cc_ids = self._services.user.LookupUserIDs(
+        cc_ids = list(self._services.user.LookupUserIDs(
             mar.cnxn, [ap.name for ap in request.cc],
-            autocreate=True).values()
+            autocreate=True).values())
       comp_ids = api_pb2_v1_helpers.convert_component_ids(
           mar.config, request.components)
       fields_add, _, _, fields_labels, _ = (
@@ -1006,10 +1008,10 @@ class MonorailApi(remote.Service):
     member_ids, owner_ids = self._services.usergroup.LookupMembers(
         mar.cnxn, [group_id])
 
-    member_emails = self._services.user.LookupUserEmails(
-        mar.cnxn, member_ids[group_id]).values()
-    owner_emails = self._services.user.LookupUserEmails(
-        mar.cnxn, owner_ids[group_id]).values()
+    member_emails = list(self._services.user.LookupUserEmails(
+        mar.cnxn, member_ids[group_id]).values())
+    owner_emails = list(self._services.user.LookupUserEmails(
+        mar.cnxn, owner_ids[group_id]).values())
 
     return api_pb2_v1.GroupsGetResponse(
       groupID=group_id,
@@ -1052,7 +1054,7 @@ class MonorailApi(remote.Service):
         id_dict = self._services.project.LookupProjectIDs(
             mar.cnxn, request.friend_projects)
         group_settings.friend_projects = (
-            id_dict.values() or group_settings.friend_projects)
+            list(id_dict.values()) or group_settings.friend_projects)
       self._services.usergroup.UpdateSettings(
           mar.cnxn, group_id, group_settings)
 
@@ -1062,11 +1064,11 @@ class MonorailApi(remote.Service):
       owners_dict = self._services.user.LookupUserIDs(
           mar.cnxn, request.groupOwners, autocreate=True)
       self._services.usergroup.UpdateMembers(
-          mar.cnxn, group_id, owners_dict.values(), 'owner')
+          mar.cnxn, group_id, list(owners_dict.values()), 'owner')
       members_dict = self._services.user.LookupUserIDs(
           mar.cnxn, request.groupMembers, autocreate=True)
       self._services.usergroup.UpdateMembers(
-          mar.cnxn, group_id, members_dict.values(), 'member')
+          mar.cnxn, group_id, list(members_dict.values()), 'member')
 
     return api_pb2_v1.GroupsUpdateResponse()
 
@@ -1354,7 +1356,7 @@ class ClientConfigApi(remote.Service):
       # 3: Update project role and extra perms
       projects_dict = self._services.project.GetAllProjects(mar.cnxn)
       project_name_to_ids = {
-          p.project_name: p.project_id for p in projects_dict.itervalues()}
+          p.project_name: p.project_id for p in projects_dict.values()}
 
       # Set project role and extra perms
       for perm in client.project_permissions:
@@ -1395,7 +1397,7 @@ class ClientConfigApi(remote.Service):
     result = []
     if any(ch in project_str for ch in ['*', '+', '?', '.']):
       pattern = re.compile(project_str)
-      for p_name in project_name_to_ids.iterkeys():
+      for p_name in project_name_to_ids.keys():
         if pattern.match(p_name):
           project_id = project_name_to_ids.get(p_name)
           if project_id:

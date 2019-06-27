@@ -152,7 +152,7 @@ class IssuesServicer(monorail_servicer.MonorailServicer):
     with mc.profiler.Phase('reveal emails to members'):
       projects = self.services.project.GetProjectsByName(
           mc.cnxn, request.project_names)
-      for _, p in projects.iteritems():
+      for _, p in projects.items():
         framework_views.RevealAllEmailsToMembers(
             mc.auth, p, pipeline.users_by_id)
 
@@ -335,7 +335,7 @@ class IssuesServicer(monorail_servicer.MonorailServicer):
     project_dict = tracker_helpers.GetAllIssueProjects(
         mc.cnxn, issues, self.services.project)
     config_dict = self.services.config.GetProjectConfigs(
-        mc.cnxn, project_dict.keys())
+        mc.cnxn, list(project_dict.keys()))
     allowed_issues = tracker_helpers.FilterOutNonViewableIssues(
         mc.auth.effective_ids, user, project_dict,
         config_dict, issues)
@@ -359,7 +359,7 @@ class IssuesServicer(monorail_servicer.MonorailServicer):
     # A dictionary {comment_id: [reporter_id]} of users who have reported the
     # comment as spam.
     comment_reporters = {}
-    for project_id, project_issues in issues_by_project.iteritems():
+    for project_id, project_issues in issues_by_project.items():
       mc.LookupLoggedInUserPerms(project_dict[project_id])
       issue_perms_dict.update({
           issue.issue_id: permissions.UpdateIssuePermissions(
@@ -369,7 +369,7 @@ class IssuesServicer(monorail_servicer.MonorailServicer):
 
       with work_env.WorkEnv(mc, self.services) as we:
         project_issue_reporters = we.LookupIssuesFlaggers(project_issues)
-        for _, issue_comment_reporters in project_issue_reporters.itervalues():
+        for _, issue_comment_reporters in project_issue_reporters.values():
           comment_reporters.update(issue_comment_reporters)
 
     with mc.profiler.Phase('converting to response objects'):
@@ -551,7 +551,7 @@ class IssuesServicer(monorail_servicer.MonorailServicer):
     else:
       snapshot_counts = [
         issues_pb2.IssueSnapshotCount(dimension=key, count=result)
-          for key, result in results.iteritems()
+          for key, result in results.items()
       ]
     response = issues_pb2.IssueSnapshotResponse()
     response.snapshot_count.extend(snapshot_counts)
@@ -696,7 +696,7 @@ class IssuesServicer(monorail_servicer.MonorailServicer):
         mc, request.issue_refs)
     with work_env.WorkEnv(mc, self.services) as we:
       issues_by_id = we.GetIssuesDict(issue_ids, use_cache=False)
-      we.FlagIssues(issues_by_id.values(), request.flag)
+      we.FlagIssues(list(issues_by_id.values()), request.flag)
 
     result = issues_pb2.FlagIssuesResponse()
     return result

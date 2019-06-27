@@ -475,7 +475,7 @@ def ProcessParsedHotlistRefs(mr, services, parsed_hotlist_refs):
   user_hotlist_owners_to_emails = services.user.LookupUserEmails(
       mr.cnxn, user_hotlist_owners_ids)
   user_hotlist_emails_to_owners = {v: k
-      for k, v in user_hotlist_owners_to_emails.iteritems()}
+      for k, v in user_hotlist_owners_to_emails.items()}
   user_hotlist_refs_to_pbs = {
       hotlist_helpers.HotlistRef(hotlist.owner_ids[0], hotlist.name): hotlist
       for hotlist in user_hotlist_pbs }

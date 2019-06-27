@@ -153,7 +153,7 @@ class IssueImport(servlet.Servlet):
 
     event_log.append(
       'Found %d total relationships.' %
-      sum((len(dsts) for dsts in relations_dict.itervalues())))
+      sum((len(dsts) for dsts in relations_dict.values())))
 
     event_log.append('Parsing phase finished OK')
     return ParserState(
@@ -292,7 +292,7 @@ class IssueImport(servlet.Servlet):
         total_stars, len(state.starrers_dict)))
 
     global_relations_dict = collections.defaultdict(list)
-    for issue, rels in state.relations_dict.iteritems():
+    for issue, rels in state.relations_dict.items():
       src_iid = self.services.issue.GetIssueByLocalID(
           cnxn, project_id, issue).issue_id
       dst_iids = [i.issue_id for i in self.services.issue.GetIssuesByLocalIDs(

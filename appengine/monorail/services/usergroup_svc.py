@@ -145,11 +145,11 @@ class UserGroupService(object):
     """
     member_ids_dict, owner_ids_dict = self.LookupMembers(cnxn, group_ids)
     citizens_id_dict = collections.defaultdict(list)
-    for g_id, user_ids in member_ids_dict.iteritems():
+    for g_id, user_ids in member_ids_dict.items():
       citizens_id_dict[g_id].extend(user_ids)
-    for g_id, user_ids in owner_ids_dict.iteritems():
+    for g_id, user_ids in owner_ids_dict.items():
       citizens_id_dict[g_id].extend(user_ids)
-    for g_id, citizen_ids in citizens_id_dict.iteritems():
+    for g_id, citizen_ids in citizens_id_dict.items():
       logging.info('Deleting group %d', g_id)
       # Remove group members, friend projects and settings
       self.RemoveMembers(cnxn, g_id, citizen_ids)
@@ -280,9 +280,9 @@ class UserGroupService(object):
         cnxn, group_ids)
     all_members_owners = set()
     all_members_owners.update(group_ids)
-    for users in children_member_ids.itervalues():
+    for users in children_member_ids.values():
       all_members_owners.update(users)
-    for users in children_owner_ids.itervalues():
+    for users in children_owner_ids.values():
       all_members_owners.update(users)
     return list(all_members_owners)
 
@@ -385,7 +385,7 @@ class UserGroupService(object):
     member_ids_dict, owner_ids_dict = self.LookupAllMembers(cnxn, group_ids)
     indirect_ids = set()
     direct_ids = {uid for uid in user_ids if uid not in group_ids}
-    for gid, settings in group_settings_dict.iteritems():
+    for gid, settings in group_settings_dict.items():
       if settings.notify_members:
         indirect_ids.update(member_ids_dict.get(gid, set()))
         indirect_ids.update(owner_ids_dict.get(gid, set()))
@@ -412,7 +412,7 @@ class UserGroupService(object):
       to view.
     """
     settings_dict = self.GetAllGroupSettings(cnxn, group_id_list)
-    group_ids = settings_dict.keys()
+    group_ids = list(settings_dict.keys())
     (owned_project_ids, membered_project_ids,
      contrib_project_ids) = services.project.GetUserRolesInAllProjects(
          cnxn, effective_ids)
@@ -592,7 +592,7 @@ class UserGroupDAG(object):
     self.initialized = True
 
     if circle_detection:
-      for child_id, parent_ids in self.user_group_parents.iteritems():
+      for child_id, parent_ids in self.user_group_parents.items():
         for parent_id in parent_ids:
           if self.IsChild(cnxn, parent_id, child_id):
             logging.error(

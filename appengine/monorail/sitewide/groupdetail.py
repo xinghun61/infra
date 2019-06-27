@@ -74,19 +74,19 @@ class GroupDetail(servlet.Servlet):
     owner_pbs_dict = self.services.user.GetUsersByIDs(
         mr.cnxn, owner_ids)
     member_dict = {}
-    for user_id, user_pb in member_pbs_dict.iteritems():
+    for user_id, user_pb in member_pbs_dict.items():
       member_view = group_helpers.GroupMemberView(user_pb, group_id, 'member')
       member_dict[user_id] = member_view
     owner_dict = {}
-    for user_id, user_pb in owner_pbs_dict.iteritems():
+    for user_id, user_pb in owner_pbs_dict.items():
       member_view = group_helpers.GroupMemberView(user_pb, group_id, 'owner')
       owner_dict[user_id] = member_view
 
     member_user_views = []
     member_user_views.extend(
-        sorted(owner_dict.values(), key=lambda u: u.email))
+        sorted(list(owner_dict.values()), key=lambda u: u.email))
     member_user_views.extend(
-        sorted(member_dict.values(), key=lambda u: u.email))
+        sorted(list(member_dict.values()), key=lambda u: u.email))
 
     group_view = sitewide_views.GroupView(
         mr.viewed_user_auth.email, len(member_ids), group_settings,

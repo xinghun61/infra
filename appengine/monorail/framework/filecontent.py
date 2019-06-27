@@ -87,13 +87,13 @@ COMMON_BINARY_FILE_EXTENSIONS = {
 # with the following extensions or exact filenames (assuming they decode
 # correctly).
 COMMON_TEXT_FILE_EXTENSIONS = (
-    set(framework_constants.PRETTIFY_CLASS_MAP.iterkeys()) |
+    set(framework_constants.PRETTIFY_CLASS_MAP.keys()) |
     { '', 'ada', 'asm', 'asp', 'bat', 'cgi', 'csv', 'diff', 'el', 'emacs',
       'jsp', 'log', 'markdown', 'md', 'mf', 'patch', 'plist', 'properties', 'r',
       'rc', 'txt', 'vim', 'wiki', 'xemacs', 'yacc',
       })
 COMMON_TEXT_FILENAMES = (
-    set(framework_constants.PRETTIFY_FILENAME_CLASS_MAP.iterkeys()) |
+    set(framework_constants.PRETTIFY_FILENAME_CLASS_MAP.keys()) |
     {'authors', 'install', 'readme'})
 
 

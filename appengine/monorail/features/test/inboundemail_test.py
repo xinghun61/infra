@@ -64,7 +64,7 @@ class InboundEmailTest(unittest.TestCase):
     self.mox.ResetAll()
 
   def testTemplates(self):
-    for name, template_path in self.inbound._templates.iteritems():
+    for name, template_path in self.inbound._templates.items():
       assert(name in inboundemail.MSG_TEMPLATES)
       assert(
           template_path.GetTemplatePath().endswith(

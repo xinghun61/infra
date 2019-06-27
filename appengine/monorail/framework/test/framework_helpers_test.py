@@ -426,7 +426,7 @@ class UserSettingsTest(unittest.TestCase):
         'preview_on_hover',
         'settings_user_prefs',
         ]
-    self.assertItemsEqual(expected_keys, page_data.keys())
+    self.assertItemsEqual(expected_keys, list(page_data.keys()))
 
     self.assertEqual('profile/url', page_data['profile_url_fragment'])
     self.assertTrue(page_data['settings_user_prefs'].public_issue_notice)

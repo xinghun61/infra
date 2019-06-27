@@ -262,7 +262,7 @@ class TemplateService(object):
       A list containing any found TemplateDef PBs.
     """
     result_dict, _ = self.template_def_2lc.GetAll(cnxn, template_ids)
-    return result_dict.values()
+    return list(result_dict.values())
 
   def GetTemplateSetForProject(self, cnxn, project_id):
     """Get the TemplateSet for a project."""

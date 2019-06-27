@@ -70,7 +70,7 @@ def _IndexIssueBatch(cnxn, issues, user_service, issue_service, config_dict):
   user_ids = tracker_bizobj.UsersInvolvedInIssues(issues)
   comments_dict = issue_service.GetCommentsForIssues(
       cnxn, [issue.issue_id for issue in issues])
-  for comments in comments_dict.itervalues():
+  for comments in comments_dict.values():
     user_ids.update([ic.user_id for ic in comments])
 
   users_by_id = framework_views.MakeAllUserViews(
@@ -152,7 +152,7 @@ def _CreateIssueSearchDocuments(
 
   start_time = time.time()
   promises = []
-  for shard_id, documents in documents_by_shard.iteritems():
+  for shard_id, documents in documents_by_shard.items():
     if documents:
       promises.append(framework_helpers.Promise(
           _IndexDocsInShard, shard_id, documents))
@@ -249,7 +249,7 @@ def UnindexIssues(issue_ids):
     iids_by_shard.setdefault(shard_id, [])
     iids_by_shard[shard_id].append(issue_id)
 
-  for shard_id, iids_in_shard in iids_by_shard.iteritems():
+  for shard_id, iids_in_shard in iids_by_shard.items():
     try:
       logging.info(
           'unindexing %r issue_ids in %r', len(iids_in_shard), shard_id)

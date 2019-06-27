@@ -137,7 +137,7 @@ class TemplateDefTwoLevelCacheTest(unittest.TestCase):
         .return_value = [phase1_row, phase2_row]
 
     actual = self.template_def_2lc.FetchItems(cnxn=None, keys=[7, 8, 9])
-    self.assertEqual(3, len(actual.keys()))
+    self.assertEqual(3, len(list(actual.keys())))
     self.assertTrue(isinstance(actual[7], tracker_pb2.TemplateDef))
     self.assertTrue(isinstance(actual[8], tracker_pb2.TemplateDef))
     self.assertTrue(isinstance(actual[9], tracker_pb2.TemplateDef))
