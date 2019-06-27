@@ -24,7 +24,10 @@ case $OSTYPE in
       mipsel-*)
         TARGET="linux-mips32"
         ;;
-      *) # should apply to aarch64, mips32 and mips64
+      mips-*)
+        TARGET="linux-mips64"
+        ;;
+      *) # should apply to aarch64
         TARGET="linux-${CROSS_TRIPLE%%-*}"
         ;;
     esac
