@@ -1,0 +1,10 @@
+// interface Foo {
+//   Something() => ();
+// };
+
+// This interface is commented
+interface Bar {
+
+  // DoSomething() => ();
+
+};

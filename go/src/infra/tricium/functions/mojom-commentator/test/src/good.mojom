@@ -1,0 +1,34 @@
+struct DoesNotNeedAComment {
+  string foo;
+  int64 bar;
+  handle<data_pipe_consumer> baz;
+};
+
+// This
+// is
+// a
+// comment
+// that rocks.
+interface Hello {
+  // This method is definitely commented.
+  DoSomething();
+
+  // So is this one, but it returns something.
+  AnotherThing() => (handle x);
+
+  // This attribute counts too.
+  [Sync]
+  CowsGoMoo();
+
+  // Multi-line methods are also cool.
+  BearsGoRawr(string a,
+              int b,
+              float c) =>
+    (string x,
+     int y);
+};
+
+enum AlsoNeedsNoComment {
+  ONE = 1,
+  TWO = 2,
+};

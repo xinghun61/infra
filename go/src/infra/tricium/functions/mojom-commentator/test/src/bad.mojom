@@ -1,0 +1,17 @@
+interface Foo {
+  SimpleMethod(int32 arg1, array<string> arg2);
+
+  WithReply() => (string value);
+};
+
+struct NoCommentIsOkay {
+  bool but_only_here;
+  pending_remote<Foo> foo;
+};
+
+interface          Another{
+  // This is commented out.
+  // OK() => (int64 x);
+
+  NotOkay();
+};

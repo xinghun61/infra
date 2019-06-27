@@ -1,0 +1,9 @@
+// Interface is good.
+interface Good {
+  // This method is OK.
+  A() => (
+  );
+
+  [Sync] B() => (string a,
+    int64 b);
+};
