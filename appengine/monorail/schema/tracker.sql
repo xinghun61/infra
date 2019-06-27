@@ -677,6 +677,7 @@ CREATE TABLE SpamReport (
 
   INDEX (issue_id),
   INDEX (comment_id),
+  UNIQUE (user_id, comment_id, issue_id),
   FOREIGN KEY (issue_id) REFERENCES Issue(id),
   FOREIGN KEY (comment_id) REFERENCES Comment(id)
 ) ENGINE=INNODB;
