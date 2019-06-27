@@ -118,7 +118,8 @@ class SpamService(object):
     """Returns a map of issue_id to most recent spam verdicts"""
     rows = self.verdict_tbl.Select(cnxn,
                                    cols=['issue_id', 'reason', 'MAX(created)'],
-                                   issue_id=issue_ids, group_by=['issue_id'])
+                                   issue_id=issue_ids, comment_id=None,
+                                   group_by=['issue_id'])
     counts = {}
     for row in rows:
       counts[int(row[0])] = row[1]

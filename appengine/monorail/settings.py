@@ -337,9 +337,8 @@ classifier_model_id = '20170302'
 
 # Number of distinct users who have to flag an issue before it
 # is automatically removed as spam.
-# 5 is an arbitrarily chosen value.  Set it to something really high
-# to effectively disable spam flag threshhold checking.
-spam_flag_thresh = 5
+# Currently effectively disabled.
+spam_flag_thresh = 1000
 
 # If the classifier's confidence is less than this value, the
 # item will show up in the spam moderation queue for manual

@@ -99,7 +99,7 @@ class SpamServiceTest(unittest.TestCase):
         issue_id=[78901]).AndReturn([(78901, settings.spam_flag_thresh)])
     self.mock_verdict_tbl.Select(
         self.cnxn, cols=['issue_id', 'reason', 'MAX(created)'],
-        group_by=['issue_id'], issue_id=[78901]).AndReturn([])
+        group_by=['issue_id'], issue_id=[78901], comment_id=None).AndReturn([])
     self.mock_verdict_tbl.InsertRows(
         self.cnxn, ['issue_id', 'is_spam', 'reason', 'project_id'],
         [(78901, True, 'threshold', 789)], ignore=True)
@@ -125,7 +125,7 @@ class SpamServiceTest(unittest.TestCase):
 
     self.mock_verdict_tbl.Select(
         self.cnxn, cols=['issue_id', 'reason', 'MAX(created)'],
-        group_by=['issue_id'], issue_id=[78901]).AndReturn([])
+        group_by=['issue_id'], issue_id=[78901], comment_id=None).AndReturn([])
 
     self.mox.ReplayAll()
     self.spam_service.FlagIssues(
@@ -146,7 +146,7 @@ class SpamServiceTest(unittest.TestCase):
 
     self.mock_verdict_tbl.Select(
         self.cnxn, cols=['issue_id', 'reason', 'MAX(created)'],
-        group_by=['issue_id'], issue_id=[78901]).AndReturn([])
+        group_by=['issue_id'], issue_id=[78901], comment_id=None).AndReturn([])
 
     self.mox.ReplayAll()
     self.spam_service.FlagIssues(
@@ -172,7 +172,7 @@ class SpamServiceTest(unittest.TestCase):
 
     self.mock_verdict_tbl.Select(
         self.cnxn, cols=['issue_id', 'reason', 'MAX(created)'],
-        group_by=['issue_id'], issue_id=[78901]).AndReturn([])
+        group_by=['issue_id'], issue_id=[78901], comment_id=None).AndReturn([])
 
     self.mox.ReplayAll()
     self.spam_service.FlagIssues(
@@ -194,7 +194,7 @@ class SpamServiceTest(unittest.TestCase):
 
     self.mock_verdict_tbl.Select(
         self.cnxn, cols=['issue_id', 'reason', 'MAX(created)'],
-        group_by=['issue_id'],
+        group_by=['issue_id'], comment_id=None,
         issue_id=[78901]).AndReturn([(78901, 'manual', '')])
 
     self.mox.ReplayAll()
@@ -388,3 +388,18 @@ class SpamServiceTest(unittest.TestCase):
         self.cnxn, delta, user_id=user_ids, commit=False)
     self.spam_service.verdict_tbl.Update.assert_called_once_with(
         self.cnxn, delta, user_id=user_ids, commit=False)
+
+  def testLookupIssueVerdicts(self):
+    self.spam_service.verdict_tbl.Select = Mock(return_value=[
+      [5, 10], [4, 11], [6, 12],
+    ])
+    actual = self.spam_service.LookupIssueVerdicts(self.cnxn, [4, 5, 6])
+
+    self.spam_service.verdict_tbl.Select.assert_called_once_with(
+        self.cnxn, cols=['issue_id', 'reason', 'MAX(created)'],
+        issue_id=[4, 5, 6], comment_id=None, group_by=['issue_id'])
+    self.assertEqual(actual, {
+      5: 10,
+      4: 11,
+      6: 12,
+    })
