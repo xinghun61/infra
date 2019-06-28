@@ -8,13 +8,16 @@ package autotest
 
 import (
 	"context"
+	"time"
 
 	build_api "go.chromium.org/chromiumos/infra/proto/go/chromite/api"
 	"go.chromium.org/chromiumos/infra/proto/go/test_platform"
 	"go.chromium.org/chromiumos/infra/proto/go/test_platform/steps"
 	swarming_api "go.chromium.org/luci/common/api/swarming/swarming/v1"
+	"go.chromium.org/luci/common/clock"
 	"go.chromium.org/luci/common/errors"
 
+	"infra/cmd/cros_test_platform/internal/execution/internal/autotest/parse"
 	"infra/cmd/cros_test_platform/internal/execution/swarming"
 	"infra/libs/skylab/autotest/dynamicsuite"
 )
@@ -23,11 +26,13 @@ import (
 type Runner struct {
 	tests  []*build_api.AutotestTest
 	params *test_platform.Request_Params
+
+	response *steps.ExecuteResponse
 }
 
 // New returns a new autotest runner.
 func New(tests []*build_api.AutotestTest, params *test_platform.Request_Params) *Runner {
-	return &Runner{tests, params}
+	return &Runner{tests: tests, params: params}
 }
 
 // LaunchAndWait launches an autotest execution and waits for it to complete.
@@ -37,9 +42,19 @@ func (r *Runner) LaunchAndWait(ctx context.Context, client swarming.Client) erro
 		return err
 	}
 
+	r.response = &steps.ExecuteResponse{State: &test_platform.TaskState{LifeCycle: test_platform.TaskState_LIFE_CYCLE_RUNNING}}
+
 	if err := r.wait(ctx, client, taskID); err != nil {
 		return err
 	}
+
+	r.response = &steps.ExecuteResponse{State: &test_platform.TaskState{LifeCycle: test_platform.TaskState_LIFE_CYCLE_COMPLETED}}
+
+	resp, err := r.collect(ctx, client, taskID)
+	if err != nil {
+		return err
+	}
+	r.response = resp
 
 	return nil
 }
@@ -47,7 +62,7 @@ func (r *Runner) LaunchAndWait(ctx context.Context, client swarming.Client) erro
 // Response constructs a response based on the current state of the
 // Runner.
 func (r *Runner) Response(swarming swarming.Client) *steps.ExecuteResponse {
-	panic("not yet implemented")
+	return r.response
 }
 
 func (r *Runner) launch(ctx context.Context, client swarming.Client) (string, error) {
@@ -85,7 +100,57 @@ func (r *Runner) proxyRequest() (*swarming_api.SwarmingRpcsNewTaskRequest, error
 }
 
 func (r *Runner) wait(ctx context.Context, client swarming.Client, taskID string) error {
-	return errors.New("not yet implemented")
+	for {
+		complete, err := r.tick(ctx, client, taskID)
+		if complete {
+			return nil
+		}
+		if err != nil {
+			return errors.Annotate(err, "wait for task %s completion", taskID).Err()
+		}
+		select {
+		case <-ctx.Done():
+			return errors.Annotate(ctx.Err(), "wait for task %s completion", taskID).Err()
+		case <-clock.After(ctx, 15*time.Second):
+		}
+	}
+}
+
+func (r *Runner) tick(ctx context.Context, client swarming.Client, taskID string) (complete bool, err error) {
+	results, err := client.GetResults(ctx, []string{taskID})
+	if err != nil {
+		return false, err
+	}
+
+	if len(results) != 1 {
+		return false, errors.Reason("expected 1 result, found %d", len(results)).Err()
+	}
+
+	taskState, err := swarming.AsTaskState(results[0].State)
+	if err != nil {
+		return false, err
+	}
+
+	return !swarming.UnfinishedTaskStates[taskState], nil
+}
+
+func (r Runner) collect(ctx context.Context, client swarming.Client, taskID string) (*steps.ExecuteResponse, error) {
+	resps, err := client.GetTaskOutputs(ctx, []string{taskID})
+	if err != nil {
+		return nil, errors.Annotate(err, "collect results").Err()
+	}
+
+	if len(resps) != 1 {
+		return nil, errors.Reason("collect results: expected 1 result, got %d", len(resps)).Err()
+	}
+
+	output := resps[0].Output
+	response, err := parse.RunSuite(output)
+	if err != nil {
+		return nil, errors.Annotate(err, "collect results").Err()
+	}
+
+	return response, nil
 }
 
 func (r *Runner) reimageAndRunArgs() interface{} {

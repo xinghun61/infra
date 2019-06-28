@@ -32,13 +32,6 @@ type TaskSet struct {
 	params   *test_platform.Request_Params
 }
 
-// unfinishedTaskStates indicate swarming states that correspond to non-final
-// tasks.
-var unfinishedTaskStates = map[jsonrpc.TaskState]bool{
-	jsonrpc.TaskState_PENDING: true,
-	jsonrpc.TaskState_RUNNING: true,
-}
-
 type testRun struct {
 	test     *build_api.AutotestTest
 	attempts []attempt
@@ -157,7 +150,7 @@ func (r *TaskSet) wait(ctx context.Context, swarming swarming.Client) error {
 	}
 }
 
-func (r *TaskSet) tick(ctx context.Context, swarming swarming.Client) (complete bool, err error) {
+func (r *TaskSet) tick(ctx context.Context, client swarming.Client) (complete bool, err error) {
 	complete = true
 
 	for _, testRun := range r.testRuns {
@@ -166,7 +159,7 @@ func (r *TaskSet) tick(ctx context.Context, swarming swarming.Client) (complete 
 			continue
 		}
 
-		results, err := swarming.GetResults(ctx, []string{attempt.taskID})
+		results, err := client.GetResults(ctx, []string{attempt.taskID})
 		if err != nil {
 			return false, errors.Annotate(err, "wait for tests").Err()
 		}
@@ -176,13 +169,13 @@ func (r *TaskSet) tick(ctx context.Context, swarming swarming.Client) (complete 
 			return false, errors.Annotate(err, "wait for tests").Err()
 		}
 
-		state, err := unpackTaskState(result.State)
+		state, err := swarming.AsTaskState(result.State)
 		if err != nil {
 			return false, errors.Annotate(err, "wait for tests").Err()
 		}
 		attempt.state = state
 
-		if !unfinishedTaskStates[state] {
+		if !swarming.UnfinishedTaskStates[state] {
 			attempt.completed = true
 			continue
 		}
@@ -213,14 +206,6 @@ func unpackResult(results []*swarming_api.SwarmingRpcsTaskResult, taskID string)
 	}
 
 	return result, nil
-}
-
-func unpackTaskState(state string) (jsonrpc.TaskState, error) {
-	val, ok := jsonrpc.TaskState_value[state]
-	if !ok {
-		return jsonrpc.TaskState_INVALID, errors.Reason("invalid task state %s", state).Err()
-	}
-	return jsonrpc.TaskState(val), nil
 }
 
 var taskStateToLifeCycle = map[jsonrpc.TaskState]test_platform.TaskState_LifeCycle{

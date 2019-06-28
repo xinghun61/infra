@@ -6,6 +6,7 @@ package autotest_test
 
 import (
 	"context"
+	"sync"
 	"testing"
 
 	. "github.com/smartystreets/goconvey/convey"
@@ -15,12 +16,23 @@ import (
 	build_api "go.chromium.org/chromiumos/infra/proto/go/chromite/api"
 	"go.chromium.org/chromiumos/infra/proto/go/chromiumos"
 	"go.chromium.org/chromiumos/infra/proto/go/test_platform"
+	"go.chromium.org/chromiumos/infra/proto/go/test_platform/steps"
 	swarming_api "go.chromium.org/luci/common/api/swarming/swarming/v1"
-	"go.chromium.org/luci/common/errors"
 )
 
 type fakeSwarming struct {
 	createCalls []*swarming_api.SwarmingRpcsNewTaskRequest
+
+	output string
+	result *swarming_api.SwarmingRpcsTaskResult
+}
+
+func NewFakeSwarming() *fakeSwarming {
+	return &fakeSwarming{
+		result: &swarming_api.SwarmingRpcsTaskResult{
+			State: "RUNNING",
+		},
+	}
 }
 
 func (f *fakeSwarming) CreateTask(ctx context.Context, req *swarming_api.SwarmingRpcsNewTaskRequest) (*swarming_api.SwarmingRpcsTaskRequestMetadata, error) {
@@ -29,32 +41,53 @@ func (f *fakeSwarming) CreateTask(ctx context.Context, req *swarming_api.Swarmin
 }
 
 func (f *fakeSwarming) GetResults(ctx context.Context, IDs []string) ([]*swarming_api.SwarmingRpcsTaskResult, error) {
-	return nil, errors.New("not yet implemented")
+	if f.result == nil {
+		return nil, nil
+	}
+
+	return []*swarming_api.SwarmingRpcsTaskResult{f.result}, nil
 }
 
 func (f *fakeSwarming) GetTaskURL(taskID string) string {
 	return ""
 }
 
+func (f *fakeSwarming) GetTaskOutputs(ctx context.Context, IDs []string) ([]*swarming_api.SwarmingRpcsTaskOutput, error) {
+	return []*swarming_api.SwarmingRpcsTaskOutput{{Output: f.output}}, nil
+}
+
+// SetOuput sets a string that will be used as task output.
+func (f *fakeSwarming) SetOutput(output string) {
+	f.output = output
+}
+
+func (f *fakeSwarming) SetResult(result *swarming_api.SwarmingRpcsTaskResult) {
+	f.result = result
+}
+
+var basicParams = &test_platform.Request_Params{
+	SoftwareAttributes: &test_platform.Request_Params_SoftwareAttributes{
+		BuildTarget: &chromiumos.BuildTarget{Name: "foo-build-target"},
+	},
+	HardwareAttributes: &test_platform.Request_Params_HardwareAttributes{
+		Model: "foo-model",
+	},
+}
+
 func TestLaunch(t *testing.T) {
 	Convey("Given two enumerated test", t, func() {
 		ctx := context.Background()
 
-		swarming := &fakeSwarming{}
+		swarming := NewFakeSwarming()
+		// Pretend to be immediately completed, so that LaunchAndWait returns
+		// immediately after launching.
+		swarming.SetResult(&swarming_api.SwarmingRpcsTaskResult{State: "COMPLETED"})
 
 		var tests []*build_api.AutotestTest
 		tests = append(tests, newTest("test1"), newTest("test2"))
-		params := &test_platform.Request_Params{
-			SoftwareAttributes: &test_platform.Request_Params_SoftwareAttributes{
-				BuildTarget: &chromiumos.BuildTarget{Name: "foo-build-target"},
-			},
-			HardwareAttributes: &test_platform.Request_Params_HardwareAttributes{
-				Model: "foo-model",
-			},
-		}
 
 		Convey("when running a autotest execution", func() {
-			run := autotest.New(tests, params)
+			run := autotest.New(tests, basicParams)
 
 			run.LaunchAndWait(ctx, swarming)
 			Convey("then a single run_suite proxy job is created, with correct arguments.", func() {
@@ -70,6 +103,50 @@ func TestLaunch(t *testing.T) {
 				}
 				So(cmd, ShouldResemble, expected)
 			})
+		})
+	})
+}
+
+var running = &steps.ExecuteResponse{State: &test_platform.TaskState{LifeCycle: test_platform.TaskState_LIFE_CYCLE_RUNNING}}
+
+func TestWaitAndCollect(t *testing.T) {
+	Convey("Given a launched autotest execution request", t, func() {
+		ctx, cancel := context.WithCancel(context.Background())
+		swarming := NewFakeSwarming()
+		run := autotest.New([]*build_api.AutotestTest{}, basicParams)
+
+		wg := sync.WaitGroup{}
+		wg.Add(1)
+		var err error
+		go func() {
+			err = run.LaunchAndWait(ctx, swarming)
+			wg.Done()
+		}()
+
+		Convey("when the context is cancelled prior to completion, then an error is returned from launch and response is RUNNING.", func() {
+			cancel()
+			wg.Wait()
+			So(err, ShouldNotBeNil)
+			So(run.Response(swarming), ShouldResemble, running)
+		})
+
+		Convey("when the task completes, but no good json is available, then an error is returned and the response is completed with unspecified verdict.", func() {
+			swarming.SetResult(&swarming_api.SwarmingRpcsTaskResult{State: "COMPLETED"})
+			wg.Wait()
+			So(err, ShouldNotBeNil)
+			resp := run.Response(swarming)
+			So(resp.State.LifeCycle, ShouldEqual, test_platform.TaskState_LIFE_CYCLE_COMPLETED)
+			So(resp.State.Verdict, ShouldEqual, test_platform.TaskState_VERDICT_UNSPECIFIED)
+		})
+
+		Convey("when the task completes with valid json, then no error is returned and response is correct", func() {
+			swarming.SetOutput(`#JSON_START#{"return_code": 0}#JSON_END#`)
+			swarming.SetResult(&swarming_api.SwarmingRpcsTaskResult{State: "COMPLETED"})
+			wg.Wait()
+			So(err, ShouldBeNil)
+			resp := run.Response(swarming)
+			So(resp.State.LifeCycle, ShouldEqual, test_platform.TaskState_LIFE_CYCLE_COMPLETED)
+			So(resp.State.Verdict, ShouldEqual, test_platform.TaskState_VERDICT_PASSED)
 		})
 	})
 }
