@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"golang.org/x/net/context"
@@ -59,6 +60,7 @@ var defaultConfig = application.Config{
 		CommonSpecNames: []string{
 			".vpython",
 		},
+		PartnerSuffix: ".vpython",
 	},
 	VENVPackage: vpython.Spec_Package{
 		Name:    "infra/python/virtualenv",
@@ -90,6 +92,11 @@ func mainImpl(c context.Context, argv []string, env environ.Env) int {
 
 	// Determine if we're bypassing "vpython".
 	defaultConfig.Bypass = env.GetEmpty(BypassENV) == BypassSentinel
+	// Determine if we're operating in "vpython3" mode (invoked as ./vpython3 or ./vpython3.exe).
+	if strings.HasSuffix(argv[0], "vpython3") || strings.HasSuffix(argv[0], "vpython3.exe") {
+		defaultConfig.SpecLoader.CommonSpecNames = []string{".vpython3"}
+		defaultConfig.SpecLoader.PartnerSuffix = ".vpython3"
+	}
 	return defaultConfig.Main(c, argv, env)
 }
 
