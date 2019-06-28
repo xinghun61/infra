@@ -140,17 +140,18 @@ func (gerritServer) QueryChanges(c context.Context, host, project string, lastTi
 }
 
 func (g gerritServer) PostRobotComments(c context.Context, host, change, revision string, runID int64, storedComments []*track.Comment) error {
-	robos := map[string][]*robotCommentInput{}
+	robos := map[string][]*robotCommentInput{} // Map of path to comments for that path.
 	for _, storedComment := range storedComments {
 		var comment tricium.Data_Comment
 		if err := jsonpb.UnmarshalString(string(storedComment.Comment), &comment); err != nil {
 			logging.WithError(err).Warningf(c, "Failed to unmarshal comment.")
 			break
 		}
-		if _, ok := robos[comment.Path]; !ok {
-			robos[comment.Path] = []*robotCommentInput{}
+		path := pathForGerrit(comment.Path)
+		if _, ok := robos[path]; !ok {
+			robos[path] = []*robotCommentInput{}
 		}
-		robos[comment.Path] = append(robos[comment.Path], createRobotComment(c, runID, comment))
+		robos[path] = append(robos[path], createRobotComment(c, runID, comment))
 	}
 	return g.setReview(c, host, change, revision, &reviewInput{
 		RobotComments: robos,
@@ -222,18 +223,12 @@ func fetchResponse(c context.Context, url string, headers map[string]string) ([]
 // Checks for presence of position info to distinguish file comments, line
 // comments, and comments with character ranges.
 func createRobotComment(c context.Context, runID int64, comment tricium.Data_Comment) *robotCommentInput {
-	// An empty string path from the analyzer signifies that the comment is on
-	// the commit message. In Gerrit, to indicate this, a "magic path" is used.
-	path := comment.Path
-	if len(comment.Path) == 0 {
-		path = commitMessagePath
-	}
 	roco := &robotCommentInput{
 		Message:        comment.Message,
 		RobotID:        comment.Category,
 		RobotRunID:     strconv.FormatInt(runID, 10),
 		URL:            composeRunURL(c, runID),
-		Path:           path,
+		Path:           pathForGerrit(comment.Path),
 		Properties:     map[string]string{"tricium_comment_uuid": comment.Id},
 		FixSuggestions: createFillSuggestions(comment.Suggestions),
 	}
@@ -262,14 +257,8 @@ func createFillSuggestions(suggestions []*tricium.Data_Suggestion) []*suggestion
 	for _, s := range suggestions {
 		var replacements []*replacement
 		for _, r := range s.Replacements {
-			// As in the Comment struct, an empty string in a replacement
-			// indicates a replacement in the commit message.
-			path := r.Path
-			if len(r.Path) == 0 {
-				path = commitMessagePath
-			}
 			replacements = append(replacements, &replacement{
-				Path:        path,
+				Path:        pathForGerrit(r.Path),
 				Replacement: r.Replacement,
 				Range: &commentRange{
 					StartLine:      int(r.StartLine),
@@ -450,4 +439,16 @@ func isInChangedLines(start, end int, changedLines []int) bool {
 		}
 	}
 	return false
+}
+
+// pathForGerrit returns the path string for a comment for Gerrit.
+//
+// This may be different if the comment is on the commit message. An empty
+// string path from the analyzer signifies that the comment is on the commit
+// message. In Gerrit, to indicate this, a "magic path" is used.
+func pathForGerrit(inputPath string) string {
+	if len(inputPath) == 0 {
+		return commitMessagePath
+	}
+	return inputPath
 }
