@@ -26,6 +26,8 @@ import (
 	"go.chromium.org/luci/common/proto/git"
 	"go.chromium.org/luci/common/proto/gitiles"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 // GitilesClient is a fake implementation of the gitiles.GitilesClient
@@ -70,6 +72,11 @@ func (g *GitilesClient) Archive(ctx context.Context, in *gitiles.ArchiveRequest,
 		Filename: fmt.Sprintf("fake_gitiles_archive"),
 		Contents: d,
 	}, nil
+}
+
+// DownloadFile implements gitiles.GitilesClient inteface.
+func (g *GitilesClient) DownloadFile(ctx context.Context, in *gitiles.DownloadFileRequest, opts ...grpc.CallOption) (*gitiles.DownloadFileResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "not implemented by fake")
 }
 
 // InventoryData contains serialized proto files to be returned as part of the
