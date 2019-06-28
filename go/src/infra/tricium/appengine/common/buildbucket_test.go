@@ -5,11 +5,14 @@
 package common
 
 import (
+	"context"
 	"encoding/json"
 	"testing"
 
 	. "github.com/smartystreets/goconvey/convey"
+	"go.chromium.org/gae/impl/memory"
 	bbapi "go.chromium.org/luci/common/api/buildbucket/buildbucket/v1"
+	"go.chromium.org/luci/common/logging/memlogger"
 
 	admin "infra/tricium/api/admin/v1"
 	"infra/tricium/api/v1"
@@ -36,7 +39,6 @@ func TestParametersJSON(t *testing.T) {
 		err = json.Unmarshal([]byte(actualBytes), &actual)
 		So(err, ShouldBeNil)
 		expected := map[string]interface{}{
-			"builder_name": "tricium",
 			"properties": map[string]interface{}{
 				"enable": "all",
 			},
@@ -62,21 +64,30 @@ func TestParametersJSON(t *testing.T) {
 
 func TestMakeRequest(t *testing.T) {
 	Convey("Creates a valid build request", t, func() {
-		pubsubTopic := "topic"
+		ctx := memory.Use(memlogger.Use(context.Background()))
 		pubsubUserdata := "userdata"
 		parametersJSON := "{}"
 		tags := []string{"tag"}
-
+		recipe := &admin.Worker_Recipe{
+			Recipe: &tricium.Recipe{
+				Name:        "recipe",
+				CipdPackage: "infra/recipe_bundle",
+				CipdVersion: "live",
+				Project:     "chromium",
+				Bucket:      "tricium",
+				Builder:     "test",
+			},
+		}
 		So(
-			makeRequest(pubsubTopic, pubsubUserdata, parametersJSON, tags),
+			makeRequest(ctx, pubsubUserdata, parametersJSON, tags, recipe.Recipe),
 			ShouldResemble, &bbapi.LegacyApiPutRequestMessage{
-				Bucket: bucket,
+				Bucket: "chromium.tricium.test",
 				PubsubCallback: &bbapi.LegacyApiPubSubCallbackMessage{
-					Topic:    pubsubTopic,
+					Topic:    topic(ctx),
 					UserData: pubsubUserdata,
 				},
 				Tags:           tags,
-				ParametersJson: parametersJSON,
+				ParametersJson: "{}",
 			})
 	})
 }

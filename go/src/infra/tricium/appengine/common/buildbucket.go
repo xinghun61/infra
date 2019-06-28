@@ -18,11 +18,11 @@ import (
 	fm "google.golang.org/genproto/protobuf/field_mask"
 
 	admin "infra/tricium/api/admin/v1"
+	tricium "infra/tricium/api/v1"
 )
 
 const (
 	buildbucketBasePath = "/_ah/api/buildbucket/v1/builds"
-	bucket              = "luci.tricium.try"
 )
 
 // BuildbucketServer implements the ServerAPI for the buildbucket service.
@@ -56,7 +56,7 @@ func (s buildbucketServer) Trigger(c context.Context, params *TriggerParameters)
 		return nil, err
 	}
 
-	req := makeRequest(topic(c), params.PubsubUserdata, parametersJSON, params.Tags)
+	req := makeRequest(c, params.PubsubUserdata, parametersJSON, params.Tags, recipe.Recipe)
 	logging.Fields{
 		"bucket": req.Bucket,
 		"tags":   req.Tags,
@@ -141,8 +141,7 @@ func swarmingParametersJSON(worker *admin.Worker, recipe *admin.Worker_Recipe) (
 	}
 
 	parameters := map[string]interface{}{
-		"builder_name": "tricium",
-		"properties":   properties,
+		"properties": properties,
 		"swarming": map[string]interface{}{
 			"override_builder_cfg": map[string]interface{}{
 				"dimensions": dimensions,
@@ -163,11 +162,24 @@ func swarmingParametersJSON(worker *admin.Worker, recipe *admin.Worker_Recipe) (
 	return string(parametersJSON), err
 }
 
-func makeRequest(pubsubTopic, pubsubUserdata, parametersJSON string, tags []string) *bbapi.LegacyApiPutRequestMessage {
+func makeRequest(c context.Context, pubsubUserdata, parametersJSON string, tags []string, recipe *tricium.Recipe) *bbapi.LegacyApiPutRequestMessage {
+	// TODO(crbug/979730): Migrate all analyzers to specify bucket explicitly.
+	// Set default bucket here for backwards compatibility until then.
+	var bucket string
+	if recipe.Project == "" || recipe.Bucket == "" || recipe.Builder == "" {
+		logging.Fields{
+			"project": recipe.Project,
+			"bucket":  recipe.Bucket,
+			"builder": recipe.Builder,
+		}.Debugf(c, "One or more builder IDs empty; using luci.tricium.try instead.")
+		bucket = "luci.tricium.try"
+	} else {
+		bucket = fmt.Sprintf("%s.%s.%s", recipe.Project, recipe.Bucket, recipe.Builder)
+	}
 	return &bbapi.LegacyApiPutRequestMessage{
 		Bucket: bucket,
 		PubsubCallback: &bbapi.LegacyApiPubSubCallbackMessage{
-			Topic:    pubsubTopic,
+			Topic:    topic(c),
 			UserData: pubsubUserdata,
 		},
 		Tags:           tags,

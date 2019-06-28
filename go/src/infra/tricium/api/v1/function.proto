@@ -152,6 +152,15 @@ message Recipe {
 
   // Name of the recipe to run.
   string name = 4;
+
+  // Project ID, e.g. "chromium".
+  string project = 5;
+
+  // Bucket name, e.g. "try".
+  string bucket = 6;
+
+  // Builder name, e.g. "linux-rel".
+  string builder = 7;
 }
 
 // Specification of a command.
