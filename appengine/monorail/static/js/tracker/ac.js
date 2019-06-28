@@ -244,6 +244,7 @@ function ac_keyevent_(event) {
           let store = (ac_storeConstructors[i])(source, event);
           if (store) {
             ac_store = store;
+            ac_store.setAvoid(event);
             ac_oldBlurHandler = ac_addHandler_(
               ac_focusedInput, 'onblur', _ac_ob);
             storeFound = true;
@@ -375,6 +376,23 @@ _AC_Store.prototype.isCompletionKey = function(code, isDown, isShiftKey) {
   return false;
 };
 
+_AC_Store.prototype.setAvoid = function(event) {
+  if (event && event.avoidValues) {
+    ac_avoidValues = event.avoidValues;
+  } else {
+    ac_avoidValues = this.computeAvoid();
+  }
+  ac_avoidValues = ac_avoidValues.map(val => val.toLowerCase());
+}
+
+/* Subclasses may implement this to compute values to avoid
+   offering in the current input field, i.e., because those
+   values are already used. */
+_AC_Store.prototype.computeAvoid = function() {
+  return [];
+}
+
+
 function _AC_AddItemToFirstCharMap(firstCharMap, ch, s) {
   let l = firstCharMap[ch];
   if (!l) {
@@ -417,6 +435,7 @@ function _AC_SimpleStore(strings, opt_docStrings) {
 }
 _AC_SimpleStore.prototype = new _AC_Store();
 _AC_SimpleStore.prototype.constructor = _AC_SimpleStore;
+
 _AC_SimpleStore.prototype.completable =
   function(inputValue, caret) {
   // complete after the last comma not inside ""s
@@ -606,6 +625,9 @@ var ac_selected = -1;
 /** Maxium number of options dislpayed in menu. @private */
 let ac_max_options = 100;
 
+/** Don't offer these values because they are already used. @private */
+let ac_avoidValues = [];
+
 /**
  * handles all the key strokes, updating the completion list, tracking selected
  * element, performing substitutions, etc.
@@ -760,6 +782,11 @@ function ac_checkCompletions() {
       ((ac_selected >= 0 && ac_selected < ac_completions.length) ?
         ac_completions[ac_selected].value : null);
     ac_completions = ac_store.completions(completable);
+    // Don't offer options for values that the user has already used
+    // in another part of the current form.
+    ac_completions = ac_completions.filter(comp =>
+        FindInArray(ac_avoidValues, comp.value.toLowerCase()) === -1);
+
     ac_selected = oldSelected ? 0 : -1;
     ac_lastCompletable = completable;
     return;

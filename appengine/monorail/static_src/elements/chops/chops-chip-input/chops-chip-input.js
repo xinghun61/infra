@@ -416,6 +416,8 @@ export class ChopsChipInput extends LitElement {
   // TODO(zhangtiff): Delete this code once deprecating legacy autocomplete.
   // See: http://crbug.com/monorail/5301
   _triggerLegacyAutocomplete(e) {
+    e.avoidValues = this.values.filter((val, i) =>
+      i !== this.collapsedChipIndex);
     if (window.ac_keyevent_) {
       ac_keyevent_(e);
     }

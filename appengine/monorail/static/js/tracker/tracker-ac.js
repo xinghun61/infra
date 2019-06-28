@@ -847,6 +847,15 @@ function TKR_setUpLabelStore(labelDefs) {
     return result;
   };
 
+  const computeAvoid = function() {
+    const labelTextFields = Array.from(
+      document.querySelectorAll('.labelinput'));
+    const otherTextFields = labelTextFields.filter(
+      tf => (tf !== ac_focusedInput && tf.value));
+    return otherTextFields.map(tf => tf.value);
+  };
+
+
   const completions = function(labeldic) {
     return function(prefix, tofilter) {
       let comps = TKR_fullComplete(prefix, labeldic);
@@ -856,31 +865,21 @@ function TKR_setUpLabelStore(labelDefs) {
       }
 
       const filteredComps = [];
-      let labelPrefix;
-      let textFields;
-      let tf;
-      for (let i = 0; i < comps.length; i++) {
-        const prefixParts = comps[i].value.split('-');
-        labelPrefix = prefixParts[0].toLowerCase();
-        if (FindInArray(TKR_exclPrefixes, labelPrefix) === -1 ||
-            TKR_usedPrefixes[labelPrefix] === undefined ||
-            TKR_usedPrefixes[labelPrefix].length === 0 ||
-            (TKR_usedPrefixes[labelPrefix].length === 1 &&
-             TKR_usedPrefixes[labelPrefix][0] === ac_focusedInput)) {
-          let uniq = true;
-          for (p in TKR_usedPrefixes) {
-            textFields = TKR_usedPrefixes[p];
-            for (let j = 0; j < textFields.length; j++) {
-              tf = textFields[j];
-              if (tf.value.toLowerCase() === comps[i].value.toLowerCase() &&
-                  tf !== ac_focusedInput) {
-                uniq = false;
-              }
+      for (let completion of comps) {
+        const completionLower = completion.value.toLowerCase();
+        const labelPrefix = completionLower.split('-')[0];
+        let alreadyUsed = false;
+        let isExclusive = FindInArray(TKR_exclPrefixes, labelPrefix) !== -1;
+        if (isExclusive) {
+          for (let usedLabel of ac_avoidValues) {
+            if (usedLabel.startsWith(labelPrefix + '-')) {
+              alreadyUsed = true;
+              break;
             }
-          };
-          if (uniq) {
-            filteredComps.push(comps[i]);
           }
+        }
+        if (!alreadyUsed) {
+         filteredComps.push(completion);
         }
       }
 
@@ -888,6 +887,7 @@ function TKR_setUpLabelStore(labelDefs) {
     };
   };
 
+  TKR_labelStore.computeAvoid = computeAvoid;
   TKR_labelStore.completable = completable;
   TKR_labelStore.completions = completions(labelDefs);
 
