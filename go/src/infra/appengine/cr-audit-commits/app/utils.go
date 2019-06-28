@@ -42,6 +42,7 @@ type gerritClientInterface interface {
 	ChangeDetails(context.Context, string, gerrit.ChangeDetailsParams) (*gerrit.Change, error)
 	ChangeQuery(context.Context, gerrit.ChangeQueryParams) ([]*gerrit.Change, bool, error)
 	IsChangePureRevert(context.Context, string) (bool, error)
+	SetReview(context.Context, string, string, *gerrit.ReviewInput) (*gerrit.ReviewResult, error)
 }
 
 type miloClientInterface interface {

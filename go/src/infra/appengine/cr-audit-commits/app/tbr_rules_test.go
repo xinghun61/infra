@@ -121,6 +121,7 @@ func TestTBRRules(t *testing.T) {
 		testClients.gerrit = &mockGerritClient{q: q}
 
 		expectedStatus := rulePassed
+		var gerritCalls []string
 
 		Convey("Pass", func() {
 			// Inject gitiles response.
@@ -157,6 +158,7 @@ func TestTBRRules(t *testing.T) {
 				rc.CommitHash = "7b12c0de2"
 				rc.CommitTime = time.Now()
 				expectedStatus = rulePending
+				gerritCalls = []string{"SetReview"}
 
 			})
 			gitilesMockClient := gitilespb.NewMockGitilesClient(gomock.NewController(t))
@@ -179,6 +181,7 @@ func TestTBRRules(t *testing.T) {
 			}, nil)
 			rr := ChangeReviewed{}.Run(ctx, ap, rc, testClients)
 			So(rr.RuleResultStatus, ShouldEqual, expectedStatus)
+			So(testClients.gerrit.(*mockGerritClient).calls, ShouldResemble, gerritCalls)
 		})
 	})
 }

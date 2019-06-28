@@ -13,6 +13,7 @@ import (
 	"golang.org/x/net/context"
 
 	"go.chromium.org/luci/common/api/gerrit"
+	"go.chromium.org/luci/common/logging"
 )
 
 const (
@@ -74,7 +75,7 @@ func (rule ChangeReviewed) Run(ctx context.Context, ap *AuditParams, rc *Relevan
 	}
 	maxValue, err := getMaxLabelValue(crLabelInfo.Values)
 	if err != nil {
-		//TODO(crbug.com/978167): Stop using panics for this sort of errors.
+		// TODO(crbug.com/978167): Stop using panics for this sort of errors.
 		panic(err)
 	}
 	for _, vote := range crLabelInfo.All {
@@ -87,6 +88,15 @@ func (rule ChangeReviewed) Run(ctx context.Context, ap *AuditParams, rc *Relevan
 	deadline := rc.CommitTime.Add(gracePeriod)
 	if deadline.After(time.Now()) {
 		result.RuleResultStatus = rulePending
+		if prevResult == nil {
+			// Notify the CL that it needs to be approved by a valid reviewer
+			// within `gracePeriod`.
+			err := postReminder(ctx, change, deadline, cs)
+			if err != nil {
+				logging.WithError(err).Errorf(
+					ctx, "Unable to post reminder on change %v", change.ChangeID)
+			}
+		}
 	} else {
 
 		result.RuleResultStatus = ruleFailed
@@ -112,4 +122,12 @@ func getChangeWithLabelDetailsAndCurrentRevision(ctx context.Context, ap *AuditP
 		panic(fmt.Sprintf("no CL found for commit %q", rc.CommitHash))
 	}
 	return cls[0]
+}
+
+func postReminder(ctx context.Context, change *gerrit.Change, deadline time.Time, cs *Clients) error {
+	ri := &gerrit.ReviewInput{
+		Message: fmt.Sprintf("This change needs to be reviewed by a valid reviewer by %v", deadline),
+	}
+	_, err := cs.gerrit.SetReview(ctx, change.ChangeID, "current", ri)
+	return err
 }

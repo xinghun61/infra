@@ -21,14 +21,19 @@ import (
 )
 
 type mockGerritClient struct {
-	q  map[string][]*gerrit.Change
-	pr map[string]bool
-	e  error
+	q     map[string][]*gerrit.Change
+	pr    map[string]bool
+	e     error
+	calls []string
 }
 
 func (c mockGerritClient) ChangeQuery(ctx context.Context, r gerrit.ChangeQueryParams) ([]*gerrit.Change, bool, error) {
 	ret := c.q[r.Query]
 	return ret, false, c.e
+}
+func (c *mockGerritClient) SetReview(ctx context.Context, changeid string, revision string, r *gerrit.ReviewInput) (*gerrit.ReviewResult, error) {
+	c.calls = append(c.calls, "SetReview")
+	return &gerrit.ReviewResult{}, nil
 }
 
 func (c mockGerritClient) ChangeDetails(ctx context.Context, cid string, p gerrit.ChangeDetailsParams) (*gerrit.Change, error) {
