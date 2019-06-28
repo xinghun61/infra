@@ -271,6 +271,17 @@ type Rule interface {
 	Run(context.Context, *AuditParams, *RelevantCommit, *Clients) *RuleResult
 }
 
+// PreviousResult returns the result for a previous application of the rule on the given commit
+// or nil.
+func PreviousResult(ctx context.Context, rc *RelevantCommit, ruleName string) *RuleResult {
+	for _, rr := range rc.Result {
+		if rr.RuleName == ruleName {
+			return &rr
+		}
+	}
+	return nil
+}
+
 // ReleaseConfig is the skeleton of a function to get the ref and milestone
 // dynamically.
 func ReleaseConfig(ctx context.Context, cfg RepoConfig) ([]*RepoConfig, error) {

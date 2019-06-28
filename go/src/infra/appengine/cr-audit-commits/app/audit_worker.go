@@ -61,13 +61,16 @@ func performScheduledAudits(ctx context.Context, cfg *RepoConfig, repoState *Rep
 		RepoState: repoState,
 	}
 
-	cq := ds.NewQuery("RelevantCommit").Ancestor(cfgk).Eq("Status", auditScheduled).Limit(MaxWorkers * CommitsPerWorker)
+	pcq := ds.NewQuery("RelevantCommit").Ancestor(cfgk).Eq("Status", auditPending).Limit(MaxWorkers * CommitsPerWorker)
+	ncq := ds.NewQuery("RelevantCommit").Ancestor(cfgk).Eq("Status", auditScheduled).Limit(MaxWorkers * CommitsPerWorker)
 
 	wp := &workerParams{rules: cfg.Rules, clients: cs}
 
 	// Count the number of commits to be analyzed to estimate a reasonable
 	// number of workers for the load.
-	nCommits, err := ds.Count(ctx, cq)
+	nNewCommits, err := ds.Count(ctx, ncq)
+	nPendingCommits, err := ds.Count(ctx, pcq)
+	nCommits := nNewCommits + nPendingCommits
 	if err != nil {
 		return auditedCommits, err
 	}
@@ -91,11 +94,17 @@ func performScheduledAudits(ctx context.Context, cfg *RepoConfig, repoState *Rep
 	wp.workerFinished = make(chan bool, nWorkers)
 	wp.finishedCleanly = make(chan bool, nWorkers)
 	for i := 0; i < nWorkers; i++ {
+		i := i
 		go audit(ctx, i, ap, wp, repoState.ConfigName)
 	}
 
-	// Send audit jobs to workers.
-	ds.Run(ctx, cq, func(rc *RelevantCommit) {
+	// Send pending audit jobs to workers.
+	ds.Run(ctx, pcq, func(rc *RelevantCommit) {
+		logging.Infof(ctx, "Sending %s to worker pool", rc.CommitHash)
+		wp.jobs <- rc
+	})
+	// Send scheduled audit jobs to workers.
+	ds.Run(ctx, ncq, func(rc *RelevantCommit) {
 		logging.Infof(ctx, "Sending %s to worker pool", rc.CommitHash)
 		wp.jobs <- rc
 	})
@@ -174,18 +183,28 @@ func runRules(ctx context.Context, rc *RelevantCommit, ap AuditParams, wp *worke
 					wp.audited <- rc
 					return
 				default:
-					currentRuleResult := *r.Run(ctx, &ap, rc, wp.clients)
-					currentRuleResult.RuleName = r.GetName()
-					rc.Result = append(rc.Result, currentRuleResult)
-					if (currentRuleResult.RuleResultStatus == ruleFailed) || (currentRuleResult.RuleResultStatus == notificationRequired) {
-						rc.Status = auditCompletedWithActionRequired
+					previousResult := PreviousResult(ctx, rc, r.GetName())
+					if previousResult == nil || previousResult.RuleResultStatus == rulePending {
+						currentRuleResult := *r.Run(ctx, &ap, rc, wp.clients)
+						currentRuleResult.RuleName = r.GetName()
+						updated := rc.SetResult(currentRuleResult)
+						if updated && (currentRuleResult.RuleResultStatus == ruleFailed || currentRuleResult.RuleResultStatus == notificationRequired) {
+							rc.Status = auditCompletedWithActionRequired
+						}
 					}
 				}
 			}
 		}
 	}
-	if rc.Status == auditScheduled { // No rules failed.
+	if rc.Status == auditScheduled || rc.Status == auditPending { // No rules failed.
 		rc.Status = auditCompleted
+		// If any rules are pending to be decided, leave the commit as pending.
+		for _, rr := range rc.Result {
+			if rr.RuleResultStatus == rulePending {
+				rc.Status = auditPending
+				break
+			}
+		}
 	}
 	wp.audited <- rc
 }

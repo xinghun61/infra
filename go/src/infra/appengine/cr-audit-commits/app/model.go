@@ -20,6 +20,8 @@ const (
 	auditCompleted
 	auditCompletedWithActionRequired
 	auditFailed
+	// Some rules may not be decidable yet.
+	auditPending
 )
 
 // ToString returns a human-readable version of this status.
@@ -64,7 +66,9 @@ func (as AuditStatus) ToShortString() string {
 	case auditFailed:
 		return "failed"
 	case auditScheduled:
-		return "pending"
+		return "scheduled"
+	case auditPending:
+		return "pending recheck"
 	default:
 		return fmt.Sprintf("unknown:%d", int(as))
 	}
@@ -78,6 +82,7 @@ const (
 	rulePassed
 	ruleSkipped
 	notificationRequired
+	rulePending
 )
 
 // ToString returns a human-readable version of this status.
@@ -91,6 +96,8 @@ func (rs RuleStatus) ToString() string {
 		return "Rule Skipped"
 	case notificationRequired:
 		return "Notification Required"
+	case rulePending:
+		return "Rule Pending"
 	default:
 		return fmt.Sprintf("Unknown status: %d", int(rs))
 	}
@@ -160,6 +167,30 @@ type RelevantCommit struct {
 	// sends multiple emails and only partially succeeds on the first
 	// attempt.
 	NotificationStates []string
+
+	// LastExternalPoll records when the commit was last attempted
+	// to be audited. This is useful for audit rules that can be left
+	// undecided for a period of time, such as TBR auditing in order to
+	// limit the frequency of polling external systems.
+	LastExternalPoll time.Time
+}
+
+// SetResult appends the given RuleResult to the array of results for this commit,
+// or update it if one with the same RuleName is already present.
+// Returns a boolean indicating whether a change was performed.
+func (rc *RelevantCommit) SetResult(rr RuleResult) bool {
+	for i, curr := range rc.Result {
+		if curr.RuleName == rr.RuleName {
+			if curr == rr {
+				return false
+			}
+			rc.Result[i] = rr
+			return true
+		}
+
+	}
+	rc.Result = append(rc.Result, rr)
+	return true
 }
 
 // RuleResult represents the result of applying a single rule to a commit.

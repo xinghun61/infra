@@ -91,6 +91,8 @@ func Auditor(rc *router.Context) {
 		return
 	}
 
+	// TODO(crbug.com/976447): Split the auditing onto its own cron schedule.
+	//
 	// Send the relevant commits to workers to be audited, note that this
 	// doesn't persist the changes, because we want to persist them together
 	// in a single transaction for efficiency.
@@ -245,11 +247,10 @@ func saveAuditedCommits(ctx context.Context, auditedCommits map[string]*Relevant
 		}
 		for _, currentCommit := range originalCommits {
 			if auditedCommit, ok := auditedCommits[currentCommit.CommitHash]; ok {
-				// Only save those that are still in the
-				// auditScheduled state in the datastore to
-				// avoid racing a possible parallel run of
-				// this handler.
-				if currentCommit.Status == auditScheduled {
+				// Only save those that are still not in a decided
+				// state in the datastore to avoid racing a possible
+				// parallel run of this handler.
+				if currentCommit.Status == auditScheduled || currentCommit.Status == auditPending {
 					commitsToPut = append(commitsToPut, auditedCommit)
 				}
 			}
