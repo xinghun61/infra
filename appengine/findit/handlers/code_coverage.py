@@ -973,6 +973,7 @@ def _SplitLineIntoRegions(line, uncovered_blocks):
 
   return regions
 
+
 class ServeCodeCoverageData(BaseHandler):
   PERMISSION_LEVEL = Permission.ANYONE
 
@@ -1054,7 +1055,8 @@ class ServeCodeCoverageData(BaseHandler):
         # coverage data for blink code are wrong, so skip serving coverage data
         # for those files. Remove this once the bug is fixed.
         if project == 'chromium/src' and (path.startswith('third_party/blink')
-                                          or path.startswith('content/')):
+                                          or path.startswith('content/renderer')
+                                          or path.startswith('content/gpu')):
           continue
 
         formatted_data['files'].append({
