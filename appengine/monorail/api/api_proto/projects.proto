@@ -25,7 +25,6 @@ service Projects {
   rpc ListFields (ListFieldsRequest) returns (ListFieldsResponse) {}
   rpc GetProjectStarCount (GetProjectStarCountRequest) returns (GetProjectStarCountResponse) {}
   rpc StarProject (StarProjectRequest) returns (StarProjectResponse) {}
-  rpc GetUserProjects (GetUserProjectsRequest) returns (GetUserProjectsResponse) {}
   rpc CheckProjectName (CheckProjectNameRequest) returns (CheckProjectNameResponse) {}
   rpc CheckComponentName (CheckComponentNameRequest) returns (CheckComponentNameResponse) {}
   rpc CheckFieldName (CheckFieldNameRequest) returns (CheckFieldNameResponse) {}
@@ -170,20 +169,6 @@ message StarProjectRequest {
 // Next available tag: 2
 message StarProjectResponse {
   uint32 star_count = 1;
-}
-
-
-// Next available tag: 2
-message GetUserProjectsRequest {
-}
-
-
-// Next available tag: 5
-message GetUserProjectsResponse {
-  repeated string owner_of = 1;
-  repeated string member_of = 2;
-  repeated string contributor_to = 3;
-  repeated string starred_projects = 4;
 }
 
 

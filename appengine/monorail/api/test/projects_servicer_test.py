@@ -788,45 +788,6 @@ class ProjectsServicerTest(unittest.TestCase):
         0, self.CallStar(requester='user_222@example.com', starred=False))
     self.assertEqual(0, self.CallGetStarCount())
 
-  def AddUserProjects(self):
-    project_states = {
-        'live': project_pb2.ProjectState.LIVE,
-        'archived': project_pb2.ProjectState.ARCHIVED,
-        'deletable': project_pb2.ProjectState.DELETABLE}
-
-    for name, state in project_states.items():
-      self.services.project.TestAddProject(
-          'owner-' + name, state=state, owner_ids=[222])
-      self.services.project.TestAddProject(
-          'committer-' + name, state=state, committer_ids=[222])
-      contributor = self.services.project.TestAddProject(
-          'contributor-' + name, state=state)
-      contributor.contributor_ids = [222]
-
-    members_only = self.services.project.TestAddProject(
-        'members-only', owner_ids=[222])
-    members_only.access = project_pb2.ProjectAccess.MEMBERS_ONLY
-
-  def testGetUserProjects(self):
-    self.AddUserProjects()
-    self.services.project_star.SetStar(
-        self.cnxn, self.project.project_id, 222, True)
-
-    request = projects_pb2.GetUserProjectsRequest()
-    mc = monorailcontext.MonorailContext(
-        self.services, cnxn=self.cnxn, requester='user_222@example.com')
-    mc.LookupLoggedInUserPerms(self.project)
-    response = self.CallWrapped(
-        self.projects_svcr.GetUserProjects, mc, request)
-
-    self.assertEqual(
-        projects_pb2.GetUserProjectsResponse(
-            owner_of=['members-only', 'owner-live'],
-            member_of=['committer-live', 'proj'],
-            contributor_to=['contributor-live'],
-            starred_projects=['proj']),
-        response)
-
   def testCheckProjectName_OK(self):
     """We can check a project name."""
     request = projects_pb2.CheckProjectNameRequest(project_name='foo')
