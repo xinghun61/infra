@@ -1,16 +1,15 @@
-module: default
-runtime: go
-api_version: go1
+service: default
+runtime: go111
 
 handlers:
 
  - url: /internal/.*
-   script: _go_app
+   script: auto
    secure: always
    login: admin
 
  - url: /_ah/push-handlers/.*
-   script: _go_app
+   script: auto
    secure: always
    login: admin
 
@@ -27,11 +26,8 @@ handlers:
    secure: always
 
  - url: /.*
-   script: _go_app
+   script: auto
    secure: always
 
 includes:
  - common
-
-skip_files:
- - ui/node_modules/
