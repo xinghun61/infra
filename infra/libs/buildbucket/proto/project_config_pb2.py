@@ -22,7 +22,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   package='buildbucket',
   syntax='proto3',
   serialized_options=_b('Z4go.chromium.org/luci/buildbucket/proto;buildbucketpb'),
-  serialized_pb=_b('\n\x14project_config.proto\x12\x0b\x62uildbucket\x1a\x1egoogle/protobuf/wrappers.proto\x1a\x0c\x63ommon.proto\"z\n\x03\x41\x63l\x12#\n\x04role\x18\x01 \x01(\x0e\x32\x15.buildbucket.Acl.Role\x12\r\n\x05group\x18\x02 \x01(\t\x12\x10\n\x08identity\x18\x03 \x01(\t\"-\n\x04Role\x12\n\n\x06READER\x10\x00\x12\r\n\tSCHEDULER\x10\x01\x12\n\n\x06WRITER\x10\x02\"6\n\x06\x41\x63lSet\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x1e\n\x04\x61\x63ls\x18\x02 \x03(\x0b\x32\x10.buildbucket.Acl\"\xc2\x06\n\x07\x42uilder\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x15\n\rswarming_host\x18\x15 \x01(\t\x12\x0e\n\x06mixins\x18\n \x03(\t\x12\x10\n\x08\x63\x61tegory\x18\x06 \x01(\t\x12\x15\n\rswarming_tags\x18\x02 \x03(\t\x12\x12\n\ndimensions\x18\x03 \x03(\t\x12+\n\x06recipe\x18\x04 \x01(\x0b\x32\x1b.buildbucket.Builder.Recipe\x12\'\n\x03\x65xe\x18\x17 \x01(\x0b\x32\x1a.buildbucket.v2.Executable\x12\x12\n\nproperties\x18\x18 \x01(\t\x12\x10\n\x08priority\x18\x05 \x01(\r\x12\x1e\n\x16\x65xecution_timeout_secs\x18\x07 \x01(\r\x12\x17\n\x0f\x65xpiration_secs\x18\x14 \x01(\r\x12/\n\x06\x63\x61\x63hes\x18\t \x03(\x0b\x32\x1f.buildbucket.Builder.CacheEntry\x12*\n\rbuild_numbers\x18\x10 \x01(\x0e\x32\x13.buildbucket.Toggle\x12\x17\n\x0fservice_account\x18\x0c \x01(\t\x12\x33\n\x16\x61uto_builder_dimension\x18\x11 \x01(\x0e\x32\x13.buildbucket.Toggle\x12)\n\x0c\x65xperimental\x18\x12 \x01(\x0e\x32\x13.buildbucket.Toggle\x12\x1b\n\x13luci_migration_host\x18\x13 \x01(\t\x12\x45\n\x1ftask_template_canary_percentage\x18\x16 \x01(\x0b\x32\x1c.google.protobuf.UInt32Value\x1aJ\n\nCacheEntry\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x0c\n\x04path\x18\x02 \x01(\t\x12 \n\x18wait_for_warm_cache_secs\x18\x03 \x01(\x05\x1ar\n\x06Recipe\x12\x0c\n\x04name\x18\x02 \x01(\t\x12\x14\n\x0c\x63ipd_package\x18\x06 \x01(\t\x12\x14\n\x0c\x63ipd_version\x18\x05 \x01(\t\x12\x12\n\nproperties\x18\x03 \x03(\t\x12\x14\n\x0cproperties_j\x18\x04 \x03(\tJ\x04\x08\x01\x10\x02J\x04\x08\x08\x10\tJ\x04\x08\x0b\x10\x0cJ\x04\x08\r\x10\x0eJ\x04\x08\x0f\x10\x10\"\xcf\x01\n\x08Swarming\x12\x10\n\x08hostname\x18\x01 \x01(\t\x12\x12\n\nurl_format\x18\x02 \x01(\t\x12.\n\x10\x62uilder_defaults\x18\x03 \x01(\x0b\x32\x14.buildbucket.Builder\x12&\n\x08\x62uilders\x18\x04 \x03(\x0b\x32\x14.buildbucket.Builder\x12\x45\n\x1ftask_template_canary_percentage\x18\x05 \x01(\x0b\x32\x1c.google.protobuf.UInt32Value\"q\n\x06\x42ucket\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x1e\n\x04\x61\x63ls\x18\x02 \x03(\x0b\x32\x10.buildbucket.Acl\x12\x10\n\x08\x61\x63l_sets\x18\x04 \x03(\t\x12\'\n\x08swarming\x18\x03 \x01(\x0b\x32\x15.buildbucket.Swarming\"\x8b\x01\n\x0e\x42uildbucketCfg\x12$\n\x07\x62uckets\x18\x01 \x03(\x0b\x32\x13.buildbucket.Bucket\x12%\n\x08\x61\x63l_sets\x18\x02 \x03(\x0b\x32\x13.buildbucket.AclSet\x12,\n\x0e\x62uilder_mixins\x18\x03 \x03(\x0b\x32\x14.buildbucket.Builder*$\n\x06Toggle\x12\t\n\x05UNSET\x10\x00\x12\x07\n\x03YES\x10\x01\x12\x06\n\x02NO\x10\x02\x42\x36Z4go.chromium.org/luci/buildbucket/proto;buildbucketpbb\x06proto3')
+  serialized_pb=_b('\n\x14project_config.proto\x12\x0b\x62uildbucket\x1a\x1egoogle/protobuf/wrappers.proto\x1a\x0c\x63ommon.proto\"z\n\x03\x41\x63l\x12#\n\x04role\x18\x01 \x01(\x0e\x32\x15.buildbucket.Acl.Role\x12\r\n\x05group\x18\x02 \x01(\t\x12\x10\n\x08identity\x18\x03 \x01(\t\"-\n\x04Role\x12\n\n\x06READER\x10\x00\x12\r\n\tSCHEDULER\x10\x01\x12\n\n\x06WRITER\x10\x02\"6\n\x06\x41\x63lSet\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x1e\n\x04\x61\x63ls\x18\x02 \x03(\x0b\x32\x10.buildbucket.Acl\"\xd3\x06\n\x07\x42uilder\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x15\n\rswarming_host\x18\x15 \x01(\t\x12\x0e\n\x06mixins\x18\n \x03(\t\x12\x10\n\x08\x63\x61tegory\x18\x06 \x01(\t\x12\x15\n\rswarming_tags\x18\x02 \x03(\t\x12\x12\n\ndimensions\x18\x03 \x03(\t\x12+\n\x06recipe\x18\x04 \x01(\x0b\x32\x1b.buildbucket.Builder.Recipe\x12\'\n\x03\x65xe\x18\x17 \x01(\x0b\x32\x1a.buildbucket.v2.Executable\x12\x12\n\nproperties\x18\x18 \x01(\t\x12\x10\n\x08priority\x18\x05 \x01(\r\x12\x1e\n\x16\x65xecution_timeout_secs\x18\x07 \x01(\r\x12\x17\n\x0f\x65xpiration_secs\x18\x14 \x01(\r\x12/\n\x06\x63\x61\x63hes\x18\t \x03(\x0b\x32\x1f.buildbucket.Builder.CacheEntry\x12*\n\rbuild_numbers\x18\x10 \x01(\x0e\x32\x13.buildbucket.Toggle\x12\x17\n\x0fservice_account\x18\x0c \x01(\t\x12\x33\n\x16\x61uto_builder_dimension\x18\x11 \x01(\x0e\x32\x13.buildbucket.Toggle\x12)\n\x0c\x65xperimental\x18\x12 \x01(\x0e\x32\x13.buildbucket.Toggle\x12\x1b\n\x13luci_migration_host\x18\x13 \x01(\t\x12\x45\n\x1ftask_template_canary_percentage\x18\x16 \x01(\x0b\x32\x1c.google.protobuf.UInt32Value\x1a[\n\nCacheEntry\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x0c\n\x04path\x18\x02 \x01(\t\x12 \n\x18wait_for_warm_cache_secs\x18\x03 \x01(\x05\x12\x0f\n\x07\x65nv_var\x18\x04 \x01(\t\x1ar\n\x06Recipe\x12\x0c\n\x04name\x18\x02 \x01(\t\x12\x14\n\x0c\x63ipd_package\x18\x06 \x01(\t\x12\x14\n\x0c\x63ipd_version\x18\x05 \x01(\t\x12\x12\n\nproperties\x18\x03 \x03(\t\x12\x14\n\x0cproperties_j\x18\x04 \x03(\tJ\x04\x08\x01\x10\x02J\x04\x08\x08\x10\tJ\x04\x08\x0b\x10\x0cJ\x04\x08\r\x10\x0eJ\x04\x08\x0f\x10\x10\"\xcf\x01\n\x08Swarming\x12\x10\n\x08hostname\x18\x01 \x01(\t\x12\x12\n\nurl_format\x18\x02 \x01(\t\x12.\n\x10\x62uilder_defaults\x18\x03 \x01(\x0b\x32\x14.buildbucket.Builder\x12&\n\x08\x62uilders\x18\x04 \x03(\x0b\x32\x14.buildbucket.Builder\x12\x45\n\x1ftask_template_canary_percentage\x18\x05 \x01(\x0b\x32\x1c.google.protobuf.UInt32Value\"q\n\x06\x42ucket\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x1e\n\x04\x61\x63ls\x18\x02 \x03(\x0b\x32\x10.buildbucket.Acl\x12\x10\n\x08\x61\x63l_sets\x18\x04 \x03(\t\x12\'\n\x08swarming\x18\x03 \x01(\x0b\x32\x15.buildbucket.Swarming\"\x8b\x01\n\x0e\x42uildbucketCfg\x12$\n\x07\x62uckets\x18\x01 \x03(\x0b\x32\x13.buildbucket.Bucket\x12%\n\x08\x61\x63l_sets\x18\x02 \x03(\x0b\x32\x13.buildbucket.AclSet\x12,\n\x0e\x62uilder_mixins\x18\x03 \x03(\x0b\x32\x14.buildbucket.Builder*$\n\x06Toggle\x12\t\n\x05UNSET\x10\x00\x12\x07\n\x03YES\x10\x01\x12\x06\n\x02NO\x10\x02\x42\x36Z4go.chromium.org/luci/buildbucket/proto;buildbucketpbb\x06proto3')
   ,
   dependencies=[google_dot_protobuf_dot_wrappers__pb2.DESCRIPTOR,common__pb2.DESCRIPTOR,])
 
@@ -47,8 +47,8 @@ _TOGGLE = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   serialized_options=None,
-  serialized_start=1567,
-  serialized_end=1603,
+  serialized_start=1584,
+  serialized_end=1620,
 )
 _sym_db.RegisterEnumDescriptor(_TOGGLE)
 
@@ -197,6 +197,13 @@ _BUILDER_CACHEENTRY = _descriptor.Descriptor(
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='env_var', full_name='buildbucket.Builder.CacheEntry.env_var', index=3,
+      number=4, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b("").decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
   ],
   extensions=[
   ],
@@ -210,7 +217,7 @@ _BUILDER_CACHEENTRY = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=884,
-  serialized_end=958,
+  serialized_end=975,
 )
 
 _BUILDER_RECIPE = _descriptor.Descriptor(
@@ -267,8 +274,8 @@ _BUILDER_RECIPE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=960,
-  serialized_end=1074,
+  serialized_start=977,
+  serialized_end=1091,
 )
 
 _BUILDER = _descriptor.Descriptor(
@@ -424,7 +431,7 @@ _BUILDER = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=264,
-  serialized_end=1098,
+  serialized_end=1115,
 )
 
 
@@ -482,8 +489,8 @@ _SWARMING = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1101,
-  serialized_end=1308,
+  serialized_start=1118,
+  serialized_end=1325,
 )
 
 
@@ -534,8 +541,8 @@ _BUCKET = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1310,
-  serialized_end=1423,
+  serialized_start=1327,
+  serialized_end=1440,
 )
 
 
@@ -579,8 +586,8 @@ _BUILDBUCKETCFG = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1426,
-  serialized_end=1565,
+  serialized_start=1443,
+  serialized_end=1582,
 )
 
 _ACL.fields_by_name['role'].enum_type = _ACL_ROLE

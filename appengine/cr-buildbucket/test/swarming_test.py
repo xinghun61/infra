@@ -84,6 +84,18 @@ class BaseTest(testing.AppengineTestCase):
                     version='git-version',
                     version_canary='git-version-canary',
                 ),
+                dict(
+                    package_name='infra/cpython/python',
+                    version='py-version',
+                    subdir='python',
+                ),
+                dict(
+                    package_name='infra/excluded',
+                    version='excluded-version',
+                    builders=service_config_pb2.BuilderPredicate(
+                        regex_exclude=['.*'],
+                    ),
+                ),
             ],
         ),
     )
@@ -274,6 +286,27 @@ class TaskDefTest(BaseTest):
 
     self.assertEqual(1, len(slices))
     self.assertEqual(slices[0]['expiration_secs'], '120')
+
+  def test_compute_cipd_input_exclusion(self):
+    build = self._test_build()
+    cipd_input = swarming._compute_cipd_input(build, self.settings.swarming)
+    packages = {p['package_name']: p for p in cipd_input['packages']}
+    self.assertIn('infra/tools/git', packages)
+    self.assertIn('infra/cpython/python', packages)
+    self.assertNotIn('infra/excluded', packages)
+
+  def test_compute_cipd_input_path(self):
+    build = self._test_build()
+    cipd_input = swarming._compute_cipd_input(build, self.settings.swarming)
+    packages = {p['package_name']: p for p in cipd_input['packages']}
+    self.assertEqual(
+        packages['infra/tools/git']['path'],
+        swarming.USER_PACKAGE_DIR,
+    )
+    self.assertEqual(
+        packages['infra/cpython/python']['path'],
+        '%s/python' % swarming.USER_PACKAGE_DIR,
+    )
 
   def test_compute_cipd_input_canary(self):
     build = self._test_build(canary=True)
@@ -513,6 +546,11 @@ class TaskDefTest(BaseTest):
                     'package_name': 'infra/tools/git',
                     'path': swarming.USER_PACKAGE_DIR,
                     'version': 'git-version',
+                },
+                {
+                    'package_name': 'infra/cpython/python',
+                    'path': '%s/python' % swarming.USER_PACKAGE_DIR,
+                    'version': 'py-version',
                 },
             ],
         },

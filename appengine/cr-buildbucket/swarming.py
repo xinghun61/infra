@@ -448,11 +448,12 @@ def _compute_cipd_input(build, settings):
           'version': build.proto.exe.cipd_version,
       },
   ]
-  packages += [
-      convert(USER_PACKAGE_DIR, up)
-      for up in settings.user_packages
-      if _builder_matches(build.proto.builder, up.builders)
-  ]
+  for up in settings.user_packages:
+    if _builder_matches(build.proto.builder, up.builders):
+      path = USER_PACKAGE_DIR
+      if up.subdir:
+        path = posixpath.join(path, up.subdir)
+      packages.append(convert(path, up))
   return {
       'packages': packages,
   }
