@@ -499,11 +499,21 @@ assert_called_once_with(self.cnxn, user_id=user_ids, commit=commit, limit=50)
 
   def testExpungeFilterRulesByUser(self):
     emails = {'chicken@farm.test': 333, 'cow@fart.test': 222}
-    rows = [
+    project_1_keep_rows = [
+        (1, 1, 'label:no-match-here', 'add_label:should-be-deleted-inserted')]
+    project_16_keep_rows =[
+        (16, 20, 'label:no-match-here', 'add_label:should-be-deleted-inserted'),
+        (16, 21, 'owner:rainbow@test.com', 'add_label:delete-and-insert')]
+    random_row = [
+        (19, 9, 'label:no-match-in-project', 'add_label:no-DELETE-INSERTROW')]
+    rows_to_delete = [
         (1, 45, 'owner:cow@fart.test', 'add_label:happy-cows'),
         (1, 46, 'owner:cow@fart.test', 'add_label:balloon'),
-        (16, 47, 'label:queue-eggs', 'add_notify:chicken@fart.test'),
-        (17, 48, 'owner:farmer@farm.test', 'add_cc_id:111 add_cc_id: 222')]
+        (16, 47, 'label:queue-eggs', 'add_notify:chicken@farm.test'),
+        (17, 48, 'owner:farmer@farm.test', 'add_cc_id:111 add_cc_id:222'),
+    ]
+    rows = (rows_to_delete + project_1_keep_rows + project_16_keep_rows +
+            random_row)
     self.features_service.filterrule_tbl.Select = mock.Mock(return_value=rows)
     self.features_service.filterrule_tbl.Delete = mock.Mock()
 
@@ -515,29 +525,47 @@ assert_called_once_with(self.cnxn, user_id=user_ids, commit=commit, limit=50)
             tracker_pb2.FilterRule(
                 predicate=rows[1][2], add_labels=['balloon'])],
         16: [tracker_pb2.FilterRule(
-            predicate=rows[2][2], add_notify_addrs=['chicken@fart.test'])],
+            predicate=rows[2][2], add_notify_addrs=['chicken@farm.test'])],
         17: [tracker_pb2.FilterRule(
             predicate=rows[3][2], add_cc_ids=[111, 222])],
     }
     self.assertItemsEqual(rules_dict, expected_dict)
 
-    where_conds = [('predicate LIKE %s', ['%cow@fart.test%']),
-                   ('consequence LIKE %s', ['%add_notify:cow@fart.test%']),
-                   ('consequence LIKE %s', ['%add_cc_id:222%']),
-                   ('predicate LIKE %s', ['%chicken@farm.test%']),
-                   ('consequence LIKE %s', ['%add_notify:chicken@farm.test%']),
-                   ('consequence LIKE %s', ['%add_cc_id:333%'])]
-    args, kwargs = self.features_service.filterrule_tbl.Select.call_args
-    self.assertEqual(
-        args, (self.cnxn, features_svc.FILTERRULE_COLS))
-    self.assertItemsEqual(kwargs['where'], where_conds)
-    self.assertTrue(kwargs['or_where_conds'])
+    self.features_service.filterrule_tbl.Select.assert_called_once_with(
+        self.cnxn, features_svc.FILTERRULE_COLS)
 
-    args, kwargs = self.features_service.filterrule_tbl.Delete.call_args
-    self.assertEqual(args, (self.cnxn,))
-    self.assertItemsEqual(kwargs['where'], where_conds)
-    self.assertTrue(kwargs['or_where_conds'])
-    self.assertFalse(kwargs['commit'])
+    calls = [mock.call(self.cnxn, project_id=project_id, rank=rank,
+                       predicate=predicate, consequence=consequence,
+                       commit=False)
+             for (project_id, rank, predicate, consequence) in rows_to_delete]
+    self.features_service.filterrule_tbl.Delete.assert_has_calls(
+        calls, any_order=True)
+
+  def testExpungeFilterRulesByUser_EmptyUsers(self):
+    self.features_service.filterrule_tbl.Select = mock.Mock()
+    self.features_service.filterrule_tbl.Delete = mock.Mock()
+
+    rules_dict = self.features_service.ExpungeFilterRulesByUser(self.cnxn, {})
+    self.assertEqual(rules_dict, {})
+    self.features_service.filterrule_tbl.Select.assert_not_called()
+    self.features_service.filterrule_tbl.Delete.assert_not_called()
+
+  def testExpungeFilterRulesByUser_NoMatch(self):
+    rows = [
+        (17, 48, 'owner:farmer@farm.test', 'add_cc_id:111 add_cc_id: 222'),
+        (19, 9, 'label:no-match-in-project', 'add_label:no-DELETE-INSERTROW'),
+        ]
+    self.features_service.filterrule_tbl.Select = mock.Mock(return_value=rows)
+    self.features_service.filterrule_tbl.Delete = mock.Mock()
+
+    emails = {'cow@fart.test': 222}
+    rules_dict = self.features_service.ExpungeFilterRulesByUser(
+        self.cnxn, emails)
+    self.assertItemsEqual(rules_dict, {})
+
+    self.features_service.filterrule_tbl.Select.assert_called_once_with(
+        self.cnxn, features_svc.FILTERRULE_COLS)
+    self.features_service.filterrule_tbl.Delete.assert_not_called()
 
   ### Hotlists
 

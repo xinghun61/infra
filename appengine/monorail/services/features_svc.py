@@ -561,25 +561,32 @@ class FeaturesService(object):
       Dictionary of {project_id: [(predicate, consequence), ..]} for Filter
       Rules that will be deleted for containing the given emails.
     """
-    where_conds = []
-    for email, user_id in user_ids_by_email.items():
-      fmt_email = '%%%s%%' % email
-      notify_str = '%%add_notify:%s%%' % email
-      cc_id_str = '%%add_cc_id:%s%%' % user_id
-      where_conds.extend([
-          ('predicate LIKE %s', [fmt_email]),
-          ('consequence LIKE %s', [notify_str]),
-          ('consequence LIKE %s', [cc_id_str])])
+    deleted_project_rules_dict = collections.defaultdict(list)
+    if user_ids_by_email:
+      deleted_rows = []
+      emails = user_ids_by_email.keys()
+      all_rules_rows = self.filterrule_tbl.Select(cnxn, FILTERRULE_COLS)
+      logging.info('Fetched all filter rules: %s' % all_rules_rows)
+      for rule_row in all_rules_rows:
+        project_id, _rank, predicate, consequence = rule_row
+        if any(email in predicate for email in emails):
+          deleted_rows.append(rule_row)
+          continue
+        if any(
+            (('add_notify:%s' % email) in consequence or
+             ('add_cc_id:%s' % user_id) in consequence)
+            for email, user_id in user_ids_by_email.iteritems()):
+          deleted_rows.append(rule_row)
+          continue
 
-    rows = self.filterrule_tbl.Select(
-        cnxn, FILTERRULE_COLS, where=where_conds, or_where_conds=True)
+      for deleted_row in deleted_rows:
+        project_id, rank, predicate, consequence = deleted_row
+        self.filterrule_tbl.Delete(
+            cnxn, project_id=project_id, rank=rank, predicate=predicate,
+            consequence=consequence, commit=False)
+      deleted_project_rules_dict = self._DeserializeFilterRules(deleted_rows)
 
-    project_rules_dict = self._DeserializeFilterRules(rows)
-
-    self.filterrule_tbl.Delete(
-        cnxn, where=where_conds, or_where_conds=True, commit=False)
-
-    return project_rules_dict
+    return deleted_project_rules_dict
 
   ### Creating hotlists
 
