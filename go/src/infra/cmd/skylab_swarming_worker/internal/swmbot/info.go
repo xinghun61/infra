@@ -21,6 +21,7 @@ type Info struct {
 	AutotestPath    string
 	DUTID           string
 	LuciferBinDir   string
+	ParserPath      string
 	SwarmingService string
 	Task            Task
 }
@@ -33,6 +34,7 @@ type Info struct {
 //   ADMIN_SERVICE: Admin service host, e.g. foo.appspot.com.
 //   AUTOTEST_DIR: Path to the autotest checkout on server.
 //   LUCIFER_TOOLS_DIR: Path to the lucifer installation.
+//   PARSER_PATH: Path to the autotest_status_parser installation.
 //   SKYLAB_DUT_ID: skylab_inventory id of the DUT that belongs to this bot.
 //   SWARMING_SERVICE: Swarming service host, e.g. https://foo.appspot.com.
 //
@@ -45,6 +47,7 @@ func GetInfo() *Info {
 		AutotestPath:    os.Getenv("AUTOTEST_DIR"),
 		DUTID:           os.Getenv("SKYLAB_DUT_ID"),
 		LuciferBinDir:   os.Getenv("LUCIFER_TOOLS_DIR"),
+		ParserPath:      os.Getenv("PARSER_PATH"),
 		SwarmingService: os.Getenv("SWARMING_SERVICE"),
 		Task: Task{
 			RunID: os.Getenv("SWARMING_TASK_ID"),

@@ -18,6 +18,7 @@
 //   ADMIN_SERVICE: Admin service host, e.g. foo.appspot.com.
 //   AUTOTEST_DIR: Path to the autotest checkout on server.
 //   LUCIFER_TOOLS_DIR: Path to the lucifer installation.
+//   PARSER_PATH: Path to the autotest_status_parser installation.
 //   SKYLAB_DUT_ID: skylab_inventory id of the DUT that belongs to this bot.
 //
 // Per-task variables:
