@@ -3106,7 +3106,7 @@ class IssueService(object):
     self.issue2fieldvalue_tbl.Delete(
         cnxn, user_id=user_ids, commit=commit, limit=limit)
     self.issueapproval2approver_tbl.Delete(
-        cnxn, user_id=user_ids, commit=commit, limit=limit)
+        cnxn, approver_id=user_ids, commit=commit, limit=limit)
     self.issue2approvalvalue_tbl.Update(
         cnxn,
         {'setter_id': framework_constants.DELETED_USER_ID},

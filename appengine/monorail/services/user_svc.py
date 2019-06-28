@@ -693,8 +693,10 @@ class UserService(object):
       cnxn: connection to SQL database.
       user_ids: list of user_ids for users we want to delete.
     """
-    self.linkedaccount_tbl.Delete(cnxn, user_id=user_ids, commit=False)
-    self.linkedaccountinvite_tbl.Delete(cnxn, user_id=user_ids, commit=False)
+    self.linkedaccount_tbl.Delete(cnxn, parent_id=user_ids, commit=False)
+    self.linkedaccount_tbl.Delete(cnxn, child_id=user_ids, commit=False)
+    self.linkedaccountinvite_tbl.Delete(cnxn, parent_id=user_ids, commit=False)
+    self.linkedaccountinvite_tbl.Delete(cnxn, child_id=user_ids, commit=False)
     self.dismissedcues_tbl.Delete(cnxn, user_id=user_ids, commit=False)
     self.userprefs_tbl.Delete(cnxn, user_id=user_ids, commit=False)
     self.user_tbl.Delete(cnxn, user_id=user_ids, commit=False)

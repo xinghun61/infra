@@ -485,12 +485,14 @@ class SQLTableManager(object):
     cursor.close()
     return result
 
-  def Delete(self, cnxn, where=None, commit=True, limit=None, **kwargs):
+  def Delete(self, cnxn, where=None, or_where_conds=False, commit=True,
+             limit=None, **kwargs):
     """Delete the specified table rows.
 
     Args:
       cnxn: MonorailConnection object.
       where: Optional list of WHERE conditions saying which rows to update.
+      or_where_conds: Set to True to use OR in the WHERE conds.
       commit: Set to False if this operation is part of a series of operations
           that should not be committed until the final one is done.
       limit: Optional LIMIT on the number of rows deleted.
@@ -502,7 +504,7 @@ class SQLTableManager(object):
     # Deleting the whole table is never intended in Monorail.
     assert where or kwargs
 
-    stmt = Statement.MakeDelete(self.table_name)
+    stmt = Statement.MakeDelete(self.table_name, or_where_conds=or_where_conds)
     stmt.AddWhereTerms(where, **kwargs)
     stmt.SetLimitAndOffset(limit, None)
     stmt_str, stmt_args = stmt.Generate()
@@ -593,11 +595,11 @@ class Statement(object):
     return cls(main_clause, update_args=update_args)
 
   @classmethod
-  def MakeDelete(cls, table_name):
+  def MakeDelete(cls, table_name, or_where_conds=False):
     """Constuct a DELETE statement."""
     assert _IsValidTableName(table_name)
     main_clause = 'DELETE FROM %s' % table_name
-    return cls(main_clause)
+    return cls(main_clause, or_where_conds=or_where_conds)
 
   def __init__(
       self, main_clause, insert_args=None, update_args=None,

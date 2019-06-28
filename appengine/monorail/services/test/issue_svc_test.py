@@ -2472,7 +2472,7 @@ class IssueServiceTest(unittest.TestCase):
         self.cnxn, user_id=user_ids, commit=commit, limit=limit)
     self.services.issue.issueapproval2approver_tbl.\
 Delete.assert_called_once_with(
-        self.cnxn, user_id=user_ids, commit=commit, limit=limit)
+        self.cnxn, approver_id=user_ids, commit=commit, limit=limit)
     self.services.issue.issue2approvalvalue_tbl.Update.assert_called_once_with(
         self.cnxn, {'setter_id': framework_constants.DELETED_USER_ID},
         setter_id=user_ids, commit=commit, limit=limit)

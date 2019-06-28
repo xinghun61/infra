@@ -36,6 +36,7 @@ from framework import artifactcollision
 from framework import banned
 from framework import clientmon
 from framework import csp_report
+from framework import deleteusers
 from framework import excessiveactivity
 from framework import trimvisitedpages
 from framework import framework_bizobj
@@ -348,6 +349,7 @@ class ServletRegistry(object):
         urls.GROUP_DELETE: grouplist.GroupList,
         urls.HOTLIST_CREATE: hotlistcreate.HotlistCreate,
         urls.BAN_SPAMMER_TASK: banspammer.BanSpammerTask,
+        urls.DELETE_USERS_TASK: deleteusers.DeleteUsersTask,
         })
 
     self._SetupUserServlets({

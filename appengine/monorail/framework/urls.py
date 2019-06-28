@@ -58,6 +58,7 @@ SPAM_DATA_EXPORT_TASK = '/_task/spamDataExport'
 BAN_SPAMMER_TASK = '/_task/banSpammer'
 ISSUE_DATE_ACTION_TASK = '/_task/issueDateAction'
 COMPONENT_DATA_EXPORT_TASK = '/_task/componentDataExportTask'
+DELETE_USERS_TASK = '/_task/deleteUsersTask'
 
 # URL for manually triggered FLT launch issue conversion job.
 FLT_ISSUE_CONVERSION_TASK = '/_task/fltConversionTask'

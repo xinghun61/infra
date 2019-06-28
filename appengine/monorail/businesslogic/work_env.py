@@ -1722,7 +1722,7 @@ class WorkEnv(object):
   # FUTURE: DeleteUser()
   # FUTURE: ListStarredUsers()
 
-  def ExpungeUsers(self, emails):
+  def ExpungeUsers(self, emails, check_perms=True):
     """Permanently deletes user data and removes remaining user references
        for all listed users.
 
@@ -1740,6 +1740,10 @@ class WorkEnv(object):
       operations would have to be known in order for later operations to
       succeed.  E.g. ExpungeUsersIngroups().
     """
+    if check_perms:
+      # TODO(jojwang): check that user is an admin and allowed to delete
+      # users.
+      pass
 
     user_ids_by_email = self.services.user.LookupExistingUserIDs(
         self.mc.cnxn, emails)

@@ -522,12 +522,16 @@ class UserServiceTest(unittest.TestCase):
     user_ids = [222, 444]
     self.user_service.ExpungeUsers(self.cnxn, user_ids)
 
-    calls = [mock.call(self.cnxn, user_id=user_ids, commit=False)]
-    self.user_service.linkedaccount_tbl.Delete.has_calls(calls)
-    self.user_service.linkedaccountinvite_tbl.Delete.has_calls(calls)
-    self.user_service.dismissedcues_tbl.Delete.has_calls(calls)
-    self.user_service.userprefs_tbl.Delete.has_calls(calls)
-    self.user_service.user_tbl.Delete.has_calls(calls)
+    linked_account_calls = [
+        mock.call(self.cnxn, parent_id=user_ids, commit=False),
+        mock.call(self.cnxn, child_id=user_ids, commit=False)]
+    self.user_service.linkedaccount_tbl.Delete.has_calls(linked_account_calls)
+    self.user_service.linkedaccountinvite_tbl.Delete.has_calls(
+        linked_account_calls)
+    user_calls = [mock.call(self.cnxn, user_id=user_ids, commit=False)]
+    self.user_service.dismissedcues_tbl.Delete.has_calls(user_calls)
+    self.user_service.userprefs_tbl.Delete.has_calls(user_calls)
+    self.user_service.user_tbl.Delete.has_calls(user_calls)
 
   def testTotalUsersCount(self):
     self.user_service.user_tbl.SelectValue = mock.Mock()
