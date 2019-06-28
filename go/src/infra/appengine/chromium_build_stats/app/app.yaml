@@ -7,11 +7,9 @@
 #  $ gae.py depserver
 #
 # To deploy
-#  $ gae.py upload
+#  $ gcloud --project=$project app deploy app.yaml
 #
-application: chromium-build-stats
-runtime: go
-api_version: go1
+runtime: go111
 
 instance_class: F4
 
@@ -35,19 +33,19 @@ handlers:
   upload: static/(robots\.txt)
 
 - url: /file.*
-  script: _go_app
+  script: auto
   login: required
   secure: always
 - url: /ninja_log.*
-  script: _go_app
+  script: auto
   secure: always
 - url: /compiler_proxy_log.*
-  script: _go_app
+  script: auto
   secure: always
 - url: /_ah/push-handlers/.*
-  script: _go_app
+  script: auto
   login: admin
   secure: always
 - url: /.*
-  script: _go_app
+  script: auto
   secure: always

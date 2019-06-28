@@ -3,7 +3,7 @@
 // found in the LICENSE file.
 
 // Package app implements chromium-build-stats.appspot.com services.
-package app
+package main
 
 import (
 	"bufio"
