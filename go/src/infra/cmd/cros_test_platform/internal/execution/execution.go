@@ -22,7 +22,7 @@ import (
 // runners.
 type Runner interface {
 	LaunchAndWait(context.Context, swarming.Client, isolate.Client) error
-	Response(swarming.Client) *steps.ExecuteResponse
+	Response(swarming.URLer) *steps.ExecuteResponse
 }
 
 // NewSkylabRunner returns a Runner that will execute the given tests in

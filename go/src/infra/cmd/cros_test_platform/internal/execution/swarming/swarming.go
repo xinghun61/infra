@@ -11,16 +11,27 @@ import (
 	swarming_api "go.chromium.org/luci/common/api/swarming/swarming/v1"
 	"go.chromium.org/luci/common/errors"
 	"go.chromium.org/luci/swarming/proto/jsonrpc"
+
+	"infra/libs/skylab/swarming"
 )
 
+// URLer defines an interface to turn task IDs into task URLs.
+type URLer interface {
+	GetTaskURL(taskID string) string
+}
+
 // Client defines an interface used to interact with a swarming service.
-// It is implemented by infra/libs/skylab/swarming.Client
+//
+// Note: this is a superset of the URLer interface.
 type Client interface {
+	URLer
 	CreateTask(context.Context, *swarming_api.SwarmingRpcsNewTaskRequest) (*swarming_api.SwarmingRpcsTaskRequestMetadata, error)
 	GetResults(ctx context.Context, IDs []string) ([]*swarming_api.SwarmingRpcsTaskResult, error)
-	GetTaskURL(taskID string) string
 	GetTaskOutputs(ctx context.Context, IDs []string) ([]*swarming_api.SwarmingRpcsTaskOutput, error)
 }
+
+// swarming.Client is the reference implementation of the Client interface.
+var _ Client = &swarming.Client{}
 
 // UnfinishedTaskStates indicate swarming states that correspond to non-final
 // tasks.

@@ -225,7 +225,7 @@ var taskStateToLifeCycle = map[jsonrpc.TaskState]test_platform.TaskState_LifeCyc
 
 // Response constructs a response based on the current state of the
 // TaskSet.
-func (r *TaskSet) Response(swarming swarming.Client) *steps.ExecuteResponse {
+func (r *TaskSet) Response(swarming swarming.URLer) *steps.ExecuteResponse {
 	resp := &steps.ExecuteResponse{}
 	for _, test := range r.testRuns {
 		for _, attempt := range test.attempts {

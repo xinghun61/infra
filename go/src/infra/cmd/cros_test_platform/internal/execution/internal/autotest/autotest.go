@@ -62,7 +62,7 @@ func (r *Runner) LaunchAndWait(ctx context.Context, client swarming.Client, _ is
 
 // Response constructs a response based on the current state of the
 // Runner.
-func (r *Runner) Response(swarming swarming.Client) *steps.ExecuteResponse {
+func (r *Runner) Response(swarming swarming.URLer) *steps.ExecuteResponse {
 	return r.response
 }
 
