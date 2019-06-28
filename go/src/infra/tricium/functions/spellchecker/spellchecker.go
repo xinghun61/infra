@@ -55,6 +55,7 @@ var (
 		"backed",     // as in "backed by"
 		"cas",        // abbr. for Content Addressed Storage
 		"copyable",   // Valid usage, and used in C++, e.g. is_trivially_copyable
+		"crasher",    // something that causes a crash
 		"crate",      // Rust keyword
 		"ect",        // abbr. for effective connection type
 		"gae",        // abbr. for Google App Engine
@@ -118,9 +119,6 @@ func main() {
 			closeFileOrDie(f)
 		}
 	}
-
-	// Also check the commit message.
-	analyzeFile(bufio.NewScanner(strings.NewReader(input.CommitMessage)), "", true, nil, results)
 
 	// Write Tricium RESULTS data.
 	path, err := tricium.WriteDataType(*outputDir, results)
