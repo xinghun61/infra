@@ -209,14 +209,15 @@ func (b *buildUpdater) ParseAnnotations(ctx context.Context, ann *milo.Step) (*b
 			Id:       dict["id"].GetStringValue(),
 			Position: uint32(dict["position"].GetNumberValue()),
 		}
-		updatePaths = append(updatePaths, "build.output.gitiles_commit")
 		delete(props.Fields, outputCommitProp)
 	}
-
 	if outputCommit == nil {
 		if outputCommit, err = outputCommitFromLegacyProperties(props); err != nil {
 			logging.Errorf(ctx, "failed to parse output commit from legacy properties: %s", err)
 		}
+	}
+	if outputCommit != nil {
+		updatePaths = append(updatePaths, "build.output.gitiles_commit")
 	}
 
 	return &buildbucketpb.UpdateBuildRequest{
