@@ -19,6 +19,7 @@ import (
 	"go.chromium.org/luci/swarming/proto/jsonrpc"
 
 	"infra/cmd/cros_test_platform/internal/execution/internal/skylab"
+	"infra/cmd/cros_test_platform/internal/execution/isolate"
 )
 
 // fakeSwarming implements skylab.Swarming
@@ -117,7 +118,7 @@ func TestLaunchAndWaitTest(t *testing.T) {
 		Convey("when running a skylab execution", func() {
 			run := skylab.NewTaskSet(tests, &test_platform.Request_Params{})
 
-			err := run.LaunchAndWait(ctx, swarming)
+			err := run.LaunchAndWait(ctx, swarming, isolate.NullClient)
 			So(err, ShouldBeNil)
 
 			resp := run.Response(swarming)
@@ -147,7 +148,7 @@ func TestServiceError(t *testing.T) {
 
 		Convey("when the swarming service immediately returns errors, that error is surfaced as a launch error.", func() {
 			swarming.setError(fmt.Errorf("foo error"))
-			err := run.LaunchAndWait(ctx, swarming)
+			err := run.LaunchAndWait(ctx, swarming, isolate.NullClient)
 			So(err, ShouldNotBeNil)
 			So(err.Error(), ShouldContainSubstring, "launch test")
 			So(err.Error(), ShouldContainSubstring, "foo error")
@@ -157,7 +158,7 @@ func TestServiceError(t *testing.T) {
 			swarming.setCallback(func() {
 				swarming.setError(fmt.Errorf("foo error"))
 			})
-			err := run.LaunchAndWait(ctx, swarming)
+			err := run.LaunchAndWait(ctx, swarming, isolate.NullClient)
 			So(err.Error(), ShouldContainSubstring, "wait for tests")
 			So(err.Error(), ShouldContainSubstring, "foo error")
 		})
@@ -171,7 +172,7 @@ func TestTaskURL(t *testing.T) {
 		swarming := newFakeSwarming(swarming_service)
 		tests := []*build_api.AutotestTest{newTest("", false)}
 		run := skylab.NewTaskSet(tests, &test_platform.Request_Params{})
-		run.LaunchAndWait(ctx, swarming)
+		run.LaunchAndWait(ctx, swarming, isolate.NullClient)
 
 		resp := run.Response(swarming)
 		So(resp.TaskResults, ShouldHaveLength, 1)
@@ -196,7 +197,7 @@ func TestIncompleteWait(t *testing.T) {
 		wg.Add(1)
 		var err error
 		go func() {
-			err = run.LaunchAndWait(ctx, swarming)
+			err = run.LaunchAndWait(ctx, swarming, isolate.NullClient)
 			wg.Done()
 		}()
 
@@ -225,7 +226,7 @@ func TestRequestArguments(t *testing.T) {
 		}
 
 		run := skylab.NewTaskSet(tests, &test_platform.Request_Params{})
-		run.LaunchAndWait(ctx, swarming)
+		run.LaunchAndWait(ctx, swarming, isolate.NullClient)
 
 		Convey("the launched task request should have correct parameters.", func() {
 			So(swarming.createCalls, ShouldHaveLength, 1)
@@ -260,7 +261,7 @@ func TestClientTestArg(t *testing.T) {
 		}
 
 		run := skylab.NewTaskSet(tests, &test_platform.Request_Params{})
-		run.LaunchAndWait(ctx, swarming)
+		run.LaunchAndWait(ctx, swarming, isolate.NullClient)
 
 		Convey("the launched task request should have correct parameters.", func() {
 			So(swarming.createCalls, ShouldHaveLength, 1)

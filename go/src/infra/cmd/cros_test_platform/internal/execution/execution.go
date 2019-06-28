@@ -14,13 +14,14 @@ import (
 
 	"infra/cmd/cros_test_platform/internal/execution/internal/autotest"
 	"infra/cmd/cros_test_platform/internal/execution/internal/skylab"
+	"infra/cmd/cros_test_platform/internal/execution/isolate"
 	"infra/cmd/cros_test_platform/internal/execution/swarming"
 )
 
 // Runner defines the interface implemented by Skylab or Autotest execution
 // runners.
 type Runner interface {
-	LaunchAndWait(context.Context, swarming.Client) error
+	LaunchAndWait(context.Context, swarming.Client, isolate.Client) error
 	Response(swarming.Client) *steps.ExecuteResponse
 }
 

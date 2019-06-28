@@ -13,6 +13,8 @@ import (
 
 	"infra/cmd/cros_test_platform/internal/execution/internal/autotest"
 
+	"infra/cmd/cros_test_platform/internal/execution/isolate"
+
 	build_api "go.chromium.org/chromiumos/infra/proto/go/chromite/api"
 	"go.chromium.org/chromiumos/infra/proto/go/chromiumos"
 	"go.chromium.org/chromiumos/infra/proto/go/test_platform"
@@ -41,10 +43,6 @@ func (f *fakeSwarming) CreateTask(ctx context.Context, req *swarming_api.Swarmin
 }
 
 func (f *fakeSwarming) GetResults(ctx context.Context, IDs []string) ([]*swarming_api.SwarmingRpcsTaskResult, error) {
-	if f.result == nil {
-		return nil, nil
-	}
-
 	return []*swarming_api.SwarmingRpcsTaskResult{f.result}, nil
 }
 
@@ -56,7 +54,6 @@ func (f *fakeSwarming) GetTaskOutputs(ctx context.Context, IDs []string) ([]*swa
 	return []*swarming_api.SwarmingRpcsTaskOutput{{Output: f.output}}, nil
 }
 
-// SetOuput sets a string that will be used as task output.
 func (f *fakeSwarming) SetOutput(output string) {
 	f.output = output
 }
@@ -89,7 +86,7 @@ func TestLaunch(t *testing.T) {
 		Convey("when running a autotest execution", func() {
 			run := autotest.New(tests, basicParams)
 
-			run.LaunchAndWait(ctx, swarming)
+			run.LaunchAndWait(ctx, swarming, isolate.NullClient)
 			Convey("then a single run_suite proxy job is created, with correct arguments.", func() {
 				So(swarming.createCalls, ShouldHaveLength, 1)
 				So(swarming.createCalls[0].TaskSlices, ShouldHaveLength, 1)
@@ -119,7 +116,7 @@ func TestWaitAndCollect(t *testing.T) {
 		wg.Add(1)
 		var err error
 		go func() {
-			err = run.LaunchAndWait(ctx, swarming)
+			err = run.LaunchAndWait(ctx, swarming, isolate.NullClient)
 			wg.Done()
 		}()
 

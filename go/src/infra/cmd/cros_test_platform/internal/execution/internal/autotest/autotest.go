@@ -18,6 +18,7 @@ import (
 	"go.chromium.org/luci/common/errors"
 
 	"infra/cmd/cros_test_platform/internal/execution/internal/autotest/parse"
+	"infra/cmd/cros_test_platform/internal/execution/isolate"
 	"infra/cmd/cros_test_platform/internal/execution/swarming"
 	"infra/libs/skylab/autotest/dynamicsuite"
 )
@@ -36,7 +37,7 @@ func New(tests []*build_api.AutotestTest, params *test_platform.Request_Params) 
 }
 
 // LaunchAndWait launches an autotest execution and waits for it to complete.
-func (r *Runner) LaunchAndWait(ctx context.Context, client swarming.Client) error {
+func (r *Runner) LaunchAndWait(ctx context.Context, client swarming.Client, _ isolate.Client) error {
 	taskID, err := r.launch(ctx, client)
 	if err != nil {
 		return err

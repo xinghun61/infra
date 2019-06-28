@@ -18,6 +18,7 @@ import (
 	"go.chromium.org/luci/common/errors"
 	"go.chromium.org/luci/swarming/proto/jsonrpc"
 
+	"infra/cmd/cros_test_platform/internal/execution/isolate"
 	"infra/cmd/cros_test_platform/internal/execution/swarming"
 	"infra/libs/skylab/inventory"
 	"infra/libs/skylab/inventory/autotest/labels"
@@ -100,7 +101,7 @@ func NewTaskSet(tests []*build_api.AutotestTest, params *test_platform.Request_P
 // If the supplied context is cancelled prior to completion, or some other error
 // is encountered, this method returns whatever partial execution response
 // was visible to it prior to that error.
-func (r *TaskSet) LaunchAndWait(ctx context.Context, swarming swarming.Client) error {
+func (r *TaskSet) LaunchAndWait(ctx context.Context, swarming swarming.Client, isolate isolate.Client) error {
 	if err := r.launch(ctx, swarming); err != nil {
 		return err
 	}
