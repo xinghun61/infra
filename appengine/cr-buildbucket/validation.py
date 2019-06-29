@@ -205,11 +205,7 @@ def validate_requested_dimension(dim, expiration_support=True):
       _enter_err('nanos', 'must be 0')
 
 
-def validate_schedule_build_request(
-    req,
-    require_builder=True,
-    allow_reserved_properties=False,
-):
+def validate_schedule_build_request(req, legacy=False):
   if '/' in req.request_id:  # pragma: no cover
     _enter_err('request_id', 'must not contain /')
 
@@ -218,7 +214,7 @@ def validate_schedule_build_request(
 
   if req.HasField('builder'):
     with _enter('builder'):
-      validate_builder_id(req.builder, require_builder=require_builder)
+      validate_builder_id(req.builder, require_builder=not legacy)
 
   with _enter('exe'):
     _check_falsehood(req.exe, 'cipd_package')
@@ -228,7 +224,7 @@ def validate_schedule_build_request(
 
   with _enter('properties'):
     validate_struct(req.properties)
-    if not allow_reserved_properties:  # pragma: no branch
+    if not legacy:  # pragma: no branch
       for path in RESERVED_PROPERTY_PATHS:
         if _struct_has_path(req.properties, path):
           _err('property path %r is reserved', path)
@@ -238,8 +234,9 @@ def validate_schedule_build_request(
       validate_gitiles_commit(req.gitiles_commit)
 
   _check_repeated(
-      req, 'gerrit_changes',
-      lambda c: validate_gerrit_change(c, require_project=True)
+      req,
+      'gerrit_changes',
+      lambda c: validate_gerrit_change(c, require_project=not legacy),
   )
 
   with _enter('tags'):

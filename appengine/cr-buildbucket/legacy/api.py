@@ -320,13 +320,7 @@ def put_request_message_to_build_request(put_request):
 
   # Validate the resulting v2 request before continuing.
   with _wrap_validation_error():
-    validation.validate_schedule_build_request(
-        sbr,
-        # V1 does not require "builder" parameter.
-        require_builder=False,
-        # Allow properties that we don't want to see in V2.
-        allow_reserved_properties=True,
-    )
+    validation.validate_schedule_build_request(sbr, legacy=True)
 
   return creation.BuildRequest(
       schedule_build_request=sbr,
