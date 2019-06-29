@@ -152,6 +152,18 @@ func TestTrafficSplit(t *testing.T) {
 			Request:           quotaAccountRequest("link", "link", "cq"),
 			WantSkylabRequest: quotaAccountRequest("link", "link", "cq"),
 		},
+		{
+			Tag:                "(unmanaged pool, model) match for skylab with quota account override",
+			TrafficSplitConfig: trafficSplitWithRules(unmanagedPoolRuleWithQuotaAccountOverride("link", "link", "toolchain", scheduler.Backend_BACKEND_SKYLAB, "quota_account_cq")),
+			Request:            unmanagedPoolRequest("link", "link", "toolchain"),
+			WantSkylabRequest:  quotaAccountRequest("link", "link", "quota_account_cq"),
+		},
+		{
+			Tag:                 "(quota account, model) match for autotest with managed pool override",
+			TrafficSplitConfig:  trafficSplitWithRules(quotaAcccountRuleWithManagedPoolOverride("link", "link", "quota_account_cq", scheduler.Backend_BACKEND_AUTOTEST, test_platform.Request_Params_Scheduling_MANAGED_POOL_BVT)),
+			Request:             quotaAccountRequest("link", "link", "quota_account_cq"),
+			WantAutotestRequest: managedPoolRequest("link", "link", test_platform.Request_Params_Scheduling_MANAGED_POOL_BVT),
+		},
 	}
 
 	for _, c := range cases {
@@ -267,4 +279,30 @@ func quotaAccountRequest(model, buildTarget, account string) *test_platform.Requ
 	}
 	setRequestParamsIfNonEmpty(&r, model, buildTarget)
 	return &r
+}
+
+func unmanagedPoolRuleWithQuotaAccountOverride(model, buildTarget, pool string, backend scheduler.Backend, accountOverride string) *scheduler.Rule {
+	r := ruleSansPool(model, buildTarget, backend)
+	r.Request.Scheduling = &test_platform.Request_Params_Scheduling{
+		Pool: &test_platform.Request_Params_Scheduling_UnmanagedPool{UnmanagedPool: pool},
+	}
+	r.RequestMod = &scheduler.RequestMod{
+		Scheduling: &test_platform.Request_Params_Scheduling{
+			Pool: &test_platform.Request_Params_Scheduling_QuotaAccount{QuotaAccount: accountOverride},
+		},
+	}
+	return r
+}
+
+func quotaAcccountRuleWithManagedPoolOverride(model, buildTarget, account string, backend scheduler.Backend, poolOverride test_platform.Request_Params_Scheduling_ManagedPool) *scheduler.Rule {
+	r := ruleSansPool(model, buildTarget, backend)
+	r.Request.Scheduling = &test_platform.Request_Params_Scheduling{
+		Pool: &test_platform.Request_Params_Scheduling_QuotaAccount{QuotaAccount: account},
+	}
+	r.RequestMod = &scheduler.RequestMod{
+		Scheduling: &test_platform.Request_Params_Scheduling{
+			Pool: &test_platform.Request_Params_Scheduling_ManagedPool_{ManagedPool: poolOverride},
+		},
+	}
+	return r
 }

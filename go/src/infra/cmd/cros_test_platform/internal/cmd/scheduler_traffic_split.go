@@ -13,6 +13,7 @@ import (
 
 	"infra/cmd/cros_test_platform/internal/site"
 
+	"github.com/golang/protobuf/proto"
 	"github.com/maruel/subcommands"
 	"go.chromium.org/chromiumos/infra/proto/go/test_platform/migration/scheduler"
 	"go.chromium.org/chromiumos/infra/proto/go/test_platform/steps"
@@ -140,7 +141,6 @@ func determineTrafficSplit(request *steps.SchedulerTrafficSplitRequest, trafficS
 	if err := ensureSufficientForTrafficSplit(request.Request); err != nil {
 		return nil, errors.Annotate(err, "determine traffic split").Err()
 	}
-
 	rules := determineRelevantRules(request.Request, trafficSplitConfig.Rules)
 	switch {
 	case len(rules) == 0:
@@ -150,20 +150,7 @@ func determineTrafficSplit(request *steps.SchedulerTrafficSplitRequest, trafficS
 	default:
 		// good case fallthrough.
 	}
-
-	r := rules[0]
-	switch r.Backend {
-	case scheduler.Backend_BACKEND_AUTOTEST:
-		return &steps.SchedulerTrafficSplitResponse{
-			AutotestRequest: request.Request,
-		}, nil
-	case scheduler.Backend_BACKEND_SKYLAB:
-		return &steps.SchedulerTrafficSplitResponse{
-			SkylabRequest: request.Request,
-		}, nil
-	default:
-		return nil, errors.Reason("invalid backend %s in rule", r.Backend.String()).Err()
-	}
+	return applyTrafficSplitRule(request, rules[0])
 }
 
 func ensureSufficientForTrafficSplit(r *test_platform.Request) error {
@@ -171,6 +158,35 @@ func ensureSufficientForTrafficSplit(r *test_platform.Request) error {
 		return errors.Reason("request contains no pool information").Err()
 	}
 	return nil
+}
+
+func applyTrafficSplitRule(request *steps.SchedulerTrafficSplitRequest, rule *scheduler.Rule) (*steps.SchedulerTrafficSplitResponse, error) {
+	newRequest := applyRequestModification(request.Request, rule.GetRequestMod())
+	switch rule.Backend {
+	case scheduler.Backend_BACKEND_AUTOTEST:
+		return &steps.SchedulerTrafficSplitResponse{
+			AutotestRequest: newRequest,
+		}, nil
+	case scheduler.Backend_BACKEND_SKYLAB:
+		return &steps.SchedulerTrafficSplitResponse{
+			SkylabRequest: newRequest,
+		}, nil
+	default:
+		return nil, errors.Reason("invalid backend %s in rule", rule.Backend.String()).Err()
+	}
+}
+
+func applyRequestModification(request *test_platform.Request, mod *scheduler.RequestMod) *test_platform.Request {
+	if mod == nil {
+		return request
+	}
+	var dst test_platform.Request
+	proto.Merge(&dst, request)
+	if dst.Params == nil {
+		dst.Params = &test_platform.Request_Params{}
+	}
+	proto.Merge(dst.Params.Scheduling, mod.Scheduling)
+	return &dst
 }
 
 func determineRelevantRules(request *test_platform.Request, rules []*scheduler.Rule) []*scheduler.Rule {
