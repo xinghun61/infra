@@ -30,6 +30,14 @@ func newAuthenticatedTransport(ctx context.Context, f *authcli.Flags) (http.Roun
 	return a.Transport()
 }
 
+func newAuthenticatedHTTPClient(ctx context.Context, f *authcli.Flags) (*http.Client, error) {
+	t, err := newAuthenticatedTransport(ctx, f)
+	if err != nil {
+		return nil, err
+	}
+	return &http.Client{Transport: t}, nil
+}
+
 func readRequest(inFile string, request proto.Message) error {
 	r, err := os.Open(inFile)
 	if err != nil {
