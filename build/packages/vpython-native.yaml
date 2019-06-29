@@ -36,7 +36,7 @@ posix_symlinks:
     dst: python2
   - src: python
     dst: python2.7
-    # TODO(iannucci): maybe add python3 aliases once vpython respects argv[0]
-    # to select real interpreter.
+  - src: python
+    dst: python3
 data:
   - version_file: .versions/python${exe_suffix}.cipd_version

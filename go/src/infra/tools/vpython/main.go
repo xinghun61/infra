@@ -92,8 +92,9 @@ func mainImpl(c context.Context, argv []string, env environ.Env) int {
 
 	// Determine if we're bypassing "vpython".
 	defaultConfig.Bypass = env.GetEmpty(BypassENV) == BypassSentinel
-	// Determine if we're operating in "vpython3" mode (invoked as ./vpython3 or ./vpython3.exe).
-	if strings.HasSuffix(argv[0], "vpython3") || strings.HasSuffix(argv[0], "vpython3.exe") {
+	// Determine if we're operating in "vpython3" mode (invoked as ./vpython3, ./vpython3.exe,
+	// ./python3, or ./python3.exe).
+	if strings.HasSuffix(argv[0], "python3") || strings.HasSuffix(argv[0], "python3.exe") {
 		defaultConfig.SpecLoader.CommonSpecNames = []string{".vpython3"}
 		defaultConfig.SpecLoader.PartnerSuffix = ".vpython3"
 	}

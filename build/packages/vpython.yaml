@@ -22,6 +22,9 @@ go_build_environ:
 go_packages:
   - infra/tools/vpython
 root: ../../go/bin
+posix_symlinks:
+  - src: vpython
+    dst: vpython3
 data:
   - file: vpython${exe_suffix}
     generate_bat_shim: true
