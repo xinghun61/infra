@@ -403,8 +403,6 @@ def _query_search_async(q):
   dq = filter_if(model.Build.created_by, q.created_by)
   dq = filter_if(model.Build.retry_of, q.retry_of)
   dq = filter_if(model.Build.canary, q.canary)
-  if not q.include_experimental:
-    dq = dq.filter(model.Build.experimental == False)
 
   if q.bucket_ids and q.retry_of is None:
     if q.builder:
@@ -433,6 +431,8 @@ def _query_search_async(q):
       return False  # pragma: no cover
     if not _between(build.create_time, q.create_time_low, q.create_time_high):
       return False  # pragma: no cover
+    if build.experimental and not q.include_experimental:
+      return False
     return True
 
   raise ndb.Return((

@@ -646,6 +646,18 @@ class SearchTest(testing.AppengineTestCase):
     builds, _ = self.search(tags=[self.INDEXED_TAG], include_experimental=True)
     self.assertEqual(builds, [prod_build, exp_build])
 
+  def test_filter_by_with_experimental_and_paging(self):
+    for _ in xrange(100):
+      self.put_build(input=dict(experimental=True))
+    prod_build = self.put_build(input=dict(experimental=False))
+    for _ in xrange(100):
+      self.put_build(input=dict(experimental=True))
+
+    builds, _ = self.search()
+    self.assertEqual(builds, [prod_build])
+    builds, _ = self.search(tags=[self.INDEXED_TAG])
+    self.assertEqual(builds, [prod_build])
+
   def test_multiple_shard_of_tag_index(self):
     # Add two builds into shard0 and 2 in shard1.
     search.TagIndex.random_shard_index.return_value = 0
