@@ -19,7 +19,7 @@ describe('issue', () => {
     })), [{value: 'v'}]);
   });
 
-  it('type', () => {
+  it('type computes type from custom field', () => {
     assert.isUndefined(issue.type(wrapIssue()));
     assert.isUndefined(issue.type(wrapIssue({
       fieldValues: [{value: 'v'}],
@@ -28,6 +28,25 @@ describe('issue', () => {
       fieldValues: [
         {fieldRef: {fieldName: 'IgnoreMe'}, value: 'v'},
         {fieldRef: {fieldName: 'Type'}, value: 'Defect'},
+      ],
+    })), 'Defect');
+  });
+
+  it('type computes type from label', () => {
+    assert.deepEqual(issue.type(wrapIssue({
+      labelRefs: [
+        {label: 'Test'},
+        {label: 'tYpE-FeatureRequest'},
+      ],
+    })), 'FeatureRequest');
+
+    assert.deepEqual(issue.type(wrapIssue({
+      fieldValues: [
+        {fieldRef: {fieldName: 'IgnoreMe'}, value: 'v'},
+      ],
+      labelRefs: [
+        {label: 'Test'},
+        {label: 'Type-Defect'},
       ],
     })), 'Defect');
   });

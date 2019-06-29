@@ -340,28 +340,47 @@ export const fieldValues = createSelector(
   (issue) => issue && issue.fieldValues
 );
 
+export const labelRefs = createSelector(
+  issue,
+  (issue) => issue && issue.labelRefs
+);
+
 export const type = createSelector(
   fieldValues,
-  (fieldValues) => {
-    if (!fieldValues) return;
-    const typeFieldValue = fieldValues.find(
-      (f) => (f.fieldRef && f.fieldRef.fieldName === 'Type')
-    );
-    if (typeFieldValue) {
-      return typeFieldValue.value;
+  labelRefs,
+  (fieldValues, labelRefs) => {
+    if (fieldValues) {
+      // If there is a custom field for "Type", use that for type.
+      const typeFieldValue = fieldValues.find(
+        (f) => (f.fieldRef && f.fieldRef.fieldName.toLowerCase() === 'type')
+      );
+      if (typeFieldValue) {
+        return typeFieldValue.value;
+      }
     }
+
+    // Otherwise, search through labels for a "Type" label.
+    if (labelRefs) {
+      const typeLabel = labelRefs.find(
+        (l) => l.label.toLowerCase().startsWith('type-'));
+      if (typeLabel) {
+        // Strip length of prefix.
+        return typeLabel.label.substr(5);
+      }
+    }
+
     return;
   }
 );
 
 export const restrictions = createSelector(
-  issue,
-  (issue) => {
-    if (!issue || !issue.labelRefs) return {};
+  labelRefs,
+  (labelRefs) => {
+    if (!labelRefs) return {};
 
     const restrictions = {};
 
-    issue.labelRefs.forEach((labelRef) => {
+    labelRefs.forEach((labelRef) => {
       const label = labelRef.label;
       const lowerCaseLabel = label.toLowerCase();
 
@@ -493,6 +512,7 @@ export const components = createSelector(
   }
 );
 
+// Get custom fields that apply to a specific issue.
 export const fieldDefs = createSelector(
   project.fieldDefs,
   type,
