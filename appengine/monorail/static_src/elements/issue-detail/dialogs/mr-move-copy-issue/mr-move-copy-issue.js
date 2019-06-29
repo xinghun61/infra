@@ -50,9 +50,13 @@ export class MrMoveCopyIssue extends connectStore(LitElement) {
           <h3 class="medium-heading">${this._action} issue</h3>
           <div class="input-grid">
             <label for="targetProjectInput">Target project:</label>
-            <mr-autocomplete vocabularyName="project">
+            <div>
               <input id="targetProjectInput" />
-            </mr-autocomplete>
+              <mr-autocomplete
+                vocabularyName="project"
+                for="targetProjectInput"
+              ></mr-autocomplete>
+            </div>
           </div>
 
           ${this._targetProjectError ? html`

@@ -2,11 +2,13 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import {LitElement, html, css} from 'lit-element';
+import {LitElement, html} from 'lit-element';
 
 const DELIMITER_REGEX = /[^a-z0-9]+/i;
 const DEFAULT_REPLACER = (input, value) => input.value = value;
 const DEFAULT_MAX_COMPLETIONS = 200;
+
+let idCount = 1;
 
 /**
  * `<chops-autocomplete>` shared autocomplete UI code that inter-ops with
@@ -19,67 +21,84 @@ const DEFAULT_MAX_COMPLETIONS = 200;
  * @customElement
  */
 export class ChopsAutocomplete extends LitElement {
-  static get styles() {
-    return css`
-      :host {
-        position: relative;
-      }
-      table {
-        padding: 0;
-        min-width: 100px;
-        max-height: 300px;
-        overflow: auto;
-        font-size: var(--chops-main-font-size);
-        color: var(--chops-link-color);
-        position: absolute;
-        top: 90%;
-        background: white;
-        border: var(--chops-accessible-border);
-        z-index: 999;
-        box-shadow: 2px 3px 8px 0px hsla(0, 0%, 0%, 0.3);
-        border-spacing: 0;
-        border-collapse: collapse;
-      }
-      tr {
-        cursor: pointer;
-        transition: background 0.2s ease-in-out;
-      }
-      tr[data-selected] {
-        background: var(--chops-blue-100);
-      }
-      td {
-        padding: 0.25em 8px;
-        white-space: nowrap;
-      }
-    `;
-  }
-
   render() {
     const completions = this.completions;
+    const currentValue = this._prefix.trim().toLowerCase();
+    const index = this._selectedIndex;
+    const currentCompletion = index >= 0
+      && index < completions.length ? completions[index] : '';
+
     return html`
-      <slot @slotchange=${this._registerInputElement}></slot>
-      <table
-        ?hidden=${!completions.length}
-      >
-        <tbody>
-          ${completions.map((completion, i) => html`
-            <tr
-              ?data-selected=${i === this._selectedIndex}
-              data-index=${i}
-              data-value=${completion}
-              @mouseover=${this._hoverCompletion}
-              @mousedown=${this._clickCompletion}
-            >
-              <td class="completion">
-                ${this._renderCompletion(completion)}
-              </td>
-              <td class="docstring">
-                ${this._renderDocstring(completion)}
-              </td>
-            </tr>
-          `)}
-        </tbody>
-      </table>
+      <style>
+        .chops-autocomplete-container {
+          position: relative;
+        }
+        .chops-autocomplete-container table {
+          padding: 0;
+          min-width: 100px;
+          max-height: 300px;
+          overflow: auto;
+          font-size: var(--chops-main-font-size);
+          color: var(--chops-link-color);
+          position: absolute;
+          background: white;
+          border: var(--chops-accessible-border);
+          z-index: 999;
+          box-shadow: 2px 3px 8px 0px hsla(0, 0%, 0%, 0.3);
+          border-spacing: 0;
+          border-collapse: collapse;
+        }
+        .chops-autocomplete-container tr {
+          cursor: pointer;
+          transition: background 0.2s ease-in-out;
+        }
+        .chops-autocomplete-container tr[data-selected] {
+          background: var(--chops-blue-100);
+        }
+        .chops-autocomplete-container td {
+          padding: 0.25em 8px;
+          white-space: nowrap;
+        }
+        .screenreader-hidden {
+          clip: rect(1px, 1px, 1px, 1px);
+          height: 1px;
+          overflow: hidden;
+          position: absolute;
+          white-space: nowrap;
+          width: 1px;
+        }
+      </style>
+      <div class="chops-autocomplete-container">
+        <span class="screenreader-hidden" aria-live="polite">
+          ${currentCompletion}
+        </span>
+        <table
+          ?hidden=${!completions.length}
+        >
+          <tbody>
+            ${completions.map((completion, i) => html`
+              <tr
+                id=${completionId(this.id, i)}
+                ?data-selected=${i === index}
+                data-index=${i}
+                data-value=${completion}
+                @mouseover=${this._hoverCompletion}
+                @mousedown=${this._clickCompletion}
+                role="option"
+                aria-selected=${completion.toLowerCase()
+                  === currentValue ? 'true' : 'false'}
+              >
+                <td class="completion">
+                  ${this._renderCompletion(completion)}
+                </td>
+                <td class="docstring">
+                  ${this._renderDocstring(completion)}
+                </td>
+              </tr>
+            `)}
+          </tbody>
+        </table>
+      </div>
     `;
   }
 
@@ -125,6 +144,24 @@ export class ChopsAutocomplete extends LitElement {
   static get properties() {
     return {
       /**
+       * The input this element is for.
+       */
+      for: {type: String},
+      /**
+       * Generated id for the element.
+       */
+      id: {
+        type: String,
+        reflect: true,
+      },
+      /**
+       * The role attribute, set for accessibility.
+       */
+      role: {
+        type: String,
+        reflect: true,
+      },
+      /**
        * Array of strings for possible autocompletion values.
        */
       strings: {type: Array},
@@ -157,6 +194,7 @@ export class ChopsAutocomplete extends LitElement {
       _boundFocusHandler: {type: Object},
       _boundNavigateCompletions: {type: Object},
       _boundKeyInputHandler: {type: Object},
+      _oldAttributes: {type: Object},
     };
   }
 
@@ -168,18 +206,57 @@ export class ChopsAutocomplete extends LitElement {
     this.completions = [];
     this.max = DEFAULT_MAX_COMPLETIONS;
 
+    this.role = 'listbox';
+    this.id = `chops-autocomplete-${idCount++}`;
+
     this._matchDict = {};
     this._selectedIndex = -1;
     this._prefix = '';
     this._boundFocusHandler = this._focusHandler.bind(this);
     this._boundKeyInputHandler = this._keyInputHandler.bind(this);
     this._boundNavigateCompletions = this._navigateCompletions.bind(this);
+    this._oldAttributes = {};
+  }
+
+  // Disable shadow DOM to allow aria attributes to propagate.
+  createRenderRoot() {
+    return this;
   }
 
   disconnectedCallback() {
     super.disconnectedCallback();
 
     this._disconnectAutocomplete(this._forRef);
+  }
+
+  updated(changedProperties) {
+    if (changedProperties.has('for')) {
+      const forRef = this.getRootNode().querySelector('#' + this.for);
+
+      // TODO(zhangtiff): Make this element work with custom input components
+      // in the future as well.
+      this._forRef = (forRef.tagName || '').toUpperCase() === 'INPUT'
+        ? forRef : undefined;
+      this._connectAutocomplete(this._forRef);
+    }
+    if (this._forRef) {
+      if (changedProperties.has('id')) {
+        this._forRef.setAttribute('aria-owns', this.id);
+      }
+      if (changedProperties.has('completions')) {
+        this._forRef.setAttribute('aria-expanded',
+          this.completions.length ? 'true' : 'false');
+      }
+
+      if (changedProperties.has('_selectedIndex')
+          || changedProperties.has('completions')) {
+        const i = this._selectedIndex;
+
+        this._forRef.setAttribute('aria-activedescendant',
+          i >= 0 && i < this.completions.length ?
+            completionId(this.id, i) : '');
+      }
+    }
   }
 
   /**
@@ -254,18 +331,6 @@ export class ChopsAutocomplete extends LitElement {
     this.completions = [];
     this._prefix = '';
     this._selectedIndex = -1;
-  }
-
-  _registerInputElement(e) {
-    const nodes = e.target.assignedNodes();
-
-    if (nodes && nodes.length > 0) {
-      this._forRef = nodes.find(
-        (el) => (el.tagName || '').toUpperCase() === 'INPUT');
-      this._connectAutocomplete(this._forRef);
-    } else {
-      this._forRef = null;
-    }
   }
 
   _hoverCompletion(e) {
@@ -346,6 +411,19 @@ export class ChopsAutocomplete extends LitElement {
     node.addEventListener('keydown', this._boundNavigateCompletions);
     node.addEventListener('focus', this._boundFocusHandler);
     node.addEventListener('blur', this._boundFocusHandler);
+
+    this._oldAttributes = {
+      'aria-owns': node.getAttribute('aria-owns'),
+      'aria-autocomplete': node.getAttribute('aria-autocomplete'),
+      'aria-expanded': node.getAttribute('aria-expanded'),
+      'aria-haspopup': node.getAttribute('aria-haspopup'),
+      'aria-activedescendant': node.getAttribute('aria-activedescendant'),
+    };
+    node.setAttribute('aria-owns', this.id);
+    node.setAttribute('aria-autocomplete', 'both');
+    node.setAttribute('aria-expanded', 'false');
+    node.setAttribute('aria-haspopup', 'listbox');
+    node.setAttribute('aria-activedescendant', '');
   }
 
   _disconnectAutocomplete(node) {
@@ -355,6 +433,16 @@ export class ChopsAutocomplete extends LitElement {
     node.removeEventListener('keydown', this._boundNavigateCompletions);
     node.removeEventListener('focus', this._boundFocusHandler);
     node.removeEventListener('blur', this._boundFocusHandler);
+
+    for (const key of Object.keys(this._oldAttributes)) {
+      node.setAttribute(key, this._oldAttributes[key]);
+    }
+    this._oldAttributes = {};
   }
 }
+
+function completionId(prefix, i) {
+  return `${prefix}-option-${i}`;
+}
+
 customElements.define('chops-autocomplete', ChopsAutocomplete);

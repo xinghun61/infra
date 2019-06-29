@@ -15,11 +15,15 @@ describe('chops-autocomplete', () => {
     document.body.appendChild(element);
 
     input = document.createElement('input');
-    element.appendChild(input);
+    input.id = 'autocomplete-input';
+    document.body.appendChild(input);
+
+    element.for = 'autocomplete-input';
   });
 
   afterEach(() => {
     document.body.removeChild(element);
+    document.body.removeChild(input);
   });
 
   it('initializes', () => {
@@ -59,8 +63,8 @@ describe('chops-autocomplete', () => {
     element.docDict = {'hello': 'well hello there'};
     await element.updateComplete;
 
-    const completions = element.shadowRoot.querySelectorAll('.completion');
-    const docstrings = element.shadowRoot.querySelectorAll('.docstring');
+    const completions = element.querySelectorAll('.completion');
+    const docstrings = element.querySelectorAll('.docstring');
 
     assert.equal(completions.length, 2);
     assert.equal(docstrings.length, 2);
@@ -81,7 +85,7 @@ describe('chops-autocomplete', () => {
 
     await element.updateComplete;
 
-    const completion = element.shadowRoot.querySelector('.completion');
+    const completion = element.querySelector('.completion');
 
     assert.include(completion.textContent, 'hello-world');
 
@@ -157,7 +161,7 @@ describe('chops-autocomplete', () => {
 
     await element.updateComplete;
 
-    const completionTable = element.shadowRoot.querySelector('table');
+    const completionTable = element.querySelector('table');
     assert.isFalse(completionTable.hidden);
 
     element.hideCompletions();
@@ -177,7 +181,7 @@ describe('chops-autocomplete', () => {
 
     await element.updateComplete;
 
-    const completions = element.shadowRoot.querySelectorAll('tr');
+    const completions = element.querySelectorAll('tr');
 
     assert.equal(input.value, '');
 
@@ -191,6 +195,21 @@ describe('chops-autocomplete', () => {
     assert.equal(input.value, 'click me!');
   });
 
+  it('aria-activedescendant set based on selected option', async () => {
+    element.completions = [
+      'i',
+      'am',
+      'an option',
+    ];
+    element._selectedIndex = 1;
+    element.id = 'chops-autocomplete-1';
+
+    await element.updateComplete;
+
+    assert.equal(input.getAttribute('aria-activedescendant'),
+      'chops-autocomplete-1-option-1');
+  });
+
   it('hovering over a completion selects it', async () => {
     element.completions = [
       'hover',
@@ -200,7 +219,7 @@ describe('chops-autocomplete', () => {
 
     await element.updateComplete;
 
-    const completions = element.shadowRoot.querySelectorAll('tr');
+    const completions = element.querySelectorAll('tr');
 
     element._hoverCompletion({
       currentTarget: completions[2],
