@@ -243,7 +243,6 @@ var (
 // outputCommitFromLegacyProperties synthesizes an output commit from
 // legacy got_revision and got_revision_cp properties.
 // Uses "repository" property as a repo, which isn't entirely correct.
-// May return a commit without a ref.
 func outputCommitFromLegacyProperties(props *structpb.Struct) (*buildbucketpb.GitilesCommit, error) {
 	repo := props.Fields["repository"].GetStringValue()
 	gotRevision := props.Fields["got_revision"].GetStringValue()
@@ -255,7 +254,7 @@ func outputCommitFromLegacyProperties(props *structpb.Struct) (*buildbucketpb.Gi
 
 	// Parse repository.
 	var err error
-	ret := &buildbucketpb.GitilesCommit{}
+	ret := &buildbucketpb.GitilesCommit{Ref: "refs/heads/master"}
 	if ret.Host, ret.Project, err = gitiles.ParseRepoURL(repo); err != nil {
 		return nil, err
 	}

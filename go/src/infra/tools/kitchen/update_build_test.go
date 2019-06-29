@@ -360,6 +360,7 @@ func TestOutputCommitFromLegacyProperties(t *testing.T) {
 			So(actual, ShouldResembleProto, &buildbucketpb.GitilesCommit{
 				Host:    "chromium.googlesource.com",
 				Project: "chromium/src",
+				Ref:     "refs/heads/master",
 				Id:      "e57f4e87022d765b45e741e478a8351d9789bc37",
 			})
 		})
