@@ -15,6 +15,7 @@ from protorpc import messages
 
 from components import utils
 
+from proto import build_pb2
 from proto import common_pb2
 import buildtags
 import config
@@ -63,6 +64,7 @@ def fetch_page_async(query, page_size, start_cursor, predicate=None):
     # entities, and the user will never see them.
     to_fetch = page_size - len(entities)
 
+    logging.debug('fetch_page: ds query: %s', query)
     page, curs, more = yield query.fetch_page_async(to_fetch, start_cursor=curs)
     pages += 1
     for entity in page:
@@ -75,8 +77,8 @@ def fetch_page_async(query, page_size, start_cursor, predicate=None):
     if not more:
       break
   logging.debug(
-      'fetch_page: fetched %d pages in %dms, skipped %d entities', pages,
-      (utils.utcnow() - started).total_seconds() * 1000, skipped
+      'fetch_page: %dms ellapsed ',
+      (utils.utcnow() - started).total_seconds() * 1000,
   )
 
   curs_str = None
@@ -127,6 +129,7 @@ class Query(object):
       self,
       project=None,
       bucket_ids=None,
+      builder=None,
       tags=None,
       status=None,
       result=None,
@@ -151,6 +154,8 @@ class Query(object):
       bucket_ids (list of str): a list of bucket_ids to search in.
         A build must be in one of the buckets.
         Mutually exclusive with project.
+      builder (str): builder name, e.g. "linux-rel".
+        Requires bucket_ids.
       tags (list of str): a list of tags that a build must have.
         All of the |tags| must be present in a build.
       status (StatusFilter or common_pb2.Status): build status.
@@ -175,6 +180,7 @@ class Query(object):
     """
     self.project = project
     self.bucket_ids = bucket_ids
+    self.builder = builder
     self.tags = tags
     self.status = status
     self.result = result
@@ -216,7 +222,13 @@ class Query(object):
     """Raises errors.InvalidInputError if self is invalid."""
     assert isinstance(self.status, (type(None), StatusFilter, int)), self.status
     assert isinstance(self.bucket_ids, (type(None), list)), self.bucket_ids
-    assert not (self.bucket_ids and self.project)
+
+    if self.bucket_ids and self.project:
+      raise errors.InvalidInputError(
+          'project and bucket_ids are mutually exclusive'
+      )
+    if self.builder and not self.bucket_ids:
+      raise errors.InvalidInputError('builder requires non-empty bucket_ids')
 
     buildtags.validate_tags(self.tags, 'search')
 
@@ -240,6 +252,12 @@ class Query(object):
       return (self.build_low, self.build_high)
     else:
       return model.build_id_range(self.create_time_low, self.create_time_high)
+
+  def expand_builder_ids(self):
+    """Expands bucket_ids and builder name to a list of builder ids."""
+    assert self.builder
+    assert self.bucket_ids
+    return ['%s/%s' % (bucket, self.builder) for bucket in self.bucket_ids]
 
 
 @ndb.tasklet
@@ -358,7 +376,6 @@ def _query_search_async(q):
   # (q.bucket_ids is None) means the requester has access to all buckets.
   assert q.bucket_ids is None or q.bucket_ids
 
-  check_buckets_locally = q.retry_of is not None
   dq = model.Build.query()
   for t in q.tags:
     dq = dq.filter(model.Build.tags == t)
@@ -389,8 +406,11 @@ def _query_search_async(q):
   if not q.include_experimental:
     dq = dq.filter(model.Build.experimental == False)
 
-  if q.bucket_ids and not check_buckets_locally:
-    dq = dq.filter(model.Build.bucket_id.IN(q.bucket_ids))
+  if q.bucket_ids and q.retry_of is None:
+    if q.builder:
+      dq = dq.filter(model.Build.builder_id.IN(q.expand_builder_ids()))
+    else:
+      dq = dq.filter(model.Build.bucket_id.IN(q.bucket_ids))
 
   id_low, id_high = q.get_create_time_order_build_id_range()
   if id_low is not None:
@@ -409,6 +429,8 @@ def _query_search_async(q):
       return False  # pragma: no cover
     if q.bucket_ids and build.bucket_id not in q.bucket_ids:
       return False
+    if q.builder and build.proto.builder.builder != q.builder:
+      return False  # pragma: no cover
     if not _between(build.create_time, q.create_time_low, q.create_time_high):
       return False  # pragma: no cover
     return True
@@ -605,6 +627,8 @@ def _tag_index_search_async(q):
         skipped_entries += 1
         continue
       if b.experimental and not q.include_experimental:
+        continue
+      if q.builder and b.proto.builder.builder != q.builder:
         continue
       result.append(b)
 

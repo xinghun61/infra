@@ -207,8 +207,9 @@ class SearchTests(BaseTestCase):
     search_async.assert_called_once_with(
         search.Query(
             bucket_ids=['chromium/try'],
-            tags=['builder:linux-try'],
+            builder='linux-try',
             include_experimental=False,
+            tags=[],
             status=common_pb2.STATUS_UNSPECIFIED,
             max_builds=10,
             start_cursor='page token',
@@ -548,9 +549,10 @@ class BatchTests(BaseTestCase):
     search_async.assert_called_once_with(
         search.Query(
             bucket_ids=['chromium/try'],
-            tags=['builder:linux-rel'],
+            builder='linux-rel',
             status=common_pb2.STATUS_UNSPECIFIED,
             include_experimental=False,
+            tags=[],
             start_cursor='',
         ),
     )
@@ -681,7 +683,7 @@ class BuildPredicateToSearchQueryTests(BaseTestCase):
     q = api.build_predicate_to_search_query(predicate)
     self.assertFalse(q.project)
     self.assertEqual(q.bucket_ids, ['chromium/try'])
-    self.assertEqual(q.tags, ['builder:linux-rel'])
+    self.assertEqual(q.builder, 'linux-rel')
 
   def test_create_time(self):
     predicate = rpc_pb2.BuildPredicate()

@@ -31,6 +31,18 @@ class ValidateQueryTests(testing.AppengineTestCase):
     with self.assertRaisesRegexp(errors.InvalidInputError, err_pattern):
       q.validate()
 
+  def test_project_and_bucket_ids(self):
+    q = search.Query(project='chromium', bucket_ids=['chromium/try'])
+    err_pattern = r'mutually exclusive'
+    with self.assertRaisesRegexp(errors.InvalidInputError, err_pattern):
+      q.validate()
+
+  def test_builder_without_bucket(self):
+    q = search.Query(builder='linux-rel')
+    err_pattern = r'builder requires non-empty bucket_ids'
+    with self.assertRaisesRegexp(errors.InvalidInputError, err_pattern):
+      q.validate()
+
 
 class SearchTest(testing.AppengineTestCase):
   INDEXED_TAG = test_util.INDEXED_TAG_STRING
@@ -165,13 +177,6 @@ class SearchTest(testing.AppengineTestCase):
     builds, _ = self.search(tags=['build_address:chromium/infra/1'])
     self.assertEqual(builds, [build])
 
-  def test_filter_by_bucket(self):
-    build1 = self.put_build(builder=dict(project='chromium', bucket='1'))
-    self.put_build(builder=dict(project='chromium', bucket='2'))
-
-    builds, _ = self.search(bucket_ids=['chromium/1'])
-    self.assertEqual(builds, [build1])
-
   def test_filter_by_project(self):
     user.get_accessible_buckets_async.return_value = future({
         'chromium/try', 'v8/try'
@@ -181,6 +186,27 @@ class SearchTest(testing.AppengineTestCase):
 
     builds, _ = self.search(project='chromium')
     self.assertEqual(builds, [build])
+
+  def test_filter_by_bucket(self):
+    build1 = self.put_build(builder=dict(project='chromium', bucket='1'))
+    self.put_build(builder=dict(project='chromium', bucket='2'))
+
+    builds, _ = self.search(bucket_ids=['chromium/1'])
+    self.assertEqual(builds, [build1])
+
+  def test_filter_by_builder(self):
+    build1 = self.put_build(
+        builder=dict(project='chromium', bucket='try', builder='linux-rel')
+    )
+    self.put_build(
+        builder=dict(project='chromium', bucket='try', builder='mac-rel')
+    )
+    self.put_build(
+        builder=dict(project='chromium', bucket='ci', builder='linux-rel')
+    )
+
+    builds, _ = self.search(bucket_ids=['chromium/try'], builder='linux-rel')
+    self.assertEqual(builds, [build1])
 
   def test_filter_by_project_admin(self):
     user.get_accessible_buckets_async.return_value = future(None)
@@ -491,6 +517,21 @@ class SearchTest(testing.AppengineTestCase):
     )
 
     builds, _ = self.search(tags=['buildset:2'], bucket_ids=['chromium/try'])
+    self.assertEqual(builds, [build])
+
+  def test_filter_by_indexed_tag_builder(self):
+    build = self.put_build(
+        builder=dict(project='chromium', bucket='try', builder='linux-rel'),
+        tags=[dict(key='buildset', value='2')]
+    )
+    self.put_build(
+        builder=dict(project='chromium', bucket='try', builder='mac-rel'),
+        tags=[dict(key='buildset', value='2')]
+    )
+
+    builds, _ = self.search(
+        tags=['buildset:2'], bucket_ids=['chromium/try'], builder='linux-rel'
+    )
     self.assertEqual(builds, [build])
 
   def test_filter_by_with_dup_tag_entries(self):
