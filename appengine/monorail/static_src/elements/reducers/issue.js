@@ -491,7 +491,7 @@ export const fieldValueMap = createSelector(
     for (const v of fieldValues) {
       if (!v || !v.fieldRef || !v.fieldRef.fieldName || !v.value) continue;
       const key = fieldValueMapKey(v.fieldRef.fieldName,
-        v.phaseRef ? v.phaseRef.phaseName : undefined);
+        v.phaseRef && v.phaseRef.phaseName);
       if (acc.has(key)) {
         acc.get(key).push(v.value);
       } else {
@@ -516,10 +516,18 @@ export const components = createSelector(
 export const fieldDefs = createSelector(
   project.fieldDefs,
   type,
-  (fieldDefs, type) => {
+  fieldValueMap,
+  (fieldDefs, type, fieldValues) => {
     if (!fieldDefs) return [];
     type = type || '';
     return fieldDefs.filter((f) => {
+      const fieldValueKey = fieldValueMapKey(f.fieldRef.fieldName,
+        f.phaseRef && f.phaseRef.phaseName);
+      if (fieldValues && fieldValues.has(fieldValueKey)) {
+        // Regardless of other checks, include a particular field def if the
+        // issue has a value defined.
+        return true;
+      }
       // Skip approval type and phase fields here.
       if (f.fieldRef.approvalName
           || f.fieldRef.type === fieldTypes.APPROVAL_TYPE

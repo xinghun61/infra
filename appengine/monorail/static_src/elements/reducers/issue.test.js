@@ -301,28 +301,12 @@ describe('issue', () => {
     ]));
   });
 
-  it('fieldDefs', () => {
+  it('fieldDefs filters fields by applicable type', () => {
     assert.deepEqual(issue.fieldDefs({
       project: {},
       ...wrapIssue(),
     }), []);
 
-    // Remove approval-related fields, regardless of issue.
-    assert.deepEqual(issue.fieldDefs({
-      project: {config: {
-        fieldDefs: [
-          {fieldRef: {fieldName: 'test', type: fieldTypes.INT_TYPE}},
-          {fieldRef: {fieldName: 'ignoreMe', type: fieldTypes.APPROVAL_TYPE}},
-          {fieldRef: {fieldName: 'LookAway', approvalName: 'ThisIsAnApproval'}},
-          {fieldRef: {fieldName: 'phaseField'}, isPhaseField: true},
-        ],
-      }},
-      ...wrapIssue(),
-    }), [
-      {fieldRef: {fieldName: 'test', type: fieldTypes.INT_TYPE}},
-    ]);
-
-    // Filter defs by applicableType.
     assert.deepEqual(issue.fieldDefs({
       project: {config: {
         fieldDefs: [
@@ -344,6 +328,41 @@ describe('issue', () => {
       {fieldRef: {fieldName: 'enum', type: fieldTypes.ENUM_TYPE}},
       {fieldRef: {fieldName: 'defectsOnly', type: fieldTypes.STR_TYPE},
         applicableType: 'Defect'},
+    ]);
+  });
+
+  it('fieldDefs skips approval fields for all issues', () => {
+    assert.deepEqual(issue.fieldDefs({
+      project: {config: {
+        fieldDefs: [
+          {fieldRef: {fieldName: 'test', type: fieldTypes.INT_TYPE}},
+          {fieldRef: {fieldName: 'ignoreMe', type: fieldTypes.APPROVAL_TYPE}},
+          {fieldRef: {fieldName: 'LookAway', approvalName: 'ThisIsAnApproval'}},
+          {fieldRef: {fieldName: 'phaseField'}, isPhaseField: true},
+        ],
+      }},
+      ...wrapIssue(),
+    }), [
+      {fieldRef: {fieldName: 'test', type: fieldTypes.INT_TYPE}},
+    ]);
+  });
+
+  it('fieldDefs includes non applicable fields when values defined', () => {
+    assert.deepEqual(issue.fieldDefs({
+      project: {config: {
+        fieldDefs: [
+          {fieldRef: {fieldName: 'nonApplicable', type: fieldTypes.STR_TYPE},
+            applicableType: 'None'},
+        ],
+      }},
+      ...wrapIssue({
+        fieldValues: [
+          {fieldRef: {fieldName: 'nonApplicable'}, value: 'v1'},
+        ],
+      }),
+    }), [
+      {fieldRef: {fieldName: 'nonApplicable', type: fieldTypes.STR_TYPE},
+        applicableType: 'None'},
     ]);
   });
 });
