@@ -107,9 +107,9 @@ func TestDeployDut(t *testing.T) {
 			So(err, ShouldNotBeNil)
 		})
 
-		Convey("DeployDut with invlalid new_specs returns error", func() {
+		Convey("DeployDut with invalid new_specs returns error", func() {
 			_, err := tf.Inventory.DeployDut(tf.C, &fleet.DeployDutRequest{
-				NewSpecs: []byte("clearly not a protobuf"),
+				NewSpecs: [][]byte{[]byte("clearly not a protobuf")},
 			})
 			So(err, ShouldNotBeNil)
 		})
@@ -129,7 +129,7 @@ func TestDeployDut(t *testing.T) {
 			deployTaskID := "swarming-task"
 			tf.MockSwarming.EXPECT().CreateTask(gomock.Any(), gomock.Any(), gomock.Any()).Return(deployTaskID, nil)
 			resp, err := tf.Inventory.DeployDut(tf.C, &fleet.DeployDutRequest{
-				NewSpecs: marshalOrPanic(specs),
+				NewSpecs: marshalOrPanicMany(specs),
 			})
 			So(err, ShouldBeNil)
 			deploymentID := resp.DeploymentId
@@ -188,6 +188,36 @@ func TestDeployDut(t *testing.T) {
 			})
 		})
 
+		Convey("DeployDut with multiple valid new_specs triggers deploy", func() {
+			ignoredID1 := "fake-id-1"
+			dutHostname1 := "fake-dut-1"
+			specs1 := &inventory.CommonDeviceSpecs{
+				Id:       &ignoredID1,
+				Hostname: &dutHostname1,
+			}
+			ignoredID2 := "fake-id-2"
+			dutHostname2 := "fale-dut-2"
+			specs2 := &inventory.CommonDeviceSpecs{
+				Id:       &ignoredID2,
+				Hostname: &dutHostname2,
+			}
+
+			var byteArr [][]byte
+			byteArr = marshalOrPanicMany(specs1, specs2)
+
+			deployTaskID := "swarming-task2"
+			// expect two calls to create task (one per new DUT)
+			for i := 1; i <= 2; i++ {
+				tf.MockSwarming.EXPECT().CreateTask(gomock.Any(), gomock.Any(), gomock.Any()).Return(deployTaskID, nil)
+			}
+			resp, err := tf.Inventory.DeployDut(tf.C, &fleet.DeployDutRequest{
+				NewSpecs: byteArr,
+			})
+			So(err, ShouldBeNil)
+			deploymentID := resp.DeploymentId
+			So(deploymentID, ShouldNotEqual, "")
+		})
+
 		Convey("DeployDut assigns servo_port if requested via option", func() {
 			tf.MockSwarming.EXPECT().CreateTask(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes()
 			tf.MockSwarming.EXPECT().GetTaskResult(gomock.Any(), gomock.Any()).AnyTimes().Return(&swarming.SwarmingRpcsTaskResult{
@@ -195,7 +225,7 @@ func TestDeployDut(t *testing.T) {
 			}, nil)
 
 			resp, err := tf.Inventory.DeployDut(tf.C, &fleet.DeployDutRequest{
-				NewSpecs: marshalOrPanic(&inventory.CommonDeviceSpecs{
+				NewSpecs: marshalOrPanicMany(&inventory.CommonDeviceSpecs{
 					Id:       stringPtr("This ID is ignored"),
 					Hostname: stringPtr("first-dut"),
 					Attributes: []*inventory.KeyValue{
@@ -276,7 +306,7 @@ func TestDeployMultipleDuts(t *testing.T) {
 			}, nil)
 
 			resp, err := tf.Inventory.DeployDut(tf.C, &fleet.DeployDutRequest{
-				NewSpecs: marshalOrPanic(&inventory.CommonDeviceSpecs{
+				NewSpecs: marshalOrPanicMany(&inventory.CommonDeviceSpecs{
 					Id:       stringPtr("This ID is ignored"),
 					Hostname: stringPtr("new-dut"),
 					Attributes: []*inventory.KeyValue{
@@ -338,14 +368,14 @@ func TestRedeployDut(t *testing.T) {
 
 		Convey("Update DUT with empty old specs returns error", func() {
 			_, err = tf.Inventory.RedeployDut(tf.C, &fleet.RedeployDutRequest{
-				NewSpecs: marshalOrPanic(oldSpecs),
+				NewSpecs: marshalOrPanicOne(oldSpecs),
 			})
 			So(err, ShouldNotBeNil)
 		})
 
 		Convey("Update DUT with empty new specs returns error", func() {
 			_, err = tf.Inventory.RedeployDut(tf.C, &fleet.RedeployDutRequest{
-				OldSpecs: marshalOrPanic(oldSpecs),
+				OldSpecs: marshalOrPanicOne(oldSpecs),
 			})
 			So(err, ShouldNotBeNil)
 		})
@@ -356,8 +386,8 @@ func TestRedeployDut(t *testing.T) {
 			newSpecs.Id = stringPtr("changed_id")
 			So(err, ShouldBeNil)
 			_, err = tf.Inventory.RedeployDut(tf.C, &fleet.RedeployDutRequest{
-				OldSpecs: marshalOrPanic(oldSpecs),
-				NewSpecs: marshalOrPanic(newSpecs),
+				OldSpecs: marshalOrPanicOne(oldSpecs),
+				NewSpecs: marshalOrPanicOne(newSpecs),
 			})
 			So(err, ShouldNotBeNil)
 		})
@@ -369,8 +399,8 @@ func TestRedeployDut(t *testing.T) {
 			tf.MockSwarming.EXPECT().CreateTask(gomock.Any(), gomock.Any(), gomock.Any()).Return(deployTaskID, nil)
 
 			resp, err := tf.Inventory.RedeployDut(tf.C, &fleet.RedeployDutRequest{
-				OldSpecs: marshalOrPanic(oldSpecs),
-				NewSpecs: marshalOrPanic(oldSpecs),
+				OldSpecs: marshalOrPanicOne(oldSpecs),
+				NewSpecs: marshalOrPanicOne(oldSpecs),
 			})
 			So(err, ShouldBeNil)
 			So(resp, ShouldNotBeNil)
@@ -404,8 +434,8 @@ func TestRedeployDut(t *testing.T) {
 			tf.MockSwarming.EXPECT().CreateTask(gomock.Any(), gomock.Any(), gomock.Any()).Return(deployTaskID, nil)
 
 			resp, err := tf.Inventory.RedeployDut(tf.C, &fleet.RedeployDutRequest{
-				OldSpecs: marshalOrPanic(oldSpecs),
-				NewSpecs: marshalOrPanic(newSpecs),
+				OldSpecs: marshalOrPanicOne(oldSpecs),
+				NewSpecs: marshalOrPanicOne(newSpecs),
 			})
 
 			So(err, ShouldBeNil)
@@ -504,11 +534,20 @@ func stringPtr(s string) *string {
 	return &s
 }
 
-// marshalOrPanic serializes the given proto.Message or panics on failure.
-func marshalOrPanic(m proto.Message) []byte {
+// marshalOrPanicOne serializes the given proto.Message or panics on failure.
+func marshalOrPanicOne(m proto.Message) []byte {
 	s, err := proto.Marshal(m)
 	if err != nil {
 		panic(err)
 	}
 	return s
+}
+
+// call marshalOrPanicOne on multiple arguments
+func marshalOrPanicMany(m ...proto.Message) [][]byte {
+	out := make([][]byte, 0)
+	for _, item := range m {
+		out = append(out, marshalOrPanicOne(item))
+	}
+	return out
 }

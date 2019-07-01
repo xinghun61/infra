@@ -51,12 +51,14 @@ func (is *ServerImpl) DeployDut(ctx context.Context, req *fleet.DeployDutRequest
 		return nil, err
 	}
 
-	specs, err := parseDUTSpecs(req.GetNewSpecs())
+	allSpecs, err := parseManyDUTSpecs(req.GetNewSpecs())
 	if err != nil {
 		return nil, err
 	}
-	if specs.GetHostname() == "" {
-		return nil, status.Errorf(codes.InvalidArgument, "DUT hostname not set in new_specs")
+	for _, specs := range allSpecs {
+		if specs.GetHostname() == "" {
+			return nil, status.Error(codes.InvalidArgument, "DUT hostname not set in new_specs")
+		}
 	}
 
 	s, err := is.newStore(ctx)
@@ -72,8 +74,14 @@ func (is *ServerImpl) DeployDut(ctx context.Context, req *fleet.DeployDutRequest
 	if err != nil {
 		return nil, err
 	}
-	ds := deployDUT(ctx, s, sc, attemptID, specs, req.GetActions(), req.GetOptions())
-	updateDeployStatusIgnoringErrors(ctx, attemptID, ds)
+
+	actions := req.GetActions()
+	options := req.GetOptions()
+
+	for _, specs := range allSpecs {
+		ds := deployDUT(ctx, s, sc, attemptID, specs, actions, options)
+		updateDeployStatusIgnoringErrors(ctx, attemptID, ds)
+	}
 	return &fleet.DeployDutResponse{DeploymentId: attemptID}, nil
 }
 
@@ -530,6 +538,19 @@ func parseDUTSpecs(specs []byte) (*inventory.CommonDeviceSpecs, error) {
 		return nil, errors.Annotate(err, "parse DUT specs").Tag(grpcutil.InvalidArgumentTag).Err()
 	}
 	return &parsed, nil
+}
+
+func parseManyDUTSpecs(specsArr [][]byte) ([]*inventory.CommonDeviceSpecs, error) {
+	var out []*inventory.CommonDeviceSpecs
+	out = make([]*inventory.CommonDeviceSpecs, 0, len(specsArr))
+	for _, item := range specsArr {
+		if parsed, err := parseDUTSpecs(item); err == nil {
+			out = append(out, parsed)
+		} else {
+			return nil, err
+		}
+	}
+	return out, nil
 }
 
 func hasServoPortAttribute(d *inventory.CommonDeviceSpecs) bool {

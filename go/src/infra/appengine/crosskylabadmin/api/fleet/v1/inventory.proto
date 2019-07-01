@@ -132,7 +132,7 @@ message DeployDutRequest {
   //
   // new_specs must satisfy following sanity conditions:
   // - inventory.CommonDeviceSpecs.Id must be unset.
-  bytes new_specs = 1;
+  repeated bytes new_specs = 1;
 
   // The deployment actions to take.
   //
