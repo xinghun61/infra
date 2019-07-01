@@ -8,6 +8,7 @@ set -x
 set -o pipefail
 
 PREFIX="$1"
+PYTHONDONTWRITEBYTECODE="1"
 
 # Install additional components. This will also install their dependencies.
 #
@@ -28,8 +29,13 @@ rm -rf google-cloud-sdk/.install/.backup
 ./google-cloud-sdk/bin/gcloud config set --installation \
     component_manager/disable_update_check true
 
-# These pyc's might not be compatible with Python on the target machine.
-find google-cloud-sdk/. -name '*.pyc' -delete
+# No need to report usage from bots.
+./google-cloud-sdk/bin/gcloud config set --installation \
+    core/disable_usage_reporting true
+
+# No need to survey bots.
+./google-cloud-sdk/bin/gcloud config set --installation \
+    survey/disable_prompts true
 
 # Put gcloud SDK root at the root of the package.
 cp -a google-cloud-sdk/. "$PREFIX"/
