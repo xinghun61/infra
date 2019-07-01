@@ -190,20 +190,26 @@ def build_to_message(build, build_output_properties, include_lease_key=False):
   assert build.key
   assert build.key.id()
 
+  bp = build.proto
+  infra = build.parse_infra()
+  sw = infra.swarming
+  logdog = infra.logdog
+  recipe = infra.recipe
+
   result_details = (build.result_details or {}).copy()
   result_details['properties'] = {}
   if build_output_properties:
     result_details['properties'] = _properties_to_dict(
         build_output_properties.parse()
     )
-  if build.proto.summary_markdown:
-    result_details['ui'] = {'info': build.proto.summary_markdown}
+  if bp.summary_markdown:
+    result_details['ui'] = {'info': bp.summary_markdown}
 
-  bp = build.proto
-  infra = build.parse_infra()
-  sw = infra.swarming
-  logdog = infra.logdog
-  recipe = infra.recipe
+  parameters = (build.parameters or {}).copy()
+  parameters['builder_name'] = bp.builder.builder
+  parameters['properties'] = _properties_to_dict(
+      infra.buildbucket.requested_properties
+  )
 
   recipe_name = recipe.name
   if build.input_properties_bytes:  # pragma: no cover
@@ -251,9 +257,7 @@ def build_to_message(build, build_output_properties, include_lease_key=False):
       project=bp.builder.project,
       bucket=legacy_bucket_name(build.bucket_id, build.is_luci),
       tags=sorted(tags),
-      # TODO(nodir): move requested properties out from model.Build.parameters
-      # to a build_pb2.Build stored in model.Build.
-      parameters_json=json.dumps(build.parameters, sort_keys=True),
+      parameters_json=json.dumps(parameters, sort_keys=True),
       status=build.status_legacy,
       result=build.result,
       result_details_json=json.dumps(result_details, sort_keys=True),

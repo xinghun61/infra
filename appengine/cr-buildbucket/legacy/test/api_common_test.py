@@ -40,8 +40,11 @@ class ApiCommonTests(testing.AppengineTestCase):
     self.assertEqual(msg.lease_expiration_ts, yesterday_timestamp)
 
   def test_build_to_dict(self):
-    props_json = json.dumps(
-        {model.BUILDER_PARAMETER: 'linux', model.PROPERTIES_PARAMETER: {}},
+    params_json = json.dumps(
+        {
+            model.BUILDER_PARAMETER: 'linux',
+            model.PROPERTIES_PARAMETER: {'build-defined-property': 1.0,},
+        },
         sort_keys=True,
     )
     tags = [
@@ -78,7 +81,7 @@ class ApiCommonTests(testing.AppengineTestCase):
         'experimental': False,
         'completed_ts': '1483228800000000',
         'id': '8991715593768927232',
-        'parameters_json': props_json,
+        'parameters_json': params_json,
         'result_details_json': json.dumps(result_details, sort_keys=True),
         'status': 'COMPLETED',
         'result': 'FAILURE',
@@ -98,9 +101,13 @@ class ApiCommonTests(testing.AppengineTestCase):
     build = test_util.build(
         status=common_pb2.INFRA_FAILURE,
         summary_markdown='bad',
-        input=dict(properties=bbutil.dict_to_struct({
-            'recipe': 'recipe',
-        })),
+        input=dict(
+            properties=bbutil.dict_to_struct({
+                'recipe': 'recipe',
+                'build-defined-property': 1,
+                'builder-defined-property': 2,
+            })
+        ),
         infra=dict(
             swarming=dict(
                 bot_dimensions=[
@@ -108,6 +115,11 @@ class ApiCommonTests(testing.AppengineTestCase):
                     dict(key='dim1', value='v2'),
                     dict(key='os', value='Ubuntu'),
                 ],
+            ),
+            buildbucket=dict(
+                requested_properties=bbutil.dict_to_struct({
+                    'build-defined-property': 1,
+                }),
             ),
         ),
     )
