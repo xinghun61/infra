@@ -130,10 +130,18 @@ hooks = [
       "python", "-u", "./infra/bootstrap/install_cipd_packages.py", "-v",
     ],
   },
+  # TODO(vadimsh): Remove once everything is switched to use gcloud.
+  # See crbug.com/835919.
   {
     "pattern": ".",
     "action": [
       "python", "-u", "./infra/bootstrap/get_appengine.py", "--dest=.",
+    ],
+  },
+  {
+    "pattern": ".",
+    "action": [
+      "python", "-u", "./infra/bootstrap/get_gcloud.py", "--dest=.",
     ],
   },
 ]
