@@ -246,13 +246,6 @@ class BuildRequest(_BuildRequestBase):
         retry_of=self.retry_of,
     )
 
-    if sbr.builder.builder:  # pragma: no branch
-      build.parameters[model.BUILDER_PARAMETER] = sbr.builder.builder
-
-    build.parameters[model.PROPERTIES_PARAMETER] = bbutil.struct_to_dict(
-        sbr.properties
-    )
-
     if sbr.HasField('notify'):
       build.pubsub_callback = model.PubSubCallback(
           topic=sbr.notify.pubsub_topic,

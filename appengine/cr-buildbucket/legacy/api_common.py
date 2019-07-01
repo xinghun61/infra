@@ -17,6 +17,10 @@ import config
 import logging
 import model
 
+# Names of well-known parameters.
+BUILDER_PARAMETER = 'builder_name'
+PROPERTIES_PARAMETER = 'properties'
+
 
 def format_luci_bucket(bucket_id):
   """Returns V1 luci bucket name, e.g. "luci.chromium.try"."""
@@ -206,8 +210,8 @@ def build_to_message(build, build_output_properties, include_lease_key=False):
     result_details['ui'] = {'info': bp.summary_markdown}
 
   parameters = (build.parameters or {}).copy()
-  parameters['builder_name'] = bp.builder.builder
-  parameters['properties'] = _properties_to_dict(
+  parameters[BUILDER_PARAMETER] = bp.builder.builder
+  parameters[PROPERTIES_PARAMETER] = _properties_to_dict(
       infra.buildbucket.requested_properties
   )
 

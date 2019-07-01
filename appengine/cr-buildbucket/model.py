@@ -31,11 +31,6 @@ BUILD_STORAGE_DURATION = datetime.timedelta(days=30 * 18)  # ~18mo
 # Builder entity is deleted.
 BUILDER_EXPIRATION_DURATION = datetime.timedelta(weeks=4)
 
-# Key in Build.parameters that specifies the builder name.
-# TODO(nodir): remove, in favor of a new property in Build.
-BUILDER_PARAMETER = 'builder_name'
-PROPERTIES_PARAMETER = 'properties'  # TODO(nodir): move to api_common.py.
-
 
 class BuildStatus(messages.Enum):
   # A build is created, can be leased by someone and started.

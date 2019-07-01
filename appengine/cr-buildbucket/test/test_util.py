@@ -145,12 +145,7 @@ def build(for_creation=False, **build_proto_fields):  # pragma: no cover
       create_time=proto.create_time.ToDatetime(),
       status_changed_time=now,
       tags=sorted(tags),
-      parameters={
-          model.BUILDER_PARAMETER:
-              proto.builder.builder,
-          model.PROPERTIES_PARAMETER:
-              bbutil.struct_to_dict(proto.input.properties),
-      },
+      parameters={},
       url='https://ci.example.com/%d' % proto.id,
       is_luci=infra.HasField('swarming'),
       swarming_task_key='swarming_task_key',

@@ -48,7 +48,7 @@ _BUILD_FIELDS = {
     'builder': BuildMetricField(
         value_type=str,
         field_type=gae_ts_mon.StringField,
-        getter=lambda b: (b.parameters or {}).get(model.BUILDER_PARAMETER),
+        getter=lambda b: b.proto.builder.builder,
     ),
     'canary': BuildMetricField(
         value_type=bool,

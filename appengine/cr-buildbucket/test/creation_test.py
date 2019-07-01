@@ -196,7 +196,6 @@ class CreationTest(testing.AppengineTestCase):
     self.assertEqual(
         build.parse_infra().buildbucket.requested_properties, prop_struct
     )
-    self.assertEqual(build.parameters.get(model.PROPERTIES_PARAMETER), props)
 
   def test_experimental(self):
     build = self.add(dict(experimental=common_pb2.YES))

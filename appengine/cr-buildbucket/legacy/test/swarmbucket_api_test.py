@@ -295,8 +295,12 @@ class SwarmbucketApiTest(testing.EndpointsTestCase):
 
     req = {
         'build_request': {
-            'bucket': 'luci.chromium.try',
-            'parameters_json': json.dumps({model.BUILDER_PARAMETER: 'linux'}),
+            'bucket':
+                'luci.chromium.try',
+            'parameters_json':
+                json.dumps({
+                    api_common.BUILDER_PARAMETER: 'linux',
+                }),
         },
     }
     resp = self.call_api('get_task_def', req).json_body
@@ -459,10 +463,12 @@ class SwarmbucketApiTest(testing.EndpointsTestCase):
   def test_get_task_def_bad_request(self):
     req = {
         'build_request': {
-            'bucket': ')))',
-            'parameters_json': json.dumps({
-                model.BUILDER_PARAMETER: 'linux',
-            }),
+            'bucket':
+                ')))',
+            'parameters_json':
+                json.dumps({
+                    api_common.BUILDER_PARAMETER: 'linux',
+                }),
         },
     }
     self.call_api('get_task_def', req, status=400)
@@ -474,7 +480,7 @@ class SwarmbucketApiTest(testing.EndpointsTestCase):
                 'luci.chromium.try',
             'parameters_json':
                 json.dumps({
-                    model.BUILDER_PARAMETER: 'not-existing-builder',
+                    api_common.BUILDER_PARAMETER: 'not-existing-builder',
                 }),
         },
     }
@@ -484,10 +490,12 @@ class SwarmbucketApiTest(testing.EndpointsTestCase):
     req = {
         'build_id': '8982540789124571952',
         'build_request': {
-            'bucket': 'secret.bucket',
-            'parameters_json': json.dumps({
-                model.BUILDER_PARAMETER: 'linux',
-            }),
+            'bucket':
+                'secret.bucket',
+            'parameters_json':
+                json.dumps({
+                    api_common.BUILDER_PARAMETER: 'linux',
+                }),
         },
     }
 

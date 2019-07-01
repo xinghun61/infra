@@ -42,8 +42,8 @@ class ApiCommonTests(testing.AppengineTestCase):
   def test_build_to_dict(self):
     params_json = json.dumps(
         {
-            model.BUILDER_PARAMETER: 'linux',
-            model.PROPERTIES_PARAMETER: {'build-defined-property': 1.0,},
+            api_common.BUILDER_PARAMETER: 'linux',
+            api_common.PROPERTIES_PARAMETER: {'build-defined-property': 1.0,},
         },
         sort_keys=True,
     )

@@ -978,7 +978,6 @@ class SubNotify(webapp2.RequestHandler):
           'swarming_task_id %s of build %s does not match %s', sw.task_id,
           build_id, task_id
       )
-    assert build.parameters
 
     # Update build.
     result = _load_task_result_async(hostname, task_id).get_result()

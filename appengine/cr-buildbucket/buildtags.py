@@ -121,8 +121,9 @@ def validate_tags(tags, mode, builder=None):
     'append': tags are to be appended to an existing build.
     'search': tags to search by.
 
-  builder is the value of "builder_name" parameter. If specified, tags
-  "builder:<v>" must have v equal to the builder. Relevant only in 'new' mode.
+  builder is the value of model.Build.proto.builder.builder.
+  If specified, tags "builder:<v>" must have v equal to the builder.
+  Relevant only in 'new' mode.
   """
   assert mode in ('new', 'append', 'search'), mode
   if tags is None:
@@ -162,8 +163,7 @@ def validate_tags(tags, mode, builder=None):
       if mode == 'new':  # pragma: no branch
         if builder is not None and v != builder:
           raise errors.InvalidInputError(
-              'Tag "%s" conflicts with builder_name parameter "%s"' %
-              (t, builder)
+              'Tag "%s" conflicts with builder name "%s"' % (t, builder)
           )
         if seen_builder_tag is None:
           seen_builder_tag = t

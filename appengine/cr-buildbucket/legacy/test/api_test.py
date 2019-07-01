@@ -29,6 +29,7 @@ import mock
 import gae_ts_mon
 
 from legacy import api
+from legacy import api_common
 from proto import common_pb2
 from proto import project_config_pb2
 from proto import rpc_pb2
@@ -108,8 +109,8 @@ class V1ApiTest(testing.EndpointsTestCase):
     add_async.return_value = future(build)
     props = {'foo': 'bar'}
     parameters_json = json.dumps({
-        model.BUILDER_PARAMETER: 'linux',
-        model.PROPERTIES_PARAMETER: props,
+        api_common.BUILDER_PARAMETER: 'linux',
+        api_common.PROPERTIES_PARAMETER: props,
     })
     req = {
         'client_operation_id': '42',
@@ -139,7 +140,7 @@ class V1ApiTest(testing.EndpointsTestCase):
                 ),
                 properties=bbutil.dict_to_struct(props),
             ),
-            parameters={model.BUILDER_PARAMETER: 'linux'},
+            parameters={},
             pubsub_callback_auth_token='secret',
         )
     )
@@ -176,7 +177,7 @@ class V1ApiTest(testing.EndpointsTestCase):
         'client_operation_id': '42',
         'bucket': 'luci.chromium.try',
         'tags': [buildset_tag, gitiles_ref_tag, 't:0'],
-        'parameters_json': json.dumps({model.BUILDER_PARAMETER: 'linux'}),
+        'parameters_json': json.dumps({api_common.BUILDER_PARAMETER: 'linux'}),
     }
     resp = self.call_api('put', req).json_body
     add_async.assert_called_once_with(
@@ -192,7 +193,7 @@ class V1ApiTest(testing.EndpointsTestCase):
                 request_id='42',
                 properties=dict(),
             ),
-            parameters={model.BUILDER_PARAMETER: 'linux'},
+            parameters={},
         )
     )
     self.assertEqual(resp['build']['id'], '1')
@@ -226,7 +227,7 @@ class V1ApiTest(testing.EndpointsTestCase):
     )
     expected_request = creation.BuildRequest(
         schedule_build_request=expected_sbr,
-        parameters={model.BUILDER_PARAMETER: 'linux'},
+        parameters={},
     )
 
     build = test_util.build(
@@ -249,8 +250,8 @@ class V1ApiTest(testing.EndpointsTestCase):
         'tags': [buildset_tag, 't:0'],
         'parameters_json':
             json.dumps({
-                model.BUILDER_PARAMETER: 'linux',
-                model.PROPERTIES_PARAMETER: props,
+                api_common.BUILDER_PARAMETER: 'linux',
+                api_common.PROPERTIES_PARAMETER: props,
             }),
     }
     resp = self.call_api('put', req).json_body
@@ -286,13 +287,13 @@ class V1ApiTest(testing.EndpointsTestCase):
     )
     expected_request = creation.BuildRequest(
         schedule_build_request=expected_sbr,
-        parameters={model.BUILDER_PARAMETER: 'linux'},
+        parameters={},
     )
 
     add_async.return_value = future(test_util.build(id=1))
 
     params = {
-        model.BUILDER_PARAMETER: 'linux',
+        api_common.BUILDER_PARAMETER: 'linux',
         'gerrit_changes': [json_format.MessageToDict(c) for c in changes],
     }
     req = {
@@ -315,7 +316,7 @@ class V1ApiTest(testing.EndpointsTestCase):
         'client_operation_id': '42',
         'bucket': 'luci.chromium.try',
         'tags': ['buildset:x', 't:0'],
-        'parameters_json': json.dumps({model.BUILDER_PARAMETER: 'linux'}),
+        'parameters_json': json.dumps({api_common.BUILDER_PARAMETER: 'linux'}),
     }
     resp = self.call_api('put', req).json_body
     add_async.assert_called_once_with(
@@ -330,7 +331,7 @@ class V1ApiTest(testing.EndpointsTestCase):
                 request_id='42',
                 properties=dict(),
             ),
-            parameters={model.BUILDER_PARAMETER: 'linux'},
+            parameters={},
         )
     )
     self.assertEqual(resp['build']['id'], '1')
@@ -346,7 +347,7 @@ class V1ApiTest(testing.EndpointsTestCase):
 
   def test_put_with_non_dict_properties(self):
     parameters = {
-        model.PROPERTIES_PARAMETER: [],
+        api_common.PROPERTIES_PARAMETER: [],
     }
     req = {
         'bucket': 'luci.chromium.try',
@@ -442,7 +443,7 @@ class V1ApiTest(testing.EndpointsTestCase):
                 canary=common_pb2.NO,
                 gitiles_commit=orig_build.proto.input.gitiles_commit,
             ),
-            parameters={model.BUILDER_PARAMETER: 'linux'},
+            parameters={},
             lease_expiration_date=None,
             retry_of=1,
             pubsub_callback_auth_token='secret',

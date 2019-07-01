@@ -227,13 +227,13 @@ def put_request_message_to_build_request(put_request):
   parameters = parameters or {}
   validate_known_build_parameters(parameters)
 
-  builder = parameters.get(model.BUILDER_PARAMETER) or ''
+  builder = parameters.pop(api_common.BUILDER_PARAMETER, '') or ''
 
   # Validate tags.
   buildtags.validate_tags(put_request.tags, 'new', builder=builder)
 
   # Read properties. Remove them from parameters.
-  props = parameters.pop(model.PROPERTIES_PARAMETER, None)
+  props = parameters.pop(api_common.PROPERTIES_PARAMETER, None)
   if props is not None and not isinstance(props, dict):
     raise errors.InvalidInputError(
         '"properties" parameter must be a JSON object or null'
@@ -637,14 +637,10 @@ class BuildBucketApi(remote.Service):
       with _wrap_validation_error():
         validation.validate_notification_config(sbr.notify)
 
-    # Remove properties from parameters.
-    params = build.parameters.copy()
-    params.pop(model.PROPERTIES_PARAMETER, None)
-
     # Create the build.
     build_req = creation.BuildRequest(
         schedule_build_request=sbr,
-        parameters=params,
+        parameters=build.parameters,
         lease_expiration_date=lease_expiration_date,
         retry_of=request.id,
         pubsub_callback_auth_token=pubsub_callback_auth_token,
