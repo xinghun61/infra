@@ -14,12 +14,13 @@ This script is a thin wrapper for running the 3pp recipe locally.
 By default this will:
   * Pull your logged-in email from `luci-auth` to derive a CIPD package
     prefix (if your email is `user@example.com`, this will try to upload
-    to `experimental/user_at_example.com`)
+    to `experimental/user_at_example.com`).
   * [OS X only] Run `sudo -v` to refresh your sudo token; this is needed to
     run `xcode-select`.
-  * Deletes the $WORKDIR/3pp subdirectory
+  * Delete the $WORKDIR/3pp subdirectory.
   * Run the 3pp recipe in experimental mode using `//infra.git/.3pp_wd` as the
-    default $WORKDIR
+    default $WORKDIR, using locally *committed* 3pp code as input. Non-committed
+    changes are silently ignored.
 
 Options:
   * Set $WORKDIR to change what directory this uses for the recipe workdir.

@@ -8,7 +8,4 @@ create {
   build {}
 }
 
-upload {
-  pkg_prefix: "tools"
-  universal: true
-}
+upload { pkg_prefix: "tools" }
