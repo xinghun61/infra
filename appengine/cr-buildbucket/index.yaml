@@ -1,24 +1,24 @@
 indexes:
 
-# Popular searches.
-- kind: Build
-  properties:
-    - name: bucket_id
-    - name: tags
+# Popular, builder-based queries.
 
+# Milo builder page uses this index to load pending and running builds.
 - kind: Build
   properties:
-    - name: bucket_id
-    - name: tags
+    - name: builder_id
     - name: status
-    - name: experimental
 
+# Milo builder page uses this index to load ended builds.
 - kind: Build
   properties:
-    - name: bucket_id
-    - name: tags
+    - name: builder_id
     - name: incomplete
-    - name: experimental
+
+# Keep builder+tag queries fast.
+- kind: Build
+  properties:
+    - name: builder_id
+    - name: tags
 
 # Peeking.
 - kind: Build
