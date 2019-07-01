@@ -40,10 +40,13 @@ const (
 	// The timestamp format used by Gerrit (using the reference date).
 	// All timestamps are in UTC.
 	timeStampLayout = "2006-01-02 15:04:05.000000000"
-	// Gerrit's "magic path" to indicate that a comment should be posted to the
-	// commit message; see:
+	// Gerrit's "magic path" for the commit message plus extra headers. See:
 	// https://gerrit-review.googlesource.com/Documentation/rest-api-changes.html#file-id
 	commitMessagePath = "/COMMIT_MSG"
+	// Number of lines added by Gerrit before the commit message in the commit
+	// message special file. This includes the headers Parent, Author,
+	// AuthorDate, Commit, CommitDate, and a blank line.
+	numHeaderLines = 6
 )
 
 // API specifies the Gerrit REST API tuned to the needs of Tricium.
@@ -151,6 +154,9 @@ func (g gerritServer) PostRobotComments(c context.Context, host, change, revisio
 		if _, ok := robos[path]; !ok {
 			robos[path] = []*robotCommentInput{}
 		}
+		if path == commitMessagePath {
+			adjustCommitMessageComment(&comment)
+		}
 		robos[path] = append(robos[path], createRobotComment(c, runID, comment))
 	}
 	return g.setReview(c, host, change, revision, &reviewInput{
@@ -220,8 +226,8 @@ func fetchResponse(c context.Context, url string, headers map[string]string) ([]
 
 // createRobotComment creates a Gerrit robot comment from a Tricium comment.
 //
-// Checks for presence of position info to distinguish file comments, line
-// comments, and comments with character ranges.
+// Related documentation:
+// https://gerrit-review.googlesource.com/Documentation/rest-api-changes.html#robot-comment-info
 func createRobotComment(c context.Context, runID int64, comment tricium.Data_Comment) *robotCommentInput {
 	roco := &robotCommentInput{
 		Message:        comment.Message,
@@ -230,14 +236,13 @@ func createRobotComment(c context.Context, runID int64, comment tricium.Data_Com
 		URL:            composeRunURL(c, runID),
 		Path:           pathForGerrit(comment.Path),
 		Properties:     map[string]string{"tricium_comment_uuid": comment.Id},
-		FixSuggestions: createFillSuggestions(comment.Suggestions),
+		FixSuggestions: createFixSuggestions(comment.Suggestions),
 	}
 	// If no StartLine is given, the comment is assumed to be a file-level comment,
 	// and the line field will not be populated so it will be set to zero.
 	if comment.StartLine > 0 {
 		if comment.EndLine > 0 {
 			// If range is set, [the line field] equals the end line of the range.
-			// See: https://goo.gl/RdiFDM
 			roco.Line = int(comment.EndLine)
 			roco.Range = &commentRange{
 				StartLine:      int(comment.StartLine),
@@ -252,7 +257,7 @@ func createRobotComment(c context.Context, runID int64, comment tricium.Data_Com
 	return roco
 }
 
-func createFillSuggestions(suggestions []*tricium.Data_Suggestion) []*suggestion {
+func createFixSuggestions(suggestions []*tricium.Data_Suggestion) []*suggestion {
 	var suggs []*suggestion
 	for _, s := range suggestions {
 		var replacements []*replacement
@@ -274,6 +279,29 @@ func createFillSuggestions(suggestions []*tricium.Data_Suggestion) []*suggestion
 		})
 	}
 	return suggs
+}
+
+// Adjusts line numbers in a comment on the commit message.
+//
+// The commit message that Gerrit provides through the API is just
+// the commit message, starting with the summary line. However, the
+// special /COMMIT_MSG file in Gerrit that the comments are posted
+// to has extra header lines added at the top.
+func adjustCommitMessageComment(comment *tricium.Data_Comment) {
+	if comment.StartLine != 0 {
+		comment.StartLine += numHeaderLines
+	}
+	if comment.EndLine != 0 {
+		comment.EndLine += numHeaderLines
+	}
+	for _, s := range comment.Suggestions {
+		for _, r := range s.Replacements {
+			// Replacements are expected to be fully-specified ranges
+			// with non-zero line numbers, so they're always adjusted.
+			r.StartLine += numHeaderLines
+			r.EndLine += numHeaderLines
+		}
+	}
 }
 
 // composeRunURL returns the URL for viewing details about a Tricium run.

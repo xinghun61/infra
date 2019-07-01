@@ -348,3 +348,61 @@ func TestIsInChangedLines(t *testing.T) {
 		So(isInChangedLines(2, 0, []int{2, 3, 4}), ShouldBeFalse)
 	})
 }
+
+func TestAdjustCommitMessage(t *testing.T) {
+	Convey("adjustCommitMessageComment changes positions in comment and replacements", t, func() {
+		comment := &tricium.Data_Comment{
+			Category:  "Foo",
+			Message:   "Bar",
+			StartLine: 5,
+			EndLine:   5,
+			StartChar: 2,
+			EndChar:   4,
+			Suggestions: []*tricium.Data_Suggestion{
+				{
+					Replacements: []*tricium.Data_Replacement{
+						{
+							StartLine: 5,
+							EndLine:   5,
+							StartChar: 2,
+							EndChar:   4,
+						},
+					},
+				},
+			},
+		}
+		adjustCommitMessageComment(comment)
+		So(comment, ShouldResemble, &tricium.Data_Comment{
+			Category:  "Foo",
+			Message:   "Bar",
+			StartLine: 5 + numHeaderLines,
+			EndLine:   5 + numHeaderLines,
+			StartChar: 2,
+			EndChar:   4,
+			Suggestions: []*tricium.Data_Suggestion{
+				{
+					Replacements: []*tricium.Data_Replacement{
+						{
+							StartLine: 5 + numHeaderLines,
+							EndLine:   5 + numHeaderLines,
+							StartChar: 2,
+							EndChar:   4,
+						},
+					},
+				},
+			},
+		})
+	})
+
+	Convey("File level comments don't have line numbers adjusted", t, func() {
+		comment := &tricium.Data_Comment{
+			Category: "Foo",
+			Message:  "Bar",
+		}
+		adjustCommitMessageComment(comment)
+		So(comment, ShouldResemble, &tricium.Data_Comment{
+			Category: "Foo",
+			Message:  "Bar",
+		})
+	})
+}
