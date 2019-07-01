@@ -7,6 +7,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"regexp"
 	"sort"
 	"strings"
 	"time"
@@ -16,6 +17,7 @@ import (
 	tq "go.chromium.org/gae/service/taskqueue"
 	"go.chromium.org/luci/auth/identity"
 	"go.chromium.org/luci/common/clock"
+	"go.chromium.org/luci/common/data/stringset"
 	"go.chromium.org/luci/common/errors"
 	"go.chromium.org/luci/common/logging"
 	"go.chromium.org/luci/common/sync/parallel"
@@ -30,8 +32,16 @@ import (
 	gc "infra/tricium/appengine/common/gerrit"
 )
 
-// Commit message footer values that tell Tricium to skip.
-var skipValues = [...]string{"disable", "skip", "no", "none", "false"}
+var (
+	// Commit message footer values that tell Tricium to skip.
+	skipValues = stringset.NewFromSlice("disable", "skip", "no", "none", "false")
+	// Strings that won't be treated as footer keys.
+	footerKeyBlacklist = stringset.NewFromSlice("Http", "Https")
+	paragraphBreak     = regexp.MustCompile(`\n\s*\n`)
+	// Pattern for a commit message footer: A key which can have dashes but not
+	// spaces, colon and optional space, and a value.
+	footerPattern = regexp.MustCompile(`^\s*([\w-]+): *(.*)$`)
+)
 
 // Datastore schema diagram for tracked Gerrit projects and CLs:
 //
@@ -513,44 +523,51 @@ func hasSkipCommand(rev *gr.RevisionInfo) bool {
 		return false
 	}
 	flags := extractFooterFlags(rev.Commit.Message)
-	triciumValue, ok := flags["tricium"]
+	triciumValue, ok := flags["Tricium"]
 	if !ok {
 		return false
 	}
-	for _, skipValue := range skipValues {
-		if triciumValue == skipValue {
-			return true
-		}
-	}
-	return false
+	return skipValues.Has(strings.ToLower(triciumValue))
 }
 
 // extractFooterFlags extracts the key: value footers from the commit message.
 //
-// The return value is a map flag flags to value where both flag and value are
-// converted to lower-case. Each flag key is expected to appear once, but if
-// a flag key appears twice, then value from the earliest line is retained.
-func extractFooterFlags(commitMessage string) map[string]string {
+// The behavior is supposed to match (roughly) the footer parsing behavior in
+// https://cs.chromium.org/chromium/tools/depot_tools/git_footers.py
+//
+// Specifically: Footer flags only appear in the last paragraph of the commit
+// message; if there's only one paragraph then there are no footers. The last
+// paragraph may also contain lines with no footer flags. Footer flag lines
+// consist of a key (which has no spaces but can have dashes) followed by
+// colon, optional whitespace, and a value which goes to the end of the line.
+//
+// The return value is a map of flag keys to values where the key is converted
+// to title case. If a flag key appears multiple times, the value from the
+// latest line is used.
+func extractFooterFlags(message string) map[string]string {
 	flags := map[string]string{}
-	// The commit message generally has a trailing \n; we want the lines
-	// processed below to be to be actual lines with content rather than
-	// including an empty string as the last "line".
-	lines := strings.Split(strings.TrimSuffix(commitMessage, "\n"), "\n")
-
-	// Going in reverse to stop as soon as a non flag line is reached.
-	for i := len(lines) - 1; i >= 0; i-- {
-		line := lines[i]
-
-		// Look for the first : or = and split on it.
-		if splitPoint := strings.IndexAny(line, ":="); splitPoint != -1 {
-			flagName := strings.ToLower(strings.TrimSpace(line[:splitPoint]))
-			value := strings.ToLower(strings.TrimSpace(line[splitPoint+1:]))
-			flags[flagName] = value
-		} else {
-			break
-		}
+	// Note, the commit message generally has a trailing newline, but it's
+	// also possible for it to have multiple trailing newlines or lines with
+	// only whitespace, which should be ignored.
+	message = strings.TrimSpace(message)
+	paragraphs := paragraphBreak.Split(message, -1)
+	if len(paragraphs) == 1 {
+		// There is only one paragraph, so there are no footers.
+		return flags
 	}
 
+	lastParagraph := paragraphs[len(paragraphs)-1]
+	for _, line := range strings.Split(lastParagraph, "\n") {
+		matches := footerPattern.FindStringSubmatch(line)
+		if len(matches) != 3 {
+			continue
+		}
+		key := strings.Title(strings.ToLower(matches[1]))
+		if footerKeyBlacklist.Has(key) {
+			continue
+		}
+		flags[key] = matches[2]
+	}
 	return flags
 }
 

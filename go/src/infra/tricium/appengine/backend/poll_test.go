@@ -542,26 +542,45 @@ func TestPollProjectDescriptionFlagBehavior(t *testing.T) {
 
 	Convey("Private helper functions behave as expected", t, func() {
 
-		Convey("Footer flags are case insensitive, output is lowercase", func() {
-			So(extractFooterFlags("summary\n\nTRICIUM: Yes\n"),
-				ShouldResemble, map[string]string{"tricium": "yes"})
+		Convey("A summary-only message with a colon is not a footer", func() {
+			So(len(extractFooterFlags("Tag: something\n")), ShouldEqual, 0)
+		})
+
+		Convey("Footer keys are converted to title-case, values are unmodified", func() {
+			So(extractFooterFlags("summary\n\nkey-name: yEs\n"),
+				ShouldResemble, map[string]string{"Key-Name": "yEs"})
+		})
+
+		Convey("There can be non-flag lines in the footer paragraph", func() {
+			So(extractFooterFlags("summary\n\nkey-name: yEs\nnot a flag\n"),
+				ShouldResemble, map[string]string{"Key-Name": "yEs"})
+		})
+
+		Convey("http and https are not used as keys", func() {
+			So(extractFooterFlags("summary\n\nkey-name: yEs\nhttps://example.com\n"),
+				ShouldResemble, map[string]string{"Key-Name": "yEs"})
+			So(extractFooterFlags("summary\n\nkey-name: yEs\nhttp://example.com\n"),
+				ShouldResemble, map[string]string{"Key-Name": "yEs"})
+			// Only some URL schemas are blacklisted, others are still treated as keys.
+			So(extractFooterFlags("summary\n\nkey-name: yEs\nfoo://example.com\n"),
+				ShouldResemble, map[string]string{"Key-Name": "yEs", "Foo": "//example.com"})
 		})
 
 		Convey("Footer flags can be extracted with newline at end", func() {
-			So(extractFooterFlags("summary\n\none: ei\nTWO: bee\nThree: sea\n"),
+			So(extractFooterFlags("Summary\n\none: A\nTWO: bee\nThree: sea\n"),
 				ShouldResemble, map[string]string{
-					"one":   "ei",
-					"two":   "bee",
-					"three": "sea",
+					"One":   "A",
+					"Two":   "bee",
+					"Three": "sea",
 				})
 		})
 
 		Convey("Footer flags can be extracted with no newline at end", func() {
-			So(extractFooterFlags("summary\n\none: ei\nTWO: bee\nThree: sea"),
+			So(extractFooterFlags("Summary\n\none: A\nTWO: bee\nThree: sea"),
 				ShouldResemble, map[string]string{
-					"one":   "ei",
-					"two":   "bee",
-					"three": "sea",
+					"One":   "A",
+					"Two":   "bee",
+					"Three": "sea",
 				})
 		})
 
