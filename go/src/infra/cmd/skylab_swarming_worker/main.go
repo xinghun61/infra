@@ -32,6 +32,7 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
@@ -46,6 +47,7 @@ import (
 	"infra/cmd/skylab_swarming_worker/internal/fifo"
 	"infra/cmd/skylab_swarming_worker/internal/flagx"
 	"infra/cmd/skylab_swarming_worker/internal/lucifer"
+	"infra/cmd/skylab_swarming_worker/internal/parser"
 	"infra/cmd/skylab_swarming_worker/internal/swmbot"
 	"infra/cmd/skylab_swarming_worker/internal/swmbot/harness"
 )
@@ -95,7 +97,7 @@ func parseArgs() *args {
 	flag.StringVar(&a.deployActions, "actions", "",
 		"Actions to execute for a deploytask")
 	flag.StringVar(&a.isolatedOutdir, "isolated-outdir", "",
-		"Not yet implemented.")
+		"Directory to place isolated output into. Generate no isolated output if not set.")
 	flag.Parse()
 
 	return a
@@ -142,6 +144,16 @@ func mainInner(a *args) error {
 	}
 	if err := runLuciferTask(i, a, annotWriter, ta); err != nil {
 		return errors.Wrap(err, "run lucifer task")
+	}
+	if a.isolatedOutdir != "" {
+		blob, err := parser.GetResults(i.ParserArgs())
+		if err != nil {
+			return errors.Wrap(err, "results parsing")
+		}
+
+		if err := writeResultsFile(a.isolatedOutdir, blob); err != nil {
+			return errors.Wrap(err, "writing results to isolated output file")
+		}
 	}
 	if err := i.Close(); err != nil {
 		return err
@@ -312,4 +324,13 @@ func runDeployTask(i *harness.Info, actions string, logdogOutput io.Writer, ta l
 		return errors.Wrap(err, "run deploy task")
 	}
 	return nil
+}
+
+// TODO(zamorzaev): move this into the isolate client.
+const resultsFileName = "results.json"
+
+// writeResultsFile writes the results blob to "results.json" inside the given dir.
+func writeResultsFile(outdir string, b []byte) error {
+	f := filepath.Join(outdir, resultsFileName)
+	return ioutil.WriteFile(f, b, 0644)
 }
