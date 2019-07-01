@@ -17,8 +17,7 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-// TODO(jojwang): change this to some trooper/chops team level auth group.
-const announcementGroup = "chopsdash-access"
+const announcementGroup = "chops-announcements-access"
 
 var perMethodACL = map[string]string{
 	"CreateLiveAnnouncement":      announcementGroup,
