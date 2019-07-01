@@ -6,9 +6,9 @@
 set -e
 set -x
 set -o pipefail
+shopt -s dotglob
 
 PREFIX="$1"
-PYTHONDONTWRITEBYTECODE="1"
 
 # Install additional components. This will also install their dependencies.
 #
@@ -23,7 +23,7 @@ PYTHONDONTWRITEBYTECODE="1"
     kubectl
 
 # This is just a dead weight in the package, we won't rollback.
-rm -rf google-cloud-sdk/.install/.backup
+rm -rf ./google-cloud-sdk/.install/.backup
 
 # Disable update checks, we deploy updates through CIPD.
 ./google-cloud-sdk/bin/gcloud config set --installation \
@@ -37,5 +37,8 @@ rm -rf google-cloud-sdk/.install/.backup
 ./google-cloud-sdk/bin/gcloud config set --installation \
     survey/disable_prompts true
 
-# Put gcloud SDK root at the root of the package.
-cp -a google-cloud-sdk/. "$PREFIX"/
+# No need to ~= double number of files in the package.
+find ./google-cloud-sdk -name "*.pyc" -delete
+
+# Put gcloud SDK root (including hidden files) at the root of the package.
+mv ./google-cloud-sdk/* "$PREFIX"/
