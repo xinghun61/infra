@@ -53,13 +53,10 @@ func TestTBRRules(t *testing.T) {
 			ChangeID:        "tbrchangeid1",
 			ChangeNumber:    4321,
 			CurrentRevision: "7b12c0de1",
-			Revisions: map[string]gerrit.RevisionInfo{
-				"7b12c0de1": {
-					Uploader: gerrit.AccountInfo{
-						AccountID: 1337,
-					},
-				},
+			Owner: gerrit.AccountInfo{
+				AccountID: 1337,
 			},
+
 			Labels: map[string]gerrit.LabelInfo{
 				"Code-Review": {
 					All: []gerrit.VoteInfo{
@@ -88,12 +85,8 @@ func TestTBRRules(t *testing.T) {
 			ChangeID:        "tbrchangeid2",
 			ChangeNumber:    4322,
 			CurrentRevision: "7b12c0de2",
-			Revisions: map[string]gerrit.RevisionInfo{
-				"7b12c0de2": {
-					Uploader: gerrit.AccountInfo{
-						AccountID: 1337,
-					},
-				},
+			Owner: gerrit.AccountInfo{
+				AccountID: 1337,
 			},
 			Labels: map[string]gerrit.LabelInfo{
 				"Code-Review": {

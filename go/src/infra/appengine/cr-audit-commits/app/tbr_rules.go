@@ -48,7 +48,7 @@ func getMaxLabelValue(values map[string]string) (int, error) {
 }
 
 // ChangeReviewed is a RuleFunc that verifies that someone other than the
-// uploader has reviewed the change.
+// owner has reviewed the change.
 type ChangeReviewed struct{}
 
 // GetName returns the name of the rule.
@@ -67,8 +67,8 @@ func (rule ChangeReviewed) Run(ctx context.Context, ap *AuditParams, rc *Relevan
 		return prevResult
 	}
 	rc.LastExternalPoll = time.Now()
-	change := getChangeWithLabelDetailsAndCurrentRevision(ctx, ap, rc, cs)
-	uploader := change.Revisions[change.CurrentRevision].Uploader.AccountID
+	change := getChangeWithLabelDetails(ctx, ap, rc, cs)
+	owner := change.Owner.AccountID
 	crLabelInfo, exists := change.Labels["Code-Review"]
 	if !exists {
 		panic(fmt.Sprintf("The gerrit change for Commit %v does not have the 'Code-Review' label.", rc.CommitHash))
@@ -79,7 +79,7 @@ func (rule ChangeReviewed) Run(ctx context.Context, ap *AuditParams, rc *Relevan
 		panic(err)
 	}
 	for _, vote := range crLabelInfo.All {
-		if int(vote.Value) == maxValue && vote.AccountID != uploader {
+		if int(vote.Value) == maxValue && vote.AccountID != owner {
 			// Valid approver found.
 			result.RuleResultStatus = rulePassed
 			return result
@@ -91,8 +91,7 @@ func (rule ChangeReviewed) Run(ctx context.Context, ap *AuditParams, rc *Relevan
 		if prevResult == nil {
 			// Notify the CL that it needs to be approved by a valid reviewer
 			// within `gracePeriod`.
-			err := postReminder(ctx, change, deadline, cs)
-			if err != nil {
+			if err := postReminder(ctx, change, deadline, cs); err != nil {
 				logging.WithError(err).Errorf(
 					ctx, "Unable to post reminder on change %v", change.ChangeID)
 			}
@@ -101,18 +100,17 @@ func (rule ChangeReviewed) Run(ctx context.Context, ap *AuditParams, rc *Relevan
 
 		result.RuleResultStatus = ruleFailed
 		result.Message = fmt.Sprintf(
-			"The commit was not approved by a reviewer other than the uploader within %d days of landing.",
+			"The commit was not approved by a reviewer other than the owner within %d days of landing.",
 			int64(gracePeriod.Hours()/24))
 	}
 	return result
 }
 
-func getChangeWithLabelDetailsAndCurrentRevision(ctx context.Context, ap *AuditParams, rc *RelevantCommit, cs *Clients) *gerrit.Change {
+func getChangeWithLabelDetails(ctx context.Context, ap *AuditParams, rc *RelevantCommit, cs *Clients) *gerrit.Change {
 	cls, _, err := cs.gerrit.ChangeQuery(ctx, gerrit.ChangeQueryParams{
 		Query: fmt.Sprintf("commit:%s", rc.CommitHash),
 		Options: []string{
 			"DETAILED_LABELS",
-			"CURRENT_REVISION",
 		},
 	})
 	if err != nil {
