@@ -14,6 +14,8 @@ import re
 import sys
 import time
 
+from six import string_types
+
 import settings
 from features import filterrules_helpers
 from framework import exceptions
@@ -109,11 +111,11 @@ def MakeTestIssue(
   if closed_timestamp:
     issue.closed_timestamp = closed_timestamp
   if labels is not None:
-    if isinstance(labels, basestring):
+    if isinstance(labels, string_types):
       labels = labels.split()
     issue.labels.extend(labels)
   if derived_labels is not None:
-    if isinstance(derived_labels, basestring):
+    if isinstance(derived_labels, string_types):
       derived_labels = derived_labels.split()
     issue.derived_labels.extend(derived_labels)
   if derived_status is not None:
@@ -132,9 +134,9 @@ def MakeTestIssue(
 def MakeTestConfig(project_id, labels, statuses):
   """Convenient function to make a ProjectIssueConfig object."""
   config = tracker_bizobj.MakeDefaultProjectIssueConfig(project_id)
-  if isinstance(labels, basestring):
+  if isinstance(labels, string_types):
     labels = labels.split()
-  if isinstance(statuses, basestring):
+  if isinstance(statuses, string_types):
     statuses = statuses.split()
   config.well_known_labels = [
       tracker_pb2.LabelDef(label=lab) for lab in labels]

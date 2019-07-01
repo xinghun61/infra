@@ -12,6 +12,8 @@ import collections
 import logging
 import time
 
+from six import string_types
+
 from google.appengine.api import search
 
 import settings
@@ -112,7 +114,7 @@ def _CreateIssueSearchDocuments(
     # This is done because the default encoding in appengine seems to be 'ascii'
     # and string values might contain unicode characters, so str will fail to
     # encode them.
-    field_values = [value if isinstance(value, basestring) else str(value)
+    field_values = [value if isinstance(value, string_types) else str(value)
                     for value in field_values]
 
     metadata = '%s %s %s %s %s %s' % (

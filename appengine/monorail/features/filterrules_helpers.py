@@ -13,6 +13,8 @@ import re
 
 import six
 
+from six import string_types
+
 from google.appengine.api import taskqueue
 
 import settings
@@ -579,7 +581,7 @@ def _Compare(op, rule_values, issue_values):
     return trivial_result
 
   if (op in [ast_pb2.QueryOp.TEXT_HAS, ast_pb2.QueryOp.NOT_TEXT_HAS] and
-      issue_values and not isinstance(min(issue_values), basestring)):
+      issue_values and not isinstance(min(issue_values), string_types)):
     return False  # Empty or numeric fields cannot match substrings
   elif op == ast_pb2.QueryOp.TEXT_HAS:
     return any(_HasText(rv, issue_values) for rv in rule_values)

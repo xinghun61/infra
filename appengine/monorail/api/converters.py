@@ -17,6 +17,8 @@ from __future__ import absolute_import
 
 import logging
 
+from six import string_types
+
 import settings
 from api.api_proto import common_pb2
 from api.api_proto import features_objects_pb2
@@ -231,7 +233,7 @@ def ConvertIssueRefs(issue_ids, related_refs_dict):
 def ConvertFieldValue(field_id, field_name, value, field_type,
                       approval_name=None, phase_name=None, is_derived=False):
   """Convert one field value view item into a protoc FieldValue."""
-  if not isinstance(value, basestring):
+  if not isinstance(value, string_types):
     value = str(value)
   fv = issue_objects_pb2.FieldValue(
       field_ref=ConvertFieldRef(field_id, field_name, field_type,

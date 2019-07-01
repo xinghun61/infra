@@ -10,6 +10,7 @@ from __future__ import absolute_import
 
 
 import logging
+from six import string_types
 from third_party import ezt
 
 import settings
@@ -109,7 +110,7 @@ class ProjectCreate(servlet.Servlet):
 
     # Validate that provided logo is supported.
     logo_provided = 'logo' in post_data and not isinstance(
-        post_data['logo'], basestring)
+        post_data['logo'], string_types)
     if logo_provided:
       item = post_data['logo']
       try:

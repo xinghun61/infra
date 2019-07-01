@@ -13,6 +13,8 @@ import datetime
 import logging
 import time
 
+from six import string_types
+
 from businesslogic import work_env
 from framework import exceptions
 from framework import framework_constants
@@ -247,7 +249,7 @@ def convert_issue(cls, issue, mar, services):
           services.user, mar.cnxn, fv.user_id)
     else:
       val = tracker_bizobj.GetFieldValue(fv, {})
-      if not isinstance(val, basestring):
+      if not isinstance(val, string_types):
         val = str(val)
     new_fv = api_pb2_v1.FieldValue(
         fieldName=fd.field_name,

@@ -44,6 +44,8 @@ import os
 import urllib
 import StringIO
 
+from six import string_types
+
 #
 # Formatting types
 #
@@ -294,7 +296,7 @@ class Template:
     to the file object 'fp' and functions are called.
     """
     for step in program:
-      if isinstance(step, basestring):
+      if isinstance(step, string_types):
         fp.write(step)
       else:
         method, method_args, filename, line_number = step
@@ -392,7 +394,7 @@ class Template:
     ((valref,), unused, section) = args
     list = _get_value(valref, ctx, filename, line_number)
     refname = valref[0]
-    if isinstance(list, basestring):
+    if isinstance(list, string_types):
       raise NeedSequenceError(refname, filename, line_number)
     ctx.for_index[refname] = idx = [ list, 0 ]
     for item in list:

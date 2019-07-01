@@ -17,6 +17,8 @@ import collections
 import logging
 import time
 
+from six import string_types
+
 from features import federated
 from framework import exceptions
 from framework import framework_bizobj
@@ -259,7 +261,7 @@ def MakeFieldDef(
     needs_member, needs_perm, grants_perm, notify_on, date_action, docstring,
     is_deleted, approval_id=None, is_phase_field=False):
   """Make a FieldDef PB for the given FieldDef table row tuple."""
-  if isinstance(date_action, basestring):
+  if isinstance(date_action, string_types):
     date_action = date_action.upper()
   fd = tracker_pb2.FieldDef(
       field_id=field_id, project_id=project_id, field_name=field_name,
@@ -1143,7 +1145,7 @@ def _PlusMinusString(added_items, removed_items):
     A unicode string with all the removed items first (preceeded by minus
     signs) and then the added items.
   """
-  assert all(isinstance(item, basestring)
+  assert all(isinstance(item, string_types)
              for item in added_items + removed_items)
   # TODO(jrobbins): this is not good when values can be negative ints.
   return ' '.join(

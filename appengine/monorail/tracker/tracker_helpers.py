@@ -19,6 +19,8 @@ import urllib
 
 from google.appengine.api import app_identity
 
+from six import string_types
+
 import settings
 
 from framework import authdata
@@ -298,7 +300,7 @@ def _ParseIssueRequestAttachments(post_data):
   for i in range(1, 16):
     if 'file%s' % i in post_data:
       item = post_data['file%s' % i]
-      if isinstance(item, basestring):
+      if isinstance(item, string_types):
         continue
       if '\\' in item.filename:  # IE insists on giving us the whole path.
         item.filename = item.filename[item.filename.rindex('\\') + 1:]

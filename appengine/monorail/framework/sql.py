@@ -14,6 +14,8 @@ import re
 import sys
 import time
 
+from six import string_types
+
 import settings
 
 if not settings.unit_test_mode:
@@ -934,7 +936,7 @@ STMT_STR_RE = re.compile(
 
 
 def _IsValidDBValue(val):
-  if isinstance(val, basestring):
+  if isinstance(val, string_types):
     return '\x00' not in val
   return True
 

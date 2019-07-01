@@ -11,6 +11,7 @@ from __future__ import absolute_import
 import logging
 import time
 
+from six import string_types
 from third_party import cloudstorage
 from third_party import ezt
 
@@ -107,7 +108,7 @@ class ProjectAdmin(servlet.Servlet):
 
     logo_gcs_id = ''
     logo_file_name = ''
-    if 'logo' in post_data and not isinstance(post_data['logo'], basestring):
+    if 'logo' in post_data and not isinstance(post_data['logo'], string_types):
       item = post_data['logo']
       logo_file_name = item.filename
       try:
