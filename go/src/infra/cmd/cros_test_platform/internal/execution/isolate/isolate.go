@@ -2,16 +2,16 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-// Package isolate defines an interface for interacting with isolate.
+// Package isolate provides an interface for fetching files from isolate.
 package isolate
 
-// Client defines and interface used to interact with an isolate service.
-type Client interface {
-	// TODO(akeshet): Flesh out this interface with the actual necessary
-	// methods.
+import (
+	"context"
+
+	"go.chromium.org/luci/common/isolated"
+)
+
+// Getter is an interface for fetching a file from isolate.
+type Getter interface {
+	GetFile(ctx context.Context, digest isolated.HexDigest, filePath string) ([]byte, error)
 }
-
-type nullClient struct{}
-
-// NullClient is a fake implementation of Client which does nothing.
-var NullClient Client = &nullClient{}

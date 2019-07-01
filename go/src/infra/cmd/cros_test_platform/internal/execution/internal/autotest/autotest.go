@@ -37,7 +37,7 @@ func New(tests []*build_api.AutotestTest, params *test_platform.Request_Params) 
 }
 
 // LaunchAndWait launches an autotest execution and waits for it to complete.
-func (r *Runner) LaunchAndWait(ctx context.Context, client swarming.Client, _ isolate.Client) error {
+func (r *Runner) LaunchAndWait(ctx context.Context, client swarming.Client, _ isolate.Getter) error {
 	taskID, err := r.launch(ctx, client)
 	if err != nil {
 		return err
