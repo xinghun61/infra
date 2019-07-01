@@ -1039,7 +1039,7 @@ class FeaturesService(object):
       project_id = project_id[0]
       self.config_service.InvalidateMemcacheForEntireProject(project_id)
 
-  def ExpungeHotlists(self, cnxn, hotlist_ids, star_svc, user_svc):
+  def ExpungeHotlists(self, cnxn, hotlist_ids, star_svc, user_svc, chart_svc):
     """Wipes the given hotlists from the DB tables.
 
     This method will not commit the operation. This method will not make
@@ -1047,12 +1047,14 @@ class FeaturesService(object):
     """
     for hotlist_id in hotlist_ids:
       star_svc.ExpungeStars(cnxn, hotlist_id, commit=False)
+    chart_svc.ExpungeHotlistsFromIssueSnapshots(cnxn, hotlist_ids)
     user_svc.ExpungeHotlistsFromHistory(cnxn, hotlist_ids, commit=False)
     self.hotlist2user_tbl.Delete(cnxn, hotlist_id=hotlist_ids, commit=False)
     self.hotlist2issue_tbl.Delete(cnxn, hotlist_id=hotlist_ids, commit=False)
     self.hotlist_tbl.Delete(cnxn, id=hotlist_ids, commit=False)
 
-  def ExpungeUsersInHotlists(self, cnxn, user_ids, star_svc, user_svc):
+  def ExpungeUsersInHotlists(
+      self, cnxn, user_ids, star_svc, user_svc, chart_svc):
     """Wipes the given users and any hotlists they owned from the
        hotlists system.
 
@@ -1082,7 +1084,8 @@ class FeaturesService(object):
     self.hotlist2user_tbl.Delete(cnxn, user_id=user_ids, commit=False)
     user_svc.ExpungeUsersHotlistsHistory(cnxn, user_ids, commit=False)
     # Delete hotlists
-    self.ExpungeHotlists(cnxn, hotlists_to_delete, star_svc, user_svc)
+    self.ExpungeHotlists(
+        cnxn, hotlists_to_delete, star_svc, user_svc, chart_svc)
 
 
 class HotlistAlreadyExists(Exception):

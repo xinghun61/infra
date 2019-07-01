@@ -315,6 +315,21 @@ class ChartService(object):
         SELECT %s, hotlist_id FROM Hotlist2Issue WHERE issue_id = %s
       ''', [issuesnapshot_id, issue.issue_id])
 
+  def ExpungeHotlistsFromIssueSnapshots(self, cnxn, hotlist_ids):
+    """Expunge the existence of hotlists from issue snapshots.
+
+    This method will not commit the operation. This method will not make
+    changes to in-memory data.
+
+    Args:
+      cnxn: connection to SQL database.
+      hotlist_ids: list of hotlist_ids for hotlists we want to delete.
+    """
+    cnxn.Execute(
+        'DELETE FROM IssueSnapshot2Hotlist WHERE hotlist_id IN (%s)',
+        [','.join(str(hotlist_id) for hotlist_id in hotlist_ids)],
+        commit=False)
+
   def _currentTime(self):
     """This is a separate method so it can be mocked by tests."""
     return time.time()

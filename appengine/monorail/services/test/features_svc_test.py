@@ -951,6 +951,8 @@ assert_called_once_with(self.cnxn, user_id=user_ids, commit=commit, limit=50)
     hotliststar_tbl.Delete = mock.Mock()
     user_service = user_svc.UserService(self.cache_manager)
     user_service.hotlistvisithistory_tbl.Delete = mock.Mock()
+    chart_service = chart_svc.ChartService(self.config_service)
+    self.cnxn.Execute = mock.Mock()
 
     self.features_service.hotlist2user_tbl.Delete = mock.Mock()
     self.features_service.hotlist2issue_tbl.Delete = mock.Mock()
@@ -958,7 +960,7 @@ assert_called_once_with(self.cnxn, user_id=user_ids, commit=commit, limit=50)
 
     hotlist_ids = [678, 679]
     self.features_service.ExpungeHotlists(
-        self.cnxn, hotlist_ids, star_service, user_service)
+        self.cnxn, hotlist_ids, star_service, user_service, chart_service)
 
     star_calls = [
         mock.call(
@@ -967,6 +969,9 @@ assert_called_once_with(self.cnxn, user_id=user_ids, commit=commit, limit=50)
             self.cnxn, commit=False, limit=None, hotlist_id=hotlist_ids[1])]
     hotliststar_tbl.Delete.assert_has_calls(star_calls)
 
+    self.cnxn.Execute.assert_called_once_with(
+        'DELETE FROM IssueSnapshot2Hotlist WHERE hotlist_id IN (%s)',
+        ['678,679'], commit=False)
     user_service.hotlistvisithistory_tbl.Delete.assert_called_once_with(
         self.cnxn, commit=False, hotlist_id=hotlist_ids)
 
@@ -982,6 +987,7 @@ assert_called_once_with(self.cnxn, user_id=user_ids, commit=commit, limit=50)
     star_service = star_svc.AbstractStarService(
         self.cache_manager, hotliststar_tbl, 'hotlist_id', 'user_id', 'hotlist')
     user_service = user_svc.UserService(self.cache_manager)
+    chart_service = chart_svc.ChartService(self.config_service)
     user_ids = [111, 222]
 
     # hotlist1 will get transferred to 333
@@ -1016,7 +1022,7 @@ assert_called_once_with(self.cnxn, user_id=user_ids, commit=commit, limit=50)
     hotliststar_tbl.Delete = mock.Mock()
 
     self.features_service.ExpungeUsersInHotlists(
-        self.cnxn, user_ids, star_service, user_service)
+        self.cnxn, user_ids, star_service, user_service, chart_service)
 
     self.features_service.UpdateHotlistRoles.assert_called_once_with(
         self.cnxn, hotlist1.hotlist_id, [333], [222], [], commit=False)

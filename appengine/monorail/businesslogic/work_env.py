@@ -1794,7 +1794,8 @@ class WorkEnv(object):
 
     # No limit will be applied for expunging in hotlists.
     self.services.features.ExpungeUsersInHotlists(
-        self.mc.cnxn, user_ids, self.services.hotlist_star, self.services.user)
+        self.mc.cnxn, user_ids, self.services.hotlist_star, self.services.user,
+        self.services.chart)
     self.mc.cnxn.Commit()
 
     # No limit will be applied for expunging in UserGroups.
