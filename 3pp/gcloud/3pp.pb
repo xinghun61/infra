@@ -1,4 +1,5 @@
 create {
+  platform_re: "linux-amd64|mac-amd64"
   source {
     script { name: "fetch.py" }
     patch_version: "chromium0"
