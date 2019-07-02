@@ -120,6 +120,9 @@ func main() {
 		}
 	}
 
+	// Also check the commit message.
+	analyzeFile(bufio.NewScanner(strings.NewReader(input.CommitMessage)), "", true, nil, results)
+
 	// Write Tricium RESULTS data.
 	path, err := tricium.WriteDataType(*outputDir, results)
 	if err != nil {
