@@ -1,4 +1,4 @@
-# Copyright 2016 The Chromium Authors. All rights reserved.
+# Copyright 2019 The Chromium Authors. All rights reserved.
 # Use of this source code is govered by a BSD-style
 # license that can be found in the LICENSE file or at
 # https://developers.google.com/open-source/licenses/bsd
@@ -19,6 +19,12 @@ automatic_scaling:
   max_pending_latency: 0.2s
 ')
 
+ifdef(`STAGING', `
+automatic_scaling:
+  min_idle_instances: 25
+  max_pending_latency: 0.2s
+')
+
 handlers:
 - url: /_ah/api/.*
   script: monorailapp.endpoints
@@ -26,6 +32,7 @@ handlers:
 - url: /robots.txt
   static_files: static/robots.txt
   upload: static/robots.txt
+  expiration: "10m"
 
 - url: /database-maintenance
   static_files: static/database-maintenance.html
@@ -40,11 +47,15 @@ handlers:
   static_dir: static/dist
   mime_type: application/javascript
   secure: always
+  http_headers:
+    Access-Control-Allow-Origin: '*'
 
 - url: /static/js
   static_dir: static/js
   mime_type: application/javascript
   secure: always
+  http_headers:
+    Access-Control-Allow-Origin: '*'
 
 - url: /static
   static_dir: static
@@ -67,16 +78,21 @@ inbound_services:
 ifdef(`PROD', `
 - warmup
 ')
+ifdef(`STAGING', `
+- warmup
+')
 
 libraries:
 - name: endpoints
   version: 1.0
 - name: MySQLdb
   version: "latest"
+- name: pytz
+  version: '2017.2'
 - name: pycrypto
   version: "2.6"
 - name: django
-  version: 1.9
+  version: 1.11
 
 includes:
 - gae_ts_mon
