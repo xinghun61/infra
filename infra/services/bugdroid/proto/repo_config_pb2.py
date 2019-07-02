@@ -20,7 +20,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   package='bugdroid',
   syntax='proto2',
   serialized_options=None,
-  serialized_pb=_b('\n\x11repo_config.proto\x12\x08\x62ugdroid\"\"\n\x04Pair\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t\"\xbf\x03\n\x04Repo\x12\x11\n\trepo_name\x18\x01 \x01(\t\x12%\n\trepo_type\x18\x02 \x01(\x0e\x32\x12.bugdroid.RepoType\x12\x10\n\x08repo_url\x18\x03 \x01(\t\x12\x17\n\x0f\x64\x65\x66\x61ult_project\x18\x04 \x01(\t\x12+\n\x0curl_template\x18\x05 \x01(\x0e\x32\x15.bugdroid.UrlTemplate\x12\x34\n\x11path_url_template\x18\x06 \x01(\x0e\x32\x19.bugdroid.PathUrlTemplate\x12\x13\n\x0bsvn_project\x18\x07 \x01(\t\x12\x19\n\x0bpublic_bugs\x18\x08 \x01(\x08:\x04true\x12\x12\n\nrefs_regex\x18\t \x03(\t\x12\x14\n\x0c\x66ilter_regex\x18\n \x03(\t\x12\x15\n\rno_merge_refs\x18\x0b \x03(\t\x12\x13\n\x0bpaths_regex\x18\x0c \x03(\t\x12\x14\n\x0cmust_succeed\x18\r \x03(\t\x12\x18\n\ttest_mode\x18\x0e \x01(\x08:\x05\x66\x61lse\x12%\n\rissues_labels\x18\x0f \x03(\x0b\x32\x0e.bugdroid.Pair\x12\x12\n\nskip_paths\x18\x10 \x01(\x08\",\n\x0bRepoConfigs\x12\x1d\n\x05repos\x18\x01 \x03(\x0b\x32\x0e.bugdroid.Repo*(\n\x08RepoType\x12\x07\n\x03svn\x10\x00\x12\x07\n\x03git\x10\x01\x12\n\n\x06gerrit\x10\x02*+\n\x0bUrlTemplate\x12\x06\n\x02\x63r\x10\x00\x12\n\n\x06\x63r_int\x10\x01\x12\x08\n\x04nacl\x10\x02*-\n\x0fPathUrlTemplate\x12\n\n\x06viewvc\x10\x00\x12\x0e\n\nviewvc_int\x10\x01')
+  serialized_pb=_b('\n\x11repo_config.proto\x12\x08\x62ugdroid\"\"\n\x04Pair\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t\"\xd6\x03\n\x04Repo\x12\x11\n\trepo_name\x18\x01 \x01(\t\x12%\n\trepo_type\x18\x02 \x01(\x0e\x32\x12.bugdroid.RepoType\x12\x10\n\x08repo_url\x18\x03 \x01(\t\x12\x17\n\x0f\x64\x65\x66\x61ult_project\x18\x04 \x01(\t\x12+\n\x0curl_template\x18\x05 \x01(\x0e\x32\x15.bugdroid.UrlTemplate\x12\x34\n\x11path_url_template\x18\x06 \x01(\x0e\x32\x19.bugdroid.PathUrlTemplate\x12\x13\n\x0bsvn_project\x18\x07 \x01(\t\x12\x19\n\x0bpublic_bugs\x18\x08 \x01(\x08:\x04true\x12\x12\n\nrefs_regex\x18\t \x03(\t\x12\x14\n\x0c\x66ilter_regex\x18\n \x03(\t\x12\x15\n\rno_merge_refs\x18\x0b \x03(\t\x12\x13\n\x0bpaths_regex\x18\x0c \x03(\t\x12\x14\n\x0cmust_succeed\x18\r \x03(\t\x12\x18\n\ttest_mode\x18\x0e \x01(\x08:\x05\x66\x61lse\x12%\n\rissues_labels\x18\x0f \x03(\x0b\x32\x0e.bugdroid.Pair\x12\x12\n\nskip_paths\x18\x10 \x01(\x08\x12\x15\n\rshorten_links\x18\x11 \x01(\x08\",\n\x0bRepoConfigs\x12\x1d\n\x05repos\x18\x01 \x03(\x0b\x32\x0e.bugdroid.Repo*(\n\x08RepoType\x12\x07\n\x03svn\x10\x00\x12\x07\n\x03git\x10\x01\x12\n\n\x06gerrit\x10\x02*+\n\x0bUrlTemplate\x12\x06\n\x02\x63r\x10\x00\x12\n\n\x06\x63r_int\x10\x01\x12\x08\n\x04nacl\x10\x02*-\n\x0fPathUrlTemplate\x12\n\n\x06viewvc\x10\x00\x12\x0e\n\nviewvc_int\x10\x01')
 )
 
 _REPOTYPE = _descriptor.EnumDescriptor(
@@ -44,8 +44,8 @@ _REPOTYPE = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   serialized_options=None,
-  serialized_start=563,
-  serialized_end=603,
+  serialized_start=586,
+  serialized_end=626,
 )
 _sym_db.RegisterEnumDescriptor(_REPOTYPE)
 
@@ -71,8 +71,8 @@ _URLTEMPLATE = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   serialized_options=None,
-  serialized_start=605,
-  serialized_end=648,
+  serialized_start=628,
+  serialized_end=671,
 )
 _sym_db.RegisterEnumDescriptor(_URLTEMPLATE)
 
@@ -94,8 +94,8 @@ _PATHURLTEMPLATE = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   serialized_options=None,
-  serialized_start=650,
-  serialized_end=695,
+  serialized_start=673,
+  serialized_end=718,
 )
 _sym_db.RegisterEnumDescriptor(_PATHURLTEMPLATE)
 
@@ -268,6 +268,13 @@ _REPO = _descriptor.Descriptor(
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='shorten_links', full_name='bugdroid.Repo.shorten_links', index=16,
+      number=17, type=8, cpp_type=7, label=1,
+      has_default_value=False, default_value=False,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
   ],
   extensions=[
   ],
@@ -281,7 +288,7 @@ _REPO = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=68,
-  serialized_end=515,
+  serialized_end=538,
 )
 
 
@@ -311,8 +318,8 @@ _REPOCONFIGS = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=517,
-  serialized_end=561,
+  serialized_start=540,
+  serialized_end=584,
 )
 
 _REPO.fields_by_name['repo_type'].enum_type = _REPOTYPE

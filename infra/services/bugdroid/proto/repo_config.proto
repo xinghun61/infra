@@ -93,6 +93,10 @@ message Repo {
   // Whether to skip including paths of changed files in the comment posted to
   // monorail.
   optional bool skip_paths = 16;
+
+  // If true, will use crrev when linking to modified files instead of using
+  // gitiles directly.
+  optional bool shorten_links = 17;
 }
 
 message RepoConfigs {
