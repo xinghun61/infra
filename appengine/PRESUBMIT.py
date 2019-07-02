@@ -186,10 +186,10 @@ def PylintFiles(input_api, output_api, files, pylint_root, disabled_warnings,
 def PylintChecks(input_api, output_api, only_changed):  # pragma: no cover
   infra_root = input_api.os_path.dirname(input_api.PresubmitLocalPath())
 
-  # DEPS specifies depot_tools, google_appengine as siblings of infra.
+  # See DEPS.
   appengine_env_path = input_api.os_path.join(
       input_api.os_path.dirname(infra_root),
-      'google_appengine')
+      'gcloud', 'platform', 'google_appengine')
   venv_path = input_api.os_path.join(infra_root, 'ENV', 'lib', 'python2.7')
 
   # Cause all pylint commands to execute in the virtualenv

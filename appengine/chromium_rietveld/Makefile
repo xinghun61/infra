@@ -5,7 +5,7 @@ APPID?= `cat app.yaml | sed -n 's/^application: *//p'`
 STAGEID= $(APPID)-staging
 TESTINGID= rietveld-public-test
 
-SDK_PATH ?= ../../../google_appengine
+SDK_PATH ?= ../../../gcloud/platform/google_appengine
 
 DEV_APPSERVER?= $(if $(SDK_PATH), $(SDK_PATH)/,)dev_appserver.py
 DEV_APPSERVER_FLAGS?=

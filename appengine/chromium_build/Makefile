@@ -5,7 +5,7 @@
 define DETECT_SDK
 import os
 locations = [
-  "../../../google_appengine", # For fetch-based checkouts.
+  "../../../gcloud/platform/google_appengine", # For fetch-based checkouts.
   "../google_appengine",
   "/usr/local/google_appengine",
   ".locally/google_appengine",

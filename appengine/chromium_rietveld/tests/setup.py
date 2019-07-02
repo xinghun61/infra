@@ -19,7 +19,7 @@ import sys
 
 TESTS_DIR = os.path.dirname(os.path.abspath(__file__))
 
-SDK_PATH = "../../../google_appengine"
+SDK_PATH = "../../../gcloud/platform/google_appengine"
 
 
 def setup_test_env(sdk_path):

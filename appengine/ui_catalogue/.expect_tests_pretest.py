@@ -23,7 +23,7 @@ pretest_APPENGINE_ENV_PATH = os.path.join(
             os.path.dirname(
                 os.path.dirname(
                     os.path.abspath(pretest_filename))))),
-    'google_appengine')
+    'gcloud', 'platform', 'google_appengine')
 sys.path.append(pretest_APPENGINE_ENV_PATH)
 
 # Crazy hack, because of appengine.

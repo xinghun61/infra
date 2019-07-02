@@ -30,7 +30,7 @@ def SetAppEnginePaths(root_dir=None):
 
   appengine_sdk_dir = os.path.realpath(
       os.path.join(root_dir, os.path.pardir, os.path.pardir, os.path.pardir,
-                   'google_appengine'))
+                   'gcloud', 'platform', 'google_appengine'))
 
   sys.path.insert(1, appengine_sdk_dir)
 

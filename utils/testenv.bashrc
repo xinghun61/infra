@@ -16,7 +16,7 @@ unset _testenv_prepend_to_path
 
 _testenv_gclient_root=$PWD
 while [ ! -f "$_testenv_gclient_root/.gclient" ] || \
-    [ ! -d "$_testenv_gclient_root/google_appengine" ]; do
+    [ ! -d "$_testenv_gclient_root/gcloud/platform/google_appengine" ]; do
   _testenv_gclient_root=${_testenv_gclient_root%/*}
   if [ -z "$_testenv_gclient_root" ]; then
     echo "ERROR: Couldn't find the root of your checkout" 1>&2
@@ -24,7 +24,7 @@ while [ ! -f "$_testenv_gclient_root/.gclient" ] || \
   fi
 done
 
-_testenv_ae_root="$_testenv_gclient_root"/google_appengine
+_testenv_ae_root="$_testenv_gclient_root"/gcloud/platform/google_appengine
 
 function _testenv_append_to_path() {
   for p in ${!1//:/ }; do
