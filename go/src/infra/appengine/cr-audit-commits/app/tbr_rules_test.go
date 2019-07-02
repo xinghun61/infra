@@ -147,9 +147,19 @@ func TestTBRRules(t *testing.T) {
 				expectedStatus = ruleFailed
 			})
 
-			Convey("Pending", func() {
+			Convey("Pending - no notification", func() {
 				rc.CommitHash = "7b12c0de2"
-				rc.CommitTime = time.Now()
+				rc.CommitTime = time.Now().Add(-23 * time.Hour)
+				expectedStatus = rulePending
+
+			})
+			Convey("Pending - send notification", func() {
+				rc.CommitHash = "7b12c0de2"
+				rc.CommitTime = time.Now().Add(-25 * time.Hour)
+				rc.Result = append(rc.Result, RuleResult{
+					RuleName:         "ChangeReviewed",
+					RuleResultStatus: rulePending,
+				})
 				expectedStatus = rulePending
 				gerritCalls = []string{"SetReview"}
 

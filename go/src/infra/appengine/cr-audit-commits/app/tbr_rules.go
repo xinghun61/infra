@@ -21,6 +21,8 @@ const (
 	pollInterval = time.Hour
 	// Fail the audit if the reviewer does not +1 the commit within 7 days.
 	gracePeriod = time.Hour * 24 * 7
+	// Post the reminder about the TBR deadline only after 1 day.
+	reminderDelay = time.Hour * 24
 )
 
 // getMaxLabelValue determines the highest possible value of a vote for a given
@@ -65,6 +67,9 @@ func (rule ChangeReviewed) Run(ctx context.Context, ap *AuditParams, rc *Relevan
 		// If we checked gerrit recently, wait before checking again, leave the rule as pending.
 		rc.LastExternalPoll.After(time.Now().Add(-pollInterval))) {
 		return prevResult
+	} else if prevResult != nil {
+		// Preserve any metadata from the previous execution of the rule.
+		result.MetaData = prevResult.MetaData
 	}
 	rc.LastExternalPoll = time.Now()
 	change := getChangeWithLabelDetails(ctx, ap, rc, cs)
@@ -88,12 +93,17 @@ func (rule ChangeReviewed) Run(ctx context.Context, ap *AuditParams, rc *Relevan
 	deadline := rc.CommitTime.Add(gracePeriod)
 	if deadline.After(time.Now()) {
 		result.RuleResultStatus = rulePending
-		if prevResult == nil {
-			// Notify the CL that it needs to be approved by a valid reviewer
-			// within `gracePeriod`.
-			if err := postReminder(ctx, change, deadline, cs); err != nil {
-				logging.WithError(err).Errorf(
-					ctx, "Unable to post reminder on change %v", change.ChangeID)
+		// Only post a reminder if `reminderDelay` has elapsed since the commit time.
+		if prevResult != nil && time.Now().After(rc.CommitTime.Add(reminderDelay)) {
+			// Only post a reminder if it hasn't been done already.
+			if _, ok := prevResult.GetToken(ctx, "TBRReminderSent"); !ok {
+				result.SetToken(ctx, "TBRReminderSent", "Sent")
+				// Notify the CL that it needs to be approved by a valid reviewer
+				// within `gracePeriod`.
+				if err := postReminder(ctx, change, deadline, cs); err != nil {
+					logging.WithError(err).Errorf(
+						ctx, "Unable to post reminder on change %v", change.ChangeID)
+				}
 			}
 		}
 	} else {
