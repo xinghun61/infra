@@ -16,6 +16,7 @@ import (
 
 	"infra/monitoring/sysmon/android"
 	"infra/monitoring/sysmon/cipd"
+	"infra/monitoring/sysmon/cros"
 	"infra/monitoring/sysmon/docker"
 	"infra/monitoring/sysmon/puppet"
 	"infra/monitoring/sysmon/system"
@@ -44,6 +45,7 @@ func main() {
 	// Register metric callbacks.
 	android.Register()
 	cipd.Register()
+	cros.Register()
 	docker.Register()
 	puppet.Register()
 	system.Register() // Should be registered last.
