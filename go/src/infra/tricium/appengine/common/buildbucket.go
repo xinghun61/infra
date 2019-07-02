@@ -51,7 +51,7 @@ func (s buildbucketServer) Trigger(c context.Context, params *TriggerParameters)
 		return nil, errors.Annotate(err, "buildbucket client function must be a recipe").Err()
 	}
 
-	parametersJSON, err := swarmingParametersJSON(params.Worker, recipe)
+	parametersJSON, err := swarmingParametersJSON(c, params.Worker, recipe)
 	if err != nil {
 		return nil, err
 	}
@@ -121,7 +121,7 @@ func (s buildbucketServer) Collect(c context.Context, params *CollectParameters)
 	return result, nil
 }
 
-func swarmingParametersJSON(worker *admin.Worker, recipe *admin.Worker_Recipe) (string, error) {
+func swarmingParametersJSON(c context.Context, worker *admin.Worker, recipe *admin.Worker_Recipe) (string, error) {
 	// Set up properties.
 	properties := make(map[string]interface{})
 	if recipe.Recipe.Properties != "" {
@@ -140,8 +140,24 @@ func swarmingParametersJSON(worker *admin.Worker, recipe *admin.Worker_Recipe) (
 		}
 	}
 
+	// TODO(crbug/979730): Migrate all analyzers to specify builder explicitly.
+	// Set default builder here for backwards compatibility until then.
+	var builder string
+	// If any of these are unset, we default to tricium builder in the luci.tricium.try bucket.
+	if recipe.Recipe.Project == "" || recipe.Recipe.Bucket == "" || recipe.Recipe.Builder == "" {
+		logging.Fields{
+			"project": recipe.Recipe.Project,
+			"bucket":  recipe.Recipe.Bucket,
+			"builder": recipe.Recipe.Builder,
+		}.Debugf(c, "One or more builder IDs empty; using builder tricium in luci.tricium.try instead.")
+		builder = "tricium"
+	} else {
+		builder = recipe.Recipe.Builder
+	}
+
 	parameters := map[string]interface{}{
-		"properties": properties,
+		"builder_name": builder,
+		"properties":   properties,
 		"swarming": map[string]interface{}{
 			"override_builder_cfg": map[string]interface{}{
 				"dimensions": dimensions,
@@ -171,10 +187,10 @@ func makeRequest(c context.Context, pubsubUserdata, parametersJSON string, tags 
 			"project": recipe.Project,
 			"bucket":  recipe.Bucket,
 			"builder": recipe.Builder,
-		}.Debugf(c, "One or more builder IDs empty; using luci.tricium.try instead.")
+		}.Debugf(c, "One or more builder IDs empty; using bucket luci.tricium.try instead.")
 		bucket = "luci.tricium.try"
 	} else {
-		bucket = fmt.Sprintf("%s.%s.%s", recipe.Project, recipe.Bucket, recipe.Builder)
+		bucket = fmt.Sprintf("luci.%s.%s", recipe.Project, recipe.Bucket)
 	}
 	return &bbapi.LegacyApiPutRequestMessage{
 		Bucket: bucket,
