@@ -41,16 +41,16 @@ func TestCopyrightChecker(t *testing.T) {
 				"Copyright <year> The <group> Authors. All rights reserved.\n" +
 				"Use of this source code is governed by a BSD-style license that can be\n" +
 				"found in the LICENSE file.\n\n" +
+				"See: https://chromium.googlesource.com/chromium/src/+/master/styleguide/c++/c++.md#file-headers\n\n" +
 				"Or the following for MIT: Copyright <year> The <group> Authors\n\n" +
 				"Use of this source code is governed by a MIT-style\n" +
 				"license that can be found in the LICENSE file or at\n" +
-				"https://opensource.org/licenses/MIT"),
+				"https://opensource.org/licenses/MIT."),
 			Path:      badBsd,
 			StartLine: 1,
 			EndLine:   1,
 			StartChar: 0,
 			EndChar:   1,
-			Url:       "https://chromium.googlesource.com/chromium/src/+/master/styleguide/c++/c++.md#file-headers",
 		})
 	})
 
@@ -64,16 +64,16 @@ func TestCopyrightChecker(t *testing.T) {
 				"Copyright <year> The <group> Authors. All rights reserved.\n" +
 				"Use of this source code is governed by a BSD-style license that can be\n" +
 				"found in the LICENSE file.\n\n" +
+				"See: https://chromium.googlesource.com/chromium/src/+/master/styleguide/c++/c++.md#file-headers\n\n" +
 				"Or the following for MIT: Copyright <year> The <group> Authors\n\n" +
 				"Use of this source code is governed by a MIT-style\n" +
 				"license that can be found in the LICENSE file or at\n" +
-				"https://opensource.org/licenses/MIT"),
+				"https://opensource.org/licenses/MIT."),
 			Path:      missing,
 			StartLine: 1,
 			EndLine:   1,
 			StartChar: 0,
 			EndChar:   1,
-			Url:       "https://chromium.googlesource.com/chromium/src/+/master/styleguide/c++/c++.md#file-headers",
 		})
 	})
 
@@ -81,14 +81,14 @@ func TestCopyrightChecker(t *testing.T) {
 		c := checkCopyright(old)
 		So(c, ShouldNotBeNil)
 		So(c, ShouldResemble, &tricium.Data_Comment{
-			Category:  "Copyright/OutOfDate",
-			Message:   "Out of date copyright statement (omit the (c) to update)",
+			Category: "Copyright/OutOfDate",
+			Message: "Out of date copyright statement (omit the (c) to update).\n\n" +
+				"See: https://chromium.googlesource.com/chromium/src/+/master/styleguide/c++/c++.md#file-headers",
 			Path:      old,
 			StartLine: 1,
 			EndLine:   1,
 			StartChar: 0,
 			EndChar:   1,
-			Url:       "https://chromium.googlesource.com/chromium/src/+/master/styleguide/c++/c++.md#file-headers",
 		})
 	})
 }

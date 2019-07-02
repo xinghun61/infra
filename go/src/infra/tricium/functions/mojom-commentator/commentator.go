@@ -141,7 +141,6 @@ func makeComment(path string, line int, subcategory, message string) *tricium.Da
 	return &tricium.Data_Comment{
 		Category:  fmt.Sprintf("MojomCommentator/%s", subcategory),
 		Message:   fmt.Sprintf("%s\n\nSee %s for details.", message, url),
-		Url:       url,
 		Path:      path,
 		StartLine: int32(line),
 	}

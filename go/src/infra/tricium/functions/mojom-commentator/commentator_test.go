@@ -48,7 +48,6 @@ func TestMojomCommentator(t *testing.T) {
 			Category:  "MojomCommentator/method",
 			Message:   methodError,
 			StartLine: 7,
-			Url:       url,
 			Path:      "partial_comments.mojom",
 		}})
 	})
@@ -61,35 +60,30 @@ func TestMojomCommentator(t *testing.T) {
 				Category:  "MojomCommentator/interface",
 				Message:   `Interface "Foo"` + interfaceErrorFragment,
 				StartLine: 1,
-				Url:       url,
 				Path:      path,
 			},
 			{
 				Category:  "MojomCommentator/method",
 				Message:   methodError,
 				StartLine: 2,
-				Url:       url,
 				Path:      path,
 			},
 			{
 				Category:  "MojomCommentator/method",
 				Message:   methodError,
 				StartLine: 4,
-				Url:       url,
 				Path:      path,
 			},
 			{
 				Category:  "MojomCommentator/interface",
 				Message:   `Interface "Another"` + interfaceErrorFragment,
 				StartLine: 12,
-				Url:       url,
 				Path:      path,
 			},
 			{
 				Category:  "MojomCommentator/method",
 				Message:   methodError,
 				StartLine: 16,
-				Url:       url,
 				Path:      path,
 			},
 		})

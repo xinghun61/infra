@@ -104,7 +104,6 @@ func run(r *runner.Runner, inputDir, outputDir, pathFilters string) {
 			// e.g. "ShellCheck/SC1234"
 			Category: fmt.Sprintf("%s/SC%d", analyzerName, warn.Code),
 			Message:  fmt.Sprintf("%s: %s", warn.Level, warn.Message),
-			Url:      warn.WikiURL(),
 			Path:     warn.File,
 			// shellcheck uses 1-based columns, but Tricium needs 0-based columns.
 			StartLine: warn.Line,

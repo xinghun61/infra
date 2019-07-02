@@ -29,11 +29,21 @@ var (
 	commentRegexp    = regexp.MustCompile(`^[ \t\n\r\v\f]*[#|\/\/|\/\*|\*|;].*`)
 	whitespaceRegexp = regexp.MustCompile(`^[ \t\n\r\v\f]*$`)
 	// Expected copyright statements (any year or author accepted).
-	bsdCopyrightRegexp = regexp.MustCompile(`Copyright 20[0-9][0-9] The [A-Za-z]* Authors\. All rights reserved\. Use of this source code is governed by a BSD-style license that can be found in the LICENSE file\.`)
-	mitCopyrightRegexp = regexp.MustCompile(`Copyright 20[0-9][0-9] The [A-Za-z]* Authors Use of this source code is governed by a MIT-style license that can be found in the LICENSE file or at https:\/\/opensource\.org\/licenses\/MIT`)
+	bsdCopyrightRegexp = regexp.MustCompile(`Copyright 20[0-9][0-9] ` +
+		`The [A-Za-z]* Authors\. All rights reserved\. ` +
+		`Use of this source code is governed by a BSD-style license ` +
+		`that can be found in the LICENSE file\.`)
+	mitCopyrightRegexp = regexp.MustCompile(`Copyright 20[0-9][0-9] ` +
+		`The [A-Za-z]* Authors ` +
+		`Use of this source code is governed by a MIT-style license ` +
+		`that can be found in the LICENSE file or at ` +
+		`https:\/\/opensource\.org\/licenses\/MIT`)
 
 	// Old-style copyright with (c).
-	oldCopyrightRegexp = regexp.MustCompile(`Copyright \(c\) 20[0-9][0-9] The [A-Za-z]* Authors. All rights reserved. Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.`)
+	oldCopyrightRegexp = regexp.MustCompile(`Copyright \(c\) 20[0-9][0-9] ` +
+		`The [A-Za-z]* Authors. ` +
+		`All rights reserved. Use of this source code is governed by ` +
+		`a BSD-style license that can be found in the LICENSE file.`)
 )
 
 func main() {
@@ -136,36 +146,52 @@ func getFileHeader(path string, file *os.File) string {
 
 func missingCopyrightComment(path string) *tricium.Data_Comment {
 	return &tricium.Data_Comment{
-		Category:  fmt.Sprintf("%s/%s", category, "Missing"),
-		Message:   "Missing copyright statement.\nUse the following for BSD:\nCopyright <year> The <group> Authors. All rights reserved.\nUse of this source code is governed by a BSD-style license that can be\nfound in the LICENSE file.\n\nOr the following for MIT: Copyright <year> The <group> Authors\n\nUse of this source code is governed by a MIT-style\nlicense that can be found in the LICENSE file or at\nhttps://opensource.org/licenses/MIT",
+		Category: fmt.Sprintf("%s/%s", category, "Missing"),
+		Message: "Missing copyright statement.\n" +
+			"Use the following for BSD:\n" +
+			"Copyright <year> The <group> Authors. All rights reserved.\n" +
+			"Use of this source code is governed by a BSD-style license that can be\n" +
+			"found in the LICENSE file.\n\n" +
+			"See: https://chromium.googlesource.com/chromium/src/+/master/styleguide/c++/c++.md#file-headers\n\n" +
+			"Or the following for MIT: Copyright <year> The <group> Authors\n\n" +
+			"Use of this source code is governed by a MIT-style\n" +
+			"license that can be found in the LICENSE file or at\n" +
+			"https://opensource.org/licenses/MIT.",
 		Path:      path,
 		StartLine: int32(1),
 		EndLine:   int32(1),
 		EndChar:   int32(1),
-		Url:       "https://chromium.googlesource.com/chromium/src/+/master/styleguide/c++/c++.md#file-headers",
 	}
 }
 
 func incorrectCopyrightComment(path string) *tricium.Data_Comment {
 	return &tricium.Data_Comment{
-		Category:  fmt.Sprintf("%s/%s", category, "Incorrect"),
-		Message:   "Incorrect copyright statement.\nUse the following for BSD:\nCopyright <year> The <group> Authors. All rights reserved.\nUse of this source code is governed by a BSD-style license that can be\nfound in the LICENSE file.\n\nOr the following for MIT: Copyright <year> The <group> Authors\n\nUse of this source code is governed by a MIT-style\nlicense that can be found in the LICENSE file or at\nhttps://opensource.org/licenses/MIT",
+		Category: fmt.Sprintf("%s/%s", category, "Incorrect"),
+		Message: "Incorrect copyright statement.\n" +
+			"Use the following for BSD:\n" +
+			"Copyright <year> The <group> Authors. All rights reserved.\n" +
+			"Use of this source code is governed by a BSD-style license that can be\n" +
+			"found in the LICENSE file.\n\n" +
+			"See: https://chromium.googlesource.com/chromium/src/+/master/styleguide/c++/c++.md#file-headers\n\n" +
+			"Or the following for MIT: Copyright <year> The <group> Authors\n\n" +
+			"Use of this source code is governed by a MIT-style\n" +
+			"license that can be found in the LICENSE file or at\n" +
+			"https://opensource.org/licenses/MIT.",
 		Path:      path,
 		StartLine: int32(1),
 		EndLine:   int32(1),
 		EndChar:   int32(1),
-		Url:       "https://chromium.googlesource.com/chromium/src/+/master/styleguide/c++/c++.md#file-headers",
 	}
 }
 
 func oldCopyrightComment(path string) *tricium.Data_Comment {
 	return &tricium.Data_Comment{
-		Category:  fmt.Sprintf("%s/%s", category, "OutOfDate"),
-		Message:   "Out of date copyright statement (omit the (c) to update)",
+		Category: fmt.Sprintf("%s/%s", category, "OutOfDate"),
+		Message: "Out of date copyright statement (omit the (c) to update).\n\n" +
+			"See: https://chromium.googlesource.com/chromium/src/+/master/styleguide/c++/c++.md#file-headers",
 		Path:      path,
 		StartLine: int32(1),
 		EndLine:   int32(1),
 		EndChar:   int32(1),
-		Url:       "https://chromium.googlesource.com/chromium/src/+/master/styleguide/c++/c++.md#file-headers",
 	}
 }

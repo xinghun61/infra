@@ -136,7 +136,6 @@ func run() int {
 			Category:  fmt.Sprintf("Gosec/%s", issue.RuleID),
 			Message:   issue.Details,
 			Path:      relpath,
-			Url:       "https://github.com/securego/gosec/blob/master/rules/rulelist.go",
 			StartLine: line,
 			StartChar: 0,
 			EndLine:   line + int32(strings.Count(issue.Code, "\n")),
