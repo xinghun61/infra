@@ -125,6 +125,7 @@ func (ejd *EditJobDefinition) EditIsolated(isolated string, cmd []string, cwd st
 				ir := slc.S.TaskSlice.Properties.InputsRef
 				if ir == nil {
 					ir = &swarming.SwarmingRpcsFilesRef{}
+					slc.S.TaskSlice.Properties.InputsRef = ir
 				}
 				ir.Isolated = isolated
 				if len(cmd) > 0 {
