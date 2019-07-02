@@ -366,7 +366,7 @@ def update_build_async(req, _res, ctx, _mask):
           ).put_async()
       )
 
-    if model_build_proto_mask:
+    if model_build_proto_mask:  # pragma: no branch
       # Merge the rest into build.proto using model_build_proto_mask.
       model_build_proto_mask.merge(req.build, build.proto)
 
