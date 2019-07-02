@@ -11,6 +11,8 @@ import (
 	"go.chromium.org/luci/common/errors"
 )
 
+const parseSubcommand = "parse"
+
 // Args contains information needed to run the parser command.
 type Args struct {
 	ParserPath string
@@ -39,5 +41,5 @@ func parseCommand(a Args) (*exec.Cmd, error) {
 		return nil, errors.Reason("No results directory provided for parsing").Err()
 	}
 
-	return exec.Command(a.ParserPath, a.ResultsDir), nil
+	return exec.Command(a.ParserPath, parseSubcommand, a.ResultsDir), nil
 }
