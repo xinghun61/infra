@@ -63,6 +63,7 @@ import flatten_swarmingcfg
 import model
 import swarmingcfg as swarmingcfg_module
 import tokens
+import tq
 import user
 
 # Name of a push task queue that synchronizes a buildbucket build and a swarming
@@ -551,16 +552,63 @@ def create_sync_task(build):  # pragma: no cover
   }
 
 
-def _create_swarming_task(build_id):
+def _sync_build_and_swarming(build_id, generation):
+  """Synchronizes build and Swarming.
+
+  If the swarming task does not exist yet, creates it.
+  Otherwise updates the build state to match swarming task state.
+
+  Enqueues a new sync push task if the build did not end.
+  """
   build = model.Build.get_by_id(build_id)
   if not build:  # pragma: no cover
     logging.warning('build not found')
     return
-  sw = build.parse_infra().swarming
-  logging.info('swarming hostname: %r', sw.hostname)
-  if sw.task_id:
-    logging.warning('build already has a task %r', sw.task_id)
+  if build.is_ended:
+    logging.info('build ended')
     return
+
+  sw = build.parse_infra().swarming
+
+  if not sw.task_id:
+    _create_swarming_task(build, sw)
+  else:
+    result = _load_task_result(sw.hostname, sw.task_id)
+    if not result:
+      logging.error(
+          'Task %s/%s referenced by build %s is not found', sw.hostname,
+          sw.task_id, build.key.id()
+      )
+    _sync_build_with_task_result(build_id, result)
+
+  # Enqueue a continuation task.
+  next_gen = generation + 1
+  payload = {
+      'id': build.key.id(),
+      'generation': next_gen,
+  }
+  deadline = build.create_time + model.BUILD_TIMEOUT
+  age_limit = deadline - utils.utcnow()
+  continuation = {
+      'name': 'sync-task-%d-%d' % (build_id, next_gen),
+      'url': '/internal/task/swarming/sync-build/%s' % build.key.id(),
+      'payload': json.dumps(payload, sort_keys=True),
+      'retry_options': {'task_age_limit': age_limit.total_seconds()},
+      'countdown': 60,  # Run the continuation task in 1m.
+  }
+  try:
+    tq.enqueue_async(
+        SYNC_QUEUE_NAME, [continuation], transactional=False
+    ).get_result()
+  except taskqueue.TaskAlreadyExistsError:  # pragma: no cover
+    # Previous attempt for this generation of the task might have already
+    # created the next generation task. This is OK.
+    pass
+
+
+def _create_swarming_task(build, sw):
+  logging.info('creating a task on %s', sw.hostname)
+  build_id = build.proto.id
 
   task_key = str(uuid.uuid4())
 
@@ -669,12 +717,7 @@ class TaskSyncBuild(webapp2.RequestHandler):  # pragma: no cover
   @decorators.require_taskqueue(SYNC_QUEUE_NAME)
   def post(self, build_id):  # pylint: disable=unused-argument
     body = json.loads(self.request.body)
-    _create_swarming_task(body['id'])
-
-    # TODO(crbug.com/943818): Re-enqueue itself without task_def.
-    # If no task_def in body, call _sync_build_async.
-    # Remove update_builds cron.
-    # If build is canceled, cancel the task and do not re-enqueue.
+    _sync_build_and_swarming(body['id'], body['generation'])
 
 
 def _generate_build_url(milo_hostname, build):
@@ -734,16 +777,21 @@ def cancel_task_transactionally_async(hostname, task_id):  # pragma: no cover
 # Update builds.
 
 
-def _load_task_result_async(hostname, task_id):  # pragma: no cover
+def _load_task_result(hostname, task_id):  # pragma: no cover
   return _call_api_async(
       impersonate=False,
       hostname=hostname,
       path='task/%s/result' % task_id,
-  )
+  ).get_result()
 
 
-def _sync_build_in_memory(build, task_result):
-  """Syncs buildbucket |build| state with swarming task |result|."""
+def _sync_build_with_task_result_in_memory(build, task_result):
+  """Syncs buildbucket |build| state with swarming task |result|.
+
+  Mutates build only if status has changed. Returns True in that case.
+
+  If task_result is None, marks the build as INFRA_FAILURE.
+  """
 
   # Task result docs:
   # https://github.com/luci/luci-py/blob/985821e9f13da2c93cb149d9e1159c68c72d58da/appengine/swarming/server/task_result.py#L239
@@ -845,18 +893,17 @@ def _sync_build_in_memory(build, task_result):
   return True
 
 
-@ndb.tasklet
-def _sync_build_async(build_id, task_result):
-  """Syncs Build entity in the datastore with the swarming task."""
+def _sync_build_with_task_result(build_id, task_result):
+  """Syncs Build entity in the datastore with a result of the swarming task."""
 
-  @ndb.transactional_tasklet
-  def txn_async():
-    build = yield model.Build.get_by_id_async(build_id)
+  @ndb.transactional
+  def txn():
+    build = model.Build.get_by_id(build_id)
     if not build:  # pragma: no cover
-      raise ndb.Return(None)
-    made_change = _sync_build_in_memory(build, task_result)
-    if not made_change:
-      raise ndb.Return(None)
+      return None
+    status_changed = _sync_build_with_task_result_in_memory(build, task_result)
+    if not status_changed:
+      return None
 
     futures = [build.put_async()]
 
@@ -870,10 +917,11 @@ def _sync_build_async(build_id, task_result):
       )
       futures.append(events.on_build_completing_async(build))
 
-    yield futures
-    raise ndb.Return(build)
+    for f in futures:
+      f.check_success()
+    return build
 
-  build = yield txn_async()
+  build = txn()
   if build:
     if build.proto.status == common_pb2.STARTED:
       events.on_build_started(build)
@@ -980,8 +1028,8 @@ class SubNotify(webapp2.RequestHandler):
       )
 
     # Update build.
-    result = _load_task_result_async(hostname, task_id).get_result()
-    _sync_build_async(build_id, result).get_result()
+    result = _load_task_result(hostname, task_id)
+    _sync_build_with_task_result(build_id, result)
 
   def stop(self, msg, *args, **kwargs):
     """Logs error and stops request processing.
@@ -1011,32 +1059,8 @@ class SubNotify(webapp2.RequestHandler):
       self.stop('%s is not a valid JSON object: %r', name, text)
 
 
-class CronUpdateBuilds(webapp2.RequestHandler):
-  """Updates builds that are associated with swarming tasks."""
-
-  @ndb.tasklet
-  def update_build_async(self, build):
-    sw = build.parse_infra().swarming
-    if not sw.hostname or not sw.task_id:
-      return
-
-    result = yield _load_task_result_async(sw.hostname, sw.task_id)
-    if not result:
-      logging.error(
-          'Task %s/%s referenced by build %s is not found', sw.hostname,
-          sw.task_id, build.key.id()
-      )
-    yield _sync_build_async(build.key.id(), result)
-
-  @decorators.require_cronjob
-  def get(self):  # pragma: no cover
-    q = model.Build.query(model.Build.incomplete == True)
-    q.map_async(self.update_build_async).get_result()
-
-
 def get_backend_routes():  # pragma: no cover
   return [
-      webapp2.Route(r'/internal/cron/swarming/update_builds', CronUpdateBuilds),
       webapp2.Route(
           r'/internal/task/swarming/sync-build/<build_id:\d+>', TaskSyncBuild
       ),
@@ -1103,7 +1127,7 @@ def _parse_ts(ts):
   # strptime cannot handle optional parts.
   # HACK: add the time-secfrac part if it is missing.
   # P(time-secfrac is missing) = 1e-6.
-  if '.' not in ts:
+  if '.' not in ts:  # pragma: no cover
     ts += '.0'
   return datetime.datetime.strptime(ts, '%Y-%m-%dT%H:%M:%S.%f')
 

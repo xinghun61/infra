@@ -39,14 +39,6 @@ cron:
   url: /internal/cron/config/update
   schedule: every 10 minutes
 
-### swarming integration
-
-- description: update builds associated with swarming tasks
-  target: backend
-  url: /internal/cron/swarming/update_builds
-  schedule: every 1 minutes
-
-
 ### bq export
 
 - description: export completed prod builds to BigQuery

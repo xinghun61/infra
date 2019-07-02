@@ -38,6 +38,7 @@ import bbutil
 import errors
 import model
 import swarming
+import tq
 import user
 
 linux_CACHE_NAME = (
@@ -655,10 +656,10 @@ class TaskDefTest(BaseTest):
     self.assertEqual(expected, actual)
 
 
-class CreateTaskTest(BaseTest):
+class SyncBuildTest(BaseTest):
 
   def setUp(self):
-    super(CreateTaskTest, self).setUp()
+    super(SyncBuildTest, self).setUp()
     self.patch('components.net.json_request_async', autospec=True)
     self.patch('components.auth.delegate_async', return_value=future('blah'))
 
@@ -680,7 +681,13 @@ class CreateTaskTest(BaseTest):
       infra.swarming.task_id = ''
     self.build.put()
 
-  def test_success(self):
+  def _create_task(self):
+    swarming._create_swarming_task(
+        self.build,
+        self.build.parse_infra().swarming
+    )
+
+  def test_create_task(self):
     expected_task_def = self.task_def.copy()
     expected_secrets = launcher_pb2.BuildSecrets(build_token=self.build_token)
     expected_task_def[u'task_slices'][0][u'properties'][u'secret_bytes'] = (
@@ -688,7 +695,7 @@ class CreateTaskTest(BaseTest):
     )
 
     net.json_request_async.return_value = future({'task_id': 'x'})
-    swarming._create_swarming_task(1)
+    swarming._sync_build_and_swarming(1, 0)
 
     actual_task_def = net.json_request_async.call_args[1]['payload']
     self.assertEqual(actual_task_def, expected_task_def)
@@ -710,13 +717,22 @@ class CreateTaskTest(BaseTest):
         ]
     )
 
-  def test_already_exists(self):
-    with self.build.mutate_infra() as infra:
-      infra.swarming.task_id = 'exists'
-    self.build.put()
-
-    swarming._create_swarming_task(1)
-    self.assertFalse(net.json_request_async.called)
+    expected_continuation_payload = {
+        'id': 1,
+        'generation': 1,
+    }
+    expected_continuation = {
+        'name': 'sync-task-1-1',
+        'url': '/internal/task/swarming/sync-build/1',
+        'payload': json.dumps(expected_continuation_payload, sort_keys=True),
+        'retry_options': {
+            'task_age_limit': model.BUILD_TIMEOUT.total_seconds()
+        },
+        'countdown': 60,
+    }
+    tq.enqueue_async.assert_called_with(
+        swarming.SYNC_QUEUE_NAME, [expected_continuation], transactional=False
+    )
 
   @mock.patch('swarming.cancel_task', autospec=True)
   def test_already_exists_after_creation(self, cancel_task):
@@ -730,7 +746,7 @@ class CreateTaskTest(BaseTest):
 
     net.json_request_async.side_effect = json_request_async
 
-    swarming._create_swarming_task(1)
+    self._create_task()
     cancel_task.assert_called_with('swarming.example.com', 'new task')
 
   def test_http_400(self):
@@ -738,7 +754,7 @@ class CreateTaskTest(BaseTest):
         net.Error('HTTP 401', 400, 'invalid request')
     )
 
-    swarming._create_swarming_task(1)
+    self._create_task()
 
     build = self.build.key.get()
     self.assertEqual(build.status, common_pb2.INFRA_FAILURE)
@@ -753,52 +769,7 @@ class CreateTaskTest(BaseTest):
     )
 
     with self.assertRaises(net.Error):
-      swarming._create_swarming_task(1)
-
-
-class CancelTest(BaseTest):
-
-  def setUp(self):
-    super(CancelTest, self).setUp()
-
-    self.json_response = None
-
-    def json_request_async(*_, **__):
-      if self.json_response is not None:
-        return future(self.json_response)
-      self.fail('unexpected outbound request')  # pragma: no cover
-
-    self.patch(
-        'components.net.json_request_async',
-        autospec=True,
-        side_effect=json_request_async
-    )
-
-  def test_cancel_task(self):
-    self.json_response = {'ok': True}
-    swarming.cancel_task('swarming.example.com', 'deadbeef')
-    net.json_request_async.assert_called_with(
-        (
-            'https://swarming.example.com/'
-            '_ah/api/swarming/v1/task/deadbeef/cancel'
-        ),
-        method='POST',
-        scopes=net.EMAIL_SCOPE,
-        delegation_token=None,
-        payload={'kill_running': True},
-        deadline=None,
-        max_attempts=None,
-    )
-
-  def test_cancel_running_task(self):
-    self.json_response = {
-        'was_running': True,
-        'ok': False,
-    }
-    swarming.cancel_task('swarming.example.com', 'deadbeef')
-
-
-class SyncBuildTest(BaseTest):
+      self._create_task()
 
   def test_validate(self):
     build = test_util.build()
@@ -979,12 +950,18 @@ class SyncBuildTest(BaseTest):
           },
       ),
   ])
-  def test_sync(self, case):
+  def test_sync_with_task_result(self, case):
     logging.info('test case: %s', case)
     build = test_util.build(id=1)
     build.put()
 
-    swarming._sync_build_async(1, case['task_result']).get_result()
+    self.patch(
+        'swarming._load_task_result',
+        autospec=True,
+        return_value=case['task_result'],
+    )
+
+    swarming._sync_build_and_swarming(1, 1)
 
     build = build.key.get()
     bp = build.proto
@@ -1004,6 +981,73 @@ class SyncBuildTest(BaseTest):
         list(build.parse_infra().swarming.bot_dimensions),
         case.get('bot_dimensions', [])
     )
+
+    expected_continuation_payload = {
+        'id': 1,
+        'generation': 2,
+    }
+    expected_continuation = {
+        'name': 'sync-task-1-2',
+        'url': '/internal/task/swarming/sync-build/1',
+        'payload': json.dumps(expected_continuation_payload, sort_keys=True),
+        'retry_options': {
+            'task_age_limit': model.BUILD_TIMEOUT.total_seconds()
+        },
+        'countdown': 60,
+    }
+    tq.enqueue_async.assert_called_with(
+        swarming.SYNC_QUEUE_NAME, [expected_continuation], transactional=False
+    )
+
+  def test_termination(self):
+    self.build.proto.status = common_pb2.SUCCESS
+    self.build.proto.end_time.FromDatetime(utils.utcnow())
+    self.build.put()
+
+    swarming._sync_build_and_swarming(1, 1)
+    self.assertFalse(tq.enqueue_async.called)
+
+
+class CancelTest(BaseTest):
+
+  def setUp(self):
+    super(CancelTest, self).setUp()
+
+    self.json_response = None
+
+    def json_request_async(*_, **__):
+      if self.json_response is not None:
+        return future(self.json_response)
+      self.fail('unexpected outbound request')  # pragma: no cover
+
+    self.patch(
+        'components.net.json_request_async',
+        autospec=True,
+        side_effect=json_request_async
+    )
+
+  def test_cancel_task(self):
+    self.json_response = {'ok': True}
+    swarming.cancel_task('swarming.example.com', 'deadbeef')
+    net.json_request_async.assert_called_with(
+        (
+            'https://swarming.example.com/'
+            '_ah/api/swarming/v1/task/deadbeef/cancel'
+        ),
+        method='POST',
+        scopes=net.EMAIL_SCOPE,
+        delegation_token=None,
+        payload={'kill_running': True},
+        deadline=None,
+        max_attempts=None,
+    )
+
+  def test_cancel_running_task(self):
+    self.json_response = {
+        'was_running': True,
+        'ok': False,
+    }
+    swarming.cancel_task('swarming.example.com', 'deadbeef')
 
 
 class SubNotifyTest(BaseTest):
@@ -1102,8 +1146,8 @@ class SubNotifyTest(BaseTest):
         }
     )
 
-  @mock.patch('swarming._load_task_result_async', autospec=True)
-  def test_post(self, load_task_result_async):
+  @mock.patch('swarming._load_task_result', autospec=True)
+  def test_post(self, load_task_result):
     build = test_util.build(id=1)
     build.put()
 
@@ -1113,10 +1157,10 @@ class SubNotifyTest(BaseTest):
         'swarming_hostname': 'swarming.example.com',
     })
 
-    load_task_result_async.return_value = future({
+    load_task_result.return_value = {
         'task_id': 'deadbeef',
         'state': 'COMPLETED',
-    })
+    }
 
     self.handler.post()
 
@@ -1219,62 +1263,6 @@ class SubNotifyTest(BaseTest):
     self.handler.post()
 
     self.assertEquals(_process_msg.call_count, 1)
-
-
-class CronUpdateTest(BaseTest):
-
-  def setUp(self):
-    super(CronUpdateTest, self).setUp()
-    self.now += datetime.timedelta(minutes=5)
-
-  @mock.patch('swarming._load_task_result_async', autospec=True)
-  def test_sync_build_async(self, load_task_result_async):
-    load_task_result_async.return_value = future({
-        'state': 'RUNNING',
-    })
-
-    build = test_util.build()
-    build.put()
-
-    swarming.CronUpdateBuilds().update_build_async(build).get_result()
-    build = build.key.get()
-    self.assertEqual(build.proto.status, common_pb2.STARTED)
-    self.assertFalse(build.proto.HasField('end_time'))
-
-    load_task_result_async.return_value = future({
-        'state': 'COMPLETED',
-    })
-
-    swarming.CronUpdateBuilds().update_build_async(build).get_result()
-    build = build.key.get()
-    self.assertEqual(build.proto.status, common_pb2.SUCCESS)
-
-  @mock.patch('swarming._load_task_result_async', autospec=True)
-  def test_sync_build_async_no_task(self, load_task_result_async):
-    load_task_result_async.return_value = future(None)
-
-    build = test_util.build()
-    build.put()
-    swarming.CronUpdateBuilds().update_build_async(build).get_result()
-    build = build.key.get()
-    self.assertEqual(build.proto.status, common_pb2.INFRA_FAILURE)
-    self.assertTrue(build.proto.summary_markdown)
-
-  def test_sync_build_async_non_swarming(self):
-    build = test_util.build(status=common_pb2.SCHEDULED)
-    with build.mutate_infra() as infra:
-      infra.ClearField('swarming')
-    build.put()
-
-    swarming.CronUpdateBuilds().update_build_async(build).get_result()
-
-    build = build.key.get()
-    self.assertEqual(build.proto.status, common_pb2.SCHEDULED)
-
-  def test_parse_ts_without_usecs(self):
-    actual = swarming._parse_ts('2018-02-23T04:22:45')
-    expected = datetime.datetime(2018, 2, 23, 4, 22, 45)
-    self.assertEqual(actual, expected)
 
 
 def b64json(data):
