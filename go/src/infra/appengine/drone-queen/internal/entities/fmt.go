@@ -6,14 +6,14 @@ package entities
 
 import (
 	"bufio"
+	"bytes"
 	"fmt"
 	"io"
-	"strings"
 )
 
 // FormatDUTs formats a slice of DUTs as a human readable string.
 func FormatDUTs(d []*DUT) string {
-	var b strings.Builder
+	var b bytes.Buffer
 	b.WriteString("[")
 	if len(d) > 0 {
 		writeDUT(&b, d[0])
