@@ -12,6 +12,7 @@ import (
 
 	build_api "go.chromium.org/chromiumos/infra/proto/go/chromite/api"
 	"go.chromium.org/chromiumos/infra/proto/go/test_platform"
+	"go.chromium.org/chromiumos/infra/proto/go/test_platform/skylab_test_runner"
 	"go.chromium.org/chromiumos/infra/proto/go/test_platform/steps"
 	swarming_api "go.chromium.org/luci/common/api/swarming/swarming/v1"
 	"go.chromium.org/luci/common/clock"
@@ -80,6 +81,10 @@ type attempt struct {
 	taskID    string
 	completed bool
 	state     jsonrpc.TaskState
+	// Note: If we ever begin supporting other harnesses's result formats
+	// then this field will change to a *skylab_test_runner.Result.
+	// For now, the autotest-specific variant is more convenient.
+	autotestResult *skylab_test_runner.Result_Autotest
 }
 
 // NewTaskSet creates a new TaskSet.
