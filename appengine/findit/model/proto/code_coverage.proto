@@ -105,8 +105,8 @@ message File {
   // The code branch info for if/else/etc.
   repeated Branch branches = 5;
 
-  // The summary metric for the file.
-  repeated Metric metrics = 6;
+  // Code coverage summary for the file.
+  repeated Metric summaries = 6;
 
   // The git hash (up to the revision in the checkout) of the commit in Gitiles
   // when the file was most recently changed.
