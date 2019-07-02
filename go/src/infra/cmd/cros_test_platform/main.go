@@ -36,9 +36,12 @@ func getApplication() *cli.Application {
 			authcli.SubcommandInfo(site.DefaultAuthOptions, "whoami", false),
 
 			subcommands.Section("Steps"),
+			// The cros_test_platform recipe runs subcommands in this order:
 			cmd.Enumerate,
-			cmd.AutotestExecute,
 			cmd.SchedulerTrafficSplit,
+			// The cros_test_platform recipe concludes with one of these
+			// two subcommands:
+			cmd.AutotestExecute,
 			cmd.SkylabExecute,
 		},
 	}
