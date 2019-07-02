@@ -288,8 +288,8 @@ def _ValidateRepoToDepPathConfig(repo_to_dep_path):
       {
           "https://boringssl.googlesource.com/boringssl.git":
               "src/third_party/boringssl/src",
-          "https://chromium.googlesource.com/android_tools.git":
-              "src/third_party/android_tools",
+          "https://chromium.googlesource.com/android_ndk.git":
+              "src/third_party/android_ndk",
           "https://chromium.googlesource.com/angle/angle.git":
               "src/third_party/angle",
           ...
