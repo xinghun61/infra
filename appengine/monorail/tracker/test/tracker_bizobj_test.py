@@ -1383,6 +1383,80 @@ class BizobjTest(unittest.TestCase):
           tracker_pb2.DanglingIssueRef(ext_issue_identifier='b/678'),
         ], issue.dangling_blocking_refs)
 
+  def testApplyIssueDelta_MergedIntoExternal(self):
+    """ApplyIssueDelta applies valid mergedinto refs."""
+    issue = tracker_pb2.Issue(status='New', owner_id=111)
+    delta = tracker_pb2.IssueDelta(merged_into_external='b/5678')
+    amendments, impacted_iids = tracker_bizobj.ApplyIssueDelta(
+        self.cnxn, self.services.issue, issue, delta, self.config)
+
+    # Test amendments.
+    self.assertEqual(1, len(amendments))
+    self.assertEqual(tracker_pb2.FieldID.MERGEDINTO, amendments[0].field)
+    self.assertEqual('b/5678', amendments[0].newvalue)
+
+    self.assertEqual(0, len(impacted_iids))
+
+    # Issue refs are applied correctly and alphabetized.
+    self.assertEqual('b/5678', issue.merged_into_external)
+
+  def testApplyIssueDelta_MergedIntoExternalInvalid(self):
+    """ApplyIssueDelta does not accept invalid mergedinto refs."""
+    issue = tracker_pb2.Issue(status='New', owner_id=111)
+    delta = tracker_pb2.IssueDelta(merged_into_external='a/5678')
+    amendments, impacted_iids = tracker_bizobj.ApplyIssueDelta(
+        self.cnxn, self.services.issue, issue, delta, self.config)
+
+    # No change.
+    self.assertEqual(0, len(amendments))
+    self.assertEqual(0, len(impacted_iids))
+    self.assertEqual(None, issue.merged_into_external)
+
+  def testApplyIssueDelta_MergedIntoFromInternalToExternal(self):
+    """ApplyIssueDelta updates from an internal to an external ref."""
+    self.services.issue.TestAddIssue(fake.MakeTestIssue(1, 2, 'Summary',
+        'New', 111, issue_id=6789))
+    issue = tracker_pb2.Issue(status='New', owner_id=111, merged_into=6789)
+    delta = tracker_pb2.IssueDelta(merged_into_external='b/5678')
+    amendments, impacted_iids = tracker_bizobj.ApplyIssueDelta(
+        self.cnxn, self.services.issue, issue, delta, self.config)
+
+    # Test amendments.
+    self.assertEqual(1, len(amendments))
+    self.assertEqual(tracker_pb2.FieldID.MERGEDINTO, amendments[0].field)
+    self.assertEqual('-2 b/5678', amendments[0].newvalue)
+    self.assertEqual(set([6789]), impacted_iids)
+    self.assertEqual(0, issue.merged_into)
+    self.assertEqual('b/5678', issue.merged_into_external)
+
+  def testApplyIssueDelta_MergedIntoFromExternalToInternal(self):
+    """ApplyIssueDelta updates from an external to an internalref."""
+    self.services.issue.TestAddIssue(fake.MakeTestIssue(1, 2, 'Summary',
+        'New', 111, issue_id=6789))
+    issue = tracker_pb2.Issue(status='New', owner_id=111,
+        merged_into_external='b/5678')
+    delta = tracker_pb2.IssueDelta(merged_into=6789)
+    amendments, impacted_iids = tracker_bizobj.ApplyIssueDelta(
+        self.cnxn, self.services.issue, issue, delta, self.config)
+
+    # Test amendments.
+    self.assertEqual(1, len(amendments))
+    self.assertEqual(tracker_pb2.FieldID.MERGEDINTO, amendments[0].field)
+    self.assertEqual('-b/5678 2', amendments[0].newvalue)
+    self.assertEqual(set([6789]), impacted_iids)
+    self.assertEqual(6789, issue.merged_into)
+    self.assertEqual(None, issue.merged_into_external)
+
+  def testApplyIssueDelta_NoMergedIntoInternalAndExternal(self):
+    """ApplyIssueDelta does not allow updating the internal and external
+    merged_into fields at the same time.
+    """
+    issue = tracker_pb2.Issue(status='New', owner_id=111, merged_into=321)
+    delta = tracker_pb2.IssueDelta(merged_into=543,
+        merged_into_external='b/5678')
+    with self.assertRaises(ValueError):
+      tracker_bizobj.ApplyIssueDelta(self.cnxn, self.services.issue, issue,
+          delta, self.config)
 
   def testMakeAmendment(self):
     amendment = tracker_bizobj.MakeAmendment(

@@ -357,6 +357,9 @@ def ConvertIssue(issue, users_by_id, related_refs, config):
   merged_into_issue_ref = None
   if issue.merged_into:
     merged_into_issue_ref = ConvertIssueRef(related_refs[issue.merged_into])
+  if issue.merged_into_external:
+    merged_into_issue_ref = ConvertIssueRef((None, None),
+        ext_id=issue.merged_into_external)
 
   field_values = ConvertFieldValues(
       config, issue.labels, issue.derived_labels,
@@ -658,7 +661,11 @@ def IngestIssueDelta(
   ext_blocking_remove = IngestExtIssueRefs(delta.blocking_refs_remove)
 
   merged_into = None
+  merged_into_external = None
   if delta.HasField('merged_into_ref'):
+    if delta.merged_into_ref.ext_identifier:
+      merged_into_external = delta.merged_into_ref.ext_identifier
+
     if not delta.merged_into_ref.local_id:
       merged_into = 0
     else:
@@ -672,7 +679,8 @@ def IngestIssueDelta(
       ext_blocked_on_add=ext_blocked_on_add,
       ext_blocked_on_remove=ext_blocked_on_remove,
       ext_blocking_add=ext_blocking_add,
-      ext_blocking_remove=ext_blocking_remove)
+      ext_blocking_remove=ext_blocking_remove,
+      merged_into_external=merged_into_external)
   return result
 
 def IngestAttachmentUploads(attachment_uploads):

@@ -835,7 +835,7 @@ def MakeIssueDelta(
     labels_add, labels_remove, field_vals_add, field_vals_remove, fields_clear,
     blocked_on_add, blocked_on_remove, blocking_add, blocking_remove,
     merged_into, summary, ext_blocked_on_add=None, ext_blocked_on_remove=None,
-    ext_blocking_add=None, ext_blocking_remove=None):
+    ext_blocking_add=None, ext_blocking_remove=None, merged_into_external=None):
   """Construct an IssueDelta object with the given fields, iff non-None."""
   delta = tracker_pb2.IssueDelta(
       cc_ids_add=cc_ids_add, cc_ids_remove=cc_ids_remove,
@@ -851,6 +851,8 @@ def MakeIssueDelta(
     delta.owner_id = owner_id
   if merged_into is not None:
     delta.merged_into = merged_into
+  if merged_into_external is not None:
+    delta.merged_into_external = merged_into_external
   if summary is not None:
     delta.summary = summary
   if ext_blocked_on_add is not None:
@@ -1074,7 +1076,12 @@ def ApplyIssueDelta(cnxn, issue_service, issue, delta, config):
         ref for ref in issue.dangling_blocking_refs + add_refs
         if ref.ext_issue_identifier not in delta.ext_blocking_remove]
 
+  if delta.merged_into and delta.merged_into_external:
+    raise ValueError(('Cannot update merged_into and merged_into_external'
+      ' fields at the same time.'))
+
   if (delta.merged_into is not None and
+      delta.merged_into != 0 and
       delta.merged_into != issue.merged_into):
     merged_remove = issue.merged_into
     merged_add = delta.merged_into
@@ -1086,6 +1093,12 @@ def ApplyIssueDelta(cnxn, issue_service, issue, delta, config):
     except exceptions.NoSuchIssueException:
       remove_ref = None
 
+    # Handle going from external->internal mergedinto.
+    if issue.merged_into_external:
+      remove_ref = tracker_pb2.DanglingIssueRef(
+          ext_issue_identifier=issue.merged_into_external)
+      issue.merged_into_external = None
+
     try:
       add_issue = issue_service.GetIssue(cnxn, merged_add)
       add_ref = add_issue.project_name, add_issue.local_id
@@ -1095,6 +1108,34 @@ def ApplyIssueDelta(cnxn, issue_service, issue, delta, config):
 
     amendments.append(MakeMergedIntoAmendment(
         add_ref, remove_ref, default_project_name=issue.project_name))
+
+  if (delta.merged_into_external is not None and
+      delta.merged_into_external != issue.merged_into_external and
+      federated.IsShortlinkValid(delta.merged_into_external)):
+
+    remove_ref = None
+    if issue.merged_into_external:
+      remove_ref = tracker_pb2.DanglingIssueRef(
+          ext_issue_identifier=issue.merged_into_external)
+    elif issue.merged_into:
+      # Handle moving from internal->external mergedinto.
+      try:
+        remove_issue = issue_service.GetIssue(cnxn, issue.merged_into)
+        remove_ref = remove_issue.project_name, remove_issue.local_id
+        impacted_iids.add(issue.merged_into)
+      except exceptions.NoSuchIssueException:
+        pass
+
+    if federated.IsShortlinkValid(delta.merged_into_external):
+      add_ref = tracker_pb2.DanglingIssueRef(
+          ext_issue_identifier=delta.merged_into_external)
+    else:
+      add_ref = None
+
+    issue.merged_into = 0
+    issue.merged_into_external = delta.merged_into_external
+    amendments.append(MakeMergedIntoAmendment(add_ref, remove_ref,
+        default_project_name=issue.project_name))
 
   if delta.summary and delta.summary != issue.summary:
     amendments.append(MakeSummaryAmendment(delta.summary, issue.summary))
@@ -1502,7 +1543,7 @@ def FormatIssueRef(issue_ref_tuple, default_project_name=None):
 
   # TODO(jeffcarp): Improve method signature to not require isinstance.
   if isinstance(issue_ref_tuple, tracker_pb2.DanglingIssueRef):
-    return issue_ref_tuple.ext_issue_identifier
+    return issue_ref_tuple.ext_issue_identifier or ''
 
   project_name, local_id = issue_ref_tuple
   if project_name and project_name != default_project_name:

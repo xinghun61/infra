@@ -277,6 +277,17 @@ class IssueTwoLevelCacheTest(unittest.TestCase):
       self.dangling_relation_rows, self.phase_rows, self.approvalvalue_rows,
       self.av_approver_rows)
 
+  def testDeserializeIssues_ExternalMergedInto(self):
+    """_DeserializeIssues handles external mergedinto refs correctly."""
+    dangling_relation_rows = self.dangling_relation_rows + [
+        (78901, None, None, 'b/1234567', 'mergedinto')]
+    issue_dict = self.issue_2lc._DeserializeIssues(
+        self.cnxn, self.issue_rows, self.summary_rows, self.label_rows,
+        self.component_rows, self.cc_rows, self.notify_rows,
+        self.fieldvalue_rows, self.relation_rows, dangling_relation_rows,
+        self.phase_rows, self.approvalvalue_rows, self.av_approver_rows)
+    self.assertEqual('b/1234567', issue_dict[78901].merged_into_external)
+
   def SetUpFetchItems(self, issue_ids):
     shard_id = None
     self.issue_service.issue_tbl.Select(
@@ -974,6 +985,28 @@ class IssueServiceTest(unittest.TestCase):
     self.mox.ReplayAll()
     self.services.issue._UpdateIssuesRelation(self.cnxn, [issue], commit=False)
     self.mox.VerifyAll()
+
+  def testUpdateIssuesRelation_MergedIntoExternal(self):
+    self.services.issue.issuerelation_tbl.Select = Mock(return_value=[])
+    self.services.issue.issuerelation_tbl.Delete = Mock()
+    self.services.issue.issuerelation_tbl.InsertRows = Mock()
+    self.services.issue.danglingrelation_tbl.Delete = Mock()
+    self.services.issue.danglingrelation_tbl.InsertRows = Mock()
+
+    issue = fake.MakeTestIssue(
+        project_id=789, local_id=1, owner_id=111, summary='sum',
+        status='Live', issue_id=78901, merged_into_external='b/5678')
+
+    self.services.issue._UpdateIssuesRelation(self.cnxn, [issue])
+
+    self.services.issue.danglingrelation_tbl.Delete.assert_called_once_with(
+        self.cnxn, commit=False, issue_id=[78901])
+    self.services.issue.danglingrelation_tbl.InsertRows\
+        .assert_called_once_with(
+          self.cnxn, ['issue_id', 'dst_issue_project', 'dst_issue_local_id',
+            'ext_issue_identifier', 'kind'],
+          [(78901, None, None, 'b/5678', 'mergedinto')],
+          ignore=True, commit=True)
 
   @patch('time.time')
   def testUpdateIssueStructure(self, mockTime):

@@ -94,7 +94,7 @@ class Issue(messages.Message):
   Summary, Status, Owner, CC, reporter, and opened_timestamp are hard
   fields that are always there.  All other metadata is stored as
   labels or custom fields.
-  Next available tag: 61.
+  Next available tag: 62.
   """
   # Globally unique issue ID.
   issue_id = messages.IntegerField(42)
@@ -149,6 +149,8 @@ class Issue(messages.Message):
   # Issue ID of issue that this issue was merged into most recently.  When it
   # is missing or 0, it is considered to be not merged into any other issue.
   merged_into = messages.IntegerField(18)
+  # Use this when an issue is a duplicate of an issue in an external tracker.
+  merged_into_external = messages.StringField(61)
 
   # Default derived via rules, used iff status == ''.
   derived_status = messages.StringField(30, default='')
@@ -208,7 +210,10 @@ class FieldID(messages.Enum):
 
 
 class IssueDelta(messages.Message):
-  """In-memory representation of requested changes to an issue."""
+  """In-memory representation of requested changes to an issue.
+
+  Next available tag: 23
+  """
   status = messages.StringField(1)
   owner_id = messages.IntegerField(2)
   cc_ids_add = messages.IntegerField(3, repeated=True)
@@ -225,6 +230,7 @@ class IssueDelta(messages.Message):
   blocking_add = messages.IntegerField(14, repeated=True)
   blocking_remove = messages.IntegerField(15, repeated=True)
   merged_into = messages.IntegerField(16)
+  merged_into_external = messages.StringField(22)
   summary = messages.StringField(17)
   ext_blocked_on_add = messages.StringField(18, repeated=True)
   ext_blocked_on_remove = messages.StringField(19, repeated=True)

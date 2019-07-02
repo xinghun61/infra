@@ -356,6 +356,8 @@ class IssueTwoLevelCache(caches.AbstractTwoLevelCache):
         src_issue.dangling_blocking_refs.append(
             tracker_bizobj.MakeDanglingIssueRef(dst_issue_proj, dst_issue_id,
                 ext_id))
+      elif kind == 'mergedinto':
+        src_issue.merged_into_external = ext_id
       else:
         logging.warn('unhandled danging relation kind %r', kind)
         continue
@@ -1272,6 +1274,10 @@ class IssueService(object):
       if issue.merged_into:
         relation_rows.append((
             issue.issue_id, issue.merged_into, 'mergedinto', None))
+      if issue.merged_into_external:
+        dangling_relation_rows.append((
+            issue.issue_id, None, None,
+            issue.merged_into_external, 'mergedinto'))
 
     old_blocking = self.issuerelation_tbl.Select(
         cnxn, cols=ISSUERELATION_COLS[:-1],

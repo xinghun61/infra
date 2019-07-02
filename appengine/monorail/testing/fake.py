@@ -81,7 +81,8 @@ def MakeTestIssue(
     derived_owner_id=0, issue_id=None, reporter_id=None, opened_timestamp=None,
     closed_timestamp=None, modified_timestamp=None, is_spam=False,
     component_ids=None, project_name=None, field_values=None, cc_ids=None,
-    derived_cc_ids=None, assume_stale=True, phases=None, approval_values=None):
+    derived_cc_ids=None, assume_stale=True, phases=None, approval_values=None,
+    merged_into_external=None):
   """Easily make an Issue for testing."""
   issue = tracker_pb2.Issue()
   issue.project_id = project_id
@@ -95,6 +96,7 @@ def MakeTestIssue(
   issue.derived_owner_id = derived_owner_id
   issue.star_count = star_count
   issue.merged_into = merged_into
+  issue.merged_into_external = merged_into_external
   issue.is_spam = is_spam
   if cc_ids:
     issue.cc_ids = cc_ids

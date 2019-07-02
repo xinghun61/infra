@@ -579,6 +579,29 @@ class ConverterFunctionsTest(unittest.TestCase):
               rank=2)])
     self.assertEqual(expected, actual)
 
+  def testConvertIssue_ExternalMergedInto(self):
+    """ConvertIssue works on issues with external mergedinto values."""
+    issue = fake.MakeTestIssue(789, 3, 'sum', 'New', 111, project_name='proj',
+        merged_into_external='b/5678')
+    actual = converters.ConvertIssue(issue, self.users_by_id, {}, self.config)
+    expected = issue_objects_pb2.Issue(
+        project_name='proj',
+        local_id=3,
+        summary='sum',
+        merged_into_issue_ref=common_pb2.IssueRef(ext_identifier='b/5678'),
+        status_ref=common_pb2.StatusRef(
+            status='New',
+            is_derived=False,
+            means_open=True),
+        owner_ref=common_pb2.UserRef(
+            user_id=111,
+            display_name='one@example.com',
+            is_derived=False),
+        reporter_ref=common_pb2.UserRef(
+            user_id=111, display_name='one@example.com', is_derived=False))
+
+    self.assertEqual(expected, actual)
+
   def testConvertPhaseDef(self):
     """We can convert a prototpc Phase to a protoc PhaseDef. """
     phase = tracker_pb2.Phase(phase_id=1, name='phase', rank=2)
@@ -1292,6 +1315,18 @@ class ConverterFunctionsTest(unittest.TestCase):
     with self.assertRaises(exceptions.NoSuchIssueException):
       converters.IngestIssueDelta(
           self.cnxn, self.services, delta, self.config, [])
+
+  def testIngestIssueDelta_ExternalMergedInto(self):
+    """IngestIssueDelta properly handles external mergedinto refs."""
+    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111)
+    self.services.issue.TestAddIssue(issue)
+    delta = issue_objects_pb2.IssueDelta(
+        merged_into_ref=common_pb2.IssueRef(ext_identifier='b/5678'))
+    actual = converters.IngestIssueDelta(
+        self.cnxn, self.services, delta, self.config, [])
+
+    self.assertEqual(0, actual.merged_into)
+    self.assertEqual('b/5678', actual.merged_into_external)
 
   def testIngestAttachmentUploads_Empty(self):
     """Uploading zero files results in an empty list of attachments."""
