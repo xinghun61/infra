@@ -1,6 +1,6 @@
 #!/bin/bash
 
-DEFINE_int flag 0 "Help"
+DEFINE_integer flag 0 "Help"
 
 	unused="variable"
 echo "$11"

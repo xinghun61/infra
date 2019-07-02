@@ -103,7 +103,7 @@ func run(r *runner.Runner, inputDir, outputDir, pathFilters string) {
 		results.Comments = append(results.Comments, &tricium.Data_Comment{
 			// e.g. "ShellCheck/SC1234"
 			Category: fmt.Sprintf("%s/SC%d", analyzerName, warn.Code),
-			Message:  fmt.Sprintf("%s: %s", warn.Level, warn.Message),
+			Message:  fmt.Sprintf("%s: %s\n\n%s", warn.Level, warn.Message, warn.WikiURL()),
 			Path:     warn.File,
 			// shellcheck uses 1-based columns, but Tricium needs 0-based columns.
 			StartLine: warn.Line,

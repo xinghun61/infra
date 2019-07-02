@@ -73,18 +73,16 @@ func TestRun(t *testing.T) {
 			So(comments, ShouldResemble, []map[string]interface{}{
 				{
 					"category":  "ShellCheck/SC2034",
-					"message":   "warning: FLAGS_flag appears unused. Verify use (or export if used externally).",
-					"url":       "https://github.com/koalaman/shellcheck/wiki/SC2034",
+					"message":   "warning: FLAGS_flag appears unused. Verify use (or export if used externally).\n\nhttps://github.com/koalaman/shellcheck/wiki/SC2034",
 					"path":      "bad.sh",
 					"startLine": float64(3),
 					"endLine":   float64(3),
-					"startChar": float64(11),
-					"endChar":   float64(15),
+					"startChar": float64(15),
+					"endChar":   float64(19),
 				},
 				{
 					"category":  "ShellCheck/SC2034",
-					"message":   "warning: unused appears unused. Verify use (or export if used externally).",
-					"url":       "https://github.com/koalaman/shellcheck/wiki/SC2034",
+					"message":   "warning: unused appears unused. Verify use (or export if used externally).\n\nhttps://github.com/koalaman/shellcheck/wiki/SC2034",
 					"path":      "bad.sh",
 					"startLine": float64(5),
 					"endLine":   float64(5),
@@ -93,8 +91,7 @@ func TestRun(t *testing.T) {
 				},
 				{
 					"category":  "ShellCheck/SC1037",
-					"message":   "error: Braces are required for positionals over 9, e.g. ${10}.",
-					"url":       "https://github.com/koalaman/shellcheck/wiki/SC1037",
+					"message":   "error: Braces are required for positionals over 9, e.g. ${10}.\n\nhttps://github.com/koalaman/shellcheck/wiki/SC1037",
 					"path":      "bad.sh",
 					"startLine": float64(6),
 					"endLine":   float64(6),
