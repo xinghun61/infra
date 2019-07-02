@@ -90,7 +90,7 @@ package (infra/docker_devices/$platform) is continously built on this
 Puppet deploys it to the relevant bots at
 [these revisions](https://chrome-internal.googlesource.com/infra/puppet/+/abab6a79a69671288c6be4c87dfc053a11a46b4b/puppetm/etc/puppet/hieradata/cipd.yaml#469).
 The canary pin affects bots on [chromium-swarm-dev](https://chromium-swarm-dev.appspot.com),
-which the android testers on the [chromium.swarm](https://build.chromium.org/p/chromium.swarm/builders)
+which the android testers on the [chromium.swarm](https://luci-milo-dev.appspot.com/p/chromium/g/chromium.swarm/builders)
 waterfall run tests against. If the canary has been updated, the bots look fine,
 and the tests haven't regressed, you can proceed to update the stable pin.
 

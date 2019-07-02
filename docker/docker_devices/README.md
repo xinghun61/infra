@@ -19,7 +19,7 @@ developer workstation is unsupported.
 
 ### Automatic image building
 Everyday at 8am PST, a builder on the internal.infra.cron waterfall builds a
-fresh version of the image. This [builder](https://uberchromegw.corp.google.com/i/internal.infra.cron/builders/android-docker-image-builder)
+fresh version of the image. This [builder](https://ci.chromium.org/p/infra-internal/builders/prod/android-docker-image-builder)
 essentially runs `./build.sh` and uploads the resultant images to a docker
 [container registry](https://docs.docker.com/registry/). The registry, hosted
 by gcloud, is located at
@@ -42,10 +42,10 @@ running outside of it. Nor can it run many of the utilities in `/sbin/` since
 the hardware layer of the machine is not available to the container. However,
 because a swarming bot uses the `/sbin/shutdown` executable to reboot, this
 file is replaced with our own bash script here
-([shutdown.sh](https://chromium.googlesource.com/infra/infra/+/master/docker/android_devices/shutdown.sh))
+([shutdown.sh](https://chromium.googlesource.com/infra/infra/+/master/docker/docker_devices/android/shutdown.sh))
 that simply sends SIGUSR1 to `init` (pid 1). For a container, `init` is whatever
 command the container was configured to run (as opposed to actual `/sbin/init`).
-In our case, this is [start_swarm_bot.sh](https://chromium.googlesource.com/infra/infra/+/master/docker/android_devices/start_swarm_bot.sh),
+In our case, this is [start_swarm_bot.sh](https://chromium.googlesource.com/infra/infra/+/master/docker/docker_devices/android/start_swarm_bot.sh),
 which conveniently traps SIGUSR1 at the very beginning and exits upon catching
 it. Consequently, running `/sbin/shutdown` from within a container will cause
 the container to immediately shutdown.
@@ -55,13 +55,13 @@ Image deployment
 --------------------------
 Image deployment is done via puppet. When a new image needs to be rolled out,
 grab the image name in the step-text of the "Push image" step on the
-[image-building bot](https://uberchromegw.corp.google.com/i/internal.infra.cron/builders/android-docker-image-builder).
+[image-building bot](https://ci.chromium.org/p/infra-internal/builders/prod/android-docker-image-builder).
 It should look like android_docker:$date. (The bot runs once a day, but you can
 manually trigger a build if you don't want to wait.) To deploy, update the
 image pins in puppet for [canary bots](https://chrome-internal.googlesource.com/infra/puppet/+/78f1ba25470edf4256e5862d7b9c3eb1fba9dcad/puppetm/opt/puppet/conf/nodes.yaml#718),
 followed by [stable bots](https://chrome-internal.googlesource.com/infra/puppet/+/78f1ba25470edf4256e5862d7b9c3eb1fba9dcad/puppetm/opt/puppet/conf/nodes.yaml#777).
 The canary pin affects bots on [chromium-swarm-dev](https://chromium-swarm-dev.appspot.com),
-which the android testers on the [chromium.swarm](https://build.chromium.org/p/chromium.swarm/builders)
+which the android testers on the [chromium.swarm](https://luci-milo-dev.appspot.com/p/chromium/g/chromium.swarm/builders)
 waterfall run tests against. If the canary has been updated, the bots look fine,
 and the tests haven't regressed, you can proceed to update the stable pin.
 (Note that it may take several hours for the image pin update to propagate. It's
