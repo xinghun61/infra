@@ -10,6 +10,7 @@ import './chops-chart.js';
 const DEFAULT_NUM_DAYS = 90;
 const SECONDS_IN_DAY = 24 * 60 * 60;
 const MAX_QUERY_SIZE = 90;
+const MAX_DISPLAY_LINES = 10;
 const predRangeType = Object.freeze({
   NEXT_MONTH: 0,
   NEXT_QUARTER: 1,
@@ -24,12 +25,18 @@ const CHART_OPTIONS = {
     text: 'Issues over time',
   },
   tooltips: {
-    mode: 'index',
+    mode: 'x',
     intersect: false,
   },
   hover: {
-    mode: 'nearest',
-    intersect: true,
+    mode: 'x',
+    intersect: false,
+  },
+  legend: {
+    display: true,
+    labels: {
+      boxWidth: 15,
+    },
   },
   scales: {
     xAxes: [{
@@ -57,9 +64,9 @@ const CHART_OPTIONS = {
   },
 };
 const COLOR_CHOICES = ['#00838F', '#B71C1C', '#2E7D32', '#00659C',
-  '#5D4037', '#558B2F', '#FF6F00', '#6A1B9A'];
+  '#5D4037', '#558B2F', '#FF6F00', '#6A1B9A', '#880E4F', '#827717'];
 const BG_COLOR_CHOICES = ['#B2EBF2', '#EF9A9A', '#C8E6C9', '#B2DFDB',
-  '#D7CCC8', '#DCEDC8', '#FFECB3', '#E1BEE7'];
+  '#D7CCC8', '#DCEDC8', '#FFECB3', '#E1BEE7', '#F8BBD0', '#E6EE9C'];
 
 export default class MrChart extends LitElement {
   static get properties() {
@@ -97,7 +104,7 @@ export default class MrChart extends LitElement {
       div.align {
         display: flex;
       }
-      div.align #frequency {
+      div.align #frequency, div.align #groupBy {
         display: inline-block;
         width: 40%;
       }
@@ -106,15 +113,12 @@ export default class MrChart extends LitElement {
         text-align: center;
         margin-bottom: 5px;
       }
-      div.align #time {
+      div.align #time, div.align #prediction {
         display: inline-block;
         width: 60%;
       }
-      div.align #prediction {
-        width: 100%;
-      }
-      div.groupBy {
-        margin-top: 2rem;
+      #dropdown {
+        height: 50%;
       }
       div.section {
         display: inline-block;
@@ -123,7 +127,22 @@ export default class MrChart extends LitElement {
       div.section.input {
         padding: 4px 10px;
       }
-      .choice.hidden {
+      .menu {
+        min-width: 50%;
+        text-align: left;
+        font-size: 12px;
+        box-sizing: border-box;
+        text-decoration: none;
+        white-space: nowrap;
+        padding: 0.25em 8px;
+        transition: 0.2s background ease-in-out;
+        cursor: pointer;
+        color: var(--chops-link-color);
+      }
+      .menu:hover {
+        background: hsl(0, 0%, 90%);
+      }
+      .choice.transparent {
         background: white;
         border-color: var(--chops-choice-color);
         border-radius: 4px;
@@ -167,38 +186,6 @@ export default class MrChart extends LitElement {
   render() {
     const doneLoading = this.progress === 1;
     return html`
-      <div class="groupBy">
-        <label>Group by label prefix:</label>
-        <div class="section input">
-          <input
-            ?disabled=${!doneLoading}
-            id="labelPrefixInput"
-            type='text'
-            autocomplete=''
-            placeholder=''
-            @focus=${(e) => {
-              if (window._ac_onfocus) {
-                _ac_onfocus(e);
-              }}}
-            @keyup=${this._setLabelPrefix}
-            @blur=${this._setLabelPrefix}
-            @change=${this._setLabelPrefix}
-          />
-        </div>
-        <div class="section">
-          <chops-button class='choice shown' ?disabled=${!doneLoading}
-            @click=${this._fetchData}>Apply</chops-button>
-        </div>
-        <div class="section">
-          <chops-button class='choice hidden'
-            ?disabled=${!doneLoading}
-            @click=${() => {
-              this.shadowRoot.querySelector('#labelPrefixInput').value = '';
-              this.groupBy = '';
-              this._fetchData();
-          }}>Clear</chops-button>
-        </div>
-      </div>
       <chops-chart
         type="line"
         .options=${CHART_OPTIONS}
@@ -224,6 +211,9 @@ export default class MrChart extends LitElement {
         <p class="warning-message" ?hidden=${!this.dateRangeNotLegal}>
           Your requested date range does not exist.
           Showing ${MAX_QUERY_SIZE} days from end date.
+        </p>
+        <p class="warning-message" ?hidden=${!this.cannedQueryOpen}>
+          Your query scope prevents closed issues from showing.
         </p>
         <div class="align">
           <div id="frequency">
@@ -289,6 +279,12 @@ export default class MrChart extends LitElement {
               </chops-button>
             </div>
           </div>
+          <div id="groupBy">
+            <label for="dropdown">Choose group by:</label>
+            <mr-dropdown id="dropdown" ?disabled=${!doneLoading} .text=${this.groupBy.display}>
+            ${this.dropdownHTML}
+            </mr-dropdown>
+          </div>
         </div>
       </div>
     `;
@@ -303,8 +299,18 @@ export default class MrChart extends LitElement {
     this.endDate = MrChart.getEndDate();
     this.startDate = MrChart.getStartDate(this.endDate, DEFAULT_NUM_DAYS);
     this.predRange = predRangeType.HIDE;
-    this.groupBy = '';
-    this.labelPrefix = '';
+    this.groupBy = MrChart.getGroupByURL();
+  }
+
+  // Set dropdown options menu in HTML.
+  async _constructDropdownMenu() {
+    let response = await this._getLabelPrefixes();
+    let dropdownOptions = ['None', 'Component', 'Is open', 'Status', 'Owner'];
+    dropdownOptions = dropdownOptions.concat(response);
+    const dropdownHTML = dropdownOptions.map((str) => html`
+      <option class='menu' @click=${this._setGroupBy}>
+        ${str}</option>`);
+    this.dropdownHTML = html`${dropdownHTML}`;
   }
 
   async connectedCallback() {
@@ -319,6 +325,7 @@ export default class MrChart extends LitElement {
     await import(/* webpackChunkName: "chartjs" */ 'chart.js/dist/Chart.bundle.min.js');
 
     this.dispatchEvent(new Event('chartLoaded'));
+    this._constructDropdownMenu();
     this._fetchData();
   }
 
@@ -362,6 +369,9 @@ export default class MrChart extends LitElement {
         }
       }
     }
+    // Set canned query flag.
+    this.cannedQueryOpen = (MrChart.getSearchParams().get('can') === '2'
+      && this.groupBy.value === 'open');
 
     // Reset chart variables except indices.
     this.progress = 0.05;
@@ -413,17 +423,20 @@ export default class MrChart extends LitElement {
       query: query,
       cannedQuery: cannedQuery,
     };
-    if (this.groupBy !== '') {
-      message['groupBy'] = this.groupBy;
-      if (this.groupBy === 'label') {
-        message['labelPrefix'] = this.labelPrefix;
+    if (this.groupBy.value !== '') {
+      message['groupBy'] = this.groupBy.value;
+      if (this.groupBy.value === 'label') {
+        message['labelPrefix'] = this.groupBy.labelPrefix;
       }
     }
     const response = await prpcClient.call('monorail.Issues',
       'IssueSnapshot', message);
-    const issues = response.snapshotCount.reduce((map, curr) => {
+
+    let issues;
+    if (response.snapshotCount) {
+      issues = response.snapshotCount.reduce((map, curr) => {
         if (curr.dimension !== undefined) {
-          if (this.groupBy === '') {
+          if (this.groupBy.value === '') {
             map.set('Issue Count', curr.count);
           } else {
             map.set(curr.dimension, curr.count);
@@ -431,12 +444,31 @@ export default class MrChart extends LitElement {
         }
         return map;
       }, new Map());
+    } else {
+      issues = new Map();
+    }
     return {
       date: timestamp * 1000,
       issues: issues,
       unsupportedField: response.unsupportedField,
       searchLimitReached: response.searchLimitReached,
     };
+  }
+
+  // Get prefixes from the set of labels.
+  async _getLabelPrefixes() {
+    const projectRequestMessage = {
+      project_name: this.projectName};
+    const labelsResponse = await prpcClient.call(
+      'monorail.Projects', 'GetLabelOptions', projectRequestMessage);
+    const labelPrefixes = new Set();
+    for (let i = 0; i < labelsResponse.labelOptions.length; i++) {
+      let label = labelsResponse.labelOptions[i].label;
+      if (label.includes('-')) {
+        labelPrefixes.add(label.split('-')[0]);
+      }
+    }
+    return Array.from(labelPrefixes);
   }
 
   _chartData(indices, values) {
@@ -464,13 +496,15 @@ export default class MrChart extends LitElement {
         count++;
       }
     }
+    // Legend display set back to default.
+    CHART_OPTIONS.legend.display = true;
     // Check if any positive valued data exist, if not, draw an array of zeros.
     if (count === values.length) {
       return {
         type: 'line',
         labels: indices,
         datasets: [{
-          label: this.labelPrefix,
+          label: this.groupBy.labelPrefix,
           data: Array(indices.length).fill(0),
           backgroundColor: COLOR_CHOICES[0],
           borderColor: COLOR_CHOICES[0],
@@ -491,6 +525,7 @@ export default class MrChart extends LitElement {
         fill: false,
       });
     });
+    arrayValues = MrChart.getSortedLines(arrayValues, MAX_DISPLAY_LINES);
     if (this.predRange === predRangeType.HIDE) {
       return {
         type: 'line',
@@ -503,6 +538,12 @@ export default class MrChart extends LitElement {
     let originalData, predictedData, maxData, minData;
     let currColor;
     let currBGColor;
+    // Check if displayed values > MAX_DISPLAY_LINES, hide legend.
+    if (arrayValues.length * 4 > MAX_DISPLAY_LINES) {
+      CHART_OPTIONS.legend.display = false;
+    } else {
+      CHART_OPTIONS.legend.display = true;
+    }
     for (let i = 0; i < arrayValues.length; i++) {
       [originalData, predictedData, maxData, minData] =
         MrChart.getAllData(indices, arrayValues[i]['data'], this.dateRange,
@@ -553,15 +594,37 @@ export default class MrChart extends LitElement {
     };
   }
 
-  // Change label prefix based on input field value.
-  _setLabelPrefix(e) {
-    if (e.target.value !== '') {
-      this.groupBy = 'label';
-      this.labelPrefix = e.target.value;
-    } else {
-      this.groupBy = '';
+  // Change group by based on dropdown menu selection.
+  _setGroupBy(e) {
+    switch(e.target.text) {
+      case 'None':
+        this.groupBy = {value: ''};
+        break;
+      case 'Is open':
+        this.groupBy = {value: 'open'};
+        break;
+      case 'Owner':
+      case 'Component':
+      case 'Status':
+        this.groupBy = {value: e.target.text.toLowerCase()};
+        break;
+      default:
+        this.groupBy = {value: 'label', labelPrefix: e.target.text};
     }
-    this.dispatchEvent(new CustomEvent('change'));
+    this.groupBy['display'] = e.target.text;
+    this.shadowRoot.querySelector('#dropdown').text = e.target.text;
+    this.shadowRoot.querySelector('#dropdown').close();
+    this._fetchData();
+    // Set groupby URL params.
+    const urlParams = MrChart.getSearchParams();
+    urlParams.set('groupby', this.groupBy.value);
+    if (this.groupBy.value === 'label') {
+      urlParams.set('labelPrefix', this.groupBy.labelPrefix);
+    } else {
+      urlParams.set('labelPrefix', '');
+    }
+    const newUrl = `${location.protocol}//${location.host}${location.pathname}?${urlParams.toString()}`;
+    window.history.pushState({}, '', newUrl);
   }
 
   // Change date range and frequency based on button clicked.
@@ -742,6 +805,54 @@ export default class MrChart extends LitElement {
       minData.push({x: predictedIndices[i], y: Math.max(minValues[i], 0)});
     }
     return [originalData, predictedData, maxData, minData]
+  }
+
+  // Sort lines by data in reversed chronological order
+  // and return top n lines with most issues.
+  static getSortedLines(arrayValues, n) {
+    if (n >= arrayValues.length) {
+      return arrayValues;
+    }
+    const len = arrayValues[0].data.length;
+    // Convert data by reversing and starting from last digit and sort according to
+    // the resulting value. e.g. [4,2,0] => 24, [0,4,3] => 340
+    const sortedValues = arrayValues.slice().sort((arrX, arrY) => {
+      const intX = parseInt(arrX.data.map((i) => i.toString()).reverse().join(''));
+      const intY = parseInt(arrY.data.map((i) => i.toString()).reverse().join(''));
+      return intY - intX;
+    });
+    return sortedValues.slice(0, n);
+  }
+
+  // Set groupby object from URL.
+  static getGroupByURL() {
+    const urlParams = MrChart.getSearchParams();
+    if (urlParams.has('groupby')) {
+      const groupBy = {value: urlParams.get('groupby')};
+      switch(urlParams.get('groupby')) {
+        case '':
+          groupBy['display'] = 'None';
+          break;
+        case 'open':
+          groupBy['display'] = 'Is open';
+          break;
+        case 'owner':
+          groupBy['display'] = 'Owner';
+          break;
+        case 'component':
+          groupBy['display'] = 'Component';
+          break;
+        case 'status':
+          groupBy['display'] = 'Status';
+          break;
+        default:
+          groupBy['display'] = urlParams.get('labelPrefix');
+          groupBy['labelPrefix'] = urlParams.get('labelPrefix');
+      }
+      return groupBy;
+    } else {
+      return {groupBy: '', display: 'None'};
+    }
   }
 }
 

@@ -159,7 +159,7 @@ class ChartServiceTest(unittest.TestCase):
 
     cols = [
       'Comp.path',
-      'IssueSnapshot.issue_id'
+      'COUNT(IssueSnapshot.issue_id)'
     ]
     left_joins = self.defaultLeftJoins + [
       ('IssueSnapshot2Component AS Is2c'
@@ -194,7 +194,7 @@ class ChartServiceTest(unittest.TestCase):
 
     cols = [
       'Lab.label',
-      'IssueSnapshot.issue_id',
+      'COUNT(IssueSnapshot.issue_id)',
     ]
     left_joins = self.defaultLeftJoins + [
       ('IssueSnapshot2Label AS Is2l'
@@ -232,7 +232,7 @@ class ChartServiceTest(unittest.TestCase):
 
     cols = [
       'IssueSnapshot.is_open',
-      'IssueSnapshot.issue_id',
+      'COUNT(IssueSnapshot.issue_id) AS issue_count',
     ]
 
     left_joins = self.defaultLeftJoins
@@ -264,7 +264,7 @@ class ChartServiceTest(unittest.TestCase):
 
     cols = [
       'Stats.status',
-      'IssueSnapshot.issue_id',
+      'COUNT(IssueSnapshot.issue_id)',
     ]
     left_joins = self.defaultLeftJoins + [
         ('StatusDef AS Stats ON ' \
@@ -297,7 +297,7 @@ class ChartServiceTest(unittest.TestCase):
         perms).AndReturn([91, 81])
     cols = [
       'IssueSnapshot.owner_id',
-      'IssueSnapshot.issue_id',
+      'COUNT(IssueSnapshot.issue_id)',
     ]
     left_joins = self.defaultLeftJoins
     where = self.defaultWheres
@@ -361,7 +361,7 @@ class ChartServiceTest(unittest.TestCase):
 
     cols = [
       'Lab.label',
-      'IssueSnapshot.issue_id',
+      'COUNT(IssueSnapshot.issue_id)',
     ]
     left_joins = [
       ('Issue ON IssueSnapshot.issue_id = Issue.id', []),
@@ -408,7 +408,7 @@ class ChartServiceTest(unittest.TestCase):
 
     cols = [
       'Lab.label',
-      'IssueSnapshot.issue_id',
+      'COUNT(IssueSnapshot.issue_id)',
     ]
     left_joins = [
       ('Issue ON IssueSnapshot.issue_id = Issue.id', []),
@@ -582,7 +582,7 @@ class ChartServiceTest(unittest.TestCase):
 
     cols = [
       'Lab.label',
-      'IssueSnapshot.issue_id',
+      'COUNT(IssueSnapshot.issue_id)',
     ]
     left_joins = [
       ('Issue ON IssueSnapshot.issue_id = Issue.id', []),

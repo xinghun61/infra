@@ -38,6 +38,9 @@ export class MrDropdown extends LitElement {
         padding: 0 2px;
         box-sizing: border-box;
       }
+      .anchor:disabled {
+        color: var(--chops-button-disabled-color);
+      }
       .anchor {
         box-sizing: border-box;
         background: none;
@@ -100,7 +103,8 @@ export class MrDropdown extends LitElement {
   render() {
     return html`
       <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-      <button class="anchor" @click=${this.toggle} aria-expanded=${this.opened}>
+      <button class="anchor" @click=${this.toggle}
+        ?disabled=${this.disabled} aria-expanded=${this.opened}>
         ${this.text}
         <i class="material-icons expand-icon">${this.icon}</i>
       </button>
@@ -137,6 +141,7 @@ export class MrDropdown extends LitElement {
     this.icon = 'arrow_drop_down';
     this.menuAlignment = 'right';
     this.opened = false;
+    this.disabled = false;
 
     this._boundCloseOnOutsideClick = this._closeOnOutsideClick.bind(this);
   }
@@ -148,6 +153,7 @@ export class MrDropdown extends LitElement {
       icon: {type: String},
       menuAlignment: {type: String},
       opened: {type: Boolean, reflect: true},
+      disabled: {type: Boolean},
     };
   }
 

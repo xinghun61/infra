@@ -147,7 +147,7 @@ class ChartService(object):
       where.append((forbidden_label_clause, []))
 
     if group_by == 'component':
-      cols = ['Comp.path', 'IssueSnapshot.issue_id']
+      cols = ['Comp.path', 'COUNT(IssueSnapshot.issue_id)']
       left_joins.extend([
         (('IssueSnapshot2Component AS Is2c ON'
           ' Is2c.issuesnapshot_id = IssueSnapshot.id'), []),
@@ -155,7 +155,7 @@ class ChartService(object):
       ])
       group_by = ['Comp.path']
     elif group_by == 'label':
-      cols = ['Lab.label', 'IssueSnapshot.issue_id']
+      cols = ['Lab.label', 'COUNT(IssueSnapshot.issue_id)']
       left_joins.extend([
         (('IssueSnapshot2Label AS Is2l'
           ' ON Is2l.issuesnapshot_id = IssueSnapshot.id'), []),
@@ -170,15 +170,16 @@ class ChartService(object):
       where.append(('LOWER(Lab.label) LIKE %s', [label_prefix.lower() + '-%']))
       group_by = ['Lab.label']
     elif group_by == 'open':
-      cols = ['IssueSnapshot.is_open', 'IssueSnapshot.issue_id']
+      cols = ['IssueSnapshot.is_open',
+        'COUNT(IssueSnapshot.issue_id) AS issue_count']
       group_by = ['IssueSnapshot.is_open']
     elif group_by == 'status':
       left_joins.append(('StatusDef AS Stats ON ' \
         'Stats.id = IssueSnapshot.status_id', []))
-      cols = ['Stats.status', 'IssueSnapshot.issue_id']
+      cols = ['Stats.status', 'COUNT(IssueSnapshot.issue_id)']
       group_by = ['Stats.status']
     elif group_by == 'owner':
-      cols = ['IssueSnapshot.owner_id', 'IssueSnapshot.issue_id']
+      cols = ['IssueSnapshot.owner_id', 'COUNT(IssueSnapshot.issue_id)']
       group_by = ['IssueSnapshot.owner_id']
     elif not group_by:
       cols = ['IssueSnapshot.issue_id']
@@ -376,25 +377,12 @@ class ChartService(object):
     stmt.SetLimitAndOffset(limit=settings.chart_query_max_rows, offset=0)
     stmt_str, stmt_args = stmt.Generate()
     if group_by:
-      if group_by[0] == 'Lab.label':
-        count_stmt = ('SELECT results.label, COUNT(results.issue_id)' \
-          'FROM (%s) AS results' % stmt_str)
-      elif group_by[0] == 'Comp.path':
-        count_stmt = ('SELECT results.path, COUNT(results.issue_id)' \
-          'FROM (%s) AS results' % stmt_str)
-      elif group_by[0] == 'IssueSnapshot.is_open':
-        count_stmt = ('SELECT IF(results.is_open = 1, "Opened", "Closed")' \
-          'AS bool_open, COUNT(results.issue_id)' \
-          'FROM (%s) AS results' % stmt_str)
-      elif group_by[0] == 'IssueSnapshot.owner_id':
-        count_stmt = ('SELECT results.owner_id, COUNT(results.issue_id)' \
-          'FROM (%s) AS results' % stmt_str)
-      elif group_by[0] == 'Stats.status':
-        count_stmt = ('SELECT results.status, COUNT(results.issue_id)' \
+      if group_by[0] == 'IssueSnapshot.is_open':
+        count_stmt = ('SELECT IF(results.is_open = 1, "Opened", "Closed") ' \
+          'AS bool_open, results.issue_count ' \
           'FROM (%s) AS results' % stmt_str)
       else:
-        raise ValueError('Group by only supports label,' \
-          'component, open, status and owner')
+        count_stmt = stmt_str
     else:
       count_stmt = 'SELECT COUNT(results.issue_id) FROM (%s) AS results' % (
         stmt_str)

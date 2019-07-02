@@ -504,5 +504,85 @@ describe('mr-chart', () => {
         assert.isTrue(error[1][0] < result[1][0]);
       });
     });
+
+    describe('getSortedLines', () => {
+      it('return all lines for less than n lines', () => {
+        const arrayValues = [
+          {label: 'line1', data: [0, 0, 1]},
+          {label: 'line2', data: [0, 1, 2]},
+          {label: 'line3', data: [0, 1, 0]},
+          {label: 'line4', data: [4, 0, 3]},
+        ];
+        const expectedValues = [
+          {label: 'line1', data: [0, 0, 1]},
+          {label: 'line2', data: [0, 1, 2]},
+          {label: 'line3', data: [0, 1, 0]},
+          {label: 'line4', data: [4, 0, 3]},
+        ];
+        const actualValues = MrChart.getSortedLines(arrayValues, 4);
+        for (let i = 0; i < 4; i++) {
+          assert.deepEqual(expectedValues[i], actualValues[i]);
+        }
+      });
+
+      it('return top n lines in sorted order for more than n lines',
+        () => {
+          const arrayValues = [
+            {label: 'line1', data: [0, 0, 1]},
+            {label: 'line2', data: [0, 1, 2]},
+            {label: 'line3', data: [0, 4, 0]},
+            {label: 'line4', data: [4, 0, 3]},
+            {label: 'line5', data: [0, 2, 3]},
+          ];
+          const expectedValues = [
+            {label: 'line5', data: [0, 2, 3]},
+            {label: 'line4', data: [4, 0, 3]},
+            {label: 'line2', data: [0, 1, 2]},
+          ];
+          const actualValues = MrChart.getSortedLines(arrayValues, 3);
+          for (let i = 0; i < 3; i++) {
+            assert.deepEqual(expectedValues[i], actualValues[i]);
+          }
+        });
+    });
+
+    describe('getGroupByURL', () => {
+      beforeEach(() => {
+        sinon.stub(MrChart, 'getSearchParams');
+      });
+
+      afterEach(() => {
+        MrChart.getSearchParams.restore();
+      });
+
+      it('get group by label object from URL', () => {
+        const searchParams = new URLSearchParams();
+        searchParams.set('groupby', 'label');
+        searchParams.set('labelPrefix', 'Type');
+        MrChart.getSearchParams.returns(searchParams);
+
+        const expectedGroupBy = {value: 'label',
+          labelPrefix: 'Type', display: 'Type'};
+        assert.deepEqual(MrChart.getGroupByURL(), expectedGroupBy);
+      });
+
+      it('get group by is open object from URL', () => {
+        const searchParams = new URLSearchParams();
+        searchParams.set('groupby', 'open');
+        MrChart.getSearchParams.returns(searchParams);
+
+        const expectedGroupBy = {value: 'open', display: 'Is open'};
+        assert.deepEqual(MrChart.getGroupByURL(), expectedGroupBy);
+      });
+
+      it('get group by none object from URL', () => {
+        const searchParams = new URLSearchParams();
+        searchParams.set('groupby', '');
+        MrChart.getSearchParams.returns(searchParams);
+
+        const expectedGroupBy = {value: '', display: 'None'};
+        assert.deepEqual(MrChart.getGroupByURL(), expectedGroupBy);
+      });
+    });
   });
 });
