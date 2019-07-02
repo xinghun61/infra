@@ -1781,11 +1781,13 @@ class WorkEnv(object):
     # below, the second run of ExpungeUsers will have less work to do.
     self.mc.cnxn.Commit()
 
-    self.services.issue.ExpungeUsersInIssues(
+    affected_issue_ids = self.services.issue.ExpungeUsersInIssues(
         self.mc.cnxn, user_ids_by_email, limit=limit)
     # Commit ExpungeUsersInIssues here, as it has many operations
     # and at least one operation that cannot be limited.
     self.mc.cnxn.Commit()
+    self.services.issue.EnqueueIssuesForIndexing(
+        self.mc.cnxn, affected_issue_ids)
 
     # Spam verdict and report tables have user_id columns that do not
     # reference User. No limit will be applied.

@@ -2871,6 +2871,7 @@ class WorkEnvTest(unittest.TestCase):
     # Assert users expunged in issues
     self.assertItemsEqual(
         self.services.issue.expunged_users_in_issues, user_ids)
+    self.assertTrue(self.services.issue.enqueue_issues_called)
 
     # Assert users expunged in spam
     self.assertItemsEqual(
