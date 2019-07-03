@@ -36,7 +36,7 @@ type TaskSet struct {
 
 type testRun struct {
 	test     *build_api.AutotestTest
-	attempts []attempt
+	attempts []*attempt
 }
 
 func (t *testRun) RequestArgs() (request.Args, error) {
@@ -78,9 +78,8 @@ func (t *testRun) isClientTest() (bool, error) {
 }
 
 type attempt struct {
-	taskID    string
-	completed bool
-	state     jsonrpc.TaskState
+	taskID string
+	state  jsonrpc.TaskState
 	// Note: If we ever begin supporting other harnesses's result formats
 	// then this field will change to a *skylab_test_runner.Result.
 	// For now, the autotest-specific variant is more convenient.
@@ -106,12 +105,12 @@ func NewTaskSet(tests []*build_api.AutotestTest, params *test_platform.Request_P
 // If the supplied context is cancelled prior to completion, or some other error
 // is encountered, this method returns whatever partial execution response
 // was visible to it prior to that error.
-func (r *TaskSet) LaunchAndWait(ctx context.Context, swarming swarming.Client, isolate isolate.Getter) error {
+func (r *TaskSet) LaunchAndWait(ctx context.Context, swarming swarming.Client, getter isolate.Getter) error {
 	if err := r.launch(ctx, swarming); err != nil {
 		return err
 	}
 
-	return r.wait(ctx, swarming)
+	return r.wait(ctx, swarming, getter)
 }
 
 var isClientTest = map[build_api.AutotestTest_ExecutionEnvironment]bool{
@@ -136,14 +135,14 @@ func (r *TaskSet) launch(ctx context.Context, swarming swarming.Client) error {
 			return errors.Annotate(err, "launch test named %s", testRun.test.Name).Err()
 		}
 
-		testRun.attempts = append(testRun.attempts, attempt{taskID: resp.TaskId})
+		testRun.attempts = append(testRun.attempts, &attempt{taskID: resp.TaskId})
 	}
 	return nil
 }
 
-func (r *TaskSet) wait(ctx context.Context, swarming swarming.Client) error {
+func (r *TaskSet) wait(ctx context.Context, swarming swarming.Client, getter isolate.Getter) error {
 	for {
-		complete, err := r.tick(ctx, swarming)
+		complete, err := r.tick(ctx, swarming, getter)
 		if complete || err != nil {
 			return err
 		}
@@ -156,33 +155,37 @@ func (r *TaskSet) wait(ctx context.Context, swarming swarming.Client) error {
 	}
 }
 
-func (r *TaskSet) tick(ctx context.Context, client swarming.Client) (complete bool, err error) {
+func (r *TaskSet) tick(ctx context.Context, client swarming.Client, getter isolate.Getter) (complete bool, err error) {
 	complete = true
 
 	for _, testRun := range r.testRuns {
-		attempt := &testRun.attempts[len(testRun.attempts)-1]
-		if attempt.completed {
+		attempt := testRun.attempts[len(testRun.attempts)-1]
+		if attempt.autotestResult != nil {
 			continue
 		}
 
 		results, err := client.GetResults(ctx, []string{attempt.taskID})
 		if err != nil {
-			return false, errors.Annotate(err, "wait for tests").Err()
+			return false, errors.Annotate(err, "wait for task %s", attempt.taskID).Err()
 		}
 
 		result, err := unpackResult(results, attempt.taskID)
 		if err != nil {
-			return false, errors.Annotate(err, "wait for tests").Err()
+			return false, errors.Annotate(err, "wait for task %s", attempt.taskID).Err()
 		}
 
 		state, err := swarming.AsTaskState(result.State)
 		if err != nil {
-			return false, errors.Annotate(err, "wait for tests").Err()
+			return false, errors.Annotate(err, "wait for task %s", attempt.taskID).Err()
 		}
 		attempt.state = state
 
 		if !swarming.UnfinishedTaskStates[state] {
-			attempt.completed = true
+			r, err := getAutotestResult(ctx, result.OutputsRef, getter)
+			if err != nil {
+				return false, errors.Annotate(err, "wait for task %s", attempt.taskID).Err()
+			}
+			attempt.autotestResult = r
 			continue
 		}
 
@@ -232,20 +235,8 @@ var taskStateToLifeCycle = map[jsonrpc.TaskState]test_platform.TaskState_LifeCyc
 // TaskSet.
 func (r *TaskSet) Response(swarming swarming.URLer) *steps.ExecuteResponse {
 	resp := &steps.ExecuteResponse{}
-	for _, test := range r.testRuns {
-		for _, attempt := range test.attempts {
-			resp.TaskResults = append(resp.TaskResults, &steps.ExecuteResponse_TaskResult{
-				Name: test.test.Name,
-				State: &test_platform.TaskState{
-					LifeCycle: taskStateToLifeCycle[attempt.state],
-					// TODO(akeshet): Determine a way to extract and identify
-					// test verdicts.
-					Verdict: test_platform.TaskState_VERDICT_NO_VERDICT,
-				},
-				TaskId:  attempt.taskID,
-				TaskUrl: swarming.GetTaskURL(attempt.taskID),
-			})
-		}
-	}
+	resp.TaskResults = toTaskResults(r.testRuns, swarming)
+
+	// TODO(akeshet): Compute overall execution task state.
 	return resp
 }

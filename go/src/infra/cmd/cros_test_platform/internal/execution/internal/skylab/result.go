@@ -5,18 +5,54 @@
 package skylab
 
 import (
+	"bytes"
+	"context"
+
 	"go.chromium.org/chromiumos/infra/proto/go/test_platform"
 	"go.chromium.org/chromiumos/infra/proto/go/test_platform/skylab_test_runner"
 	"go.chromium.org/chromiumos/infra/proto/go/test_platform/steps"
+	swarming_api "go.chromium.org/luci/common/api/swarming/swarming/v1"
+	"go.chromium.org/luci/common/errors"
+	"go.chromium.org/luci/common/isolated"
 
+	"github.com/golang/protobuf/jsonpb"
+
+	"infra/cmd/cros_test_platform/internal/execution/isolate"
 	"infra/cmd/cros_test_platform/internal/execution/swarming"
 )
+
+const resultsFileName = "results.json"
+
+func getAutotestResult(ctx context.Context, outputRef *swarming_api.SwarmingRpcsFilesRef, getter isolate.Getter) (*skylab_test_runner.Result_Autotest, error) {
+	if outputRef == nil {
+		return nil, errors.Reason("get result: nil output ref").Err()
+	}
+
+	content, err := getter.GetFile(ctx, isolated.HexDigest(outputRef.Isolated), resultsFileName)
+	if err != nil {
+		return nil, errors.Annotate(err, "get result").Err()
+	}
+
+	var result skylab_test_runner.Result
+
+	err = jsonpb.Unmarshal(bytes.NewReader(content), &result)
+	if err != nil {
+		return nil, errors.Annotate(err, "get result").Err()
+	}
+
+	a := result.GetAutotestResult()
+	if a == nil {
+		return nil, errors.Reason("get result: no autotest result; other harnesses not yet supported").Err()
+	}
+
+	return a, nil
+}
 
 func toTaskResults(testRuns []*testRun, urler swarming.URLer) []*steps.ExecuteResponse_TaskResult {
 	var results []*steps.ExecuteResponse_TaskResult
 	for _, test := range testRuns {
 		for _, attempt := range test.attempts {
-			results = append(results, toTaskResult(test.test.Name, &attempt, urler))
+			results = append(results, toTaskResult(test.test.Name, attempt, urler))
 		}
 	}
 	return results

@@ -26,8 +26,7 @@ type Client struct {
 	server          string
 }
 
-// New creates a new tasker client, with given http client and
-// environment variables.
+// New creates a new Client.
 func New(ctx context.Context, h *http.Client, server string) (*Client, error) {
 	service, err := newSwarmingService(ctx, h, server)
 	if err != nil {
