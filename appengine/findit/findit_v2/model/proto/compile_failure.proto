@@ -78,4 +78,8 @@ message BuildCompileFailureOutput {
 
   // Represent all the failed build edges.
   repeated BuildEdge failures = 1;
+
+  // Name of the failed compile step.
+  // For example: "install packages|installation results".
+  string failed_step = 2;
 }

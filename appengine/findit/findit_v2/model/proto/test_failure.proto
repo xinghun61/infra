@@ -1,0 +1,42 @@
+syntax = "proto3";
+
+package findit.test_failure;
+
+
+// Represents the test failures in a specific build.
+// Planned usage of this proto is for test failures in ChromeOS builds at suite
+// level. For chromium builds, or builds from other projects that we currently
+// have plan to support, there's no need to use this proto.
+// TODO(crbug.com/981066): In the future when LUCI Tests is in place, Findit
+// should instead request test failures of any build from LUCI Tests, and this
+// proto should be deprecated at that time.
+message BuildTestFailureOutput {
+  // Represents failure information of a test suite.
+  message TestFailure {
+    // The leaf step corresponds to a failed test suite.
+    string failed_step = 1;
+
+    // A json serialized data for running the suite.
+    // Findit receives it from the failed build and passes it as is to rerun
+    // builds.
+    string test_spec = 2;
+  }
+
+  // All failed hardware test suites in one build.
+  repeated TestFailure hw_test_failures = 1;
+}
+
+
+// Represents the input to a build to rerun test failures.
+message BuildRerunTestFailureInput {
+  // Represents information required to rerun a test suite.
+  message RerunTestFailure {
+    // A json serialized data for running the suite.
+    // Findit receives it from the failed build and passes it as is to rerun
+    // builds.
+    string test_spec = 1;
+  }
+
+  // Hardware test failures to rerun.
+  repeated RerunTestFailure hw_test_failures = 1;
+}

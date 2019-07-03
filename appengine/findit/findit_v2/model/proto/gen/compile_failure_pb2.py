@@ -19,7 +19,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   package='findit.compile_failure',
   syntax='proto3',
   serialized_options=None,
-  serialized_pb=_b('\n\x15\x63ompile_failure.proto\x12\x16\x66indit.compile_failure\"\xc3\x01\n\x19\x42uildCompileFailureOutput\x12M\n\x08\x66\x61ilures\x18\x01 \x03(\x0b\x32;.findit.compile_failure.BuildCompileFailureOutput.BuildEdge\x1aW\n\tBuildEdge\x12\x14\n\x0c\x64\x65pendencies\x18\x01 \x03(\t\x12\x0e\n\x06output\x18\x02 \x01(\t\x12\x16\n\x0eoutput_targets\x18\x03 \x03(\t\x12\x0c\n\x04rule\x18\x04 \x01(\tb\x06proto3')
+  serialized_pb=_b('\n\x15\x63ompile_failure.proto\x12\x16\x66indit.compile_failure\"\xd8\x01\n\x19\x42uildCompileFailureOutput\x12M\n\x08\x66\x61ilures\x18\x01 \x03(\x0b\x32;.findit.compile_failure.BuildCompileFailureOutput.BuildEdge\x12\x13\n\x0b\x66\x61iled_step\x18\x02 \x01(\t\x1aW\n\tBuildEdge\x12\x14\n\x0c\x64\x65pendencies\x18\x01 \x03(\t\x12\x0e\n\x06output\x18\x02 \x01(\t\x12\x16\n\x0eoutput_targets\x18\x03 \x03(\t\x12\x0c\n\x04rule\x18\x04 \x01(\tb\x06proto3')
 )
 
 
@@ -72,8 +72,8 @@ _BUILDCOMPILEFAILUREOUTPUT_BUILDEDGE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=158,
-  serialized_end=245,
+  serialized_start=179,
+  serialized_end=266,
 )
 
 _BUILDCOMPILEFAILUREOUTPUT = _descriptor.Descriptor(
@@ -90,6 +90,13 @@ _BUILDCOMPILEFAILUREOUTPUT = _descriptor.Descriptor(
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='failed_step', full_name='findit.compile_failure.BuildCompileFailureOutput.failed_step', index=1,
+      number=2, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b("").decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
   ],
   extensions=[
   ],
@@ -103,7 +110,7 @@ _BUILDCOMPILEFAILUREOUTPUT = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=50,
-  serialized_end=245,
+  serialized_end=266,
 )
 
 _BUILDCOMPILEFAILUREOUTPUT_BUILDEDGE.containing_type = _BUILDCOMPILEFAILUREOUTPUT
