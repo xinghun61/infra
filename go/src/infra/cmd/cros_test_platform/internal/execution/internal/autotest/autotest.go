@@ -16,6 +16,7 @@ import (
 	swarming_api "go.chromium.org/luci/common/api/swarming/swarming/v1"
 	"go.chromium.org/luci/common/clock"
 	"go.chromium.org/luci/common/errors"
+	"go.chromium.org/luci/common/logging"
 
 	"infra/cmd/cros_test_platform/internal/execution/internal/autotest/parse"
 	"infra/cmd/cros_test_platform/internal/execution/isolate"
@@ -72,10 +73,14 @@ func (r *Runner) launch(ctx context.Context, client swarming.Client) (string, er
 		return "", errors.Annotate(err, "launch").Err()
 	}
 
+	logging.Debugf(ctx, "Launching proxy request %+v", req)
+
 	resp, err := client.CreateTask(ctx, req)
 	if err != nil {
 		return "", errors.Annotate(err, "launch").Err()
 	}
+
+	logging.Debugf(ctx, "Launched proxy task at %s", client.GetTaskURL(resp.TaskId))
 
 	return resp.TaskId, nil
 }

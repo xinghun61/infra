@@ -75,9 +75,16 @@ func asSlices(cmd []string) []*swarming.SwarmingRpcsTaskSlice {
 	slices[0] = &swarming.SwarmingRpcsTaskSlice{
 		Properties: &swarming.SwarmingRpcsTaskProperties{
 			Command: cmd,
+			Dimensions: []*swarming.SwarmingRpcsStringPair{
+				{Key: "pool", Value: "default"},
+			},
+			// TODO(akeshet): determine this based on task parameters.
+			ExecutionTimeoutSecs: 60 * 60,
 			// TODO(akeshet): Add additional necessary properties, such as
-			// priority, pool dimension, timeout, etc.
+			// priority etc.
 		},
+		// TODO(akeshet): determine this based on task parameters.
+		ExpirationSecs: 60 * 60,
 	}
 	return slices
 }
