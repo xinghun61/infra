@@ -31,12 +31,23 @@ def presubmit(
       cq_group,
       repo_name,  # e.g. 'infra' or 'luci_py', as expected by the recipe
       run_hooks=True,
+      timeout_s=480,
+      vpython_spec_path=None,
 
       os=None,
       experiment_percentage=None
   ):
   """Defines a try builder that runs 'run_presubmit' recipe."""
-  props = {'repo_name': repo_name}
+  props = {
+      'repo_name': repo_name,
+      '$depot_tools/presubmit': {
+          'runhooks': run_hooks,
+          'timeout_s': timeout_s,
+          'vpython_spec_path': vpython_spec_path,
+      }
+  }
+  # TODO(jbudorick): Remove after all users have switched to the new module
+  # properties.
   if run_hooks:
     props['runhooks'] = True
   luci.builder(
