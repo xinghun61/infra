@@ -15,6 +15,7 @@ import (
 	. "github.com/smartystreets/goconvey/convey"
 
 	build_api "go.chromium.org/chromiumos/infra/proto/go/chromite/api"
+	"go.chromium.org/chromiumos/infra/proto/go/chromiumos"
 	"go.chromium.org/chromiumos/infra/proto/go/test_platform"
 	"go.chromium.org/chromiumos/infra/proto/go/test_platform/skylab_test_runner"
 	swarming_api "go.chromium.org/luci/common/api/swarming/swarming/v1"
@@ -139,6 +140,22 @@ func newTest(name string, client bool, labels ...string) *build_api.AutotestTest
 	return &build_api.AutotestTest{Name: name, ExecutionEnvironment: ee, Dependencies: deps}
 }
 
+func basicParams() *test_platform.Request_Params {
+	return &test_platform.Request_Params{
+		SoftwareAttributes: &test_platform.Request_Params_SoftwareAttributes{
+			BuildTarget: &chromiumos.BuildTarget{Name: "foo-build-target"},
+		},
+		HardwareAttributes: &test_platform.Request_Params_HardwareAttributes{
+			Model: "foo-model",
+		},
+		SoftwareDependencies: []*test_platform.Request_Params_SoftwareDependency{
+			{
+				Dep: &test_platform.Request_Params_SoftwareDependency_ChromeosBuild{ChromeosBuild: "foo-build"},
+			},
+		},
+	}
+}
+
 func TestLaunchAndWaitTest(t *testing.T) {
 	Convey("Given two enumerated test", t, func() {
 		ctx := context.Background()
@@ -150,7 +167,7 @@ func TestLaunchAndWaitTest(t *testing.T) {
 		tests = append(tests, newTest("", false), newTest("", true))
 
 		Convey("when running a skylab execution", func() {
-			run := skylab.NewTaskSet(tests, &test_platform.Request_Params{})
+			run := skylab.NewTaskSet(tests, basicParams())
 
 			err := run.LaunchAndWait(ctx, swarming, getter)
 			So(err, ShouldBeNil)
@@ -179,7 +196,7 @@ func TestServiceError(t *testing.T) {
 		getter := newFakeGetter()
 
 		tests := []*build_api.AutotestTest{newTest("", false)}
-		run := skylab.NewTaskSet(tests, &test_platform.Request_Params{})
+		run := skylab.NewTaskSet(tests, basicParams())
 
 		Convey("when the swarming service immediately returns errors, that error is surfaced as a launch error.", func() {
 			swarming.setError(fmt.Errorf("foo error"))
@@ -208,7 +225,7 @@ func TestTaskURL(t *testing.T) {
 		getter := newFakeGetter()
 
 		tests := []*build_api.AutotestTest{newTest("", false)}
-		run := skylab.NewTaskSet(tests, &test_platform.Request_Params{})
+		run := skylab.NewTaskSet(tests, basicParams())
 		run.LaunchAndWait(ctx, swarming, getter)
 
 		resp := run.Response(swarming)
@@ -229,7 +246,7 @@ func TestIncompleteWait(t *testing.T) {
 		getter := newFakeGetter()
 
 		tests := []*build_api.AutotestTest{newTest("", false)}
-		run := skylab.NewTaskSet(tests, &test_platform.Request_Params{})
+		run := skylab.NewTaskSet(tests, basicParams())
 
 		wg := sync.WaitGroup{}
 		wg.Add(1)
@@ -264,28 +281,34 @@ func TestRequestArguments(t *testing.T) {
 			newTest("name1", false, "board:foo_board", "model:foo_model"),
 		}
 
-		run := skylab.NewTaskSet(tests, &test_platform.Request_Params{})
+		run := skylab.NewTaskSet(tests, basicParams())
 		run.LaunchAndWait(ctx, swarming, getter)
 
 		Convey("the launched task request should have correct parameters.", func() {
 			So(swarming.createCalls, ShouldHaveLength, 1)
 			create := swarming.createCalls[0]
-			// TODO(akeshet): Add a provisionable label to the request and proper
-			// provisionable label handling, at which point we will expect 2
-			// slices here.
-			So(create.TaskSlices, ShouldHaveLength, 1)
+			So(create.TaskSlices, ShouldHaveLength, 2)
 
-			slice := create.TaskSlices[0]
-			flatCommand := strings.Join(slice.Properties.Command, " ")
-			So(flatCommand, ShouldContainSubstring, "-task-name name1")
-			So(flatCommand, ShouldNotContainSubstring, "-client-test")
+			slice0 := create.TaskSlices[0]
+			slice1 := create.TaskSlices[1]
+			flatCommand0 := strings.Join(slice0.Properties.Command, " ")
+			flatCommand1 := strings.Join(slice1.Properties.Command, " ")
+			So(flatCommand0, ShouldContainSubstring, "-task-name name1")
+			So(flatCommand0, ShouldNotContainSubstring, "-client-test")
+			So(flatCommand1, ShouldContainSubstring, "-task-name name1")
+			So(flatCommand1, ShouldNotContainSubstring, "-client-test")
 
-			flatDimensions := make([]string, len(slice.Properties.Dimensions))
-			for i, d := range slice.Properties.Dimensions {
-				flatDimensions[i] = d.Key + ":" + d.Value
+			So(flatCommand0, ShouldNotContainSubstring, "-provision-labels cros-version:foo-build")
+			So(flatCommand1, ShouldContainSubstring, "-provision-labels cros-version:foo-build")
+
+			for _, slice := range create.TaskSlices {
+				flatDimensions := make([]string, len(slice.Properties.Dimensions))
+				for i, d := range slice.Properties.Dimensions {
+					flatDimensions[i] = d.Key + ":" + d.Value
+				}
+				So(flatDimensions, ShouldContain, "label-board:foo_board")
+				So(flatDimensions, ShouldContain, "label-model:foo_model")
 			}
-			So(flatDimensions, ShouldContain, "label-board:foo_board")
-			So(flatDimensions, ShouldContain, "label-model:foo_model")
 		})
 	})
 }
@@ -299,16 +322,17 @@ func TestClientTestArg(t *testing.T) {
 			newTest("name1", true, "board:foo_board", "model:foo_model"),
 		}
 
-		run := skylab.NewTaskSet(tests, &test_platform.Request_Params{})
+		run := skylab.NewTaskSet(tests, basicParams())
 		run.LaunchAndWait(ctx, swarming, newFakeGetter())
 
 		Convey("the launched task request should have correct parameters.", func() {
 			So(swarming.createCalls, ShouldHaveLength, 1)
 			create := swarming.createCalls[0]
-			So(create.TaskSlices, ShouldHaveLength, 1)
-			slice := create.TaskSlices[0]
-			flatCommand := strings.Join(slice.Properties.Command, " ")
-			So(flatCommand, ShouldContainSubstring, "-client-test")
+			So(create.TaskSlices, ShouldHaveLength, 2)
+			for _, slice := range create.TaskSlices {
+				flatCommand := strings.Join(slice.Properties.Command, " ")
+				So(flatCommand, ShouldContainSubstring, "-client-test")
+			}
 		})
 	})
 }

@@ -20,6 +20,7 @@ import (
 	"go.chromium.org/luci/common/logging"
 	"go.chromium.org/luci/swarming/proto/jsonrpc"
 
+	"infra/cmd/cros_test_platform/internal/execution/internal/common"
 	"infra/cmd/cros_test_platform/internal/execution/isolate"
 	"infra/cmd/cros_test_platform/internal/execution/swarming"
 	"infra/libs/skylab/inventory"
@@ -40,8 +41,13 @@ type testRun struct {
 	attempts []*attempt
 }
 
-func (t *testRun) RequestArgs() (request.Args, error) {
+func (t *testRun) RequestArgs(params *test_platform.Request_Params) (request.Args, error) {
 	isClient, err := t.isClientTest()
+	if err != nil {
+		return request.Args{}, errors.Annotate(err, "create request args").Err()
+	}
+
+	provisionableDimensions, err := toProvisionableDimensions(params.SoftwareDependencies)
 	if err != nil {
 		return request.Args{}, errors.Annotate(err, "create request args").Err()
 	}
@@ -59,9 +65,8 @@ func (t *testRun) RequestArgs() (request.Args, error) {
 		// TODO(akeshet): Determine parent task ID correctly.
 		ParentTaskID: "",
 		// TODO(akeshet): Determine priority correctly.
-		Priority: 0,
-		// TODO(akeshet): Determine provisionable dimensions correctly.
-		ProvisionableDimensions: nil,
+		Priority:                0,
+		ProvisionableDimensions: provisionableDimensions,
 		// TODO(akeshet): Determine tags correctly.
 		SwarmingTags: nil,
 		// TODO(akeshet): Determine timeout correctly.
@@ -122,7 +127,7 @@ var isClientTest = map[build_api.AutotestTest_ExecutionEnvironment]bool{
 
 func (r *TaskSet) launch(ctx context.Context, swarming swarming.Client) error {
 	for _, testRun := range r.testRuns {
-		args, err := testRun.RequestArgs()
+		args, err := testRun.RequestArgs(r.params)
 		if err != nil {
 			return errors.Annotate(err, "launch test named %s", testRun.test.Name).Err()
 		}
@@ -206,6 +211,14 @@ func toInventoryLabels(deps []*build_api.AutotestTaskDependency) inventory.Sched
 		flatDims[i] = dep.Label
 	}
 	return *labels.Revert(flatDims)
+}
+
+func toProvisionableDimensions(deps []*test_platform.Request_Params_SoftwareDependency) ([]string, error) {
+	crosBuild, err := common.GetChromeOSBuild(deps)
+	if err != nil {
+		return nil, errors.Annotate(err, "get provisionable dimensions").Err()
+	}
+	return []string{"provisionable-cros-version:" + crosBuild}, nil
 }
 
 func unpackResult(results []*swarming_api.SwarmingRpcsTaskResult, taskID string) (*swarming_api.SwarmingRpcsTaskResult, error) {
