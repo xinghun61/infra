@@ -202,10 +202,10 @@ class GitLogEntry(object):
 
   # -- svn_helper.svn_log_entry compatibility --
 
-  def GetCommitUrl(self, parent=False, universal=False):
+  def GetCommitUrl(self, parent=False, shorten=False):
     """Generate a link to the gitiles UI for this commit."""
     url = None
-    if universal:
+    if shorten:
       url = 'https://crrev.com'
     elif self.repo_url:
       url = self.repo_url
@@ -221,10 +221,10 @@ class GitLogEntry(object):
       else:
         return '%s/%s' % (url, self.commit)
 
-  def GetPathUrl(self, filepath, parent=False, universal=False):
+  def GetPathUrl(self, filepath, parent=False, shorten=False):
     """Generate a link to the gitiles UI for the given file from this commit, or
     the parent commit."""
-    link = self.GetCommitUrl(parent, universal=universal)
+    link = self.GetCommitUrl(parent, shorten)
     if link:
       return '%s/%s' % (link, filepath)
 

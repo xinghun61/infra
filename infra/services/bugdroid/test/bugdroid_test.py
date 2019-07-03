@@ -59,8 +59,8 @@ class BugdroidGitPollerHandlerTest(unittest.TestCase):
     self.assertFalse(self.monorail_client.get_issue.called)
     self.assertFalse(self.monorail_client.update_issue.called)
 
-  def test_process_log_entry_default_project(self):
-    handler = self._make_handler()
+  def test_process_log_entry_shorten_links(self):
+    handler = self._make_handler(shorten_links=True)
 
     issue = monorail_client.Issue(1234, [])
     self.monorail_client.get_issue.return_value = issue
@@ -83,6 +83,35 @@ class BugdroidGitPollerHandlerTest(unittest.TestCase):
         '[modify] https://crrev.com/abcdef/modified/file\n'
         '[add] https://crrev.com/abcdef/added/file\n'
         '[delete] https://crrev.com/123456/deleted/file\n', issue.comment)
+    self.assertEqual(1,
+        bugdroid.BugdroidGitPollerHandler.bug_comments_metric.get(
+            {'project': 'foo', 'status': 'success'}))
+
+  def test_process_log_entry_default_project(self):
+    handler = self._make_handler()
+
+    issue = monorail_client.Issue(1234, [])
+    self.monorail_client.get_issue.return_value = issue
+
+    handler.ProcessLogEntry(self._make_commit('Message\nBug: 1234'))
+
+    self.logger.info.assert_called_once_with(
+        'Processing commit %s : bugs %s', 'abcdef', "{'foo': [1234]}")
+    self.monorail_client.get_issue.assert_called_once_with('foo', 1234)
+    self.monorail_client.update_issue.assert_called_once_with(
+        'foo', issue, True)
+    self.assertEqual(
+        'The following revision refers to this bug:\n'
+        '  https://example.googlesource.com/foo/+/abcdef\n\n'
+        'commit abcdef\n'
+        'Author: Author <author@example.com>\n'
+        'Date: Sun Oct 10 10:10:10 2010\n\n'
+        'Message\n'
+        'Bug: 1234\n'
+        '[modify] https://example.googlesource.com/foo/+/abcdef/modified/file\n'
+        '[add] https://example.googlesource.com/foo/+/abcdef/added/file\n'
+        '[delete] https://example.googlesource.com/foo/+/123456/deleted/file\n',
+        issue.comment)
     self.assertEqual(1,
         bugdroid.BugdroidGitPollerHandler.bug_comments_metric.get(
             {'project': 'foo', 'status': 'success'}))
@@ -141,9 +170,10 @@ class BugdroidGitPollerHandlerTest(unittest.TestCase):
         'Date: Sun Oct 10 10:10:10 2010\n\n'
         'Message\n'
         'Bug: bar:1234\n'
-        '[modify] https://crrev.com/abcdef/modified/file\n'
-        '[add] https://crrev.com/abcdef/added/file\n'
-        '[delete] https://crrev.com/123456/deleted/file\n', issue.comment)
+        '[modify] https://example.googlesource.com/foo/+/abcdef/modified/file\n'
+        '[add] https://example.googlesource.com/foo/+/abcdef/added/file\n'
+        '[delete] https://example.googlesource.com/foo/+/123456/deleted/file\n',
+        issue.comment)
 
   def test_process_log_entry_private_bugs(self):
     handler = self._make_handler(public_bugs=False)

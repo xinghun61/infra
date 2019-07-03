@@ -38,13 +38,14 @@ class BugdroidGitPollerHandler(poller_handlers.BasePollerHandler):
 
   def __init__(self, monorail, logger, default_project,
                no_merge=None, public_bugs=True, test_mode=False,
-               issues_labels=None, *args, **kwargs):
+               issues_labels=None, shorten_links=False, *args, **kwargs):
     self.monorail_client = monorail
     self.logger = logger
     self.default_project = default_project
     self.no_merge = no_merge or []
     self.public_bugs = public_bugs
     self.test_mode = test_mode
+    self.shorten_links = shorten_links
     if issues_labels:
       self.issues_labels = dict((p.key, p.value) for p in issues_labels)
     else:
@@ -125,11 +126,11 @@ class BugdroidGitPollerHandler(poller_handlers.BasePollerHandler):
           # to https://.../<commit>//dev/null
           rtn += '[%s] %s\n' % (
               path.action, log_entry.GetPathUrl(
-                  path.copy_from_path, parent=True, universal=True))
+                  path.copy_from_path, parent=True, shorten=self.shorten_links))
         else:
           rtn += '[%s] %s\n' % (
               path.action, log_entry.GetPathUrl(
-                  path.filename, universal=True))
+                  path.filename, shorten=self.shorten_links))
     return rtn
 
 
@@ -231,7 +232,8 @@ class Bugdroid(object):
         public_bugs=config.public_bugs,
         test_mode=config.test_mode or self.dryrun,
         issues_labels=config.issues_labels,
-        no_merge=config.no_merge_refs))
+        no_merge=config.no_merge_refs,
+        shorten_links=config.shorten_links))
     poller.saved_config = config
     poller.daemon = True
     return poller
