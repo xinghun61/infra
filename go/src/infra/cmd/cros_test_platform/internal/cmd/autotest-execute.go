@@ -58,6 +58,7 @@ func (c *autotestExecuteRun) innerRun(a subcommands.Application, args []string, 
 	}
 
 	ctx := cli.GetContext(a, c, env)
+	ctx = setupLogging(ctx)
 
 	client, err := swarmingClient(ctx, request.Config.AutotestProxy)
 	if err != nil {

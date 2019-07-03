@@ -58,6 +58,7 @@ func (c *skylabExecuteRun) innerRun(a subcommands.Application, args []string, en
 	}
 
 	ctx := cli.GetContext(a, c, env)
+	ctx = setupLogging(ctx)
 
 	client, err := swarmingClient(ctx, request.Config.SkylabSwarming)
 	if err != nil {

@@ -17,6 +17,7 @@ import (
 	swarming_api "go.chromium.org/luci/common/api/swarming/swarming/v1"
 	"go.chromium.org/luci/common/clock"
 	"go.chromium.org/luci/common/errors"
+	"go.chromium.org/luci/common/logging"
 	"go.chromium.org/luci/swarming/proto/jsonrpc"
 
 	"infra/cmd/cros_test_platform/internal/execution/isolate"
@@ -63,7 +64,7 @@ func (t *testRun) RequestArgs() (request.Args, error) {
 		// TODO(akeshet): Determine tags correctly.
 		SwarmingTags: nil,
 		// TODO(akeshet): Determine timeout correctly.
-		Timeout: 0,
+		Timeout: 10 * time.Minute,
 	}
 
 	return args, nil
@@ -134,6 +135,8 @@ func (r *TaskSet) launch(ctx context.Context, swarming swarming.Client) error {
 		if err != nil {
 			return errors.Annotate(err, "launch test named %s", testRun.test.Name).Err()
 		}
+
+		logging.Infof(ctx, "Launched test named %s as task %s", testRun.test.Name, swarming.GetTaskURL(resp.TaskId))
 
 		testRun.attempts = append(testRun.attempts, &attempt{taskID: resp.TaskId})
 	}

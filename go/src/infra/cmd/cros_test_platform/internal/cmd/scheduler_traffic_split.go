@@ -75,6 +75,8 @@ func (c *schedulerTrafficSplitRun) innerRun(a subcommands.Application, args []st
 	}
 
 	ctx := cli.GetContext(a, c, env)
+	ctx = setupLogging(ctx)
+
 	split, err := c.getTrafficSplitConfig(ctx)
 	if err != nil {
 		return err

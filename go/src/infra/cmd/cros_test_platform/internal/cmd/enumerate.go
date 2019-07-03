@@ -77,6 +77,8 @@ func (c *enumerateRun) innerRun(a subcommands.Application, args []string, env su
 	}()
 
 	ctx := cli.GetContext(a, c, env)
+	ctx = setupLogging(ctx)
+
 	gsDir := gs.Path(request.GetMetadata().GetTestMetadataUrl())
 	lp, err := c.downloadArtifacts(ctx, gsDir, workspace)
 	if err != nil {
