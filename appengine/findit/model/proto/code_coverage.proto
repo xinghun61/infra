@@ -88,7 +88,7 @@ message Metric {
 
 // Represents the code coverage info of a single source file.
 message File {
-  // The file path relative to the root of the code base.
+  // Source absolute path to the file, e.g. '//base/file.cc'.
   string path = 1;
 
   // The total number of lines in the file.
