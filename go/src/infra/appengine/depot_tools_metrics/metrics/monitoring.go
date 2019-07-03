@@ -2,9 +2,9 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-// Package metrics stores the reported JSON metrics from depot_tools into a
+// Package main stores the reported JSON metrics from depot_tools into a
 // BigQuery table.
-package metrics
+package main
 
 import (
 	"go.chromium.org/luci/common/data/stringset"
