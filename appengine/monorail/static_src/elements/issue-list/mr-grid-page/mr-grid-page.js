@@ -13,13 +13,17 @@ import './mr-grid-controls.js';
 export class MrGridPage extends connectStore(LitElement) {
   render() {
     return html`
-    <mr-grid-controls></mr-grid-controls>
-      ${this.issues.map((issue) => html`
-        <mr-issue-link
-          .projectName=${this.projectName}
-          .issue=${issue}
-          .text=${issue.localId}
-        ></mr-issue-link>`)}
+    <mr-grid-controls
+      .queryParams=${this.queryParams}
+      .customIssueProperties=${this.fields}>
+    </mr-grid-controls>
+    ${this.issues.map((issue) => html`
+      <mr-issue-link
+        .projectName=${this.projectName}
+        .issue=${issue}
+        .text=${issue.localId}
+        .queryParams=${this.queryParams}
+      ></mr-issue-link>`)}
       <br>
       ${this.fields.map((field) => html`
         <p>${field.fieldRef.fieldName}</p>`)}

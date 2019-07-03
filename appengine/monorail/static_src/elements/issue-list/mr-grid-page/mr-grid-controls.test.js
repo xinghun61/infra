@@ -1,6 +1,8 @@
 // Copyright 2019 The Chromium Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
+
+import sinon from 'sinon';
 import {assert} from 'chai';
 import {MrGridControls} from './mr-grid-controls';
 
@@ -18,5 +20,25 @@ describe('mr-grid-controls', () => {
 
   it('initializes', () => {
     assert.instanceOf(element, MrGridControls);
+  });
+
+  it('selection creates url params', async () => {
+    await element.updateComplete;
+
+    const dropdownRows = element.shadowRoot.querySelector('.rows');
+    const dropdownCols = element.shadowRoot.querySelector('.cols');
+
+    const stub = sinon.stub(element, '_changeUrlParams');
+
+    const event = document.createEvent('Event');
+    event.initEvent('change');
+
+    dropdownRows.selection = 'Status';
+    dropdownRows.dispatchEvent(event);
+    sinon.assert.calledWith(stub, sinon.match({y: 'Status'}));
+
+    dropdownCols.selection = 'Blocking';
+    dropdownCols.dispatchEvent(event);
+    sinon.assert.calledWith(stub, sinon.match({x: 'Blocking', y: 'Status'}));
   });
 });

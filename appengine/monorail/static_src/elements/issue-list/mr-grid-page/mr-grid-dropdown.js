@@ -3,14 +3,20 @@
 // found in the LICENSE file.
 
 import {LitElement, html, css} from 'lit-element';
+import {equalsIgnoreCase} from 'elements/shared/helpers.js';
 
 export class MrGridDropdown extends LitElement {
   render() {
     return html`
       ${this.text}:
-      <select class="drop-down">
+      <select
+        class="drop-down"
+        @change=${this._optionChanged}
+      >
         ${(this.items).map((item) => html`
-          <option>${item}</option>
+          <option .selected=${equalsIgnoreCase(item, this.selection)}>
+            ${item}
+          </option>
         `)}
       </select>
       `;
@@ -20,16 +26,17 @@ export class MrGridDropdown extends LitElement {
     return {
       text: {type: String},
       items: {type: Array},
+      selection: {type: String},
     };
   };
 
   constructor() {
     super();
     this.items = [];
+    this.selection = 'None';
   };
 
   static get styles() {
-    // define css file.
     return css`
       :host {
         font-size: var(--chops-large-font-size);
@@ -38,6 +45,11 @@ export class MrGridDropdown extends LitElement {
         font-size: var(--chops-large-font-size);
       }
     `;
+  };
+
+  _optionChanged(e) {
+    this.selection = e.target.value;
+    this.dispatchEvent(new CustomEvent('change'));
   };
 };
 
