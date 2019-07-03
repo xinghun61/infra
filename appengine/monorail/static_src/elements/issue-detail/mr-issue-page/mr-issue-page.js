@@ -251,7 +251,6 @@ export class MrIssuePage extends connectStore(LitElement) {
 
   static get properties() {
     return {
-      issueEntryUrl: {type: String},
       queryParams: {type: Object},
       userDisplayName: {type: String},
       // Redux state.

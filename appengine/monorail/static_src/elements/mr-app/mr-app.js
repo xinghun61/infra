@@ -138,7 +138,7 @@ export class MrApp extends connectStore(LitElement) {
 
       next();
     });
-    page('/p/:project/issues/list_new', this._loadGridPage.bind(this));
+    page('/p/:project/issues/list_new', this._loadListPage.bind(this));
     page('/p/:project/issues/detail', this._loadIssuePage.bind(this));
     page();
   }
@@ -177,22 +177,31 @@ export class MrApp extends connectStore(LitElement) {
     this.loadWebComponent('mr-issue-page', {
       'projectName': ctx.params.project,
       'userDisplayName': this.userDisplayName,
-      'issueEntryUrl': this.issueEntryUrl,
       'queryParams': ctx.params,
       'loginUrl': this.loginUrl,
     });
   }
 
-  async _loadGridPage(ctx, next) {
+  async _loadListPage(ctx, next) {
     this.projectName = ctx.params.project;
 
-    await import('../issue-list/mr-grid-page/mr-grid-page.js');
-    this.loadWebComponent(/* webpackChunkName: "mr-grid-page" */ 'mr-grid-page', {
-      'projectName': ctx.params.project,
-      'userDisplayName': this.userDisplayName,
-      'issueEntryUrl': this.issueEntryUrl,
-      'queryParams': this.queryParams,
-    });
+    switch (this.queryParams && this.queryParams.mode
+        && this.queryParams.mode.toLowerCase()) {
+      case 'grid':
+        await import(/* webpackChunkName: "mr-grid-page" */ '../issue-list/mr-grid-page/mr-grid-page.js');
+        return this.loadWebComponent('mr-grid-page', {
+          'projectName': ctx.params.project,
+          'queryParams': this.queryParams,
+        });
+      // TODO(zhangtiff): Add case for loading chart SPA page.
+      // case 'chart':
+      default:
+        await import(/* webpackChunkName: "mr-list-page" */ '../issue-list/mr-list-page/mr-list-page.js');
+        return this.loadWebComponent('mr-list-page', {
+          'projectName': ctx.params.project,
+          'queryParams': this.queryParams,
+        });
+    }
   }
 
   _confirmDiscardMessage() {
