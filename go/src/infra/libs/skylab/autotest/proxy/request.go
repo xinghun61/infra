@@ -45,6 +45,8 @@ func NewRunSuite(args RunSuiteArgs) (*swarming.SwarmingRpcsNewTaskRequest, error
 func runSuiteCmd(args RunSuiteArgs) ([]string, error) {
 	cmd := []string{runSuitePath}
 
+	cmd = append(cmd, "--json_dump_postfix")
+
 	if args.Build != "" {
 		cmd = append(cmd, "--build", args.Build)
 	}

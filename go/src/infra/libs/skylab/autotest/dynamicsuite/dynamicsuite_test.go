@@ -31,6 +31,7 @@ func TestRequest(t *testing.T) {
 			So(req.TaskSlices, ShouldHaveLength, 1)
 			expected := []string{
 				"/usr/local/autotest/site_utils/run_suite.py",
+				"--json_dump_postfix",
 				"--build", "build",
 				"--board", "board",
 				"--model", "model",

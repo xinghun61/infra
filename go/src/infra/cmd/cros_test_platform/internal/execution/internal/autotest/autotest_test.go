@@ -95,6 +95,7 @@ func TestLaunch(t *testing.T) {
 				cmd := swarming.createCalls[0].TaskSlices[0].Properties.Command
 				expected := []string{
 					"/usr/local/autotest/site_utils/run_suite.py",
+					"--json_dump_postfix",
 					"--build", "foo-build",
 					"--board", "foo-build-target",
 					"--model", "foo-model",
