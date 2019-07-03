@@ -60,17 +60,20 @@ func (f *fakeSwarming) SetResult(result *swarming_api.SwarmingRpcsTaskResult) {
 	f.result = result
 }
 
-var basicParams = &test_platform.Request_Params{
-	SoftwareAttributes: &test_platform.Request_Params_SoftwareAttributes{
-		BuildTarget: &chromiumos.BuildTarget{Name: "foo-build-target"},
-	},
-	HardwareAttributes: &test_platform.Request_Params_HardwareAttributes{
-		Model: "foo-model",
-	},
-	SoftwareDependencies: []*test_platform.Request_Params_SoftwareDependency{
-		// TODO(akeshet): Encoding build name in the Url field is incorrect.
-		{Type: test_platform.Request_Params_SoftwareDependency_TYPE_CHROMEOS_IMAGE, Url: "foo-build"},
-	},
+func basicParams() *test_platform.Request_Params {
+	return &test_platform.Request_Params{
+		SoftwareAttributes: &test_platform.Request_Params_SoftwareAttributes{
+			BuildTarget: &chromiumos.BuildTarget{Name: "foo-build-target"},
+		},
+		HardwareAttributes: &test_platform.Request_Params_HardwareAttributes{
+			Model: "foo-model",
+		},
+		SoftwareDependencies: []*test_platform.Request_Params_SoftwareDependency{
+			{
+				Dep: &test_platform.Request_Params_SoftwareDependency_ChromeosBuild{ChromeosBuild: "foo-build"},
+			},
+		},
+	}
 }
 
 func TestLaunch(t *testing.T) {
@@ -86,7 +89,7 @@ func TestLaunch(t *testing.T) {
 		tests = append(tests, newTest("test1"), newTest("test2"))
 
 		Convey("when running a autotest execution", func() {
-			run := autotest.New(tests, basicParams)
+			run := autotest.New(tests, basicParams())
 
 			run.LaunchAndWait(ctx, swarming, nil)
 			Convey("then a single run_suite proxy job is created, with correct arguments.", func() {
@@ -114,7 +117,7 @@ func TestWaitAndCollect(t *testing.T) {
 	Convey("Given a launched autotest execution request", t, func() {
 		ctx, cancel := context.WithCancel(context.Background())
 		swarming := NewFakeSwarming()
-		run := autotest.New([]*build_api.AutotestTest{}, basicParams)
+		run := autotest.New([]*build_api.AutotestTest{}, basicParams())
 
 		wg := sync.WaitGroup{}
 		wg.Add(1)
