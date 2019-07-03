@@ -26,15 +26,15 @@ import (
 
 // Runner runs a set of tests in autotest.
 type Runner struct {
-	tests  []*build_api.AutotestTest
-	params *test_platform.Request_Params
+	tests         []*build_api.AutotestTest
+	requestParams *test_platform.Request_Params
 
 	response *steps.ExecuteResponse
 }
 
 // New returns a new autotest runner.
 func New(tests []*build_api.AutotestTest, params *test_platform.Request_Params) *Runner {
-	return &Runner{tests: tests, params: params}
+	return &Runner{tests: tests, requestParams: params}
 }
 
 // LaunchAndWait launches an autotest execution and waits for it to complete.
@@ -86,11 +86,15 @@ func (r *Runner) launch(ctx context.Context, client swarming.Client) (string, er
 }
 
 func (r *Runner) proxyRequest() (*swarming_api.SwarmingRpcsNewTaskRequest, error) {
+	if err := r.validate(); err != nil {
+		return nil, errors.Annotate(err, "create proxy request").Err()
+	}
+
 	dsArgs := dynamicsuite.Args{
-		Board: r.params.SoftwareAttributes.BuildTarget.Name,
+		Board: r.requestParams.SoftwareAttributes.BuildTarget.Name,
 		// TODO(akeshet): Determine build from request parameters.
 		Build: "",
-		Model: r.params.HardwareAttributes.Model,
+		Model: r.requestParams.HardwareAttributes.Model,
 		// TODO(akeshet): Determine pool from request parameters, after remapping
 		// to autotest pool namespace.
 		Pool:              "",
@@ -103,6 +107,22 @@ func (r *Runner) proxyRequest() (*swarming_api.SwarmingRpcsNewTaskRequest, error
 	}
 
 	return req, nil
+}
+
+func (r *Runner) validate() error {
+	if r.requestParams == nil {
+		return errors.Reason("nil request_params").Err()
+	}
+	if r.requestParams.SoftwareAttributes == nil {
+		return errors.Reason("nil request_params.software_attributes").Err()
+	}
+	if r.requestParams.SoftwareAttributes.BuildTarget == nil {
+		return errors.Reason("nil request_params.software_attributes.build_target").Err()
+	}
+	if r.requestParams.HardwareAttributes == nil {
+		return errors.Reason("nil request_params.hardware_attributes").Err()
+	}
+	return nil
 }
 
 func (r *Runner) wait(ctx context.Context, client swarming.Client, taskID string) error {
