@@ -67,6 +67,10 @@ var basicParams = &test_platform.Request_Params{
 	HardwareAttributes: &test_platform.Request_Params_HardwareAttributes{
 		Model: "foo-model",
 	},
+	SoftwareDependencies: []*test_platform.Request_Params_SoftwareDependency{
+		// TODO(akeshet): Encoding build name in the Url field is incorrect.
+		{Type: test_platform.Request_Params_SoftwareDependency_TYPE_CHROMEOS_IMAGE, Url: "foo-build"},
+	},
 }
 
 func TestLaunch(t *testing.T) {
@@ -91,6 +95,7 @@ func TestLaunch(t *testing.T) {
 				cmd := swarming.createCalls[0].TaskSlices[0].Properties.Command
 				expected := []string{
 					"/usr/local/autotest/site_utils/run_suite.py",
+					"--build", "foo-build",
 					"--board", "foo-build-target",
 					"--model", "foo-model",
 					"--suite_name", "cros_test_platform",

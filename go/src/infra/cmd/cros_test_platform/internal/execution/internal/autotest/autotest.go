@@ -90,10 +90,14 @@ func (r *Runner) proxyRequest() (*swarming_api.SwarmingRpcsNewTaskRequest, error
 		return nil, errors.Annotate(err, "create proxy request").Err()
 	}
 
+	build, err := r.getBuild()
+	if err != nil {
+		return nil, errors.Annotate(err, "create proxy request").Err()
+	}
+
 	dsArgs := dynamicsuite.Args{
 		Board: r.requestParams.SoftwareAttributes.BuildTarget.Name,
-		// TODO(akeshet): Determine build from request parameters.
-		Build: "",
+		Build: build,
 		Model: r.requestParams.HardwareAttributes.Model,
 		// TODO(akeshet): Determine pool from request parameters, after remapping
 		// to autotest pool namespace.
@@ -107,6 +111,16 @@ func (r *Runner) proxyRequest() (*swarming_api.SwarmingRpcsNewTaskRequest, error
 	}
 
 	return req, nil
+}
+
+func (r *Runner) getBuild() (string, error) {
+	buildDeps := depsForType(r.requestParams.SoftwareDependencies, test_platform.Request_Params_SoftwareDependency_TYPE_CHROMEOS_IMAGE)
+	if len(buildDeps) != 1 {
+		return "", errors.Reason("expected 1 chromeos image dep, got %d", len(buildDeps)).Err()
+	}
+	// TODO(akeshet): The URL is not the correct build name. Extract the build name from
+	// build URL, or add a new proto field for specifing build name.
+	return buildDeps[0].Url, nil
 }
 
 func (r *Runner) validate() error {
@@ -191,4 +205,14 @@ func (r *Runner) reimageAndRunArgs() interface{} {
 		// TODO(akeshet): Implement that behavior in autotest.
 		"test_names": testNames,
 	}
+}
+
+func depsForType(deps []*test_platform.Request_Params_SoftwareDependency, t test_platform.Request_Params_SoftwareDependency_Type) []*test_platform.Request_Params_SoftwareDependency {
+	var filtered []*test_platform.Request_Params_SoftwareDependency
+	for _, dep := range deps {
+		if dep.Type == t {
+			filtered = append(filtered, dep)
+		}
+	}
+	return filtered
 }
