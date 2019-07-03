@@ -9,9 +9,11 @@
 package dynamicsuite
 
 import (
+	"encoding/json"
 	"infra/libs/skylab/autotest/proxy"
 
 	swarming "go.chromium.org/luci/common/api/swarming/swarming/v1"
+	"go.chromium.org/luci/common/errors"
 )
 
 const suiteName = "cros_test_platform"
@@ -32,7 +34,12 @@ type Args struct {
 // NewRequest creates a new swarming request for the given entry point
 // arguments.
 func NewRequest(args Args) (*swarming.SwarmingRpcsNewTaskRequest, error) {
-	return proxy.NewRunSuite(
+	encodedArgs, err := json.Marshal(args.ReimageAndRunArgs)
+	if err != nil {
+		return nil, errors.Annotate(err, "new dynamicsuite request").Err()
+	}
+
+	req, err := proxy.NewRunSuite(
 		proxy.RunSuiteArgs{
 			Board:     args.Board,
 			Build:     args.Build,
@@ -40,7 +47,11 @@ func NewRequest(args Args) (*swarming.SwarmingRpcsNewTaskRequest, error) {
 			Pool:      args.Pool,
 			SuiteName: suiteName,
 			SuiteArgs: map[string]interface{}{
-				argsKey: args.ReimageAndRunArgs,
+				argsKey: string(encodedArgs),
 			},
 		})
+	if err != nil {
+		return nil, errors.Annotate(err, "new dynamicsuite request").Err()
+	}
+	return req, nil
 }

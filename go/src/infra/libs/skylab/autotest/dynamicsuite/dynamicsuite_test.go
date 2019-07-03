@@ -37,7 +37,7 @@ func TestRequest(t *testing.T) {
 				"--model", "model",
 				"--suite_name", "cros_test_platform",
 				"--pool", "pool",
-				"--suite_args_json", `{"args_dict_json":{"arg_1":1,"arg_2":["v1","v2"]}}`,
+				"--suite_args_json", `{"args_dict_json":"{\"arg_1\":1,\"arg_2\":[\"v1\",\"v2\"]}"}`,
 			}
 			So(req.TaskSlices[0].Properties.Command, ShouldResemble, expected)
 		})

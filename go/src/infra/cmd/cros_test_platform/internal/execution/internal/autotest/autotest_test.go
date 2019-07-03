@@ -100,7 +100,7 @@ func TestLaunch(t *testing.T) {
 					"--board", "foo-build-target",
 					"--model", "foo-model",
 					"--suite_name", "cros_test_platform",
-					"--suite_args_json", `{"args_dict_json":{"test_names":["test1","test2"]}}`,
+					"--suite_args_json", `{"args_dict_json":"{\"test_names\":[\"test1\",\"test2\"]}"}`,
 				}
 				So(cmd, ShouldResemble, expected)
 			})
