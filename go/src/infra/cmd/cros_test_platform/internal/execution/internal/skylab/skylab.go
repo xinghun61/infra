@@ -48,8 +48,9 @@ func (t *testRun) RequestArgs() (request.Args, error) {
 
 	// TODO(akeshet): Run cmd.Config() with correct environment.
 	cmd := &worker.Command{
-		TaskName:   t.test.Name,
-		ClientTest: isClient,
+		TaskName:        t.test.Name,
+		ClientTest:      isClient,
+		OutputToIsolate: true,
 	}
 
 	args := request.Args{
