@@ -95,13 +95,62 @@ func TestSpellCheckerAnalyzeFiles(t *testing.T) {
 		So(results.Comments, ShouldBeEmpty)
 	})
 
+	Convey("Words in URLs are not checked", t, func() {
+		fileContent := "/* See: https://exmaple.com/DontChek/wurds%20heare?x=NdAn43" +
+			"And see also: http://exmaple.com/moar-wurds#framgent */"
+		results := &tricium.Data_Results{}
+		analyzeFile(bufio.NewScanner(strings.NewReader(fileContent)), "test.c", false, cp[".c"], results)
+		So(results.Comments, ShouldBeEmpty)
+	})
+
+	Convey("Words in TODO notes are not flagged as misspellings.", t, func() {
+		// Note that just the part in the TODO is not checked; the comment
+		// after the TODO is still checked.
+		fileContent := "TODO(nams): do someting"
+		results := &tricium.Data_Results{}
+		analyzeFile(bufio.NewScanner(strings.NewReader(fileContent)), "test.txt", true, cp[".txt"], results)
+		So(results.Comments, ShouldResemble, []*tricium.Data_Comment{
+			{
+				Path:      "test.txt",
+				Message:   `"someting" is a possible misspelling of "something".`,
+				Category:  "SpellChecker",
+				StartLine: 1,
+				EndLine:   1,
+				StartChar: 15,
+				EndChar:   23,
+				Suggestions: []*tricium.Data_Suggestion{
+					{
+						Description: "Misspelling fix suggestion",
+						Replacements: []*tricium.Data_Replacement{
+							{
+								Path:        "test.txt",
+								Replacement: "something",
+								StartLine:   1,
+								EndLine:     1,
+								StartChar:   15,
+								EndChar:     23,
+							},
+						},
+					},
+				},
+			},
+		})
+	})
+
+	Convey("Email addresses are not checked.", t, func() {
+		fileContent := "nams@chromium.org"
+		results := &tricium.Data_Results{}
+		analyzeFile(bufio.NewScanner(strings.NewReader(fileContent)), "test.txt", true, cp[".txt"], results)
+		So(results.Comments, ShouldBeEmpty)
+	})
+
 	Convey("Analyzing a .c file with several comments.", t, func() {
 		fileContent := "// The misspelling iminent is mapped to three possible fixes.\n" +
 			"This is not in a comment so aberation shouldn't be flagged.\n" +
-			"//The word wanna has a reason to be disabled, so isn't flagged\n" +
+			"// The word wanna has a reason to be disabled, so isn't flagged\n" +
 			"/*Here are\ncombinatins of\nlines.\nAnd GAE is ignored.*/\n"
-			// 2019/06/13 13:58:35 ADDING "iminent" with fixes: ["imminent" "immanent" "eminent"]
 
+		// "iminent" has three suggested fixes: ["imminent" "immanent" "eminent"]
 		expected := &tricium.Data_Results{
 			Comments: []*tricium.Data_Comment{
 				{
@@ -452,13 +501,6 @@ func TestSpellCheckerAnalyzeFiles(t *testing.T) {
 		results := &tricium.Data_Results{}
 		analyzeFile(bufio.NewScanner(strings.NewReader(fileContent)), "test.txt", true, cp[".txt"], results)
 		So(results, ShouldResemble, expected)
-	})
-
-	Convey("Usernames are not flagged as misspellings.", t, func() {
-		fileContent := "TODO(faund): Contact govement@chromium.org/coment"
-		results := &tricium.Data_Results{}
-		analyzeFile(bufio.NewScanner(strings.NewReader(fileContent)), "test.txt", true, cp[".txt"], results)
-		So(results.Comments, ShouldBeEmpty)
 	})
 
 	Convey("Analyzing HTML file generates appropriate comments", t, func() {

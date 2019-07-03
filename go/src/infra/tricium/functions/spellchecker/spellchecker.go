@@ -75,8 +75,9 @@ var (
 	justWord = regexp.MustCompile(`[a-zA-Z0-9'-]+`)
 
 	// Patterns within which we don't want to flag misspellings.
-	emailAddr = regexp.MustCompile(`\w+@\w+\.\w+`)
-	todoNote  = regexp.MustCompile(`TODO\(\w+\)`)
+	emailPattern = regexp.MustCompile(`^\w+@\w+\.\w+$`)
+	urlPattern   = regexp.MustCompile(`^https?:\/\/\S+$`)
+	todoPattern  = regexp.MustCompile(`^TODO.*$`)
 
 	// selects everything except whitespace.
 	whitespaceBreak = regexp.MustCompile(`[^\s]+`)
@@ -238,10 +239,10 @@ func analyzeWords(commentWord, stopPattern string,
 	// Trim to only include parts of the word in current (comment) state.
 	commentWord = string(commentWord[:stopIdx])
 
-	// Words should not be flagged if they appear to be usernames. Note that
-	// this will skip over any other misspellings in commentWord, but this
-	// should be relatively rare.
-	if emailAddr.MatchString(commentWord) || todoNote.MatchString(commentWord) {
+	// There are places where checking spelling leads to relatively high
+	// false positives: URLs, email addresses, and TODO notes. In these
+	// cases, just skip the word.
+	if urlPattern.MatchString(commentWord) || emailPattern.MatchString(commentWord) || todoPattern.MatchString(commentWord) {
 		return stopIdx
 	}
 
