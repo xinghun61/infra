@@ -806,7 +806,7 @@ class ProjectService(object):
 
   def __init__(self):
     self.test_projects = {}  # project_name -> project_pb
-    self.projects_by_id = {}
+    self.projects_by_id = {}  # project_id -> project_pb
     self.test_star_manager = None
     self.indexed_projects = {}
     self.unindexed_projects = set()
@@ -1034,6 +1034,15 @@ class ProjectService(object):
         contrib_project_ids.add(project.project_id)
 
     return owned_project_ids, membered_project_ids, contrib_project_ids
+
+  def ExpungeUsersInProjects(self, cnxn, user_ids, limit=None):
+    for project in self.projects_by_id.values():
+      project.owner_ids = [owner_id for owner_id in project.owner_ids
+                           if owner_id not in user_ids]
+      project.committer_ids = [com_id for com_id in project.committer_ids
+                              if com_id not in user_ids]
+      project.contributor_ids = [con_id for con_id in project.contributor_ids
+                                 if con_id not in user_ids]
 
 
 class ConfigService(object):

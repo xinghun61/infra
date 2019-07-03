@@ -489,9 +489,11 @@ class ProjectServiceTest(unittest.TestCase):
     self.project_service.user2project_tbl.Delete = mock.Mock()
 
     user_ids = [111, 222]
-    self.project_service.ExpungeUsersInProjects(self.cnxn, user_ids)
+    limit= 16
+    self.project_service.ExpungeUsersInProjects(
+        self.cnxn, user_ids, limit=limit)
 
-    call = [mock.call(self.cnxn, user_id=user_ids, commit=False)]
+    call = [mock.call(self.cnxn, user_id=user_ids, limit=limit, commit=False)]
     self.project_service.extraperm_tbl.Delete.assert_has_calls(call)
     self.project_service.acexclusion_tbl.Delete.assert_has_calls(call)
     self.project_service.membernotes_tbl.Delete.assert_has_calls(call)

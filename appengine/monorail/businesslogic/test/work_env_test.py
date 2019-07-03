@@ -2833,6 +2833,11 @@ class WorkEnvTest(unittest.TestCase):
         self.mr.cnxn, user_2.user_id, user_4.user_id, True)
     template = self.services.template.TestAddIssueTemplateDef(
         13, 16, 'template name', owner_id=user_3.user_id)
+    project1 = self.services.project.TestAddProject(
+        'project1', owner_ids=[111, 333])
+    project2 = self.services.project.TestAddProject(
+        'project2',owner_ids=[888], contrib_ids=[111, 222],
+        committer_ids=[333])
 
     self.services.features.TestAddFilterRule(
         16, 'owner:cow@test.com', add_cc_ids=[user_4.user_id])
@@ -2867,6 +2872,10 @@ class WorkEnvTest(unittest.TestCase):
     self.assertIsNone(template.owner_id)
     self.assertItemsEqual(
         self.services.config.expunged_users_in_configs, user_ids)
+
+    # Assert users expunged in projects
+    self.assertEqual(project1.owner_ids, [])
+    self.assertEqual(project2.contributor_ids, [])
 
     # Assert users expunged in issues
     self.assertItemsEqual(

@@ -687,13 +687,16 @@ class ProjectService(object):
 
     self.project_2lc.InvalidateKeys(cnxn, [project_id])
 
-  def ExpungeUsersInProjects(self, cnxn, user_ids):
+  def ExpungeUsersInProjects(self, cnxn, user_ids, limit=None):
     """Wipes the given users from the projects system.
 
     This method will not commit the operation. This method will
     not make changes to in-memory data.
     """
-    self.extraperm_tbl.Delete(cnxn, user_id=user_ids, commit=False)
-    self.acexclusion_tbl.Delete(cnxn, user_id=user_ids, commit=False)
-    self.membernotes_tbl.Delete(cnxn, user_id=user_ids, commit=False)
-    self.user2project_tbl.Delete(cnxn, user_id=user_ids, commit=False)
+    self.extraperm_tbl.Delete(cnxn, user_id=user_ids, limit=limit, commit=False)
+    self.acexclusion_tbl.Delete(
+        cnxn, user_id=user_ids, limit=limit, commit=False)
+    self.membernotes_tbl.Delete(
+        cnxn, user_id=user_ids, limit=limit, commit=False)
+    self.user2project_tbl.Delete(
+        cnxn, user_id=user_ids, limit=limit, commit=False)

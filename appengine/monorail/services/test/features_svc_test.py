@@ -22,6 +22,7 @@ import settings
 from features import filterrules_helpers
 from features import features_constants
 from framework import exceptions
+from framework import framework_constants
 from framework import sql
 from proto import tracker_pb2
 from services import chart_svc
@@ -372,6 +373,7 @@ assert_called_once_with(self.cnxn, user_id=user_ids, commit=commit, limit=50)
     self.features_service.user2savedquery_tbl.Select = mock.Mock(
         return_value=sv_rows)
     self.features_service.user2savedquery_tbl.Delete = mock.Mock()
+    self.features_service.savedqueryexecutesinproject_tbl.Delete = mock.Mock()
     self.features_service.savedquery_tbl.Delete = mock.Mock()
 
     self.features_service.ExpungeSavedQueriesByUsers(
@@ -380,6 +382,9 @@ assert_called_once_with(self.cnxn, user_id=user_ids, commit=commit, limit=50)
     self.features_service.user2savedquery_tbl.Select.assert_called_once_with(
         self.cnxn, cols=['query_id'], user_id=user_ids, limit=50)
     self.features_service.user2savedquery_tbl.Delete.assert_called_once_with(
+        self.cnxn, query_id=[8, 9], commit=commit)
+    self.features_service.savedqueryexecutesinproject_tbl.\
+Delete.assert_called_once_with(
         self.cnxn, query_id=[8, 9], commit=commit)
     self.features_service.savedquery_tbl.Delete.assert_called_once_with(
         self.cnxn, id=[8, 9], commit=commit)
@@ -511,6 +516,7 @@ assert_called_once_with(self.cnxn, user_id=user_ids, commit=commit, limit=50)
         (1, 46, 'owner:cow@fart.test', 'add_label:balloon'),
         (16, 47, 'label:queue-eggs', 'add_notify:chicken@farm.test'),
         (17, 48, 'owner:farmer@farm.test', 'add_cc_id:111 add_cc_id:222'),
+        (17, 48, 'label:queue-chickens', 'default_owner_id:333'),
     ]
     rows = (rows_to_delete + project_1_keep_rows + project_16_keep_rows +
             random_row)
@@ -997,10 +1003,16 @@ assert_called_once_with(self.cnxn, user_id=user_ids, commit=commit, limit=50)
     hotlist2 = fake.Hotlist(hotlist_name='name', hotlist_id=223,
                             owner_ids=[222], editor_ids=[111, 333])
     delete_hotlists = [hotlist2.hotlist_id]
+    hotlists_by_user_id = {
+        111: [hotlist1.hotlist_id, hotlist2.hotlist_id],
+        222: [hotlist1.hotlist_id, hotlist2.hotlist_id],
+        333: [hotlist1.hotlist_id, hotlist2.hotlist_id]}
+    self.features_service.LookupUserHotlists = mock.Mock(
+        return_value=hotlists_by_user_id)
     hotlists_by_id = {hotlist1.hotlist_id: hotlist1,
                       hotlist2.hotlist_id: hotlist2}
-    self.features_service.LookupUserHotlists = mock.Mock(
-        return_value=hotlists_by_id)
+    self.features_service.GetHotlistsByID = mock.Mock(
+        return_value=(hotlists_by_id, []))
 
     # User 333 already has a hotlist named 'name'.
     def side_effect(_cnxn, hotlist_names, owner_ids):
@@ -1014,6 +1026,7 @@ assert_called_once_with(self.cnxn, user_id=user_ids, commit=commit, limit=50)
 
     # Called to expunge users and hotlists
     self.features_service.hotlist2user_tbl.Delete = mock.Mock()
+    self.features_service.hotlist2issue_tbl.Update = mock.Mock()
     user_service.hotlistvisithistory_tbl.Delete = mock.Mock()
 
     # Called to expunge hotlists
@@ -1030,6 +1043,9 @@ assert_called_once_with(self.cnxn, user_id=user_ids, commit=commit, limit=50)
     self.features_service.hotlist2user_tbl.Delete.assert_has_calls(
         [mock.call(self.cnxn, user_id=user_ids, commit=False),
          mock.call(self.cnxn, hotlist_id=delete_hotlists, commit=False)])
+    self.features_service.hotlist2issue_tbl.Update.assert_called_once_with(
+        self.cnxn, {'adder_id': framework_constants.DELETED_USER_ID},
+        adder_id=user_ids, commit=False)
     user_service.hotlistvisithistory_tbl.Delete.assert_has_calls(
         [mock.call(self.cnxn, user_id=user_ids, commit=False),
          mock.call(self.cnxn, hotlist_id=delete_hotlists, commit=False)])

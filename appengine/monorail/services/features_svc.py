@@ -23,6 +23,7 @@ from features import features_constants
 from features import filterrules_helpers
 from framework import exceptions
 from framework import framework_bizobj
+from framework import framework_constants
 from framework import sql
 from proto import features_pb2
 from services import caches
@@ -447,6 +448,8 @@ class FeaturesService(object):
     savedquery_ids = [row[0] for row in savedquery_rows]
     self.user2savedquery_tbl.Delete(
         cnxn, query_id=savedquery_ids, commit=commit)
+    self.savedqueryexecutesinproject_tbl.Delete(
+        cnxn, query_id=savedquery_ids, commit=commit)
     self.savedquery_tbl.Delete(cnxn, id=savedquery_ids, commit=commit)
 
 
@@ -566,7 +569,7 @@ class FeaturesService(object):
       deleted_rows = []
       emails = user_ids_by_email.keys()
       all_rules_rows = self.filterrule_tbl.Select(cnxn, FILTERRULE_COLS)
-      logging.info('Fetched all filter rules: %s' % all_rules_rows)
+      logging.info('Fetched all filter rules: %s' % (all_rules_rows,))
       for rule_row in all_rules_rows:
         project_id, _rank, predicate, consequence = rule_row
         if any(email in predicate for email in emails):
@@ -574,7 +577,8 @@ class FeaturesService(object):
           continue
         if any(
             (('add_notify:%s' % email) in consequence or
-             ('add_cc_id:%s' % user_id) in consequence)
+             ('add_cc_id:%s' % user_id) in consequence or
+             ('default_owner_id:%s' % user_id) in consequence)
             for email, user_id in user_ids_by_email.iteritems()):
           deleted_rows.append(rule_row)
           continue
@@ -1062,7 +1066,13 @@ class FeaturesService(object):
     changes to in-memory data.
     """
     # Transfer hotlist ownership to editors, if possible.
-    hotlists_by_id = self.LookupUserHotlists(cnxn, user_ids)
+    hotlist_ids_by_user_id = self.LookupUserHotlists(cnxn, user_ids)
+    hotlist_ids = [hotlist_id for hotlist_ids in hotlist_ids_by_user_id.values()
+                   for hotlist_id in hotlist_ids]
+    hotlists_by_id, missed = self.GetHotlistsByID(
+        cnxn, list(set(hotlist_ids)), use_cache=False)
+    logging.info('Missed hotlists: %s', missed)
+
     hotlists_to_delete = []
     for hotlist_id, hotlist in hotlists_by_id.items():
       # One of the users to be deleted is an owner of hotlist.
@@ -1082,6 +1092,9 @@ class FeaturesService(object):
 
     # Delete users
     self.hotlist2user_tbl.Delete(cnxn, user_id=user_ids, commit=False)
+    self.hotlist2issue_tbl.Update(
+        cnxn, {'adder_id': framework_constants.DELETED_USER_ID},
+        adder_id=user_ids, commit=False)
     user_svc.ExpungeUsersHotlistsHistory(cnxn, user_ids, commit=False)
     # Delete hotlists
     self.ExpungeHotlists(
