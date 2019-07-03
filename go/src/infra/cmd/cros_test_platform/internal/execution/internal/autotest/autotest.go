@@ -24,6 +24,8 @@ import (
 	"infra/libs/skylab/autotest/dynamicsuite"
 )
 
+const suiteName = "cros_test_platform"
+
 // Runner runs a set of tests in autotest.
 type Runner struct {
 	tests         []*build_api.AutotestTest
@@ -202,8 +204,8 @@ func (r *Runner) reimageAndRunArgs() interface{} {
 		// test_names is in argument to reimage_and_run which, if provided, short
 		// cuts the normal test enumeration code and replaces it with this list
 		// of tests.
-		// TODO(akeshet): Implement that behavior in autotest.
 		"test_names": testNames,
+		"name":       suiteName,
 	}
 }
 
