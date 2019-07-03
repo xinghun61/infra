@@ -81,7 +81,7 @@ func (c *skylabExecuteRun) validateRequest(request *steps.ExecuteRequest) error 
 	}
 
 	if request.Config.SkylabSwarming == nil {
-		return fmt.Errorf("nil request.Config.SkylabSwarming")
+		return fmt.Errorf("nil request.config.skylab_swarming")
 	}
 
 	return nil

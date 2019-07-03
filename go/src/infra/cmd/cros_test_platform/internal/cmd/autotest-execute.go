@@ -81,7 +81,7 @@ func (c *autotestExecuteRun) validateRequest(request *steps.ExecuteRequest) erro
 	}
 
 	if request.Config.AutotestProxy == nil {
-		return fmt.Errorf("nil request.Config.AutotestProxy")
+		return fmt.Errorf("nil request.config.autotest_proxy")
 	}
 
 	return nil

@@ -58,7 +58,7 @@ func (c *commonExecuteRun) validateRequestCommon(request *steps.ExecuteRequest) 
 	}
 
 	if request.Config == nil {
-		return fmt.Errorf("nil request.Config")
+		return fmt.Errorf("nil request.config")
 	}
 
 	return nil
