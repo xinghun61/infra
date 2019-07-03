@@ -91,7 +91,7 @@ class AutolinkTest(unittest.TestCase):
     all_ref_artifacts = self.aa.GetAllReferencedArtifacts(
         None, self.comments, max_total_length=10)
 
-    self.assertEqual(autolink._SKIP_LOOKUPS, all_ref_artifacts)
+    self.assertEqual(autolink.SKIP_LOOKUPS, all_ref_artifacts)
 
   def testMarkupAutolinks(self):
     all_ref_artifacts = self.aa.GetAllReferencedArtifacts(None, self.comments)

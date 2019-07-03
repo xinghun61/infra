@@ -91,8 +91,6 @@ libraries:
   version: '2017.2'
 - name: pycrypto
   version: "2.6"
-- name: django
-  version: 1.11
 
 includes:
 - gae_ts_mon

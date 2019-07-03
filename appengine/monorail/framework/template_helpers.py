@@ -311,3 +311,12 @@ class TextRun(object):
     self.href = href
     self.title = None
     self.css_class = None
+
+  def FormatForHTMLEmail(self):
+    """Return a string that can be used in an HTML email body."""
+    if self.tag == 'a' and self.href:
+      return '<a href="%s">%s</a>' % (
+          cgi.escape(self.href, quote=True),
+          cgi.escape(self.content, quote=True))
+
+    return cgi.escape(self.content, quote=True)

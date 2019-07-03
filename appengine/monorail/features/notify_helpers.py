@@ -13,11 +13,12 @@ import json
 import logging
 import re
 
-from django.utils.html import urlize
 from third_party import ezt
 
 from google.appengine.api import taskqueue
 
+from features import autolink
+from features import autolink_constants
 from features import features_constants
 from features import filterrules_helpers
 from features import savedqueries_helpers
@@ -249,16 +250,16 @@ def _MakeEmailWorkItem(
   # We use markup to display a convenient link that takes users directly to the
   # issue without clicking on the email.
   html_body = None
-  # cgi.escape the body and additionally escape single quotes which are
-  # occassionally used to contain HTML attributes and event handler
-  # definitions.
-  html_escaped_body = cgi.escape(body, quote=1).replace("'", '&#39;')
   template = HTML_BODY_WITH_GMAIL_ACTION_TEMPLATE
   if addr_perm.user and not addr_perm.user.email_view_widget:
     template = HTML_BODY_WITHOUT_GMAIL_ACTION_TEMPLATE
+  body_with_tags = _AddHTMLTags(body.decode('utf-8'))
+  # Escape single quotes which are occasionally used to contain HTML
+  # attributes and event handler definitions.
+  body_with_tags = body_with_tags.replace("'", '&#39;')
   html_body = template % {
       'url': detail_url,
-      'body': _AddHTMLTags(html_escaped_body.decode('utf-8')),
+      'body': body_with_tags,
       }
   return dict(
     to=addr_perm.address, subject=subject, body=body, html_body=html_body,
@@ -275,27 +276,46 @@ def _AddHTMLTags(body):
   See crbug.com/582463 for context.
   """
   # Convert all URLs into clickable links.
-  body = urlize(body)
-  # The above step converts
-  #   '&lt;link.com&gt;' into '&lt;<a href="link.com&gt">link.com&gt</a>;' and
-  #   '&lt;x@y.com&gt;' into '&lt;<a href="mailto:x@y.com&gt">x@y.com&gt</a>;'
-  #   And, a newer version of urlize seems to use "&amp;gt" instead of "&gt".
-  # The below regex fixes this specific problem. See
-  # https://bugs.chromium.org/p/monorail/issues/detail?id=1007 for more details.
-  body = re.sub(r'<a href="(|mailto:)(.*?)&(?:amp;)?gt">(.*?)&gt</a>;',
-                r'<a href="\1\2">\3</a>&gt;', body)
-
-  # Fix incorrectly split leading and trailing &quot; by urlize, and put any
-  # surrounding &quot; entities outside the <a> tag.
-  body = re.sub(r'<a href="(|mailto:)&(?:amp;)?quot;(.*?)">&quot;',
-                r'&quot;<a href="\1\2">', body)
-  body = re.sub(r'<a href="(.*?)&(?:amp;)?quot">(.*?)&quot</a>;',
-                r'<a href="\1">\2</a>&quot;', body)
+  body = _AutolinkBody(body)
 
   # Convert all "\n"s into "<br/>"s.
   body = body.replace('\r\n', '<br/>')
   body = body.replace('\n', '<br/>')
   return body
+
+
+def _AutolinkBody(body):
+  """Convert text that looks like URLs into <a href=...>.
+
+  This uses autolink.py, but it does not register all the autolink components
+  because some of them depend on the current user's permissions which would
+  not make sense for an email body that will be sent to several different users.
+  """
+  email_autolink = autolink.Autolink()
+  email_autolink.RegisterComponent(
+      '01-linkify-user-profiles-or-mailto',
+      lambda request, mr: None,
+      lambda _mr, match: [match.group(0)],
+      {autolink_constants.IS_IMPLIED_EMAIL_RE: autolink.LinkifyEmail})
+  email_autolink.RegisterComponent(
+      '02-linkify-full-urls',
+      lambda request, mr: None,
+      lambda mr, match: None,
+      {autolink_constants.IS_A_LINK_RE: autolink.Linkify})
+  email_autolink.RegisterComponent(
+      '03-linkify-shorthand',
+      lambda request, mr: None,
+      lambda mr, match: None,
+      {autolink_constants.IS_A_SHORT_LINK_RE: autolink.Linkify,
+       autolink_constants.IS_A_NUMERIC_SHORT_LINK_RE: autolink.Linkify,
+       autolink_constants.IS_IMPLIED_LINK_RE: autolink.Linkify,
+       })
+
+  input_run = template_helpers.TextRun(body)
+  output_runs = email_autolink.MarkupAutolinks(
+      None, [input_run], autolink.SKIP_LOOKUPS)
+  output_strings = [run.FormatForHTMLEmail() for run in output_runs]
+  return ''.join(output_strings)
 
 
 def _MakeNotificationFooter(reasons, reply_perm, hostport):

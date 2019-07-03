@@ -191,3 +191,26 @@ class HelpersUnitTest(unittest.TestCase):
     self.assertEqual('1.0 MB', template_helpers.BytesKbOrMb(1024 * 1024))
     self.assertEqual('98.0 MB', template_helpers.BytesKbOrMb(98 * 1024 * 1024))
     self.assertEqual('99 MB', template_helpers.BytesKbOrMb(99 * 1024 * 1024))
+
+
+class TextRunTest(unittest.TestCase):
+
+  def testLink(self):
+    run = template_helpers.TextRun(
+        'content', tag='a', href='http://example.com')
+    expected = '<a href="http://example.com">content</a>'
+    self.assertEqual(expected, run.FormatForHTMLEmail())
+
+    run = template_helpers.TextRun(
+      'con<tent>', tag='a', href='http://exa"mple.com')
+    expected = '<a href="http://exa&quot;mple.com">con&lt;tent&gt;</a>'
+    self.assertEqual(expected, run.FormatForHTMLEmail())
+
+  def testText(self):
+    run = template_helpers.TextRun('content')
+    expected = 'content'
+    self.assertEqual(expected, run.FormatForHTMLEmail())
+
+    run = template_helpers.TextRun('con<tent>')
+    expected = 'con&lt;tent&gt;'
+    self.assertEqual(expected, run.FormatForHTMLEmail())

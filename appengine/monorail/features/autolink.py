@@ -48,7 +48,7 @@ from tracker import tracker_helpers
 _MAX_TOTAL_LENGTH = 150 * 1024  # 150KB
 # Special all_referenced_artifacts value used to indicate that the
 # text content is too big to lookup all referenced artifacts quickly.
-_SKIP_LOOKUPS = 'skip lookups'
+SKIP_LOOKUPS = 'skip lookups'
 
 _CLOSING_TAG_RE = re.compile('</[a-z0-9]+>$', re.IGNORECASE)
 
@@ -488,11 +488,11 @@ class Autolink(object):
     Returns:
       Opaque object that can be pased to MarkupAutolinks.  It's
       structure happens to be {component_name: artifact_list, ...},
-      or the special value _SKIP_LOOKUPS.
+      or the special value SKIP_LOOKUPS.
     """
     total_len = sum(len(comment_text) for comment_text in comment_text_list)
     if total_len > max_total_length:
-      return _SKIP_LOOKUPS
+      return SKIP_LOOKUPS
 
     all_referenced_artifacts = {}
     for comp, (lookup, match_to_refs, re_dict) in self.registry.items():
@@ -524,7 +524,7 @@ class Autolink(object):
     items = list(self.registry.items())
     items.sort()  # Process components in determinate alphabetical order.
     for component, (_lookup, _match_ref, re_subst_dict) in items:
-      if all_referenced_artifacts == _SKIP_LOOKUPS:
+      if all_referenced_artifacts == SKIP_LOOKUPS:
         component_ref_artifacts = None
       else:
         component_ref_artifacts = all_referenced_artifacts[component]

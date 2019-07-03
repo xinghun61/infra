@@ -244,7 +244,7 @@ class MakeEmailWorkItemTest(unittest.TestCase):
     email_task = notify_helpers._MakeEmailWorkItem(
         notify_reasons.AddrPerm(
             False, 'a@a.com', self.member, REPLY_NOT_ALLOWED),
-        ['reason'], self.issue, 'a <t@chromium.org> <a@chromium.org> z',
+        ['reason'], self.issue, 'a <tt@chromium.org> <aa@chromium.org> z',
         'unused body mem', self.project, 'example.com', self.commenter_view,
         self.detail_url)
 
@@ -252,8 +252,8 @@ class MakeEmailWorkItemTest(unittest.TestCase):
         notify_helpers.HTML_BODY_WITH_GMAIL_ACTION_TEMPLATE % {
             'url': self.detail_url,
             'body': (
-                'a &lt;<a href="mailto:t@chromium.org">t@chromium.org</a>&gt; '
-                '&lt;<a href="mailto:a@chromium.org">a@chromium.org</a>&gt; '
+                'a &lt;<a href="mailto:tt@chromium.org">tt@chromium.org</a>&gt;'
+                ' &lt;<a href="mailto:aa@chromium.org">aa@chromium.org</a>&gt; '
                 'z-- <br/>%s' % self.expected_html_footer)})
     self.assertEquals(expected_html_body, email_task['html_body'])
 
@@ -279,8 +279,8 @@ class MakeEmailWorkItemTest(unittest.TestCase):
                                       self.expected_html_footer)})
     self.assertEquals(expected_html_body, email_task['html_body'])
 
-  def doTestAddHTMLTags(self, escaped_body, expected):
-    actual = notify_helpers._AddHTMLTags(escaped_body)
+  def doTestAddHTMLTags(self, body, expected):
+    actual = notify_helpers._AddHTMLTags(body)
     self.assertEqual(expected, actual)
 
   def testAddHTMLTags_Email(self):
@@ -293,14 +293,14 @@ class MakeEmailWorkItemTest(unittest.TestCase):
   def testAddHTMLTags_EmailInQuotes(self):
     """Quoted "test@example.com" produces "<a href="...">...</a>"."""
     self.doTestAddHTMLTags(
-      'test &quot;test@example.com&quot;.',
+      'test "test@example.com".',
       ('test &quot;<a href="mailto:test@example.com">'
        'test@example.com</a>&quot;.'))
 
   def testAddHTMLTags_EmailInAngles(self):
     """Bracketed <test@example.com> produces &lt;<a href="...">...</a>&gt;."""
     self.doTestAddHTMLTags(
-      'test &lt;test@example.com&gt;.',
+      'test <test@example.com>.',
       ('test &lt;<a href="mailto:test@example.com">'
        'test@example.com</a>&gt;.'))
 
@@ -312,15 +312,16 @@ class MakeEmailWorkItemTest(unittest.TestCase):
        'http://www.example.com</a>.'))
 
   def testAddHTMLTags_WebsiteInQuotes(self):
-    """For some reason, urlize() does not autolink quoted "www.example.com"."""
+    """A link in quotes gets the quotes escaped."""
     self.doTestAddHTMLTags(
-      'test &quot;http://www.example.com&quot;.',
-      ('test &quot;http://www.example.com&quot;.'))
+      'test "http://www.example.com".',
+      ('test &quot;<a href="http://www.example.com">'
+       'http://www.example.com</a>&quot;.'))
 
   def testAddHTMLTags_WebsiteInAngles(self):
     """Bracketed <www.example.com> produces &lt;<a href="...">...</a>&gt;."""
     self.doTestAddHTMLTags(
-      'test &lt;http://www.example.com&gt;.',
+      'test <http://www.example.com>.',
       ('test &lt;<a href="http://www.example.com">'
        'http://www.example.com</a>&gt;.'))
 
