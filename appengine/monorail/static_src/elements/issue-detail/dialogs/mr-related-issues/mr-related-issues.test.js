@@ -3,14 +3,14 @@
 // found in the LICENSE file.
 
 import {assert} from 'chai';
-import {MrRelatedIssuesTable} from './mr-related-issues-table.js';
+import {MrRelatedIssues} from './mr-related-issues.js';
 
 
 let element;
 
-describe('mr-related-issues-table', () => {
+describe('mr-related-issues', () => {
   beforeEach(() => {
-    element = document.createElement('mr-related-issues-table');
+    element = document.createElement('mr-related-issues');
     document.body.appendChild(element);
   });
 
@@ -19,7 +19,7 @@ describe('mr-related-issues-table', () => {
   });
 
   it('initializes', () => {
-    assert.instanceOf(element, MrRelatedIssuesTable);
+    assert.instanceOf(element, MrRelatedIssues);
   });
 
   it('computes blocked on table rows', () => {

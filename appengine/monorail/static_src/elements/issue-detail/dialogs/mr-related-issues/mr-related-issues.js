@@ -12,7 +12,7 @@ import {SHARED_STYLES} from 'elements/shared/shared-styles.js';
 import {ISSUE_EDIT_PERMISSION} from 'elements/shared/permissions';
 import {prpcClient} from 'prpc-client-instance.js';
 
-export class MrRelatedIssuesTable extends connectStore(LitElement) {
+export class MrRelatedIssues extends connectStore(LitElement) {
   static get styles() {
     return [
       SHARED_STYLES,
@@ -295,4 +295,4 @@ export class MrRelatedIssuesTable extends connectStore(LitElement) {
   }
 }
 
-customElements.define('mr-related-issues-table', MrRelatedIssuesTable);
+customElements.define('mr-related-issues', MrRelatedIssues);
