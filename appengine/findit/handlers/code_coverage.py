@@ -1122,8 +1122,9 @@ class ServeCodeCoverageData(BaseHandler):
           query = PostsubmitReport.query(
               PostsubmitReport.gitiles_commit.server_host == host,
               PostsubmitReport.gitiles_commit.project == project,
-              PostsubmitReport.bucket == bucket, PostsubmitReport.builder ==
-              builder).order(-PostsubmitReport.commit_position).order(
+              PostsubmitReport.bucket == bucket,
+              PostsubmitReport.builder == builder, PostsubmitReport.visible ==
+              True).order(-PostsubmitReport.commit_position).order(
                   -PostsubmitReport.commit_timestamp)
           entities = query.fetch(limit=1)
           report = entities[0]
