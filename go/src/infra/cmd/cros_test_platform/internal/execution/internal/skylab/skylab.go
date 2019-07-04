@@ -189,17 +189,21 @@ func (r *TaskSet) tick(ctx context.Context, client swarming.Client, getter isola
 		}
 		attempt.state = state
 
-		if !swarming.UnfinishedTaskStates[state] {
+		switch {
+		// Task ran to completion.
+		case swarming.CompletedTaskStates[state]:
 			r, err := getAutotestResult(ctx, result.OutputsRef, getter)
 			if err != nil {
 				return false, errors.Annotate(err, "wait for task %s", attempt.taskID).Err()
 			}
 			attempt.autotestResult = r
-			continue
+		// Task no longer running, but didn't run to completion.
+		case !swarming.UnfinishedTaskStates[state]:
+			attempt.autotestResult = &skylab_test_runner.Result_Autotest{Incomplete: true}
+		// Task still pending or running; at least 1 task not complete.
+		default:
+			complete = false
 		}
-
-		// At least one task is not complete.
-		complete = false
 	}
 
 	return complete, nil

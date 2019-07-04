@@ -40,6 +40,12 @@ var UnfinishedTaskStates = map[jsonrpc.TaskState]bool{
 	jsonrpc.TaskState_RUNNING: true,
 }
 
+// CompletedTaskStates indicate swarming states that correspond to final-tasks
+// in which the task executed to completion.
+var CompletedTaskStates = map[jsonrpc.TaskState]bool{
+	jsonrpc.TaskState_COMPLETED: true,
+}
+
 // AsTaskState converts the string swarming task state into enum representation.
 func AsTaskState(state string) (jsonrpc.TaskState, error) {
 	val, ok := jsonrpc.TaskState_value[state]

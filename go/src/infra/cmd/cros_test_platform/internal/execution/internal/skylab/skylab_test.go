@@ -34,6 +34,7 @@ type fakeSwarming struct {
 	server      string
 	createCalls []*swarming_api.SwarmingRpcsNewTaskRequest
 	getCalls    [][]string
+	hasRef      bool
 }
 
 func (f *fakeSwarming) CreateTask(ctx context.Context, req *swarming_api.SwarmingRpcsNewTaskRequest) (*swarming_api.SwarmingRpcsTaskRequestMetadata, error) {
@@ -53,12 +54,18 @@ func (f *fakeSwarming) GetResults(ctx context.Context, IDs []string) ([]*swarmin
 	if f.nextError != nil {
 		return nil, f.nextError
 	}
+
+	var ref *swarming_api.SwarmingRpcsFilesRef
+	if f.hasRef {
+		ref = &swarming_api.SwarmingRpcsFilesRef{}
+	}
+
 	results := make([]*swarming_api.SwarmingRpcsTaskResult, len(IDs))
 	for i, taskID := range IDs {
 		results[i] = &swarming_api.SwarmingRpcsTaskResult{
 			TaskId:     taskID,
 			State:      jsonrpc.TaskState_name[int32(f.nextState)],
-			OutputsRef: &swarming_api.SwarmingRpcsFilesRef{},
+			OutputsRef: ref,
 		}
 	}
 	return results, nil
@@ -78,6 +85,10 @@ func (f *fakeSwarming) setTaskState(state jsonrpc.TaskState) {
 	f.nextState = state
 }
 
+func (f *fakeSwarming) setHasOutputRef(has bool) {
+	f.hasRef = has
+}
+
 // setError causes this fake to start returning the given error on all
 // future API calls.
 func (f *fakeSwarming) setError(err error) {
@@ -95,6 +106,7 @@ func newFakeSwarming(server string) *fakeSwarming {
 		nextState: jsonrpc.TaskState_COMPLETED,
 		callback:  func() {},
 		server:    server,
+		hasRef:    true,
 	}
 }
 
@@ -182,6 +194,74 @@ func TestLaunchAndWaitTest(t *testing.T) {
 				So(swarming.createCalls, ShouldHaveLength, 2)
 			})
 		})
+	})
+}
+
+// Note: the purpose of this test is the test the behavior when a parsed
+// autotest result is not available from a task, because the task didn't run
+// far enough to output one.
+//
+// For detailed tests on the handling of autotest test results, see result_test.go.
+func TestTaskStates(t *testing.T) {
+	Convey("Given a single test", t, func() {
+		ctx := context.Background()
+
+		var tests []*build_api.AutotestTest
+		tests = append(tests, newTest("", false))
+
+		cases := []struct {
+			description     string
+			swarmingState   jsonrpc.TaskState
+			hasRef          bool
+			expectTaskState *test_platform.TaskState
+		}{
+			{
+				description:   "with expired state",
+				swarmingState: jsonrpc.TaskState_EXPIRED,
+				hasRef:        false,
+				expectTaskState: &test_platform.TaskState{
+					LifeCycle: test_platform.TaskState_LIFE_CYCLE_CANCELLED,
+					Verdict:   test_platform.TaskState_VERDICT_FAILED,
+				},
+			},
+			{
+				description:   "with killed state",
+				swarmingState: jsonrpc.TaskState_KILLED,
+				hasRef:        false,
+				expectTaskState: &test_platform.TaskState{
+					LifeCycle: test_platform.TaskState_LIFE_CYCLE_ABORTED,
+					Verdict:   test_platform.TaskState_VERDICT_FAILED,
+				},
+			},
+			{
+				description:   "with completed state",
+				swarmingState: jsonrpc.TaskState_COMPLETED,
+				hasRef:        true,
+				expectTaskState: &test_platform.TaskState{
+					LifeCycle: test_platform.TaskState_LIFE_CYCLE_COMPLETED,
+					Verdict:   test_platform.TaskState_VERDICT_NO_VERDICT,
+				},
+			},
+		}
+		for _, c := range cases {
+			Convey(c.description, func() {
+				swarming := newFakeSwarming("")
+				swarming.setTaskState(c.swarmingState)
+				swarming.setHasOutputRef(c.hasRef)
+				getter := newFakeGetter()
+				getter.SetAutotestResult(&skylab_test_runner.Result_Autotest{})
+
+				run := skylab.NewTaskSet(tests, basicParams())
+				err := run.LaunchAndWait(ctx, swarming, getter)
+				So(err, ShouldBeNil)
+
+				Convey("then the task state is correct.", func() {
+					resp := run.Response(swarming)
+					So(resp.TaskResults, ShouldHaveLength, 1)
+					So(resp.TaskResults[0].State, ShouldResemble, c.expectTaskState)
+				})
+			})
+		}
 	})
 }
 
