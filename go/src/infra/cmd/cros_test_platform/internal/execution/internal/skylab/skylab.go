@@ -61,7 +61,7 @@ func (t *testRun) RequestArgs(params *test_platform.Request_Params) (request.Arg
 
 	args := request.Args{
 		Cmd:               *cmd,
-		SchedulableLabels: toInventoryLabels(t.test.Dependencies),
+		SchedulableLabels: toInventoryLabels(params, t.test.Dependencies),
 		// TODO(akeshet): Determine parent task ID correctly.
 		ParentTaskID: "",
 		// TODO(akeshet): Determine priority correctly.
@@ -205,12 +205,22 @@ func (r *TaskSet) tick(ctx context.Context, client swarming.Client, getter isola
 	return complete, nil
 }
 
-func toInventoryLabels(deps []*build_api.AutotestTaskDependency) inventory.SchedulableLabels {
+func toInventoryLabels(params *test_platform.Request_Params, deps []*build_api.AutotestTaskDependency) inventory.SchedulableLabels {
 	flatDims := make([]string, len(deps))
 	for i, dep := range deps {
 		flatDims[i] = dep.Label
 	}
-	return *labels.Revert(flatDims)
+
+	inventory := labels.Revert(flatDims)
+
+	if params.SoftwareAttributes.BuildTarget != nil {
+		inventory.Board = &params.SoftwareAttributes.BuildTarget.Name
+	}
+	if params.HardwareAttributes.Model != "" {
+		inventory.Model = &params.HardwareAttributes.Model
+	}
+
+	return *inventory
 }
 
 func toProvisionableDimensions(deps []*test_platform.Request_Params_SoftwareDependency) ([]string, error) {

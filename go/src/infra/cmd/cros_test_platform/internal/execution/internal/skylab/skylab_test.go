@@ -128,14 +128,10 @@ func newFakeGetter() *fakeGetter {
 	return f
 }
 
-func newTest(name string, client bool, labels ...string) *build_api.AutotestTest {
+func newTest(name string, client bool, deps ...*build_api.AutotestTaskDependency) *build_api.AutotestTest {
 	ee := build_api.AutotestTest_EXECUTION_ENVIRONMENT_SERVER
 	if client {
 		ee = build_api.AutotestTest_EXECUTION_ENVIRONMENT_CLIENT
-	}
-	deps := make([]*build_api.AutotestTaskDependency, len(labels))
-	for i, lab := range labels {
-		deps[i] = &build_api.AutotestTaskDependency{Label: lab}
 	}
 	return &build_api.AutotestTest{Name: name, ExecutionEnvironment: ee, Dependencies: deps}
 }
@@ -143,7 +139,7 @@ func newTest(name string, client bool, labels ...string) *build_api.AutotestTest
 func basicParams() *test_platform.Request_Params {
 	return &test_platform.Request_Params{
 		SoftwareAttributes: &test_platform.Request_Params_SoftwareAttributes{
-			BuildTarget: &chromiumos.BuildTarget{Name: "foo-build-target"},
+			BuildTarget: &chromiumos.BuildTarget{Name: "foo-board"},
 		},
 		HardwareAttributes: &test_platform.Request_Params_HardwareAttributes{
 			Model: "foo-model",
@@ -278,7 +274,7 @@ func TestRequestArguments(t *testing.T) {
 		getter := newFakeGetter()
 
 		tests := []*build_api.AutotestTest{
-			newTest("name1", false, "board:foo_board", "model:foo_model"),
+			newTest("name1", false, &build_api.AutotestTaskDependency{Label: "cr50:pvt"}),
 		}
 
 		run := skylab.NewTaskSet(tests, basicParams())
@@ -306,8 +302,9 @@ func TestRequestArguments(t *testing.T) {
 				for i, d := range slice.Properties.Dimensions {
 					flatDimensions[i] = d.Key + ":" + d.Value
 				}
-				So(flatDimensions, ShouldContain, "label-board:foo_board")
-				So(flatDimensions, ShouldContain, "label-model:foo_model")
+				So(flatDimensions, ShouldContain, "label-cr50_phase:CR50_PHASE_PVT")
+				So(flatDimensions, ShouldContain, "label-model:foo-model")
+				So(flatDimensions, ShouldContain, "label-board:foo-board")
 			}
 		})
 	})
@@ -318,9 +315,7 @@ func TestClientTestArg(t *testing.T) {
 		ctx := context.Background()
 		swarming := newFakeSwarming("")
 
-		tests := []*build_api.AutotestTest{
-			newTest("name1", true, "board:foo_board", "model:foo_model"),
-		}
+		tests := []*build_api.AutotestTest{newTest("name1", true)}
 
 		run := skylab.NewTaskSet(tests, basicParams())
 		run.LaunchAndWait(ctx, swarming, newFakeGetter())
