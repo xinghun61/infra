@@ -679,4 +679,8 @@ func TestCommentCaseMatching(t *testing.T) {
 	Convey("matchCase doesn't convert case if the target has irregular case", t, func() {
 		So(matchCase("myword", "tArGeT"), ShouldEqual, "myword")
 	})
+
+	Convey("words with apostrophes are capitalized as expected", t, func() {
+		So(matchCase("don't", "Target"), ShouldEqual, "Don't")
+	})
 }

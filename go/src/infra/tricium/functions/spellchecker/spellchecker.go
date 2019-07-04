@@ -341,10 +341,24 @@ func convertCaseOfFixes(misspelling string, fixes []string) []string {
 // proposed fix to match the misspelling in the original text. The input word
 // expected to always be all-lowercase.
 func matchCase(word string, target string) string {
-	if strings.Title(target) == target {
-		return strings.Title(word)
+	if capitalize(target) == target {
+		return capitalize(word)
 	}
 	return word
+}
+
+// capitalize just changes the first letter to title case.
+//
+// This is almost the same as strings.Title but only ever changes the first
+// letter; strings.Title would convert "don't" to "Don'T", whereas this
+// function would return "Don't".
+func capitalize(word string) string {
+	if len(word) == 0 {
+		return ""
+	}
+	runes := []rune(word)
+	runes[0] = unicode.ToTitle(runes[0])
+	return string(runes)
 }
 
 // fixesMessage constructs a string listing the possible fixes.
