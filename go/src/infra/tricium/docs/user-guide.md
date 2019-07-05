@@ -46,6 +46,8 @@ service_account: "tricium-prod@appspot.gserviceaccount.com"
 swarming_service_account: "swarming@tricium-prod.iam.gserviceaccount.
 ```
 
+Available functions are in [functions](../functions) directory.
+
 If you are just enabling a new project with existing Analyzers, then you don't
 need to edit the service config, which mostly contains the Analyzer definitions.
 
