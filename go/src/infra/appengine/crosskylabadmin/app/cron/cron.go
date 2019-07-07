@@ -52,6 +52,23 @@ func InstallHandlers(r *router.Router, mwBase router.MiddlewareChain) {
 	r.GET("/internal/cron/trigger-repair-on-idle", mwCron, logAndSetHTTPErr(triggerRepairOnIdleCronHandler))
 	r.GET("/internal/cron/trigger-repair-on-repair-failed", mwCron, logAndSetHTTPErr(triggerRepairOnRepairFailedCronHandler))
 	r.GET("/internal/cron/ensure-critical-pools-healthy", mwCron, logAndSetHTTPErr(ensureCriticalPoolsHealthy))
+
+	// For Repair or Reset cron jobs.
+	r.GET("/internal/cron/push-bots-for-admin-tasks", mwCron, logAndSetHTTPErr(pushBotsForAdminTasksCronHandler))
+}
+
+// pushBotsForAdminTasksCronHandler pushes bots that require admin tasks to bot queue.
+func pushBotsForAdminTasksCronHandler(c *router.Context) (err error) {
+	defer func() {
+		pushBotsForAdminTasksCronHandlerTick.Add(c.Context, 1, err == nil)
+	}()
+
+	tsi := frontend.TrackerServerImpl{}
+	if _, err := tsi.PushBotsForAdminTasks(c.Context, &fleet.PushBotsForAdminTasksRequest{}); err != nil {
+		return err
+	}
+	logging.Infof(c.Context, "Successfully finished")
+	return nil
 }
 
 // refreshBotsCronHandler refreshes the swarming bot information about the whole fleet.

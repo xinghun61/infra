@@ -56,3 +56,20 @@ func (s *DecoratedTracker) SummarizeBots(c context.Context, req *SummarizeBotsRe
 	}
 	return
 }
+
+func (s *DecoratedTracker) PushBotsForAdminTasks(c context.Context, req *PushBotsForAdminTasksRequest) (rsp *PushBotsForAdminTasksResponse, err error) {
+	if s.Prelude != nil {
+		var newCtx context.Context
+		newCtx, err = s.Prelude(c, "PushBotsForAdminTasks", req)
+		if err == nil {
+			c = newCtx
+		}
+	}
+	if err == nil {
+		rsp, err = s.Service.PushBotsForAdminTasks(c, req)
+	}
+	if s.Postlude != nil {
+		err = s.Postlude(c, "PushBotsForAdminTasks", rsp, err)
+	}
+	return
+}

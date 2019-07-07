@@ -30,6 +30,15 @@ service Tracker {
   //
   // SummarizeBots stops at the first error encountered and returns the error.
   rpc SummarizeBots(SummarizeBotsRequest) returns (SummarizeBotsResponse);
+
+  // Filter out and queue the bots that require admin tasks Repair and Reset.
+  rpc PushBotsForAdminTasks(PushBotsForAdminTasksRequest) returns (PushBotsForAdminTasksResponse);
+}
+
+message PushBotsForAdminTasksRequest {
+}
+
+message PushBotsForAdminTasksResponse {
 }
 
 // RefreshBotsRequest can be used to restrict the Swarming bots to refresh via

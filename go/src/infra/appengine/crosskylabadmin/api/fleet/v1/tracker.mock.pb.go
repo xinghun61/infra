@@ -74,6 +74,26 @@ func (mr *MockTrackerClientMockRecorder) SummarizeBots(ctx, in interface{}, opts
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SummarizeBots", reflect.TypeOf((*MockTrackerClient)(nil).SummarizeBots), varargs...)
 }
 
+// PushBotsForAdminTasks mocks base method
+func (m *MockTrackerClient) PushBotsForAdminTasks(ctx context.Context, in *PushBotsForAdminTasksRequest, opts ...grpc.CallOption) (*PushBotsForAdminTasksResponse, error) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "PushBotsForAdminTasks", varargs...)
+	ret0, _ := ret[0].(*PushBotsForAdminTasksResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// PushBotsForAdminTasks indicates an expected call of PushBotsForAdminTasks
+func (mr *MockTrackerClientMockRecorder) PushBotsForAdminTasks(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PushBotsForAdminTasks", reflect.TypeOf((*MockTrackerClient)(nil).PushBotsForAdminTasks), varargs...)
+}
+
 // MockTrackerServer is a mock of TrackerServer interface
 type MockTrackerServer struct {
 	ctrl     *gomock.Controller
@@ -125,4 +145,19 @@ func (m *MockTrackerServer) SummarizeBots(arg0 context.Context, arg1 *SummarizeB
 func (mr *MockTrackerServerMockRecorder) SummarizeBots(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SummarizeBots", reflect.TypeOf((*MockTrackerServer)(nil).SummarizeBots), arg0, arg1)
+}
+
+// PushBotsForAdminTasks mocks base method
+func (m *MockTrackerServer) PushBotsForAdminTasks(arg0 context.Context, arg1 *PushBotsForAdminTasksRequest) (*PushBotsForAdminTasksResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "PushBotsForAdminTasks", arg0, arg1)
+	ret0, _ := ret[0].(*PushBotsForAdminTasksResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// PushBotsForAdminTasks indicates an expected call of PushBotsForAdminTasks
+func (mr *MockTrackerServerMockRecorder) PushBotsForAdminTasks(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PushBotsForAdminTasks", reflect.TypeOf((*MockTrackerServer)(nil).PushBotsForAdminTasks), arg0, arg1)
 }

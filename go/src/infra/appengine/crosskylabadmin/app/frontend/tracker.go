@@ -50,6 +50,16 @@ func (tsi *TrackerServerImpl) newSwarmingClient(c context.Context, host string) 
 	return clients.NewSwarmingClient(c, host)
 }
 
+// PushBotsForAdminTasks implements the fleet.Tracker.pushBotsForAdminTasks() method.
+func (tsi *TrackerServerImpl) PushBotsForAdminTasks(ctx context.Context, req *fleet.PushBotsForAdminTasksRequest) (res *fleet.PushBotsForAdminTasksResponse, err error) {
+	defer func() {
+		err = grpcutil.GRPCifyAndLogErr(ctx, err)
+	}()
+
+	// TODO (xixuan): To be implemented.
+	return &fleet.PushBotsForAdminTasksResponse{}, nil
+}
+
 // RefreshBots implements the fleet.Tracker.RefreshBots() method.
 func (tsi *TrackerServerImpl) RefreshBots(ctx context.Context, req *fleet.RefreshBotsRequest) (res *fleet.RefreshBotsResponse, err error) {
 	defer func() {

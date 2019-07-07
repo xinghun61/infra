@@ -20,6 +20,12 @@ import (
 )
 
 var (
+	pushBotsForAdminTasksCronHandlerTick = metric.NewCounter(
+		"chromeos/crosskylabadmin/cron/push_bots_for_admin_tasks",
+		"PushBotsForAdminTasks cron attempt",
+		nil,
+		field.Bool("success"),
+	)
 	refreshBotsTick = metric.NewCounter(
 		"chromeos/crosskylabadmin/cron/refresh_bots",
 		"RefreshBots cron attempt",
