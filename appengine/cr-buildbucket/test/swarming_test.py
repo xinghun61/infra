@@ -681,6 +681,12 @@ class SyncBuildTest(BaseTest):
       infra.swarming.task_id = ''
     self.build.put()
 
+    self.build_infra = model.BuildInfra(
+        key=model.BuildInfra.key_for(self.build.key),
+        infra=self.build.infra_bytes,
+    )
+    self.build_infra.put()
+
   def _create_task(self):
     swarming._create_swarming_task(
         self.build,
@@ -739,9 +745,10 @@ class SyncBuildTest(BaseTest):
 
     @ndb.tasklet
     def json_request_async(*_args, **_kwargs):
-      with self.build.mutate_infra() as infra:
+      with self.build_infra.mutate() as infra:
         infra.swarming.task_id = 'deadbeef'
-      yield self.build.put_async()
+      yield self.build_infra.put_async()
+
       raise ndb.Return({'task_id': 'new task'})
 
     net.json_request_async.side_effect = json_request_async
@@ -953,7 +960,11 @@ class SyncBuildTest(BaseTest):
   def test_sync_with_task_result(self, case):
     logging.info('test case: %s', case)
     build = test_util.build(id=1)
-    build.put()
+    build_infra = model.BuildInfra(
+        key=model.BuildInfra.key_for(self.build.key),
+        infra=build.infra_bytes,
+    )
+    ndb.put_multi([build, build_infra])
 
     self.patch(
         'swarming._load_task_result',
@@ -964,6 +975,7 @@ class SyncBuildTest(BaseTest):
     swarming._sync_build_and_swarming(1, 1)
 
     build = build.key.get()
+    build_infra = build_infra.key.get()
     bp = build.proto
     self.assertEqual(bp.status, case['status'])
     self.assertEqual(
@@ -977,8 +989,9 @@ class SyncBuildTest(BaseTest):
 
     self.assertEqual(bp.start_time, case.get('start_time', tspb(0)))
     self.assertEqual(bp.end_time, case.get('end_time', tspb(0)))
+
     self.assertEqual(
-        list(build.parse_infra().swarming.bot_dimensions),
+        list(build_infra.parse().swarming.bot_dimensions),
         case.get('bot_dimensions', [])
     )
 

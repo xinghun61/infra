@@ -524,8 +524,11 @@ def prepare_task_def(build, settings, fake_build=False):
   Mutates build.
   Creates a swarming task definition.
 
+  The build must have proto.infra initialized.
+
   Returns a task_def dict.
   """
+  assert build.proto.HasField('infra')
   build.url = _generate_build_url(settings.milo_hostname, build)
   task_def = _create_task_def(build, settings, fake_build)
   return task_def
@@ -682,12 +685,29 @@ def _create_swarming_task(build, sw):
 
   @ndb.transactional
   def txn():
-    build = model.Build.get_by_id(build_id)
+    build_key = ndb.Key(model.Build, build_id)
+    build, build_infra = ndb.get_multi([
+        build_key, model.BuildInfra.key_for(build_key)
+    ],)
     if not build:  # pragma: no cover
       return False
+
+    if build_infra:  # pragma: no branch
+      # TODO(crbug.com/970053): do this unconditionally when all builds have
+      # BuildInfra entity.
+      with build_infra.mutate() as infra:
+        sw = infra.swarming
+        if sw.task_id:
+          logging.warning('build already has a task %r', sw.task_id)
+          return False
+
+        sw.task_id = new_task_id
+
+    # TODO(crbug.com/970053): remove this block once all in-flight and future
+    # tasks have BuildInfra entity.
     with build.mutate_infra() as infra:
       sw = infra.swarming
-      if sw.task_id:
+      if sw.task_id:  # pragma: no cover
         logging.warning('build already has a task %r', sw.task_id)
         return False
 
@@ -696,6 +716,10 @@ def _create_swarming_task(build, sw):
     assert not build.swarming_task_key
     build.swarming_task_key = task_key
     build.put()
+    if build_infra:  # pragma: no branch
+      # TODO(crbug.com/970053): do this unconditionally when all builds have
+      # BuildInfra entity.
+      build_infra.put()
     return True
 
   updated = False
@@ -785,7 +809,7 @@ def _load_task_result(hostname, task_id):  # pragma: no cover
   ).get_result()
 
 
-def _sync_build_with_task_result_in_memory(build, task_result):
+def _sync_build_with_task_result_in_memory(build, build_infra, task_result):
   """Syncs buildbucket |build| state with swarming task |result|.
 
   Mutates build only if status has changed. Returns True in that case.
@@ -804,6 +828,20 @@ def _sync_build_with_task_result_in_memory(build, task_result):
   old_status = build.proto.status
   bp = build.proto
 
+  if build_infra:
+    # TODO(crbug.com/970053): do this unconditionally when all builds have
+    # BuildInfra entity.
+    with build_infra.mutate() as infra:
+      sw = infra.swarming
+      sw.ClearField('bot_dimensions')
+      for d in (task_result or {}).get('bot_dimensions', []):
+        assert isinstance(d['value'], list)
+        for v in d['value']:
+          sw.bot_dimensions.add(key=d['key'], value=v)
+      sw.bot_dimensions.sort(key=lambda d: (d.key, d.value))
+
+  # TODO(crbug.com/970053): remove this block once all in-flight and future
+  # tasks have BuildInfra entity.
   with build.mutate_infra() as infra:
     sw = infra.swarming
     sw.ClearField('bot_dimensions')
@@ -898,14 +936,23 @@ def _sync_build_with_task_result(build_id, task_result):
 
   @ndb.transactional
   def txn():
-    build = model.Build.get_by_id(build_id)
+    build_key = ndb.Key(model.Build, build_id)
+    build, build_infra = ndb.get_multi([
+        build_key, model.BuildInfra.key_for(build_key)
+    ],)
     if not build:  # pragma: no cover
       return None
-    status_changed = _sync_build_with_task_result_in_memory(build, task_result)
+    status_changed = _sync_build_with_task_result_in_memory(
+        build, build_infra, task_result
+    )
     if not status_changed:
       return None
 
     futures = [build.put_async()]
+    if build_infra:  # pragma: no branch
+      # TODO(crbug.com/970053): do this unconditionally when all builds have
+      # BuildInfra entity.
+      futures.append(build_infra.put_async())
 
     if build.proto.status == common_pb2.STARTED:
       futures.append(events.on_build_starting_async(build))

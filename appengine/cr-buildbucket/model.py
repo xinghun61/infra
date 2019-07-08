@@ -149,6 +149,7 @@ class Build(ndb.Model):
 
   def parse_infra(self):  # pragma: no cover
     """Deserializes infra_bytes."""
+    # TODO(crbug.com/970053): remove this function in favor of BuildInfra entity
     infra = build_pb2.BuildInfra()
     if self.infra_bytes:
       infra.ParseFromString(self.infra_bytes)
@@ -162,6 +163,7 @@ class Build(ndb.Model):
 
     Deserializes infra_bytes, yields it, and serializes back.
     """
+    # TODO(crbug.com/970053): remove this function in favor of BuildInfra entity
     infra = self.parse_infra()
     yield infra
     self.infra_bytes = infra.SerializeToString()
@@ -385,8 +387,8 @@ class BuildDetailEntity(ndb.Model):
     return ndb.Key(cls, 1, parent=build_key)
 
 
-class BuildOutputProperties(BuildDetailEntity):
-  """Stores buildbucket.v2.Build.output.properties."""
+class BuildProperties(BuildDetailEntity):
+  """Base class for storing build input/output properties."""
 
   # google.protobuf.Struct message in binary form.
   properties = ndb.BlobProperty()
@@ -399,6 +401,14 @@ class BuildOutputProperties(BuildDetailEntity):
   def serialize(self, struct):  # pragma: no cover
     assert isinstance(struct, struct_pb2.Struct)
     self.properties = struct.SerializeToString()
+
+
+class BuildInputProperties(BuildProperties):
+  """Stores buildbucket.v2.Build.input.properties."""
+
+
+class BuildOutputProperties(BuildProperties):
+  """Stores buildbucket.v2.Build.output.properties."""
 
 
 class BuildSteps(BuildDetailEntity):
@@ -483,6 +493,29 @@ class BuildSteps(BuildDetailEntity):
     if changed:  # pragma: no branch
       entity.write_steps(container)
       yield entity.put_async()
+
+
+class BuildInfra(BuildDetailEntity):
+  """Stores buildbucket.v2.Build.infra."""
+
+  # buildbucket.v2.Build.infra serialized to bytes.
+  infra = ndb.BlobProperty()
+
+  def parse(self):  # pragma: no cover
+    """Deserializes infra."""
+    ret = build_pb2.BuildInfra()
+    ret.ParseFromString(self.infra)
+    return ret
+
+  @contextlib.contextmanager
+  def mutate(self):  # pragma: no cover
+    """Returns a context manager that provides a mutable BuildInfra proto.
+
+    Deserializes infra, yields it, and serializes back.
+    """
+    proto = self.parse()
+    yield proto
+    self.infra = proto.SerializeToString()
 
 
 # Tuple of classes representing entity kinds that living under Build entity.
@@ -594,9 +627,11 @@ def builds_to_protos_async(
       b.tags_to_protos(d.tags)
 
     if load_infra and b.infra_bytes:
+      # TODO(crbug.com/970053): read from BuildInfra entity.
       d.infra.ParseFromString(b.infra_bytes)
 
     if load_input_properties and b.input_properties_bytes:
+      # TODO(crbug.com/970053): read from BuildInputProperties entity.
       d.input.properties.ParseFromString(b.input_properties_bytes)
 
     if steps_f:

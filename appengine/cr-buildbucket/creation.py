@@ -341,12 +341,23 @@ class NewBuild(object):
         self.exception = ex
         return
 
-    # Move Build.input.properties to Build.input_properties_bytes.
+    b.is_luci = bool(self.builder_cfg)
+
+    # Store some parts of the proto in separate entities, so that
+    # reads do not pay for things they don't need.
+    input_properties = model.BuildInputProperties(
+        key=model.BuildInputProperties.key_for(b.key),
+        properties=bp.input.properties.SerializeToString(),
+    )
+    # TODO(crbug.com/970053): stop writing input_properties_bytes.
     b.input_properties_bytes = bp.input.properties.SerializeToString()
     bp.input.ClearField('properties')
 
-    # Move Build.proto.infra to Build.infra_bytes.
-    b.is_luci = bool(self.builder_cfg)
+    build_infra = model.BuildInfra(
+        key=model.BuildInfra.key_for(b.key),
+        infra=bp.infra.SerializeToString(),
+    )
+    # TODO(crbug.com/970053): stop writing infra_bytes.
     b.infra_bytes = bp.infra.SerializeToString()
     bp.ClearField('infra')
 
@@ -355,7 +366,11 @@ class NewBuild(object):
       if (yield b.key.get_async()):  # pragma: no cover
         raise errors.Error('build number collision')
 
-      futs = [b.put_async()]
+      futs = [
+          b.put_async(),
+          input_properties.put_async(),
+          build_infra.put_async(),
+      ]
       if sync_task:
         futs.append(tq.enqueue_async(swarming.SYNC_QUEUE_NAME, [sync_task]))
       yield futs
