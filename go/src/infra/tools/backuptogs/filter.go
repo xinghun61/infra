@@ -16,12 +16,15 @@ var (
 		&types.MetricMetadata{})
 )
 
-// filterFiles determines whether a file needs to be backed up by comparing to a previous backup state
+// filterFiles determines whether a file needs to be backed up by comparing to
+// a previous backup state.
 //
-// It also populates a new backup state with each file that it sees on filesChan, regardless of
-// whether it actually needs to be backed up
-// Simliarly, each file from filesChan is deleted from prevState. This mechanism is used
-// to detect files that have been deleted on the local filesystem since the previous backup run.
+// It also populates a new backup state with each file that it sees on
+// filesChan, regardless of whether it actually needs to be backed up.
+//
+// Similarly, each file from filesChan is deleted from prevState. This
+// mechanism is used to detect files that have been deleted on the local
+// filesystem since the previous backup run.
 func filterFiles(
 	ctx context.Context,
 	filesChan <-chan fileInfo,

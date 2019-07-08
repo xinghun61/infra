@@ -106,7 +106,7 @@ func (h *State) shiftChanges(ctx *router.Context, cfg *rotang.Configuration, ss 
 				}
 			}
 			if s.EvtID == "" {
-				logging.Warningf(ctx.Context, "shiftChanges: No EvtID recieved for shift: %v", s)
+				logging.Warningf(ctx.Context, "shiftChanges: No EvtID received for shift: %v", s)
 			}
 			if err := shiftStore.UpdateShift(ctx.Context, cfg.Config.Name, &s); err != nil {
 				return err

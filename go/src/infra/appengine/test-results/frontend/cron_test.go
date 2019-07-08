@@ -63,7 +63,7 @@ func TestDeleteOldResults(t *testing.T) {
 				[]string{})
 		}
 
-		// Put another entity with a fake key that points to a non-existant
+		// Put another entity with a fake key that points to a non-existent
 		// DataEntry entity to test that we do not fail in this case.
 		So(datastore.Put(ctx, &model.TestFile{
 			Name:    "results.json",

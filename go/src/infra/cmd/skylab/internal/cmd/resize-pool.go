@@ -108,7 +108,7 @@ func (c *resizePoolRun) printResult(resp *fleet.ResizePoolResponse) {
 	defer w.Flush()
 
 	fmt.Fprintf(w, "Resize pool succeeded\n")
-	fmt.Fprintf(w, "Inventory changes commited at:\t%s\n", resp.GetUrl())
+	fmt.Fprintf(w, "Inventory changes committed at:\t%s\n", resp.GetUrl())
 	if len(resp.GetChanges()) > 0 {
 		fmt.Fprintf(w, "Inventory changes:\n")
 		for _, c := range resp.Changes {

@@ -54,7 +54,7 @@ message Issue {
     // "Started" - Work in progress.
     // "ExternalDependency" - Requires action from a third party
     // Closed statuses:
-    // "Fixed" - Work completed, needs verificaiton
+    // "Fixed" - Work completed, needs verification
     // "Verified" - Test or reporter verified that the fix works
     // "Duplicate" - Same root cause as another issue
     // "WontFix" -  Cannot reproduce, works as intended, invalid or absolete.

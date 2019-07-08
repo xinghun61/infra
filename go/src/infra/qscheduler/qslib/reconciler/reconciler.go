@@ -120,7 +120,7 @@ func (state *State) AssignTasks(ctx context.Context, s *scheduler.Scheduler, t t
 
 	for _, a := range newAssignments {
 		if a.TaskToAbort != "" && a.Type != scheduler.AssignmentPreemptWorker {
-			panic(fmt.Sprintf("Received a non-preempt assignment specifing a task to abort %s.", a.TaskToAbort))
+			panic(fmt.Sprintf("Received a non-preempt assignment specifying a task to abort %s.", a.TaskToAbort))
 		}
 		new := &protos.WorkerQueue{
 			EnqueueTime:  tutils.TimestampProto(a.Time),

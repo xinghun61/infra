@@ -226,7 +226,7 @@ func TestAnnotations(t *testing.T) {
 			})
 
 			Convey("remove", func() {
-				Convey("can't remove non-existant annotation", func() {
+				Convey("can't remove non-existent annotation", func() {
 					ah.PostAnnotationsHandler(&router.Context{
 						Context: c,
 						Writer:  w,

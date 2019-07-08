@@ -208,7 +208,7 @@ func TestBaseLabelMatch(t *testing.T) {
 // TestMatchRareLabel tests that the worker-to-request match quality heuristics allow a rare worker to be matched
 // to its corresponding rare request, even amidst other common requests that could use that worker.
 func TestMatchRareLabel(t *testing.T) {
-	Convey("Given a state with 10 interchangable workers and 1 rare-labeled worker", t, func() {
+	Convey("Given a state with 10 interchangeable workers and 1 rare-labeled worker", t, func() {
 		ctx := context.Background()
 		tm := time.Unix(0, 0)
 		s := scheduler.New(tm)
@@ -220,7 +220,7 @@ func TestMatchRareLabel(t *testing.T) {
 		rareLabel := "RareLabel"
 		var rareWorker scheduler.WorkerID = "RareWorker"
 		s.MarkIdle(ctx, rareWorker, stringset.NewFromSlice(commonLabel, rareLabel), tm, scheduler.NullEventSink)
-		Convey("and 10 interchangable requests and 1 rare-labeled request", func() {
+		Convey("and 10 interchangeable requests and 1 rare-labeled request", func() {
 			var aid scheduler.AccountID = "AccountID"
 			s.AddAccount(ctx, aid, scheduler.NewAccountConfig(0, 0, nil), []float32{1})
 			for i := 0; i < 10; i++ {

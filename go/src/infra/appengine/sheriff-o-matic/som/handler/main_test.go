@@ -855,7 +855,7 @@ func TestMain(t *testing.T) {
 					So(rslt["key"], ShouldEqual, "test")
 				})
 
-				Convey("POST non-existant", func() {
+				Convey("POST non-existent", func() {
 					q := datastore.NewQuery("AlertJSON")
 					results := []*model.AlertJSON{}
 					So(datastore.GetAll(c, q, &results), ShouldBeNil)

@@ -55,7 +55,7 @@ import (
 	ds "go.chromium.org/gae/service/datastore"
 	"go.chromium.org/luci/common/errors"
 
-	"infra/tricium/api/v1"
+	tricium "infra/tricium/api/v1"
 )
 
 // AnalyzeRequest represents one Tricium Analyze RPC request.
@@ -72,7 +72,7 @@ type AnalyzeRequest struct {
 	Project string
 	// Files listed in the request, including metadata.
 	Files []tricium.Data_File `gae:",noindex"`
-	// Paths is retained for backward compatibilty but should not be used
+	// Paths is retained for backward compatibility but should not be used
 	// in new entities. Files is used instead. See crbug.com/934246.
 	Paths []string `gae:",noindex"`
 	// Full URL of Git repository hosting files in the request.

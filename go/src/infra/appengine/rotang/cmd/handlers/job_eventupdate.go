@@ -62,7 +62,7 @@ func (h *State) eventUpdate(ctx *router.Context, cfg *rotang.Configuration, t ti
 			continue
 		}
 		if resShift.EvtID == "" {
-			logging.Warningf(ctx.Context, "calendar.Event, EvtID emtpy for shift: %v", resShift)
+			logging.Warningf(ctx.Context, "calendar.Event, EvtID empty for shift: %v", resShift)
 			resShift.EvtID = s.EvtID
 		}
 		resShift.Comment = s.Comment

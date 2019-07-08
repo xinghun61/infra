@@ -162,7 +162,7 @@ func getDeployedApp(service, module string) (string, string, error) {
 	}
 	var deployedVers *appengine.Version
 	// This is a heuristic to determine which version is "deployed" - use
-	// the latest verison (by creation timestamp) that is "SERVING". More
+	// the latest version (by creation timestamp) that is "SERVING". More
 	// accurate would be to look at traffic splits and pick the one that
 	// has the most (or all) traffic going to it. Unfortunately the API
 	// doesn't appear to expose that information(!).

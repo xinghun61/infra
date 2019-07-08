@@ -276,8 +276,8 @@ func (s *Store) AllShifts(ctx context.Context, rota string) ([]rotang.ShiftEntry
 		})
 	}
 
-	// TODO(olakar): Look into why the Store emulator doesn't generated indexes automatically when
-	// specifing .Order for the queryShifts query.
+	// TODO(olakar): Look into why the Store emulator doesn't generated indexes
+	// automatically when specifying .Order for the queryShifts query.
 	sort.Sort(byStartTime(shifts))
 
 	return shifts, nil

@@ -66,7 +66,7 @@ func (g *GitilesClient) Archive(ctx context.Context, in *gitiles.ArchiveRequest,
 	k := projectRefKey(in.Project, in.Ref)
 	d, ok := g.Archived[k]
 	if !ok {
-		return nil, fmt.Errorf("Unkonwn project reference %s", k)
+		return nil, fmt.Errorf("Unknown project reference %s", k)
 	}
 	return &gitiles.ArchiveResponse{
 		Filename: fmt.Sprintf("fake_gitiles_archive"),

@@ -215,7 +215,7 @@ type gitRunner struct {
 	// Args is the arguments to pass to Git.
 	Args []string
 
-	// Env is the environemnt to use for the Git subcommand. Env may be modified
+	// Env is the environment to use for the Git subcommand. Env may be modified
 	// during execution.
 	Env environ.Env
 

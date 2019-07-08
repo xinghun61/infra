@@ -121,7 +121,7 @@ suite('chops-announcements', () => {
     assert.isNull(annInput);
   });
 
-  test('error messages empty after succesful requests', async () => {
+  test('error messages empty after successful requests', async () => {
     await element.updateComplete;
 
     element._retiredErrorMessage = 'error fetching retired announcements';

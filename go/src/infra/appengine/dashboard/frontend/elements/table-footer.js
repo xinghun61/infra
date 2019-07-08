@@ -94,7 +94,7 @@ class TableFooter extends PolymerElement {
   /**
    * This calculates the timestamp of the previous week's last date. The
    * timestamp returned will be undefined if the current week being viewed is
-   * the very first week that this dashbaord started collecting data. If the
+   * the very first week that this dashboard started collecting data. If the
    * latestDate is within the second week the previous timestamp will be set to
    * endOfFirstWeek.
    */
@@ -146,7 +146,7 @@ class TableFooter extends PolymerElement {
     let date = new Date(baseDate);
     date.setDate(date.getDate() + diff);
     // A link should never take the user to a page showing days that haven't
-    // happend yet.
+    // happened yet.
     if (date > new Date()) {
       date = new Date();
     }

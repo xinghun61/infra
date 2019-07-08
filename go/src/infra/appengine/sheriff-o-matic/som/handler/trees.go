@@ -65,7 +65,7 @@ func getTreeLogo(ctx *router.Context, sa string, sign signer) {
 	sl := []string{
 		"GET",
 		"", // Optional MD5, which we don't have.
-		"", // Content type, ommitted because it breaks the signature.
+		"", // Content type, omitted because it breaks the signature.
 		expStr,
 		resource,
 	}

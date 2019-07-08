@@ -132,7 +132,7 @@ type RepoState struct {
 	// configuration.
 	ConfigName string
 
-	// These are overriden in the repo config differently for each ref.
+	// These are overridden in the repo config differently for each ref.
 	Metadata   string
 	BranchName string
 }

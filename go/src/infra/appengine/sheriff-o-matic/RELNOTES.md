@@ -1128,7 +1128,7 @@
 - [SoM: do not show resolved alerts for non-CrOS trees](https://chromium-review.googlesource.com/580515) (davidriley@chromium.org)
 - [SoM: Split alerts retrieval into two calls.](https://chromium-review.googlesource.com/580029) (davidriley@chromium.org)
 - [[som] merge diff data and only show diff link for chromium](https://chromium-review.googlesource.com/580354) (renjietang@google.com)
-- [[som] Make test expectation editor deep-linkable to specfic tests.](https://chromium-review.googlesource.com/579794) (seanmccullough@chromium.org)
+- [[som] Make test expectation editor deep-linkable to specific tests.](https://chromium-review.googlesource.com/579794) (seanmccullough@chromium.org)
 - [[som] fix LogDIff datastore ID](https://chromium-review.googlesource.com/580292) (renjietang@google.com)
 - [[som] Fix QueuedUpdate ID field](https://chromium-review.googlesource.com/579657) (seanmccullough@chromium.org)
 - [SoM: Add filtering of shown alerts via regexp.](https://chromium-review.googlesource.com/578480) (davidriley@chromium.org)
@@ -1268,7 +1268,7 @@
 - [[infra frontend testing] move wct.go runner into infra/tools/wct](https://chromium-review.googlesource.com/540068) (seanmccullough@chromium.org)
 - [[som] For CrOS, don't append .milo for GETs to /api/v1/alerts/gardener](https://chromium-review.googlesource.com/538981) (seanmccullough@chromium.org)
 - [[som] Add server-side handler for updating layout test expectations.](https://chromium-review.googlesource.com/538039) (seanmccullough@chromium.org)
-- [[som]add diff intepretation representated by color and +/- sign](https://chromium-review.googlesource.com/531624) (renjietang@google.com)
+- [[som]add diff interpretation represented by color and +/- sign](https://chromium-review.googlesource.com/531624) (renjietang@google.com)
 - [[som] test expectation edit form changes](https://chromium-review.googlesource.com/537142) (seanmccullough@chromium.org)
 - [[som] add -persist flag to keep wct.go running after tests complete.](https://chromium-review.googlesource.com/537145) (seanmccullough@chromium.org)
 

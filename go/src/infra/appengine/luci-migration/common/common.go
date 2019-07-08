@@ -49,7 +49,7 @@ func DurationString(d time.Duration) string {
 }
 
 // PathEscape escapes the string so it can be safely placed inside a URL path segment.
-// TODO(nodir): remove, when native url.PathEscape is avaiable on AppEngine.
+// TODO(nodir): remove, when native url.PathEscape is available on AppEngine.
 func PathEscape(s string) string {
 	u := url.URL{Path: s}
 	return u.EscapedPath()

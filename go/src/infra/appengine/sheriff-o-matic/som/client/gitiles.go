@@ -47,8 +47,9 @@ func GetGitilesCached(c context.Context, URL string) ([]byte, error) {
 	return item.Value(), nil
 }
 
-// GetGitiles fetches gitiles raw text content with requried authentication headers.
-// Note that this currently only works from AppEngine due to gaeauth dependencies.
+// GetGitiles fetches gitiles raw text content with required authentication
+// headers. Note that this currently only works from AppEngine due to gaeauth
+// dependencies.
 func GetGitiles(c context.Context, URL string) ([]byte, error) {
 	token, err := client.GetAccessToken(c, []string{gitilesScope})
 	if err != nil {

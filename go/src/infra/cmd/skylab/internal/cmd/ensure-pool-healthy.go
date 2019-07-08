@@ -143,7 +143,7 @@ func (c *ensurePoolHealthyRun) printEnsurePoolHealthyResult(w io.Writer, model, 
 		fmt.Fprintf(tw, "Failures encountered:\t%s\t\n", strings.Join(fs, ", "))
 	}
 	if res.GetUrl() != "" {
-		fmt.Fprintf(tw, "Inventory changes commited at:\t%s\t\n", res.GetUrl())
+		fmt.Fprintf(tw, "Inventory changes committed at:\t%s\t\n", res.GetUrl())
 	}
 
 	// Do not align inventory changes with the summary output.

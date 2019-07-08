@@ -250,7 +250,7 @@ func (h *State) handleGeneratedShifts(ctx *router.Context, cfg *rotang.Configura
 	}
 	for i, s := range shifts {
 		if resShifts[i].EvtID == "" {
-			logging.Warningf(ctx.Context, "handleGeneratedShifts: No EvtID recieved for shift: %v", s)
+			logging.Warningf(ctx.Context, "handleGeneratedShifts: No EvtID received for shift: %v", s)
 		}
 		s.EvtID = resShifts[i].EvtID
 		if err := shiftStorer.UpdateShift(ctx.Context, cfg.Config.Name, &s); err != nil {
@@ -290,7 +290,7 @@ func (h *State) handleUpdatedShifts(ctx *router.Context, cfg *rotang.Configurati
 				}
 			}
 			if shift.EvtID == "" {
-				logging.Warningf(ctx.Context, "handleUpdatedShifts: No EvtID recieved for shift: %v", shift)
+				logging.Warningf(ctx.Context, "handleUpdatedShifts: No EvtID received for shift: %v", shift)
 			}
 			if err := shiftStorer.UpdateShift(ctx.Context, cfg.Config.Name, &shift); err != nil {
 				return err

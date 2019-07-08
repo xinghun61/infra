@@ -35,7 +35,7 @@
     let date = new Date(baseDate);
     date.setDate(date.getDate() + diff);
     // A link should never take the user to a page showing days that
-    // haven't happend yet.
+    // haven't happened yet.
     if (date > new Date()) {
       date = new Date();
     }

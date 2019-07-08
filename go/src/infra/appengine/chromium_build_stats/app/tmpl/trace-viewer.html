@@ -2244,7 +2244,7 @@ using custom elements specialized for different event types.
   height: 30px;
 }
 </style><!--
-  Interactive visualizaiton of Model objects based loosely on gantt charts.
+  Interactive visualization of Model objects based loosely on gantt charts.
   Each thread in the Model is given a set of Tracks, one per subrow in the
   thread. The TimelineTrackView class acts as a controller, creating the
   individual tracks, while Tracks do actual drawing.
@@ -15130,7 +15130,7 @@ tr.exportTo('tr.b.math', function() {
   }
 
   /**
-   *  Uses the 1-2-5 series to find the closest prefered number to min
+   *  Uses the 1-2-5 series to find the closest preferred number to min
    *  whose absolute value is at least the absolute value of |min|.
    *  https://en.wikipedia.org/wiki/Preferred_number
    */
@@ -18599,10 +18599,10 @@ tr.exportTo('tr.b', function() {
       // |minimumFractionDigits| <= |maximumFractionDigits|.
       if (minimumFractionDigits > maximumFractionDigits) {
         if (minCtx !== undefined && maxCtx === undefined) {
-          // Only minimumFractionDigits was overriden by context.
+          // Only minimumFractionDigits was overridden by context.
           maximumFractionDigits = minimumFractionDigits;
         } else if (minCtx === undefined && maxCtx !== undefined) {
-          // Only maximumFractionDigits was overriden by context.
+          // Only maximumFractionDigits was overridden by context.
           minimumFractionDigits = maximumFractionDigits;
         }
       }
@@ -23147,7 +23147,7 @@ tr.exportTo('tr.model', function() {
      * the slice group as a tree where the top-level slice A is the root node.
      * The preorder depth-first-search (DFS) order is naturally equivalent
      * to the function call order. We just need to perform a DFS, and start
-     * recording the slices after we see the occurance of E.
+     * recording the slices after we see the occurrence of E.
      */
     iterateAllSubsequentSlices(callback, opt_this) {
       const parentStack = [];
@@ -33048,7 +33048,7 @@ tr.exportTo('tr.model', function() {
    * Merge two slice groups.
    *
    * If the two groups do not nest properly some of the slices of groupB will
-   * be split to accomodate the improper nesting.  This is done to accomodate
+   * be split to accommodate the improper nesting.  This is done to accommodate
    * combined kernel and userland call stacks on Android.  Because userland
    * tracing is done by writing to the trace_marker file, the kernel calls
    * that get invoked as part of that write may not be properly nested with
@@ -42401,7 +42401,7 @@ tr.exportTo('tr.metrics.sh', function() {
    * values of the associated |componentNode| across all timestamps
    * (corresponding to global memory dumps associated with the given browser)
    * |values| for each process (e.g. 'gpu_process', 'browser_process', etc).
-   * We also report a special 'all_processes' histogram which agregates all
+   * We also report a special 'all_processes' histogram which aggregates all
    * others, this has a RelatedNameMap diagnostic explaining
    * how it is built from the other histograms.
    *
@@ -42928,7 +42928,7 @@ tr.exportTo('tr.importer', function() {
       'hasCpuTime': true,
     }
   };
-  /* Maps XR instant events to histograms. Since instant events have arbitary
+  /* Maps XR instant events to histograms. Since instant events have arbitrary
    * key/value pairs in their "args" dict, have a map of arg names to
    * histograms. Nothing but the keys are used in this file, but the extra info
    * is included here so that there's a single list of events we reference
@@ -46611,7 +46611,7 @@ tr.exportTo('tr.metrics.vr', function() {
     );
 
     // Map the events that we use to generate the input expectations to
-    // histograms. Each event can have an arbitarary number of fields in
+    // histograms. Each event can have an arbitrary number of fields in
     // its "args" field, so we iterate over each of those that we expect.
     const instantHistogramsByTitle = new Map();
     const expectationEvents = tr.importer.WEBXR_INSTANT_EVENTS;
@@ -47164,7 +47164,7 @@ tr.exportTo('tr.ui.b', function() {
       if (opt_parentConstructor &&
           f.prototype.__proto__ !== opt_parentConstructor.prototype) {
         throw new Error(
-            className + ' prototye\'s __proto__ field is messed up. ' +
+            className + ' prototype\'s __proto__ field is messed up. ' +
             'It MUST be the prototype of ' + opt_parentConstructor.tagName);
       }
 
@@ -47741,7 +47741,7 @@ tr.exportTo('tr.ui.b', function() {
     },
 
     /**
-     * Called to take over responsiblities of an existingAnimation.
+     * Called to take over responsibilities of an existingAnimation.
      *
      * At this point, the existingAnimation has been ticked one last time, then
      * stopped. This animation will be started after this returns and has the
@@ -50855,7 +50855,7 @@ tr.exportTo('tr.ui.b', function() {
 
       // Try to preserve the user's sort choice.
       // This is a 'best-effort' attempt, for example we compare columns by
-      // thier titles which can be HTML nodes in which case we might consider
+      // their titles which can be HTML nodes in which case we might consider
       // them different even if they look the same to the user.
       let sortIndex = undefined;
       const currentSortColumn = this.tableColumns[this.sortColumnIndex_];
@@ -53057,8 +53057,8 @@ tr.exportTo('tr.ui.analysis', function() {
      *      row (e.g. a process) was present in the first 2 and last 6 of them
      *      (but not in the third and fourth dump).
      *
-     * This method should therefore NOT be overriden by subclasses. The
-     * formatTitle method should be overriden instead when necessary.
+     * This method should therefore NOT be overridden by subclasses. The
+     * formatTitle method should be overridden instead when necessary.
      */
     value(row) {
       const formattedTitle = this.formatTitle(row);
@@ -53119,7 +53119,7 @@ tr.exportTo('tr.ui.analysis', function() {
 
     /**
      * Format the title associated with a given row. This method is intended to
-     * be overriden by subclasses.
+     * be overridden by subclasses.
      */
     formatTitle(row) {
       return row.title;
@@ -53325,7 +53325,7 @@ tr.exportTo('tr.ui.analysis', function() {
 
     /**
      * Format a cell associated with this column from the given row. This
-     * method is not intended to be overriden.
+     * method is not intended to be overridden.
      */
     value(row) {
       const fields = this.fields(row);
@@ -53419,7 +53419,7 @@ tr.exportTo('tr.ui.analysis', function() {
     /**
      * Format a single defined field.
      *
-     * This method is intended to be overriden by field type specific columns
+     * This method is intended to be overridden by field type specific columns
      * (e.g. show '1.0 KiB' instead of '1024' for Scalar(s) representing
      * bytes).
      */
@@ -53432,7 +53432,7 @@ tr.exportTo('tr.ui.analysis', function() {
      * aggregation mode is guaranteed to be defined.
      *
      * The aggregation mode specializations of this method (e.g.
-     * formatMultipleFieldsDiff) are intended to be overriden by field type
+     * formatMultipleFieldsDiff) are intended to be overridden by field type
      * specific columns.
      */
     formatMultipleFields(fields) {
@@ -53495,7 +53495,7 @@ tr.exportTo('tr.ui.analysis', function() {
     /**
      * Compare a pair of single defined fields.
      *
-     * This method is intended to be overriden by field type specific columns.
+     * This method is intended to be overridden by field type specific columns.
      */
     compareSingleFields(fieldA, fieldB) {
       throw new Error('Not implemented');
@@ -53507,7 +53507,7 @@ tr.exportTo('tr.ui.analysis', function() {
      * lists.
      *
      * The aggregation mode specializations of this method (e.g.
-     * compareMultipleFieldsDiff) are intended to be overriden by field type
+     * compareMultipleFieldsDiff) are intended to be overridden by field type
      * specific columns.
      */
     compareMultipleFields(fieldsA, fieldsB) {
@@ -54013,7 +54013,7 @@ tr.exportTo('tr.ui.analysis', function() {
       /**
        * Rebuild the pane if necessary.
        *
-       * This method is not intended to be overriden by subclasses. Please
+       * This method is not intended to be overridden by subclasses. Please
        * override scheduleRebuild_() instead.
        */
       if (!this.paneDirty_) {
@@ -54040,7 +54040,7 @@ tr.exportTo('tr.ui.analysis', function() {
     /**
      * Called when the pane is dirty and a rebuild is triggered.
      *
-     * This method is intended to be overriden by subclasses (instead of
+     * This method is intended to be overridden by subclasses (instead of
      * directly overriding rebuild()).
      */
     onRebuild_() {
@@ -57386,7 +57386,7 @@ Polymer({
     if (!this.listeners_) {
       // Instead of initializing the listeners map in a created() callback,
       // we do it lazily here so that subclasses could provide their own
-      // created() callback (Polymer currently doesn't allow calling overriden
+      // created() callback (Polymer currently doesn't allow calling overridden
       // superclass methods in strict mode).
       this.listeners_ = new WeakMap();
     }
@@ -77448,7 +77448,7 @@ tr.exportTo('tr.model.helpers', function() {
   AndroidSurfaceFlinger.createForProcessIfPossible = function(process) {
     const mainThread = process.getThread(process.pid);
 
-    // newer versions - main thread, lowercase name, preceeding forward slash
+    // newer versions - main thread, lowercase name, preceding forward slash
     if (mainThread && mainThread.name &&
         /surfaceflinger/.test(mainThread.name)) {
       return new AndroidSurfaceFlinger(process, mainThread);
@@ -78395,7 +78395,7 @@ tr.exportTo('tr.e.chrome', function() {
     __proto__: ObjectInstance.prototype,
 
     /**
-     * Returns the type of the blame context, to be overriden by subclasses.
+     * Returns the type of the blame context, to be overridden by subclasses.
      */
     get blameContextType() {
       throw new Error('Not implemented');
@@ -82814,7 +82814,7 @@ tr.exportTo('tr.e.importer', function() {
       const id = parentId + ':self';
 
       // In the new format all values are 'self' values,
-      // we distingiush these from the totals in the UI via
+      // we distinguish these from the totals in the UI via
       // artificial '<self>' stack frames.
       if (!this.stackFrames[id]) {
         const parentStackFrame = this.stackFrames[parentId];
@@ -90929,7 +90929,7 @@ tr.exportTo('tr.e.importer.linux_perf', function() {
      *  Thread A calls an async function on Thread B. Like above we receive a
      *  binder_transaction message, but the flags differ from above. The
      *  TF_ONEWAY flags are set so we know that when Thread B gets the
-     *  binder_transaction_received with the same transaciton key the total
+     *  binder_transaction_received with the same transaction key the total
      *  transaction is complete.
      *
      * Case Three: 'Prior_receive'
@@ -99739,7 +99739,7 @@ tr.exportTo('tr.e.cc', function() {
           this, ['pendingTree']);
 
       // Move active_tiles into this.tiles. If that doesn't exist then, then as
-      // a backward compatability move tiles into this.tiles.
+      // a backward compatibility move tiles into this.tiles.
       if (this.args.activeTiles !== undefined) {
         this.activeTiles = this.args.activeTiles;
         delete this.args.activeTiles;
@@ -99999,7 +99999,7 @@ tr.exportTo('tr.e.cc', function() {
         this.gpuMemoryUsageInBytes = this.args.gpuMemoryUsage;
       }
 
-      // This check is for backward compatability. It can probably
+      // This check is for backward compatibility. It can probably
       // be removed once we're confident that most traces contain
       // content_rect.
       if (this.contentRect) {
@@ -103056,7 +103056,7 @@ tr.exportTo('tr.ui.e.chrome.cc', function() {
             tmgs.memoryLimitPolicy + ')';
       } else {
         // Old Chromes do not have a globalState on the LTHI dump.
-        // But they do issue a DidManage event wiht the globalstate. Find that
+        // But they do issue a DidManage event with the globalstate. Find that
         // event so that we show some global state.
         const thread = lthi.snapshottedOnThread;
         const didManageTilesSlices = thread.sliceGroup.slices.filter(s => {

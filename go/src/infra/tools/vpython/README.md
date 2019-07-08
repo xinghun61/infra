@@ -118,7 +118,7 @@ Circumstantially, other ways of creating `vpython` CIPD wheel packages include:
   Python wheels for multiple platforms (e.g., Windows, Linux, Mac) in the same
   package. `vpython` will defer to `pip`, which will identify and install only
   the wheel matching the current Python platform.
-- A dependency-resolved package, wihch is a single CIPD package containig
+- A dependency-resolved package, wihch is a single CIPD package containing
   multiple different wheels, perhaps a single package and all of its transitive
   dependencies. This can be used for easy deployment of wheels with complex
   or numerous dependencies.
@@ -139,7 +139,7 @@ Circumstantially, other ways of creating `vpython` CIPD wheel packages include:
 - For LUCI builds, it is deployed and integrated into `PATH` via the build's
   SwarmBucket template.
 
-Bot builds set the `VPYTHON_VIRTUALENV_ROOT` enviornment variable to control
+Bot builds set the `VPYTHON_VIRTUALENV_ROOT` environment variable to control
 the directory that is used to accumulate VirtualEnv deployments.
 
 ## Building

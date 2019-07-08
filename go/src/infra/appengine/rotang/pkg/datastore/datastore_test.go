@@ -834,7 +834,7 @@ func TestUpdateMember(t *testing.T) {
 		fail: true,
 		ctx:  ctxCancel,
 	}, {
-		name: "Update sucess",
+		name: "Update success",
 		ctx:  ctx,
 		store: []rotang.Member{
 			{

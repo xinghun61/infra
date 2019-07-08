@@ -177,7 +177,7 @@ func (sc *swarmingClientImpl) CreateTask(c context.Context, name string, args *S
 					Command:              args.Cmd,
 					Dimensions:           dims,
 					ExecutionTimeoutSecs: args.ExecutionTimeoutSecs,
-					// We never want tasks deduplicated with ealier tasks.
+					// We never want tasks deduplicated with earlier tasks.
 					Idempotent: false,
 				},
 				// There are no fallback task slices.

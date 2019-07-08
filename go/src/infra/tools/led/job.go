@@ -87,7 +87,7 @@ func JobSliceFromTaskSlice(ts *swarming.SwarmingRpcsTaskSlice) (*JobSlice, error
 					delete(ret.S.CipdPkgs[ret.S.KitchenArgs.CheckoutDir], pkgname)
 					ret.U.RecipeCIPDSource = &RecipeCIPDSource{pkgname, vers}
 				} else if iso := props.InputsRef.Isolated; iso != "" {
-					// TODO(iannucci): actually seperate recipe files from the isolated
+					// TODO(iannucci): actually separate recipe files from the isolated
 					// instead of assuming the whole thing is recipes.
 					ret.U.RecipeIsolatedHash = iso
 					props.InputsRef.Isolated = ""

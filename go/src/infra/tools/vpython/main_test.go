@@ -290,7 +290,7 @@ func (tc *testCase) runBypass(c context.Context, t *testing.T, td string, env en
 func testMainRunDelegate(self, v string) int {
 	var p testDelegateParams
 	if err := decodeEnvironmentParam(v, &p); err != nil {
-		log.Fatalf("could not decode enviornment param %q: %s", v, err)
+		log.Fatalf("could not decode environment param %q: %s", v, err)
 	}
 
 	argv := make([]string, 1, len(p.Args)+1)

@@ -169,7 +169,7 @@ message TestRun {
   // to draw repaint overlays to help explain the results (only used in layout tests).
   bool has_repaint_overlay = 7;
 
-  // IsMissingAudio indicates taht the test was supposed to have an audio
+  // IsMissingAudio indicates that the test was supposed to have an audio
   // baseline to compare against, and we didn't find one.
   bool is_missing_audio = 8;
 

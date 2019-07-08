@@ -36,7 +36,7 @@ const (
 
 	// Closed statuses
 
-	// Fixed means work completed, needs verificaiton
+	// Fixed means work completed, needs verification
 	StatusFixed = "Fixed"
 	// Verified means test or reporter verified that the fix works
 	StatusVerified = "Verified"

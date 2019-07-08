@@ -132,7 +132,7 @@ func GetUserAutocompleteHandler(ctx *router.Context) {
 	query := p.ByName("query")
 
 	// TODO: sort by relevance, like position of the match in the result
-	// so that earlier matches rank higer than later matches.
+	// so that earlier matches rank higher than later matches.
 	results := ac.query(query)
 	respData, err := json.Marshal(results)
 	if err != nil {

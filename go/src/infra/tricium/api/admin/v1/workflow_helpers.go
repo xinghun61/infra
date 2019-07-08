@@ -7,7 +7,7 @@ package admin
 import (
 	"fmt"
 
-	"infra/tricium/api/v1"
+	tricium "infra/tricium/api/v1"
 )
 
 // GetNext returns the names of successing workers of the given worker.

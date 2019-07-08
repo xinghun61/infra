@@ -91,7 +91,7 @@ export class IncidentIcon extends PolymerElement {
    * instead start/end with the middle icon, to represent the incident
    * going onto the next week.
    * @param {Object} incident - Object containing incident's data.
-   * @param {Date[]} dates - The list of dates shown on the dashbaord.
+   * @param {Date[]} dates - The list of dates shown on the dashboard.
    */
   _computeStyle(incident, dates) {
     let startPosition = this.getDatePosition(incident.startTime, dates);
@@ -126,7 +126,7 @@ export class IncidentIcon extends PolymerElement {
    * start_time unix and where that time falls within the given dates.
    * @param {string} incidentUnix - string Unix timestamp of start time.
    * @param {Date[]} dates - The list of dates being shown on the
-   * dashbaord.
+   * dashboard.
    */
   getDatePosition(incidentUnix, dates) {
     const NUM_DAYS_DISPLAYED = 7;

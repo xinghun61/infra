@@ -5,9 +5,8 @@ package recipe_engine
 
 import (
 	fmt "fmt"
-	math "math"
-
 	proto "github.com/golang/protobuf/proto"
+	math "math"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -223,10 +222,10 @@ func (*Failure) XXX_OneofWrappers() []interface{} {
 	}
 }
 
-// An unexpected exception occured during execution. Caused by the builtin
+// An unexpected exception occurred during execution. Caused by the builtin
 // Exception class.
 type Exception struct {
-	// Traceback of an exception which occured.
+	// Traceback of an exception which occurred.
 	Traceback            []string `protobuf:"bytes,1,rep,name=traceback,proto3" json:"traceback,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`

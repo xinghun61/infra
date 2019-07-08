@@ -19,7 +19,7 @@
   const REQUEST_ERROR_STATUS = {
     isOpen: false,
     generalState: 'unknown',
-    message: "Error occured while requesting tree status",
+    message: "Error occurred while requesting tree status",
     username: 'RequestError',
     date: UNKNOWN_DATE
   };

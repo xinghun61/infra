@@ -78,7 +78,7 @@ func (SettingsPage) Fields(c context.Context) ([]portal.Field, error) {
 	return fields, nil
 }
 
-// ReadSettings converts query paramters and POST body into settings values.
+// ReadSettings converts query parameters and POST body into settings values.
 func (SettingsPage) ReadSettings(c context.Context) (map[string]string, error) {
 	q := datastore.NewQuery("Tree")
 	results := []*model.Tree{}

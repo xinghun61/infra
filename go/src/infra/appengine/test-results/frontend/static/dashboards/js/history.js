@@ -229,7 +229,7 @@ history.History.prototype = {
 
         // Note: We use window.location.hash rather that window.location.replace
         // because of bugs in Chrome where extra entries were getting created
-        // when back button was pressed and full page navigation was occuring.
+        // when back button was pressed and full page navigation was occurring.
         // FIXME: file those bugs.
         window.location.hash = this._permaLinkURLHash(newState);
     },

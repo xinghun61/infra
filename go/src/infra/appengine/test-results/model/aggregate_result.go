@@ -465,7 +465,7 @@ func (leaf *AggregateTestLeaf) defaultFields() {
 }
 
 // ResultSummary is the type of test failure and count of how many
-// times the running time occured.
+// times the running time occurred.
 type ResultSummary struct {
 	Count int
 	Type  string
@@ -503,7 +503,7 @@ func (rs *ResultSummary) UnmarshalJSON(data []byte) error {
 }
 
 // RuntimeSummary is the running time of a test and count of how many
-// times the running time occured.
+// times the running time occurred.
 type RuntimeSummary struct {
 	Count   int
 	Runtime float64

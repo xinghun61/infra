@@ -463,7 +463,7 @@ func (c *cookRun) run(ctx context.Context, args []string, env environ.Env) *buil
 		}
 
 		// If the build failed, update the build status.
-		// If it suceeded, do not set it just yet, since there are more ways
+		// If it succeeded, do not set it just yet, since there are more ways
 		// the swarming task can fail.
 		switch {
 		case result.InfraFailure != nil:

@@ -71,7 +71,7 @@ type TaskLog struct {
 	// CompileMode is compile mode of the task.
 	CompileMode CompileMode
 
-	// AcceptTime is a time when this task is accpeted by compiler_proxy.
+	// AcceptTime is a time when this task is accepted by compiler_proxy.
 	AcceptTime time.Time
 
 	// StartTime is a time when compiler_proxy started to handle this task.

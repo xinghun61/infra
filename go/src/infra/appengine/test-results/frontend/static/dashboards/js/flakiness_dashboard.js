@@ -622,7 +622,7 @@ function htmlForTestResults(test, revisions)
                   }
                   // We treat three attempts as a special case since many test
                   // runners run the first attempt with other tests in parallel,
-                  // resulting in occassional races. Tests *should* be resilient
+                  // resulting in occasional races. Tests *should* be resilient
                   // to that, so we label them as FLAKY above. If tests still
                   // fail once when run sequentially afterward it's noteworthy
                   // and we label them VERYFLAKY.
