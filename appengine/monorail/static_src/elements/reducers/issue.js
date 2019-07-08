@@ -13,6 +13,7 @@ import * as project from './project.js';
 import {fieldValueMapKey} from
   '../issue-detail/metadata/shared/metadata-helpers.js';
 import {prpcClient} from 'prpc-client-instance.js';
+import {extractTypeForIssue} from './type.js';
 
 // Actions
 const SET_ISSUE_REF = 'SET_ISSUE_REF';
@@ -348,29 +349,7 @@ export const labelRefs = createSelector(
 export const type = createSelector(
   fieldValues,
   labelRefs,
-  (fieldValues, labelRefs) => {
-    if (fieldValues) {
-      // If there is a custom field for "Type", use that for type.
-      const typeFieldValue = fieldValues.find(
-        (f) => (f.fieldRef && f.fieldRef.fieldName.toLowerCase() === 'type')
-      );
-      if (typeFieldValue) {
-        return typeFieldValue.value;
-      }
-    }
-
-    // Otherwise, search through labels for a "Type" label.
-    if (labelRefs) {
-      const typeLabel = labelRefs.find(
-        (l) => l.label.toLowerCase().startsWith('type-'));
-      if (typeLabel) {
-        // Strip length of prefix.
-        return typeLabel.label.substr(5);
-      }
-    }
-
-    return;
-  }
+  (fieldValues, labelRefs) => extractTypeForIssue(fieldValues, labelRefs)
 );
 
 export const restrictions = createSelector(

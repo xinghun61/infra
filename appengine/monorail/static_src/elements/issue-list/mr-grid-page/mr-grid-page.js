@@ -8,6 +8,7 @@ import * as issue from 'elements/reducers/issue.js';
 import * as project from 'elements/reducers/project.js';
 import 'elements/framework/links/mr-issue-link/mr-issue-link.js';
 import './mr-grid-controls.js';
+import './mr-grid.js';
 
 
 export class MrGridPage extends connectStore(LitElement) {
@@ -25,9 +26,13 @@ export class MrGridPage extends connectStore(LitElement) {
         .queryParams=${this.queryParams}
       ></mr-issue-link>`)}
       <br>
-      ${this.fields.map((field) => html`
-        <p>${field.fieldRef.fieldName}</p>`)}
-      `;
+      <mr-grid
+        .issues=${this.issues}
+        .xAttr=${this.queryParams.x}
+        .yAttr=${this.queryParams.y}
+        .cellMode=${this.queryParams.cells}
+      ></mr-grid>
+    `;
   }
 
   static get properties() {
