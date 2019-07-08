@@ -18,9 +18,9 @@ from services.issue_generator import FlakeDetectionGroupIssueGenerator
 from services.issue_generator import FlakyTestIssueGenerator
 from waterfall.test.wf_testcase import WaterfallTestCase
 
-
 # pylint:disable=unused-argument, unused-variable
 # https://crbug.com/947753
+
 
 class FlakeReportUtilTest(WaterfallTestCase):
 
@@ -253,7 +253,7 @@ class FlakeReportUtilTest(WaterfallTestCase):
   @mock.patch.object(
       flake_issue_util, 'SearchOpenIssueIdForFlakyTest', return_value=None)
   @mock.patch.object(monorail_util, 'UpdateBug')
-  @mock.patch.object(monorail_util, 'CreateBug', return_value=66666)
+  @mock.patch.object(monorail_util, 'CreateBug', return_value=666661)
   @mock.patch.object(monorail_util, 'GetMonorailIssueForIssueId')
   def testCreateIssue(self, mock_issue, mock_create_bug_fn, mock_update_bug_fn,
                       *_):
@@ -323,7 +323,7 @@ Automatically posted by the findit-for-me app (https://goo.gl/Ne6KtC)."""
     self.assertEqual('test', issue.field_values[0].to_dict()['fieldValue'])
 
     flake = Flake.Get('chromium', 'step', 'test')
-    flake_issue = FlakeIssue.Get('chromium', 66666)
+    flake_issue = FlakeIssue.Get('chromium', 666661)
     self.assertEqual(
         datetime.datetime(2018, 1, 2),
         flake_issue.last_updated_time_by_flake_detection)
@@ -339,7 +339,7 @@ Automatically posted by the findit-for-me app (https://goo.gl/Ne6KtC)."""
       return_value=None)
   @mock.patch.object(flake_issue_util, 'SearchOpenIssueIdForFlakyTest')
   @mock.patch.object(monorail_util, 'UpdateIssueWithIssueGenerator')
-  @mock.patch.object(monorail_util, 'CreateBug', return_value=66666)
+  @mock.patch.object(monorail_util, 'CreateBug', return_value=666662)
   @mock.patch.object(monorail_util, 'GetMonorailIssueForIssueId')
   def testLinkIssueFromMonorail(self, mock_issue, mock_create_bug_fn,
                                 mock_update_bug_fn, mock_search_open_bug, *_):
@@ -371,7 +371,7 @@ Automatically posted by the findit-for-me app (https://goo.gl/Ne6KtC)."""
     ]
 
     def MockSearchOpenBug(test_name, _monorail_project):
-      return 12345 if test_name == 'test0' else 66666
+      return 12345 if test_name == 'test0' else 666662
 
     mock_search_open_bug.side_effect = MockSearchOpenBug
 
@@ -383,7 +383,7 @@ Automatically posted by the findit-for-me app (https://goo.gl/Ne6KtC)."""
     self.assertFalse(mock_create_bug_fn.called)
     self.assertTrue(mock_update_bug_fn.called)
     flake = Flake.Get('chromium', 'step', 'test')
-    flake_issue = FlakeIssue.Get('chromium', 66666)
+    flake_issue = FlakeIssue.Get('chromium', 666662)
     self.assertIsNone(flake_issue.last_updated_time_by_flake_detection)
     self.assertEqual(flake.flake_issue_key, flake_issue.key)
 
