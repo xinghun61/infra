@@ -186,5 +186,32 @@ func TestTBRRules(t *testing.T) {
 			So(rr.RuleResultStatus, ShouldEqual, expectedStatus)
 			So(testClients.gerrit.(*mockGerritClient).calls, ShouldResemble, gerritCalls)
 		})
+		Convey("Skip", func() {
+			expectedStatus = ruleSkipped
+			rc.AuthorAccount = "recipe-mega-autoroller@chops-service-accounts.iam.gserviceaccount.com"
+			// Inject gitiles response.
+			gitilesMockClient := gitilespb.NewMockGitilesClient(gomock.NewController(t))
+			testClients.gitilesFactory = func(host string, httpClient *http.Client) (gitilespb.GitilesClient, error) {
+				return gitilesMockClient, nil
+			}
+			gitilesMockClient.EXPECT().Log(gomock.Any(), &gitilespb.LogRequest{
+				Project:    "a",
+				Committish: "7b12c0de1",
+				PageSize:   1,
+			}).Return(&gitilespb.LogResponse{
+				Log: []*git.Commit{
+					{
+						Id: "7b12c0de1",
+						Committer: &git.Commit_User{
+							Time: mustGitilesTime("Fri Aug 25 07:00:00 2017"),
+						},
+					},
+				},
+			}, nil)
+			rr := ChangeReviewed{}.Run(ctx, ap, rc, testClients)
+			// Check result code.
+			So(rr.RuleResultStatus, ShouldEqual, expectedStatus)
+
+		})
 	})
 }
