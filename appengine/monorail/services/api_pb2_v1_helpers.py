@@ -472,8 +472,7 @@ def _get_user_email(user_service, cnxn, user_id):
   if not user_id:
     # _get_user_email should handle getting emails for optional user values,
     # like issue.owner where user_id may be None.
-    # TODO(jojwang): monorail:5740, this should return USER_NOT_FOUND.
-    return framework_constants.DELETED_USER_NAME
+    return framework_constants.NO_USER_NAME
   try:
     user_email = user_service.LookupUserEmail(
             cnxn, user_id)

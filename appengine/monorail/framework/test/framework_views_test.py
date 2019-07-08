@@ -171,15 +171,6 @@ class UserViewTest(unittest.TestCase):
     self.assertEqual(user_view.obscure_email, '')
     self.assertEqual(user_view.profile_url, '')
 
-  def testDeletedUserOld(self):
-    deleted_user = user_pb2.User(user_id=0)
-    user_view = framework_views.UserView(deleted_user)
-    self.assertEqual(
-        user_view.display_name, framework_constants.DELETED_USER_NAME)
-    self.assertEqual(user_view.email, '')
-    self.assertEqual(user_view.obscure_email, '')
-    self.assertEqual(user_view.profile_url, '')
-
 class RevealEmailsToMembersTest(unittest.TestCase):
 
   def setUp(self):

@@ -481,10 +481,9 @@ class ApiV1HelpersTest(unittest.TestCase):
         self.services.user, '', framework_constants.DELETED_USER_ID)
     self.assertEqual(framework_constants.DELETED_USER_NAME, deleted)
 
-    # TODO(jojwang): monorail: 5740, change to NO_USER_NAME
     none_user_id = api_pb2_v1_helpers._get_user_email(
         self.services.user, '', None)
-    self.assertEqual(framework_constants.DELETED_USER_NAME, none_user_id)
+    self.assertEqual(framework_constants.NO_USER_NAME, none_user_id)
 
   def testSplitRemoveAdd(self):
     """Test split_remove_add."""
