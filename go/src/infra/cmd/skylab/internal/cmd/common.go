@@ -23,8 +23,8 @@ import (
 	swarming_api "go.chromium.org/luci/common/api/swarming/swarming/v1"
 	"go.chromium.org/luci/common/data/strpair"
 	"go.chromium.org/luci/common/errors"
+	lflag "go.chromium.org/luci/common/flag"
 
-	"infra/cmd/skylab/internal/flagx"
 	"infra/cmd/skylab/internal/site"
 	"infra/libs/skylab/swarming"
 )
@@ -73,7 +73,7 @@ type removalReason struct {
 func (rr *removalReason) Register(f *flag.FlagSet) {
 	f.StringVar(&rr.bug, "bug", "", "Bug link for why DUT is being removed.  Required.")
 	f.StringVar(&rr.comment, "comment", "", "Short comment about why DUT is being removed.")
-	f.Var(flagx.RelativeTime{T: &rr.expire}, "expires-in", "Expire removal reason in `days`.")
+	f.Var(lflag.RelativeTime{T: &rr.expire}, "expires-in", "Expire removal reason in `days`.")
 }
 
 // httpClient returns an HTTP client with authentication set up.

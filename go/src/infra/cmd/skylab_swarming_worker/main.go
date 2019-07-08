@@ -45,7 +45,6 @@ import (
 	"infra/cmd/skylab_swarming_worker/internal/autotest/constants"
 	"infra/cmd/skylab_swarming_worker/internal/event"
 	"infra/cmd/skylab_swarming_worker/internal/fifo"
-	"infra/cmd/skylab_swarming_worker/internal/flagx"
 	"infra/cmd/skylab_swarming_worker/internal/lucifer"
 	"infra/cmd/skylab_swarming_worker/internal/parser"
 	"infra/cmd/skylab_swarming_worker/internal/swmbot"
@@ -90,7 +89,7 @@ func parseArgs() *args {
 		"This is a client side test")
 	flag.Var(lflag.CommaList(&a.xProvisionLabels), "provision-labels",
 		"Labels to provision, comma separated")
-	flag.Var(flagx.JSONMap(&a.xKeyvals), "keyvals",
+	flag.Var(lflag.JSONMap(&a.xKeyvals), "keyvals",
 		"JSON string of job keyvals")
 	flag.StringVar(&a.xTestArgs, "test-args", "",
 		"Test args (meaning depends on test)")

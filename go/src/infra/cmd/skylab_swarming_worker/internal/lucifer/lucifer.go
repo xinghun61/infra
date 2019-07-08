@@ -11,7 +11,8 @@ import (
 	"strings"
 
 	"infra/cmd/skylab_swarming_worker/internal/autotest/constants"
-	"infra/cmd/skylab_swarming_worker/internal/flagx"
+
+	"go.chromium.org/luci/common/flag"
 )
 
 // Config contains information needed to run Lucifer commands.
@@ -81,7 +82,7 @@ func TestCommand(c Config, r TestArgs) *exec.Cmd {
 		// be skipped within autoserv if the control file demands it.
 		args = append(args, "-x-require-ssp")
 	}
-	args = append(args, "-x-keyvals", flagx.JSONMap(&r.XKeyvals).String())
+	args = append(args, "-x-keyvals", flag.JSONMap(&r.XKeyvals).String())
 	args = append(args, "-x-job-owner", r.XJobOwner)
 	args = append(args, "-x-level", string(r.XLevel))
 	if r.XLocalOnlyHostInfo {
