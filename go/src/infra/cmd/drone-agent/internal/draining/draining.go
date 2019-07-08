@@ -7,7 +7,6 @@ package draining
 
 import (
 	"context"
-	"sync"
 )
 
 // key is a context value key.
@@ -15,30 +14,40 @@ type key struct{}
 
 // value is a context value to store draining status.
 type value struct {
-	m sync.Mutex
-	v bool
+	c chan struct{}
 }
 
 // WithDraining returns a context that can be marked as draining by
 // calling the returned function.
 func WithDraining(ctx context.Context) (context.Context, func()) {
-	var dv value
+	dv := value{
+		c: make(chan struct{}),
+	}
 	ctx = context.WithValue(ctx, key{}, &dv)
 	return ctx, func() {
-		dv.m.Lock()
-		dv.v = true
-		dv.m.Unlock()
+		close(dv.c)
 	}
 }
 
-// IsDraining checks whether the context is marked draining.
+// IsDraining checks whether the context is draining.  If the context
+// is not set up for draining, return false.
 func IsDraining(ctx context.Context) bool {
-	dv, ok := ctx.Value(key{}).(*value)
-	if !ok {
+	select {
+	case <-C(ctx):
+		return true
+	default:
 		return false
 	}
-	dv.m.Lock()
-	v := dv.v
-	dv.m.Unlock()
-	return v
+}
+
+// C returns a channel associated with the draining context.  The
+// channel is closed when the context is draining.  If the context is
+// not set up for draining, return nil (nil channels block forever on
+// receive).
+func C(ctx context.Context) <-chan struct{} {
+	dv, ok := ctx.Value(key{}).(*value)
+	if !ok {
+		return nil
+	}
+	return dv.c
 }
