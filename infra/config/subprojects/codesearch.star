@@ -154,7 +154,7 @@ builder(
 
 chromium_genfiles('and', 'codesearch-gen-chromium-android')
 chromium_genfiles('cro', 'codesearch-gen-chromium-chromiumos')
-chromium_genfiles('fch', 'codesearch-gen-chromium-fuchsia')
+chromium_genfiles('fch', 'codesearch-gen-chromium-fuchsia', os = 'Ubuntu-16.04')
 chromium_genfiles('lnx', 'codesearch-gen-chromium-linux')
 chromium_genfiles('win', 'codesearch-gen-chromium-win', os = 'Windows-10')
 
