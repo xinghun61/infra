@@ -23,7 +23,10 @@ import (
 // LauncherServer represents the Tricium pRPC Launcher server.
 type launcherServer struct{}
 
-// Launch processes one launch request to the Tricium Launcher.
+// Launch processes one launch request.
+//
+// Specifically, this is responsible for generating the workflow, and enqueuing
+// subsequent requests to trigger initial workers and update datastore.
 func (r *launcherServer) Launch(c context.Context, req *admin.LaunchRequest) (res *admin.LaunchResponse, err error) {
 	defer func() {
 		err = grpcutil.GRPCifyAndLogErr(c, err)
@@ -42,9 +45,7 @@ func (r *launcherServer) Launch(c context.Context, req *admin.LaunchRequest) (re
 	return &admin.LaunchResponse{}, nil
 }
 
-// validateAnalyzeRequest returns an error if the request is invalid.
-//
-// The returned error should be tagged for gRPC by the caller.
+// validateLaunchRequest returns an error if the request is invalid.
 func validateLaunchRequest(req *admin.LaunchRequest) error {
 	if req.RunId == 0 {
 		return errors.New("missing run ID")
