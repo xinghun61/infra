@@ -190,7 +190,7 @@ func handlePubSubMessage(c context.Context, msg *pubsub.PubsubMessage) error {
 	if err == ds.ErrNoSuchEntity {
 		received.RunID = tr.RunId
 		received.Worker = tr.Worker
-		if err := ds.Put(c, received); err != nil {
+		if err = ds.Put(c, received); err != nil {
 			return errors.Annotate(err, "failed to store receivedPubSubMessage").Err()
 		}
 	} else {
@@ -261,7 +261,7 @@ func decodePubsubMessage(c context.Context, msg *pubsub.PubsubMessage) (*admin.T
 		Userdata            string `json:"userdata"`
 		BuildbucketUserdata string `json:"user_data"`
 	}{}
-	if err := json.Unmarshal(data, &p); err != nil {
+	if err = json.Unmarshal(data, &p); err != nil {
 		return nil, "", 0, errors.Annotate(err, "failed to unmarshal pubsub JSON payload").Err()
 	}
 	var rawUserdata string

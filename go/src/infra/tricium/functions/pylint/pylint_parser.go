@@ -15,7 +15,7 @@ import (
 	"regexp"
 	"strconv"
 
-	"infra/tricium/api/v1"
+	tricium "infra/tricium/api/v1"
 )
 
 // The pylint output format specification.
@@ -55,7 +55,7 @@ func main() {
 
 	// Read Tricium input FILES data.
 	input := &tricium.Data_Files{}
-	if err := tricium.ReadDataType(*inputDir, input); err != nil {
+	if err = tricium.ReadDataType(*inputDir, input); err != nil {
 		log.Fatalf("Failed to read FILES data: %v", err)
 	}
 	log.Printf("Read FILES data.")

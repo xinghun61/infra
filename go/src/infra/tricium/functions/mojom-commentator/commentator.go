@@ -42,13 +42,13 @@ func main() {
 	// Create RESULTS data.
 	for _, file := range files {
 		p := file.Path
-		file, err := os.Open(filepath.Join(*inputDir, p))
+		f, err := os.Open(filepath.Join(*inputDir, p))
 		if err != nil {
 			log.Fatalf("Failed to open file %q: %v", p, err)
 		}
-		comments := analyzeFile(bufio.NewScanner(file), p)
+		comments := analyzeFile(bufio.NewScanner(f), p)
 		output.Comments = append(output.Comments, comments...)
-		if err := file.Close(); err != nil {
+		if err := f.Close(); err != nil {
 			log.Fatalf("Failed to close file %q: %v", p, err)
 		}
 	}

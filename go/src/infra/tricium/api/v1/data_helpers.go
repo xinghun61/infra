@@ -63,7 +63,7 @@ func WriteDataType(prefix string, t proto.Message) (string, error) {
 		return p, fmt.Errorf("failed to get path for type: %v", err)
 	}
 	path := path.Join(prefix, p)
-	if err := os.MkdirAll(filepath.Dir(path), os.ModePerm); err != nil {
+	if err = os.MkdirAll(filepath.Dir(path), os.ModePerm); err != nil {
 		return path, fmt.Errorf("failed to make directories for path: %v", err)
 	}
 	f, err := os.Create(path)

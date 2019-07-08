@@ -8,7 +8,7 @@ import (
 	"bufio"
 	"flag"
 	"fmt"
-	"infra/tricium/api/v1"
+	tricium "infra/tricium/api/v1"
 	"log"
 	"os"
 	"os/exec"
@@ -51,7 +51,7 @@ func main() {
 
 	// Read Tricium input FILES data.
 	input := &tricium.Data_Files{}
-	if err := tricium.ReadDataType(*inputDir, input); err != nil {
+	if err = tricium.ReadDataType(*inputDir, input); err != nil {
 		log.Fatalf("Failed to read FILES data: %v", err)
 	}
 	log.Printf("Read FILES data.")
@@ -65,7 +65,7 @@ func main() {
 	cmd := exec.Command("git", "init")
 	cmd.Dir = *inputDir
 	log.Printf("Running cmd: %s", cmd.Args)
-	if err := cmd.Run(); err != nil {
+	if err = cmd.Run(); err != nil {
 		log.Fatalf("Failed to run command %s", err)
 	}
 

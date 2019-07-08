@@ -88,7 +88,6 @@ func run(r *runner.Runner, inputDir, outputDir, pathFilters string) {
 
 	var warns []runner.Warning
 	if len(paths) > 0 {
-		var err error
 		warns, err = r.Warnings(paths...)
 		if err != nil {
 			log.Fatalf("Error running shellcheck: %v", err)

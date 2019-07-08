@@ -29,7 +29,7 @@ func (r *TriciumServer) ReportNotUseful(c context.Context, req *tricium.ReportNo
 	logging.Fields{
 		"commentID": req.CommentId,
 	}.Infof(c, "Request received.")
-	if err := validateReportRequest(c, req); err != nil {
+	if err = validateReportRequest(c, req); err != nil {
 		return nil, err
 	}
 	response, err := reportNotUseful(c, req.CommentId)
@@ -57,7 +57,7 @@ func reportNotUseful(c context.Context, commentID string) (*tricium.ReportNotUse
 		return nil, err
 	}
 
-	if err := streamToBigQuery(c, comment); err != nil {
+	if err = streamToBigQuery(c, comment); err != nil {
 		return nil, err
 	}
 

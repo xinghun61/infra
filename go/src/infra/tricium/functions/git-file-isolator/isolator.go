@@ -18,7 +18,7 @@ import (
 
 	"go.chromium.org/luci/common/data/stringset"
 
-	"infra/tricium/api/v1"
+	tricium "infra/tricium/api/v1"
 )
 
 func main() {
@@ -48,7 +48,7 @@ func main() {
 		log.Fatalf("Failed to setup temporary directory: %v", err)
 	}
 	defer func() {
-		if err := os.RemoveAll(tempDir); err != nil {
+		if err = os.RemoveAll(tempDir); err != nil {
 			log.Fatalf("Failed to clean up temporary directory %q: %v", tempDir, err)
 		}
 	}()
@@ -65,7 +65,7 @@ func main() {
 		c.Dir = tempDir
 		c.Stderr = &stderr
 		log.Printf("Running cmd: %s", c.Args)
-		if err := c.Run(); err != nil {
+		if err = c.Run(); err != nil {
 			log.Fatalf("Failed to run command %s\n%v\nStderr: %s", c.Args, err, stderr.String())
 		}
 	}
@@ -85,7 +85,7 @@ func main() {
 	for _, file := range files {
 		c.Args = append(c.Args, file.Path)
 	}
-	if err := c.Run(); err != nil {
+	if err = c.Run(); err != nil {
 		log.Fatalf("Failed to run command: %v, cmd: %s", err, c.Args)
 	}
 

@@ -135,7 +135,7 @@ func main() {
 // Analyzes file line by line to find misspellings within comments.
 func analyzeFile(scanner *bufio.Scanner, path string, checkEveryWord bool, patterns *commentFormat, results *tricium.Data_Results) {
 	lineNum := 1
-	state := noComment
+	s := noComment
 
 	for scanner.Scan() {
 		line := scanner.Text()
@@ -152,14 +152,14 @@ func analyzeFile(scanner *bufio.Scanner, path string, checkEveryWord bool, patte
 				analyzeWords(commentWord, "", lineNum, startIdx, path, &comments)
 				results.Comments = append(results.Comments, comments...)
 			} else {
-				state.processCommentWord(commentWord, patterns, lineNum, startIdx, path, &comments)
+				s.processCommentWord(commentWord, patterns, lineNum, startIdx, path, &comments)
 				results.Comments = append(results.Comments, comments...)
 			}
 		}
 
 		// End of line; reset state if it is a single line comment.
-		if state == lineComment {
-			state = noComment
+		if s == lineComment {
+			s = noComment
 		}
 
 		lineNum++

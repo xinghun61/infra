@@ -144,7 +144,7 @@ func launch(c context.Context, req *admin.LaunchRequest, cp config.ProviderAPI, 
 	}
 	return ds.RunInTransaction(c, func(c context.Context) (err error) {
 		// Store workflow config.
-		if err := ds.Put(c, wfConfig); err != nil {
+		if err = ds.Put(c, wfConfig); err != nil {
 			return errors.Annotate(err, "failed to store workflow").Err()
 		}
 		// Run the below two operations in parallel.

@@ -19,7 +19,7 @@ import (
 	"go.chromium.org/luci/grpc/grpcutil"
 
 	admin "infra/tricium/api/admin/v1"
-	"infra/tricium/api/v1"
+	tricium "infra/tricium/api/v1"
 	"infra/tricium/appengine/common"
 	"infra/tricium/appengine/common/config"
 	"infra/tricium/appengine/common/track"
@@ -43,7 +43,7 @@ func (r *TriciumServer) Analyze(c context.Context, req *tricium.AnalyzeRequest) 
 	defer func() {
 		err = grpcutil.GRPCifyAndLogErr(c, err)
 	}()
-	if err := validateAnalyzeRequest(c, req); err != nil {
+	if err = validateAnalyzeRequest(c, req); err != nil {
 		return nil, err
 	}
 	runID, err := analyzeWithAuth(c, req, config.LuciConfigServer)

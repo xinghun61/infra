@@ -99,7 +99,7 @@ func run() int {
 		log.Fatalf("Unable to setup gosec environment: %v", err)
 	}
 	defer func() {
-		if err := cleanupEnv(envDir); err != nil {
+		if err = cleanupEnv(envDir); err != nil {
 			log.Fatalf("Unable to clean up gosec environment: %v", err)
 		}
 	}()
@@ -113,8 +113,8 @@ func run() int {
 
 	output := &tricium.Data_Results{}
 	for _, issue := range issues {
-		codeLine, err := strconv.Atoi(issue.Line)
-		if err != nil {
+		codeLine := 0
+		if codeLine, err = strconv.Atoi(issue.Line); err != nil {
 			log.Printf("Unable to convert line number: %s", issue.Line)
 			continue
 		}

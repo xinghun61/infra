@@ -20,7 +20,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 
-	"infra/tricium/api/v1"
+	tricium "infra/tricium/api/v1"
 	"infra/tricium/appengine/common/config"
 )
 
@@ -80,7 +80,7 @@ func analyzeHandler(ctx *router.Context) {
 		return
 	}
 	ar := &tricium.AnalyzeRequest{}
-	if err := proto.Unmarshal(body, ar); err != nil {
+	if err = proto.Unmarshal(body, ar); err != nil {
 		logging.WithError(err).Errorf(c, "Failed to unmarshal request.")
 		w.WriteHeader(http.StatusBadRequest)
 		return

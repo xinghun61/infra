@@ -36,10 +36,10 @@ func (*trackerServer) WorkerDone(c context.Context, req *admin.WorkerDoneRequest
 	defer func() {
 		err = grpcutil.GRPCifyAndLogErr(c, err)
 	}()
-	if err := validateWorkerDoneRequest(req); err != nil {
+	if err = validateWorkerDoneRequest(req); err != nil {
 		return nil, errors.Annotate(err, "invalid request").Tag(grpcutil.InvalidArgumentTag).Err()
 	}
-	if err := workerDone(c, req, common.IsolateServer); err != nil {
+	if err = workerDone(c, req, common.IsolateServer); err != nil {
 		return nil, errors.Annotate(err, "failed to track worker completion").Tag(grpcutil.InternalTag).Err()
 	}
 	return &admin.WorkerDoneResponse{}, nil
@@ -124,7 +124,7 @@ func createAnalysisResults(wres *track.WorkerRunResult, areq *track.AnalyzeReque
 			return nil, err
 		}
 		tcomment := tricium.Data_Comment{}
-		if err := jsonpb.UnmarshalString(string(comment.Comment), &tcomment); err != nil {
+		if err = jsonpb.UnmarshalString(string(comment.Comment), &tcomment); err != nil {
 			return nil, err
 		}
 		p, err := getPlatforms(comment.Platforms)
@@ -232,7 +232,7 @@ func workerDone(c context.Context, req *admin.WorkerDoneRequest, isolator common
 
 	// If this worker is already marked as done, abort.
 	workerRes := &track.WorkerRunResult{ID: 1, Parent: workerKey}
-	if err := ds.Get(c, workerRes); err != nil {
+	if err = ds.Get(c, workerRes); err != nil {
 		return errors.Annotate(err, "failed to read state of WorkerRunResult").Err()
 	}
 	if tricium.IsDone(workerRes.State) {
@@ -244,7 +244,7 @@ func workerDone(c context.Context, req *admin.WorkerDoneRequest, isolator common
 
 	// Get run entity for this worker.
 	run := &track.WorkflowRun{ID: 1, Parent: requestKey}
-	if err := ds.Get(c, run); err != nil {
+	if err = ds.Get(c, run); err != nil {
 		return errors.Annotate(err, "failed to get WorkflowRun").Err()
 	}
 
@@ -312,8 +312,8 @@ func workerDone(c context.Context, req *admin.WorkerDoneRequest, isolator common
 	// Compute the overall worflow run state.
 	var runResults []*track.FunctionRunResult
 	for _, name := range run.Functions {
-		functionRunKey := ds.NewKey(c, "FunctionRun", name, 0, workflowRunKey)
-		runResults = append(runResults, &track.FunctionRunResult{ID: 1, Parent: functionRunKey})
+		p := ds.NewKey(c, "FunctionRun", name, 0, workflowRunKey)
+		runResults = append(runResults, &track.FunctionRunResult{ID: 1, Parent: p})
 	}
 	if err := ds.Get(c, runResults); err != nil {
 		return errors.Annotate(err, "failed to retrieve FunctionRunResult entities").Err()
@@ -365,7 +365,7 @@ func workerDone(c context.Context, req *admin.WorkerDoneRequest, isolator common
 				if len(comments) == 0 {
 					return nil
 				}
-				if err := ds.Put(c, comments); err != nil {
+				if err = ds.Put(c, comments); err != nil {
 					return errors.Annotate(err, "failed to add Comment entries").Err()
 				}
 				entities := make([]interface{}, 0, len(comments)*2)

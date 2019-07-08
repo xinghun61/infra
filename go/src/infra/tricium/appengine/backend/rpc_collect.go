@@ -126,7 +126,7 @@ func collect(c context.Context, req *admin.CollectRequest,
 	}
 	t := tq.NewPOSTTask("/tracker/internal/worker-done", nil)
 	t.Payload = b
-	if err := tq.Add(c, common.TrackerQueue, t); err != nil {
+	if err = tq.Add(c, common.TrackerQueue, t); err != nil {
 		return errors.Annotate(err, "failed to enqueue track request").Err()
 	}
 
@@ -154,7 +154,7 @@ func collect(c context.Context, req *admin.CollectRequest,
 			t.Payload = b
 			tasks = append(tasks, t)
 		}
-		if err := tq.Add(c, common.TrackerQueue, tasks...); err != nil {
+		if err = tq.Add(c, common.TrackerQueue, tasks...); err != nil {
 			return errors.Annotate(err, "failed to enqueue track request").Err()
 		}
 		return nil
