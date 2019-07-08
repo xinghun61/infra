@@ -4,8 +4,11 @@
 
 import json
 
+from recipe_engine import post_process
+
 
 DEPS = [
+  'recipe_engine/assertions',
   'recipe_engine/buildbucket',
   'recipe_engine/context',
   'recipe_engine/json',
@@ -23,43 +26,38 @@ def RunSteps(api):
   url = 'https://chromium.googlesource.com/infra/infra'
   rev = 'deadbeef' * 5
   # Assume path is where infra/infra is repo is checked out.
-  path = api.path['builder_cache'].join('assume', 'infra')
+  path = api.path['cache'].join('builder', 'assume', 'infra')
   with api.infra_cipd.context(
       path_to_repo=path,
       goos=api.properties.get('goos'),
       goarch=api.properties.get('goarch')):
     api.infra_cipd.build()
     api.infra_cipd.test()
-    if api.properties.get('buildnumber'):
+    if not api.properties.get('no_buildnumbers'):
       api.infra_cipd.upload(api.infra_cipd.tags(url, rev))
+    else:
+      with api.assertions.assertRaises(ValueError):
+        api.infra_cipd.upload(api.infra_cipd.tags(url, rev))
 
 
 def GenTests(api):
   yield (
     api.test('luci-native') +
-    api.properties(
-      path_config='generic',
-      buildername='native',
-      buildnumber=5,
-    ) +
-    api.buildbucket.ci_build('infra-internal', 'ci', 'native') +
+    api.buildbucket.ci_build('infra-internal', 'ci', 'native', build_number=5) +
     api.runtime(is_luci=True, is_experimental=False))
   yield (
     api.test('luci-cross') +
     api.properties(
-      path_config='generic',
       goos='linux',
       goarch='arm64',
-      buildername='cross',
-      buildnumber=5,
     ) +
-    api.buildbucket.ci_build('infra-internal', 'ci', 'cross') +
+    api.buildbucket.ci_build('infra-internal', 'ci', 'cross', build_number=5) +
     api.runtime(is_luci=True, is_experimental=False))
   yield (
     api.test('no-buildnumbers') +
     api.properties(
-      path_config='generic',
-      buildername='just-build-and-test',
+      no_buildnumbers=True,
     ) +
     api.buildbucket.ci_build('infra-internal', 'ci', 'just-build-and-test') +
-    api.runtime(is_luci=True, is_experimental=False))
+    api.runtime(is_luci=True, is_experimental=False) +
+    api.post_process(post_process.DropExpectation))

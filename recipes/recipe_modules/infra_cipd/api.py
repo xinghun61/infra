@@ -16,9 +16,8 @@ class InfraCIPDApi(recipe_api.RecipeApi):
   and its internal counterpart.
   """
 
-  def __init__(self, buildnumber, **kwargs):
+  def __init__(self, **kwargs):
     super(InfraCIPDApi, self).__init__(**kwargs)
-    self._buildnumber = buildnumber
     self._cur_ctx = None  # (path_to_repo, name_prefix)
 
   @contextlib.contextmanager
@@ -105,13 +104,13 @@ class InfraCIPDApi(recipe_api.RecipeApi):
 
   def tags(self, git_repo_url, revision):
     """Returns tags to be attached to uploaded CIPD packages."""
-    if self._buildnumber == -1:
-      raise ValueError('buildnumbers must be enabled')  # pragma: no cover
+    if self.m.buildbucket.build.number <= 0:
+      raise ValueError('buildnumbers must be enabled')
     return [
       'luci_build:%s/%s/%s' % (
         self.m.buildbucket.builder_id.bucket,
         self.m.buildbucket.builder_id.builder,
-        self._buildnumber),
+        self.m.buildbucket.build.number),
       'git_repository:%s' % git_repo_url,
       'git_revision:%s' % revision,
     ]

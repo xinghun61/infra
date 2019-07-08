@@ -245,8 +245,9 @@ def GenTests(api):
         api.test(name) +
         api.platform(plat, 64) +
         api.runtime(is_luci=True, is_experimental=is_experimental) +
-        api.properties(path_config='generic', buildnumber=123) +
-        api.buildbucket.ci_build(project, bucket, builder, git_repo=repo)
+        api.buildbucket.ci_build(project, bucket, builder,
+                                 git_repo=repo,
+                                 build_number=123)
     )
 
   yield test('public-ci-linux', 'infra-continuous-trusty-64',

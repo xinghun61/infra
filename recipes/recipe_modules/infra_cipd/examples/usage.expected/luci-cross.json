@@ -3,7 +3,7 @@
     "cmd": [
       "vpython",
       "-u",
-      "[BUILDER_CACHE]/assume/infra/build/build.py",
+      "[CACHE]/builder/assume/infra/build/build.py",
       "--builder",
       "cross"
     ],
@@ -17,7 +17,7 @@
     "cmd": [
       "vpython",
       "-u",
-      "[BUILDER_CACHE]/assume/infra/build/test_packages.py"
+      "[CACHE]/builder/assume/infra/build/test_packages.py"
     ],
     "env": {
       "GOARCH": "arm64",
@@ -29,7 +29,7 @@
     "cmd": [
       "vpython",
       "-u",
-      "[BUILDER_CACHE]/assume/infra/build/build.py",
+      "[CACHE]/builder/assume/infra/build/build.py",
       "--no-rebuild",
       "--upload",
       "--json-output",

@@ -3,7 +3,7 @@
     "cmd": [
       "vpython",
       "-u",
-      "[BUILDER_CACHE]/assume/infra/build/build.py",
+      "[CACHE]/builder/assume/infra/build/build.py",
       "--builder",
       "native"
     ],
@@ -13,7 +13,7 @@
     "cmd": [
       "vpython",
       "-u",
-      "[BUILDER_CACHE]/assume/infra/build/test_packages.py"
+      "[CACHE]/builder/assume/infra/build/test_packages.py"
     ],
     "name": "cipd - test packages integrity"
   },
@@ -21,7 +21,7 @@
     "cmd": [
       "vpython",
       "-u",
-      "[BUILDER_CACHE]/assume/infra/build/build.py",
+      "[CACHE]/builder/assume/infra/build/build.py",
       "--no-rebuild",
       "--upload",
       "--json-output",
