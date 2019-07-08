@@ -138,8 +138,7 @@ func TestGitCommand(t *testing.T) {
 		}
 
 		prepareAgentENV := func(vars ...string) []string {
-			env := environ.New(vars)
-			return env.Sorted()
+			return environ.New(vars).Sorted()
 		}
 
 		var args []string
@@ -147,18 +146,18 @@ func TestGitCommand(t *testing.T) {
 			writeRequest()
 
 			// Clone inputs so we can modify them for the test harness.
-			env := env.Clone()
-			args := append(append([]string(nil), testRunnerArgs...), args...)
-			env.Set(runTestAgentENV, ta.inPath)
+			env2 := env.Clone()
+			args2 := append(append([]string(nil), testRunnerArgs...), args...)
+			env2.Set(runTestAgentENV, ta.inPath)
 
-			rc, err := gc.Run(c, args, env)
+			rc, err := gc.Run(c, args2, env2)
 			if err == nil && rc == testAgentFailedReturnCode {
 				t.Fatalf("Test agent failed: %d", rc)
 			}
 
 			// Read our output JSON. Since we move it on atomic completion, if it is
 			// present, it is expected to be valid.
-			switch _, err := os.Stat(ta.outPath); {
+			switch _, err = os.Stat(ta.outPath); {
 			case err == nil:
 				resp, err := ioutil.ReadFile(ta.outPath)
 				if err != nil {

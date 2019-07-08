@@ -23,7 +23,9 @@ func TestUpdate(t *testing.T) {
 	Convey("In a temporary directory", t, func() {
 		tmpPath, err := ioutil.TempDir("", "cros-devicefile-test")
 		So(err, ShouldBeNil)
-		defer os.RemoveAll(tmpPath)
+		defer func() {
+			So(os.RemoveAll(tmpPath), ShouldBeNil)
+		}()
 		fileNames := []string{
 			strings.Replace(fileGlob, "*", "device1", 1),
 			strings.Replace(fileGlob, "*", "device2", 1),
@@ -31,21 +33,15 @@ func TestUpdate(t *testing.T) {
 		}
 		Convey("Loads a number of empty files", func() {
 			for _, fileName := range fileNames {
-				err := ioutil.WriteFile(filepath.Join(tmpPath,
-					fileName), []byte(""), 0644)
-				So(err, ShouldBeNil)
+				So(ioutil.WriteFile(filepath.Join(tmpPath, fileName), []byte(""), 0644), ShouldBeNil)
 			}
-			err = update(c, tmpPath)
-			So(err, ShouldNotBeNil)
+			So(update(c, tmpPath), ShouldNotBeNil)
 		})
 		Convey("Loads a number of broken files", func() {
 			for _, fileName := range fileNames {
-				err := ioutil.WriteFile(filepath.Join(tmpPath,
-					fileName), []byte(`not json`), 0644)
-				So(err, ShouldBeNil)
+				So(ioutil.WriteFile(filepath.Join(tmpPath, fileName), []byte(`not json`), 0644), ShouldBeNil)
 			}
-			err = update(c, tmpPath)
-			So(err, ShouldNotBeNil)
+			So(update(c, tmpPath), ShouldNotBeNil)
 		})
 	})
 }

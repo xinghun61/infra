@@ -85,11 +85,11 @@ func TestRuntimeSummary(t *testing.T) {
 
 	Convey("RuntimeSummary", t, func() {
 		rs := RuntimeSummary{1, 0.001}
-		b := `[1,0.001]`
 
 		Convey("Unmarshal", func() {
 			Convey("Simple floats", func() {
 				var actual RuntimeSummary
+				b := `[1,0.001]`
 				So(json.Unmarshal([]byte(b), &actual), ShouldBeNil)
 				So(actual, ShouldResemble, rs)
 			})
@@ -114,6 +114,7 @@ func TestRuntimeSummary(t *testing.T) {
 
 		Convey("Marshal", func() {
 			Convey("Simple", func() {
+				b := `[1,0.001]`
 				actual, err := json.Marshal(&rs)
 				So(err, ShouldBeNil)
 				So(actual, ShouldResemble, []byte(b))

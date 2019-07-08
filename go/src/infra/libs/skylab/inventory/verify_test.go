@@ -18,13 +18,17 @@ func TestVerifyInventoryBadFormat(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Error creating temporary directory: %s", err)
 	}
-	defer os.RemoveAll(d)
+	defer func() {
+		if err = os.RemoveAll(d); err != nil {
+			t.Fatal(err)
+		}
+	}()
 
 	files := []string{labFilename, infraFilename}
 	content := []byte("I am bad!")
 	for _, filename := range files {
 		t.Run(filename, func(t *testing.T) {
-			if err := ioutil.WriteFile(filepath.Join(d, filename), content, 0644); err != nil {
+			if err = ioutil.WriteFile(filepath.Join(d, filename), content, 0644); err != nil {
 				t.Fatalf("Error writing to inventory file %s: %s", filename, err)
 			}
 			if filename == labFilename {
@@ -123,11 +127,10 @@ func TestVerifyLabInventoryUnordered(t *testing.T) {
 		}
 		// Change the order by replacing the name from 'host1' to 'host3'.
 		labStr = strings.Replace(labStr, "host1", "host3", 1)
-		if err := ioutil.WriteFile(filepath.Join(d, labFilename), []byte(labStr), 0644); err != nil {
+		if err = ioutil.WriteFile(filepath.Join(d, labFilename), []byte(labStr), 0644); err != nil {
 			t.Fatalf("Error writing to inventory file %s: %s", labFilename, err)
 		}
-		err = VerifyLabInventory(d)
-		if err == nil {
+		if err = VerifyLabInventory(d); err == nil {
 			t.Fatalf("Failed to verify unordered file %s!", labFilename)
 		}
 
@@ -162,11 +165,10 @@ func TestVerifyLabInventoryUnordered(t *testing.T) {
 		}
 		// change the order by replacing the name from 'host1' to 'host3'
 		infraStr = strings.Replace(infraStr, "host1", "host3", 1)
-		if err := ioutil.WriteFile(filepath.Join(d, infraFilename), []byte(infraStr), 0644); err != nil {
+		if err = ioutil.WriteFile(filepath.Join(d, infraFilename), []byte(infraStr), 0644); err != nil {
 			t.Fatalf("Error writing to inventory file %s: %s", infraFilename, err)
 		}
-		err = VerifyInfraInventory(d)
-		if err == nil {
+		if err = VerifyInfraInventory(d); err == nil {
 			t.Fatalf("Failed to verify unordered file %s!", infraFilename)
 		}
 

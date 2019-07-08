@@ -12,7 +12,7 @@ import (
 	. "github.com/smartystreets/goconvey/convey"
 
 	admin "infra/tricium/api/admin/v1"
-	"infra/tricium/api/v1"
+	tricium "infra/tricium/api/v1"
 )
 
 const (
@@ -300,7 +300,6 @@ func TestIncludeFunction(t *testing.T) {
 
 func TestCreateWorker(t *testing.T) {
 	Convey("Test Environment", t, func() {
-		platform := tricium.Platform_UBUNTU
 		analyzer := "PyLint"
 		config := "enable"
 		configValue := "all"
@@ -323,7 +322,7 @@ func TestCreateWorker(t *testing.T) {
 			},
 		}
 		dimension := "pool:Default"
-		sc := &tricium.ServiceConfig{
+		sc2 := &tricium.ServiceConfig{
 			Platforms: []*tricium.Platform_Details{
 				{
 					Name:       platform,
@@ -358,7 +357,7 @@ func TestCreateWorker(t *testing.T) {
 					},
 				},
 			}
-			w, err := createWorker(selection, sc, f, gitRef, gitURL)
+			w, err := createWorker(selection, sc2, f, gitRef, gitURL)
 			So(err, ShouldBeNil)
 			So(w.Name, ShouldEqual, fmt.Sprintf("%s_%s", analyzer, platform))
 			So(w.Needs, ShouldEqual, f.Needs)
@@ -408,7 +407,7 @@ func TestCreateWorker(t *testing.T) {
 					},
 				},
 			}
-			w, err := createWorker(selection, sc, f, gitRef, gitURL)
+			w, err := createWorker(selection, sc2, f, gitRef, gitURL)
 			So(err, ShouldBeNil)
 			So(w.Name, ShouldEqual, fmt.Sprintf("%s_%s", analyzer, platform))
 			So(w.Needs, ShouldEqual, f.Needs)
@@ -468,14 +467,13 @@ func TestCreateWorker(t *testing.T) {
 					},
 				},
 			}
-			w, err := createWorker(selection, sc, f, gitRef, gitURL)
+			w, err := createWorker(selection, sc2, f, gitRef, gitURL)
 			So(err, ShouldBeNil)
 			So(w.Name, ShouldEqual, fmt.Sprintf("%s_%s", analyzer, platform))
 			So(w.Needs, ShouldEqual, f.Needs)
 			So(w.Provides, ShouldEqual, f.Provides)
 			So(w.ProvidesForPlatform, ShouldEqual, platform)
-			So(len(w.Dimensions), ShouldEqual, 1)
-			So(w.Dimensions[0], ShouldEqual, dimension)
+			So(w.Dimensions, ShouldResemble, []string{dimension})
 			So(len(w.CipdPackages), ShouldEqual, 1)
 			So(w.Deadline, ShouldEqual, deadline)
 			wi := w.Impl.(*admin.Worker_Recipe)

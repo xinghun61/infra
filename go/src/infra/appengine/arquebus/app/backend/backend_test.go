@@ -8,13 +8,12 @@ import (
 	"testing"
 	"time"
 
-	. "github.com/smartystreets/goconvey/convey"
+	"infra/appengine/arquebus/app/backend/model"
+	monorail "infra/monorailv2/api/api_proto"
 
+	. "github.com/smartystreets/goconvey/convey"
 	"go.chromium.org/gae/service/datastore"
 	"go.chromium.org/luci/common/clock"
-
-	"infra/appengine/arquebus/app/backend/model"
-	"infra/monorailv2/api/api_proto"
 )
 
 func TestBackend(t *testing.T) {
@@ -53,7 +52,7 @@ func TestBackend(t *testing.T) {
 
 			for _, task := range tasks {
 				So(task.Status, ShouldEqual, model.TaskStatus_Scheduled)
-				task := triggerRunTaskHandler(c, assignerID, task.ID)
+				task = triggerRunTaskHandler(c, assignerID, task.ID)
 
 				So(task.Status, ShouldEqual, model.TaskStatus_Succeeded)
 				So(task.Started.IsZero(), ShouldBeFalse)

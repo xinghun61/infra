@@ -43,7 +43,11 @@ func TestWriteAndLoadLab(t *testing.T) {
 			if err != nil {
 				t.Fatalf("Error creating temporary directory: %s", err)
 			}
-			defer os.RemoveAll(d)
+			defer func() {
+				if err = os.RemoveAll(d); err != nil {
+					t.Fatal(err)
+				}
+			}()
 			if err := WriteLab(lab, d); err != nil {
 				t.Fatal(err)
 			}
@@ -71,7 +75,7 @@ func TestWriteLabPythonifies(t *testing.T) {
 			{Common: &CommonDeviceSpecs{Id: &id, Hostname: &id}},
 		},
 	}
-	if err := WriteLab(l, d); err != nil {
+	if err = WriteLab(l, d); err != nil {
 		t.Fatal(err)
 	}
 

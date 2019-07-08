@@ -204,7 +204,7 @@ func TestUploadAndGetHandlers(t *testing.T) {
 			// Regression test: timestamp 1500791325552 was reported by one of the
 			// test launchers and that broke our #plx pipelines.
 			Convey("with invalid timestamp value", func() {
-				frData := bytes.Replace(
+				frData = bytes.Replace(
 					frData, []byte("1406123456.0"), []byte("1500791325552.0"), 1)
 				req := createTestUploadRequest(srv.URL, "chromium.chromiumos", frData)
 				resp, err := client.Do(req)

@@ -168,7 +168,7 @@ func TestAnnotations(t *testing.T) {
 			})
 
 			Convey("add", func() {
-				ann := &model.Annotation{
+				ann = &model.Annotation{
 					Tree:             datastore.MakeKey(c, "Tree", "tree.unknown"),
 					Key:              "foobar",
 					KeyDigest:        fmt.Sprintf("%x", sha1.Sum([]byte("foobar"))),

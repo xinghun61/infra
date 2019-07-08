@@ -595,7 +595,7 @@ func TestGetTestSuite(t *testing.T) {
 			So(GetTestSuite(s), ShouldEqual, "thing_tests")
 		})
 		Convey("on perf", func() {
-			url, err := url.Parse("https://build.chromium.org/p/chromium.perf")
+			url, err = url.Parse("https://build.chromium.org/p/chromium.perf")
 			So(err, ShouldBeNil)
 			s.Master = &messages.MasterLocation{
 				URL: *url,

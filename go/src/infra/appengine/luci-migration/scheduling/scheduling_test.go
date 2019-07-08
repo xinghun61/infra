@@ -145,13 +145,13 @@ func TestScheduling(t *testing.T) {
 
 		Convey("schedules buildbot builds on LUCI", func() {
 			Convey("shouldExperiment is deterministic", func() {
-				change := &buildbucketpb.GerritChange{
+				chng := &buildbucketpb.GerritChange{
 					Host:     "gerrit.example.com",
 					Change:   1,
 					Patchset: 1,
 				}
-				So(shouldExperiment(change, 50), ShouldBeTrue)
-				So(shouldExperiment(change, 1), ShouldBeFalse)
+				So(shouldExperiment(chng, 50), ShouldBeTrue)
+				So(shouldExperiment(chng, 1), ShouldBeFalse)
 			})
 
 			c = config.Use(c, &config.Config{

@@ -38,19 +38,15 @@ func TestFileGlobbing(t *testing.T) {
 		}
 		Convey("loads a number of empty files", func() {
 			for _, fileName := range fileNames {
-				err := ioutil.WriteFile(filepath.Join(path, fileName), []byte(`{"version": 1, "timestamp": 946782245, "devices": {}}`), 0644)
-				So(err, ShouldBeNil)
+				So(ioutil.WriteFile(filepath.Join(path, fileName), []byte(`{"version": 1, "timestamp": 946782245, "devices": {}}`), 0644), ShouldBeNil)
 			}
-			err = update(c, tmpPath)
-			So(err, ShouldBeNil)
+			So(update(c, tmpPath), ShouldBeNil)
 		})
 		Convey("loads a number of broken files", func() {
 			for _, fileName := range fileNames {
-				err := ioutil.WriteFile(filepath.Join(path, fileName), []byte(`not json`), 0644)
-				So(err, ShouldBeNil)
+				So(ioutil.WriteFile(filepath.Join(path, fileName), []byte(`not json`), 0644), ShouldBeNil)
 			}
-			err = update(c, tmpPath)
-			So(err, ShouldNotBeNil)
+			So(update(c, tmpPath), ShouldNotBeNil)
 		})
 	})
 }

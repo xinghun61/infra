@@ -76,8 +76,8 @@ func TestTestFile(t *testing.T) {
 					ID: 1,
 				}
 				So(tf.PutData(c, func(w io.Writer) error {
-					_, err := w.Write(data)
-					return err
+					_, err2 := w.Write(data)
+					return err2
 				}), ShouldBeNil)
 				So(datastore.Put(c, &tf), ShouldBeNil)
 
@@ -109,8 +109,8 @@ func TestTestFile(t *testing.T) {
 					ID: 1,
 				}
 				So(tf.PutData(c, func(w io.Writer) error {
-					_, err := w.Write(data)
-					return err
+					_, err2 := w.Write(data)
+					return err2
 				}), ShouldBeNil)
 				So(datastore.Put(c, &tf), ShouldBeNil)
 

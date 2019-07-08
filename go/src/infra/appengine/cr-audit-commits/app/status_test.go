@@ -114,8 +114,7 @@ func TestStatusPage(t *testing.T) {
 					if i > 0 {
 						relevantCommit.PreviousRelevantCommit = fmt.Sprintf("%02d%02d%02d", i-1, i-1, i-1)
 					}
-					err := ds.Put(ctx, relevantCommit)
-					So(err, ShouldBeNil)
+					So(ds.Put(ctx, relevantCommit), ShouldBeNil)
 				}
 				resp, err := client.Get(srv.URL + statusPath + "?refUrl=" + url.QueryEscape(
 					"https://new.googlesource.com/new.git/+/master") + "&n=11")

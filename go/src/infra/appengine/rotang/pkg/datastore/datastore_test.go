@@ -1133,8 +1133,8 @@ func TestCreateMember(t *testing.T) {
 				return
 			}
 			defer func() {
-				if err := store.DeleteMember(ctx, tst.email); err != nil {
-					t.Logf("%s: store.DeleteMember(ctx, sm.Email) failed: %v", tst.name, err)
+				if err2 := store.DeleteMember(ctx, tst.email); err2 != nil {
+					t.Logf("%s: store.DeleteMember(ctx, sm.Email) failed: %v", tst.name, err2)
 				}
 			}()
 

@@ -905,8 +905,6 @@ func TestMain(t *testing.T) {
 			})
 
 			Convey("/restarts", func() {
-				c := gaetesting.TestingContext()
-				w := httptest.NewRecorder()
 				c = info.SetFactory(c, func(ic context.Context) info.RawInterface {
 					return giMock{dummy.Info(), "", time.Now(), nil}
 				})

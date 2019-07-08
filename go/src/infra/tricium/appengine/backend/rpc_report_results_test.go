@@ -99,7 +99,7 @@ func TestReportResultsRequest(t *testing.T) {
 
 		Convey("Reports only included comments", func() {
 			mock := &gc.MockRestAPI{ChangedLines: changedLines}
-			err := reportResults(ctx, &admin.ReportResultsRequest{
+			err = reportResults(ctx, &admin.ReportResultsRequest{
 				RunId:    run.ID,
 				Analyzer: "MyLinter",
 			}, mock)
@@ -116,7 +116,7 @@ func TestReportResultsRequest(t *testing.T) {
 			request.GerritReportingDisabled = true
 			So(ds.Put(ctx, request), ShouldBeNil)
 			mock := &gc.MockRestAPI{ChangedLines: changedLines}
-			err := reportResults(ctx, &admin.ReportResultsRequest{
+			err = reportResults(ctx, &admin.ReportResultsRequest{
 				RunId:    run.ID,
 				Analyzer: functionName,
 			}, mock)
@@ -144,7 +144,7 @@ func TestReportResultsRequest(t *testing.T) {
 
 		Convey("Reports when number of comments is at maximum", func() {
 			mock := &gc.MockRestAPI{ChangedLines: changedLines}
-			err := reportResults(ctx, &admin.ReportResultsRequest{
+			err = reportResults(ctx, &admin.ReportResultsRequest{
 				RunId:    run.ID,
 				Analyzer: functionName,
 			}, mock)

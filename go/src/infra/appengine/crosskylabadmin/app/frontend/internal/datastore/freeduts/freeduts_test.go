@@ -26,7 +26,6 @@ import (
 
 func TestDatastore(t *testing.T) {
 	t.Parallel()
-	ctx := context.Background()
 	d := DUT{
 		ID:         "5208f074-8632-4665-ab9e-324579917f36",
 		Hostname:   "yorktown.example.com",
@@ -41,7 +40,7 @@ func TestDatastore(t *testing.T) {
 
 	t.Run("add and get all", func(t *testing.T) {
 		t.Parallel()
-		ctx := memory.Use(ctx)
+		ctx := memory.Use(context.Background())
 		if err := Add(ctx, []DUT{d}); err != nil {
 			t.Fatalf("Add returned error: %s", err)
 		}
@@ -59,7 +58,7 @@ func TestDatastore(t *testing.T) {
 
 	t.Run("remove", func(t *testing.T) {
 		t.Parallel()
-		ctx := memory.Use(ctx)
+		ctx := memory.Use(context.Background())
 		if err := Add(ctx, []DUT{d, d2}); err != nil {
 			t.Fatalf("Add returned error: %s", err)
 		}
@@ -80,7 +79,7 @@ func TestDatastore(t *testing.T) {
 
 	t.Run("remove missing DUT does not error", func(t *testing.T) {
 		t.Parallel()
-		ctx := memory.Use(ctx)
+		ctx := memory.Use(context.Background())
 		if err := Remove(ctx, []DUT{d}); err != nil {
 			t.Fatalf("Remove returned error: %s", err)
 		}
