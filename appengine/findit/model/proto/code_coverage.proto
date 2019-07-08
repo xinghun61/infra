@@ -22,7 +22,7 @@ message LineRange {
   //
   // If the coverage tool doesn't support counting how many times a line was
   // executed, the value could only be 1 or 0; otherwise the value could be
-  // larger than 1. If the values ar the exactly the same for a few consecutive
+  // larger than 1. If the values are the exactly the same for a few consecutive
   // lines, they could be merged into one bigger line range.
   // For example, four small ranges in the middle are merged into a bigger one.
   // |line number|actual count|
