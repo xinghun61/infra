@@ -4,8 +4,10 @@
 
 // +build android
 
-// Watchdog daemon for android devices. It will attempt to reboot the device
-// if its uptime exceeds a specified maximum.
+// device_watchdog is a watchdog daemon for android devices. It will attempt to
+// reboot the device if its uptime exceeds a specified maximum.
+//
+// This executable is android-only.
 package main
 
 /*
@@ -151,7 +153,7 @@ func dumpState(c context.Context) error {
 		return err
 	}
 	// Explicitly flush the changes to disk here to avoid the subsequent
-	// reboot from occuring before the system automatically flushes.
+	// reboot from occurring before the system automatically flushes.
 	if err := f.Sync(); err != nil {
 		return err
 	}
