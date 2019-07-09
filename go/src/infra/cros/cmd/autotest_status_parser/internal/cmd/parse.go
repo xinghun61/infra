@@ -19,6 +19,7 @@ import (
 )
 
 const (
+	testSubdir         = "autoserv_test"
 	resultsSummaryFile = "status.log"
 
 	verdictStringPrefix = "END "
@@ -77,7 +78,7 @@ func (c *parseRun) validateArgs() error {
 // getTestResults extracts all test case results from the status.log file
 // inside the given results directory.
 func getTestResults(dir string) skylab_test_runner.Result {
-	resultsSummaryPath := path.Join(dir, resultsSummaryFile)
+	resultsSummaryPath := path.Join(dir, testSubdir, resultsSummaryFile)
 	resultsSummaryContent, err := ioutil.ReadFile(resultsSummaryPath)
 
 	if err != nil {
