@@ -47,19 +47,21 @@ def _fix_build_async(build_key):  # pragma: no cover
 
   to_put = []
 
-  if not in_props and build.input_properties_bytes:
+  if not in_props:
     to_put.append(
         model.BuildInputProperties(
             key=in_props_key,
-            properties=build.input_properties_bytes,
+            properties=build.input_properties_bytes or '',
         )
     )
 
-  if not build_infra and build.infra_bytes:
-    to_put.append(model.BuildInfra(
-        key=infra_key,
-        infra=build.infra_bytes,
-    ))
+  if not build_infra:
+    to_put.append(
+        model.BuildInfra(
+            key=infra_key,
+            infra=build.parse_infra().SerializeToString(),
+        )
+    )
 
   if to_put:
     yield ndb.put_multi_async(to_put)
