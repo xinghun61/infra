@@ -9,6 +9,8 @@ import sys
 
 from parameterized import parameterized
 
+from google.appengine.ext import ndb
+
 from proto import project_config_pb2
 import bbutil
 
@@ -396,7 +398,7 @@ class V1ApiTest(testing.EndpointsTestCase):
         'foo': 'bar',
         'recipe': 'recipe',
     })
-    orig_build = test_util.build(
+    orig_bundle = test_util.build_bundle(
         id=1,
         input=dict(
             properties=props,
@@ -407,9 +409,10 @@ class V1ApiTest(testing.EndpointsTestCase):
             ),
         ),
     )
+    orig_build = orig_bundle.build
     orig_build.parameters.pop('changes')
     orig_build.tags = ['a:b']
-    orig_build.put()
+    ndb.put_multi([orig_build, orig_bundle.input_properties])
 
     retried_build_bundle = test_util.build_bundle(
         id=2,
@@ -872,14 +875,14 @@ class V1ApiTest(testing.EndpointsTestCase):
 
   @mock.patch('service.succeed', autospec=True)
   def test_succeed_with_result_details(self, succeed):
-    build = test_util.build(id=1, tags=[dict(key='t', value='0')])
-    succeed.return_value = build
-
     props = {'p': '0'}
-    model.BuildOutputProperties(
-        key=model.BuildOutputProperties.key_for(build.key),
-        properties=bbutil.dict_to_struct(props).SerializeToString(),
-    ).put()
+    bundle = test_util.build_bundle(
+        id=1,
+        tags=[dict(key='t', value='0')],
+        output=dict(properties=bbutil.dict_to_struct(props)),
+    )
+    succeed.return_value = bundle.build
+    bundle.output_properties.put()
     result_details = {'properties': props}
 
     req = {

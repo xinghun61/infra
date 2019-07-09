@@ -131,9 +131,9 @@ class Build(ndb.Model):
   #   output.properties: see BuildOutputProperties
   #   steps: see BuildSteps.
   #   tags: stored in tags attribute, because we have to index them anyway.
-  #   input.properties: see input_properties_bytes.
+  #   input.properties: see BuildInputProperties.
   #     CAVEAT: field input.properties does exist during build creation, and
-  #     moved into input_properties_bytes right before initial datastore.put.
+  #     moved into BuildInputProperties right before initial datastore.put.
   #   infra: see BuildInfra.
   #     CAVEAT: field infra does exist during build creation, and moved into
   #     BuildInfra right before initial datastore.put.
@@ -636,7 +636,7 @@ class BuildBundle(BuildBundleBase):
   def put(self):
     return self.put_async().get_result()
 
-  def to_proto(self, dest, load_input_properties, load_tags):
+  def to_proto(self, dest, load_tags):
     """Writes build to the dest Build proto. Returns dest."""
     dest.id = self.build.key.id()  # old builds do not have id field
     if dest is not self.build.proto:  # pragma: no branch
@@ -648,13 +648,11 @@ class BuildBundle(BuildBundleBase):
     if self.infra:
       dest.infra.ParseFromString(self.infra.infra)
 
-    if load_input_properties and self.build.input_properties_bytes:
-      # TODO(crbug.com/970053): read from BuildInputProperties entity.
-      dest.input.properties.ParseFromString(self.build.input_properties_bytes)
-
     if self.steps:
       self.steps.read_steps(dest)
 
+    if self.input_properties:
+      dest.input.properties.ParseFromString(self.input_properties.properties)
     if self.output_properties:
       dest.output.properties.ParseFromString(self.output_properties.properties)
     return dest
@@ -754,6 +752,4 @@ def builds_to_protos_async(
 
   for dest, bundle_fut in bundle_futs:
     bundle = yield bundle_fut
-    bundle.to_proto(
-        dest, load_input_properties=load_input_properties, load_tags=load_tags
-    )
+    bundle.to_proto(dest, load_tags=load_tags)

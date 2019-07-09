@@ -187,8 +187,8 @@ class CreationTest(testing.AppengineTestCase):
     props = {'foo': 'bar', 'qux': 1}
     prop_struct = bbutil.dict_to_struct(props)
     build = self.add(dict(properties=prop_struct))
-    actual = struct_pb2.Struct()
-    actual.ParseFromString(build.input_properties_bytes)
+    in_props = model.BuildInputProperties.key_for(build.key).get()
+    actual = in_props.parse()
 
     expected = bbutil.dict_to_struct(props)
     expected['recipe'] = 'recipe'

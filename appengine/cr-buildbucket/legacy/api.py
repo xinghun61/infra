@@ -609,7 +609,10 @@ class BuildBucketApi(remote.Service):
     lease_expiration_date = parse_datetime(request.lease_expiration_ts)
     errors.validate_lease_expiration_date(lease_expiration_date)
 
-    build = model.Build.get_by_id(request.id)
+    build_key = ndb.Key(model.Build, request.id)
+    build, in_props = ndb.get_multi([
+        build_key, model.BuildInputProperties.key_for(build_key)
+    ])
     if not build:
       raise errors.BuildNotFoundError('Build %s not found' % request.id)
 
@@ -624,8 +627,7 @@ class BuildBucketApi(remote.Service):
         gerrit_changes=build.proto.input.gerrit_changes[:],
     )
     build.tags_to_protos(sbr.tags)
-    if build.input_properties_bytes:  # pragma: no branch
-      sbr.properties.ParseFromString(build.input_properties_bytes)
+    sbr.properties.ParseFromString(in_props.properties)
     if build.proto.input.HasField('gitiles_commit'):  # pragma: no branch
       sbr.gitiles_commit.CopyFrom(build.proto.input.gitiles_commit)
 

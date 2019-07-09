@@ -181,29 +181,27 @@ class ToBuildProtosTests(testing.AppengineTestCase):
     actual = self.to_proto(build, load_steps=True)
     self.assertEqual(list(actual.steps), steps)
 
-  def test_out_props(self):
-    props = bbutil.dict_to_struct({'a': 'b'})
-    build = test_util.build()
-    model.BuildOutputProperties(
-        key=model.BuildOutputProperties.key_for(build.key),
-        properties=props.SerializeToString(),
-    ).put()
-
-    actual = self.to_proto(build, load_output_properties=True)
-    self.assertEqual(actual.output.properties, props)
-
   def test_in_props(self):
     props = bbutil.dict_to_struct({'a': 'b'})
-    build = test_util.build(input=dict(properties=props))
+    bundle = test_util.build_bundle(input=dict(properties=props))
+    bundle.put()
 
-    actual = self.to_proto(build, load_input_properties=True)
+    actual = self.to_proto(bundle.build, load_input_properties=True)
     self.assertEqual(actual.input.properties, props)
+
+  def test_out_props(self):
+    props = bbutil.dict_to_struct({'a': 'b'})
+    bundle = test_util.build_bundle(output=dict(properties=props))
+    bundle.put()
+
+    actual = self.to_proto(bundle.build, load_output_properties=True)
+    self.assertEqual(actual.output.properties, props)
 
   def test_infra(self):
     bundle = test_util.build_bundle(
         infra=dict(swarming=dict(hostname='swarming.example.com'))
     )
-    bundle.infra.put()
+    bundle.put()
     actual = self.to_proto(bundle.build, load_infra=True)
     self.assertEqual(actual.infra.swarming.hostname, 'swarming.example.com')
 

@@ -122,11 +122,11 @@ class RpcImplTests(BaseTestCase):
 
   @mock.patch('service.get_async', autospec=True)
   def test_trimming_include(self, get_async):
-    get_async.return_value = future(
-        test_util.build(
-            input=dict(properties=bbutil.dict_to_struct({'a': 'b'}))
-        ),
+    bundle = test_util.build_bundle(
+        input=dict(properties=bbutil.dict_to_struct({'a': 'b'}))
     )
+    bundle.put()
+    get_async.return_value = future(bundle.build)
     req = rpc_pb2.GetBuildRequest(id=1, fields=dict(paths=['input.properties']))
     res = self.call(self.api.GetBuild, req)
     self.assertEqual(res.input.properties.items(), [('a', 'b')])

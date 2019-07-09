@@ -218,9 +218,8 @@ def build_to_message(build_bundle, include_lease_key=False):
   )
 
   recipe_name = recipe.name
-  if build.input_properties_bytes:  # pragma: no cover
-    input_props = struct_pb2.Struct()
-    input_props.ParseFromString(build.input_properties_bytes)
+  if build_bundle.input_properties:  # pragma: no cover
+    input_props = build_bundle.input_properties.parse()
     if 'recipe' in input_props.fields:
       recipe_name = input_props['recipe']
 

@@ -564,7 +564,7 @@ def _sync_build_and_swarming(build_id, generation):
 
   Enqueues a new sync push task if the build did not end.
   """
-  bundle = model.BuildBundle.get(build_id, infra=True)
+  bundle = model.BuildBundle.get(build_id, infra=True, input_properties=True)
   if not bundle:  # pragma: no cover
     logging.warning('build not found')
     return
@@ -575,6 +575,9 @@ def _sync_build_and_swarming(build_id, generation):
     return
 
   build.proto.infra.ParseFromString(bundle.infra.infra)
+  build.proto.input.properties.ParseFromString(
+      bundle.input_properties.properties
+  )
   sw = build.proto.infra.swarming
 
   if not sw.task_id:
@@ -616,9 +619,10 @@ def _sync_build_and_swarming(build_id, generation):
 def _create_swarming_task(build):
   """Creates a swarming task for the build.
 
-  Requires build.proto.infra to be populated.
+  Requires build.proto.input.properties and build.proto.infra to be populated.
   """
   assert build.proto.HasField('infra')
+  assert build.proto.input.HasField('properties')
   sw = build.proto.infra.swarming
   logging.info('creating a task on %s', sw.hostname)
   build_id = build.proto.id
@@ -628,10 +632,6 @@ def _create_swarming_task(build):
   settings = config.get_settings_async().get_result().swarming
 
   # Prepare task definition.
-  # Deserialize all fields.
-  # TODO(crbug.com/970053): read model.BuildInputProperties instead of
-  # input_properties_bytes.
-  build.proto.input.properties.ParseFromString(build.input_properties_bytes)
   task_def = prepare_task_def(build, settings)
 
   # Insert secret bytes.

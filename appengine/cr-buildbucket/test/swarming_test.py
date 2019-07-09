@@ -691,6 +691,9 @@ class SyncBuildTest(BaseTest):
     self.build_bundle.build.proto.infra.ParseFromString(
         self.build_bundle.infra.infra
     )
+    self.build_bundle.build.proto.input.properties.ParseFromString(
+        self.build_bundle.input_properties.properties
+    )
     swarming._create_swarming_task(self.build_bundle.build)
 
   def test_create_task(self):
