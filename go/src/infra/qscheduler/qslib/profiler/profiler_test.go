@@ -15,34 +15,56 @@
 package profiler
 
 import (
+	"bytes"
+	"compress/zlib"
 	"fmt"
 	"testing"
 
 	"github.com/golang/protobuf/proto"
 )
 
+var params = Params{
+	LabelCorpusSize: 1000,
+
+	LabelsPerWorker: 30,
+	Workers:         5000,
+
+	LabelsPerTask: 5,
+	Tasks:         100000,
+}
+
 // BenchmarkEntitySize prints the typical proto-serialized size
 // of a scheduler, and benchmarks its serialization time.
 func BenchmarkEntitySize(b *testing.B) {
-	params := Params{
-		LabelCorpusSize: 1000,
-
-		LabelsPerWorker: 30,
-		Workers:         5000,
-
-		LabelsPerTask: 5,
-		Tasks:         100000,
-	}
-
 	state := NewSchedulerState(params)
 
 	b.ResetTimer()
 
-	var bytes []byte
+	var protoBytes []byte
 	for i := 0; i < b.N; i++ {
 		stateProto := state.ToProto()
-		bytes, _ = proto.Marshal(stateProto)
+		protoBytes, _ = proto.Marshal(stateProto)
 	}
 
-	fmt.Printf("proto size: %d bytes\n", len(bytes))
+	fmt.Printf("proto size: %d bytes\n", len(protoBytes))
+}
+
+func BenchmarkEntityZip(b *testing.B) {
+	state := NewSchedulerState(params)
+
+	stateProto := state.ToProto()
+	protoBytes, _ := proto.Marshal(stateProto)
+
+	b.ResetTimer()
+
+	var compressedBytes []byte
+	for i := 0; i < b.N; i++ {
+		buffer := &bytes.Buffer{}
+		w := zlib.NewWriter(buffer)
+		w.Write(protoBytes)
+		w.Close()
+		compressedBytes = buffer.Bytes()
+	}
+
+	fmt.Printf("compressed proto size: %d bytes\n", len(compressedBytes))
 }
