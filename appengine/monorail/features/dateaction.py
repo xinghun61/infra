@@ -204,7 +204,7 @@ class IssueDateActionTask(notify_helpers.NotifyTaskBase):
       if (field.field_id in arrived_dates_by_field_id and
           field.date_action in (tracker_pb2.DateAction.PING_OWNER_ONLY,
                                 tracker_pb2.DateAction.PING_PARTICIPANTS))]
-    pings = sorted(pings, key=lambda (field, timestamp): field.field_name)
+    pings = sorted(pings, key=lambda ping: ping[0].field_name)
     return pings
 
   def _FormatPingLine(self, ping):

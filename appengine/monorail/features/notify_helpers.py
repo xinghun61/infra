@@ -14,6 +14,7 @@ import logging
 import re
 
 from third_party import ezt
+from third_party import six
 
 from google.appengine.api import taskqueue
 
@@ -223,7 +224,7 @@ def _MakeEmailWorkItem(
     }
 
   footer = _MakeNotificationFooter(reasons, addr_perm.reply_perm, hostport)
-  if isinstance(footer, unicode):
+  if isinstance(footer, six.text_type):
     footer = footer.encode('utf-8')
   if addr_perm.is_member:
     logging.info('got member %r, sending body for members', addr_perm.address)

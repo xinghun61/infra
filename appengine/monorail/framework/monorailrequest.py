@@ -19,6 +19,7 @@ import re
 import urllib
 
 from third_party import ezt
+from third_party import six
 
 from google.appengine.api import app_identity
 from google.appengine.api import oauth
@@ -535,7 +536,7 @@ class MonorailRequest(MonorailRequestBase):
                antitamper_re=None):
     """Get a query parameter from the URL as a utf8 string."""
     value = self.request.params.get(query_param_name)
-    assert value is None or isinstance(value, unicode)
+    assert value is None or isinstance(value, six.text_type)
     using_default = value is None
     if using_default:
       value = default_value

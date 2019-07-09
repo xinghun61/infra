@@ -17,6 +17,8 @@ import logging
 import re
 import string
 
+from third_party import six
+
 import settings
 from framework import framework_constants
 from proto import tracker_pb2
@@ -106,7 +108,7 @@ def CanonicalizeLabel(user_input):
   if user_input is None:
     return user_input
 
-  if not isinstance(user_input, unicode):
+  if not isinstance(user_input, six.text_type):
     user_input = user_input.decode('utf-8')
 
   canon_str = user_input.translate(_CANONICALIZATION_TRANSLATION_TABLE)

@@ -18,6 +18,8 @@ import logging
 import re
 import rfc822
 
+from third_party import six
+
 from google.appengine.api import app_identity
 
 import settings
@@ -80,7 +82,7 @@ def ParseEmailMessage(msg):
     # We only process plain text emails.
     if part.get_content_type() == 'text/plain':
       body = part.get_payload(decode=True)
-      if not isinstance(body, unicode):
+      if not isinstance(body, six.text_type):
         body = body.decode('utf-8')
       break  # Only consider the first text part.
 
@@ -193,7 +195,7 @@ def NormalizeHeader(s):
 def MakeMessageID(to_addr, subject, from_addr):
   """Make a unique (but deterministic) email Message-Id: value."""
   normalized_subject = NormalizeHeader(subject)
-  if isinstance(normalized_subject, unicode):
+  if isinstance(normalized_subject, six.text_type):
     normalized_subject = normalized_subject.encode('utf-8')
   mail_hmac_key = secrets_svc.GetEmailKey()
   return '<0=%s=%s=%s@%s>' % (

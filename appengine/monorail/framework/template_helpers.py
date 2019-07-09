@@ -17,6 +17,7 @@ import time
 import types
 
 from third_party import ezt
+from third_party import six
 
 from protorpc import messages
 
@@ -125,7 +126,7 @@ class cStringIOUnicodeWrapper(object):
     self.buffer = cStringIO.StringIO()
 
   def write(self, s):
-    if isinstance(s, unicode):
+    if isinstance(s, six.text_type):
       utf8_s = s.encode('utf-8')
     else:
       utf8_s = s

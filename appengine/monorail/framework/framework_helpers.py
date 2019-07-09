@@ -22,6 +22,7 @@ import urlparse
 from google.appengine.api import app_identity
 
 from third_party import ezt
+from third_party import six
 
 import settings
 from framework import framework_bizobj
@@ -284,7 +285,7 @@ def FormatURL(recognized_params, servlet_path, **kwargs):
 def _FormatQueryString(url, params):
   """URLencode a list of parameters and attach them to the end of a URL."""
   param_string = '&'.join(
-      '%s=%s' % (name, urllib.quote(unicode(value).encode('utf-8')))
+      '%s=%s' % (name, urllib.quote(six.text_type(value).encode('utf-8')))
       for name, value in params if value is not None)
   if not param_string:
     qs_start_char = ''
