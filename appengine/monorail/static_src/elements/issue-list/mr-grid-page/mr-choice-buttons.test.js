@@ -2,13 +2,13 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 import {assert} from 'chai';
-import {MrButtonGroup} from './mr-button-group';
+import {MrChoiceButtons} from './mr-choice-buttons';
 
 let element;
 
-describe('mr-button-group', () => {
+describe('mr-choice-buttons', () => {
   beforeEach(() => {
-    element = document.createElement('mr-button-group');
+    element = document.createElement('mr-choice-buttons');
     document.body.appendChild(element);
   });
 
@@ -17,6 +17,6 @@ describe('mr-button-group', () => {
   });
 
   it('initializes', () => {
-    assert.instanceOf(element, MrButtonGroup);
+    assert.instanceOf(element, MrChoiceButtons);
   });
 });

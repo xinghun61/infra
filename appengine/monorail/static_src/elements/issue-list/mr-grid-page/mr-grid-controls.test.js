@@ -41,4 +41,20 @@ describe('mr-grid-controls', () => {
     dropdownCols.dispatchEvent(event);
     sinon.assert.calledWith(stub, sinon.match({x: 'Blocking', y: 'Status'}));
   });
+
+  it('button selection creates url params', async () => {
+    await element.updateComplete;
+
+    const cellsToggle = element.shadowRoot.querySelector('.cells');
+
+    const stub = sinon.stub(element, '_changeUrlParams');
+
+    const event = document.createEvent('Event');
+    event.initEvent('change');
+
+    cellsToggle.value = 'ids';
+    cellsToggle.dispatchEvent(event);
+    sinon.assert.calledWith(stub, sinon.match(
+      {cells: 'ids', x: 'None', y: 'None'}));
+  });
 });

@@ -4,7 +4,7 @@
 
 import {LitElement, html, css} from 'lit-element';
 import './mr-grid-dropdown';
-import './mr-button-group';
+import './mr-choice-buttons';
 import page from 'page';
 import qs from 'qs';
 
@@ -33,13 +33,20 @@ export class MrGridControls extends LitElement {
       </mr-grid-dropdown>
     </div>
     <div class="cell-selector">
-      <mr-button-group .options = ${this.cells}>
-      </mr-button-group>
+      <mr-choice-buttons
+        class='cells'
+        .options=${this.cells}
+        @change=${this._cellSelected}
+        .value=${this.cellType}>
+      </mr-choice-buttons>
     </div>
     </div>
     <div class="view-selector">
-      <mr-button-group .options=${this.viewSelector}>
-      </mr-button-group>
+      <mr-choice-buttons
+        .options=${this.viewSelector}
+        @change=${this._viewSelected}
+        .value=${'grid'}>
+      </mr-choice-buttons>
     </div>
       `;
   }
@@ -47,15 +54,25 @@ export class MrGridControls extends LitElement {
   constructor() {
     super();
     this.issueProperties = DEFAULT_ISSUE_PROPERTIES;
-    this.cells = ['Tiles', 'Ids', 'Counts'];
-    this.viewSelector = ['List', 'Grid', 'Chart'];
+    this.cells = [
+      {text: 'Tile', value: 'tiles'},
+      {text: 'IDs', value: 'ids'},
+      {text: 'Counts', value: 'counts'},
+    ];
+    this.viewSelector = [
+      {text: 'List', value: 'list'},
+      {text: 'Grid', value: 'grid'},
+      {text: 'Chart', value: 'chart'},
+    ];
     this.queryParams = {y: 'None', x: 'None'};
+    this.cellType = 'tiles';
   };
 
   static get properties() {
     return {
       issueProperties: {type: Array},
       cells: {type: Array},
+      cellType: {type: String},
       viewSelector: {type: Array},
       queryParams: {type: Object},
       customIssueProperties: {type: Array},
@@ -68,6 +85,9 @@ export class MrGridControls extends LitElement {
         property.fieldRef.fieldName);
       // TODO(zosha): sort custom properties alphabetically.
       this.issueProperties = DEFAULT_ISSUE_PROPERTIES.concat(customFields);
+    }
+    if (changedProperties.has('cells') && this.queryParams.cells) {
+      this.cellType = this.queryParams.cells;
     }
     super.update(changedProperties);
   }
@@ -100,12 +120,12 @@ export class MrGridControls extends LitElement {
   };
 
   _rowChanged(e) {
-    this.queryParams.y = e.currentTarget.selection;
+    this.queryParams.y = e.target.selection;
     this._changeUrlParams(this.queryParams);
   }
 
   _colChanged(e) {
-    this.queryParams.x = e.currentTarget.selection;
+    this.queryParams.x = e.target.selection;
     this._changeUrlParams(this.queryParams);
   }
 
@@ -113,6 +133,26 @@ export class MrGridControls extends LitElement {
     const newParams = qs.stringify(params);
     const newUrl = `${location.pathname}?${newParams}`;
     page(newUrl);
+  }
+
+  _cellSelected(e) {
+    this.queryParams.cells = e.target.value;
+    this._changeUrlParams(this.queryParams);
+  }
+
+  _viewSelected(e) {
+    const value = e.target.value.toLowerCase();
+    if (value !== 'grid') {
+      if (value === 'chart') {
+        this.queryParams.mode = 'chart';
+      } else {
+        delete this.queryParams.mode;
+      }
+      const params = qs.stringify(this.queryParams);
+      const newURL =
+        `${location.pathname.replace('list_new', 'list')}?${params}`;
+      page(newURL);
+    }
   }
 };
 
