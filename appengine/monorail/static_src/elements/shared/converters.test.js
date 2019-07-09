@@ -4,7 +4,7 @@
 
 import {assert} from 'chai';
 import {displayNameToUserRef, labelStringToRef, componentStringToRef,
-  issueStringToRef, issueStringToBlockingRef, issueRefToString,
+  issueStringToRef, issueStringToBlockingRef, issueRefToString, issueRefToUrl,
   fieldNameToLabelPrefix, commentListToDescriptionList, valueToFieldValue,
 } from './converters.js';
 
@@ -117,6 +117,25 @@ describe('issueRefToString', () => {
       'b/123456',
       issueRefToString({extIdentifier: 'b/123456'}, 'proj')
     );
+  });
+});
+
+describe('issueRefToUrl', () => {
+  it('no ref', () => {
+    assert.equal(issueRefToUrl(), '');
+  });
+
+  it('issue ref', () => {
+    assert.equal(issueRefToUrl({
+      projectName: 'test',
+      localId: 11,
+    }), '/p/test/issues/detail?id=11');
+  });
+
+  it('federated issue ref', () => {
+    assert.equal(issueRefToUrl({
+      extIdentifier: 'b/5678',
+    }), 'https://issuetracker.google.com/issues/5678');
   });
 });
 

@@ -3,6 +3,7 @@
 // found in the LICENSE file.
 
 import {equalsIgnoreCase} from './helpers';
+import {fromShortlink} from 'elements/shared/federated.js';
 import {UserInputError} from 'elements/shared/errors.js';
 
 // Match: projectName:localIdFormat
@@ -99,6 +100,21 @@ export function issueRefToString(ref, projectName) {
     return `${ref.localId}`;
   }
   return `${ref.projectName}:${ref.localId}`;
+}
+
+export function issueRefToUrl(ref) {
+  if (!ref) return '';
+
+  if (ref.extIdentifier) {
+    const extRef = fromShortlink(ref.extIdentifier);
+    if (!extRef) {
+      console.error(`No tracker found for reference: ${ref.extIdentifier}`);
+      return '';
+    }
+    return extRef.toURL();
+  }
+
+  return `/p/${ref.projectName}/issues/detail?id=${ref.localId}`;
 }
 
 export function issueRefsToStrings(arr, projectName) {

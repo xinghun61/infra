@@ -4,8 +4,7 @@
 
 import {LitElement, html, css} from 'lit-element';
 import {ifDefined} from 'lit-html/directives/if-defined';
-import {issueRefToString} from 'elements/shared/converters.js';
-import {fromShortlink} from 'elements/shared/federated.js';
+import {issueRefToString, issueRefToUrl} from 'elements/shared/converters.js';
 
 /**
  * `<mr-issue-link>`
@@ -26,7 +25,7 @@ export class MrIssueLink extends LitElement {
     return html`
       <a
         id="bugLink"
-        href=${this._issueUrl}
+        href=${issueRefToUrl(this.issue)}
         title=${ifDefined(this.issue && this.issue.summary)}
         ?is-closed=${this.isClosed}
       >${this._linkText}</a>
@@ -47,22 +46,6 @@ export class MrIssueLink extends LitElement {
     if (!this.issue || !this.issue.statusRef) return false;
 
     return this.issue.statusRef.meansOpen === false;
-  }
-
-  get _issueUrl() {
-    const issue = this.issue;
-    if (!issue) return '';
-
-    if (issue.extIdentifier) {
-      const extRef = fromShortlink(issue.extIdentifier);
-      if (!extRef) {
-        console.error(`No tracker found for reference: ${issue.extIdentifier}`);
-        return '';
-      }
-      return extRef.toURL();
-    }
-
-    return `/p/${issue.projectName}/issues/detail?id=${issue.localId}`;
   }
 
   get _linkText() {

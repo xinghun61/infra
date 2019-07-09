@@ -36,5 +36,77 @@ describe('mr-issue-list', () => {
     assert.equal(summaries[0].textContent.trim(), 'test issue');
     assert.equal(summaries[1].textContent.trim(), 'I have a summary');
   });
+
+  it('selected disabled when selectionEnabled is false', async () => {
+    element.selectionEnabled = false;
+    element.issues = [
+      {summary: 'test issue'},
+      {summary: 'I have a summary'},
+    ];
+
+    await element.updateComplete;
+
+    const checkboxes = element.shadowRoot.querySelectorAll('.issue-checkbox');
+
+    assert.equal(checkboxes.length, 0);
+  });
+
+  it('selected issues render selected attribute', async () => {
+    element.selectionEnabled = true;
+    element.issues = [
+      {summary: 'issue 1'},
+      {summary: 'another issue'},
+      {summary: 'issue 2'},
+    ];
+    element.columns = ['Summary'];
+
+    await element.updateComplete;
+
+    element._selectedIssues = [true, false, false];
+
+    await element.updateComplete;
+
+    const issues = element.shadowRoot.querySelectorAll('tr[selected]');
+
+    assert.equal(issues.length, 1);
+    assert.equal(issues[0].dataset.index, '0');
+    assert.include(issues[0].textContent, 'issue 1');
+  });
+
+  it('selected issues added when issues checked', async () => {
+    element.selectionEnabled = true;
+    element.issues = [
+      {summary: 'issue 1'},
+      {summary: 'another issue'},
+      {summary: 'issue 2'},
+    ];
+
+    await element.updateComplete;
+
+    assert.deepEqual(element.selectedIssues, []);
+
+    const checkboxes = element.shadowRoot.querySelectorAll('.issue-checkbox');
+
+    assert.equal(checkboxes.length, 3);
+
+    checkboxes[2].checked = true;
+    checkboxes[2].dispatchEvent(new CustomEvent('change'));
+
+    await element.updateComplete;
+
+    assert.deepEqual(element.selectedIssues, [
+      {summary: 'issue 2'},
+    ]);
+
+    checkboxes[0].checked = true;
+    checkboxes[0].dispatchEvent(new CustomEvent('change'));
+
+    await element.updateComplete;
+
+    assert.deepEqual(element.selectedIssues, [
+      {summary: 'issue 1'},
+      {summary: 'issue 2'},
+    ]);
+  });
 });
 

@@ -37,6 +37,7 @@ export class MrListPage extends connectStore(LitElement) {
       <mr-issue-list
         .issues=${this.issues}
         .projectName=${this.projectName}
+        selectionEnabled
       ></mr-issue-list>
     `;
   }
