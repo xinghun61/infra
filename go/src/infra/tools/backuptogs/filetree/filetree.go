@@ -49,7 +49,7 @@ func Load(ctx context.Context, filename string) (dir *Dir, err error) {
 
 	dir = New()
 	dec := gob.NewDecoder(f)
-	if err := dec.Decode(dir); err != nil {
+	if err = dec.Decode(dir); err != nil {
 		logging.Errorf(ctx, "Failed to decode BackupState from file '%s': %v", filename, err)
 		return nil, err
 	}

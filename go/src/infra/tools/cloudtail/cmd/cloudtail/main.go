@@ -121,7 +121,7 @@ func (opts *commonOptions) processFlags(ctx context.Context) (context.Context, s
 		opts.tsmonFlags.Target.TaskJobName = fmt.Sprintf(
 			"%s-%s-%s", opts.logID, opts.resourceType, opts.resourceID)
 	}
-	if err := tsmon.InitializeFromFlags(ctx, &opts.tsmonFlags); err != nil {
+	if err = tsmon.InitializeFromFlags(ctx, &opts.tsmonFlags); err != nil {
 		return ctx, state{}, err
 	}
 

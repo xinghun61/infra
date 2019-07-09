@@ -122,8 +122,7 @@ func main() {
 		log.Fatal(err)
 	}
 	if *traceJSON != "" {
-		err = output(*traceJSON, traces)
-		if err != nil {
+		if err = output(*traceJSON, traces); err != nil {
 			log.Fatal(err)
 		}
 	}
@@ -138,24 +137,20 @@ func main() {
 		go func() {
 			u := fmt.Sprintf("http://localhost:%d", *port)
 			for {
-				_, err := http.Get(u)
-				if err == nil {
+				if _, err = http.Get(u); err == nil {
 					break
 				}
 				fmt.Printf("waiting for %s", u)
 				time.Sleep(1 * time.Second)
 			}
-			cmd := exec.Command(*browser, u)
-			err := cmd.Run()
-			if err != nil {
+			if err = exec.Command(*browser, u).Run(); err != nil {
 				log.Fatal(err)
 			}
 		}()
 	}
 	http.HandleFunc("/", hf)
 	fmt.Printf("listening on :%d\n", *port)
-	err = http.ListenAndServe(fmt.Sprintf(":%d", *port), nil)
-	if err != nil {
+	if err = http.ListenAndServe(fmt.Sprintf(":%d", *port), nil); err != nil {
 		log.Fatal(err)
 	}
 }

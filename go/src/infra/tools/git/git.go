@@ -466,7 +466,7 @@ func (gr *gitRunner) runGitVersion(c context.Context) (int, error) {
 	// Write any STDOUT or STDERR data that it produced, in that order.
 	writeBuf := func(b *bytes.Buffer, out io.Writer, name string) {
 		if b.Len() > 0 && out != nil {
-			if _, err := b.WriteTo(out); err != nil {
+			if _, err = b.WriteTo(out); err != nil {
 				logging.Warningf(c, "Failed to write %s content: %s", name, err)
 			}
 		}

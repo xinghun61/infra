@@ -88,7 +88,7 @@ func (h *State) scheduleShifts(ctx *router.Context, cfg *rotang.Configuration, t
 		logging.Infof(ctx.Context, "modifier: %q applied to generated shifts for rota: %q", m, cfg.Config.Name)
 	}
 
-	if err := h.shiftStore(ctx.Context).AddShifts(ctx.Context, cfg.Config.Name, ss); err != nil {
+	if err = h.shiftStore(ctx.Context).AddShifts(ctx.Context, cfg.Config.Name, ss); err != nil {
 		return err
 	}
 	resShifts, err := h.calendar.CreateEvent(ctx, cfg, ss, h.IsProduction())

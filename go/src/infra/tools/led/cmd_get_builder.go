@@ -129,7 +129,7 @@ func (c *cmdGetBuilder) grabBuilderDefinition(ctx context.Context, bucket, build
 
 	newTask := &swarming.SwarmingRpcsNewTaskRequest{}
 	r := strings.NewReader(answer.TaskDefinition)
-	if err := json.NewDecoder(r).Decode(newTask); err != nil {
+	if err = json.NewDecoder(r).Decode(newTask); err != nil {
 		return nil, err
 	}
 

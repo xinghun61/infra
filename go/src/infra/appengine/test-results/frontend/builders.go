@@ -173,7 +173,7 @@ func getBuildersHandler(ctx *router.Context) {
 		}
 
 		item.SetValue(res).SetExpiration(time.Hour)
-		if err := memcache.Set(c, item); err != nil {
+		if err = memcache.Set(c, item); err != nil {
 			// Log this error but do not return to the client because it is not critical
 			// for this handler.
 			logging.Fields{

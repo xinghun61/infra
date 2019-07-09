@@ -137,8 +137,7 @@ func (c *cmdLaunch) Run(a subcommands.Application, args []string, env subcommand
 	logging.Infof(ctx, "building swarming task: done")
 
 	if c.dump {
-		err := json.NewEncoder(os.Stdout).Encode(st)
-		if err != nil {
+		if err = json.NewEncoder(os.Stdout).Encode(st); err != nil {
 			errors.Log(ctx, err)
 			return 1
 		}

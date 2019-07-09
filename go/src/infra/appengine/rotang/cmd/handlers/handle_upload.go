@@ -54,7 +54,7 @@ func (h *State) HandleUpload(ctx *router.Context) {
 			logging.Errorf(ctx.Context, "File: %q not a json file", part.FileName())
 			continue
 		}
-		if _, err := io.Copy(&buf, part); err != nil {
+		if _, err = io.Copy(&buf, part); err != nil {
 			logging.Errorf(ctx.Context, "File: %q containing: %q failed to Copy: %v", part.FileName(), buf, err)
 			continue
 		}

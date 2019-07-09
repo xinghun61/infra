@@ -48,12 +48,12 @@ func (h *State) JobBackup(ctx *router.Context) {
 	logging.Infof(ctx.Context, "ID: %q", h.projectID(appCTX))
 
 	var jsonReq bytes.Buffer
-	enc := json.NewEncoder(&jsonReq)
-	if err := enc.Encode(&exportReq{
+	data := &exportReq{
 		ProjectID: h.projectID(appCTX),
 		// gs://rota-ng-staging-backup/staging-20181106-01:43:43
 		URLPrefix: "gs://" + bucketPfx + h.prodENV + bucketSfx + "/" + h.prodENV + "-" + now.Format(timeFormat),
-	}); err != nil {
+	}
+	if err = json.NewEncoder(&jsonReq).Encode(data); err != nil {
 		http.Error(ctx.Writer, err.Error(), http.StatusInternalServerError)
 		return
 	}

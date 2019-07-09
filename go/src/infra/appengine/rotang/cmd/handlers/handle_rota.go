@@ -175,11 +175,11 @@ func (h *State) updateMembers(ctx context.Context, members []rotang.Member) erro
 		switch {
 		case err == nil:
 			m.OOO = currentMember.OOO
-			if err := ms.UpdateMember(ctx, &m); err != nil {
+			if err = ms.UpdateMember(ctx, &m); err != nil {
 				return err
 			}
 		case status.Code(err) == codes.NotFound:
-			if err := ms.CreateMember(ctx, &m); err != nil {
+			if err = ms.CreateMember(ctx, &m); err != nil {
 				return err
 			}
 		default:
@@ -214,7 +214,7 @@ func (h *State) HandleRotaModify(ctx *router.Context) {
 		rotas, err := h.configStore(ctx.Context).RotaConfig(ctx.Context, res.Cfg.Config.Name)
 		if err != nil {
 			if status.Code(err) == codes.NotFound {
-				if err := h.createRota(ctx, &res); err != nil {
+				if err = h.createRota(ctx, &res); err != nil {
 					http.Error(ctx.Writer, err.Error(), http.StatusInternalServerError)
 				}
 				return
@@ -222,7 +222,7 @@ func (h *State) HandleRotaModify(ctx *router.Context) {
 			http.Error(ctx.Writer, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		if err := h.modifyRota(ctx, rotas[0], &res); err != nil {
+		if err = h.modifyRota(ctx, rotas[0], &res); err != nil {
 			http.Error(ctx.Writer, err.Error(), http.StatusInternalServerError)
 			return
 		}

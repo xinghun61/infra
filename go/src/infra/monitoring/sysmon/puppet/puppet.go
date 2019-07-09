@@ -65,22 +65,16 @@ type lastRunData struct {
 // Register adds tsmon callbacks to set puppet metrics.
 func Register() {
 	tsmon.RegisterCallback(func(c context.Context) {
-		path, err := lastRunFile()
-		if err != nil {
+		if path, err := lastRunFile(); err != nil {
 			logging.Warningf(c, "Failed to get puppet last_run_summary.yaml path: %v", err)
-		} else {
-			if err := updateLastRunStats(c, path); err != nil {
-				logging.Warningf(c, "Failed to update puppet metrics: %v", err)
-			}
+		} else if err = updateLastRunStats(c, path); err != nil {
+			logging.Warningf(c, "Failed to update puppet metrics: %v", err)
 		}
 
-		path, err = isPuppetCanaryFile()
-		if err != nil {
+		if path, err := isPuppetCanaryFile(); err != nil {
 			logging.Warningf(c, "Failed to get is_puppet_canary path: %v", err)
-		} else {
-			if err := updateIsCanary(c, path); err != nil {
-				logging.Warningf(c, "Failed to update puppet canary metric: %v", err)
-			}
+		} else if err = updateIsCanary(c, path); err != nil {
+			logging.Warningf(c, "Failed to update puppet canary metric: %v", err)
 		}
 
 		if err := updateExitStatus(c, exitStatusFiles()); err != nil {

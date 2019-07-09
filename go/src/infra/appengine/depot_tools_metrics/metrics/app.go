@@ -10,6 +10,8 @@ import (
 	"fmt"
 	"net/http"
 
+	"infra/appengine/depot_tools_metrics/schema"
+
 	"cloud.google.com/go/bigquery"
 	"github.com/golang/protobuf/jsonpb"
 	"go.chromium.org/luci/appengine/gaemiddleware/standard"
@@ -18,7 +20,6 @@ import (
 	"go.chromium.org/luci/server/router"
 	"golang.org/x/net/context"
 	"google.golang.org/appengine"
-	"infra/appengine/depot_tools_metrics/schema"
 )
 
 const (
@@ -63,8 +64,7 @@ func shouldUploadHandler(c *router.Context) {
 // projectID.datasetID.tableID.
 func uploadHandler(c *router.Context) {
 	var metrics schema.Metrics
-	err := jsonpb.Unmarshal(c.Request.Body, &metrics)
-	if err != nil {
+	if err := jsonpb.Unmarshal(c.Request.Body, &metrics); err != nil {
 		logging.Errorf(c.Context, "Could not extract metrics: %v", err)
 		http.Error(c.Writer, err.Error(), http.StatusBadRequest)
 		return
@@ -79,8 +79,7 @@ func uploadHandler(c *router.Context) {
 	reportDepotToolsMetrics(c.Context, metrics)
 
 	ctx := appengine.WithContext(c.Context, c.Request)
-	err = putMetrics(ctx, metrics)
-	if err != nil {
+	if err := putMetrics(ctx, metrics); err != nil {
 		logging.Errorf(c.Context, "Could not write to BQ: %v", err)
 		http.Error(c.Writer, err.Error(), http.StatusInternalServerError)
 		return

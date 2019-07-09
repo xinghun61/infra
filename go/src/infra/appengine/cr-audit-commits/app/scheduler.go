@@ -43,8 +43,7 @@ func Scheduler(rc *router.Context) {
 				state.Metadata = refConfig.Metadata
 				state.BranchName = refConfig.BranchName
 				state.LastKnownCommit = refConfig.StartingCommit
-				err := ds.Put(ctx, state)
-				if err != nil {
+				if err = ds.Put(ctx, state); err != nil {
 					logging.WithError(err).Errorf(ctx, "Could not save ref state for %s due to %s", configName, err.Error())
 					RefAuditsDue.Add(ctx, 1, false)
 					continue

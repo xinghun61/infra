@@ -81,12 +81,12 @@ func main() {
 	ctx = opts.loggingConfig.Set(ctx)
 
 	// Init Tsmon
-	if err := tsmon.InitializeFromFlags(ctx, &opts.tsmonFlags); err != nil {
+	if err = tsmon.InitializeFromFlags(ctx, &opts.tsmonFlags); err != nil {
 		logging.Errorf(ctx, "Failed to initialize tsmon: %v", err)
 		os.Exit(tsmonError)
 	}
 	defer func() {
-		if err := tsmon.Flush(ctx); err != nil {
+		if err = tsmon.Flush(ctx); err != nil {
 			logging.Errorf(ctx, "Failed to flush tsmon: %v", err)
 		}
 		tsmon.Shutdown(ctx)

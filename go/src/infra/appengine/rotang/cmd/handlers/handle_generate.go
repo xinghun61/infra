@@ -38,7 +38,6 @@ func (h *State) HandleGenerate(ctx *router.Context) {
 	case "":
 		start = clock.Now(ctx.Context)
 	default:
-		var err error
 		if start, err = time.ParseInLocation(elementTimeFormat, ctx.Request.FormValue("startTime"), mtvTime); err != nil {
 			http.Error(ctx.Writer, err.Error(), http.StatusBadRequest)
 			return

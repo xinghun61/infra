@@ -133,8 +133,7 @@ func dashboard(ctx *router.Context) {
 
 func oldDashboard(ctx *router.Context) {
 	c, w, r := ctx.Context, ctx.Writer, ctx.Request
-	err := r.ParseForm()
-	if err != nil {
+	if err := r.ParseForm(); err != nil {
 		http.Error(w, "Failed to parse form",
 			http.StatusInternalServerError)
 		return

@@ -123,7 +123,7 @@ func run(ctx context.Context) error {
 
 	// Prepare random prefix to use for insert IDs uploaded by this process.
 	rnd := make([]byte, 12)
-	if _, err := rand.Read(rnd); err != nil {
+	if _, err = rand.Read(rnd); err != nil {
 		return err
 	}
 	bqOpts.insertIDBase = base64.RawURLEncoding.EncodeToString(rnd)

@@ -86,7 +86,7 @@ func respondTestFileData(ctx *router.Context, params URLParams) {
 
 	tf := model.TestFile{ID: key.IntID()}
 
-	if err := datastore.Get(c, &tf); err != nil {
+	if err = datastore.Get(c, &tf); err != nil {
 		if err == datastore.ErrNoSuchEntity {
 			http.Error(w, err.Error(), http.StatusNotFound)
 			logging.Errorf(c, "TestFile with ID %v not found: %v", key.IntID(), err)

@@ -85,7 +85,7 @@ func (c *cmdEditIsolated) Run(a subcommands.Application, args []string, env subc
 		return 1
 	}
 	defer func() {
-		if err := os.RemoveAll(tdir); err != nil {
+		if err = os.RemoveAll(tdir); err != nil {
 			logging.Errorf(ctx, "failed to cleanup temp dir %q: %s", tdir, err)
 		}
 	}()
@@ -126,7 +126,7 @@ func (c *cmdEditIsolated) Run(a subcommands.Application, args []string, env subc
 				},
 			})
 
-			if err := dl.Wait(); err != nil {
+			if err = dl.Wait(); err != nil {
 				return err
 			}
 
@@ -138,7 +138,7 @@ func (c *cmdEditIsolated) Run(a subcommands.Application, args []string, env subc
 		logging.Infof(ctx, "")
 		logging.Infof(ctx, "Edit files as you wish in:")
 		logging.Infof(ctx, "\t%s", tdir)
-		if err := prompt(ctx); err != nil {
+		if err = prompt(ctx); err != nil {
 			return err
 		}
 

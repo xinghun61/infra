@@ -232,7 +232,7 @@ func doFileUpload(c context.Context, fh *multipart.FileHeader) error {
 	switch fh.Filename {
 	case "incremental_results.json":
 		var incr model.AggregateResult
-		if err := json.NewDecoder(file).Decode(&incr); err != nil {
+		if err = json.NewDecoder(file).Decode(&incr); err != nil {
 			logging.WithError(err).Warningf(c, "doFileUpload: incremental_results.json: unmarshal JSON")
 			return statusError{err, http.StatusBadRequest}
 		}

@@ -54,7 +54,7 @@ func (q *DroneQueenImpl) ReportDrone(ctx context.Context, req *api.ReportDroneRe
 	// Refresh expiration time.
 	d := entities.Drone{ID: id}
 	f := func(ctx context.Context) error {
-		if err := datastore.Get(ctx, &d); err != nil {
+		if err = datastore.Get(ctx, &d); err != nil {
 			if datastore.IsErrNoSuchEntity(err) {
 				res.Status = api.ReportDroneResponse_UNKNOWN_UUID
 			}
@@ -65,12 +65,12 @@ func (q *DroneQueenImpl) ReportDrone(ctx context.Context, req *api.ReportDroneRe
 			return errors.Reason("drone expired").Err()
 		}
 		d.Expiration = q.now().Add(config.AssignmentDuration(ctx)).UTC()
-		if err := datastore.Put(ctx, &d); err != nil {
+		if err = datastore.Put(ctx, &d); err != nil {
 			return errors.Annotate(err, "refresh drone expiration").Err()
 		}
 		return nil
 	}
-	if err := datastore.RunInTransaction(ctx, f, nil); err != nil {
+	if err = datastore.RunInTransaction(ctx, f, nil); err != nil {
 		// Specially handle specific status errors if they
 		// were set.  These need to be reported in a regular
 		// response.
@@ -83,12 +83,9 @@ func (q *DroneQueenImpl) ReportDrone(ctx context.Context, req *api.ReportDroneRe
 	var duts []*entities.DUT
 	f = func(ctx context.Context) error {
 		duts, err = queries.AssignNewDUTs(ctx, id, req.GetLoadIndicators())
-		if err != nil {
-			return err
-		}
-		return nil
+		return err
 	}
-	if err := datastore.RunInTransaction(ctx, f, nil); err != nil {
+	if err = datastore.RunInTransaction(ctx, f, nil); err != nil {
 		return nil, err
 	}
 	// Populate response fields.

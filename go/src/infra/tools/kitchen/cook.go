@@ -389,14 +389,14 @@ func (c *cookRun) run(ctx context.Context, args []string, env environ.Env) *buil
 	if c.engine.properties, c.kitchenProps, err = c.prepareProperties(env); err != nil {
 		return fail(err)
 	}
-	if err := c.reportProperties(ctx, "recipe engine", c.engine.properties); err != nil {
+	if err = c.reportProperties(ctx, "recipe engine", c.engine.properties); err != nil {
 		return fail(err)
 	}
-	if err := c.reportProperties(ctx, "kitchen", c.kitchenProps); err != nil {
+	if err = c.reportProperties(ctx, "kitchen", c.kitchenProps); err != nil {
 		return fail(err)
 	}
 
-	if err := c.updateEnv(&env); err != nil {
+	if err = c.updateEnv(&env); err != nil {
 		return fail(errors.Annotate(err, "failed to update the environment").Err())
 	}
 
@@ -406,7 +406,7 @@ func (c *cookRun) run(ctx context.Context, args []string, env environ.Env) *buil
 	//
 	// All other env modifications must be performed using 'env' object.
 	path, _ := env.Get("PATH")
-	if err := os.Setenv("PATH", path); err != nil {
+	if err = os.Setenv("PATH", path); err != nil {
 		return fail(errors.Annotate(err, "failed to update process PATH").Err())
 	}
 
@@ -726,7 +726,7 @@ func (c *cookRun) runWithLogdogButler(ctx context.Context, env environ.Env, res 
 		return errors.Annotate(err, "failed to generate stream server").Err()
 	}
 
-	if err := streamServer.Listen(); err != nil {
+	if err = streamServer.Listen(); err != nil {
 		return errors.Annotate(err, "failed to listen on stream server").Err()
 	}
 	defer func() {

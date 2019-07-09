@@ -128,8 +128,7 @@ func (h *State) memberGET(ctx *router.Context, member *rotang.Member) error {
 	}
 
 	var buf bytes.Buffer
-	mEnc := json.NewEncoder(&buf)
-	if err := mEnc.Encode(&res); err != nil {
+	if err = json.NewEncoder(&buf).Encode(&res); err != nil {
 		return err
 	}
 	_, err = fmt.Fprintln(ctx.Writer, buf.String())

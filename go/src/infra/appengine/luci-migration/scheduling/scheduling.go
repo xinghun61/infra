@@ -104,7 +104,7 @@ func ParseBuild(msg *bbapi.LegacyApiCommonBuildMessage) (*Build, error) {
 				DryRun      interface{} `json:"dry_run"`
 			} `json:"properties"`
 		}
-		if err := json.NewDecoder(strings.NewReader(msg.ResultDetailsJson)).Decode(&resultDetails); err != nil {
+		if err = json.NewDecoder(strings.NewReader(msg.ResultDetailsJson)).Decode(&resultDetails); err != nil {
 			return nil, errors.Annotate(err, "failed to parse result details").Err()
 		}
 		build.GotRevision = resultDetails.Properties.GotRevision

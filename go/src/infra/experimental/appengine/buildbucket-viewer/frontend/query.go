@@ -33,7 +33,7 @@ func getQueryHandler(c context.Context, req *http.Request, resp http.ResponseWri
 	)
 	addSectionIfAvailable := func() error {
 		if cur != nil {
-			if err := validateSection(cur); err != nil {
+			if err = validateSection(cur); err != nil {
 				return makeHTTPError(http.StatusBadRequest, err)
 			}
 			view.Section = append(view.Section, cur)
@@ -45,7 +45,7 @@ func getQueryHandler(c context.Context, req *http.Request, resp http.ResponseWri
 		// Special cases: define a new section boundary via "bucket".
 		switch param.key {
 		case "bucket":
-			if err := addSectionIfAvailable(); err != nil {
+			if err = addSectionIfAvailable(); err != nil {
 				return err
 			}
 			cur = &settings.View_Section{
@@ -147,7 +147,7 @@ func getQueryHandler(c context.Context, req *http.Request, resp http.ResponseWri
 			return makeHTTPError(http.StatusBadRequest, errors.Reason("unknown parameter: %q", param.key).Err())
 		}
 	}
-	if err := addSectionIfAvailable(); err != nil {
+	if err = addSectionIfAvailable(); err != nil {
 		return err
 	}
 

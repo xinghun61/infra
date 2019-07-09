@@ -45,7 +45,7 @@ func pubsubHandler(w http.ResponseWriter, req *http.Request) {
 	log.Debugf(ctx, "request: %v", string(body))
 
 	request := Req{}
-	if err := json.Unmarshal(body, &request); err != nil {
+	if err = json.Unmarshal(body, &request); err != nil {
 		http.Error(w, "failed to decode json", http.StatusBadRequest)
 		log.Errorf(ctx, "failed to decode json: %v", err)
 		return
@@ -107,7 +107,7 @@ func getFile(ctx context.Context, filename string, bucketID string) (*ninjalog.N
 		return nil, err
 	}
 	defer func() {
-		if err := client.Close(); err != nil {
+		if err = client.Close(); err != nil {
 			log.Warningf(ctx, "failed to close client: %v", err)
 		}
 	}()

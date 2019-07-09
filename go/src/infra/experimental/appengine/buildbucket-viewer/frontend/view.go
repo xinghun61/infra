@@ -364,42 +364,42 @@ func (r *buildSetRenderer) fetchViewSection(s *settings.View_Section) (*buildSet
 		builds          = make([]*build, len(searchBuilds))
 		aggregateStatus = buildPending
 	)
-	for i, b := range searchBuilds {
-		build := build{
-			ID:      b.Id,
+	for i, buildMsg := range searchBuilds {
+		b := build{
+			ID:      buildMsg.Id,
 			Title:   s.Name,
-			Status:  getBuildStatus(b),
+			Status:  getBuildStatus(buildMsg),
 			Subtext: nil,
 			BuildURL: fmt.Sprintf(
 				"https://apis-explorer.appspot.com/apis-explorer/?base=https://%s/_ah/api#p/buildbucket/v1/buildbucket.get?id=%d",
-				r.BuildbucketHost, b.Id),
-			Created: timeFromMicrosecondsSinceEpoch(b.CreatedTs),
-			Updated: timeFromMicrosecondsSinceEpoch(b.UpdatedTs),
-			URL:     b.Url,
+				r.BuildbucketHost, buildMsg.Id),
+			Created: timeFromMicrosecondsSinceEpoch(buildMsg.CreatedTs),
+			Updated: timeFromMicrosecondsSinceEpoch(buildMsg.UpdatedTs),
+			URL:     buildMsg.Url,
 		}
 
-		aggregateStatus = aggregateStatus.aggregate(build.Status)
+		aggregateStatus = aggregateStatus.aggregate(b.Status)
 
 		// Ingest build tags into our tag map.
-		for _, tag := range b.Tags {
-			if build.tags == nil {
-				build.tags = map[string][]string{}
+		for _, tag := range buildMsg.Tags {
+			if b.tags == nil {
+				b.tags = map[string][]string{}
 			}
 
 			k, v := splitTag(tag)
-			build.tags[k] = append(build.tags[k], v)
+			b.tags[k] = append(b.tags[k], v)
 		}
 
 		// See if we can convert this to a Milo URL.
-		if build.URL != "" {
+		if b.URL != "" {
 			if mh := r.MiloHost; mh != "" {
-				if miloURL, err := maybeGetMiloURL(mh, &build); err != nil {
+				if miloURL, err := maybeGetMiloURL(mh, &b); err != nil {
 					log.Fields{
 						log.ErrorKey: err,
-						"url":        build.URL,
+						"url":        b.URL,
 					}.Debugf(r, "Could not construct Milo URL.")
 				} else {
-					build.URL = miloURL
+					b.URL = miloURL
 				}
 			}
 		}
@@ -407,20 +407,20 @@ func (r *buildSetRenderer) fetchViewSection(s *settings.View_Section) (*buildSet
 		// Generate our title.
 		titleTags := make([]string, 0, len(s.TitleTag)+1)
 		for _, tt := range s.TitleTag {
-			if v := build.getOneTag(tt); v != "" {
+			if v := b.getOneTag(tt); v != "" {
 				titleTags = append(titleTags, v)
 			}
 		}
 		if len(titleTags) == 0 {
-			titleTags = append(titleTags, strconv.FormatInt(b.Id, 10))
+			titleTags = append(titleTags, strconv.FormatInt(buildMsg.Id, 10))
 		}
-		build.Title = strings.Join(titleTags, " ")
+		b.Title = strings.Join(titleTags, " ")
 
 		// Assemble our subtext from show values.
 		for _, show := range s.Show {
 			if st := show.GetTag(); st != "" {
-				for _, v := range build.tags[st] {
-					build.Subtext = append(build.Subtext, v)
+				for _, v := range b.tags[st] {
+					b.Subtext = append(b.Subtext, v)
 				}
 			}
 			switch show.GetInfo() {
@@ -428,16 +428,16 @@ func (r *buildSetRenderer) fetchViewSection(s *settings.View_Section) (*buildSet
 				break
 
 			case settings.View_Section_Show_STATUS:
-				build.Subtext = append(build.Subtext, fmt.Sprintf("Status: %s", b.Status))
+				b.Subtext = append(b.Subtext, fmt.Sprintf("Status: %s", buildMsg.Status))
 
 			case settings.View_Section_Show_FAILURE_REASON:
-				if fr := b.FailureReason; fr != "" {
-					build.Subtext = append(build.Subtext, fmt.Sprintf("Failure Reason: %s", fr))
+				if fr := buildMsg.FailureReason; fr != "" {
+					b.Subtext = append(b.Subtext, fmt.Sprintf("Failure Reason: %s", fr))
 				}
 			}
 		}
 
-		builds[i] = &build
+		builds[i] = &b
 	}
 
 	sbb := sortableBuildSlice{

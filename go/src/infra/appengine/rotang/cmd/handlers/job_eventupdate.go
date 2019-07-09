@@ -50,7 +50,7 @@ func (h *State) eventUpdate(ctx *router.Context, cfg *rotang.Configuration, t ti
 		resShift, err := h.calendar.Event(ctx, cfg, &s)
 		if err != nil {
 			if status.Code(err) == codes.NotFound {
-				if err := h.createNonExists(ctx, cfg, s); err != nil {
+				if err = h.createNonExists(ctx, cfg, s); err != nil {
 					return err
 				}
 				logging.Infof(ctx.Context, "Calendar entry for shift: %v created in calendar due to not existing", s)

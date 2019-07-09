@@ -274,11 +274,11 @@ func (c *cmdBundle) prepPackage(repoName string, specref string, resolvedSpec fe
 
 	pkg.version = "git_revision:" + resolvedSpec.revision
 	pkg.refs = make([]string, 0, 2)
-	if err := cipd_common.ValidatePackageRef(specref); err == nil {
+	if err = cipd_common.ValidatePackageRef(specref); err == nil {
 		pkg.refs = append(pkg.refs, specref)
 	}
 	if resolvedSpec.ref != specref {
-		if err := cipd_common.ValidatePackageRef(resolvedSpec.ref); err == nil {
+		if err = cipd_common.ValidatePackageRef(resolvedSpec.ref); err == nil {
 			pkg.refs = append(pkg.refs, resolvedSpec.ref)
 		}
 	}
