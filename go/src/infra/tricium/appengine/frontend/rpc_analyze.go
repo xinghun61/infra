@@ -39,6 +39,9 @@ var changeIDPattern = regexp.MustCompile(".+~.+~I[0-9a-fA-F]{40}.*")
 // Launches a workflow customized to the project and listed paths. The run ID
 // in the response can be used to track the progress and results of the request
 // via the Tricium UI.
+//
+// Requests are not deduped, so multiple identical requests will get separate
+// runs with separate run IDs, and possibly post duplicate comments.
 func (r *TriciumServer) Analyze(c context.Context, req *tricium.AnalyzeRequest) (res *tricium.AnalyzeResponse, err error) {
 	defer func() {
 		err = grpcutil.GRPCifyAndLogErr(c, err)
@@ -166,14 +169,6 @@ func analyze(c context.Context, req *tricium.AnalyzeRequest, cp config.ProviderA
 	} else {
 		return "", errors.Reason("unsupported request source").Err()
 	}
-
-	// TODO(qyearsley): Verify that there is no current run for this request,
-	// maybe by storing a mapping of hashed requests to run IDs, and checking
-	// that nothing exists for this exact request yet.
-	//
-	// One way to do this would be to make the run ID the hash of the
-	// track.AnalyzeRequest; then we would calculate the hash, check if the
-	// entity already exists, and if so, abort.
 
 	requestRes := &track.AnalyzeRequestResult{
 		ID:    1,
