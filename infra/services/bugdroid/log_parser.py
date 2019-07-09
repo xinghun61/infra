@@ -14,13 +14,13 @@ BUG_LINE_REGEX = re.compile(
 PROJECT_NAME_REGEX = r'(?P<project>[a-z0-9][-a-z0-9]*[a-z0-9])'
 BUG_NUMBER_REGEX = r'(?P<bugnum>[0-9]+)'
 
-SHORTFORM_REGEX = r'(?:%s:)?#?%s' % (
+SHORTFORM_REGEX = r'^(?:%s:)?#?%s$' % (
     PROJECT_NAME_REGEX, BUG_NUMBER_REGEX)
-CRBUG_REGEX = r'(?:https?://)?crbug\.com/(%s/)?%s' % (
+CRBUG_REGEX = r'^(?:https?://)?crbug\.com/(%s/)?%s$' % (
     PROJECT_NAME_REGEX, BUG_NUMBER_REGEX)
-MONORAIL_REGEX = r'(?:https?://)?bugs\.chromium\.org/p/%s/[^?]+\?id=%s' % (
+MONORAIL_REGEX = r'^(?:https?://)?bugs\.chromium\.org/p/%s/[^?]+\?id=%s$' % (
     PROJECT_NAME_REGEX, BUG_NUMBER_REGEX)
-CODESITE_REGEX = '(?:https?://)?code\.google\.com/p/%s/[^?]+\?id=%s' % (
+CODESITE_REGEX = '^(?:https?://)?code\.google\.com/p/%s/[^?]+\?id=%s$' % (
     PROJECT_NAME_REGEX, BUG_NUMBER_REGEX)
 
 REGEXES = [
