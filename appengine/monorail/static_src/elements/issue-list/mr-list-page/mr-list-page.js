@@ -60,7 +60,8 @@ export class MrListPage extends connectStore(LitElement) {
   updated(changedProperties) {
     if (changedProperties.has('projectName') ||
         changedProperties.has('queryParams')) {
-      store.dispatch(issue.fetchIssueList(this.queryParams, this.projectName));
+      store.dispatch(issue.fetchIssueList(this.queryParams, this.projectName,
+        {maxItems: 100, start: 0}));
     }
   }
 

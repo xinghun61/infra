@@ -689,7 +689,7 @@ export const fetchHotlists = (issue) => async (dispatch) => {
   };
 };
 
-export const fetchIssueList = (params, projectName) =>
+export const fetchIssueList = (params, projectName, pagination = {}) =>
   async (dispatch) => {
     dispatch({type: FETCH_ISSUE_LIST_START});
 
@@ -699,7 +699,7 @@ export const fetchIssueList = (params, projectName) =>
           query: params.q,
           cannedQuery: params.can,
           projectNames: [projectName],
-          pagination: {},
+          pagination: pagination,
           groupBySpec: params.groupby,
           sortSpec: params.sort,
         });
