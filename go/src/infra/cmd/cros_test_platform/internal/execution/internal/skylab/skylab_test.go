@@ -12,6 +12,7 @@ import (
 	"testing"
 
 	"github.com/golang/protobuf/jsonpb"
+	"github.com/golang/protobuf/ptypes/duration"
 	. "github.com/smartystreets/goconvey/convey"
 
 	build_api "go.chromium.org/chromiumos/infra/proto/go/chromite/api"
@@ -160,6 +161,9 @@ func basicParams() *test_platform.Request_Params {
 			{
 				Dep: &test_platform.Request_Params_SoftwareDependency_ChromeosBuild{ChromeosBuild: "foo-build"},
 			},
+		},
+		Time: &test_platform.Request_Params_Time{
+			MaximumDuration: &duration.Duration{Seconds: 60},
 		},
 	}
 }

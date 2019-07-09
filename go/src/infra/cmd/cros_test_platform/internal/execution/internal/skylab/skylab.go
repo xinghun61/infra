@@ -10,6 +10,8 @@ import (
 	"context"
 	"time"
 
+	"github.com/golang/protobuf/ptypes"
+
 	build_api "go.chromium.org/chromiumos/infra/proto/go/chromite/api"
 	"go.chromium.org/chromiumos/infra/proto/go/test_platform"
 	"go.chromium.org/chromiumos/infra/proto/go/test_platform/skylab_test_runner"
@@ -52,6 +54,11 @@ func (t *testRun) RequestArgs(params *test_platform.Request_Params) (request.Arg
 		return request.Args{}, errors.Annotate(err, "create request args").Err()
 	}
 
+	timeout, err := toTimeout(params)
+	if err != nil {
+		return request.Args{}, errors.Annotate(err, "create request args").Err()
+	}
+
 	// TODO(akeshet): Run cmd.Config() with correct environment.
 	cmd := &worker.Command{
 		TaskName:        t.test.Name,
@@ -69,8 +76,7 @@ func (t *testRun) RequestArgs(params *test_platform.Request_Params) (request.Arg
 		ProvisionableDimensions: provisionableDimensions,
 		// TODO(akeshet): Determine tags correctly.
 		SwarmingTags: nil,
-		// TODO(akeshet): Determine timeout correctly.
-		Timeout: 10 * time.Minute,
+		Timeout:      timeout,
 	}
 
 	return args, nil
@@ -233,6 +239,17 @@ func toProvisionableDimensions(deps []*test_platform.Request_Params_SoftwareDepe
 		return nil, errors.Annotate(err, "get provisionable dimensions").Err()
 	}
 	return []string{"provisionable-cros-version:" + crosBuild}, nil
+}
+
+func toTimeout(params *test_platform.Request_Params) (time.Duration, error) {
+	if params.Time == nil {
+		return 0, errors.Reason("get timeout: nil params.time").Err()
+	}
+	duration, err := ptypes.Duration(params.Time.MaximumDuration)
+	if err != nil {
+		return 0, errors.Annotate(err, "get timeout").Err()
+	}
+	return duration, nil
 }
 
 func unpackResult(results []*swarming_api.SwarmingRpcsTaskResult, taskID string) (*swarming_api.SwarmingRpcsTaskResult, error) {
