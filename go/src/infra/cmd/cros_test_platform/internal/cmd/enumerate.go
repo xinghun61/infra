@@ -134,8 +134,8 @@ func (c *enumerateRun) newGSClient(ctx context.Context) (gs.Client, error) {
 
 func (c *enumerateRun) enumerate(tm *api.TestMetadataResponse, request *steps.EnumerationRequest) []*api.AutotestTest {
 	var ts []*api.AutotestTest
-	ts = append(ts, enumeration.GetForTests(tm.GetAutotest(), request.GetTests())...)
-	ts = append(ts, enumeration.GetForSuites(tm.GetAutotest(), request.GetSuites())...)
+	ts = append(ts, enumeration.GetForTests(tm.Autotest, request.TestPlan.Test)...)
+	ts = append(ts, enumeration.GetForSuites(tm.Autotest, request.TestPlan.Suite)...)
 	return ts
 }
 
