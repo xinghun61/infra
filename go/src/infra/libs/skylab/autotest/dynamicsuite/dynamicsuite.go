@@ -11,6 +11,7 @@ package dynamicsuite
 import (
 	"encoding/json"
 	"infra/libs/skylab/autotest/proxy"
+	"time"
 
 	swarming "go.chromium.org/luci/common/api/swarming/swarming/v1"
 	"go.chromium.org/luci/common/errors"
@@ -21,10 +22,11 @@ const argsKey = "args_dict_json"
 
 // Args encapsulates arguments for forming a request.
 type Args struct {
-	Board string
-	Build string
-	Model string
-	Pool  string
+	Board   string
+	Build   string
+	Model   string
+	Pool    string
+	Timeout time.Duration
 	// ReimageAndRunArgs specifies arguments to be passed into
 	// autotest.dynamic_suite.reimage_and_run. This object must be
 	// json-encodable.
@@ -45,6 +47,7 @@ func NewRequest(args Args) (*swarming.SwarmingRpcsNewTaskRequest, error) {
 			Build:     args.Build,
 			Model:     args.Model,
 			Pool:      args.Pool,
+			Timeout:   args.Timeout,
 			SuiteName: suiteName,
 			SuiteArgs: map[string]interface{}{
 				argsKey: string(encodedArgs),

@@ -8,6 +8,8 @@ package proxy
 
 import (
 	"encoding/json"
+	"strconv"
+	"time"
 
 	swarming "go.chromium.org/luci/common/api/swarming/swarming/v1"
 	"go.chromium.org/luci/common/errors"
@@ -22,6 +24,7 @@ type RunSuiteArgs struct {
 	Model     string
 	SuiteName string
 	Pool      string
+	Timeout   time.Duration
 	// SuiteArgs are the arguments to be passed into the suite. This object
 	// must be json-encodable, or an error will be returned.
 	SuiteArgs interface{}
@@ -61,6 +64,10 @@ func runSuiteCmd(args RunSuiteArgs) ([]string, error) {
 	}
 	if args.Pool != "" {
 		cmd = append(cmd, "--pool", args.Pool)
+	}
+	if args.Timeout != 0 {
+		minutes := int(args.Timeout.Minutes())
+		cmd = append(cmd, "--timeout_mins", strconv.Itoa(minutes))
 	}
 	if args.SuiteArgs != nil {
 		bytes, err := json.Marshal(args.SuiteArgs)

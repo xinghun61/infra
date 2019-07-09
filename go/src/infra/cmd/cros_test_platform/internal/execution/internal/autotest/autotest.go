@@ -10,6 +10,8 @@ import (
 	"context"
 	"time"
 
+	"github.com/golang/protobuf/ptypes"
+
 	build_api "go.chromium.org/chromiumos/infra/proto/go/chromite/api"
 	"go.chromium.org/chromiumos/infra/proto/go/test_platform"
 	"go.chromium.org/chromiumos/infra/proto/go/test_platform/steps"
@@ -98,10 +100,16 @@ func (r *Runner) proxyRequest() (*swarming_api.SwarmingRpcsNewTaskRequest, error
 		return nil, errors.Annotate(err, "create proxy request").Err()
 	}
 
+	timeout, err := toTimeout(r.requestParams)
+	if err != nil {
+		return nil, errors.Annotate(err, "create proxy request").Err()
+	}
+
 	dsArgs := dynamicsuite.Args{
-		Board: r.requestParams.SoftwareAttributes.BuildTarget.Name,
-		Build: build,
-		Model: r.requestParams.HardwareAttributes.Model,
+		Board:   r.requestParams.SoftwareAttributes.BuildTarget.Name,
+		Build:   build,
+		Model:   r.requestParams.HardwareAttributes.Model,
+		Timeout: timeout,
 		// TODO(akeshet): Determine pool from request parameters, after remapping
 		// to autotest pool namespace.
 		Pool:              "",
@@ -116,6 +124,17 @@ func (r *Runner) proxyRequest() (*swarming_api.SwarmingRpcsNewTaskRequest, error
 	return req, nil
 }
 
+func toTimeout(params *test_platform.Request_Params) (time.Duration, error) {
+	if params.Time == nil {
+		return 0, errors.Reason("get timeout: nil params.time").Err()
+	}
+	duration, err := ptypes.Duration(params.Time.MaximumDuration)
+	if err != nil {
+		return 0, errors.Annotate(err, "get timeout").Err()
+	}
+	return duration, nil
+}
+
 func (r *Runner) validate() error {
 	if r.requestParams == nil {
 		return errors.Reason("nil request_params").Err()
@@ -128,6 +147,9 @@ func (r *Runner) validate() error {
 	}
 	if r.requestParams.HardwareAttributes == nil {
 		return errors.Reason("nil request_params.hardware_attributes").Err()
+	}
+	if r.requestParams.Time == nil {
+		return errors.Reason("nil requests_params.time").Err()
 	}
 	return nil
 }

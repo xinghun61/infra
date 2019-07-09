@@ -9,6 +9,7 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/golang/protobuf/ptypes/duration"
 	. "github.com/smartystreets/goconvey/convey"
 
 	"infra/cmd/cros_test_platform/internal/execution/internal/autotest"
@@ -73,6 +74,9 @@ func basicParams() *test_platform.Request_Params {
 				Dep: &test_platform.Request_Params_SoftwareDependency_ChromeosBuild{ChromeosBuild: "foo-build"},
 			},
 		},
+		Time: &test_platform.Request_Params_Time{
+			MaximumDuration: &duration.Duration{Seconds: 60 * 60},
+		},
 	}
 }
 
@@ -103,6 +107,7 @@ func TestLaunch(t *testing.T) {
 					"--board", "foo-build-target",
 					"--model", "foo-model",
 					"--suite_name", "cros_test_platform",
+					"--timeout_mins", "60",
 					"--suite_args_json", `{"args_dict_json":"{\"name\":\"cros_test_platform\",\"test_names\":[\"test1\",\"test2\"]}"}`,
 				}
 				So(cmd, ShouldResemble, expected)
