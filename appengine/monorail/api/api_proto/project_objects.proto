@@ -100,13 +100,14 @@ message Config {
 }
 
 
-// Next available tag: 6
+// Next available tag: 7
 message PresentationConfig {
   string project_thumbnail_url = 1;
   string project_summary = 2;
   string custom_issue_entry_url = 3;
   string default_query = 4;
   repeated SavedQuery saved_queries = 5;
+  string revision_url_format = 6;
   // TODO(zhangtiff): Add default issue list columns.
 }
 

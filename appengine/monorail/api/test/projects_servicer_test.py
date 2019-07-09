@@ -11,7 +11,6 @@ from __future__ import absolute_import
 import unittest
 from mock import patch
 
-import mox
 from components.prpc import codes
 from components.prpc import context
 from components.prpc import server
@@ -35,7 +34,6 @@ from services import service_manager
 class ProjectsServicerTest(unittest.TestCase):
 
   def setUp(self):
-    self.mox = mox.Mox()
     self.cnxn = fake.MonorailConnection()
     self.services = service_manager.Services(
         config=fake.ConfigService(),
@@ -81,10 +79,6 @@ class ProjectsServicerTest(unittest.TestCase):
         self.services, make_rate_limiter=False)
     self.prpc_context = context.ServicerContext()
     self.prpc_context.set_code(codes.StatusCode.OK)
-
-  def tearDown(self):
-    self.mox.UnsetStubs()
-    self.mox.ResetAll()
 
   def CallWrapped(self, wrapped_handler, *args, **kwargs):
     return wrapped_handler.wrapped(self.projects_svcr, *args, **kwargs)
@@ -169,8 +163,24 @@ class ProjectsServicerTest(unittest.TestCase):
 
   def testGetPresentationConfig_Normal(self):
     """Test getting project summary, thumbnail url, custom issue entry, etc."""
-    # TODO(zhangtiff): Add this test.
-    pass
+    config = tracker_pb2.ProjectIssueConfig(project_id=789)
+    self.project.summary = 'project summary'
+    config.custom_issue_entry_url = 'issue entry url'
+    config.member_default_query = 'default query'
+    self.project.revision_url_format = 'revision url format'
+    self.services.config.StoreConfig(self.cnxn, config)
+
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='owner@example.com')
+
+    request = projects_pb2.GetPresentationConfigRequest(project_name='proj')
+    response = self.CallWrapped(
+        self.projects_svcr.GetPresentationConfig, mc, request)
+
+    self.assertEqual('project summary', response.project_summary)
+    self.assertEqual('issue entry url', response.custom_issue_entry_url)
+    self.assertEqual('default query', response.default_query)
+    self.assertEqual('revision url format', response.revision_url_format)
 
   def testGetPresentationConfig_SavedQueriesAllowed(self):
     """Only project members or higher can see project saved queries."""

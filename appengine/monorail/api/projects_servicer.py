@@ -9,6 +9,8 @@ from __future__ import absolute_import
 
 import logging
 
+import settings
+
 from api import monorail_servicer
 from api import converters
 from api.api_proto import projects_pb2
@@ -103,6 +105,8 @@ class ProjectsServicer(monorail_servicer.MonorailServicer):
     project_thumbnail_url = tracker_views.LogoView(project).thumbnail_url
     project_summary = project.summary
     custom_issue_entry_url = config.custom_issue_entry_url
+    revision_url_format = (
+        project.revision_url_format or settings.revision_url_format)
 
     default_query = None
     saved_queries = None
@@ -121,8 +125,9 @@ class ProjectsServicer(monorail_servicer.MonorailServicer):
         project_summary=project_summary,
         custom_issue_entry_url=custom_issue_entry_url,
         default_query=default_query,
-        saved_queries=converters.IngestSavedQueries(mc.cnxn,
-            self.services.project, saved_queries))
+        saved_queries=converters.IngestSavedQueries(
+            mc.cnxn, self.services.project, saved_queries),
+        revision_url_format=revision_url_format)
 
   @monorail_servicer.PRPCMethod
   def GetCustomPermissions(self, mc, request):
