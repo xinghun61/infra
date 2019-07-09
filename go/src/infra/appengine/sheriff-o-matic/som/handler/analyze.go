@@ -547,9 +547,9 @@ func enqueueLogDiffTask(ctx context.Context, alerts []messages.Alert) error {
 				}
 				data := &LogDiff{nil, master, builder.Name, buildNum1, buildNum2, 0, false}
 				err = datastore.RunInTransaction(ctx, func(ctx context.Context) error {
-					if err := datastore.Put(ctx, data); err != nil {
-						logging.Errorf(ctx, "storing data: %v", err)
-						return err
+					if err2 := datastore.Put(ctx, data); err2 != nil {
+						logging.Errorf(ctx, "storing data: %v", err2)
+						return err2
 					}
 					return nil
 				}, nil)

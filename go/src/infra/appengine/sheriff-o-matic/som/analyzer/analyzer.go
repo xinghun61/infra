@@ -494,9 +494,9 @@ func (a *Analyzer) builderStepAlerts(ctx context.Context, tree string, master *m
 			// Initialize to -1, since 0 is a valid build number
 			goodBuilds[i] = -1
 			workC <- func() error {
-				failures, err := a.stepFailures(ctx, master, builderName, buildNum)
-				if err != nil {
-					return err
+				failures, err2 := a.stepFailures(ctx, master, builderName, buildNum)
+				if err2 != nil {
+					return err2
 				}
 
 				if len(failures) == 0 {

@@ -101,7 +101,7 @@ func PostLayoutTestExpectationChangeHandler(ctx *router.Context) {
 
 	logging.Infof(c, "new expectation: %+v", *stmt)
 
-	if err := fs.UpdateExpectation(stmt); err != nil {
+	if err = fs.UpdateExpectation(stmt); err != nil {
 		errStatus(c, w, http.StatusInternalServerError, err.Error())
 		return
 	}

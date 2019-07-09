@@ -168,7 +168,7 @@ func PostAlertsHandler(ctx *router.Context) {
 		return
 	}
 
-	if err := r.Body.Close(); err != nil {
+	if err = r.Body.Close(); err != nil {
 		errStatus(c, w, http.StatusBadRequest, err.Error())
 		return
 	}
@@ -301,7 +301,7 @@ func PostAlertHandler(ctx *router.Context) {
 		return
 	}
 
-	if err := r.Body.Close(); err != nil {
+	if err = r.Body.Close(); err != nil {
 		errStatus(c, w, http.StatusBadRequest, err.Error())
 		return
 	}
@@ -357,12 +357,12 @@ func ResolveAlertHandler(ctx *router.Context) {
 		return
 	}
 
-	if err := xsrf.Check(c, req.XSRFToken); err != nil {
+	if err = xsrf.Check(c, req.XSRFToken); err != nil {
 		errStatus(c, w, http.StatusForbidden, err.Error())
 		return
 	}
 
-	if err := r.Body.Close(); err != nil {
+	if err = r.Body.Close(); err != nil {
 		errStatus(c, w, http.StatusBadRequest, err.Error())
 		return
 	}
@@ -461,7 +461,7 @@ func getRestartingMasters(c context.Context, treeName string) (map[string]master
 	}
 
 	ms := &desiredMasterStates{}
-	if err := json.Unmarshal(b, ms); err != nil {
+	if err = json.Unmarshal(b, ms); err != nil {
 		return nil, err
 	}
 

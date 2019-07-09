@@ -215,14 +215,14 @@ func (ah *AnnotationHandler) PostAnnotationsHandler(ctx *router.Context) {
 		return
 	}
 
-	if err := xsrf.Check(c, req.XSRFToken); err != nil {
+	if err = xsrf.Check(c, req.XSRFToken); err != nil {
 		errStatus(c, w, http.StatusForbidden, err.Error())
 		return
 	}
 
 	// Extract the annotation key from the otherwise unparsed body.
 	rawJSON := struct{ Key string }{}
-	if err := json.Unmarshal([]byte(*req.Data), &rawJSON); err != nil {
+	if err = json.Unmarshal([]byte(*req.Data), &rawJSON); err != nil {
 		errStatus(c, w, http.StatusBadRequest, fmt.Sprintf("while decoding request: %s", err))
 	}
 
@@ -347,7 +347,7 @@ func FileBugHandler(ctx *router.Context) {
 		return
 	}
 
-	if err := xsrf.Check(c, req.XSRFToken); err != nil {
+	if err = xsrf.Check(c, req.XSRFToken); err != nil {
 		errStatus(c, w, http.StatusForbidden, err.Error())
 		return
 	}
@@ -359,7 +359,7 @@ func FileBugHandler(ctx *router.Context) {
 		Priority    string
 		Labels      []string
 	}{}
-	if err := json.Unmarshal([]byte(*req.Data), &rawJSON); err != nil {
+	if err = json.Unmarshal([]byte(*req.Data), &rawJSON); err != nil {
 		errStatus(c, w, http.StatusBadRequest, fmt.Sprintf("while decoding request: %s", err))
 	}
 

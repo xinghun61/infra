@@ -82,7 +82,7 @@ func (sc *simpleClient) attemptJSONGet(ctx context.Context, url string, v interf
 // Returns the status code and the error, if any.
 func (sc *simpleClient) getJSON(ctx context.Context, url string, v interface{}) (status int, err error) {
 	err = retry(func() (bool, error) {
-		status, err := sc.attemptJSONGet(ctx, url, v)
+		status, err = sc.attemptJSONGet(ctx, url, v)
 		if status >= 400 && status < 500 {
 			return false, fmt.Errorf("HTTP status %d, not retrying: %s", status, url)
 		}

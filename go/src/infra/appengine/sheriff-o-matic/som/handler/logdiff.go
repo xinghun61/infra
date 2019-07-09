@@ -147,10 +147,10 @@ func LogdiffWorker(ctx *router.Context) {
 
 	logchan := make(chan *logerr)
 	go func() {
-		ret, err := logreader.StdioForStep(c, Master, builder, "steps", buildNum1)
+		ret, err2 := logreader.StdioForStep(c, Master, builder, "steps", buildNum1)
 		logchan <- &logerr{
 			log: ret,
-			err: err,
+			err: err2,
 		}
 	}()
 	res2, err := logreader.StdioForStep(c, Master, builder, "steps", buildNum2)
@@ -191,7 +191,7 @@ func LogdiffWorker(ctx *router.Context) {
 		return
 	}
 	diff := &LogDiff{ID: int64(id)}
-	if err := datastore.Get(c, diff); err != nil {
+	if err = datastore.Get(c, diff); err != nil {
 		errStatus(c, w, http.StatusInternalServerError, fmt.Sprintf("error getting Logdiff shell: %v", err))
 		return
 	}
