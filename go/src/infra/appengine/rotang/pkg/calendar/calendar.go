@@ -72,13 +72,18 @@ func (c *Calendar) CreateEvent(ctx *router.Context, cfg *rotang.Configuration, s
 	}, cfg.Config.Name, &cfg.Config.Shifts)
 }
 
+// eventsRange specifies the time-range used when finding and matching Google calendar events to RotaNG shifts.
+// The reason for searching instead of just making a query for the ID directly is that when querying for an ID'
+// sometimes the resulting Calendar Event is returned with blank Start/End times.
+const eventsRange = 2 * fullDay
+
 // Event returns the information about the provided shift from the associated calendar event.
 func (c *Calendar) Event(ctx *router.Context, cfg *rotang.Configuration, shift *rotang.ShiftEntry) (*rotang.ShiftEntry, error) {
 	if err := ctx.Context.Err(); err != nil {
 		return nil, err
 	}
 	// For some reason using the Google calendar Event.Get does not give Start and End times.
-	shifts, err := c.Events(ctx, cfg, shift.StartTime.Add(-24*time.Hour), shift.EndTime.Add(24*time.Hour))
+	shifts, err := c.Events(ctx, cfg, shift.StartTime.Add(-eventsRange), shift.EndTime.Add(eventsRange))
 	if err != nil {
 		return nil, err
 	}
