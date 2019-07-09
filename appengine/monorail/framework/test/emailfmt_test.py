@@ -18,8 +18,6 @@ from framework import framework_views
 from proto import project_pb2
 from testing import testing_helpers
 
-from google.appengine.api import apiproxy_stub_map
-
 
 class EmailFmtTest(unittest.TestCase):
 
