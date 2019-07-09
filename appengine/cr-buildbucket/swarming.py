@@ -147,6 +147,7 @@ def _buildbucket_property(build):
   export = copy.deepcopy(build.proto)
   export.ClearField('status')
   export.ClearField('update_time')
+  export.ClearField('output')
   export.input.ClearField('properties')
   export.infra.ClearField('recipe')
   export.infra.buildbucket.ClearField('requested_properties')
@@ -563,18 +564,21 @@ def _sync_build_and_swarming(build_id, generation):
 
   Enqueues a new sync push task if the build did not end.
   """
-  build = model.Build.get_by_id(build_id)
-  if not build:  # pragma: no cover
+  bundle = model.BuildBundle.get(build_id, infra=True)
+  if not bundle:  # pragma: no cover
     logging.warning('build not found')
     return
+
+  build = bundle.build
   if build.is_ended:
     logging.info('build ended')
     return
 
-  sw = build.parse_infra().swarming
+  build.proto.infra.ParseFromString(bundle.infra.infra)
+  sw = build.proto.infra.swarming
 
   if not sw.task_id:
-    _create_swarming_task(build, sw)
+    _create_swarming_task(build)
   else:
     result = _load_task_result(sw.hostname, sw.task_id)
     if not result:
@@ -609,7 +613,13 @@ def _sync_build_and_swarming(build_id, generation):
     pass
 
 
-def _create_swarming_task(build, sw):
+def _create_swarming_task(build):
+  """Creates a swarming task for the build.
+
+  Requires build.proto.infra to be populated.
+  """
+  assert build.proto.HasField('infra')
+  sw = build.proto.infra.swarming
   logging.info('creating a task on %s', sw.hostname)
   build_id = build.proto.id
 
@@ -619,7 +629,8 @@ def _create_swarming_task(build, sw):
 
   # Prepare task definition.
   # Deserialize all fields.
-  build.proto.infra.ParseFromString(build.infra_bytes)
+  # TODO(crbug.com/970053): read model.BuildInputProperties instead of
+  # input_properties_bytes.
   build.proto.input.properties.ParseFromString(build.input_properties_bytes)
   task_def = prepare_task_def(build, settings)
 
@@ -685,23 +696,17 @@ def _create_swarming_task(build, sw):
 
   @ndb.transactional
   def txn():
-    build_key = ndb.Key(model.Build, build_id)
-    build, build_infra = ndb.get_multi([
-        build_key, model.BuildInfra.key_for(build_key)
-    ],)
-    if not build:  # pragma: no cover
+    bundle = model.BuildBundle.get(build_id, infra=True)
+    if not bundle:  # pragma: no cover
       return False
 
-    if build_infra:  # pragma: no branch
-      # TODO(crbug.com/970053): do this unconditionally when all builds have
-      # BuildInfra entity.
-      with build_infra.mutate() as infra:
-        sw = infra.swarming
-        if sw.task_id:
-          logging.warning('build already has a task %r', sw.task_id)
-          return False
+    with bundle.infra.mutate() as infra:
+      sw = infra.swarming
+      if sw.task_id:
+        logging.warning('build already has a task %r', sw.task_id)
+        return False
 
-        sw.task_id = new_task_id
+      sw.task_id = new_task_id
 
     # TODO(crbug.com/970053): remove this block once all in-flight and future
     # tasks have BuildInfra entity.
@@ -715,11 +720,7 @@ def _create_swarming_task(build, sw):
 
     assert not build.swarming_task_key
     build.swarming_task_key = task_key
-    build.put()
-    if build_infra:  # pragma: no branch
-      # TODO(crbug.com/970053): do this unconditionally when all builds have
-      # BuildInfra entity.
-      build_infra.put()
+    bundle.put()
     return True
 
   updated = False
@@ -828,17 +829,14 @@ def _sync_build_with_task_result_in_memory(build, build_infra, task_result):
   old_status = build.proto.status
   bp = build.proto
 
-  if build_infra:
-    # TODO(crbug.com/970053): do this unconditionally when all builds have
-    # BuildInfra entity.
-    with build_infra.mutate() as infra:
-      sw = infra.swarming
-      sw.ClearField('bot_dimensions')
-      for d in (task_result or {}).get('bot_dimensions', []):
-        assert isinstance(d['value'], list)
-        for v in d['value']:
-          sw.bot_dimensions.add(key=d['key'], value=v)
-      sw.bot_dimensions.sort(key=lambda d: (d.key, d.value))
+  with build_infra.mutate() as infra:
+    sw = infra.swarming
+    sw.ClearField('bot_dimensions')
+    for d in (task_result or {}).get('bot_dimensions', []):
+      assert isinstance(d['value'], list)
+      for v in d['value']:
+        sw.bot_dimensions.add(key=d['key'], value=v)
+    sw.bot_dimensions.sort(key=lambda d: (d.key, d.value))
 
   # TODO(crbug.com/970053): remove this block once all in-flight and future
   # tasks have BuildInfra entity.
@@ -936,23 +934,17 @@ def _sync_build_with_task_result(build_id, task_result):
 
   @ndb.transactional
   def txn():
-    build_key = ndb.Key(model.Build, build_id)
-    build, build_infra = ndb.get_multi([
-        build_key, model.BuildInfra.key_for(build_key)
-    ],)
-    if not build:  # pragma: no cover
+    bundle = model.BuildBundle.get(build_id, infra=True)
+    if not bundle:  # pragma: no cover
       return None
+    build = bundle.build
     status_changed = _sync_build_with_task_result_in_memory(
-        build, build_infra, task_result
+        build, bundle.infra, task_result
     )
     if not status_changed:
       return None
 
-    futures = [build.put_async()]
-    if build_infra:  # pragma: no branch
-      # TODO(crbug.com/970053): do this unconditionally when all builds have
-      # BuildInfra entity.
-      futures.append(build_infra.put_async())
+    futures = [bundle.put_async()]
 
     if build.proto.status == common_pb2.STARTED:
       futures.append(events.on_build_starting_async(build))
@@ -1041,8 +1033,8 @@ class SubNotify(webapp2.RequestHandler):
 
     # Load build.
     logging.info('Build id: %s', build_id)
-    build = model.Build.get_by_id(build_id)
-    if not build:
+    bundle = model.BuildBundle.get(build_id, infra=True)
+    if not bundle:
 
       # TODO(nodir): remove this if statement.
 
@@ -1060,7 +1052,7 @@ class SubNotify(webapp2.RequestHandler):
       )
 
     # Ensure the loaded build is associated with the task.
-    sw = build.parse_infra().swarming
+    sw = bundle.infra.parse().swarming
     if hostname != sw.hostname:
       self.stop(
           'swarming_hostname %s of build %s does not match %s', sw.hostname,

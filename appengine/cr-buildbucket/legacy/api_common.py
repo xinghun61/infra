@@ -188,23 +188,25 @@ def _properties_to_dict(properties):
   return as_dict
 
 
-def build_to_message(build, build_output_properties, include_lease_key=False):
-  """Converts model.Build to BuildMessage."""
+def build_to_message(build_bundle, include_lease_key=False):
+  """Converts a model.BuildBundle to BuildMessage."""
+  build = build_bundle.build
+
   assert build
   assert build.key
   assert build.key.id()
 
   bp = build.proto
-  infra = build.parse_infra()
+  infra = build_bundle.infra.parse()
   sw = infra.swarming
   logdog = infra.logdog
   recipe = infra.recipe
 
   result_details = (build.result_details or {}).copy()
   result_details['properties'] = {}
-  if build_output_properties:
+  if build_bundle.output_properties:  # pragma: no branch
     result_details['properties'] = _properties_to_dict(
-        build_output_properties.parse()
+        build_bundle.output_properties.parse()
     )
   if bp.summary_markdown:
     result_details['ui'] = {'info': bp.summary_markdown}
@@ -295,7 +297,7 @@ def build_to_message(build, build_output_properties, include_lease_key=False):
   return msg
 
 
-def build_to_dict(build, build_output_properties, include_lease_key=False):
+def build_to_dict(build_bundle, include_lease_key=False):
   """Converts a build to an externally consumable dict.
 
   This function returns a dict that a BuildMessage would be encoded to.
@@ -305,9 +307,7 @@ def build_to_dict(build, build_output_properties, include_lease_key=False):
   # knowledge of many protorpc and endpoints implementation details.
   # Not worth it.
 
-  msg = build_to_message(
-      build, build_output_properties, include_lease_key=include_lease_key
-  )
+  msg = build_to_message(build_bundle, include_lease_key=include_lease_key)
 
   # Special cases
   result = {

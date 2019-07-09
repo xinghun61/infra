@@ -57,8 +57,8 @@ class BigQueryExportTest(testing.AppengineTestCase):
     )
 
   def test_cron_export_builds_to_bq(self):
-    builds = [
-        test_util.build(
+    bundles = [
+        test_util.build_bundle(
             id=1,
             status=common_pb2.SUCCESS,
             infra=dict(
@@ -76,12 +76,14 @@ class BigQueryExportTest(testing.AppengineTestCase):
                 ),
             ),
         ),
-        test_util.build(id=2, status=common_pb2.FAILURE),
-        test_util.build(id=3, status=common_pb2.SCHEDULED),
-        test_util.build(id=4, status=common_pb2.STARTED),
+        test_util.build_bundle(id=2, status=common_pb2.FAILURE),
+        test_util.build_bundle(id=3, status=common_pb2.SCHEDULED),
+        test_util.build_bundle(id=4, status=common_pb2.STARTED),
     ]
-    ndb.put_multi(builds)
+    for b in bundles:
+      b.put()
 
+    builds = [b.build for b in bundles]
     build_steps = model.BuildSteps(key=model.BuildSteps.key_for(builds[0].key))
     build_steps.write_steps(
         build_pb2.Build(
@@ -150,10 +152,13 @@ class BigQueryExportTest(testing.AppengineTestCase):
       'google.appengine.api.taskqueue.Queue.delete_tasks', autospec=True
   )
   def test_cron_export_builds_to_bq_insert_errors(self, delete_tasks):
-    builds = [
-        test_util.build(id=i + 1, status=common_pb2.SUCCESS) for i in xrange(3)
+    bundles = [
+        test_util.build_bundle(id=i + 1, status=common_pb2.SUCCESS)
+        for i in xrange(3)
     ]
-    ndb.put_multi(builds)
+    for b in bundles:
+      b.put()
+    builds = [b.build for b in bundles]
     tasks = [
         taskqueue.Task(method='PULL', payload=json.dumps({'id': b.key.id()}))
         for b in builds

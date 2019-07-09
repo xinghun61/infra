@@ -52,22 +52,20 @@ class NotificationsTest(testing.AppengineTestCase):
     self.patch('components.pubsub.publish', autospec=True)
 
   def test_pubsub_callback(self):
-    build = test_util.build(id=1)
+    bundle = test_util.build_bundle(
+        id=1,
+        output=dict(properties=bbutil.dict_to_struct({'a': 'b'}),),
+    )
+    build = bundle.build
     build.pubsub_callback = model.PubSubCallback(
         topic='projects/example/topics/buildbucket',
         user_data='hello',
         auth_token='secret',
     )
 
-    out_props = model.BuildOutputProperties(
-        key=model.BuildOutputProperties.key_for(build.key),
-    )
-    out_props.serialize(bbutil.dict_to_struct({'a': 'b'}))
-
     @ndb.transactional
     def txn():
-      build.put()
-      out_props.put()
+      bundle.put()
       notifications.enqueue_notifications_async(build).get_result()
 
     txn()
@@ -108,7 +106,7 @@ class NotificationsTest(testing.AppengineTestCase):
     pubsub.publish.assert_called_with(
         'projects/testbed-test/topics/builds',
         json.dumps({
-            'build': api_common.build_to_dict(build, out_props),
+            'build': api_common.build_to_dict(bundle),
             'hostname': 'buildbucket.example.com',
         },
                    sort_keys=True),
@@ -123,7 +121,7 @@ class NotificationsTest(testing.AppengineTestCase):
     pubsub.publish.assert_called_with(
         'projects/example/topics/buildbucket',
         json.dumps({
-            'build': api_common.build_to_dict(build, out_props),
+            'build': api_common.build_to_dict(bundle),
             'hostname': 'buildbucket.example.com',
             'user_data': 'hello',
         },
@@ -135,16 +133,15 @@ class NotificationsTest(testing.AppengineTestCase):
     )
 
   def test_no_pubsub_callback(self):
-    build = test_util.build(id=1)
+    bundle = test_util.build_bundle(id=1)
 
     @ndb.transactional
     def txn():
-      build.put()
-      notifications.enqueue_notifications_async(build).get_result()
+      bundle.put()
+      notifications.enqueue_notifications_async(bundle.build).get_result()
 
     txn()
 
-    build = build.key.get()
     global_task_payload = {
         'id': 1,
         'mode': 'global',
@@ -169,7 +166,7 @@ class NotificationsTest(testing.AppengineTestCase):
     pubsub.publish.assert_called_with(
         'projects/testbed-test/topics/builds',
         json.dumps({
-            'build': api_common.build_to_dict(build, None),
+            'build': api_common.build_to_dict(bundle),
             'hostname': 'buildbucket.example.com',
         },
                    sort_keys=True),

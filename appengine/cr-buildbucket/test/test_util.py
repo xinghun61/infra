@@ -87,12 +87,16 @@ BUILD_DEFAULTS = build_pb2.Build(
             project='chromium',
             prefix='bb',
         ),
-    ),
+    )
 )
 
 
-def build(for_creation=False, **build_proto_fields):  # pragma: no cover
-  """Creates a model.Build from proto fields, with reasonable defaults.
+def build(*args, **kwargs):  # pragma: no cover
+  return build_bundle(*args, **kwargs).build
+
+
+def build_bundle(for_creation=False, **build_proto_fields):  # pragma: no cover
+  """Creates a model.BuildBundle from proto fields, with reasonable defaults.
 
   If for_creation is True, returned Build.proto.{infra, input.properties} will
   be set.
@@ -128,35 +132,57 @@ def build(for_creation=False, **build_proto_fields):  # pragma: no cover
     tags.add(buildtags.build_address_tag(proto.builder, proto.number))
   proto.ClearField('tags')
 
-  infra = copy.deepcopy(proto.infra)
-  input_properties = copy.deepcopy(proto.input.properties)
-  if not for_creation:
-    proto.ClearField('infra')
-    proto.input.ClearField('properties')
-
-  ret = model.Build(
+  b = model.Build(
       id=proto.id,
       proto=proto,
+      # TODO(crbug.com/970053): remove this in favor of
+      # model.BuildInputProperties.
       input_properties_bytes=(
-          input_properties.SerializeToString() if not for_creation else ''
+          proto.input.properties.SerializeToString() if not for_creation else ''
       ),
-      infra_bytes=infra.SerializeToString() if not for_creation else '',
       created_by=auth.Identity.from_bytes(proto.created_by),
       create_time=proto.create_time.ToDatetime(),
       status_changed_time=now,
       tags=sorted(tags),
       parameters={},
       url='https://ci.example.com/%d' % proto.id,
-      is_luci=infra.HasField('swarming'),
+      is_luci=True,
       swarming_task_key='swarming_task_key',
   )
-  ret.update_v1_status_fields()
+  b.update_v1_status_fields()
   if proto.input.HasField('gitiles_commit'):
-    ret.parameters['changes'] = [{
+    b.parameters['changes'] = [{
         'author': {'email': 'bob@example.com'},
         'repo_url': 'https://chromium.googlesource.com/chromium/src',
     }]
 
+  ret = model.BuildBundle(
+      b,
+      infra=model.BuildInfra(
+          key=model.BuildInfra.key_for(b.key),
+          infra=proto.infra.SerializeToString()
+      ),
+      input_properties=model.BuildInputProperties(
+          key=model.BuildInputProperties.key_for(b.key),
+          properties=proto.input.properties.SerializeToString(),
+      ),
+      output_properties=model.BuildOutputProperties(
+          key=model.BuildOutputProperties.key_for(b.key),
+          properties=proto.output.properties.SerializeToString(),
+      ),
+      steps=model.BuildSteps(
+          key=model.BuildSteps.key_for(b.key),
+          step_container_bytes=(
+              build_pb2.Build(steps=proto.steps).SerializeToString()
+          ),
+      ),
+  )
+
+  if not for_creation:
+    proto.ClearField('infra')
+    proto.input.ClearField('properties')
+  proto.output.ClearField('properties')
+  proto.ClearField('steps')
   return ret
 
 

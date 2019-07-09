@@ -43,13 +43,18 @@ class TaskPublishNotification(webapp2.RequestHandler):
     body = json.loads(self.request.body)
 
     assert body.get('mode') in ('global', 'callback')
-    build = model.Build.get_by_id(body['id'])
-    if not build:  # pragma: no cover
+    bundle = model.BuildBundle.get(
+        body['id'],
+        infra=True,
+        input_properties=True,
+        output_properties=True,
+    )
+    if not bundle:  # pragma: no cover
       return
-    out_props = model.BuildOutputProperties.key_for(build.key).get()
+    build = bundle.build
 
     message = {
-        'build': api_common.build_to_dict(build, out_props),
+        'build': api_common.build_to_dict(bundle),
         'hostname': app_identity.get_default_version_hostname(),
     }
     attrs = {'build_id': str(build.key.id())}

@@ -149,7 +149,7 @@ class CreationTest(testing.AppengineTestCase):
     self.assertEqual(build.proto.builder.builder, 'linux')
     self.assertEqual(build.created_by, auth.get_current_identity())
 
-    infra = build.parse_infra()
+    infra = model.BuildInfra.key_for(build.key).get().parse()
     self.assertEqual(infra.logdog.hostname, 'logs.example.com')
     self.assertIn(
         build_pb2.BuildInfra.Swarming.CacheEntry(
@@ -193,19 +193,20 @@ class CreationTest(testing.AppengineTestCase):
     expected = bbutil.dict_to_struct(props)
     expected['recipe'] = 'recipe'
     self.assertEqual(actual, expected)
-    self.assertEqual(
-        build.parse_infra().buildbucket.requested_properties, prop_struct
-    )
+    infra = model.BuildInfra.key_for(build.key).get().parse()
+    self.assertEqual(infra.buildbucket.requested_properties, prop_struct)
 
   def test_experimental(self):
     build = self.add(dict(experimental=common_pb2.YES))
     self.assertTrue(build.proto.input.experimental)
-    self.assertEqual(build.parse_infra().swarming.priority, 60)
+    infra = model.BuildInfra.key_for(build.key).get().parse()
+    self.assertEqual(infra.swarming.priority, 60)
 
   def test_non_experimental(self):
     build = self.add(dict(experimental=common_pb2.NO))
     self.assertFalse(build.proto.input.experimental)
-    self.assertEqual(build.parse_infra().swarming.priority, 30)
+    infra = model.BuildInfra.key_for(build.key).get().parse()
+    self.assertEqual(infra.swarming.priority, 30)
 
   def test_configured_caches(self):
     with self.mutate_builder_cfg() as cfg:
@@ -219,7 +220,8 @@ class CreationTest(testing.AppengineTestCase):
           wait_for_warm_cache_secs=60,
       )
 
-    caches = self.add().parse_infra().swarming.caches
+    infra = model.BuildInfra.key_for(self.add().key).get().parse()
+    caches = infra.swarming.caches
     self.assertIn(
         build_pb2.BuildInfra.Swarming.CacheEntry(
             path='required',
@@ -243,7 +245,8 @@ class CreationTest(testing.AppengineTestCase):
           path='git',
           name='git2',
       )
-    caches = self.add().parse_infra().swarming.caches
+    infra = model.BuildInfra.key_for(self.add().key).get().parse()
+    caches = infra.swarming.caches
     git_caches = [c for c in caches if c.path == 'git']
     self.assertEqual(
         git_caches,
@@ -257,7 +260,8 @@ class CreationTest(testing.AppengineTestCase):
     )
 
   def test_builder_cache(self):
-    caches = self.add().parse_infra().swarming.caches
+    infra = model.BuildInfra.key_for(self.add().key).get().parse()
+    caches = infra.swarming.caches
 
     self.assertIn(
         build_pb2.BuildInfra.Swarming.CacheEntry(
@@ -278,7 +282,8 @@ class CreationTest(testing.AppengineTestCase):
           name='builder',
       )
 
-    caches = self.add().parse_infra().swarming.caches
+    infra = model.BuildInfra.key_for(self.add().key).get().parse()
+    caches = infra.swarming.caches
     self.assertIn(
         build_pb2.BuildInfra.Swarming.CacheEntry(
             path='builder',
@@ -306,7 +311,7 @@ class CreationTest(testing.AppengineTestCase):
     ]
     build = self.add(dict(dimensions=dims))
 
-    infra = build.parse_infra()
+    infra = model.BuildInfra.key_for(build.key).get().parse()
     self.assertEqual(list(infra.buildbucket.requested_dimensions), dims)
     self.assertEqual(list(infra.swarming.task_dimensions), dims)
 
@@ -327,7 +332,7 @@ class CreationTest(testing.AppengineTestCase):
     ]
     build = self.add(dict(dimensions=dims))
 
-    infra = build.parse_infra()
+    infra = model.BuildInfra.key_for(build.key).get().parse()
     self.assertEqual(list(infra.buildbucket.requested_dimensions), dims)
     self.assertEqual(
         list(infra.swarming.task_dimensions), [
@@ -403,7 +408,8 @@ class CreationTest(testing.AppengineTestCase):
 
   def test_priority(self):
     build = self.add(dict(priority=42))
-    self.assertEqual(build.parse_infra().swarming.priority, 42)
+    infra = model.BuildInfra.key_for(build.key).get().parse()
+    self.assertEqual(infra.swarming.priority, 42)
 
   def test_update_builders(self):
     recently = self.now - datetime.timedelta(minutes=1)

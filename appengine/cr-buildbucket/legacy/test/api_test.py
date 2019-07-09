@@ -79,6 +79,9 @@ class V1ApiTest(testing.EndpointsTestCase):
         ),
     )
 
+    self.build_infra = test_util.build_bundle(id=1).infra
+    self.build_infra.put()
+
   def expect_error(self, method_name, req, error_reason):
     res = self.call_api(method_name, req).json_body
     self.assertIsNotNone(res.get('error'))
@@ -408,13 +411,15 @@ class V1ApiTest(testing.EndpointsTestCase):
     orig_build.tags = ['a:b']
     orig_build.put()
 
-    retried_build = test_util.build(
+    retried_build_bundle = test_util.build_bundle(
         id=2,
         input=dict(
             properties=orig_build.proto.input.properties,
             gitiles_commit=orig_build.proto.input.gitiles_commit,
         ),
     )
+    retried_build_bundle.infra.put()
+    retried_build = retried_build_bundle.build
     retried_build.retry_of = 1
     add_async.return_value = future(retried_build)
 
@@ -480,8 +485,11 @@ class V1ApiTest(testing.EndpointsTestCase):
 
   @mock.patch('creation.add_many_async', autospec=True)
   def test_put_batch(self, add_many_async):
-    build1 = test_util.build(id=1, tags=[dict(key='a', value='b')])
-    build2 = test_util.build(id=2)
+    bundle1 = test_util.build_bundle(id=1, tags=[dict(key='a', value='b')])
+    bundle2 = test_util.build_bundle(id=2)
+
+    bundle1.infra.put()
+    bundle2.infra.put()
 
     config.put_bucket(
         'chromium',
@@ -498,8 +506,8 @@ class V1ApiTest(testing.EndpointsTestCase):
     )
 
     add_many_async.return_value = future([
-        (build1, None),
-        (build2, None),
+        (bundle1.build, None),
+        (bundle2.build, None),
         (None, errors.InvalidInputError('bad')),
     ])
     req = {

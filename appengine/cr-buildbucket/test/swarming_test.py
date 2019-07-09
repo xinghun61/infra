@@ -675,23 +675,23 @@ class SyncBuildTest(BaseTest):
         'swarming.prepare_task_def', autospec=True, return_value=self.task_def
     )
 
-    self.build = test_util.build(id=1, created_by='user:john@example.com')
-    self.build.swarming_task_key = None
-    with self.build.mutate_infra() as infra:
-      infra.swarming.task_id = ''
-    self.build.put()
-
-    self.build_infra = model.BuildInfra(
-        key=model.BuildInfra.key_for(self.build.key),
-        infra=self.build.infra_bytes,
+    self.build_bundle = test_util.build_bundle(
+        id=1, created_by='user:john@example.com'
     )
-    self.build_infra.put()
+    self.build_bundle.build.swarming_task_key = None
+    with self.build_bundle.infra.mutate() as infra:
+      infra.swarming.task_id = ''
+    self.build_bundle.put()
+
+  @property
+  def build(self):
+    return self.build_bundle.build
 
   def _create_task(self):
-    swarming._create_swarming_task(
-        self.build,
-        self.build.parse_infra().swarming
+    self.build_bundle.build.proto.infra.ParseFromString(
+        self.build_bundle.infra.infra
     )
+    swarming._create_swarming_task(self.build_bundle.build)
 
   def test_create_task(self):
     expected_task_def = self.task_def.copy()
@@ -745,9 +745,9 @@ class SyncBuildTest(BaseTest):
 
     @ndb.tasklet
     def json_request_async(*_args, **_kwargs):
-      with self.build_infra.mutate() as infra:
+      with self.build_bundle.infra.mutate() as infra:
         infra.swarming.task_id = 'deadbeef'
-      yield self.build_infra.put_async()
+      yield self.build_bundle.infra.put_async()
 
       raise ndb.Return({'task_id': 'new task'})
 
@@ -959,12 +959,8 @@ class SyncBuildTest(BaseTest):
   ])
   def test_sync_with_task_result(self, case):
     logging.info('test case: %s', case)
-    build = test_util.build(id=1)
-    build_infra = model.BuildInfra(
-        key=model.BuildInfra.key_for(self.build.key),
-        infra=build.infra_bytes,
-    )
-    ndb.put_multi([build, build_infra])
+    bundle = test_util.build_bundle(id=1)
+    bundle.put()
 
     self.patch(
         'swarming._load_task_result',
@@ -974,8 +970,8 @@ class SyncBuildTest(BaseTest):
 
     swarming._sync_build_and_swarming(1, 1)
 
-    build = build.key.get()
-    build_infra = build_infra.key.get()
+    build = bundle.build.key.get()
+    build_infra = bundle.infra.key.get()
     bp = build.proto
     self.assertEqual(bp.status, case['status'])
     self.assertEqual(
@@ -1068,6 +1064,7 @@ class SubNotifyTest(BaseTest):
   def setUp(self):
     super(SubNotifyTest, self).setUp()
     self.handler = swarming.SubNotify(response=webapp2.Response())
+    self.build_bundle = test_util.build_bundle(id=1)
 
   def test_unpack_msg(self):
     self.assertEqual(
@@ -1161,9 +1158,7 @@ class SubNotifyTest(BaseTest):
 
   @mock.patch('swarming._load_task_result', autospec=True)
   def test_post(self, load_task_result):
-    build = test_util.build(id=1)
-    build.put()
-
+    self.build_bundle.put()
     self.mock_request({
         'build_id': 1L,
         'created_ts': 1448841600000000,
@@ -1177,12 +1172,11 @@ class SubNotifyTest(BaseTest):
 
     self.handler.post()
 
-    build = build.key.get()
+    build = self.build_bundle.build.key.get()
     self.assertEqual(build.proto.status, common_pb2.SUCCESS)
 
   def test_post_with_different_swarming_hostname(self):
-    build = test_util.build(id=1)
-    build.put()
+    self.build_bundle.put()
 
     self.mock_request({
         'build_id': 1L,
@@ -1194,8 +1188,7 @@ class SubNotifyTest(BaseTest):
       self.handler.post()
 
   def test_post_with_different_task_id(self):
-    build = test_util.build(id=1)
-    build.put()
+    self.build_bundle.put()
 
     self.mock_request(
         {
@@ -1210,10 +1203,9 @@ class SubNotifyTest(BaseTest):
       self.handler.post()
 
   def test_post_too_soon(self):
-    build = test_util.build(id=1)
-    with build.mutate_infra() as infra:
+    with self.build_bundle.infra.mutate() as infra:
       infra.swarming.task_id = ''
-    build.put()
+    self.build_bundle.put()
 
     self.mock_request({
         'build_id': 1L,

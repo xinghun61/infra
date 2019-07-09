@@ -2,6 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import collections
 import contextlib
 import datetime
 import itertools
@@ -133,9 +134,9 @@ class Build(ndb.Model):
   #   input.properties: see input_properties_bytes.
   #     CAVEAT: field input.properties does exist during build creation, and
   #     moved into input_properties_bytes right before initial datastore.put.
-  #   infra: see infra_bytes.
+  #   infra: see BuildInfra.
   #     CAVEAT: field infra does exist during build creation, and moved into
-  #     infra_bytes right before initial datastore.put.
+  #     BuildInfra right before initial datastore.put.
   #
   # Transition period: proto is either None or complete, i.e. created by
   # creation.py or fix_builds.py.
@@ -521,9 +522,142 @@ class BuildInfra(BuildDetailEntity):
 # Tuple of classes representing entity kinds that living under Build entity.
 # Such entities must be deleted if Build entity is deleted.
 BUILD_CHILD_CLASSES = (
+    BuildInfra,
+    BuildInputProperties,
     BuildOutputProperties,
     BuildSteps,
 )
+
+BuildBundleBase = collections.namedtuple(
+    'BuildBundleBase',
+    [
+        'build',  # instance of Build
+        'infra',  # instance of BuildInfra
+        'input_properties',  # instance of BuildInputProperties
+        'output_properties',  # instance of BuildOutputProperties
+        'steps',  # instance of BuildSteps
+    ]
+)
+
+
+class BuildBundle(BuildBundleBase):
+  """A tuple of entities describing one build."""
+
+  def __new__(
+      cls,
+      build,
+      infra=None,
+      input_properties=None,
+      output_properties=None,
+      steps=None
+  ):
+    assert isinstance(build, Build), build
+    assert not infra or isinstance(infra, BuildInfra)
+    assert (
+        not input_properties or
+        isinstance(input_properties, BuildInputProperties)
+    )
+    assert (
+        not output_properties or
+        isinstance(output_properties, BuildOutputProperties)
+    )
+    assert not steps or isinstance(steps, BuildSteps)
+    return super(BuildBundle, cls).__new__(
+        cls,
+        build=build,
+        infra=infra,
+        input_properties=input_properties,
+        output_properties=output_properties,
+        steps=steps,
+    )
+
+  @classmethod
+  @ndb.tasklet
+  def get_async(
+      cls,
+      build,
+      infra=False,
+      output_properties=False,
+      input_properties=False,
+      steps=False
+  ):
+    """Fetches a BuildBundle.
+
+    build must be either an int/long build id or pre-fetched Build.
+    If it is an id, the build will be fetched.
+    If not found, this function returns None future.
+    """
+    assert isinstance(build, (int, long, Build)), build
+
+    if isinstance(build, Build):
+      build_key = build.key
+      build_fut = ndb.Future()
+      build_fut.set_result(build)
+    else:
+      build_key = ndb.Key(Build, build)
+      build_fut = build_key.get_async()
+
+    def get_child_async(do_load, clazz):
+      if not do_load:
+        f = ndb.Future()
+        f.set_result(None)
+        return f
+      return clazz.key_for(build_key).get_async()
+
+    kwarg_futs = dict(
+        build=build_fut,
+        infra=get_child_async(infra, BuildInfra),
+        input_properties=get_child_async(
+            input_properties, BuildInputProperties
+        ),
+        output_properties=get_child_async(
+            output_properties, BuildOutputProperties
+        ),
+        steps=get_child_async(steps, BuildSteps),
+    )
+    build = yield build_fut
+    if not build:  # pragma: no cover
+      raise ndb.Return(None)
+
+    kwargs = {}
+    for k, f in kwarg_futs.iteritems():
+      kwargs[k] = yield f
+    raise ndb.Return(cls(**kwargs))
+
+  @classmethod
+  def get(cls, *args, **kwargs):
+    return cls.get_async(*args, **kwargs).get_result()
+
+  @ndb.tasklet
+  def put_async(self):
+    """Puts all non-None entities."""
+    yield ndb.put_multi_async(filter(None, self))
+
+  def put(self):
+    return self.put_async().get_result()
+
+  def to_proto(self, dest, load_input_properties, load_tags):
+    """Writes build to the dest Build proto. Returns dest."""
+    dest.id = self.build.key.id()  # old builds do not have id field
+    if dest is not self.build.proto:  # pragma: no branch
+      dest.CopyFrom(self.build.proto)
+
+    if load_tags:
+      self.build.tags_to_protos(dest.tags)
+
+    if self.infra:
+      dest.infra.ParseFromString(self.infra.infra)
+
+    if load_input_properties and self.build.input_properties_bytes:
+      # TODO(crbug.com/970053): read from BuildInputProperties entity.
+      dest.input.properties.ParseFromString(self.build.input_properties_bytes)
+
+    if self.steps:
+      self.steps.read_steps(dest)
+
+    if self.output_properties:
+      dest.output.properties.ParseFromString(self.output_properties.properties)
+    return dest
 
 
 class Builder(ndb.Model):
@@ -606,40 +740,20 @@ def builds_to_protos_async(
   builds must be a list of (model.Build, build_pb2.Build) tuples,
   where the build_pb2.Build is the destination.
   """
-  if load_steps:
-    steps_futs = [BuildSteps.key_for(b.key).get_async() for b, _ in builds]
-  else:
-    steps_futs = itertools.repeat(None)
 
-  if load_output_properties:
-    out_props_futs = [
-        BuildOutputProperties.key_for(b.key).get_async() for b, _ in builds
-    ]
-  else:
-    out_props_futs = itertools.repeat(None)
+  bundle_futs = [(
+      dest,
+      BuildBundle.get_async(
+          b,
+          infra=load_infra,
+          input_properties=load_input_properties,
+          output_properties=load_output_properties,
+          steps=load_steps
+      )
+  ) for b, dest in builds]
 
-  for (b, d), steps_f, out_props_f in zip(builds, steps_futs, out_props_futs):
-    d.CopyFrom(b.proto)
-    # Old builds do not have proto.id
-    d.id = b.key.id()
-
-    if load_tags and not d.tags:
-      b.tags_to_protos(d.tags)
-
-    if load_infra and b.infra_bytes:
-      # TODO(crbug.com/970053): read from BuildInfra entity.
-      d.infra.ParseFromString(b.infra_bytes)
-
-    if load_input_properties and b.input_properties_bytes:
-      # TODO(crbug.com/970053): read from BuildInputProperties entity.
-      d.input.properties.ParseFromString(b.input_properties_bytes)
-
-    if steps_f:
-      steps = yield steps_f
-      if steps:  # pragma: no branch
-        steps.read_steps(d)
-
-    if out_props_f:
-      out_props = yield out_props_f
-      if out_props:  # pragma: no branch
-        d.output.properties.ParseFromString(out_props.properties)
+  for dest, bundle_fut in bundle_futs:
+    bundle = yield bundle_fut
+    bundle.to_proto(
+        dest, load_input_properties=load_input_properties, load_tags=load_tags
+    )

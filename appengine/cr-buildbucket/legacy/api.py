@@ -351,15 +351,17 @@ def _override_builder_cfg_func(parameters):
 def builds_to_messages(builds, include_lease_key=False):
   """Converts model.Build objects to BuildMessage objects.
 
-  Fetches model.BuildOutputProperties.
+  Fetches children of the model.Build entities.
   """
-  out_props_list = ndb.get_multi([
-      model.BuildOutputProperties.key_for(b.key) for b in builds
-  ])
+  bundle_futs = [
+      model.BuildBundle.get_async(
+          b, infra=True, input_properties=True, output_properties=True
+      ) for b in builds
+  ]
   return [
       api_common.build_to_message(
-          b, out_props, include_lease_key=include_lease_key
-      ) for b, out_props in zip(builds, out_props_list)
+          f.get_result(), include_lease_key=include_lease_key
+      ) for f in bundle_futs
   ]
 
 

@@ -222,11 +222,16 @@ def build_predicate_to_search_query(predicate):
 def get_build_async(req, res, _ctx, mask):
   """Retrieves a build by id or number."""
   validation.validate_get_build_request(req)
-  logging.info('Build id: %s', req.id)
 
   if req.id:
+    logging.info('Build id: %s', req.id)
     build = yield service.get_async(req.id)
   else:
+    logging.info(
+        'Build id: %s/%d',
+        config.builder_id_string(req.builder),
+        req.build_number,
+    )
     tag = buildtags.build_address_tag(req.builder, req.build_number)
     q = search.Query(
         bucket_ids=[bucket_id_string(req.builder)],

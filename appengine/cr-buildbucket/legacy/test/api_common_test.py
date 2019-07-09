@@ -33,10 +33,10 @@ class ApiCommonTests(testing.AppengineTestCase):
   def test_expired_build_to_message(self):
     yesterday = utils.utcnow() - datetime.timedelta(days=1)
     yesterday_timestamp = utils.datetime_to_timestamp(yesterday)
-    build = test_util.build()
-    build.lease_key = 1
-    build.lease_expiration_date = yesterday
-    msg = api_common.build_to_message(build, None)
+    bundle = test_util.build_bundle()
+    bundle.build.lease_key = 1
+    bundle.build.lease_expiration_date = yesterday
+    msg = api_common.build_to_message(bundle)
     self.assertEqual(msg.lease_expiration_ts, yesterday_timestamp)
 
   def test_build_to_dict(self):
@@ -96,9 +96,7 @@ class ApiCommonTests(testing.AppengineTestCase):
         'url': 'https://ci.example.com/8991715593768927232',
     }
 
-    out_props = model.BuildOutputProperties()
-    out_props.serialize(bbutil.dict_to_struct({'a': 'b'}))
-    build = test_util.build(
+    bundle = test_util.build_bundle(
         status=common_pb2.INFRA_FAILURE,
         summary_markdown='bad',
         input=dict(
@@ -106,8 +104,9 @@ class ApiCommonTests(testing.AppengineTestCase):
                 'recipe': 'recipe',
                 'build-defined-property': 1,
                 'builder-defined-property': 2,
-            })
+            }),
         ),
+        output=dict(properties=bbutil.dict_to_struct({'a': 'b'}),),
         infra=dict(
             swarming=dict(
                 bot_dimensions=[
@@ -121,18 +120,17 @@ class ApiCommonTests(testing.AppengineTestCase):
                     'build-defined-property': 1,
                 }),
             ),
-        ),
+        )
     )
+
     self.assertEqual(
-        expected,
-        test_util.ununicode(api_common.build_to_dict(build, out_props))
+        expected, test_util.ununicode(api_common.build_to_dict(bundle))
     )
 
   def test_build_to_dict_non_luci(self):
-    build = test_util.build(builder=dict(bucket='master.chromium'))
-    build.is_luci = False
-
-    actual = api_common.build_to_dict(build, None)
+    bundle = test_util.build_bundle(builder=dict(bucket='master.chromium'))
+    bundle.build.is_luci = False
+    actual = api_common.build_to_dict(bundle)
     self.assertEqual(actual['project'], 'chromium')
     self.assertEqual(actual['bucket'], 'master.chromium')
 

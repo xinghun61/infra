@@ -200,12 +200,19 @@ class ToBuildProtosTests(testing.AppengineTestCase):
     self.assertEqual(actual.input.properties, props)
 
   def test_infra(self):
-    build = test_util.build(
+    bundle = test_util.build_bundle(
         infra=dict(swarming=dict(hostname='swarming.example.com'))
     )
-
-    actual = self.to_proto(build, load_infra=True)
+    bundle.infra.put()
+    actual = self.to_proto(bundle.build, load_infra=True)
     self.assertEqual(actual.infra.swarming.hostname, 'swarming.example.com')
+
+  def test_load_bundle_with_build_id(self):
+    bundle = test_util.build_bundle(id=1)
+    bundle.put()
+    actual = model.BuildBundle.get(1, infra=True)
+    self.assertEqual(actual.build.key.id(), 1)
+    self.assertEqual(actual.infra, bundle.infra)
 
 
 class BuildStepsTest(testing.AppengineTestCase):

@@ -211,6 +211,7 @@ class SwarmbucketApi(remote.Service):
       build = build_request.create_build_async(
           1, settings, builder_cfg, identity, utils.utcnow()
       ).get_result()
+      assert build.proto.HasField('infra')
       build.proto.number = 1
       settings = config.get_settings_async().get_result()
       task_def = swarming.prepare_task_def(
@@ -220,7 +221,7 @@ class SwarmbucketApi(remote.Service):
 
       return GetTaskDefinitionResponseMessage(
           task_definition=task_def_json,
-          swarming_host=build.parse_infra().swarming.hostname,
+          swarming_host=build.proto.infra.swarming.hostname,
       )
     except errors.InvalidInputError as ex:
       raise endpoints.BadRequestException(

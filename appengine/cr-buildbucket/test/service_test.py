@@ -100,6 +100,8 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
 
     self.patch('search.TagIndex.random_shard_index', return_value=0)
 
+    test_util.build_bundle(id=1).infra.put()
+
   def mock_cannot(self, action, bucket_id=None):
 
     def can_async(requested_bucket_id, requested_action, _identity=None):
@@ -124,7 +126,6 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
   @staticmethod
   def classic_build(**build_proto_fields):
     build = test_util.build(**build_proto_fields)
-    build.infra_bytes = None
     build.is_luci = False
     return build
 
@@ -148,7 +149,8 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
 
   @mock.patch('swarming.cancel_task_async', autospec=True)
   def test_cancel(self, cancel_task_async):
-    test_util.build(id=1).put()
+    bundle = test_util.build_bundle(id=1)
+    bundle.put()
     build = service.cancel_async(1, summary_markdown='nope').get_result()
     self.assertEqual(build.proto.status, common_pb2.CANCELED)
     self.assertEqual(build.proto.end_time.ToDatetime(), utils.utcnow())
@@ -525,34 +527,37 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
   ########################## RESET EXPIRED BUILDS ##############################
 
   def test_delete_many_scheduled_builds(self):
-    scheduled_build = test_util.build(id=1, status=common_pb2.SCHEDULED)
-    completed_build = test_util.build(id=2, status=common_pb2.SUCCESS)
-    scheduled_build.put()
-    completed_build.put()
-    self.assertIsNotNone(scheduled_build.key.get())
-    self.assertIsNotNone(completed_build.key.get())
+    scheduled = test_util.build_bundle(id=1, status=common_pb2.SCHEDULED)
+    completed = test_util.build_bundle(id=2, status=common_pb2.SUCCESS)
+    scheduled.put()
+    completed.put()
+    self.assertIsNotNone(scheduled.build.key.get())
+    self.assertIsNotNone(completed.build.key.get())
     service._task_delete_many_builds(
-        scheduled_build.bucket_id, model.BuildStatus.SCHEDULED
+        scheduled.build.bucket_id, model.BuildStatus.SCHEDULED
     )
-    self.assertIsNone(scheduled_build.key.get())
-    self.assertIsNotNone(completed_build.key.get())
+    self.assertIsNone(scheduled.build.key.get())
+    self.assertIsNotNone(completed.build.key.get())
 
   def test_delete_many_started_builds(self):
-    scheduled_build = test_util.build(id=1, status=common_pb2.SCHEDULED)
-    started_build = test_util.build(id=2, status=common_pb2.STARTED)
-    completed_build = test_util.build(id=3, status=common_pb2.SUCCESS)
-    ndb.put_multi([scheduled_build, started_build, completed_build])
+    scheduled = test_util.build_bundle(id=1, status=common_pb2.SCHEDULED)
+    started = test_util.build_bundle(id=2, status=common_pb2.STARTED)
+    completed = test_util.build_bundle(id=3, status=common_pb2.SUCCESS)
+    scheduled.put()
+    started.put()
+    completed.put()
 
     service._task_delete_many_builds(
-        scheduled_build.bucket_id, model.BuildStatus.STARTED
+        scheduled.build.bucket_id, model.BuildStatus.STARTED
     )
-    self.assertIsNotNone(scheduled_build.key.get())
-    self.assertIsNone(started_build.key.get())
-    self.assertIsNotNone(completed_build.key.get())
+    self.assertIsNotNone(scheduled.build.key.get())
+    self.assertIsNone(started.build.key.get())
+    self.assertIsNotNone(completed.build.key.get())
 
   def test_delete_many_builds_with_tags(self):
-    build = test_util.build(tags=[dict(key='tag', value='1')])
-    build.put()
+    bundle = test_util.build_bundle(tags=[dict(key='tag', value='1')])
+    bundle.put()
+    build = bundle.build
 
     service._task_delete_many_builds(
         build.bucket_id, model.BuildStatus.SCHEDULED, tags=['tag:0']
@@ -565,17 +570,18 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     self.assertIsNone(build.key.get())
 
   def test_delete_many_builds_created_by(self):
-    build1 = test_util.build(id=1, created_by='user:1@example.com')
-    build2 = test_util.build(id=2, created_by='user:2@example.com')
-    ndb.put_multi([build1, build2])
+    bundle1 = test_util.build_bundle(id=1, created_by='user:1@example.com')
+    bundle2 = test_util.build_bundle(id=2, created_by='user:2@example.com')
+    bundle1.put()
+    bundle2.put()
 
     service._task_delete_many_builds(
-        build1.bucket_id,
+        bundle1.build.bucket_id,
         model.BuildStatus.SCHEDULED,
-        created_by=build2.created_by,
+        created_by=bundle2.build.created_by,
     )
-    self.assertIsNone(build2.key.get())
-    self.assertIsNotNone(build1.key.get())
+    self.assertIsNone(bundle2.build.key.get())
+    self.assertIsNotNone(bundle1.build.key.get())
 
   def test_delete_many_builds_auth_error(self):
     self.mock_cannot(user.Action.DELETE_SCHEDULED_BUILDS)
