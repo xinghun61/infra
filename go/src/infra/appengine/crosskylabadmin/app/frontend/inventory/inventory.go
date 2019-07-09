@@ -155,9 +155,9 @@ func (is *ServerImpl) UpdateDutLabels(ctx context.Context, req *fleet.UpdateDutL
 		ctx,
 		transientErrorRetries(),
 		func() error {
-			var err error
-			resp, err = updateDutLabels(ctx, store, req2)
-			return err
+			var err2 error
+			resp, err2 = updateDutLabels(ctx, store, req2)
+			return err2
 		},
 		retry.LogCallback(ctx, "updateDutLabels"),
 	)

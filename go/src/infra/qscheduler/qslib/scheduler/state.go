@@ -290,11 +290,11 @@ func (s *state) notifyTaskAbsent(ctx context.Context, requestID RequestID, t tim
 // getRequest looks up the given requestID among either the running or queued
 // tasks, and returns (the request if it exists, boolean indication if
 // request exists).
-func (s *state) getRequest(requestID RequestID) (r *TaskRequest, ok bool) {
+func (s *state) getRequest(requestID RequestID) (*TaskRequest, bool) {
 	if wid, ok := s.runningRequestsCache[requestID]; ok {
 		return s.workers[wid].runningTask.request, true
 	}
-	r, ok = s.queuedRequests[requestID]
+	r, ok := s.queuedRequests[requestID]
 	return r, ok
 }
 

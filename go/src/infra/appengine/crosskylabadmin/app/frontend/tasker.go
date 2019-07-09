@@ -57,7 +57,7 @@ func (tsi *TaskerServerImpl) TriggerRepairOnIdle(ctx context.Context, req *fleet
 		err = grpcutil.GRPCifyAndLogErr(ctx, err)
 	}()
 
-	if err := req.Validate(); err != nil {
+	if err = req.Validate(); err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 	sc, err := tsi.newSwarmingClient(ctx, config.Get(ctx).Swarming.Host)
@@ -122,7 +122,7 @@ func (tsi *TaskerServerImpl) TriggerRepairOnRepairFailed(ctx context.Context, re
 		err = grpcutil.GRPCifyAndLogErr(ctx, err)
 	}()
 
-	if err := req.Validate(); err != nil {
+	if err = req.Validate(); err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 	sc, err := tsi.newSwarmingClient(ctx, config.Get(ctx).Swarming.Host)

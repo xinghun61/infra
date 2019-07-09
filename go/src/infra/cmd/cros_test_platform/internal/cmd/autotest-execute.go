@@ -53,7 +53,7 @@ func (c *autotestExecuteRun) innerRun(a subcommands.Application, args []string, 
 		return err
 	}
 
-	if err := c.validateRequest(request); err != nil {
+	if err = c.validateRequest(request); err != nil {
 		return err
 	}
 

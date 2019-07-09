@@ -47,7 +47,7 @@ func (is *ServerImpl) AssignDutsToDrones(ctx context.Context, req *fleet.AssignD
 	defer func() {
 		err = grpcutil.GRPCifyAndLogErr(ctx, err)
 	}()
-	if err := req.Validate(); err != nil {
+	if err = req.Validate(); err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 	s, err := is.newStore(ctx)

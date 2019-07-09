@@ -45,7 +45,7 @@ func verifyLabInventoryLoadAndOrder(dataDir string) error {
 		return err
 	}
 	lab := Lab{}
-	if err := LoadLabFromString(labStrGot, &lab); err != nil {
+	if err = LoadLabFromString(labStrGot, &lab); err != nil {
 		return errors.Annotate(err, "load lab inventory %s", dataDir).Err()
 	}
 	labStr, err := WriteLabToString(&lab)
@@ -69,7 +69,7 @@ func verifyInfraInventoryLoadAndOrder(dataDir string) error {
 		return err
 	}
 	infrastructure := Infrastructure{}
-	if err := LoadInfrastructureFromString(infraStrGot, &infrastructure); err != nil {
+	if err = LoadInfrastructureFromString(infraStrGot, &infrastructure); err != nil {
 		return errors.Annotate(err, "load infrastructure inventory %s", dataDir).Err()
 	}
 	infraStr, err := WriteInfrastructureToString(&infrastructure)

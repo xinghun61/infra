@@ -49,7 +49,7 @@ func (r *Runner) LaunchAndWait(ctx context.Context, client swarming.Client, _ is
 
 	r.response = &steps.ExecuteResponse{State: &test_platform.TaskState{LifeCycle: test_platform.TaskState_LIFE_CYCLE_RUNNING}}
 
-	if err := r.wait(ctx, client, taskID); err != nil {
+	if err = r.wait(ctx, client, taskID); err != nil {
 		return err
 	}
 

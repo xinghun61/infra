@@ -71,7 +71,7 @@ func jsonCmdOutput(cmd *exec.Cmd) ([]byte, error) {
 	}
 	defer os.Remove(f.Name())
 	cmd.Args = append(cmd.Args, "-json-output", f.Name())
-	if _, err := cmd.Output(); err != nil {
+	if _, err = cmd.Output(); err != nil {
 		return nil, errors.Annotate(err, "JSON command output").Err()
 	}
 	out, err := ioutil.ReadAll(f)

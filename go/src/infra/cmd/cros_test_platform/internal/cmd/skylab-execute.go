@@ -53,7 +53,7 @@ func (c *skylabExecuteRun) innerRun(a subcommands.Application, args []string, en
 		return err
 	}
 
-	if err := c.validateRequest(request); err != nil {
+	if err = c.validateRequest(request); err != nil {
 		return err
 	}
 

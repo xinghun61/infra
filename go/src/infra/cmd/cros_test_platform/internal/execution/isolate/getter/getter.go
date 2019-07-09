@@ -8,6 +8,7 @@ package getter
 import (
 	"context"
 	"io/ioutil"
+	"log"
 	"os"
 	"path/filepath"
 
@@ -34,7 +35,12 @@ func (c *Client) GetFile(ctx context.Context, digest isolated.HexDigest, filePat
 		return nil, errors.Annotate(err, "get isolate %s file %s", digest, filePath).Err()
 	}
 
-	defer os.RemoveAll(dir)
+	defer func() {
+		// TODO(akeshet): return it.
+		if err = os.RemoveAll(dir); err != nil {
+			log.Fatalf("unexpected failure to remove %s", dir)
+		}
+	}()
 
 	// TODO(akeshet): Add a downloader option to limit to downloading to only
 	// a whitelist a file paths, then use that option here.
@@ -46,7 +52,7 @@ func (c *Client) GetFile(ctx context.Context, digest isolated.HexDigest, filePat
 	go func() { e <- dl.Wait() }()
 
 	select {
-	case err := <-e:
+	case err = <-e:
 		if err != nil {
 			return nil, errors.Annotate(err, "get isolate %s file %s", digest, filePath).Err()
 		}

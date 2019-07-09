@@ -39,7 +39,7 @@ func (s *BasicQSchedulerServer) AssignTasks(ctx context.Context, r *swarming.Ass
 	defer func() {
 		err = grpcutil.GRPCifyAndLogErr(ctx, err)
 	}()
-	if err := r.Validate(); err != nil {
+	if err = r.Validate(); err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 
@@ -53,7 +53,7 @@ func (s *BasicQSchedulerServer) AssignTasks(ctx context.Context, r *swarming.Ass
 	op, result := operations.AssignTasks(r)
 
 	store := state.NewStore(r.SchedulerId)
-	if err := store.RunOperationInTransaction(ctx, op); err != nil {
+	if err = store.RunOperationInTransaction(ctx, op); err != nil {
 		return nil, err
 	}
 
@@ -65,7 +65,7 @@ func (s *BasicQSchedulerServer) GetCancellations(ctx context.Context, r *swarmin
 	defer func() {
 		err = grpcutil.GRPCifyAndLogErr(ctx, err)
 	}()
-	if err := r.Validate(); err != nil {
+	if err = r.Validate(); err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 

@@ -50,7 +50,7 @@ func (is *ServerImpl) GetDutInfo(ctx context.Context, req *fleet.GetDutInfoReque
 		err = grpcutil.GRPCifyAndLogErr(ctx, err)
 	}()
 
-	if err := req.Validate(); err != nil {
+	if err = req.Validate(); err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 

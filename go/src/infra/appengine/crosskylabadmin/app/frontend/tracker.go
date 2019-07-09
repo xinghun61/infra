@@ -88,7 +88,7 @@ func (tsi *TrackerServerImpl) RefreshBots(ctx context.Context, req *fleet.Refres
 
 	bsm := botInfoToSummary(ctx, bots)
 	logging.Infof(ctx, "Adding task info to bot summaries")
-	if err := addTaskInfoToSummaries(ctx, sc, bsm); err != nil {
+	if err = addTaskInfoToSummaries(ctx, sc, bsm); err != nil {
 		return nil, errors.Annotate(err, "failed to set idle time for bots").Err()
 	}
 	logging.Infof(ctx, "Inserting bot summaries into datastore")

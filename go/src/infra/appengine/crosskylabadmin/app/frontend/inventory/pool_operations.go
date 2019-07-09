@@ -39,7 +39,7 @@ func (is *ServerImpl) EnsurePoolHealthy(ctx context.Context, req *fleet.EnsurePo
 		err = grpcutil.GRPCifyAndLogErr(ctx, err)
 	}()
 
-	if err := req.Validate(); err != nil {
+	if err = req.Validate(); err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 	err = retry.Retry(
@@ -61,7 +61,7 @@ func (is *ServerImpl) ensurePoolHealthyNoRetry(ctx context.Context, req *fleet.E
 	if err != nil {
 		return nil, err
 	}
-	if err := store.Refresh(ctx); err != nil {
+	if err = store.Refresh(ctx); err != nil {
 		return nil, err
 	}
 
@@ -94,7 +94,7 @@ func (is *ServerImpl) EnsurePoolHealthyForAllModels(ctx context.Context, req *fl
 		err = grpcutil.GRPCifyAndLogErr(ctx, err)
 	}()
 
-	if err := req.Validate(); err != nil {
+	if err = req.Validate(); err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 	err = retry.Retry(
@@ -116,7 +116,7 @@ func (is *ServerImpl) ensurePoolHealthyForAllModelsNoRetry(ctx context.Context, 
 	if err != nil {
 		return nil, err
 	}
-	if err := store.Refresh(ctx); err != nil {
+	if err = store.Refresh(ctx); err != nil {
 		return nil, err
 	}
 
@@ -134,9 +134,9 @@ func (is *ServerImpl) ensurePoolHealthyForAllModelsNoRetry(ctx context.Context, 
 			im := m
 			ids := ds
 			workC <- func() error {
-				iResp, err := ensurePoolHealthyFor(ctx, ts, ids, req.TargetPool, req.SparePool, req.MaxUnhealthyDuts)
-				if err != nil {
-					return err
+				iResp, err2 := ensurePoolHealthyFor(ctx, ts, ids, req.TargetPool, req.SparePool, req.MaxUnhealthyDuts)
+				if err2 != nil {
+					return err2
 				}
 
 				mResp.Lock()
@@ -167,7 +167,7 @@ func (is *ServerImpl) ResizePool(ctx context.Context, req *fleet.ResizePoolReque
 		err = grpcutil.GRPCifyAndLogErr(ctx, err)
 	}()
 
-	if err := req.Validate(); err != nil {
+	if err = req.Validate(); err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 	err = retry.Retry(
@@ -189,7 +189,7 @@ func (is *ServerImpl) resizePoolNoRetry(ctx context.Context, req *fleet.ResizePo
 	if err != nil {
 		return nil, err
 	}
-	if err := store.Refresh(ctx); err != nil {
+	if err = store.Refresh(ctx); err != nil {
 		return nil, err
 	}
 

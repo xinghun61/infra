@@ -71,7 +71,7 @@ func (c *internalPrintBotInfoRun) innerRun(a subcommands.Application, args []str
 		return err
 	}
 	var d inventory.DeviceUnderTest
-	if err := proto.Unmarshal(res.GetSpec(), &d); err != nil {
+	if err = proto.Unmarshal(res.GetSpec(), &d); err != nil {
 		return err
 	}
 	stderr := a.GetErr()

@@ -180,14 +180,14 @@ func (is *ServerImpl) DeleteDuts(ctx context.Context, req *fleet.DeleteDutsReque
 	}
 	var changeURL string
 	var removedIDs []string
-	f := func() (err error) {
-		if err := s.Refresh(ctx); err != nil {
-			return err
+	f := func() error {
+		if err2 := s.Refresh(ctx); err2 != nil {
+			return err2
 		}
 		removedDUTs := removeDUTWithHostnames(s, req.Hostnames)
-		url, err := s.Commit(ctx, fmt.Sprintf("delete %d duts", len(removedDUTs)))
-		if err != nil {
-			return err
+		url, err2 := s.Commit(ctx, fmt.Sprintf("delete %d duts", len(removedDUTs)))
+		if err2 != nil {
+			return err2
 		}
 
 		// Captured variables only on success, hence at most once.
