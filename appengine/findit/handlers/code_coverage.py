@@ -51,6 +51,7 @@ _ALLOWED_GITILES_HOST = set([
     'skia.googlesource.com',
     'swiftshader.googlesource.com',
     'webrtc.googlesource.com',
+    'libassistant-internal.googlesource.com',
 ])
 
 # The regex to extract the build id from the url path.
@@ -89,6 +90,11 @@ _POSTSUBMIT_PLATFORM_INFO_MAP = {
         'builder': 'linux-chromeos-oobe-code-coverage',
         'ui_name': 'ChromeOS on Linux for OOBE',
         'hidden': True,
+    },
+    'libassistant': {
+        'bucket': 'master.tryserver.cast-chromecast-internal.gce',
+        'builder': 'libassistant-absolute_coverage',
+        'ui_name': 'libassistant code coverage',
     },
 }
 
