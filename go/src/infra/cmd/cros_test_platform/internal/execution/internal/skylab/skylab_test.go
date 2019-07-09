@@ -307,9 +307,8 @@ func TestTaskURL(t *testing.T) {
 		resp := run.Response(swarming)
 		So(resp.TaskResults, ShouldHaveLength, 1)
 		taskURL := resp.TaskResults[0].TaskUrl
-		taskID := resp.TaskResults[0].TaskId
 		So(taskURL, ShouldStartWith, swarming_service)
-		So(taskURL, ShouldEndWith, taskID)
+		So(taskURL, ShouldEndWith, "1")
 	})
 }
 

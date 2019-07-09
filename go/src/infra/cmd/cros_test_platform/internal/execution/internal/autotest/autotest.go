@@ -199,13 +199,3 @@ func (r *Runner) reimageAndRunArgs() interface{} {
 		"name":       suiteName,
 	}
 }
-
-func depsForType(deps []*test_platform.Request_Params_SoftwareDependency, t test_platform.Request_Params_SoftwareDependency_Type) []*test_platform.Request_Params_SoftwareDependency {
-	var filtered []*test_platform.Request_Params_SoftwareDependency
-	for _, dep := range deps {
-		if dep.Type == t {
-			filtered = append(filtered, dep)
-		}
-	}
-	return filtered
-}

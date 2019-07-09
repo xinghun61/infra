@@ -76,7 +76,6 @@ func toTaskResult(testName string, attempt *attempt, urler swarming.URLer) *step
 			LifeCycle: taskStateToLifeCycle[attempt.state],
 			Verdict:   verdict,
 		},
-		TaskId:  attempt.taskID,
 		TaskUrl: urler.GetTaskURL(attempt.taskID),
 	}
 }
