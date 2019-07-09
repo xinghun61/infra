@@ -311,9 +311,10 @@ function ReplaceLinkRef(match, _componets, _currentProjectName) {
   return textRuns;
 }
 
-function ReplaceRevisionRef(match, _components, _currentProjectName) {
+function ReplaceRevisionRef(
+    match, _components, _currentProjectName, revisionUrlFormat) {
   const content = match[0];
-  const href = `https://crrev.com/${match[REV_NUM_GROUP]}`;
+  const href = revisionUrlFormat.replace('{revnum}', match[REV_NUM_GROUP]);
   return [{content: content, tag: 'a', href: href}];
 }
 
@@ -352,7 +353,8 @@ function getReferencedArtifacts(comments, currentProjectName) {
   });
 }
 
-function markupAutolinks(plainString, componentRefs, currentProjectName) {
+function markupAutolinks(
+    plainString, componentRefs, currentProjectName, revisionUrlFormat) {
   plainString = plainString || '';
   const chunks = plainString.trim().split(NEW_LINE_OR_BOLD_REGEX);
   let textRuns = [];
@@ -362,24 +364,30 @@ function markupAutolinks(plainString, componentRefs, currentProjectName) {
     } else if (chunk.startsWith('<b>') && chunk.endsWith('</b>')) {
       textRuns.push({content: chunk.slice(3, -4), tag: 'b'});
     } else {
-      textRuns.push(...autolinkChunk(chunk, componentRefs, currentProjectName));
+      textRuns.push(
+        ...autolinkChunk(
+          chunk, componentRefs, currentProjectName, revisionUrlFormat));
     }
   });
   return textRuns;
 }
 
-function autolinkChunk(chunk, componentRefs, currentProjectName) {
+function autolinkChunk(
+    chunk, componentRefs, currentProjectName, revisionUrlFormat) {
   let textRuns = [{content: chunk}];
   Components.forEach(({refRegs, replacer}, componentName) => {
     refRegs.forEach((re) => {
-      textRuns = applyLinks(textRuns, replacer, re,
-        componentRefs.get(componentName), currentProjectName);
+      textRuns = applyLinks(
+        textRuns, replacer, re, componentRefs.get(componentName),
+        currentProjectName, revisionUrlFormat);
     });
   });
   return textRuns;
 }
 
-function applyLinks(textRuns, replacer, re, existingRefs, currentProjectName) {
+function applyLinks(
+    textRuns, replacer, re, existingRefs, currentProjectName,
+    revisionUrlFormat) {
   let resultRuns = [];
   textRuns.forEach((textRun) => {
     if (textRun.tag) {
@@ -393,7 +401,9 @@ function applyLinks(textRuns, replacer, re, existingRefs, currentProjectName) {
           // Create textrun for content between previous and current match.
           resultRuns.push({content: content.slice(pos, match.index)});
         }
-        resultRuns.push(...replacer(match, existingRefs, currentProjectName));
+        resultRuns.push(
+          ...replacer(
+            match, existingRefs, currentProjectName, revisionUrlFormat));
         pos = match.index + match[0].length;
       }
       if (content.slice(pos) !== '') {

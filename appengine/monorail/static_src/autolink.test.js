@@ -538,7 +538,8 @@ describe('autolink', () => {
     it('replace revision refs plain text', () => {
       const str = 'r63b72a71d5fbce6739c51c3846dd94bd62b91091';
       const match = refRegs[0].exec(str);
-      const actualTextRuns = replacer(match);
+      const actualTextRuns = replacer(
+        match, null, null, 'https://crrev.com/{revnum}');
       refRegs[0].lastIndex = 0;
       assert.deepEqual(
         actualTextRuns,
@@ -546,6 +547,21 @@ describe('autolink', () => {
           content: 'r63b72a71d5fbce6739c51c3846dd94bd62b91091',
           tag: 'a',
           href: 'https://crrev.com/63b72a71d5fbce6739c51c3846dd94bd62b91091',
+        }]);
+    });
+
+    it('replace revision refs plain text different template', () => {
+      const str = 'r63b72a71d5fbce6739c51c3846dd94bd62b91091';
+      const match = refRegs[0].exec(str);
+      const actualTextRuns = replacer(
+        match, null, null, 'https://foo.bar/{revnum}/baz');
+      refRegs[0].lastIndex = 0;
+      assert.deepEqual(
+        actualTextRuns,
+        [{
+          content: 'r63b72a71d5fbce6739c51c3846dd94bd62b91091',
+          tag: 'a',
+          href: 'https://foo.bar/63b72a71d5fbce6739c51c3846dd94bd62b91091/baz',
         }]);
     });
   });

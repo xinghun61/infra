@@ -15,6 +15,13 @@ const FETCH_CONFIG_START = 'project/FETCH_CONFIG_START';
 const FETCH_CONFIG_SUCCESS = 'project/FETCH_CONFIG_SUCCESS';
 const FETCH_CONFIG_FAILURE = 'project/FETCH_CONFIG_FAILURE';
 
+const FETCH_PRESENTATION_CONFIG_START =
+  'project/FETCH_PRESENTATION_CONFIG_START';
+const FETCH_PRESENTATION_CONFIG_SUCCESS =
+  'project/FETCH_PRESENTATION_CONFIG_SUCCESS';
+const FETCH_PRESENTATION_CONFIG_FAILURE =
+  'project/FETCH_PRESENTATION_CONFIG_FAILURE';
+
 const FETCH_TEMPLATES_START = 'project/FETCH_TEMPLATES_START';
 const FETCH_TEMPLATES_SUCCESS = 'project/FETCH_TEMPLATES_SUCCESS';
 const FETCH_TEMPLATES_FAILURE = 'project/FETCH_TEMPLATES_FAILURE';
@@ -26,6 +33,7 @@ const FETCH_FIELDS_LIST_FAILURE = 'project/FECTH_FIELDS_LIST_FAILURE';
 /* State Shape
 {
   config: Object,
+  presentationConfig: Object,
   templates: Array,
   fieldsList: Array,
   requests: {
@@ -40,6 +48,12 @@ const FETCH_FIELDS_LIST_FAILURE = 'project/FECTH_FIELDS_LIST_FAILURE';
 const configReducer = createReducer({}, {
   [FETCH_CONFIG_SUCCESS]: (_state, action) => {
     return action.config;
+  },
+});
+
+const presentationConfigReducer = createReducer({}, {
+  [FETCH_PRESENTATION_CONFIG_SUCCESS]: (_state, action) => {
+    return action.presentationConfig;
   },
 });
 
@@ -66,6 +80,7 @@ const requestsReducer = combineReducers({
 
 export const reducer = combineReducers({
   config: configReducer,
+  presentationConfig: presentationConfigReducer,
   templates: templatesReducer,
   requests: requestsReducer,
   fieldsList: fieldsListReducer,
@@ -75,6 +90,7 @@ export const reducer = combineReducers({
 export const project = (state) => state.project;
 export const fieldsList = (state) => state.project.fieldsList;
 export const config = createSelector(project, (project) => project.config);
+export const presentationConfig = (state) => state.project.presentationConfig;
 
 // Look up components by path.
 export const componentsMap = createSelector(
@@ -174,6 +190,7 @@ export const fetchingConfig = (state) => {
 // Action Creators
 export const fetch = (projectName) => async (dispatch) => {
   dispatch(fetchConfig(projectName));
+  dispatch(fetchPresentationConfig(projectName));
   dispatch(fetchTemplates(projectName));
 };
 
@@ -191,6 +208,18 @@ const fetchConfig = (projectName) => async (dispatch) => {
     dispatch({type: FETCH_CONFIG_SUCCESS, config: resp});
   } catch (error) {
     dispatch({type: FETCH_CONFIG_FAILURE, error});
+  }
+};
+
+export const fetchPresentationConfig = (projectName) => async (dispatch) => {
+  dispatch({type: FETCH_PRESENTATION_CONFIG_START});
+
+  try {
+    const presentationConfig = await prpcClient.call(
+      'monorail.Projects', 'GetPresentationConfig', {projectName});
+    dispatch({type: FETCH_PRESENTATION_CONFIG_SUCCESS, presentationConfig});
+  } catch (error) {
+    dispatch({type: FETCH_PRESENTATION_CONFIG_FAILURE, error});
   }
 };
 

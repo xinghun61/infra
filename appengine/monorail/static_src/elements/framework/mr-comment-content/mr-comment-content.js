@@ -7,6 +7,7 @@ import {ifDefined} from 'lit-html/directives/if-defined';
 import {autolink} from 'autolink.js';
 import {connectStore} from 'elements/reducers/base.js';
 import * as issue from 'elements/reducers/issue.js';
+import * as project from 'elements/reducers/project.js';
 
 /**
  * `<mr-comment-content>`
@@ -28,6 +29,7 @@ export class MrCommentContent extends connectStore(LitElement) {
     return {
       content: {type: String},
       commentReferences: {type: Object},
+      revisionUrlFormat: {type: String},
       isDeleted: {
         type: Boolean,
         reflect: true,
@@ -59,7 +61,8 @@ export class MrCommentContent extends connectStore(LitElement) {
 
   render() {
     const runs = autolink.markupAutolinks(
-      this.content, this.commentReferences, this.projectName);
+      this.content, this.commentReferences, this.projectName,
+      this.revisionUrlFormat);
     const templates = runs.map((run) => {
       switch (run.tag) {
         case 'b':
@@ -84,6 +87,8 @@ export class MrCommentContent extends connectStore(LitElement) {
   stateChanged(state) {
     this.commentReferences = issue.commentReferences(state);
     this.projectName = issue.issueRef(state).projectName;
+    this.revisionUrlFormat =
+      project.presentationConfig(state).revisionUrlFormat;
   }
 }
 customElements.define('mr-comment-content', MrCommentContent);
