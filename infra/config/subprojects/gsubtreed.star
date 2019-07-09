@@ -24,7 +24,7 @@ def gsubtreed_cron(
           'target_repo': target_repo,
       },
       dimensions = {
-          'os': 'Ubuntu-14.04',
+          'os': 'Ubuntu-16.04',
           'cpu': 'x86-64',
           'cores': '2',
           'pool': 'luci.infra.cron',

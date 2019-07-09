@@ -15,7 +15,7 @@ def builder(name, recipe, builder_dimension=None, cores=8, **kwargs):
       service_account = 'chromium-tarball-builder@chops-service-accounts.iam.gserviceaccount.com',
       dimensions = {
           'pool': 'luci.infra.cron',
-          'os': 'Ubuntu-14.04',
+          'os': 'Ubuntu-16.04',
           'cpu': 'x86-64',
           'cores': str(cores),
           'builderless': '1',
