@@ -1,0 +1,6 @@
+queue:
+- name: repair-bots
+  rate: 20/s
+
+- name: reset-bots
+  rate: 20/s

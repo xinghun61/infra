@@ -26,6 +26,7 @@ import (
 	"infra/appengine/crosskylabadmin/app/config"
 	"infra/appengine/crosskylabadmin/app/cron"
 	"infra/appengine/crosskylabadmin/app/frontend"
+	"infra/appengine/crosskylabadmin/app/queue"
 )
 
 func init() {
@@ -41,6 +42,7 @@ func init() {
 	standard.InstallHandlers(r)
 	frontend.InstallHandlers(r, mwBase)
 	cron.InstallHandlers(r, mwBase)
+	queue.InstallHandlers(r, mwBase)
 
 	config.SetupValidation()
 

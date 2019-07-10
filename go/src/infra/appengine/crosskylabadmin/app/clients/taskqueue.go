@@ -15,17 +15,47 @@
 package clients
 
 import (
+	"fmt"
+	"net/url"
+
+	"go.chromium.org/gae/service/taskqueue"
+	"go.chromium.org/luci/common/logging"
 	"golang.org/x/net/context"
 )
 
-// PushRepairDUTs pushes duts to taskqueue repair-bots for upcoming repair jobs.
+const repairBotsQueue = "repair-bots"
+const resetBotsQueue = "reset-bots"
+
+// PushRepairDUTs pushes duts for taskqueue repair-bots upcoming repair jobs.
 func PushRepairDUTs(ctx context.Context, dutNames []string) error {
-	// TODO(xixuan): to be implemented.
-	return nil
+	return pushDUTs(ctx, dutNames, repairBotsQueue, repairTask)
 }
 
 // PushResetDUTs pushes duts for taskqueue reset-bots upcoming reset jobs.
 func PushResetDUTs(ctx context.Context, dutNames []string) error {
-	// TODO(xixuan): to be implemented.
+	return pushDUTs(ctx, dutNames, resetBotsQueue, resetTask)
+}
+
+func repairTask(dn string) *taskqueue.Task {
+	var values url.Values
+	values.Set("dutName", dn)
+	return taskqueue.NewPOSTTask(fmt.Sprintf("/internal/task/repair/%s", dn), values)
+}
+
+func resetTask(dn string) *taskqueue.Task {
+	var values url.Values
+	values.Set("dutName", dn)
+	return taskqueue.NewPOSTTask(fmt.Sprintf("/internal/task/reset/%s", dn), values)
+}
+
+func pushDUTs(ctx context.Context, dutNames []string, queueName string, taskGenerator func(string) *taskqueue.Task) error {
+	tasks := make([]*taskqueue.Task, len(dutNames))
+	for i, dn := range dutNames {
+		tasks[i] = taskGenerator(dn)
+	}
+	if err := taskqueue.Add(ctx, queueName, tasks...); err != nil {
+		return err
+	}
+	logging.Infof(ctx, "enqueued %d tasks", len(tasks))
 	return nil
 }

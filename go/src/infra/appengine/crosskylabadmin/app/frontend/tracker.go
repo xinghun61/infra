@@ -68,6 +68,8 @@ func (tsi *TrackerServerImpl) PushBotsForAdminTasks(ctx context.Context, req *fl
 		return nil, errors.Annotate(err, "failed to list alive idle bots").Err()
 	}
 	logging.Infof(ctx, "successfully get %d alive idle bots.", len(bots))
+
+	// Parse DUT name to schedule tasks for readability.
 	repairDUTs, resetDUTs := identifyBots(ctx, bots)
 	err1 := clients.PushRepairDUTs(ctx, repairDUTs)
 	err2 := clients.PushResetDUTs(ctx, resetDUTs)

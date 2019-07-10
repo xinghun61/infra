@@ -19,6 +19,7 @@ import (
 	"sync"
 
 	"go.chromium.org/luci/common/errors"
+	"go.chromium.org/luci/common/logging"
 	"go.chromium.org/luci/common/sync/parallel"
 	"go.chromium.org/luci/grpc/grpcutil"
 	"golang.org/x/net/context"
@@ -49,6 +50,48 @@ func (tsi *TaskerServerImpl) newSwarmingClient(c context.Context, host string) (
 		return tsi.SwarmingFactory(c, host)
 	}
 	return clients.NewSwarmingClient(c, host)
+}
+
+// CreateRepairTask kicks off a repair job.
+func CreateRepairTask(ctx context.Context, dutName string) error {
+	at := worker.AdminTaskForType(ctx, fleet.TaskType_Repair)
+	if err := runTaskByDUTName(ctx, at, dutName); err != nil {
+		return errors.Annotate(err, "fail to create repair task for %s", dutName).Err()
+	}
+	return nil
+}
+
+// CreateResetTask kicks off a reset job.
+func CreateResetTask(ctx context.Context, dutName string) error {
+	at := worker.AdminTaskForType(ctx, fleet.TaskType_Reset)
+	if err := runTaskByDUTName(ctx, at, dutName); err != nil {
+		return errors.Annotate(err, "fail to create reset task for %s", dutName).Err()
+	}
+	return nil
+}
+
+func runTaskByDUTName(ctx context.Context, at worker.Task, dutName string) error {
+	cfg := config.Get(ctx)
+	sc, err := clients.NewSwarmingClient(ctx, config.Get(ctx).Swarming.Host)
+	tags := swarming.AddCommonTags(
+		ctx,
+		fmt.Sprintf("%s:%s", at.Name, dutName),
+		fmt.Sprintf("%s", at.Name),
+	)
+	tags = append(tags, at.Tags...)
+	tid, err := sc.CreateTask(ctx, at.Name, swarming.SetCommonTaskArgs(ctx, &clients.SwarmingCreateTaskArgs{
+		Cmd:                  at.Cmd,
+		DutName:              dutName,
+		ExecutionTimeoutSecs: cfg.Tasker.BackgroundTaskExecutionTimeoutSecs,
+		ExpirationSecs:       cfg.Tasker.BackgroundTaskExpirationSecs,
+		Priority:             cfg.Cron.FleetAdminTaskPriority,
+		Tags:                 tags,
+	}))
+	if err != nil {
+		return errors.Annotate(err, "failed to create task for dut %s", dutName).Err()
+	}
+	logging.Infof(ctx, "successfully kick off task %s for dut %s", tid, dutName)
+	return nil
 }
 
 // TriggerRepairOnIdle implements the fleet.TaskerService method.
