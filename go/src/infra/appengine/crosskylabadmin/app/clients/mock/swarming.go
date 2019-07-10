@@ -36,6 +36,21 @@ func (m *MockSwarmingClient) EXPECT() *MockSwarmingClientMockRecorder {
 	return m.recorder
 }
 
+// ListAliveIdleBotsInPool mocks base method
+func (m *MockSwarmingClient) ListAliveIdleBotsInPool(c context.Context, pool string, dims strpair.Map) ([]*v1.SwarmingRpcsBotInfo, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListAliveIdleBotsInPool", c, pool, dims)
+	ret0, _ := ret[0].([]*v1.SwarmingRpcsBotInfo)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListAliveIdleBotsInPool indicates an expected call of ListAliveIdleBotsInPool
+func (mr *MockSwarmingClientMockRecorder) ListAliveIdleBotsInPool(c, pool, dims interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListAliveIdleBotsInPool", reflect.TypeOf((*MockSwarmingClient)(nil).ListAliveIdleBotsInPool), c, pool, dims)
+}
+
 // ListAliveBotsInPool mocks base method
 func (m *MockSwarmingClient) ListAliveBotsInPool(arg0 context.Context, arg1 string, arg2 strpair.Map) ([]*v1.SwarmingRpcsBotInfo, error) {
 	m.ctrl.T.Helper()

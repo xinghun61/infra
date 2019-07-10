@@ -56,7 +56,26 @@ func (tsi *TrackerServerImpl) PushBotsForAdminTasks(ctx context.Context, req *fl
 		err = grpcutil.GRPCifyAndLogErr(ctx, err)
 	}()
 
-	// TODO (xixuan): To be implemented.
+	cfg := config.Get(ctx)
+	sc, err := tsi.newSwarmingClient(ctx, cfg.Swarming.Host)
+	if err != nil {
+		return nil, errors.Annotate(err, "failed to obtain Swarming client").Err()
+	}
+
+	// Only schedule admin tasks to idle DUTs.
+	bots, err := sc.ListAliveIdleBotsInPool(ctx, cfg.Swarming.BotPool, strpair.Map{})
+	if err != nil {
+		return nil, errors.Annotate(err, "failed to list alive idle bots").Err()
+	}
+	logging.Infof(ctx, "successfully get %d alive idle bots.", len(bots))
+	repairDUTs, resetDUTs := identifyBots(ctx, bots)
+	err1 := clients.PushRepairDUTs(ctx, repairDUTs)
+	err2 := clients.PushResetDUTs(ctx, resetDUTs)
+	if err1 != nil || err2 != nil {
+		logging.Infof(ctx, "push repair duts: %v", err1)
+		logging.Infof(ctx, "push reset duts: %v", err2)
+		return nil, errors.New("failed to push repair or reset duts")
+	}
 	return &fleet.PushBotsForAdminTasksResponse{}, nil
 }
 
@@ -327,4 +346,26 @@ func extractSingleValuedDimension(dims strpair.Map, key string) (string, error) 
 	default:
 		return "", fmt.Errorf("multiple values for dimension %s", key)
 	}
+}
+
+// identifyBots identifies bots that need reset and need repair.
+func identifyBots(ctx context.Context, bots []*swarming.SwarmingRpcsBotInfo) (repairDUTs []string, resetDUTs []string) {
+	repairDUTs = make([]string, 0, len(bots))
+	resetDUTs = make([]string, 0, len(bots))
+	for _, b := range bots {
+		s := clients.GetStateDimension(b.Dimensions)
+		dims := swarmingDimensionsMap(b.Dimensions)
+		n, err := extractSingleValuedDimension(dims, clients.DutNameDimensionKey)
+		if err != nil {
+			logging.Warningf(ctx, "failed to obtain DUT name for bot %q", b.BotId)
+			continue
+		}
+		if s == fleet.DutState_NeedsRepair || s == fleet.DutState_RepairFailed {
+			repairDUTs = append(repairDUTs, n)
+		}
+		if s == fleet.DutState_NeedsReset {
+			resetDUTs = append(resetDUTs, n)
+		}
+	}
+	return repairDUTs, resetDUTs
 }

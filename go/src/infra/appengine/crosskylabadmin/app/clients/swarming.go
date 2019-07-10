@@ -76,6 +76,7 @@ const paginationChunkSize = 100
 // In prod, a SwarmingClient for interacting with the Swarming service will be
 // used. Tests should use a fake.
 type SwarmingClient interface {
+	ListAliveIdleBotsInPool(c context.Context, pool string, dims strpair.Map) ([]*swarming.SwarmingRpcsBotInfo, error)
 	ListAliveBotsInPool(context.Context, string, strpair.Map) ([]*swarming.SwarmingRpcsBotInfo, error)
 	ListBotTasks(id string) BotTasksCursor
 	ListRecentTasks(c context.Context, tags []string, state string, limit int) ([]*swarming.SwarmingRpcsTaskResult, error)
@@ -120,6 +121,28 @@ func NewSwarmingClient(c context.Context, host string) (SwarmingClient, error) {
 	}
 	srv.BasePath = fmt.Sprintf("https://%s/_ah/api/swarming/v1/", host)
 	return (*swarmingClientImpl)(srv), nil
+}
+
+// ListAliveIdleBotsInPool lists the Swarming bots in the given pool.
+//
+// Use dims to restrict to dimensions beyond pool.
+func (sc *swarmingClientImpl) ListAliveIdleBotsInPool(c context.Context, pool string, dims strpair.Map) ([]*swarming.SwarmingRpcsBotInfo, error) {
+	var botsInfo []*swarming.SwarmingRpcsBotInfo
+	dims.Set(PoolDimensionKey, pool)
+	call := sc.Bots.List().Dimensions(dims.Format()...).IsDead("FALSE").IsBusy("FALSE")
+	for {
+		ic, _ := context.WithTimeout(c, 60*time.Second)
+		response, err := call.Context(ic).Do()
+		if err != nil {
+			return nil, errors.Reason("failed to list alive and idle bots in pool %s", pool).InternalReason(err.Error()).Err()
+		}
+		botsInfo = append(botsInfo, response.Items...)
+		if response.Cursor == "" {
+			break
+		}
+		call = call.Cursor(response.Cursor)
+	}
+	return botsInfo, nil
 }
 
 // ListAliveBotsInPool lists the Swarming bots in the given pool.
