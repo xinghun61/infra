@@ -18,7 +18,6 @@ import (
 
 	"infra/cmd/cros_test_platform/internal/execution"
 	"infra/cmd/cros_test_platform/internal/execution/isolate"
-	"infra/cmd/cros_test_platform/internal/execution/isolate/getter"
 	"infra/libs/skylab/swarming"
 )
 
@@ -65,17 +64,15 @@ func (c *commonExecuteRun) validateRequestCommon(request *steps.ExecuteRequest) 
 	return nil
 }
 
-func (c *commonExecuteRun) handleRequest(ctx context.Context, runner execution.Runner, t *swarming.Client) (*steps.ExecuteResponse, error) {
-	// TODO(akeshet): Use correct isolate client.
-	gf := func(_ context.Context, _ string) (isolate.Getter, error) { return getter.New(nil), nil }
+func (c *commonExecuteRun) handleRequest(ctx context.Context, runner execution.Runner, t *swarming.Client, gf isolate.GetterFactory) (*steps.ExecuteResponse, error) {
 	err := runner.LaunchAndWait(ctx, t, gf)
 	return runner.Response(t), err
 }
 
-func httpClient(ctx context.Context, c *config.Config_Swarming) (*http.Client, error) {
+func httpClient(ctx context.Context, authJSONPath string) (*http.Client, error) {
 	// TODO(akeshet): Specify ClientID and ClientSecret fields.
 	options := auth.Options{
-		ServiceAccountJSONPath: c.AuthJsonPath,
+		ServiceAccountJSONPath: authJSONPath,
 		Scopes:                 []string{auth.OAuthScopeEmail},
 	}
 	a := auth.NewAuthenticator(ctx, auth.OptionalLogin, options)
@@ -87,7 +84,7 @@ func httpClient(ctx context.Context, c *config.Config_Swarming) (*http.Client, e
 }
 
 func swarmingClient(ctx context.Context, c *config.Config_Swarming) (*swarming.Client, error) {
-	hClient, err := httpClient(ctx, c)
+	hClient, err := httpClient(ctx, c.AuthJsonPath)
 	if err != nil {
 		return nil, err
 	}

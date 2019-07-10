@@ -67,7 +67,7 @@ func (c *autotestExecuteRun) innerRun(a subcommands.Application, args []string, 
 
 	runner := execution.NewAutotestRunner(request.Enumeration.AutotestTests, request.RequestParams)
 
-	response, err := c.handleRequest(ctx, runner, client)
+	response, err := c.handleRequest(ctx, runner, client, nil)
 	if err != nil && response == nil {
 		// Catastrophic error. There is no reasonable response to write.
 		return err

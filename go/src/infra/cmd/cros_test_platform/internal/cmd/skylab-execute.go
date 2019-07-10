@@ -5,14 +5,19 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/maruel/subcommands"
 
+	"go.chromium.org/chromiumos/infra/proto/go/test_platform/config"
 	"go.chromium.org/chromiumos/infra/proto/go/test_platform/steps"
 	"go.chromium.org/luci/common/cli"
+	"go.chromium.org/luci/common/isolatedclient"
 
 	"infra/cmd/cros_test_platform/internal/execution"
+	"infra/cmd/cros_test_platform/internal/execution/isolate"
+	"infra/cmd/cros_test_platform/internal/execution/isolate/getter"
 )
 
 // SkylabExecute subcommand: Run a set of enumerated tests against skylab backend.
@@ -65,9 +70,11 @@ func (c *skylabExecuteRun) innerRun(a subcommands.Application, args []string, en
 		return err
 	}
 
+	gf := c.getterFactory(request.Config.SkylabIsolate)
+
 	runner := execution.NewSkylabRunner(request.Enumeration.AutotestTests, request.RequestParams)
 
-	response, err := c.handleRequest(ctx, runner, client)
+	response, err := c.handleRequest(ctx, runner, client, gf)
 	if err != nil && response == nil {
 		// Catastrophic error. There is no reasonable response to write.
 		return err
@@ -85,5 +92,22 @@ func (c *skylabExecuteRun) validateRequest(request *steps.ExecuteRequest) error 
 		return fmt.Errorf("nil request.config.skylab_swarming")
 	}
 
+	if request.Config.SkylabIsolate == nil {
+		return fmt.Errorf("nil request.config.skylab_isolate")
+	}
+
 	return nil
+}
+
+func (c *skylabExecuteRun) getterFactory(conf *config.Config_Isolate) isolate.GetterFactory {
+	return func(ctx context.Context, server string) (isolate.Getter, error) {
+		hClient, err := httpClient(ctx, conf.AuthJsonPath)
+		if err != nil {
+			return nil, err
+		}
+
+		isolateClient := isolatedclient.New(nil, hClient, server, isolatedclient.DefaultNamespace, nil, nil)
+
+		return getter.New(isolateClient), nil
+	}
 }
