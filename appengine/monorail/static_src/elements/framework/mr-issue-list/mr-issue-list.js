@@ -112,6 +112,7 @@ export class MrIssueList extends LitElement {
            <mr-issue-link
             .projectName=${this.projectName}
             .issue=${issue}
+            .queryParams=${this.queryParams}
           ></mr-issue-link>
         `;
       case 'Summary':
@@ -147,6 +148,11 @@ export class MrIssueList extends LitElement {
         type: String,
         reflect: true,
       },
+      /**
+       * Object containing URL parameters to be preserved when issue links are
+       * clicked.
+       */
+      queryParams: {type: Object},
       /**
        * Array of all selected issues. Each value is either true or false
        * depending on whether the issue at that index is selected.

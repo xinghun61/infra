@@ -132,6 +132,16 @@ describe('issueRefToUrl', () => {
     }), '/p/test/issues/detail?id=11');
   });
 
+  it('issue ref with params', () => {
+    assert.equal(issueRefToUrl({
+      projectName: 'test',
+      localId: 11,
+    }, {
+      q: 'owner:me',
+      id: 44,
+    }), '/p/test/issues/detail?id=11&q=owner%3Ame');
+  });
+
   it('federated issue ref', () => {
     assert.equal(issueRefToUrl({
       extIdentifier: 'b/5678',

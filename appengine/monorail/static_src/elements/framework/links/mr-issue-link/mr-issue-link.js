@@ -25,7 +25,7 @@ export class MrIssueLink extends LitElement {
     return html`
       <a
         id="bugLink"
-        href=${issueRefToUrl(this.issue)}
+        href=${issueRefToUrl(this.issue, this.queryParams)}
         title=${ifDefined(this.issue && this.issue.summary)}
         ?is-closed=${this.isClosed}
       >${this._linkText}</a>
@@ -39,6 +39,7 @@ export class MrIssueLink extends LitElement {
       text: {type: String},
       // The global current project name. NOT the issue's project name.
       projectName: {type: String},
+      queryParams: {type: Object},
     };
   }
 

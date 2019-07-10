@@ -2,6 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+import qs from 'qs';
+
 import {equalsIgnoreCase} from './helpers';
 import {fromShortlink} from 'elements/shared/federated.js';
 import {UserInputError} from 'elements/shared/errors.js';
@@ -102,7 +104,7 @@ export function issueRefToString(ref, projectName) {
   return `${ref.projectName}:${ref.localId}`;
 }
 
-export function issueRefToUrl(ref) {
+export function issueRefToUrl(ref, queryParams = {}) {
   if (!ref) return '';
 
   if (ref.extIdentifier) {
@@ -114,7 +116,14 @@ export function issueRefToUrl(ref) {
     return extRef.toURL();
   }
 
-  return `/p/${ref.projectName}/issues/detail?id=${ref.localId}`;
+  let paramString = '';
+  if (Object.keys(queryParams).length) {
+    delete queryParams.id;
+
+    paramString = `&${qs.stringify(queryParams)}`;
+  }
+
+  return `/p/${ref.projectName}/issues/detail?id=${ref.localId}${paramString}`;
 }
 
 export function issueRefsToStrings(arr, projectName) {
