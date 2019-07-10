@@ -1833,6 +1833,21 @@ class WorkEnv(object):
       send_notifications.PrepareAndSendDeletedFilterRulesNotification(
           project_id, hostport, filter_rule_strs)
 
+  def TotalUsersCount(self):
+    """Returns the total number of Users in Monorail."""
+    return self.services.user.TotalUsersCount(self.mc.cnxn)
+
+  def GetAllUserEmailsBatch(self, limit=1000, offset=0):
+    """Returns a list emails that belong to Users in Monorail.
+
+    Returns:
+      A list of emails for Users within Monorail ordered by the user.user_ids.
+      The list will hold at most [limit] emails and will start at the given
+      [offset].
+    """
+    return self.services.user.GetAllUserEmailsBatch(
+        self.mc.cnxn, limit=limit, offset=offset)
+
   ### Group methods
 
   # FUTURE: CreateGroup()

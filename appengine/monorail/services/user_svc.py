@@ -702,15 +702,23 @@ class UserService(object):
     self.user_tbl.Delete(cnxn, user_id=user_ids, commit=False)
 
   def TotalUsersCount(self, cnxn):
-    """Returns the total number of rows in the User table."""
-    return self.user_tbl.SelectValue(cnxn, col='COUNT(*)')
+    """Returns the total number of rows in the User table.
+
+    The dummy User reserved for representing deleted users within Monorail
+    will not be counted.
+    """
+    # Subtract one so we don't count the deleted user with
+    # with user_id = framework_constants.DELETED_USER_ID
+    return (self.user_tbl.SelectValue(cnxn, col='COUNT(*)')) - 1
 
   def GetAllUserEmailsBatch(self, cnxn, limit=1000, offset=0):
     """Returns a list of user emails.
 
     This method can be used for listing all user emails in Monorail's DB.
     The list will contain at most [limit] emails, and be ordered by
-    user_id. The list will start at the given offset value.
+    user_id. The list will start at the given offset value. The email for
+    the dummy User reserved for representing deleted users within Monorail
+    will never be returned.
 
     Args:
       cnxn: connection to SQL database.
@@ -720,5 +728,8 @@ class UserService(object):
     """
     rows = self.user_tbl.Select(
         cnxn, cols=['email'],
-        limit=limit, offset=offset, order_by=[('user_id ASC'), []])
+        limit=limit,
+        offset=offset,
+        where=[('user_id != %s', [framework_constants.DELETED_USER_ID])],
+        order_by=[('user_id ASC'), []])
     return [row[0] for row in rows]

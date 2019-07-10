@@ -2920,6 +2920,50 @@ class WorkEnvTest(unittest.TestCase):
                  framework_constants.DELETED_USER_NAME)])
         ])
 
+  def testTotalUsersCount_WithDeletedUser(self):
+    # Clear users added previously with TestAddUser
+    self.services.user.users_by_id = {}
+    self.services.user.TestAddUser(
+        '', framework_constants.DELETED_USER_ID)
+    self.services.user.TestAddUser('cow@test.com', 111)
+    self.services.user.TestAddUser('chicken@test.com', 222)
+    self.assertEqual(2, self.services.user.TotalUsersCount(self.mr.cnxn))
+
+  def testTotalUsersCount(self):
+    # Clear users added previously with TestAddUser
+    self.services.user.users_by_id = {}
+    self.services.user.TestAddUser('cow@test.com', 111)
+    self.assertEqual(1, self.services.user.TotalUsersCount(self.mr.cnxn))
+
+  def testGetAllUserEmailsBatch(self):
+    # Clear users added previously with TestAddUser
+    self.services.user.users_by_id = {}
+    user_1 = self.services.user.TestAddUser('cow@test.com', 111)
+    user_2 = self.services.user.TestAddUser('chicken@test.com', 222)
+    user_6 = self.services.user.TestAddUser('6@test.com', 666)
+    user_5 = self.services.user.TestAddUser('5@test.com', 555)
+    user_3 = self.services.user.TestAddUser('3@test.com', 333)
+    self.services.user.TestAddUser('4@test.com', 444)
+
+
+    self.assertItemsEqual(
+        [user_1.email, user_2.email, user_3.email],
+        self.services.user.GetAllUserEmailsBatch(self.mr.cnxn, limit=3))
+    self.assertItemsEqual(
+        [user_5.email, user_6.email],
+        self.services.user.GetAllUserEmailsBatch(
+            self.mr.cnxn, limit=3, offset=4))
+
+    # Test existence of deleted user does not change results.
+    self.services.user.TestAddUser(
+        '', framework_constants.DELETED_USER_ID)
+    self.assertItemsEqual(
+        [user_1.email, user_2.email, user_3.email],
+        self.services.user.GetAllUserEmailsBatch(self.mr.cnxn, limit=3))
+    self.assertItemsEqual(
+        [user_5.email, user_6.email],
+        self.services.user.GetAllUserEmailsBatch(
+            self.mr.cnxn, limit=3, offset=4))
 
   # FUTURE: CreateGroup()
   # FUTURE: ListGroups()

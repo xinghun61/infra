@@ -20,6 +20,7 @@ import settings
 from features import filterrules_helpers
 from framework import exceptions
 from framework import framework_bizobj
+from framework import framework_constants
 from framework import framework_helpers
 from framework import monorailrequest
 from framework import permissions
@@ -682,6 +683,26 @@ class UserService(object):
     self.linked_account_rows = [
         row for row in self.linked_account_rows
         if row[0] not in user_ids and row[1] not in user_ids]
+
+  def TotalUsersCount(self, cnxn):
+    return len(self.users_by_id) - 1 if (
+        framework_constants.DELETED_USER_ID in self.users_by_id
+        ) else len(self.users_by_id)
+
+  def GetAllUserEmailsBatch(self, cnxn, limit=1000, offset=0):
+    sorted_user_ids = sorted(self.users_by_id.keys())
+    sorted_user_ids = filter(
+        lambda user_id: user_id != framework_constants.DELETED_USER_ID,
+        sorted_user_ids)
+    emails = []
+    for i in range(offset, offset + limit):
+      try:
+        user_id = sorted_user_ids[i]
+        if user_id != framework_constants.DELETED_USER_ID:
+          emails.append(self.users_by_id[user_id])
+      except IndexError:
+        break
+    return emails
 
   def GetRecentlyVisitedHotlists(self, _cnxn, user_id):
     try:
