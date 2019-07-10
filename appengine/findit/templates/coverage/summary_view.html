@@ -202,22 +202,21 @@
               {% for metric in datum.summaries %}
                 {% if not found and metric.name == name %}
                   {% set found = True %}
-                  {% set percentage = metric.covered*100.0/metric.total %}
-                  {% if percentage > 89.9999 %}
+                  {% set percent = (metric.covered*100.0/metric.total) | int %}
+                  {% if percent >= 90 %}
                     {% set css_class = 'high-coverage' %}
-                  {% elif percentage > 79.9999 %}
+                  {% elif percent >= 80 %}
                     {% set css_class = 'medium-coverage' %}
                   {% else %}
                     {% set css_class = 'low-coverage' %}
                   {% endif %}
                   <td class="{{css_class}}">
-                    {% set percent = metric.covered*100.0/metric.total %}
-                    {% if percent > 99.999999 %}
-                      {{ '{0:.2f}%'.format(percent) }} ({{metric.covered}}/{{metric.total}})
-                    {% elif percent > 9.999999 %}
-                      &nbsp;{{ '{0:.2f}%'.format(percent) }} ({{metric.covered}}/{{metric.total}})
+                    {% if percent == 100 %}
+                      {{ percent }}% ({{ metric.covered }}/{{ metric.total }})
+                    {% elif percent >= 10 %}
+                      &nbsp;{{ percent }}% ({{ metric.covered }}/{{ metric.total }})
                     {% else %}
-                      &nbsp;&nbsp;{{ '{0:.2f}%'.format(percent) }} ({{metric.covered}}/{{metric.total}})
+                      &nbsp;&nbsp;{{ percent }}% ({{ metric.covered }}/{{ metric.total }})
                     {% endif %}
                   </td>
                 {% endif %}
@@ -236,22 +235,21 @@
               {% for metric in data.metadata.summaries %}
                 {% if not found and metric.name == name %}
                   {% set found = True %}
-                  {% set percentage = metric.covered*100.0/metric.total %}
-                  {% if percentage > 89.9999 %}
+                  {% set percent = (metric.covered*100.0/metric.total) | int %}
+                  {% if percent >= 90 %}
                     {% set css_class = 'high-coverage' %}
-                  {% elif percentage > 79.9999 %}
+                  {% elif percent >= 80 %}
                     {% set css_class = 'medium-coverage' %}
                   {% else %}
                     {% set css_class = 'low-coverage' %}
                   {% endif %}
                   <td class="{{css_class}}">
-                    {% set percent = metric.covered*100.0/metric.total %}
-                    {% if percent > 99.999999 %}
-                      {{ '{0:.2f}%'.format(percent) }} ({{metric.covered}}/{{metric.total}})
-                    {% elif percent > 9.999999 %}
-                      &nbsp;{{ '{0:.2f}%'.format(percent) }} ({{metric.covered}}/{{metric.total}})
+                    {% if percent == 100 %}
+                      {{ percent }}% ({{ metric.covered }}/{{ metric.total }})
+                    {% elif percent >= 10 %}
+                      &nbsp;{{ percent }}% ({{ metric.covered }}/{{ metric.total }})
                     {% else %}
-                      &nbsp;&nbsp;{{ '{0:.2f}%'.format(percent) }} ({{metric.covered}}/{{metric.total}})
+                      &nbsp;&nbsp;{{ percent }}% ({{ metric.covered }}/{{ metric.total }})
                     {% endif %}
                   </td>
                 {% endif %}
