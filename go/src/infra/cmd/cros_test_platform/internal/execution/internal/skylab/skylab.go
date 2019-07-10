@@ -14,6 +14,7 @@ import (
 
 	build_api "go.chromium.org/chromiumos/infra/proto/go/chromite/api"
 	"go.chromium.org/chromiumos/infra/proto/go/test_platform"
+	"go.chromium.org/chromiumos/infra/proto/go/test_platform/config"
 	"go.chromium.org/chromiumos/infra/proto/go/test_platform/skylab_test_runner"
 	"go.chromium.org/chromiumos/infra/proto/go/test_platform/steps"
 	swarming_api "go.chromium.org/luci/common/api/swarming/swarming/v1"
@@ -34,8 +35,9 @@ import (
 // TaskSet encapsulates the running state of a set of tasks, to satisfy
 // a Skylab Execution.
 type TaskSet struct {
-	testRuns []*testRun
-	params   *test_platform.Request_Params
+	testRuns     []*testRun
+	params       *test_platform.Request_Params
+	workerConfig *config.Config_SkylabWorker
 }
 
 type testRun struct {
@@ -43,7 +45,7 @@ type testRun struct {
 	attempts []*attempt
 }
 
-func (t *testRun) RequestArgs(params *test_platform.Request_Params) (request.Args, error) {
+func (t *testRun) RequestArgs(params *test_platform.Request_Params, workerConfig *config.Config_SkylabWorker) (request.Args, error) {
 	isClient, err := t.isClientTest()
 	if err != nil {
 		return request.Args{}, errors.Annotate(err, "create request args").Err()
@@ -59,12 +61,12 @@ func (t *testRun) RequestArgs(params *test_platform.Request_Params) (request.Arg
 		return request.Args{}, errors.Annotate(err, "create request args").Err()
 	}
 
-	// TODO(akeshet): Run cmd.Config() with correct environment.
 	cmd := &worker.Command{
 		TaskName:        t.test.Name,
 		ClientTest:      isClient,
 		OutputToIsolate: true,
 	}
+	cmd.Config(wrap(workerConfig))
 
 	args := request.Args{
 		Cmd:               *cmd,
@@ -74,9 +76,8 @@ func (t *testRun) RequestArgs(params *test_platform.Request_Params) (request.Arg
 		// TODO(akeshet): Determine priority correctly.
 		Priority:                0,
 		ProvisionableDimensions: provisionableDimensions,
-		// TODO(akeshet): Determine tags correctly.
-		SwarmingTags: nil,
-		Timeout:      timeout,
+		SwarmingTags:            swarmingTags(cmd, workerConfig),
+		Timeout:                 timeout,
 	}
 
 	return args, nil
@@ -90,6 +91,13 @@ func (t *testRun) isClientTest() (bool, error) {
 	return isClient, nil
 }
 
+func swarmingTags(cmd *worker.Command, conf *config.Config_SkylabWorker) []string {
+	return []string{
+		"luci-project:" + conf.LuciProject,
+		"log_location:" + cmd.LogDogAnnotationURL,
+	}
+}
+
 type attempt struct {
 	taskID string
 	state  jsonrpc.TaskState
@@ -100,14 +108,15 @@ type attempt struct {
 }
 
 // NewTaskSet creates a new TaskSet.
-func NewTaskSet(tests []*build_api.AutotestTest, params *test_platform.Request_Params) *TaskSet {
+func NewTaskSet(tests []*build_api.AutotestTest, params *test_platform.Request_Params, workerConfig *config.Config_SkylabWorker) *TaskSet {
 	testRuns := make([]*testRun, len(tests))
 	for i, test := range tests {
 		testRuns[i] = &testRun{test: test}
 	}
 	return &TaskSet{
-		testRuns: testRuns,
-		params:   params,
+		testRuns:     testRuns,
+		params:       params,
+		workerConfig: workerConfig,
 	}
 }
 
@@ -133,7 +142,7 @@ var isClientTest = map[build_api.AutotestTest_ExecutionEnvironment]bool{
 
 func (r *TaskSet) launch(ctx context.Context, swarming swarming.Client) error {
 	for _, testRun := range r.testRuns {
-		args, err := testRun.RequestArgs(r.params)
+		args, err := testRun.RequestArgs(r.params, r.workerConfig)
 		if err != nil {
 			return errors.Annotate(err, "launch test named %s", testRun.test.Name).Err()
 		}

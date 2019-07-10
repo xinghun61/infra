@@ -18,6 +18,7 @@ import (
 	build_api "go.chromium.org/chromiumos/infra/proto/go/chromite/api"
 	"go.chromium.org/chromiumos/infra/proto/go/chromiumos"
 	"go.chromium.org/chromiumos/infra/proto/go/test_platform"
+	"go.chromium.org/chromiumos/infra/proto/go/test_platform/config"
 	"go.chromium.org/chromiumos/infra/proto/go/test_platform/skylab_test_runner"
 	swarming_api "go.chromium.org/luci/common/api/swarming/swarming/v1"
 	"go.chromium.org/luci/common/isolated"
@@ -175,6 +176,13 @@ func basicParams() *test_platform.Request_Params {
 	}
 }
 
+func basicConfig() *config.Config_SkylabWorker {
+	return &config.Config_SkylabWorker{
+		LuciProject: "foo-luci-project",
+		LogDogHost:  "foo-logdog-host",
+	}
+}
+
 func TestLaunchAndWaitTest(t *testing.T) {
 	Convey("Given two enumerated test", t, func() {
 		ctx := context.Background()
@@ -187,7 +195,7 @@ func TestLaunchAndWaitTest(t *testing.T) {
 		tests = append(tests, newTest("", false), newTest("", true))
 
 		Convey("when running a skylab execution", func() {
-			run := skylab.NewTaskSet(tests, basicParams())
+			run := skylab.NewTaskSet(tests, basicParams(), basicConfig())
 
 			err := run.LaunchAndWait(ctx, swarming, gf)
 			So(err, ShouldBeNil)
@@ -264,7 +272,7 @@ func TestTaskStates(t *testing.T) {
 				getter.SetAutotestResult(&skylab_test_runner.Result_Autotest{})
 				gf := fakeGetterFactory(getter)
 
-				run := skylab.NewTaskSet(tests, basicParams())
+				run := skylab.NewTaskSet(tests, basicParams(), basicConfig())
 				err := run.LaunchAndWait(ctx, swarming, gf)
 				So(err, ShouldBeNil)
 
@@ -286,7 +294,7 @@ func TestServiceError(t *testing.T) {
 		gf := fakeGetterFactory(getter)
 
 		tests := []*build_api.AutotestTest{newTest("", false)}
-		run := skylab.NewTaskSet(tests, basicParams())
+		run := skylab.NewTaskSet(tests, basicParams(), basicConfig())
 
 		Convey("when the swarming service immediately returns errors, that error is surfaced as a launch error.", func() {
 			swarming.setError(fmt.Errorf("foo error"))
@@ -316,7 +324,7 @@ func TestTaskURL(t *testing.T) {
 		gf := fakeGetterFactory(getter)
 
 		tests := []*build_api.AutotestTest{newTest("", false)}
-		run := skylab.NewTaskSet(tests, basicParams())
+		run := skylab.NewTaskSet(tests, basicParams(), basicConfig())
 		run.LaunchAndWait(ctx, swarming, gf)
 
 		resp := run.Response(swarming)
@@ -337,7 +345,7 @@ func TestIncompleteWait(t *testing.T) {
 		gf := fakeGetterFactory(getter)
 
 		tests := []*build_api.AutotestTest{newTest("", false)}
-		run := skylab.NewTaskSet(tests, basicParams())
+		run := skylab.NewTaskSet(tests, basicParams(), basicConfig())
 
 		wg := sync.WaitGroup{}
 		wg.Add(1)
@@ -373,7 +381,7 @@ func TestRequestArguments(t *testing.T) {
 			newTest("name1", false, &build_api.AutotestTaskDependency{Label: "cr50:pvt"}),
 		}
 
-		run := skylab.NewTaskSet(tests, basicParams())
+		run := skylab.NewTaskSet(tests, basicParams(), basicConfig())
 		run.LaunchAndWait(ctx, swarming, gf)
 
 		Convey("the launched task request should have correct parameters.", func() {
@@ -381,19 +389,39 @@ func TestRequestArguments(t *testing.T) {
 			create := swarming.createCalls[0]
 			So(create.TaskSlices, ShouldHaveLength, 2)
 
-			slice0 := create.TaskSlices[0]
-			slice1 := create.TaskSlices[1]
-			flatCommand0 := strings.Join(slice0.Properties.Command, " ")
-			flatCommand1 := strings.Join(slice1.Properties.Command, " ")
-			So(flatCommand0, ShouldContainSubstring, "-task-name name1")
-			So(flatCommand0, ShouldNotContainSubstring, "-client-test")
-			So(flatCommand1, ShouldContainSubstring, "-task-name name1")
-			So(flatCommand1, ShouldNotContainSubstring, "-client-test")
+			So(create.Tags, ShouldContain, "luci-project:foo-luci-project")
 
-			So(flatCommand0, ShouldNotContainSubstring, "-provision-labels cros-version:foo-build")
-			So(flatCommand1, ShouldContainSubstring, "-provision-labels cros-version:foo-build")
+			prefix := "log_location:"
+			var logdogURL string
+			matchingTags := 0
+			for _, tag := range create.Tags {
+				if strings.HasPrefix(tag, prefix) {
+					matchingTags++
+					So(tag, ShouldEndWith, "+/annotations")
 
-			for _, slice := range create.TaskSlices {
+					logdogURL = strings.TrimPrefix(tag, "log_location:")
+				}
+			}
+			So(matchingTags, ShouldEqual, 1)
+			So(logdogURL, ShouldStartWith, "logdog://foo-logdog-host/foo-luci-project/skylab/")
+			So(logdogURL, ShouldEndWith, "/+/annotations")
+
+			for i, slice := range create.TaskSlices {
+				flatCommand := strings.Join(slice.Properties.Command, " ")
+
+				So(flatCommand, ShouldContainSubstring, "-task-name name1")
+				So(flatCommand, ShouldNotContainSubstring, "-client-test")
+
+				// Logdog annotation url argument should match the associated tag's url.
+				So(flatCommand, ShouldContainSubstring, "-logdog-annotation-url "+logdogURL)
+
+				provisionArg := "-provision-labels cros-version:foo-build"
+				if i == 0 {
+					So(flatCommand, ShouldNotContainSubstring, provisionArg)
+				} else {
+					So(flatCommand, ShouldContainSubstring, provisionArg)
+				}
+
 				flatDimensions := make([]string, len(slice.Properties.Dimensions))
 				for i, d := range slice.Properties.Dimensions {
 					flatDimensions[i] = d.Key + ":" + d.Value
@@ -413,7 +441,7 @@ func TestClientTestArg(t *testing.T) {
 
 		tests := []*build_api.AutotestTest{newTest("name1", true)}
 
-		run := skylab.NewTaskSet(tests, basicParams())
+		run := skylab.NewTaskSet(tests, basicParams(), basicConfig())
 		run.LaunchAndWait(ctx, swarming, fakeGetterFactory(newFakeGetter()))
 
 		Convey("the launched task request should have correct parameters.", func() {
