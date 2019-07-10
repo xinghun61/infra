@@ -207,7 +207,7 @@ func (r *TaskSet) tick(ctx context.Context, client swarming.Client, gf isolate.G
 		switch {
 		// Task ran to completion.
 		case swarming.CompletedTaskStates[state]:
-			r, err := getAutotestResult(ctx, result.OutputsRef, gf)
+			r, err := getAutotestResult(ctx, result, gf)
 			if err != nil {
 				return false, errors.Annotate(err, "wait for task %s", attempt.taskID).Err()
 			}
