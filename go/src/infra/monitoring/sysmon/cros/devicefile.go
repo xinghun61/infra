@@ -21,6 +21,7 @@ type deviceStatusFile struct {
 	ContainerHostname string  `json:"container_hostname"`
 	Timestamp         float64 `json:"timestamp"`
 	Status            string  `json:"status"`
+	OSVersion         string  `json:"os_version"`
 }
 
 func loadfile(c context.Context, path string) (df deviceStatusFile, err error) {

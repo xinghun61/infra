@@ -55,10 +55,13 @@ func TestUpdateMetrics(t *testing.T) {
 		ContainerHostname: "b1_b2",
 		Timestamp:         946782246,
 		Status:            "online",
+		OSVersion:         "12317.0.0-rc1",
 	}
 	Convey("UpdateMetrics Testing", t, func() {
 		updateMetrics(c, statusFile)
 		So(dutStatus.Get(c, statusFile.ContainerHostname), ShouldEqual,
 			"online")
+		So(crosVersion.Get(c, statusFile.ContainerHostname), ShouldEqual,
+			"12317.0.0-rc1")
 	})
 }

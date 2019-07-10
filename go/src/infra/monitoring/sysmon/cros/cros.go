@@ -17,12 +17,17 @@ import (
 )
 
 var (
+	crosVersion = metric.NewString("dev/cros/version",
+		"CrOS version.",
+		nil,
+		field.String("container_hostname"))
 	dutStatus = metric.NewString("dev/cros/status",
 		"DUT status (Online|Offline).",
 		nil,
 		field.String("container_hostname"))
 
 	allMetrics = []types.Metric{
+		crosVersion,
 		dutStatus,
 	}
 )
@@ -72,5 +77,11 @@ func updateMetrics(c context.Context, deviceFile deviceStatusFile) {
 		dutStatus.Set(c, deviceFile.Status, deviceFile.ContainerHostname)
 	} else {
 		logging.Warningf(c, "Device status unknown")
+	}
+	if deviceFile.OSVersion != "" {
+		crosVersion.Set(c, deviceFile.OSVersion,
+			deviceFile.ContainerHostname)
+	} else {
+		logging.Warningf(c, "CrOS version unknown")
 	}
 }
