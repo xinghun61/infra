@@ -30,7 +30,7 @@ func TestMain(t *testing.T) {
 	Convey(`Using a test setup`, t, func() {
 		c := context.Background()
 
-		var env environ.Env
+		env := environ.New(nil)
 		runMain := func(c context.Context, args ...string) int {
 			args = append([]string{executable}, args...)
 			return mainImpl(c, args, env, bytes.NewReader(nil), ioutil.Discard, ioutil.Discard)

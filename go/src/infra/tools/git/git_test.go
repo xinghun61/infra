@@ -123,8 +123,8 @@ func TestGitCommand(t *testing.T) {
 			// Skip arguments added in "runAgent".
 			testParseSkipArgs: len(testRunnerArgs),
 		}
-		var env environ.Env
 
+		env := environ.New(nil)
 		ta := makeTestAgent(filepath.Join(tdir, "agent_params.json"))
 
 		writeRequest := func() {

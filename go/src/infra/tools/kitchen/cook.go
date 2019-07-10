@@ -150,7 +150,7 @@ func (c *cookRun) runRecipe(ctx context.Context, env environ.Env) *build.BuildRu
 	c.engine.cmdPrefix = []string{recipesPath}
 
 	// Setup our working directory. This is cwd for the recipe itself.
-	// Previously this was unnecessarially configurable; Now we hard-code it to
+	// Previously this was unnecessarily configurable; Now we hard-code it to
 	// "$CWD/k", which is the shortest path we can make. This is important to
 	// allow tasks on Windows to have as many characters as possible; otherwise
 	// they run into MAX_PATH issues.
@@ -165,10 +165,15 @@ func (c *cookRun) runRecipe(ctx context.Context, env environ.Env) *build.BuildRu
 
 	// Run the recipe in the appropriate auth context by exporting it into the
 	// environ of the recipe engine.
-	recipeEnv := c.recipeAuth.ExportIntoEnv(env)
+	exported, err := lucictx.ExportInto(c.recipeAuth.Export(ctx, env), c.TempDir)
+	if err != nil {
+		return fail(errors.Annotate(err, "failed to export LUCI_CONTEXT").Err())
+	}
+	defer exported.Close()
+	exported.SetInEnviron(env)
 
 	result.AnnotationUrl = c.AnnotationURL.String()
-	if err = c.runWithLogdogButler(ctx, recipeEnv, result); err != nil {
+	if err = c.runWithLogdogButler(ctx, env, result); err != nil {
 		return fail(errors.Annotate(err, "failed to run recipe").Err())
 	}
 	setAnnotationText(result.Annotations)
@@ -396,7 +401,7 @@ func (c *cookRun) run(ctx context.Context, args []string, env environ.Env) *buil
 		return fail(err)
 	}
 
-	if err = c.updateEnv(&env); err != nil {
+	if err = c.updateEnv(env); err != nil {
 		return fail(errors.Annotate(err, "failed to update the environment").Err())
 	}
 
@@ -420,8 +425,8 @@ func (c *cookRun) run(ctx context.Context, args []string, env environ.Env) *buil
 	if err := c.setupAuth(ctx); err != nil {
 		return fail(errors.Annotate(err, "failed to setup auth").Err())
 	}
-	defer c.recipeAuth.Close()
-	defer c.systemAuth.Close()
+	defer c.recipeAuth.Close(ctx)
+	defer c.systemAuth.Close(ctx)
 
 	// If we are asked to call UpdateBuild, prepare a buildUpdater.
 	// Must happen after c.systemAuth is initialized.
@@ -515,7 +520,7 @@ func (c *cookRun) flushResult(result *build.BuildRunResult) (err error) {
 }
 
 // updateEnv updates temp path env variables in env.
-func (c *cookRun) updateEnv(env *environ.Env) error {
+func (c *cookRun) updateEnv(env environ.Env) error {
 	if c.TempDir == "" {
 		// It should have been initialized in c.run.
 		panic("TempDir was not initialized earlier")
@@ -609,7 +614,7 @@ func (c *cookRun) setupAuth(ctx context.Context) error {
 		EnableFirebaseAuth: c.kitchenProps.FirebaseAuth,
 		KnownGerritHosts:   c.KnownGerritHost,
 	}
-	if _, err := systemAuth.Launch(systemCtx, c.TempDir); err != nil {
+	if err := systemAuth.Launch(systemCtx, c.TempDir); err != nil {
 		return errors.Annotate(err, "failed to start system auth context").Err()
 	}
 
@@ -625,14 +630,14 @@ func (c *cookRun) setupAuth(ctx context.Context) error {
 		EnableFirebaseAuth: c.kitchenProps.FirebaseAuth,
 		KnownGerritHosts:   c.KnownGerritHost,
 	}
-	if _, err := recipeAuth.Launch(ctx, c.TempDir); err != nil {
-		systemAuth.Close() // best effort cleanup
+	if err := recipeAuth.Launch(ctx, c.TempDir); err != nil {
+		systemAuth.Close(ctx) // best effort cleanup
 		return errors.Annotate(err, "failed to start recipe auth context").Err()
 	}
 
 	// Log the actual service account emails corresponding to each context.
-	systemAuth.Report()
-	recipeAuth.Report()
+	systemAuth.Report(ctx)
+	recipeAuth.Report(ctx)
 	c.systemAuth = systemAuth
 	c.recipeAuth = recipeAuth
 

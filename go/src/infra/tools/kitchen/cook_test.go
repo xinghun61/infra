@@ -46,7 +46,7 @@ func TestCook(t *testing.T) {
 			expected := filepath.Join(tdir, "t")
 
 			env := environ.New(nil)
-			So(cook.updateEnv(&env), ShouldBeNil)
+			So(cook.updateEnv(env), ShouldBeNil)
 			So(env.Map(), ShouldResemble, map[string]string{
 				"TEMPDIR":             expected,
 				"TMPDIR":              expected,
