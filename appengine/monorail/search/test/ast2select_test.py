@@ -60,230 +60,328 @@ class AST2SelectTest(unittest.TestCase):
 
   def testBlockingIDCond_SingleValue(self):
     fd = BUILTIN_ISSUE_FIELDS['blocking_id']
-    txt_cond = ast_pb2.MakeCond(
-        ast_pb2.QueryOp.EQ, [fd], ['1'], [])
-    num_cond = ast_pb2.MakeCond(ast_pb2.QueryOp.EQ, [fd], [], [1])
+    cond = ast_pb2.MakeCond(ast_pb2.QueryOp.EQ, [fd], [], [1])
 
-    for cond, expected in ((txt_cond, '1'), (num_cond, 1)):
-      left_joins, where, unsupported = ast2select._ProcessBlockingIDCond(
-          cond, 'Cond1', 'Issue1', snapshot_mode=False)
-      self.assertEqual(
-          [('IssueRelation AS Cond1 ON Issue.id = Cond1.dst_issue_id AND '
-            'Cond1.kind = %s AND Cond1.issue_id = %s',
-            ['blockedon', expected])],
-          left_joins)
-      self.assertTrue(sql._IsValidJoin(left_joins[0][0]))
-      self.assertEqual(
-          [('Cond1.dst_issue_id IS NOT NULL', [])],
-          where)
-      self.assertTrue(sql._IsValidWhereCond(where[0][0]))
-      self.assertEqual([], unsupported)
+    left_joins, where, unsupported = ast2select._ProcessBlockingIDCond(
+        cond, 'Cond1', 'Issue1', snapshot_mode=False)
+    self.assertEqual(
+        [('IssueRelation AS Cond1 ON Issue.id = Cond1.dst_issue_id AND '
+          'Cond1.kind = %s AND Cond1.issue_id = %s',
+          ['blockedon', 1])],
+        left_joins)
+    self.assertTrue(sql._IsValidJoin(left_joins[0][0]))
+    self.assertEqual(
+        [('Cond1.dst_issue_id IS NOT NULL', [])],
+        where)
+    self.assertTrue(sql._IsValidWhereCond(where[0][0]))
+    self.assertEqual([], unsupported)
 
   def testBlockingIDCond_NegatedSingleValue(self):
     fd = BUILTIN_ISSUE_FIELDS['blocking_id']
-    txt_cond = ast_pb2.MakeCond(
-        ast_pb2.QueryOp.NE, [fd], ['1'], [])
-    num_cond = ast_pb2.MakeCond(ast_pb2.QueryOp.NE, [fd], [], [1])
+    cond = ast_pb2.MakeCond(ast_pb2.QueryOp.NE, [fd], [], [1])
 
-    for cond, expected in ((txt_cond, '1'), (num_cond, 1)):
-      left_joins, where, unsupported = ast2select._ProcessBlockingIDCond(
-          cond, 'Cond1', 'Issue1', snapshot_mode=False)
-      self.assertEqual(
-          [('IssueRelation AS Cond1 ON Issue.id = Cond1.dst_issue_id AND '
-            'Cond1.kind = %s AND Cond1.issue_id = %s',
-            ['blockedon', expected])],
-          left_joins)
-      self.assertTrue(sql._IsValidJoin(left_joins[0][0]))
-      self.assertEqual(
-          [('Cond1.dst_issue_id IS NULL', [])],
-          where)
-      self.assertTrue(sql._IsValidWhereCond(where[0][0]))
-      self.assertEqual([], unsupported)
+    left_joins, where, unsupported = ast2select._ProcessBlockingIDCond(
+        cond, 'Cond1', 'Issue1', snapshot_mode=False)
+    self.assertEqual(
+        [('IssueRelation AS Cond1 ON Issue.id = Cond1.dst_issue_id AND '
+          'Cond1.kind = %s AND Cond1.issue_id = %s',
+          ['blockedon', 1])],
+        left_joins)
+    self.assertTrue(sql._IsValidJoin(left_joins[0][0]))
+    self.assertEqual(
+        [('Cond1.dst_issue_id IS NULL', [])],
+        where)
+    self.assertTrue(sql._IsValidWhereCond(where[0][0]))
+    self.assertEqual([], unsupported)
 
   def testBlockingIDCond_MultiValue(self):
     fd = BUILTIN_ISSUE_FIELDS['blocking_id']
-    txt_cond = ast_pb2.MakeCond(
-        ast_pb2.QueryOp.EQ, [fd], ['1', '2', '3'], [])
-    num_cond = ast_pb2.MakeCond(ast_pb2.QueryOp.EQ, [fd], [], [1, 2, 3])
+    cond = ast_pb2.MakeCond(ast_pb2.QueryOp.EQ, [fd], [], [1, 2, 3])
 
-    for cond, expected in ((txt_cond, ['1', '2', '3']),
-                           (num_cond, [1, 2, 3])):
-      left_joins, where, unsupported = ast2select._ProcessBlockingIDCond(
-          cond, 'Cond1', 'Issue1', snapshot_mode=False)
-      self.assertEqual(
-          [('IssueRelation AS Cond1 ON Issue.id = Cond1.dst_issue_id AND '
-            'Cond1.kind = %s AND Cond1.issue_id IN (%s,%s,%s)',
-            ['blockedon'] + expected)],
-          left_joins)
-      self.assertTrue(sql._IsValidJoin(left_joins[0][0]))
-      self.assertEqual(
-          [('Cond1.dst_issue_id IS NOT NULL', [])],
-          where)
-      self.assertTrue(sql._IsValidWhereCond(where[0][0]))
-      self.assertEqual([], unsupported)
+    left_joins, where, unsupported = ast2select._ProcessBlockingIDCond(
+        cond, 'Cond1', 'Issue1', snapshot_mode=False)
+    self.assertEqual(
+        [('IssueRelation AS Cond1 ON Issue.id = Cond1.dst_issue_id AND '
+          'Cond1.kind = %s AND Cond1.issue_id IN (%s,%s,%s)',
+          ['blockedon', 1, 2, 3])],
+        left_joins)
+    self.assertTrue(sql._IsValidJoin(left_joins[0][0]))
+    self.assertEqual(
+        [('Cond1.dst_issue_id IS NOT NULL', [])],
+        where)
+    self.assertTrue(sql._IsValidWhereCond(where[0][0]))
+    self.assertEqual([], unsupported)
 
   def testBlockingIDCond_NegatedMultiValue(self):
     fd = BUILTIN_ISSUE_FIELDS['blocking_id']
-    txt_cond = ast_pb2.MakeCond(
-        ast_pb2.QueryOp.NE, [fd], ['1', '2', '3'], [])
-    num_cond = ast_pb2.MakeCond(ast_pb2.QueryOp.NE, [fd], [], [1, 2, 3])
+    cond = ast_pb2.MakeCond(ast_pb2.QueryOp.NE, [fd], [], [1, 2, 3])
 
-    for cond, expected in ((txt_cond, ['1', '2', '3']),
-                           (num_cond, [1, 2, 3])):
-      left_joins, where, unsupported = ast2select._ProcessBlockingIDCond(
-          cond, 'Cond1', 'Issue1', snapshot_mode=False)
-      self.assertEqual(
-          [('IssueRelation AS Cond1 ON Issue.id = Cond1.dst_issue_id AND '
-            'Cond1.kind = %s AND Cond1.issue_id IN (%s,%s,%s)',
-            ['blockedon'] + expected)],
-          left_joins)
-      self.assertTrue(sql._IsValidJoin(left_joins[0][0]))
-      self.assertEqual(
-          [('Cond1.dst_issue_id IS NULL', [])],
-          where)
-      self.assertTrue(sql._IsValidWhereCond(where[0][0]))
-      self.assertEqual([], unsupported)
+    left_joins, where, unsupported = ast2select._ProcessBlockingIDCond(
+        cond, 'Cond1', 'Issue1', snapshot_mode=False)
+    self.assertEqual(
+        [('IssueRelation AS Cond1 ON Issue.id = Cond1.dst_issue_id AND '
+          'Cond1.kind = %s AND Cond1.issue_id IN (%s,%s,%s)',
+          ['blockedon', 1, 2, 3])],
+        left_joins)
+    self.assertTrue(sql._IsValidJoin(left_joins[0][0]))
+    self.assertEqual(
+        [('Cond1.dst_issue_id IS NULL', [])],
+        where)
+    self.assertTrue(sql._IsValidWhereCond(where[0][0]))
+    self.assertEqual([], unsupported)
 
   def testBlockingIDCond_SnapshotMode(self):
     fd = BUILTIN_ISSUE_FIELDS['blocking_id']
     txt_cond = ast_pb2.MakeCond(
-        ast_pb2.QueryOp.EQ, [fd], ['1'], [])
+        ast_pb2.QueryOp.EQ, [fd], ['b/1'], [])
 
     left_joins, where, unsupported = ast2select._ProcessBlockingIDCond(
-        (txt_cond, '1'), 'Cond1', 'Issue1', snapshot_mode=True)
+        txt_cond, 'Cond1', 'Issue1', snapshot_mode=True)
     self.assertEqual([], left_joins)
     self.assertEqual([], where)
-    self.assertEqual([(txt_cond, '1')], unsupported)
+    self.assertEqual([txt_cond], unsupported)
+
+  def testBlockingIDCond_ExtIssues(self):
+    fd = BUILTIN_ISSUE_FIELDS['blocking_id']
+    ne_cond = ast_pb2.MakeCond(ast_pb2.QueryOp.NE, [fd], ['b/1', 'b/2'], [])
+    eq_cond = ast_pb2.MakeCond(ast_pb2.QueryOp.EQ, [fd], ['b/1', 'b/2'], [])
+
+    for cond, where_str in [(eq_cond, 'DIR.issue_id IS NOT NULL'),
+      (ne_cond, 'DIR.issue_id IS NULL')]:
+      left_joins, where, unsupported = ast2select._ProcessBlockingIDCond(
+          cond, 'DIR', 'Issue1', snapshot_mode=False)
+      self.assertEqual(
+          [('DanglingIssueRelation AS DIR ON Issue.id = DIR.issue_id AND '
+            'DIR.kind = %s AND DIR.ext_issue_identifier IN (%s,%s)',
+            ['blocking', 'b/1', 'b/2'])],
+          left_joins)
+      self.assertTrue(sql._IsValidJoin(left_joins[0][0]))
+      self.assertEqual(
+          [(where_str, [])],
+          where)
+      self.assertTrue(sql._IsValidWhereCond(where[0][0]))
+      self.assertEqual([], unsupported)
+
+  def testBlockingIDCond_CombinedIssues(self):
+    fd = BUILTIN_ISSUE_FIELDS['blocking_id']
+    cond = ast_pb2.MakeCond(ast_pb2.QueryOp.EQ, [fd], ['b/1', 'b/2'], [1, 2])
+
+    left_joins, where, unsupported = ast2select._ProcessBlockingIDCond(
+        cond, 'Cond1', 'Issue1', snapshot_mode=False)
+    self.assertEqual(
+        ('IssueRelation AS Cond1 ON Issue.id = Cond1.dst_issue_id AND '
+          'Cond1.kind = %s AND Cond1.issue_id IN (%s,%s)',
+          ['blockedon', 1, 2]), left_joins[0])
+    self.assertEqual(
+         ('DanglingIssueRelation AS DIR ON Issue.id = DIR.issue_id AND '
+          'DIR.kind = %s AND DIR.ext_issue_identifier IN (%s,%s)',
+          ['blocking', 'b/1', 'b/2']), left_joins[1])
+    self.assertTrue(sql._IsValidJoin(left_joins[0][0]))
+    self.assertTrue(sql._IsValidJoin(left_joins[1][0]))
+    self.assertEqual(
+        [('Cond1.dst_issue_id IS NOT NULL', []),
+        ('DIR.issue_id IS NOT NULL', [])],
+        where)
+    self.assertTrue(sql._IsValidWhereCond(where[0][0]))
+    self.assertTrue(sql._IsValidWhereCond(where[1][0]))
+    self.assertEqual([], unsupported)
 
   def testBlockedOnIDCond_SingleValue(self):
     fd = BUILTIN_ISSUE_FIELDS['blockedon_id']
-    txt_cond = ast_pb2.MakeCond(
-        ast_pb2.QueryOp.EQ, [fd], ['1'], [])
-    num_cond = ast_pb2.MakeCond(ast_pb2.QueryOp.EQ, [fd], [], [1])
+    cond = ast_pb2.MakeCond(ast_pb2.QueryOp.EQ, [fd], [], [1])
 
-    for cond, expected in ((txt_cond, '1'), (num_cond, 1)):
-      left_joins, where, unsupported = ast2select._ProcessBlockedOnIDCond(
-          cond, 'Cond1', 'Issue1', snapshot_mode=False)
-      self.assertEqual(
-          [('IssueRelation AS Cond1 ON Issue.id = Cond1.issue_id AND '
-            'Cond1.kind = %s AND Cond1.dst_issue_id = %s',
-            ['blockedon', expected])],
-          left_joins)
-      self.assertTrue(sql._IsValidJoin(left_joins[0][0]))
-      self.assertEqual(
-          [('Cond1.issue_id IS NOT NULL', [])],
-          where)
-      self.assertTrue(sql._IsValidWhereCond(where[0][0]))
-      self.assertEqual([], unsupported)
+    left_joins, where, unsupported = ast2select._ProcessBlockedOnIDCond(
+        cond, 'Cond1', 'Issue1', snapshot_mode=False)
+    self.assertEqual(
+        [('IssueRelation AS Cond1 ON Issue.id = Cond1.issue_id AND '
+          'Cond1.kind = %s AND Cond1.dst_issue_id = %s',
+          ['blockedon', 1])],
+        left_joins)
+    self.assertTrue(sql._IsValidJoin(left_joins[0][0]))
+    self.assertEqual(
+        [('Cond1.issue_id IS NOT NULL', [])],
+        where)
+    self.assertTrue(sql._IsValidWhereCond(where[0][0]))
+    self.assertEqual([], unsupported)
 
   def testBlockedOnIDCond_NegatedSingleValue(self):
     fd = BUILTIN_ISSUE_FIELDS['blockedon_id']
-    txt_cond = ast_pb2.MakeCond(
-        ast_pb2.QueryOp.NE, [fd], ['1'], [])
-    num_cond = ast_pb2.MakeCond(ast_pb2.QueryOp.NE, [fd], [], [1])
+    cond = ast_pb2.MakeCond(ast_pb2.QueryOp.NE, [fd], [], [1])
 
-    for cond, expected in ((txt_cond, '1'), (num_cond, 1)):
-      left_joins, where, unsupported = ast2select._ProcessBlockedOnIDCond(
-          cond, 'Cond1', 'Issue1', snapshot_mode=False)
-      self.assertEqual(
-          [('IssueRelation AS Cond1 ON Issue.id = Cond1.issue_id AND '
-            'Cond1.kind = %s AND Cond1.dst_issue_id = %s',
-            ['blockedon', expected])],
-          left_joins)
-      self.assertTrue(sql._IsValidJoin(left_joins[0][0]))
-      self.assertEqual(
-          [('Cond1.issue_id IS NULL', [])],
-          where)
-      self.assertTrue(sql._IsValidWhereCond(where[0][0]))
-      self.assertEqual([], unsupported)
+    left_joins, where, unsupported = ast2select._ProcessBlockedOnIDCond(
+        cond, 'Cond1', 'Issue1', snapshot_mode=False)
+    self.assertEqual(
+        [('IssueRelation AS Cond1 ON Issue.id = Cond1.issue_id AND '
+          'Cond1.kind = %s AND Cond1.dst_issue_id = %s',
+          ['blockedon', 1])],
+        left_joins)
+    self.assertTrue(sql._IsValidJoin(left_joins[0][0]))
+    self.assertEqual(
+        [('Cond1.issue_id IS NULL', [])],
+        where)
+    self.assertTrue(sql._IsValidWhereCond(where[0][0]))
+    self.assertEqual([], unsupported)
 
   def testBlockedOnIDCond_MultiValue(self):
     fd = BUILTIN_ISSUE_FIELDS['blockedon_id']
-    txt_cond = ast_pb2.MakeCond(
-        ast_pb2.QueryOp.EQ, [fd], ['1', '2', '3'], [])
-    num_cond = ast_pb2.MakeCond(ast_pb2.QueryOp.EQ, [fd], [], [1, 2, 3])
+    cond = ast_pb2.MakeCond(ast_pb2.QueryOp.EQ, [fd], [], [1, 2, 3])
 
-    for cond, expected in ((txt_cond, ['1', '2', '3']),
-                           (num_cond, [1, 2, 3])):
-      left_joins, where, unsupported = ast2select._ProcessBlockedOnIDCond(
-          cond, 'Cond1', 'Issue1', snapshot_mode=False)
-      self.assertEqual(
-          [('IssueRelation AS Cond1 ON Issue.id = Cond1.issue_id AND '
-            'Cond1.kind = %s AND Cond1.dst_issue_id IN (%s,%s,%s)',
-            ['blockedon'] + expected)],
-          left_joins)
-      self.assertTrue(sql._IsValidJoin(left_joins[0][0]))
-      self.assertEqual(
-          [('Cond1.issue_id IS NOT NULL', [])],
-          where)
-      self.assertTrue(sql._IsValidWhereCond(where[0][0]))
-      self.assertEqual([], unsupported)
+    left_joins, where, unsupported = ast2select._ProcessBlockedOnIDCond(
+        cond, 'Cond1', 'Issue1', snapshot_mode=False)
+    self.assertEqual(
+        [('IssueRelation AS Cond1 ON Issue.id = Cond1.issue_id AND '
+          'Cond1.kind = %s AND Cond1.dst_issue_id IN (%s,%s,%s)',
+          ['blockedon', 1, 2, 3])],
+        left_joins)
+    self.assertTrue(sql._IsValidJoin(left_joins[0][0]))
+    self.assertEqual(
+        [('Cond1.issue_id IS NOT NULL', [])],
+        where)
+    self.assertTrue(sql._IsValidWhereCond(where[0][0]))
+    self.assertEqual([], unsupported)
 
   def testBlockedOnIDCond_NegatedMultiValue(self):
     fd = BUILTIN_ISSUE_FIELDS['blockedon_id']
-    txt_cond = ast_pb2.MakeCond(
-        ast_pb2.QueryOp.NE, [fd], ['1', '2', '3'], [])
-    num_cond = ast_pb2.MakeCond(ast_pb2.QueryOp.NE, [fd], [], [1, 2, 3])
+    cond = ast_pb2.MakeCond(ast_pb2.QueryOp.NE, [fd], [], [1, 2, 3])
 
-    for cond, expected in ((txt_cond, ['1', '2', '3']),
-                           (num_cond, [1, 2, 3])):
-      left_joins, where, unsupported = ast2select._ProcessBlockedOnIDCond(
-          cond, 'Cond1', 'Issue1', snapshot_mode=False)
-      self.assertEqual(
-          [('IssueRelation AS Cond1 ON Issue.id = Cond1.issue_id AND '
-            'Cond1.kind = %s AND Cond1.dst_issue_id IN (%s,%s,%s)',
-            ['blockedon'] + expected)],
-          left_joins)
-      self.assertTrue(sql._IsValidJoin(left_joins[0][0]))
-      self.assertEqual(
-          [('Cond1.issue_id IS NULL', [])],
-          where)
-      self.assertTrue(sql._IsValidWhereCond(where[0][0]))
-      self.assertEqual([], unsupported)
+    left_joins, where, unsupported = ast2select._ProcessBlockedOnIDCond(
+        cond, 'Cond1', 'Issue1', snapshot_mode=False)
+    self.assertEqual(
+        [('IssueRelation AS Cond1 ON Issue.id = Cond1.issue_id AND '
+          'Cond1.kind = %s AND Cond1.dst_issue_id IN (%s,%s,%s)',
+          ['blockedon', 1, 2, 3])],
+        left_joins)
+    self.assertTrue(sql._IsValidJoin(left_joins[0][0]))
+    self.assertEqual(
+        [('Cond1.issue_id IS NULL', [])],
+        where)
+    self.assertTrue(sql._IsValidWhereCond(where[0][0]))
+    self.assertEqual([], unsupported)
 
   def testBlockedOnIDCond_SnapshotMode(self):
     fd = BUILTIN_ISSUE_FIELDS['blockedon_id']
     txt_cond = ast_pb2.MakeCond(
-        ast_pb2.QueryOp.EQ, [fd], ['1'], [])
+        ast_pb2.QueryOp.EQ, [fd], ['b/1'], [])
 
-    left_joins, where, unsupported = ast2select._ProcessBlockingIDCond(
-        (txt_cond, '1'), 'Cond1', 'Issue1', snapshot_mode=True)
+    left_joins, where, unsupported = ast2select._ProcessBlockedOnIDCond(
+        txt_cond, 'Cond1', 'Issue1', snapshot_mode=True)
     self.assertEqual([], left_joins)
     self.assertEqual([], where)
-    self.assertEqual([(txt_cond, '1')], unsupported)
+    self.assertEqual([txt_cond], unsupported)
 
-  def testMergedIntoIDCond_MultiValue(self):
-    fd = BUILTIN_ISSUE_FIELDS['mergedinto_id']
-    txt_cond = ast_pb2.MakeCond(
-        ast_pb2.QueryOp.EQ, [fd], ['1', '2', '3'], [])
-    num_cond = ast_pb2.MakeCond(ast_pb2.QueryOp.EQ, [fd], [], [1, 2, 3])
+  def testBlockedOnIDCond_ExtIssues(self):
+    fd = BUILTIN_ISSUE_FIELDS['blockedon_id']
+    eq_cond = ast_pb2.MakeCond(ast_pb2.QueryOp.EQ, [fd], ['b/1', 'b/2'], [])
+    ne_cond = ast_pb2.MakeCond(ast_pb2.QueryOp.NE, [fd], ['b/1', 'b/2'], [])
 
-    for cond, expected in ((txt_cond, ['1', '2', '3']),
-                           (num_cond, [1, 2, 3])):
-      left_joins, where, unsupported = ast2select._ProcessMergedIntoIDCond(
-          cond, 'Cond1', 'Issue1', snapshot_mode=False)
+    for cond, where_str in [(eq_cond, 'DIR.issue_id IS NOT NULL'),
+      (ne_cond, 'DIR.issue_id IS NULL')]:
+      left_joins, where, unsupported = ast2select._ProcessBlockedOnIDCond(
+          cond, 'DIR', 'Issue1', snapshot_mode=False)
       self.assertEqual(
-          [('IssueRelation AS Cond1 ON Issue.id = Cond1.issue_id AND '
-            'Cond1.kind = %s AND Cond1.dst_issue_id IN (%s,%s,%s)',
-            ['mergedinto'] + expected)],
+          [('DanglingIssueRelation AS DIR ON Issue.id = DIR.issue_id AND '
+            'DIR.kind = %s AND DIR.ext_issue_identifier IN (%s,%s)',
+            ['blockedon', 'b/1', 'b/2'])],
           left_joins)
       self.assertTrue(sql._IsValidJoin(left_joins[0][0]))
       self.assertEqual(
-          [('Cond1.issue_id IS NOT NULL', [])],
+          [(where_str, [])],
           where)
       self.assertTrue(sql._IsValidWhereCond(where[0][0]))
       self.assertEqual([], unsupported)
 
+  def testBlockedOnIDCond_CombinedIssues(self):
+    fd = BUILTIN_ISSUE_FIELDS['blockedon_id']
+    cond = ast_pb2.MakeCond(ast_pb2.QueryOp.EQ, [fd], ['b/1', 'b/2'], [1, 2])
+
+    left_joins, where, unsupported = ast2select._ProcessBlockedOnIDCond(
+        cond, 'Cond1', 'Issue1', snapshot_mode=False)
+    self.assertEqual(
+        ('IssueRelation AS Cond1 ON Issue.id = Cond1.issue_id AND '
+          'Cond1.kind = %s AND Cond1.dst_issue_id IN (%s,%s)',
+          ['blockedon', 1, 2]), left_joins[0])
+    self.assertEqual(
+         ('DanglingIssueRelation AS DIR ON Issue.id = DIR.issue_id AND '
+          'DIR.kind = %s AND DIR.ext_issue_identifier IN (%s,%s)',
+          ['blockedon', 'b/1', 'b/2']), left_joins[1])
+    self.assertTrue(sql._IsValidJoin(left_joins[0][0]))
+    self.assertTrue(sql._IsValidJoin(left_joins[1][0]))
+    self.assertEqual(
+        [('Cond1.issue_id IS NOT NULL', []),
+        ('DIR.issue_id IS NOT NULL', [])],
+        where)
+    self.assertTrue(sql._IsValidWhereCond(where[0][0]))
+    self.assertTrue(sql._IsValidWhereCond(where[1][0]))
+    self.assertEqual([], unsupported)
+
+  def testMergedIntoIDCond_MultiValue(self):
+    fd = BUILTIN_ISSUE_FIELDS['mergedinto_id']
+    cond = ast_pb2.MakeCond(ast_pb2.QueryOp.EQ, [fd], [], [1, 2, 3])
+
+    left_joins, where, unsupported = ast2select._ProcessMergedIntoIDCond(
+        cond, 'Cond1', 'Issue1', snapshot_mode=False)
+    self.assertEqual(
+        [('IssueRelation AS Cond1 ON Issue.id = Cond1.issue_id AND '
+          'Cond1.kind = %s AND Cond1.dst_issue_id IN (%s,%s,%s)',
+          ['mergedinto', 1, 2, 3])],
+        left_joins)
+    self.assertTrue(sql._IsValidJoin(left_joins[0][0]))
+    self.assertEqual(
+        [('Cond1.issue_id IS NOT NULL', [])],
+        where)
+    self.assertTrue(sql._IsValidWhereCond(where[0][0]))
+    self.assertEqual([], unsupported)
+
   def testMergedIntoIDCond_SnapshotMode(self):
     fd = BUILTIN_ISSUE_FIELDS['mergedinto_id']
     txt_cond = ast_pb2.MakeCond(
-        ast_pb2.QueryOp.EQ, [fd], ['1', '2', '3'], [])
+        ast_pb2.QueryOp.EQ, [fd], ['b/1', 'b/2', 'b/3'], [])
 
-    left_joins, where, unsupported = ast2select._ProcessBlockingIDCond(
-        (txt_cond, ['1', '2', '3']), 'Cond1', 'Issue1', snapshot_mode=True)
+    left_joins, where, unsupported = ast2select._ProcessMergedIntoIDCond(
+        txt_cond, 'Cond1', 'Issue1', snapshot_mode=True)
     self.assertEqual([], left_joins)
     self.assertEqual([], where)
-    self.assertEqual([(txt_cond, ['1', '2', '3'])], unsupported)
+    self.assertEqual([txt_cond], unsupported)
+
+  def testMergedIntoIDCond_ExtIssues(self):
+    fd = BUILTIN_ISSUE_FIELDS['mergedinto_id']
+    eq_cond = ast_pb2.MakeCond(ast_pb2.QueryOp.EQ, [fd], ['b/1', 'b/2'], [])
+    ne_cond = ast_pb2.MakeCond(ast_pb2.QueryOp.NE, [fd], ['b/1', 'b/2'], [])
+
+    for cond, expected in [(eq_cond, ['b/1', 'b/2']),
+      (ne_cond, ['b/1', 'b/2'])]:
+      left_joins, where, unsupported = ast2select._ProcessMergedIntoIDCond(
+          cond, 'Cond1', 'Issue1', snapshot_mode=False)
+      self.assertEqual(
+          [('DanglingIssueRelation AS DIR ON Issue.id = DIR.issue_id AND '
+            'DIR.kind = %s AND DIR.ext_issue_identifier IN (%s,%s)',
+            ['mergedinto'] + expected)],
+          left_joins)
+      self.assertTrue(sql._IsValidJoin(left_joins[0][0]))
+      self.assertTrue(sql._IsValidWhereCond(where[0][0]))
+      self.assertEqual([], unsupported)
+
+  def testMergedIntoIDCond_CombinedIssues(self):
+    fd = BUILTIN_ISSUE_FIELDS['mergedinto_id']
+    cond = ast_pb2.MakeCond(ast_pb2.QueryOp.EQ, [fd], ['b/1', 'b/2'], [1, 2])
+
+    left_joins, where, unsupported = ast2select._ProcessMergedIntoIDCond(
+        cond, 'Cond1', 'Issue1', snapshot_mode=False)
+    self.assertEqual(
+        [('IssueRelation AS Cond1 ON Issue.id = Cond1.issue_id AND '
+          'Cond1.kind = %s AND Cond1.dst_issue_id IN (%s,%s)',
+          ['mergedinto', 1, 2]),
+         ('DanglingIssueRelation AS DIR ON Issue.id = DIR.issue_id AND '
+          'DIR.kind = %s AND DIR.ext_issue_identifier IN (%s,%s)',
+          ['mergedinto', 'b/1', 'b/2'])],
+        left_joins)
+    self.assertTrue(sql._IsValidJoin(left_joins[0][0]))
+    self.assertEqual(
+        [('Cond1.issue_id IS NOT NULL', []),
+        ('DIR.issue_id IS NOT NULL', [])],
+        where)
+    self.assertTrue(sql._IsValidWhereCond(where[0][0]))
+    self.assertEqual([], unsupported)
 
   def testHasBlockedCond(self):
     for op, expected in ((ast_pb2.QueryOp.IS_DEFINED, 'IS NOT NULL'),
@@ -294,11 +392,17 @@ class AST2SelectTest(unittest.TestCase):
       left_joins, where, unsupported = ast2select._ProcessBlockedOnIDCond(
           cond, 'Cond1', None, snapshot_mode=False)
       self.assertEqual(
-          [('IssueRelation AS Cond1 ON Issue.id = Cond1.issue_id AND '
-            'Cond1.kind = %s', ['blockedon'])],
-          left_joins)
+          ('IssueRelation AS Cond1 ON Issue.id = Cond1.issue_id AND '
+            'Cond1.kind = %s', ['blockedon']),
+          left_joins[0])
+      self.assertEqual(
+          ('DanglingIssueRelation AS DIR ON Issue.id = DIR.issue_id AND '
+            'DIR.kind = %s', ['blockedon']),
+          left_joins[1])
       self.assertTrue(sql._IsValidJoin(left_joins[0][0]))
-      self.assertEqual([('Cond1.issue_id %s' % expected, [])], where)
+      self.assertTrue(sql._IsValidJoin(left_joins[1][0]))
+      self.assertEqual([('(Cond1.issue_id %s OR DIR.issue_id %s)'
+          % (expected, expected), [])], where)
       self.assertTrue(sql._IsValidWhereCond(where[0][0]))
       self.assertEqual([], unsupported)
 
@@ -322,11 +426,17 @@ class AST2SelectTest(unittest.TestCase):
       left_joins, where, unsupported = ast2select._ProcessBlockingIDCond(cond,
           'Cond1', None, snapshot_mode=False)
       self.assertEqual(
-          [('IssueRelation AS Cond1 ON Issue.id = Cond1.dst_issue_id AND '
-            'Cond1.kind = %s', ['blockedon'])],
-          left_joins)
+          ('IssueRelation AS Cond1 ON Issue.id = Cond1.dst_issue_id AND '
+            'Cond1.kind = %s', ['blockedon']),
+          left_joins[0])
+      self.assertEqual(
+          ('DanglingIssueRelation AS DIR ON Issue.id = DIR.issue_id AND '
+            'DIR.kind = %s', ['blocking']),
+          left_joins[1])
       self.assertTrue(sql._IsValidJoin(left_joins[0][0]))
-      self.assertEqual([('Cond1.dst_issue_id %s' % expected, [])], where)
+      self.assertTrue(sql._IsValidJoin(left_joins[1][0]))
+      self.assertEqual([('(Cond1.dst_issue_id %s OR DIR.issue_id %s)'
+          % (expected, expected), [])], where)
       self.assertTrue(sql._IsValidWhereCond(where[0][0]))
       self.assertEqual([], unsupported)
 

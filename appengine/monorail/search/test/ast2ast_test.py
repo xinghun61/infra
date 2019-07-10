@@ -183,6 +183,33 @@ class AST2ASTTest(unittest.TestCase):
           'project prefixes is ambiguous and is currently not supported.',
           cm.exception.message)
 
+  def testPreprocessBlockedOnCond_WithExternalIssues(self):
+    blockedon_field = BUILTIN_ISSUE_FIELDS['blockedon']
+    blockedon_id_field = BUILTIN_ISSUE_FIELDS['blockedon_id']
+    self.services.project.TestAddProject('Project1', project_id=1)
+    issue1 = fake.MakeTestIssue(
+        project_id=1, local_id=1, summary='sum', status='new', owner_id=2,
+        issue_id=101)
+    issue2 = fake.MakeTestIssue(
+        project_id=1, local_id=2, summary='sum', status='new', owner_id=2,
+        issue_id=102)
+    self.services.issue.TestAddIssue(issue1)
+    self.services.issue.TestAddIssue(issue2)
+
+    for local_ids, expected_issues, expected_ext_issues in (
+        (['b/1234'], [], ['b/1234']),
+        (['Project1:1', 'b/1234'], [101], ['b/1234']),
+        (['1', 'b/1234', 'b/1551', 'Project1:2'],
+        [101, 102], ['b/1234', 'b/1551'])):
+      cond = ast_pb2.MakeCond(
+          ast_pb2.QueryOp.TEXT_HAS, [blockedon_field], local_ids, [])
+      new_cond = ast2ast._PreprocessBlockedOnCond(
+          self.cnxn, cond, [1], self.services, None, True)
+      self.assertEqual(ast_pb2.QueryOp.EQ, new_cond.op)
+      self.assertEqual([blockedon_id_field], new_cond.field_defs)
+      self.assertEqual(expected_issues, new_cond.int_values)
+      self.assertEqual(expected_ext_issues, new_cond.str_values)
+
   def testPreprocessIsBlockedCond(self):
     blocked_field = BUILTIN_ISSUE_FIELDS['blockedon_id']
     for input_op, expected_op in (
@@ -296,6 +323,33 @@ class AST2ASTTest(unittest.TestCase):
         'project prefixes is ambiguous and is currently not supported.',
         cm.exception.message)
 
+  def testPreprocessBlockingCond_WithExternalIssues(self):
+    blocking_field = BUILTIN_ISSUE_FIELDS['blocking']
+    blocking_id_field = BUILTIN_ISSUE_FIELDS['blocking_id']
+    self.services.project.TestAddProject('Project1', project_id=1)
+    issue1 = fake.MakeTestIssue(
+        project_id=1, local_id=1, summary='sum', status='new', owner_id=2,
+        issue_id=101)
+    issue2 = fake.MakeTestIssue(
+        project_id=1, local_id=2, summary='sum', status='new', owner_id=2,
+        issue_id=102)
+    self.services.issue.TestAddIssue(issue1)
+    self.services.issue.TestAddIssue(issue2)
+
+    for local_ids, expected_issues, expected_ext_issues in (
+        (['b/1234'], [], ['b/1234']),
+        (['Project1:1', 'b/1234'], [101], ['b/1234']),
+        (['1', 'b/1234', 'b/1551', 'Project1:2'],
+        [101, 102], ['b/1234', 'b/1551'])):
+      cond = ast_pb2.MakeCond(
+          ast_pb2.QueryOp.TEXT_HAS, [blocking_field], local_ids, [])
+      new_cond = ast2ast._PreprocessBlockingCond(
+          self.cnxn, cond, [1], self.services, None, True)
+      self.assertEqual(ast_pb2.QueryOp.EQ, new_cond.op)
+      self.assertEqual([blocking_id_field], new_cond.field_defs)
+      self.assertEqual(expected_issues, new_cond.int_values)
+      self.assertEqual(expected_ext_issues, new_cond.str_values)
+
   def testPreprocessMergedIntoCond_WithSingleProjectID(self):
     field = BUILTIN_ISSUE_FIELDS['mergedinto']
     id_field = BUILTIN_ISSUE_FIELDS['mergedinto_id']
@@ -322,6 +376,33 @@ class AST2ASTTest(unittest.TestCase):
       self.assertEqual([id_field], new_cond.field_defs)
       self.assertEqual(expected, new_cond.int_values)
       self.assertEqual([], new_cond.str_values)
+
+  def testPreprocessMergedIntoCond_WithExternalIssues(self):
+    blocking_field = BUILTIN_ISSUE_FIELDS['mergedinto']
+    blocking_id_field = BUILTIN_ISSUE_FIELDS['mergedinto_id']
+    self.services.project.TestAddProject('Project1', project_id=1)
+    issue1 = fake.MakeTestIssue(
+        project_id=1, local_id=1, summary='sum', status='new', owner_id=2,
+        issue_id=101)
+    issue2 = fake.MakeTestIssue(
+        project_id=1, local_id=2, summary='sum', status='new', owner_id=2,
+        issue_id=102)
+    self.services.issue.TestAddIssue(issue1)
+    self.services.issue.TestAddIssue(issue2)
+
+    for local_ids, expected_issues, expected_ext_issues in (
+        (['b/1234'], [], ['b/1234']),
+        (['Project1:1', 'b/1234'], [101], ['b/1234']),
+        (['1', 'b/1234', 'b/1551', 'Project1:2'],
+        [101, 102], ['b/1234', 'b/1551'])):
+      cond = ast_pb2.MakeCond(
+          ast_pb2.QueryOp.TEXT_HAS, [blocking_field], local_ids, [])
+      new_cond = ast2ast._PreprocessMergedIntoCond(
+          self.cnxn, cond, [1], self.services, None, True)
+      self.assertEqual(ast_pb2.QueryOp.EQ, new_cond.op)
+      self.assertEqual([blocking_id_field], new_cond.field_defs)
+      self.assertEqual(expected_issues, new_cond.int_values)
+      self.assertEqual(expected_ext_issues, new_cond.str_values)
 
   def testPreprocessIsSpamCond(self):
     spam_field = BUILTIN_ISSUE_FIELDS['spam']

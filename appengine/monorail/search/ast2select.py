@@ -76,7 +76,8 @@ def BuildSQLQuery(query_ast, snapshot_mode=False):
 
 def _ProcessBlockedOnIDCond(cond, alias, _spare_alias, snapshot_mode):
   """Convert a blockedon_id=issue_id cond to SQL."""
-  return _ProcessRelatedIDCond(cond, alias, 'blockedon', snapshot_mode)
+  return _ProcessRelatedIDCond(cond, alias, 'blockedon',
+      snapshot_mode=snapshot_mode)
 
 
 def _ProcessBlockingIDCond(cond, alias, _spare_alias, snapshot_mode):
@@ -105,26 +106,73 @@ def _ProcessRelatedIDCond(cond, alias, kind, reverse_relation=False,
 
   matching_issue_col = 'issue_id' if reverse_relation else 'dst_issue_id'
   ret_issue_col = 'dst_issue_id' if reverse_relation else 'issue_id'
+  ext_kind = 'blocking' if reverse_relation else kind
+  left_join = []
+  where = []
 
-  kind_cond_str, kind_cond_args = _Compare(
+  issue_ids = cond.int_values
+  ext_issue_ids = cond.str_values
+  # Filter has:blockedon and has:blocking.
+  if (not issue_ids) and (not ext_issue_ids):
+    kind_cond_str, kind_cond_args = _Compare(
       alias, ast_pb2.QueryOp.EQ, tracker_pb2.FieldTypes.STR_TYPE, 'kind',
       [kind])
-  left_join_str = (
-      'IssueRelation AS {alias} ON Issue.id = {alias}.{ret_issue_col} AND '
-       '{kind_cond}').format(
-           alias=alias, ret_issue_col=ret_issue_col, kind_cond=kind_cond_str)
-  left_join_args = kind_cond_args
-
-  field_type, field_values = _GetFieldTypeAndValues(cond)
-  if field_values:
+    left_join_str = (
+        'IssueRelation AS {alias} ON Issue.id = {alias}.{ret_issue_col} AND '
+         '{kind_cond}').format(
+             alias=alias, ret_issue_col=ret_issue_col, kind_cond=kind_cond_str)
+    left_join_args = kind_cond_args
+    left_join.append((left_join_str, left_join_args))
+    kind_cond_str, kind_cond_args = _Compare(
+      'DIR', ast_pb2.QueryOp.EQ, tracker_pb2.FieldTypes.STR_TYPE, 'kind',
+      [ext_kind])
+    ext_left_join_str = ('DanglingIssueRelation AS DIR ON '
+        'Issue.id = DIR.issue_id AND {kind_cond}').format(
+            kind_cond=kind_cond_str)
+    left_join.append((ext_left_join_str, kind_cond_args))
+    where_str, where_args = _CompareAlreadyJoined(alias,
+      cond.op, ret_issue_col)
+    ext_where_str, ext_where_args = _CompareAlreadyJoined('DIR',
+      cond.op, 'issue_id')
+    where.append(('({where} OR {ext_where})'.format(
+      where=where_str, ext_where=ext_where_str),
+      where_args + ext_where_args))
+  # Filter kind using provided issue ids.
+  if issue_ids:
+    kind_cond_str, kind_cond_args = _Compare(
+      alias, ast_pb2.QueryOp.EQ, tracker_pb2.FieldTypes.STR_TYPE, 'kind',
+      [kind])
+    left_join_str = (
+        'IssueRelation AS {alias} ON Issue.id = {alias}.{ret_issue_col} AND '
+         '{kind_cond}').format(
+             alias=alias, ret_issue_col=ret_issue_col, kind_cond=kind_cond_str)
+    left_join_args = kind_cond_args
     related_cond_str, related_cond_args = _Compare(
-        alias, ast_pb2.QueryOp.EQ, field_type, matching_issue_col, field_values)
+        alias, ast_pb2.QueryOp.EQ, tracker_pb2.FieldTypes.INT_TYPE,
+        matching_issue_col, issue_ids)
     left_join_str += ' AND {related_cond}'.format(related_cond=related_cond_str)
     left_join_args += related_cond_args
 
-  where = [_CompareAlreadyJoined(alias, cond.op, ret_issue_col)]
+    left_join.append((left_join_str, left_join_args))
+    where.append(_CompareAlreadyJoined(alias, cond.op, ret_issue_col))
+  # Filter kind using provided external issue ids.
+  if ext_issue_ids:
+    kind_cond_str, kind_cond_args = _Compare(
+      'DIR', ast_pb2.QueryOp.EQ, tracker_pb2.FieldTypes.STR_TYPE, 'kind',
+      [ext_kind])
+    ext_left_join_str = ('DanglingIssueRelation AS DIR ON '
+        'Issue.id = DIR.issue_id AND {kind_cond}').format(
+            kind_cond=kind_cond_str)
+    related_cond_str, related_cond_args = _Compare(
+        'DIR', ast_pb2.QueryOp.EQ, tracker_pb2.FieldTypes.INT_TYPE,
+        'ext_issue_identifier', ext_issue_ids)
+    ext_left_join_str += ' AND {related_cond}'.format(
+        related_cond=related_cond_str)
+    kind_cond_args += related_cond_args
 
-  return [(left_join_str, left_join_args)], where, []
+    left_join.append((ext_left_join_str, kind_cond_args))
+    where.append(_CompareAlreadyJoined('DIR', cond.op, 'issue_id'))
+  return left_join, where, []
 
 
 def _GetFieldTypeAndValues(cond):

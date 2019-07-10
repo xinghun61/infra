@@ -42,6 +42,7 @@ from proto import tracker_pb2
 # remove this dep.
 from search import query2ast
 from tracker import tracker_bizobj
+from features import federated
 
 
 def PreprocessAST(
@@ -136,11 +137,13 @@ def _PreprocessBlockedOnCond(
   Preprocesses blockedon=xyz cond into blockedon_id:issue_ids.
   Preprocesses has:blockedon cond into issues that are blocked on other issues.
   """
-  issue_ids = _GetIssueIDsFromLocalIdsCond(cnxn, cond, project_ids, services)
+  issue_ids, ext_issue_ids = _GetIssueIDsFromLocalIdsCond(cnxn,
+    cond, project_ids, services)
   return ast_pb2.Condition(
       op=_TextOpToIntOp(cond.op),
       field_defs=[query2ast.BUILTIN_ISSUE_FIELDS['blockedon_id']],
-      int_values=issue_ids)
+      int_values=issue_ids,
+      str_values=ext_issue_ids)
 
 
 def _PreprocessBlockingCond(
@@ -150,11 +153,13 @@ def _PreprocessBlockingCond(
   Preprocesses blocking=xyz cond into blocking_id:issue_ids.
   Preprocesses has:blocking cond into issues that are blocking other issues.
   """
-  issue_ids = _GetIssueIDsFromLocalIdsCond(cnxn, cond, project_ids, services)
+  issue_ids, ext_issue_ids = _GetIssueIDsFromLocalIdsCond(cnxn,
+    cond, project_ids, services)
   return ast_pb2.Condition(
       op=_TextOpToIntOp(cond.op),
       field_defs=[query2ast.BUILTIN_ISSUE_FIELDS['blocking_id']],
-      int_values=issue_ids)
+      int_values=issue_ids,
+      str_values=ext_issue_ids)
 
 
 def _PreprocessMergedIntoCond(
@@ -164,11 +169,13 @@ def _PreprocessMergedIntoCond(
   Preprocesses mergedinto=xyz cond into mergedinto_id:issue_ids.
   Preprocesses has:mergedinto cond into has:mergedinto_id.
   """
-  issue_ids = _GetIssueIDsFromLocalIdsCond(cnxn, cond, project_ids, services)
+  issue_ids, ext_issue_ids = _GetIssueIDsFromLocalIdsCond(cnxn,
+    cond, project_ids, services)
   return ast_pb2.Condition(
       op=_TextOpToIntOp(cond.op),
       field_defs=[query2ast.BUILTIN_ISSUE_FIELDS['mergedinto_id']],
-      int_values=issue_ids)
+      int_values=issue_ids,
+      str_values=ext_issue_ids)
 
 
 def _GetIssueIDsFromLocalIdsCond(cnxn, cond, project_ids, services):
@@ -183,24 +190,31 @@ def _GetIssueIDsFromLocalIdsCond(cnxn, cond, project_ids, services):
 
   # Populate refs with (project_name, local_id) pairs.
   refs = []
+  # Populate ext_issue_ids with strings like 'b/1234'.
+  ext_issue_ids = []
   for val in cond.str_values:
     try:
       project_name, local_id = tracker_bizobj.ParseIssueRef(val)
+      if not project_name:
+        if not default_project_name:
+          # TODO(rmistry): Support the below.
+          raise MalformedQuery(
+              'Searching for issues accross multiple/all projects without '
+              'project prefixes is ambiguous and is currently not supported.')
+        project_name = default_project_name
+      refs.append((project_name, int(local_id)))
+    except MalformedQuery as e:
+      raise e
+    # Can't parse issue id, try external issue pattern.
     except ValueError as e:
-      logging.exception(e)
-      raise MalformedQuery('Could not parse issue reference: %s' % val)
-    if not project_name:
-      if not default_project_name:
-        # TODO(rmistry): Support the below.
-        raise MalformedQuery(
-            'Searching for issues accross multiple/all projects without '
-            'project prefixes is ambiguous and is currently not supported.')
-      project_name = default_project_name
-    refs.append((project_name, int(local_id)))
+      if federated.FromShortlink(val):
+        ext_issue_ids.append(val)
+      else:
+        raise MalformedQuery('Could not parse issue reference: %s' % val)
 
   issue_ids, _misses =  services.issue.ResolveIssueRefs(
       cnxn, ref_projects, default_project_name, refs)
-  return issue_ids
+  return issue_ids, ext_issue_ids
 
 
 def _PreprocessStatusCond(
