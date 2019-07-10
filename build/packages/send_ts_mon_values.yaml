@@ -1,0 +1,20 @@
+package: infra/send_ts_mon_values/all
+description: The tool to send values to ts_mon
+platforms:
+  - linux-amd64
+
+root: ../../
+data:
+  - dir: infra/tools/send_ts_mon_values
+    exclude:
+      - .*\.pyc
+      # Tests are not needed in the production setup.
+      - test/.*
+
+  # Keep __init__.py files from the parent directories to allow invoking the
+  # tool as infra.tools.send_ts_mon package.
+  - file: infra/__init__.py
+  - file: infra/tools/__init__.py
+
+  # Where to put info about installed package version.
+  - version_file: CIPD_VERSION.json
