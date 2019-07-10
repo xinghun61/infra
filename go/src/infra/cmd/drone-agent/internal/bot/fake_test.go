@@ -31,7 +31,7 @@ func TestFakeBot_StopWith(t *testing.T) {
 			if got != err {
 				t.Errorf("Got wait error %v; want %v", got, err)
 			}
-		case <-time.After(time.Millisecond):
+		case <-time.After(time.Second):
 			t.Fatal("bot didn't exist after calling StopWith")
 		}
 	})
