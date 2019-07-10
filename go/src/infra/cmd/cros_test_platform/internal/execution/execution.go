@@ -21,7 +21,7 @@ import (
 // Runner defines the interface implemented by Skylab or Autotest execution
 // runners.
 type Runner interface {
-	LaunchAndWait(context.Context, swarming.Client, isolate.Getter) error
+	LaunchAndWait(context.Context, swarming.Client, isolate.GetterFactory) error
 	Response(swarming.URLer) *steps.ExecuteResponse
 }
 

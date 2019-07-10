@@ -24,6 +24,7 @@ import (
 	"go.chromium.org/luci/swarming/proto/jsonrpc"
 
 	"infra/cmd/cros_test_platform/internal/execution/internal/skylab"
+	"infra/cmd/cros_test_platform/internal/execution/isolate"
 )
 
 // fakeSwarming implements skylab.Swarming
@@ -141,6 +142,12 @@ func newFakeGetter() *fakeGetter {
 	return f
 }
 
+func fakeGetterFactory(getter isolate.Getter) isolate.GetterFactory {
+	return func(_ context.Context, _ string) (isolate.Getter, error) {
+		return getter, nil
+	}
+}
+
 func newTest(name string, client bool, deps ...*build_api.AutotestTaskDependency) *build_api.AutotestTest {
 	ee := build_api.AutotestTest_EXECUTION_ENVIRONMENT_SERVER
 	if client {
@@ -174,6 +181,7 @@ func TestLaunchAndWaitTest(t *testing.T) {
 
 		swarming := newFakeSwarming("")
 		getter := newFakeGetter()
+		gf := fakeGetterFactory(getter)
 
 		var tests []*build_api.AutotestTest
 		tests = append(tests, newTest("", false), newTest("", true))
@@ -181,7 +189,7 @@ func TestLaunchAndWaitTest(t *testing.T) {
 		Convey("when running a skylab execution", func() {
 			run := skylab.NewTaskSet(tests, basicParams())
 
-			err := run.LaunchAndWait(ctx, swarming, getter)
+			err := run.LaunchAndWait(ctx, swarming, gf)
 			So(err, ShouldBeNil)
 
 			resp := run.Response(swarming)
@@ -254,9 +262,10 @@ func TestTaskStates(t *testing.T) {
 				swarming.setHasOutputRef(c.hasRef)
 				getter := newFakeGetter()
 				getter.SetAutotestResult(&skylab_test_runner.Result_Autotest{})
+				gf := fakeGetterFactory(getter)
 
 				run := skylab.NewTaskSet(tests, basicParams())
-				err := run.LaunchAndWait(ctx, swarming, getter)
+				err := run.LaunchAndWait(ctx, swarming, gf)
 				So(err, ShouldBeNil)
 
 				Convey("then the task state is correct.", func() {
@@ -274,13 +283,14 @@ func TestServiceError(t *testing.T) {
 		ctx := context.Background()
 		swarming := newFakeSwarming("")
 		getter := newFakeGetter()
+		gf := fakeGetterFactory(getter)
 
 		tests := []*build_api.AutotestTest{newTest("", false)}
 		run := skylab.NewTaskSet(tests, basicParams())
 
 		Convey("when the swarming service immediately returns errors, that error is surfaced as a launch error.", func() {
 			swarming.setError(fmt.Errorf("foo error"))
-			err := run.LaunchAndWait(ctx, swarming, getter)
+			err := run.LaunchAndWait(ctx, swarming, gf)
 			So(err, ShouldNotBeNil)
 			So(err.Error(), ShouldContainSubstring, "launch test")
 			So(err.Error(), ShouldContainSubstring, "foo error")
@@ -290,7 +300,7 @@ func TestServiceError(t *testing.T) {
 			swarming.setCallback(func() {
 				swarming.setError(fmt.Errorf("foo error"))
 			})
-			err := run.LaunchAndWait(ctx, swarming, getter)
+			err := run.LaunchAndWait(ctx, swarming, gf)
 			So(err.Error(), ShouldContainSubstring, "wait for task")
 			So(err.Error(), ShouldContainSubstring, "foo error")
 		})
@@ -303,10 +313,11 @@ func TestTaskURL(t *testing.T) {
 		swarming_service := "https://foo.bar.com/"
 		swarming := newFakeSwarming(swarming_service)
 		getter := newFakeGetter()
+		gf := fakeGetterFactory(getter)
 
 		tests := []*build_api.AutotestTest{newTest("", false)}
 		run := skylab.NewTaskSet(tests, basicParams())
-		run.LaunchAndWait(ctx, swarming, getter)
+		run.LaunchAndWait(ctx, swarming, gf)
 
 		resp := run.Response(swarming)
 		So(resp.TaskResults, ShouldHaveLength, 1)
@@ -323,6 +334,7 @@ func TestIncompleteWait(t *testing.T) {
 		swarming := newFakeSwarming("")
 		swarming.setTaskState(jsonrpc.TaskState_RUNNING)
 		getter := newFakeGetter()
+		gf := fakeGetterFactory(getter)
 
 		tests := []*build_api.AutotestTest{newTest("", false)}
 		run := skylab.NewTaskSet(tests, basicParams())
@@ -331,7 +343,7 @@ func TestIncompleteWait(t *testing.T) {
 		wg.Add(1)
 		var err error
 		go func() {
-			err = run.LaunchAndWait(ctx, swarming, getter)
+			err = run.LaunchAndWait(ctx, swarming, gf)
 			wg.Done()
 		}()
 
@@ -355,13 +367,14 @@ func TestRequestArguments(t *testing.T) {
 		ctx := context.Background()
 		swarming := newFakeSwarming("")
 		getter := newFakeGetter()
+		gf := fakeGetterFactory(getter)
 
 		tests := []*build_api.AutotestTest{
 			newTest("name1", false, &build_api.AutotestTaskDependency{Label: "cr50:pvt"}),
 		}
 
 		run := skylab.NewTaskSet(tests, basicParams())
-		run.LaunchAndWait(ctx, swarming, getter)
+		run.LaunchAndWait(ctx, swarming, gf)
 
 		Convey("the launched task request should have correct parameters.", func() {
 			So(swarming.createCalls, ShouldHaveLength, 1)
@@ -401,7 +414,7 @@ func TestClientTestArg(t *testing.T) {
 		tests := []*build_api.AutotestTest{newTest("name1", true)}
 
 		run := skylab.NewTaskSet(tests, basicParams())
-		run.LaunchAndWait(ctx, swarming, newFakeGetter())
+		run.LaunchAndWait(ctx, swarming, fakeGetterFactory(newFakeGetter()))
 
 		Convey("the launched task request should have correct parameters.", func() {
 			So(swarming.createCalls, ShouldHaveLength, 1)

@@ -23,9 +23,14 @@ import (
 
 const resultsFileName = "results.json"
 
-func getAutotestResult(ctx context.Context, outputRef *swarming_api.SwarmingRpcsFilesRef, getter isolate.Getter) (*skylab_test_runner.Result_Autotest, error) {
+func getAutotestResult(ctx context.Context, outputRef *swarming_api.SwarmingRpcsFilesRef, gf isolate.GetterFactory) (*skylab_test_runner.Result_Autotest, error) {
 	if outputRef == nil {
 		return nil, errors.Reason("get result: nil output ref").Err()
+	}
+
+	getter, err := gf(ctx, outputRef.Isolatedserver)
+	if err != nil {
+		return nil, errors.Annotate(err, "get result").Err()
 	}
 
 	content, err := getter.GetFile(ctx, isolated.HexDigest(outputRef.Isolated), resultsFileName)

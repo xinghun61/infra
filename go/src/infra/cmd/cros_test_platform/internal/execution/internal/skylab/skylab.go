@@ -118,12 +118,12 @@ func NewTaskSet(tests []*build_api.AutotestTest, params *test_platform.Request_P
 // If the supplied context is cancelled prior to completion, or some other error
 // is encountered, this method returns whatever partial execution response
 // was visible to it prior to that error.
-func (r *TaskSet) LaunchAndWait(ctx context.Context, swarming swarming.Client, getter isolate.Getter) error {
+func (r *TaskSet) LaunchAndWait(ctx context.Context, swarming swarming.Client, gf isolate.GetterFactory) error {
 	if err := r.launch(ctx, swarming); err != nil {
 		return err
 	}
 
-	return r.wait(ctx, swarming, getter)
+	return r.wait(ctx, swarming, gf)
 }
 
 var isClientTest = map[build_api.AutotestTest_ExecutionEnvironment]bool{
@@ -155,9 +155,9 @@ func (r *TaskSet) launch(ctx context.Context, swarming swarming.Client) error {
 	return nil
 }
 
-func (r *TaskSet) wait(ctx context.Context, swarming swarming.Client, getter isolate.Getter) error {
+func (r *TaskSet) wait(ctx context.Context, swarming swarming.Client, gf isolate.GetterFactory) error {
 	for {
-		complete, err := r.tick(ctx, swarming, getter)
+		complete, err := r.tick(ctx, swarming, gf)
 		if complete || err != nil {
 			return err
 		}
@@ -170,7 +170,7 @@ func (r *TaskSet) wait(ctx context.Context, swarming swarming.Client, getter iso
 	}
 }
 
-func (r *TaskSet) tick(ctx context.Context, client swarming.Client, getter isolate.Getter) (complete bool, err error) {
+func (r *TaskSet) tick(ctx context.Context, client swarming.Client, gf isolate.GetterFactory) (complete bool, err error) {
 	complete = true
 
 	for _, testRun := range r.testRuns {
@@ -198,7 +198,7 @@ func (r *TaskSet) tick(ctx context.Context, client swarming.Client, getter isola
 		switch {
 		// Task ran to completion.
 		case swarming.CompletedTaskStates[state]:
-			r, err := getAutotestResult(ctx, result.OutputsRef, getter)
+			r, err := getAutotestResult(ctx, result.OutputsRef, gf)
 			if err != nil {
 				return false, errors.Annotate(err, "wait for task %s", attempt.taskID).Err()
 			}

@@ -17,6 +17,7 @@ import (
 	"go.chromium.org/luci/common/errors"
 
 	"infra/cmd/cros_test_platform/internal/execution"
+	"infra/cmd/cros_test_platform/internal/execution/isolate"
 	"infra/cmd/cros_test_platform/internal/execution/isolate/getter"
 	"infra/libs/skylab/swarming"
 )
@@ -66,8 +67,8 @@ func (c *commonExecuteRun) validateRequestCommon(request *steps.ExecuteRequest) 
 
 func (c *commonExecuteRun) handleRequest(ctx context.Context, runner execution.Runner, t *swarming.Client) (*steps.ExecuteResponse, error) {
 	// TODO(akeshet): Use correct isolate client.
-	g := getter.New(nil)
-	err := runner.LaunchAndWait(ctx, t, g)
+	gf := func(_ context.Context, _ string) (isolate.Getter, error) { return getter.New(nil), nil }
+	err := runner.LaunchAndWait(ctx, t, gf)
 	return runner.Response(t), err
 }
 

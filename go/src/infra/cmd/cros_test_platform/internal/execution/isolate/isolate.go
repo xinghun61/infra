@@ -15,3 +15,6 @@ import (
 type Getter interface {
 	GetFile(ctx context.Context, digest isolated.HexDigest, filePath string) ([]byte, error)
 }
+
+// GetterFactory is a function that returns a Getter for a given server.
+type GetterFactory func(ctx context.Context, server string) (Getter, error)
