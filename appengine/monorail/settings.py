@@ -363,6 +363,7 @@ spam_whitelisted_suffixes = (
 # corporate systems that they are familiar with.
 corp_mode_user_groups = [
   'chromeos-all@google.com',
+  'chromeos-acl@google.com',
   'create-team@google.com',
   'test-corp-mode@google.com',
   ]
