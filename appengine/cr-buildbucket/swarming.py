@@ -699,6 +699,7 @@ def _create_swarming_task(build):
     bundle = model.BuildBundle.get(build_id, infra=True)
     if not bundle:  # pragma: no cover
       return False
+    build = bundle.build
 
     with bundle.infra.mutate() as infra:
       sw = infra.swarming

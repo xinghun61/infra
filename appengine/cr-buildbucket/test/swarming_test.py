@@ -726,6 +726,12 @@ class SyncBuildTest(BaseTest):
         ]
     )
 
+    # Assert that we've persisted information about the new task.
+    bundle = model.BuildBundle.get(1, infra=True)
+    self.assertIsNotNone(bundle)
+    self.assertTrue(bundle.build.swarming_task_key)
+    self.assertTrue(bundle.infra.parse().swarming.task_id)
+
     expected_continuation_payload = {
         'id': 1,
         'generation': 1,
