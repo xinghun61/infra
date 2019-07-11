@@ -308,6 +308,66 @@ func TestWorkerModifiedTime(t *testing.T) {
 	})
 }
 
+// TestExaminedTime tests that request.examineTime is updated correctly.
+func TestExaminedTime(t *testing.T) {
+	Convey("Given a state with a new accountless request", t, func() {
+		ctx := context.Background()
+		t0 := time.Unix(100, 0)
+		s := New(t0)
+		s.AddRequest(ctx, NewTaskRequest("r1", "", nil, nil, t0), t0, nil, NullEventSink)
+		Convey("it starts with examinedTime = 0.", func() {
+			So(s.state.queuedRequests["r1"].examinedTime, ShouldEqual, time.Unix(0, 0))
+		})
+
+		s.RunOnce(ctx, NullEventSink)
+		Convey("after a scheduler run in which it is not assigned, its examinedTime gets updated to scheduler's time.", func() {
+			So(s.state.queuedRequests["r1"].examinedTime, ShouldEqual, t0)
+		})
+	})
+
+	Convey("Given two requests with an account with fanout limit, and with free tasks disabled", t, func() {
+		ctx := context.Background()
+		t0 := time.Unix(100, 0).UTC()
+		s := New(t0)
+		accountConfig := NewAccountConfig(1, 10, []float32{100})
+		accountConfig.DisableFreeTasks = true
+		s.AddAccount(ctx, "a1", accountConfig, []float32{100})
+
+		s.AddRequest(ctx, NewTaskRequest("r1", "a1", nil, nil, t0), t0, nil, NullEventSink)
+		s.AddRequest(ctx, NewTaskRequest("r2", "a1", nil, nil, t0), t0, nil, NullEventSink)
+
+		s.RunOnce(ctx, NullEventSink)
+		Convey("after a scheduler run in which neither is assigned, their examined times are updated to scheduler's time.", func() {
+			So(s.state.queuedRequests, ShouldHaveLength, 2)
+			for _, r := range s.state.queuedRequests {
+				So(r.examinedTime, ShouldEqual, t0)
+			}
+		})
+
+		t1 := t0.Add(10 * time.Second)
+		s.MarkIdle(ctx, "w1", nil, t1, NullEventSink)
+		s.UpdateTime(ctx, t1)
+		s.RunOnce(ctx, NullEventSink)
+		Convey("after a idle worker is added and a scheduler run in which one request is assigned, the other request's examined time is not updated (due to throttling, with an account with free tasks disabled).", func() {
+			So(s.state.queuedRequests, ShouldHaveLength, 1)
+			for _, r := range s.state.queuedRequests {
+				So(r.examinedTime, ShouldEqual, t0)
+			}
+		})
+
+		s.config.AccountConfigs["a1"].DisableFreeTasks = false
+		t2 := t1.Add(10 * time.Second)
+		s.UpdateTime(ctx, t2)
+		s.RunOnce(ctx, NullEventSink)
+		Convey("when free tasks are enabled, then after a scheduler run the queued request's examined time is updated.", func() {
+			So(s.state.queuedRequests, ShouldHaveLength, 1)
+			for _, r := range s.state.queuedRequests {
+				So(r.examinedTime, ShouldEqual, t2)
+			}
+		})
+	})
+}
+
 // addRunningRequest is a test helper to add a new request to a scheduler and
 // immediately start it running on a new worker.
 func addRunningRequest(ctx context.Context, s *Scheduler, rid RequestID, wid WorkerID, aid AccountID, pri Priority, tm time.Time) {

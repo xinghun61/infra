@@ -71,6 +71,8 @@ func (run *schedulerRun) Run(e EventSink) []*Assignment {
 	output = append(output, run.matchIdleBots(FreeBucket, provisionAwareMatch, e)...)
 	output = append(output, run.matchIdleBots(FreeBucket, basicMatch, e)...)
 
+	run.updateExaminedTimes()
+
 	return output
 }
 
@@ -80,6 +82,19 @@ func (run *schedulerRun) assignRequestToWorker(w WorkerID, request requestNode, 
 	delete(run.idleWorkers, w)
 	run.fanout.count(request.Value())
 	run.requestsPerPriority[priority].Remove(request.Element)
+}
+
+func (run *schedulerRun) updateExaminedTimes() {
+	for _, req := range run.scheduler.state.queuedRequests {
+		// A task request was fully examined unless it was throttled due to
+		// account fanout limit, for an account with free tasks disabled.
+		account, ok := run.scheduler.config.AccountConfigs[string(req.AccountID)]
+		if ok && account.DisableFreeTasks && run.isThrottled(req) {
+			continue
+		}
+
+		req.examinedTime = run.scheduler.state.lastUpdateTime
+	}
 }
 
 // newRun initializes a scheduler pass.
@@ -209,11 +224,15 @@ func (run *schedulerRun) matchIdleBots(priority Priority, mf matcher, events Eve
 	return output
 }
 
+func (run *schedulerRun) isThrottled(request *TaskRequest) bool {
+	return run.fanout.getRemaining(request) <= 0
+}
+
 // shouldSkip computes if the given request should be skipped at the given priority.
 func (run *schedulerRun) shouldSkip(request *TaskRequest, priority Priority) bool {
 	// Enforce fanout (except for Freebucket).
 	if priority != FreeBucket {
-		return run.fanout.getRemaining(request) <= 0
+		return run.isThrottled(request)
 	}
 
 	// Enforce DisableFreeTasks (for FreeBucket).
