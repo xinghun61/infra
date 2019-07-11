@@ -98,13 +98,8 @@
                   {% if not found and metric.name == name %}
                     {% set found = True %}
                     {% set percent = (metric.covered*100.0/metric.total) | int %}
-                    {% if percent == 100 %}
-                      {{ percent }}% ({{ metric.covered }}/{{ metric.total }})
-                    {% elif percent >= 10 %}
-                      &nbsp;{{ percent }}% ({{ metric.covered }}/{{ metric.total }})
-                    {% else %}
-                      &nbsp;&nbsp;{{ percent }}% ({{ metric.covered }}/{{ metric.total }})
-                    {% endif %}
+                    {{ ('%3d' % percent).replace(' ', '&nbsp;') | safe }}%
+                    ({{ metric.covered }}/{{ metric.total }})
                   {% endif %}
                 {% endfor %}
                 </td>
