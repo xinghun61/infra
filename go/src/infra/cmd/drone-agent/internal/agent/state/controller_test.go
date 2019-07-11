@@ -121,8 +121,20 @@ func TestController(t *testing.T) {
 		const d = "some-dut"
 		c.AddDUT(d)
 		c.DrainDUT(d)
-		// This will hang if draining doesn't work.
-		c.Wait()
+		assertDontHang(t, c.Wait, "Wait hanged")
+	})
+	t.Run("can terminate DUT even if starting errors", func(t *testing.T) {
+		t.Parallel()
+		h := stubHook{
+			start: func(dutID string) (bot.Bot, error) {
+				return nil, errors.New("some error")
+			},
+		}
+		c := NewController(h)
+		const d = "some-dut"
+		c.AddDUT(d)
+		c.TerminateDUT(d)
+		assertDontHang(t, c.Wait, "Wait hanged")
 	})
 	t.Run("stopped DUTs are removed", func(t *testing.T) {
 		t.Parallel()
@@ -140,8 +152,7 @@ func TestController(t *testing.T) {
 		c := NewController(stubHook{})
 		c.AddDUT("ionasal")
 		c.AddDUT("nero")
-		// This will hang if DrainAll locks improperly.
-		c.DrainAll()
+		assertDontHang(t, c.DrainAll, "TerminateAll hanged")
 		c.Wait()
 	})
 	t.Run("terminate all does not hang", func(t *testing.T) {
@@ -149,10 +160,23 @@ func TestController(t *testing.T) {
 		c := NewController(stubHook{})
 		c.AddDUT("ionasal")
 		c.AddDUT("nero")
-		// This will hang if TerminateAll locks improperly.
-		c.TerminateAll()
+		assertDontHang(t, c.TerminateAll, "TerminateAll hanged")
 		c.Wait()
 	})
+}
+
+func assertDontHang(t *testing.T, f func(), msg string) {
+	t.Helper()
+	done := make(chan struct{})
+	go func() {
+		f()
+		close(done)
+	}()
+	select {
+	case <-done:
+	case <-time.After(time.Second):
+		t.Fatalf(msg)
+	}
 }
 
 // stubHook is an implementation of ControllerHook for tests.
