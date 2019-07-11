@@ -20,6 +20,7 @@ import (
 )
 
 // CreateNewDrone creates a new Drone datastore entity with a unique ID.
+// This function cannot be called in a transaction.
 func CreateNewDrone(ctx context.Context, now time.Time) (entities.DroneID, error) {
 	return createNewDrone(ctx, now, func() string { return uuid.New().String() })
 }
