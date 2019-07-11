@@ -16,7 +16,7 @@ type ControllerHook interface {
 	// StartBot starts a bot process for the DUT.
 	StartBot(dutID string) (bot.Bot, error)
 	// ReleaseDUT is called to release the DUT for a bot process
-	// that has finished.
+	// that has finished.  This method should be idempotent.
 	ReleaseDUT(dutID string)
 }
 
@@ -41,8 +41,10 @@ func NewController(h ControllerHook) *Controller {
 	return c
 }
 
-// AddDUT adds a DUT to have bots running for it.  If the DUT was
-// already added, do nothing.  This method is concurrency safe.
+// AddDUT adds a DUT to the Controller.
+// The controller ensures that a Swarming bot is running for the DUT.
+// If the DUT was already added, do nothing.
+// This method is concurrency safe.
 func (c *Controller) AddDUT(dutID string) {
 	c.m.Lock()
 	defer c.m.Unlock()
@@ -62,9 +64,9 @@ func (c *Controller) AddDUT(dutID string) {
 	}()
 }
 
-// runBotForDUT keeps a Swarming bot running for the DUT.  Signals to
-// drain or terminate should be sent to the channel.  This function
-// otherwise runs forever.
+// runBotForDUT keeps a Swarming bot running for the DUT.
+// Signals to drain or terminate should be sent using dutSignals.
+// This function otherwise runs forever.
 func runBotForDUT(h ControllerHook, dutID string, s dutSignals) {
 	for {
 		select {
@@ -108,7 +110,10 @@ func runBotForDUT(h ControllerHook, dutID string, s dutSignals) {
 }
 
 // DrainDUT removes a DUT to no longer have bots running for it and
-// drains its current bot.  This method can be called repeatedly.
+// drains its current bot.
+// This method can be called repeatedly.
+// If the controller does not have the DUT, just call ReleaseDUT on
+// the controller's hook.
 // This method is concurrency safe.
 func (c *Controller) DrainDUT(dutID string) {
 	c.m.Lock()
@@ -116,18 +121,25 @@ func (c *Controller) DrainDUT(dutID string) {
 	c.m.Unlock()
 	if ok {
 		s.sendDrain()
+	} else {
+		c.hook.ReleaseDUT(dutID)
 	}
 }
 
 // TerminateDUT removes a DUT to no longer have bots running for it
-// and terminates its current bot.  This method can be called
-// repeatedly.  This method is concurrency safe.
+// and terminates its current bot.
+// This method can be called repeatedly.
+// If the controller does not have the DUT, just call ReleaseDUT on
+// the controller's hook.
+// This method is concurrency safe.
 func (c *Controller) TerminateDUT(dutID string) {
 	c.m.Lock()
 	s, ok := c.duts[dutID]
 	c.m.Unlock()
 	if ok {
 		s.sendTerminate()
+	} else {
+		c.hook.ReleaseDUT(dutID)
 	}
 }
 

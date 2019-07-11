@@ -143,6 +143,14 @@ func TestAgent_dont_add_draining_duts(t *testing.T) {
 		case <-time.After(time.Millisecond):
 		}
 	})
+	t.Run("draining DUTs are released", func(t *testing.T) {
+		got := receiveStrings(s.drainedDUTs, 2)
+		sort.Strings(got)
+		want := []string{"claudia", "ryza"}
+		if diff := cmp.Diff(want, got); diff != "" {
+			t.Errorf("drained DUTs mismatch (-want +got):\n%s", diff)
+		}
+	})
 	drain()
 	t.Run("agent exits", func(t *testing.T) {
 		select {

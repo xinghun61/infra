@@ -50,6 +50,42 @@ func TestController(t *testing.T) {
 			t.Fatalf("bot not released after draining DUT")
 		}
 	})
+	t.Run("draining missing DUT still releases", func(t *testing.T) {
+		t.Parallel()
+		released := make(chan string, 1)
+		h := stubHook{
+			release: func(dutID string) { released <- dutID },
+		}
+		c := NewController(h)
+
+		const d = "some-dut"
+		t.Run("drain", func(t *testing.T) {
+			c.DrainDUT(d)
+			c.Wait()
+			select {
+			case got := <-released:
+				if got != d {
+					t.Errorf("Got released bot %v; want %v", got, d)
+				}
+			default:
+				t.Fatalf("bot not released after draining DUT")
+			}
+
+		})
+		t.Run("terminate", func(t *testing.T) {
+			c.TerminateDUT(d)
+			c.Wait()
+			select {
+			case got := <-released:
+				if got != d {
+					t.Errorf("Got released bot %v; want %v", got, d)
+				}
+			default:
+				t.Fatalf("bot not released after draining DUT")
+			}
+
+		})
+	})
 	t.Run("restart bot if crash", func(t *testing.T) {
 		t.Parallel()
 		started := make(chan *bot.FakeBot, 1)
