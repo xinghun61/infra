@@ -92,11 +92,15 @@ root: ../..
 # will automatically be added as data 'file' entries.
 #
 # generate_bat_shim works as it does for data 'file' entries below, and is
-# optional.
+# optional. platforms optionally specifies which platforms to target. If
+# unspecified, targets all platforms.
 copies:
   - src: some_built_file
     dst: some_other_file
     generate_bat_shim: true
+    platforms:
+    - windows-386
+    - windows-amd64
 
 # Symlinks apply after the build, but before creating the package. `dst` links
 # are automatically be added as data 'file' entries. These will only run when

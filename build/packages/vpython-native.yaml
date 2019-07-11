@@ -31,6 +31,12 @@ copies:
   - src: vpython${exe_suffix}
     dst: python${exe_suffix}
     generate_bat_shim: true
+  - src: python${exe_suffix}
+    dst: python3${exe_suffix}
+    generate_bat_shim: true
+    platforms:
+      - windows-386
+      - windows-amd64
 posix_symlinks:
   - src: python
     dst: python2

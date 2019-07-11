@@ -25,6 +25,13 @@ root: ../../go/bin
 posix_symlinks:
   - src: vpython
     dst: vpython3
+copies:
+  - src: vpython${exe_suffix}
+    dst: vpython3${exe_suffix}
+    generate_bat_shim: true
+    platforms:
+      - windows-386
+      - windows-amd64
 data:
   - file: vpython${exe_suffix}
     generate_bat_shim: true

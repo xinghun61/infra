@@ -167,6 +167,9 @@ class PackageDef(collections.namedtuple(
     ]
 
     for cp in pkg_def.get('copies', ()):
+      plat = cp.get('platforms')
+      if plat and pkg_vars['platform'] not in plat:
+        continue
       dst = os.path.join(self.pkg_root, render_path(cp['dst'], pkg_vars))
       shutil.copy(os.path.join(self.pkg_root, render_path(cp['src'], pkg_vars)),
                   dst)
