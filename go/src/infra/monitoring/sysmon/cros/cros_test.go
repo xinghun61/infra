@@ -56,6 +56,9 @@ func TestUpdateMetrics(t *testing.T) {
 		Timestamp:         946782246,
 		Status:            "online",
 		OSVersion:         "12317.0.0-rc1",
+		Battery: batteryStatus{
+			Charge: 50.56,
+		},
 	}
 	Convey("UpdateMetrics Testing", t, func() {
 		updateMetrics(c, statusFile)
@@ -63,5 +66,7 @@ func TestUpdateMetrics(t *testing.T) {
 			"online")
 		So(crosVersion.Get(c, statusFile.ContainerHostname), ShouldEqual,
 			"12317.0.0-rc1")
+		So(battCharge.Get(c, statusFile.ContainerHostname), ShouldEqual,
+			50.56)
 	})
 }

@@ -17,6 +17,10 @@ import (
 )
 
 var (
+	battCharge = metric.NewFloat("dev/cros/battery/charge",
+		"Percentage charge of battery.",
+		nil,
+		field.String("container_hostname"))
 	crosVersion = metric.NewString("dev/cros/version",
 		"CrOS version.",
 		nil,
@@ -27,6 +31,7 @@ var (
 		field.String("container_hostname"))
 
 	allMetrics = []types.Metric{
+		battCharge,
 		crosVersion,
 		dutStatus,
 	}
@@ -83,5 +88,11 @@ func updateMetrics(c context.Context, deviceFile deviceStatusFile) {
 			deviceFile.ContainerHostname)
 	} else {
 		logging.Warningf(c, "CrOS version unknown")
+	}
+	if &(deviceFile.Battery) != nil {
+		battCharge.Set(c, deviceFile.Battery.Charge,
+			deviceFile.ContainerHostname)
+	} else {
+		logging.Warningf(c, "Battery info unknown")
 	}
 }
