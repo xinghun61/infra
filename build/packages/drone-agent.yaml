@@ -1,0 +1,10 @@
+package: chromiumos/infra/drone-agent/${platform}
+description: Skylab drone agent.
+platforms:
+  - linux-amd64
+go_packages:
+  - infra/cmd/drone-agent
+root: ../../go/bin
+data:
+  - file: drone-agent${exe_suffix}
+  - version_file: .versions/drone-agent${exe_suffix}.cipd_version
