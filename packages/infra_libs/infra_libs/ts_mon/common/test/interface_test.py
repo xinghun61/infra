@@ -94,7 +94,7 @@ class GlobalsTest(unittest.TestCase):
     interface.flush()
     self.assertFalse(interface.state.global_monitor.send.called)
 
-  def test_flush_new(self):
+  def test_flush_with_new(self):
     interface.state.metric_name_prefix = '/infra/test/'
     interface.state.global_monitor = mock.create_autospec(monitors.Monitor)
     interface.state.target = targets.TaskTarget('a', 'b', 'c', 'd', 1)
@@ -112,6 +112,63 @@ class GlobalsTest(unittest.TestCase):
 
     data_set = proto.metrics_collection[0].metrics_data_set[0]
     self.assertEqual('/infra/test/counter', data_set.metric_name)
+
+  def test_flush_without_metric_set(self):
+    """Tests to ensure that no data is flushed out before set being called."""
+    interface.state.metric_name_prefix = '/infra/test/'
+    interface.state.global_monitor = mock.create_autospec(monitors.Monitor)
+    interface.state.target = targets.TaskTarget('a', 'b', 'c', 'd', 1)
+
+    counter = metrics.CounterMetric('counter', 'desc', None)
+    interface.register(counter)
+    counter.get()
+
+    interface.flush()
+    # send should not be called, as there is no data to flush out.
+    self.assertEqual(0, interface.state.global_monitor.send.call_count)
+
+  def test_flush_with_default_target_changed(self):
+    """Tests if flush stills works after the default target being changed."""
+    interface.state.metric_name_prefix = '/infra/test/'
+    interface.state.global_monitor = mock.create_autospec(monitors.Monitor)
+    interface.state.target = targets.TaskTarget('a', 'b', 'c', 'd', 1)
+    mocked_send = interface.state.global_monitor.send
+
+    counter = metrics.CounterMetric(
+        'counter', 'desc', [metrics.StringField('foo')])
+    interface.register(counter)
+
+    # set/flush with task_num=1
+    interface.state.target.task_num = 1
+    counter.set(3, {'foo': 'bar'})
+    interface.flush()
+
+    self.assertEqual(1, mocked_send.call_count)
+    data_set = (
+        mocked_send.call_args[0][0].metrics_collection[0].metrics_data_set[0])
+    self.assertEqual('/infra/test/counter', data_set.metric_name)
+    self.assertEqual(3, data_set.data[0].int64_value)
+
+    # flush with task_num=2
+    interface.state.target.task_num += 1
+    interface.flush()
+
+    self.assertEqual(2, mocked_send.call_count)
+    data_set = (
+        mocked_send.call_args[0][0].metrics_collection[0].metrics_data_set[0])
+    self.assertEqual('/infra/test/counter', data_set.metric_name)
+    self.assertEqual(3, data_set.data[0].int64_value)
+
+    # flush with task_num=3 but with a data change.
+    interface.state.target.task_num += 1
+    counter.set(4, {'foo': 'bar'})
+    interface.flush()
+
+    self.assertEqual(3, mocked_send.call_count)
+    data_set = (
+        mocked_send.call_args[0][0].metrics_collection[0].metrics_data_set[0])
+    self.assertEqual('/infra/test/counter', data_set.metric_name)
+    self.assertEqual(4, data_set.data[0].int64_value)
 
   def test_flush_empty_new(self):
     interface.state.metric_name_prefix = '/infra/test/'

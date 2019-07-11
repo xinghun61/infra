@@ -142,11 +142,6 @@ def _generate_proto():
   for (target, metric, start_times, end_time, fields_values
        ) in state.store.get_all():
     for fields, value in fields_values.iteritems():
-      # Each stream is identified by a unique set of field values.
-      # e.g.,
-      #   - ('metric:result': 'success', 'metric:command': 'get_name')
-      #   - ('metric:result': 'failure', 'metric:command': 'get_name')
-      #
       # In default, the start time of all data points for a single stream
       # should be set with the first time of a value change in the stream,
       # until metric.reset() invoked.
@@ -176,7 +171,7 @@ def _generate_proto():
       # with the metric-level start_time.
       #
       # Otherwise, report data points with the first value change time.
-      start_time = metric.start_time or start_times[fields]
+      start_time = metric.start_time or start_times.get(fields, end_time)
       if count >= METRICS_DATA_LENGTH_LIMIT:
         yield proto
         proto = metrics_pb2.MetricsPayload()
