@@ -18,10 +18,12 @@ package profiler
 
 import (
 	"context"
+	"fmt"
 	"math/rand"
 	"time"
 
 	"infra/qscheduler/qslib/scheduler"
+	"infra/qscheduler/qslib/tutils"
 
 	"go.chromium.org/luci/common/data/stringset"
 )
@@ -106,6 +108,7 @@ func RunSimulation(params SimulationParams) {
 	// The preemption pass of scheduler has not yet been optimized for
 	// large state size. Disable it for simulation purposes.
 	state.Config().DisablePreemption = true
+	state.Config().BotExpiration = tutils.DurationProto(time.Hour * 100)
 
 	labels := labelCorpus(params.StateParams.LabelCorpusSize)
 
@@ -116,6 +119,8 @@ func RunSimulation(params SimulationParams) {
 		state.RunOnce(ctx, scheduler.NullEventSink)
 
 		t = t.Add(1 * time.Minute)
+		fmt.Printf("iter %d/%d\tworkers %d\tqueued tasks %d\trunning tasks %d\n", i+1, params.Iterations,
+			len(state.GetWorkers()), len(state.GetWaitingRequests()), state.RunningRequests())
 	}
 }
 
