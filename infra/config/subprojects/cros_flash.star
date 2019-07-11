@@ -15,7 +15,7 @@ luci.builder(
     executable = infra.recipe('cros_flash_scheduler'),
     service_account = 'cros-flash@chops-service-accounts.iam.gserviceaccount.com',
     dimensions = {
-        'os': 'Ubuntu-14.04',
+        'os': 'Ubuntu-16.04',
         'cpu': 'x86-64',
         'cores': '2',
         'pool': 'luci.infra.cron',
