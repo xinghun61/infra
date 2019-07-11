@@ -45,7 +45,7 @@ def simulation_tester(
       # associated commit and hence we need git_repo property.
       properties = {'git_repo': _repo_url(project_under_test)},
       dimensions = {
-          'os': 'Ubuntu-14.04',
+          'os': 'Ubuntu-16.04',
           'cpu': 'x86-64',
           'pool': 'luci.flex.ci',
       },
@@ -96,7 +96,7 @@ def led_recipes_tester(name, cq_group, repo_name):
       executable = build.recipe('led_recipes_tester'),
       properties = {'repo_name': repo_name},
       dimensions = {
-          'os': 'Ubuntu-14.04',
+          'os': 'Ubuntu-16.04',
           'cpu': 'x86-64',
           'pool': 'luci.flex.try',
       },

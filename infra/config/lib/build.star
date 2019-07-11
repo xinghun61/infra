@@ -57,7 +57,7 @@ def presubmit(
       properties = props,
       service_account = infra.SERVICE_ACCOUNT_TRY,
       dimensions = {
-          'os': os or 'Ubuntu-14.04',
+          'os': os or 'Ubuntu-16.04',
           'cpu': 'x86-64',
           'pool': 'luci.flex.try',
       },
