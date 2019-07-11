@@ -48,6 +48,7 @@ peripherals: {
 os_type: 2
 model: "modelval"
 sku: "skuval"
+brand: "HOMH"
 ec_type: 1
 cts_cpu: 1
 cts_cpu: 2
@@ -88,6 +89,7 @@ var fullLabels = []string{
 	"audio_loopback_dongle",
 	"bluetooth",
 	"board:boardval",
+	"brand-code:HOMH",
 	"carrier:tmobile",
 	"chameleon",
 	"chameleon:dp_hdmi",

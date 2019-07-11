@@ -47,6 +47,7 @@ peripherals: {
 os_type: 2
 model: "modelval"
 sku: "skuval"
+brand: "HOMH"
 ec_type: 1
 cts_cpu: 1
 cts_cpu: 2
@@ -118,6 +119,7 @@ var fullDimensions = Dimensions{
 	"label-touchpad":              {"True"},
 	"label-servo":                 {"True"},
 	"label-sku":                   {"skuval"},
+	"label-brand":                 {"HOMH"},
 	"label-storage":               {"storageval"},
 	"label-stylus":                {"True"},
 	"label-telephony":             {"telephonyval"},

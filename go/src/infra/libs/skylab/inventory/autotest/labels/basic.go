@@ -29,6 +29,10 @@ func basicConverter(ls *inventory.SchedulableLabels) []string {
 		lv := "device-sku:" + v
 		labels = append(labels, lv)
 	}
+	if v := ls.GetBrand(); v != "" {
+		lv := "brand-code:" + v
+		labels = append(labels, lv)
+	}
 	if v := ls.GetPlatform(); v != "" {
 		lv := "platform:" + v
 		labels = append(labels, lv)
@@ -68,6 +72,8 @@ func basicReverter(ls *inventory.SchedulableLabels, labels []string) []string {
 			*ls.Model = v
 		case "device-sku":
 			*ls.Sku = v
+		case "brand-code":
+			*ls.Brand = v
 		case "platform":
 			*ls.Platform = v
 		case "ec":

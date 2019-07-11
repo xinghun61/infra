@@ -46,6 +46,7 @@ func newScheduableLabels() *inventory.SchedulableLabels {
 	return &inventory.SchedulableLabels{
 		Arc:   new(bool),
 		Board: new(string),
+		Brand: new(string),
 		Capabilities: &inventory.HardwareCapabilities{
 			Atrus:           new(bool),
 			Bluetooth:       new(bool),

@@ -22,6 +22,9 @@ func basicConverter(dims Dimensions, ls *inventory.SchedulableLabels) {
 	if v := ls.GetSku(); v != "" {
 		dims["label-sku"] = []string{v}
 	}
+	if v := ls.GetBrand(); v != "" {
+		dims["label-brand"] = []string{v}
+	}
 	if v := ls.GetPlatform(); v != "" {
 		dims["label-platform"] = []string{v}
 	}

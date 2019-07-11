@@ -143,7 +143,7 @@ message Shard {
 //
 // Keep sorted by field name.
 //
-// NEXT TAG: 26
+// NEXT TAG: 27
 message SchedulableLabels {
   // Whether this device supports ARC execution environment.
   optional bool arc = 20;
@@ -151,6 +151,9 @@ message SchedulableLabels {
   // TODO(pprabhu) This should be an enum shared with stable_versions.proto
   // But there are 171 of them...
   optional string board = 2;
+
+  // This matches the brand id in chromiumos/infra/proto/src/device/brand_id.proto
+  optional string brand = 26;
 
   optional HardwareCapabilities capabilities = 5;
 
