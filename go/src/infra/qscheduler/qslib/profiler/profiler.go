@@ -26,8 +26,8 @@ import (
 	"go.chromium.org/luci/common/data/stringset"
 )
 
-// Params defines size parameters used to construct a qscheduler state.
-type Params struct {
+// StateParams defines size parameters used to construct a qscheduler state.
+type StateParams struct {
 	// LabelCorpusSize is the number of unique labels referenced by tasks
 	// or workers.
 	LabelCorpusSize int
@@ -40,39 +40,83 @@ type Params struct {
 
 // NewSchedulerState returns a proto-representation of a qscheduler state, with
 // given size parameters.
-func NewSchedulerState(params Params) *scheduler.Scheduler {
+func NewSchedulerState(params StateParams) *scheduler.Scheduler {
 	ctx := context.Background()
 	state := scheduler.New(time.Now())
 
-	labelCorpus := make([]string, params.LabelCorpusSize)
+	corpus := labelCorpus(params.LabelCorpusSize)
+
+	addWorkers(ctx, time.Now(), params, corpus, state)
+
+	addTasks(ctx, time.Now(), params, corpus, state)
+
+	return state
+}
+
+func labelCorpus(size int) []string {
+	labelCorpus := make([]string, size)
 	for i := range labelCorpus {
 		labelCorpus[i] = randomString()
 	}
+	return labelCorpus
+}
 
+func addWorkers(ctx context.Context, t time.Time, params StateParams, corpus []string, s *scheduler.Scheduler) {
 	for i := 0; i < params.Workers; i++ {
 		labels := stringset.New(params.LabelsPerWorker)
 		for j := 0; j < params.LabelsPerWorker; j++ {
-			labels.Add(labelCorpus[rand.Intn(len(labelCorpus))])
+			labels.Add(corpus[rand.Intn(len(corpus))])
 		}
-		state.MarkIdle(ctx, scheduler.WorkerID(randomString()), labels, time.Now(), scheduler.NullEventSink)
+		s.MarkIdle(ctx, scheduler.WorkerID(randomString()), labels, t, scheduler.NullEventSink)
 	}
+}
 
+func addTasks(ctx context.Context, t time.Time, params StateParams, corpus []string, s *scheduler.Scheduler) {
 	for i := 0; i < params.Tasks; i++ {
 		labels := stringset.New(params.LabelsPerTask)
 		for j := 0; j < params.LabelsPerTask; j++ {
-			labels.Add(labelCorpus[rand.Intn(len(labelCorpus))])
+			labels.Add(corpus[rand.Intn(len(corpus))])
 		}
+		provisionableLabel := corpus[rand.Intn(len(corpus))]
 		request := scheduler.NewTaskRequest(
 			scheduler.RequestID(randomString()),
 			"foo-account-1",
-			nil,
+			stringset.NewFromSlice(provisionableLabel),
 			labels,
-			time.Now(),
+			t,
 		)
-		state.AddRequest(ctx, request, time.Now(), nil, scheduler.NullEventSink)
+		s.AddRequest(ctx, request, t, nil, scheduler.NullEventSink)
 	}
+}
 
-	return state
+// SimulationParams defines parameters for an iterated scheduler simulation.
+type SimulationParams struct {
+	// StateParams describes the per-iteration parameters of workers and requests
+	// to create.
+	StateParams StateParams
+
+	Iterations int
+}
+
+// RunSimulation runs an iterated scheduler simulation.
+func RunSimulation(params SimulationParams) {
+	ctx := context.Background()
+	t := time.Now()
+	state := scheduler.New(t)
+	// The preemption pass of scheduler has not yet been optimized for
+	// large state size. Disable it for simulation purposes.
+	state.Config().DisablePreemption = true
+
+	labels := labelCorpus(params.StateParams.LabelCorpusSize)
+
+	for i := 0; i < params.Iterations; i++ {
+		addTasks(ctx, t, params.StateParams, labels, state)
+		addWorkers(ctx, t, params.StateParams, labels, state)
+		state.UpdateTime(ctx, t)
+		state.RunOnce(ctx, scheduler.NullEventSink)
+
+		t = t.Add(1 * time.Minute)
+	}
 }
 
 var letters = []byte("abcdefghijklmnopqsrtuvwxyz")

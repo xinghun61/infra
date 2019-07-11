@@ -23,7 +23,7 @@ import (
 	"github.com/golang/protobuf/proto"
 )
 
-var params = Params{
+var params = StateParams{
 	LabelCorpusSize: 1000,
 
 	LabelsPerWorker: 30,
@@ -67,4 +67,22 @@ func BenchmarkEntityZip(b *testing.B) {
 	}
 
 	fmt.Printf("compressed proto size: %d bytes\n", len(compressedBytes))
+}
+
+func BenchmarkSchedulerSimulation(b *testing.B) {
+	params := SimulationParams{
+		Iterations: 100,
+		StateParams: StateParams{
+			LabelCorpusSize: 1000,
+
+			LabelsPerWorker: 30,
+			LabelsPerTask:   5,
+
+			Tasks:   100,
+			Workers: 5,
+		},
+	}
+	for i := 0; i < b.N; i++ {
+		RunSimulation(params)
+	}
 }
