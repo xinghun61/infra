@@ -146,6 +146,13 @@ List of all flake occurrences can be found at:
 {previous_tracking_bug_text}
 {footer}""")
 
+_DUPLICATE_FLAKE_BUG_COMMENT = textwrap.dedent("""
+This flake has been identified as being introduced in r{commit_position}.
+See {culprit_url} for details.
+
+In the case that Findit's finding is wrong, please unmerge the bug.
+""")
+
 
 def _GenerateAnalysisLink(analysis):
   """Returns a link to Findit's result page of a MasterFlakeAnalysis."""
@@ -255,9 +262,10 @@ def _GetAutoAssignOwner(analysis):
   return None
 
 
-def GenerateDuplicateComment(commit_position):
-  return 'This flake has been identified as being introduced in r{}'.format(
-      commit_position)
+def GenerateDuplicateComment(culprit):
+  return _DUPLICATE_FLAKE_BUG_COMMENT.format(
+      commit_position=culprit.commit_position,
+      culprit_url=_CULPRIT_LINK_TEMPLATE.format(culprit.key.urlsafe()))
 
 
 class BaseFlakeIssueGenerator(object):

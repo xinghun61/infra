@@ -70,6 +70,8 @@ def _MergeFlakeIssuesAndUpdateMonorail(culprit, culprit_flake_issue,
   """
   assert ndb.in_transaction(), (
       '_MergeFlakeIssues should only be called from within a transaction')
+  assert flake_issue.key != culprit_flake_issue.key, (
+      'Merging FlakeIssue into itself! {}'.format(flake_issue.key))
   culprit_monorail_issue = monorail_util.GetMonorailIssueForIssueId(
       culprit_flake_issue.issue_id)
   flake_monorail_issue = monorail_util.GetMonorailIssueForIssueId(
@@ -79,51 +81,36 @@ def _MergeFlakeIssuesAndUpdateMonorail(culprit, culprit_flake_issue,
                  culprit_flake_issue.issue_id, flake_issue.issue_id)
     return None, None
 
-  if (monorail_util.WasCreatedByFindit(culprit_monorail_issue) and
-      not monorail_util.WasCreatedByFindit(flake_monorail_issue)):
-    # If the flake's Monorail bug was created by a human while the bug already
-    # associated with the culprit is that of Findit, merge into the human-
-    # created bug.
-    duplicate_monorail_issue = culprit_monorail_issue
-    destination_monorail_issue = flake_monorail_issue
-    duplicate_flake_issue = culprit_flake_issue
-    destination_flake_issue = flake_issue
-  else:
-    # In all other cases (both created by humans or both created by Findit,
-    # etc.), merge into the culprit's bug (first-come-first-serve).
-    duplicate_monorail_issue = flake_monorail_issue
-    destination_monorail_issue = culprit_monorail_issue
-    duplicate_flake_issue = flake_issue
-    destination_flake_issue = culprit_flake_issue
-
-  assert duplicate_flake_issue.key != destination_flake_issue.key, (
-      'Merging FlakeIssue into itself! {}'.format(duplicate_flake_issue.key))
-
   # Include a comment for why the merge is taking place.
-  comment = issue_generator.GenerateDuplicateComment(culprit.commit_position)
+  comment = issue_generator.GenerateDuplicateComment(culprit)
 
-  # Merge in Monorail.
+  # Always uses the culprit's bug as the merge destination. Because
+  # 1. A comment can easily be added to the merged bug explaining the
+  #   reason when merge it, but cannot do it for the merge destination.
+  # 2. The culprit bug already has comments about the culprit and has also
+  #   been assigned to the culprit owner, while nowhere in the flake bug has
+  #   mentioned the culprit.
   try:
-    monorail_util.MergeDuplicateIssues(duplicate_monorail_issue,
-                                       destination_monorail_issue, comment)
+    monorail_util.MergeDuplicateIssues(flake_monorail_issue,
+                                       culprit_monorail_issue, comment)
   except HttpError as error:  # pragma: no cover. This is unexpected.
     # Raise an exception to abort any merging of data on Findit side, as this
     # can lead to some inconsistent states between FlakeIssue and Monorail.
     logging.error('Could not merge %s into %s Monorail',
-                  duplicate_monorail_issue.id, destination_monorail_issue.id)
+                  flake_monorail_issue.id, culprit_monorail_issue.id)
     raise error
 
   # Update the merged flake issue to point to the culprit if not already.
-  if (destination_flake_issue.flake_culprit_key !=
+  if (culprit_flake_issue.flake_culprit_key !=
       culprit.key):  # pragma: no branch
-    destination_flake_issue.flake_culprit_key = culprit.key
-    destination_flake_issue.put()
+    culprit_flake_issue.flake_culprit_key = culprit.key
+    culprit_flake_issue.put()
 
   # Update the duplicate's merge_destination_key to the merged flake issue.
-  duplicate_flake_issue.merge_destination_key = destination_flake_issue.key
-  duplicate_flake_issue.put()
+  flake_issue.merge_destination_key = culprit_flake_issue.key
+  flake_issue.put()
 
-  return duplicate_flake_issue.key, destination_flake_issue.key
+  return flake_issue.key, culprit_flake_issue.key
 
 
 # pylint: disable=E1120

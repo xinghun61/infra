@@ -254,6 +254,10 @@ class IssueGeneratorTest(WaterfallTestCase):
 
   def testGenerateDuplicateComment(self):
     commit_position = 12345
-    self.assertIn(
-        str(commit_position),
-        issue_generator.GenerateDuplicateComment(commit_position))
+    culprit = FlakeCulprit.Create('c', str(commit_position), commit_position,
+                                  'http://')
+    culprit.put()
+
+    comment = issue_generator.GenerateDuplicateComment(culprit)
+    self.assertIn(str(commit_position), comment)
+    self.assertIn(culprit.key.urlsafe(), comment)

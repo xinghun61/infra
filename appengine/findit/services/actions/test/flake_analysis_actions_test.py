@@ -114,61 +114,6 @@ class FlakeAnalysisActionsTest(WaterfallTestCase):
     self.assertIsNone(duplicate)
     self.assertIsNone(destination)
 
-  @mock.patch.object(
-      monorail_util, 'WasCreatedByFindit', side_effect=[True, False])
-  @mock.patch.object(monorail_util, 'MergeDuplicateIssues')
-  @mock.patch.object(monorail_util, 'GetMonorailIssueForIssueId')
-  def testMergeOrSplitFlakeIssueByCulpritMergeIntoManuallyCreated(
-      self, mocked_get_issue, mocked_merge_issues, _):
-    project = 'chromium'
-    duplicate_bug_id = 12344
-    manually_created_bug_id = 12345
-    revision = 'r1000'
-    commit_position = 1000
-
-    flake_issue = FlakeIssue.Create(project, manually_created_bug_id)
-    flake_issue.status = 'Assigned'
-    flake_issue.put()
-    culprit_flake_issue = FlakeIssue.Create(project, duplicate_bug_id)
-    culprit_flake_issue.put()
-
-    flake_culprit = FlakeCulprit.Create(project, revision, commit_position)
-    flake_culprit.flake_issue_key = culprit_flake_issue.key
-    flake_culprit.put()
-
-    # Even though the flake issue associated with the culprit was identified
-    # first, the incoming flake issue was manually created. Merge into the
-    # manually created one.
-    flake_monorail_issue = Issue({
-        'status': 'Available',
-        'projectId': 'chromium',
-        'id': str(manually_created_bug_id)
-    })
-    culprit_monorail_issue = Issue({
-        'status': 'Available',
-        'projectId': 'chromium',
-        'id': str(duplicate_bug_id)
-    })
-
-    mocked_get_issue.side_effect = [
-        culprit_monorail_issue, flake_monorail_issue
-    ]
-
-    (duplicate,
-     destination) = flake_analysis_actions.MergeOrSplitFlakeIssueByCulprit(
-         flake_issue.key, flake_culprit.key)
-
-    mocked_merge_issues.assert_called_once_with(culprit_monorail_issue,
-                                                flake_monorail_issue, mock.ANY)
-    flake_culprit = flake_culprit.key.get()
-    flake_issue = flake_issue.key.get()
-    culprit_flake_issue = culprit_flake_issue.key.get()
-
-    self.assertEqual(culprit_flake_issue.key, duplicate)
-    self.assertEqual(flake_issue.key, destination)
-    self.assertEqual(flake_issue.flake_culprit_key, flake_culprit.key)
-    self.assertEqual(flake_issue.key, culprit_flake_issue.merge_destination_key)
-
   @mock.patch.object(monorail_util, 'WasCreatedByFindit', return_value=True)
   @mock.patch.object(monorail_util, 'MergeDuplicateIssues')
   @mock.patch.object(monorail_util, 'GetMonorailIssueForIssueId')
