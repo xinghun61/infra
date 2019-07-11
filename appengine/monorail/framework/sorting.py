@@ -25,8 +25,6 @@ from __future__ import absolute_import
 
 import logging
 
-from functools import total_ordering
-
 import settings
 from framework import framework_constants
 from proto import tracker_pb2
@@ -35,7 +33,6 @@ from tracker import tracker_bizobj
 from tracker import tracker_constants
 
 
-@total_ordering
 class DescendingValue(object):
   """A wrapper which reverses the sort order of values."""
 
@@ -55,23 +52,12 @@ class DescendingValue(object):
   def __init__(self, val):
     self.val = val
 
-  def __eq__(self, other):
+  def __cmp__(self, other):
+    """Return -1, 0, or 1 base on the reverse of the normal sort order."""
     if isinstance(other, DescendingValue):
-      return self.val == other.val
+      return cmp(other.val, self.val)
     else:
-      return self.val == other
-
-  def __ne__(self, other):
-    if isinstance(other, DescendingValue):
-      return self.val != other.val
-    else:
-      return self.val != other
-
-  def __lt__(self, other):
-    if isinstance(other, DescendingValue):
-      return self.val < other.val
-    else:
-      return self.val < other
+      return cmp(other, self.val)
 
   def __repr__(self):
     return 'DescendingValue(%r)' % self.val
