@@ -255,6 +255,59 @@ func TestDefaultProtoTimes(t *testing.T) {
 	})
 }
 
+// TestWorkerModifiedTime tests that worker.modifiedTime is updated under the
+// right circumstances (when its labels change, or when it becomes idle).
+func TestWorkerModifiedTime(t *testing.T) {
+	Convey("Given a state with a newly added worker", t, func() {
+		ctx := context.Background()
+		t0 := time.Unix(100, 0)
+		s := New(t0)
+		s.MarkIdle(ctx, "w1", nil, time.Unix(0, 0), NullEventSink)
+		Convey("the worker starts with modification time equal to scheduler's last update time.", func() {
+			So(s.state.workers["w1"].modifiedTime, ShouldEqual, t0)
+		})
+
+		t1 := t0.Add(10 * time.Second)
+		s.UpdateTime(ctx, t1)
+		Convey("when scheduler time is updated, worker modificate time is unchanged.", func() {
+			So(s.state.workers["w1"].modifiedTime, ShouldEqual, t0)
+		})
+
+		s.MarkIdle(ctx, "w1", nil, time.Unix(100, 0), NullEventSink)
+		Convey("when worker is marked idle with same labels as before, modification time is unchanged.", func() {
+			So(s.state.workers["w1"].modifiedTime, ShouldEqual, t0)
+		})
+
+		s.MarkIdle(ctx, "w1", stringset.NewFromSlice("foo"), time.Unix(0, 0), NullEventSink)
+		Convey("when worker has an ignored update (timestamp before previous update), modification time is unchanged.", func() {
+			So(s.state.workers["w1"].modifiedTime, ShouldEqual, t0)
+		})
+
+		s.MarkIdle(ctx, "w1", stringset.NewFromSlice("foo"), time.Unix(200, 0), NullEventSink)
+		Convey("when worker has a forward in time update with label change, modification time becomes the scheduler's last update time.", func() {
+			So(s.state.workers["w1"].modifiedTime, ShouldEqual, t1)
+		})
+	})
+
+	Convey("Given a state with a running worker", t, func() {
+		ctx := context.Background()
+		t0 := time.Unix(100, 0)
+		s := New(t0)
+		s.MarkIdle(ctx, "w1", nil, time.Unix(0, 0), NullEventSink)
+		s.AddRequest(ctx, NewTaskRequest("r1", "", nil, nil, t0), t0, nil, NullEventSink)
+		s.RunOnce(ctx, NullEventSink)
+		So(s.state.workers["w1"].IsIdle(), ShouldBeFalse)
+		So(s.state.workers["w1"].modifiedTime, ShouldEqual, t0)
+		Convey("when the worker becomes idle, it's modification time becomes scheduler's latest update time.", func() {
+			t1 := t0.Add(10 * time.Second)
+			s.UpdateTime(ctx, t1)
+			s.MarkIdle(ctx, "w1", nil, t1, NullEventSink)
+			So(s.state.workers["w1"].IsIdle(), ShouldBeTrue)
+			So(s.state.workers["w1"].modifiedTime, ShouldEqual, t1)
+		})
+	})
+}
+
 // addRunningRequest is a test helper to add a new request to a scheduler and
 // immediately start it running on a new worker.
 func addRunningRequest(ctx context.Context, s *Scheduler, rid RequestID, wid WorkerID, aid AccountID, pri Priority, tm time.Time) {

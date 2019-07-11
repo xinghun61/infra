@@ -206,12 +206,20 @@ func (s *state) addNewRequest(ctx context.Context, r *TaskRequest, t time.Time, 
 		&metrics.TaskEvent_EnqueuedDetails{Tags: tags}))
 }
 
+// TODO(akeshet): Move this helper method to the stringset library.
+func setEquals(a stringset.Set, b stringset.Set) bool {
+	if a.Len() != b.Len() {
+		return false
+	}
+	return a.Contains(b)
+}
+
 // markIdle implements MarkIdle for a given state.
 func (s *state) markIdle(workerID WorkerID, labels stringset.Set, t time.Time, e EventSink) {
 	w, ok := s.workers[workerID]
 	if !ok {
 		// This is a new worker, create it and return.
-		s.workers[workerID] = &Worker{ID: workerID, confirmedTime: t, Labels: labels}
+		s.workers[workerID] = &Worker{ID: workerID, confirmedTime: t, modifiedTime: s.lastUpdateTime, Labels: labels}
 		return
 	}
 
@@ -232,7 +240,11 @@ func (s *state) markIdle(workerID WorkerID, labels stringset.Set, t time.Time, e
 		return
 	}
 
-	w.Labels = labels
+	if !setEquals(w.Labels, labels) {
+		w.Labels = labels
+		w.modifiedTime = s.lastUpdateTime
+	}
+
 	w.confirm(t)
 
 	if w.IsIdle() {
@@ -243,6 +255,7 @@ func (s *state) markIdle(workerID WorkerID, labels stringset.Set, t time.Time, e
 
 	// Our worker wasn't previously idle. Remove the previous request it was
 	// running.
+	w.modifiedTime = s.lastUpdateTime
 	previousRequest := w.runningTask.request
 	e.AddEvent(eventCompleted(previousRequest, w, s, t,
 		&metrics.TaskEvent_CompletedDetails{Reason: metrics.TaskEvent_CompletedDetails_BOT_IDLE}))
