@@ -1,1 +1,3 @@
-../../../../../../../infra/go/src/go.chromium.org/luci/appengine/static/dispatch.yaml
+dispatch:
+  - url: "*/static/*"
+    module: static
