@@ -37,13 +37,13 @@ func PushResetDUTs(ctx context.Context, dutNames []string) error {
 }
 
 func repairTask(dn string) *taskqueue.Task {
-	var values url.Values
+	values := url.Values{}
 	values.Set("dutName", dn)
 	return taskqueue.NewPOSTTask(fmt.Sprintf("/internal/task/repair/%s", dn), values)
 }
 
 func resetTask(dn string) *taskqueue.Task {
-	var values url.Values
+	values := url.Values{}
 	values.Set("dutName", dn)
 	return taskqueue.NewPOSTTask(fmt.Sprintf("/internal/task/reset/%s", dn), values)
 }
