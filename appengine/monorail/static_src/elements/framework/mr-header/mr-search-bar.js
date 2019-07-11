@@ -3,33 +3,13 @@
 // found in the LICENSE file.
 
 import {LitElement, html, css} from 'lit-element';
+import page from 'page';
+import qs from 'qs';
+
 import '../mr-dropdown/mr-dropdown.js';
 import {prpcClient} from 'prpc-client-instance.js';
 import ClientLogger from 'monitoring/client-logger';
 
-
-let clientLogger;
-const getClientLogger = () => {
-  if (!clientLogger) {
-    clientLogger = new ClientLogger('issues');
-  }
-  return clientLogger;
-};
-
-const searchEditStarted = () => {
-  getClientLogger().logStart('query-edit', 'user-time');
-  getClientLogger().logStart('issue-search', 'user-time');
-};
-
-const searchEditFinished = () => {
-  getClientLogger().logEnd('query-edit');
-};
-
-const searchSubmitted = () => {
-  getClientLogger().logEnd('query-edit');
-  getClientLogger().logPause('issue-search', 'user-time');
-  getClientLogger().logStart('issue-search', 'computer-time');
-};
 
 /**
  * `<mr-search-bar>`
@@ -165,7 +145,7 @@ export class MrSearchBar extends LitElement {
   render() {
     return html`
       <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-      <form action="/p/${this.projectName}/issues/list" method="GET" @submit=${searchSubmitted}>
+      <form @submit=${this._searchSubmitted}>
         <div class="select-container">
           <i class="material-icons">arrow_drop_down</i>
           <select id="can" name="can" @change=${this._redirectOnSelect} aria-label="Search scope">
@@ -209,19 +189,10 @@ export class MrSearchBar extends LitElement {
           value=${this.initialValue || ''}
           autocomplete="off"
           aria-label="Search box"
-          @focus=${searchEditStarted}
-          @blur=${searchEditFinished}
+          @focus=${this._searchEditStarted}
+          @blur=${this._searchEditFinished}
           spellcheck="false"
         />
-        ${this.keptQueryParams.map((param) => html`
-            <input
-              type="hidden"
-              id=${param}
-              name=${param}
-              value=${this.queryParams[param] || ''}
-              ?disabled=${!(param in this.queryParams)}
-            />
-          `)}
         <button type="submit">
           <i class="material-icons">search</i>
         </button>
@@ -261,11 +232,14 @@ export class MrSearchBar extends LitElement {
       'mode',
       'cells',
       'num',
+      'start',
     ];
     this.initialValue = '';
     this.defaultCan = '2';
     this.projectSavedQueries = [];
     this.userSavedQueries = [];
+
+    this.clientLogger = new ClientLogger('issues');
   }
 
   connectedCallback() {
@@ -290,6 +264,64 @@ export class MrSearchBar extends LitElement {
       userSavedQueriesPromise.then((resp) => {
         this.userSavedQueries = resp.savedQueries;
       });
+    }
+  }
+
+  _searchEditStarted() {
+    this.clientLogger.logStart('query-edit', 'user-time');
+    this.clientLogger.logStart('issue-search', 'user-time');
+  }
+
+  _searchEditFinished() {
+    this.clientLogger.logEnd('query-edit');
+  }
+
+  _searchSubmitted(e) {
+    e.preventDefault();
+
+    this.clientLogger.logEnd('query-edit');
+    this.clientLogger.logPause('issue-search', 'user-time');
+    this.clientLogger.logStart('issue-search', 'computer-time');
+
+    const form = e.target;
+
+    const params = {};
+
+    this.keptQueryParams.forEach((param) => {
+      if (param in this.queryParams) {
+        params[param] = this.queryParams[param];
+      }
+    });
+
+    params.q = form.q.value;
+    params.can = form.can.value;
+
+    this._navigateToList(params);
+  }
+
+  _navigateToList(params) {
+    // TODO(zhangtiff): Remove this check once list_new is removed
+    // when the new list page switches to default.
+    const isNewPage = window.location.pathname.endsWith('list_new');
+
+    const pathname = `/p/${this.projectName}/issues/${isNewPage ?
+      'list_new' : 'list'}`;
+
+    const hasChanges = !window.location.pathname.startsWith(pathname)
+      || this.queryParams.q !== params.q
+      || this.queryParams.can !== params.can;
+
+    if (hasChanges) {
+      page(`${pathname}?${qs.stringify(params)}`);
+    } else {
+      if (isNewPage) {
+        // TODO(zhangtiff): Replace this event with Redux once all of Monorail
+        // uses Redux.
+        this.dispatchEvent(new Event('refreshList',
+          {'composed': true, 'bubbles': true}));
+      } else {
+        location.reload();
+      }
     }
   }
 

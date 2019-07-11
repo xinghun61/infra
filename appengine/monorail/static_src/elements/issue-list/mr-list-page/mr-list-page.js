@@ -56,14 +56,32 @@ export class MrListPage extends connectStore(LitElement) {
     super();
     this.issues = [];
     this.fetchingIssueList = false;
+
+    this._boundRefresh = this.refresh.bind(this);
   };
+
+  connectedCallback() {
+    super.connectedCallback();
+
+    window.addEventListener('refreshList', this._boundRefresh);
+  }
+
+  disconnectedCallback() {
+    super.disconnectedCallback();
+
+    window.removeEventListener('refreshList', this._boundRefresh);
+  }
 
   updated(changedProperties) {
     if (changedProperties.has('projectName') ||
         changedProperties.has('queryParams')) {
-      store.dispatch(issue.fetchIssueList(this.queryParams, this.projectName,
-        {maxItems: 100, start: 0}));
+      this.refresh();
     }
+  }
+
+  refresh() {
+    store.dispatch(issue.fetchIssueList(this.queryParams, this.projectName,
+      {maxItems: 100, start: 0}));
   }
 
   stateChanged(state) {

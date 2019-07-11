@@ -3,7 +3,10 @@
 // found in the LICENSE file.
 
 import {assert} from 'chai';
+import sinon from 'sinon';
+
 import {MrSearchBar} from './mr-search-bar.js';
+import {clientLoggerFake} from 'elements/shared/test-fakes.js';
 
 
 window.CS_env = {
@@ -72,5 +75,75 @@ describe('mr-search-bar', () => {
     await element.updateComplete;
     const searchElement = element.shadowRoot.querySelector('#searchq');
     assert.equal(searchElement.getAttribute('spellcheck'), 'false');
+  });
+
+  describe('search form submit', () => {
+    beforeEach(() => {
+      sinon.stub(element, '_navigateToList');
+      element.clientLogger = clientLoggerFake;
+    });
+
+    afterEach(() => {
+      element._navigateToList.restore();
+    });
+
+    it('submit prevents default', async () => {
+      await element.updateComplete;
+
+      const form = element.shadowRoot.querySelector('form');
+
+      // Note: HTMLFormElement's submit function does not run submit handlers
+      // but clicking a submit buttons programmatically works.
+      const event = new Event('submit');
+      sinon.stub(event, 'preventDefault');
+      form.dispatchEvent(event);
+
+      sinon.assert.calledOnce(event.preventDefault);
+    });
+
+    it('submit uses default values when no form changes', async () => {
+      element.initialValue = 'test query';
+      element.defaultCan = '3';
+
+      await element.updateComplete;
+
+      const form = element.shadowRoot.querySelector('form');
+
+      form.dispatchEvent(new Event('submit'));
+
+      sinon.assert.calledOnce(element._navigateToList);
+      sinon.assert.calledWith(element._navigateToList,
+        {q: 'test query', can: '3'});
+    });
+
+    it('submit adds form values to url', async () => {
+      await element.updateComplete;
+
+      const form = element.shadowRoot.querySelector('form');
+
+      form.q.value = 'test';
+      form.can.value = '1';
+
+      form.dispatchEvent(new Event('submit'));
+
+      sinon.assert.calledOnce(element._navigateToList);
+      sinon.assert.calledWith(element._navigateToList,
+        {q: 'test', can: '1'});
+    });
+
+    it('submit only keeps kept query params', async () => {
+      element.queryParams = {fakeParam: 'test', x: 'Status'};
+      element.keptParams = ['x'];
+
+      await element.updateComplete;
+
+      const form = element.shadowRoot.querySelector('form');
+
+      form.dispatchEvent(new Event('submit'));
+
+      sinon.assert.calledOnce(element._navigateToList);
+      sinon.assert.calledWith(element._navigateToList,
+        {q: '', can: '2', x: 'Status'});
+    });
   });
 });
