@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"math"
 	"os"
 	"time"
 
@@ -178,17 +179,10 @@ func applyUpdateToState(res *api.ReportDroneResponse, s stateInterface) error {
 // reportRequest returns the api.ReportDroneRequest to use when
 // reporting to the drone queen.
 func (a *Agent) reportRequest(uuid string) *api.ReportDroneRequest {
-	var dutCap uint32
-	dutCap = uint32(a.DUTCapacity)
-	if a.DUTCapacity < 0 {
-		dutCap = 0
-	} else {
-		dutCap = uint32(a.DUTCapacity)
-	}
 	req := api.ReportDroneRequest{
 		DroneUuid: uuid,
 		LoadIndicators: &api.ReportDroneRequest_LoadIndicators{
-			DutCapacity: dutCap,
+			DutCapacity: intToUint32(a.DUTCapacity),
 		},
 	}
 	return &req
@@ -264,4 +258,17 @@ type fatalError struct {
 
 func (e fatalError) Error() string {
 	return fmt.Sprintf("agent fatal error: %s", e.reason)
+}
+
+// intToUint32 converts an int to a uint32.
+// If the value is negative, return 0.
+// If the value overflows, return the max value.
+func intToUint32(a int) uint32 {
+	if a < 0 {
+		return 0
+	}
+	if a > math.MaxUint32 {
+		return math.MaxUint32
+	}
+	return uint32(a)
 }
