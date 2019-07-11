@@ -86,7 +86,7 @@ func (a *Agent) Run(ctx context.Context) {
 // function returns an error.
 func (a *Agent) runOnce(ctx context.Context) error {
 	// Register with queen.
-	res, err := a.Client.ReportDrone(ctx, a.reportRequest(""))
+	res, err := a.Client.ReportDrone(ctx, a.reportRequest(ctx, ""))
 	if err != nil {
 		return errors.Annotate(err, "register with queen").Err()
 	}
@@ -138,7 +138,7 @@ reportLoop:
 // reportDrone does one cycle of calling the ReportDrone queen RPC and
 // handling the response.
 func (a *Agent) reportDrone(ctx context.Context, s stateInterface) error {
-	res, err := a.Client.ReportDrone(ctx, a.reportRequest(s.UUID()))
+	res, err := a.Client.ReportDrone(ctx, a.reportRequest(ctx, s.UUID()))
 	if err != nil {
 		return errors.Annotate(err, "report to queen").Err()
 	}
@@ -178,12 +178,15 @@ func applyUpdateToState(res *api.ReportDroneResponse, s stateInterface) error {
 
 // reportRequest returns the api.ReportDroneRequest to use when
 // reporting to the drone queen.
-func (a *Agent) reportRequest(uuid string) *api.ReportDroneRequest {
+func (a *Agent) reportRequest(ctx context.Context, uuid string) *api.ReportDroneRequest {
 	req := api.ReportDroneRequest{
 		DroneUuid: uuid,
 		LoadIndicators: &api.ReportDroneRequest_LoadIndicators{
 			DutCapacity: intToUint32(a.DUTCapacity),
 		},
+	}
+	if draining.IsDraining(ctx) {
+		req.LoadIndicators.DutCapacity = 0
 	}
 	return &req
 }

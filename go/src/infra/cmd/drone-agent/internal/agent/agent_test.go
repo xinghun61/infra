@@ -294,6 +294,50 @@ func TestAgent_expiration_causes_termination(t *testing.T) {
 	})
 }
 
+func TestAgent_draining_reports_lame_duck_mode(t *testing.T) {
+	t.Parallel()
+	a, cleanup := newTestAgent(t)
+	defer cleanup()
+
+	// Set up agent.
+	c := newSpyClient()
+	a.Client = c
+	f := newStateSpyFactory()
+	a.wrapStateFunc = f.wrapState
+
+	// Start running.
+	ctx := context.Background()
+	ctx, drain := draining.WithDraining(ctx)
+	done := make(chan struct{})
+	go func() {
+		a.Run(ctx)
+		close(done)
+	}()
+
+	drain()
+drainEvents:
+	for {
+		select {
+		case <-c.reports:
+		default:
+			break drainEvents
+		}
+	}
+	t.Run("agent reports lame duck", func(t *testing.T) {
+		res := <-c.reports
+		if got := res.LoadIndicators.DutCapacity; got != 0 {
+			t.Errorf("agent reported DutCapacity %v; want 0", got)
+		}
+	})
+	t.Run("agent exits", func(t *testing.T) {
+		select {
+		case <-done:
+		case <-time.After(time.Second):
+			t.Errorf("agent did not exit after draining")
+		}
+	})
+}
+
 // newTestAgent makes a new agent for tests with common values.  Tests
 // MUST NOT depend on the exact values here.  If something is
 // important to a test, the test should explicitly set the value.
@@ -437,6 +481,29 @@ func (c *stubClient) ReportDrone(ctx context.Context, req *api.ReportDroneReques
 
 func (c *stubClient) ReleaseDuts(ctx context.Context, req *api.ReleaseDutsRequest, _ ...grpc.CallOption) (*api.ReleaseDutsResponse, error) {
 	return &api.ReleaseDutsResponse{}, nil
+}
+
+type spyClient struct {
+	*stubClient
+	reports chan *api.ReportDroneRequest
+}
+
+func newSpyClient() *spyClient {
+	return &spyClient{
+		stubClient: newStubClient(),
+		// These channels need to have big enough buffers to
+		// capture events needed by tests.  Events that
+		// overfill the channel buffers are discarded.
+		reports: make(chan *api.ReportDroneRequest, 2),
+	}
+}
+
+func (c *spyClient) ReportDrone(ctx context.Context, req *api.ReportDroneRequest, o ...grpc.CallOption) (*api.ReportDroneResponse, error) {
+	select {
+	case c.reports <- req:
+	default:
+	}
+	return c.stubClient.ReportDrone(ctx, req, o...)
 }
 
 // protoTime returns a protobuf time type.
