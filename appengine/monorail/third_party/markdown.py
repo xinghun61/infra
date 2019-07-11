@@ -1,6 +1,4 @@
 #!/usr/bin/python
-import re, md5, sys, string
-
 """markdown.py: A Markdown-styled-text to HTML converter in Python.
 
 Usage:
@@ -14,6 +12,14 @@ For other versions of markdown, see:
   http://www.freewisdom.org/projects/python-markdown/
   http://en.wikipedia.org/wiki/Markdown
 """
+
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
+import md5
+import re
+import sys
 
 __version__ = '1.0.1-2' # port of 1.0.1
 __license__ = "GNU GPL 2"
@@ -672,6 +678,6 @@ markdown = Markdown
 
 if __name__ == '__main__':
     if len(sys.argv) > 1:
-        print Markdown(open(sys.argv[1]).read())
+        print(Markdown(open(sys.argv[1]).read()))
     else:
-        print Markdown(sys.stdin.read())
+        print(Markdown(sys.stdin.read()))

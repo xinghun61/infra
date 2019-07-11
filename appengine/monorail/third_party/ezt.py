@@ -3,6 +3,11 @@
 
 For documentation, please see: http://code.google.com/p/ezt/wiki/Syntax
 """
+
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
 #
 # Copyright (C) 2001-2011 Greg Stein. All Rights Reserved.
 #
@@ -44,7 +49,7 @@ import os
 import urllib
 import StringIO
 
-from six import string_types
+from six import string_types, text_type
 
 #
 # Formatting types
@@ -302,7 +307,8 @@ class Template:
         method, method_args, filename, line_number = step
         method(method_args, fp, ctx, filename, line_number)
 
-  def _cmd_print(self, (transforms, valref), fp, ctx, filename, line_number):
+  def _cmd_print(self, transforms_and_valref, fp, ctx, filename, line_number):
+    transforms, valref = transforms_and_valref
     value = _get_value(valref, ctx, filename, line_number)
     # if the value has a 'read' attribute, then it is a stream: copy it
     if hasattr(value, 'read'):
@@ -318,8 +324,9 @@ class Template:
         value = t(value)
       fp.write(value)
 
-  def _cmd_subst(self, (transforms, valref, args), fp, ctx, filename,
+  def _cmd_subst(self, transforms_valref_args, fp, ctx, filename,
                  line_number):
+    transforms, valref, args = transforms_valref_args
     fmt = _get_value(valref, ctx, filename, line_number)
     parts = _re_subst.split(fmt)
     for i in range(len(parts)):
@@ -334,16 +341,18 @@ class Template:
         piece = t(piece)
       fp.write(piece)
 
-  def _cmd_include(self, (valref, reader, printer), fp, ctx, filename,
+  def _cmd_include(self, valref_reader_printer, fp, ctx, filename,
                    line_number):
+    valref, reader, printer = valref_reader_printer
     fname = _get_value(valref, ctx, filename, line_number)
     ### note: we don't have the set of for_names to pass into this parse.
     ### I don't think there is anything to do but document it
     self._execute(self._parse(reader.read_other(fname), base_printer=printer),
                   fp, ctx)
 
-  def _cmd_insertfile(self, (valref, reader, printer), fp, ctx, filename,
+  def _cmd_insertfile(self, valref_reader_printer, fp, ctx, filename,
                       line_number):
+    valref, reader, _ = valref_reader_printer
     fname = _get_value(valref, ctx, filename, line_number)
     fp.write(reader.read_other(fname).text)
 
@@ -464,7 +473,7 @@ def _prepare_ref(refname, for_names, file_args):
 
   return refname, start, rest
 
-def _get_value((refname, start, rest), ctx, filename, line_number):
+def _get_value(refname_start_rest, ctx, filename, line_number):
   """(refname, start, rest) -> a prepared `value reference' (see above).
   ctx -> an execution context instance.
 
@@ -472,6 +481,7 @@ def _get_value((refname, start, rest), ctx, filename, line_number):
   for blocks take precedence over data dictionary members with the
   same name.
   """
+  refname, start, rest = refname_start_rest
   if rest is None:
     # it was a string constant
     return start
@@ -532,7 +542,7 @@ REPLACE_HTML_MAP = (
 def _js_escape(s):
   s = _replace(s, REPLACE_JS_MAP)
   ### perhaps attempt to coerce the string to unicode and then replace?
-  if isinstance(s, unicode):
+  if isinstance(s, text_type):
     s = _replace(s, REPLACE_JS_UNICODE_MAP)
   return s
 
@@ -543,7 +553,7 @@ def _url_escape(s):
   ### quote_plus barfs on non-ASCII characters. According to
   ### http://www.w3.org/International/O-URL-code.html URIs should be
   ### UTF-8 encoded first.
-  if isinstance(s, unicode):
+  if isinstance(s, text_type):
     s = s.encode('utf8')
   return urllib.quote_plus(s)
 
