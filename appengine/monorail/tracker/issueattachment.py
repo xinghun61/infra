@@ -23,6 +23,7 @@ import urllib
 import webapp2
 
 from google.appengine.api import app_identity
+from google.appengine.api import images
 
 from framework import exceptions
 from framework import framework_constants

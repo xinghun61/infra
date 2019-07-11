@@ -17,7 +17,7 @@ import webapp2
 
 from google.appengine.api import app_identity
 from google.appengine.api import urlfetch
-from google.appengine.ext import ndb
+from google.appengine.ext import db
 from google.protobuf import text_format
 
 from infra_libs import ts_mon
@@ -40,8 +40,8 @@ service_account_map = None
 qpm_dict = None
 
 
-class ClientConfig(ndb.Model):
-  configs = ndb.TextProperty()
+class ClientConfig(db.Model):
+  configs = db.TextProperty()
 
 
 # Note: The cron job must have hit the servlet before this will work.
@@ -76,7 +76,7 @@ class LoadApiClientConfigs(webapp2.RequestHandler):
 
     logging.info('luci-config content decoded: %r.', content_text)
     configs = ClientConfig(configs=content_text,
-                           key_name='api_client_configs')
+                            key_name='api_client_configs')
     configs.put()
     service_account_map = None
     qpm_dict = None
@@ -162,7 +162,7 @@ class ClientConfigService(object):
       logging.exception('Failed to read client configs: %s', e)
 
   def _ReadFromDatastore(self):
-    entity = ClientConfig.get_by_id('api_client_configs')
+    entity = ClientConfig.get_by_key_name('api_client_configs')
     if entity:
       cfg = api_clients_config_pb2.ClientCfg()
       text_format.Merge(entity.configs, cfg)

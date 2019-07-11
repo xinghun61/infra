@@ -10,6 +10,7 @@ from __future__ import absolute_import
 
 import unittest
 
+from google.appengine.api import images
 from google.appengine.ext import testbed
 
 import mox

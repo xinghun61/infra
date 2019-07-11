@@ -23,6 +23,7 @@ import time
 import uuid
 
 from google.appengine.api import app_identity
+from google.appengine.api import images
 from third_party import cloudstorage
 
 import settings
