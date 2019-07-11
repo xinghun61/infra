@@ -638,9 +638,9 @@ class BuildBundle(BuildBundleBase):
 
   def to_proto(self, dest, load_tags):
     """Writes build to the dest Build proto. Returns dest."""
-    dest.id = self.build.key.id()  # old builds do not have id field
     if dest is not self.build.proto:  # pragma: no branch
       dest.CopyFrom(self.build.proto)
+    dest.id = self.build.key.id()  # old builds do not have id field
 
     if load_tags:
       self.build.tags_to_protos(dest.tags)
