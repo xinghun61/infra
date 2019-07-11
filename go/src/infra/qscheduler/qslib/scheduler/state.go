@@ -78,6 +78,11 @@ type TaskRequest struct {
 	// provided or confirmed by external authority (via a call to Enforce or
 	// AddRequest).
 	confirmedTime time.Time
+
+	// examinedTime is the most recent time at which the Request participated
+	// in a scheduler pass, without being ignored (due to fanout limit) and
+	// without being matched to a worker.
+	examinedTime time.Time
 }
 
 // ConfirmedTime returns the latest time at which the task request's state was
@@ -92,6 +97,7 @@ func requestProto(r *TaskRequest, mb *mapBuilder) *protos.TaskRequest {
 	return &protos.TaskRequest{
 		AccountId:             string(r.AccountID),
 		ConfirmedTime:         tutils.TimestampProto(r.confirmedTime),
+		ExaminedTime:          tutils.TimestampProto(r.examinedTime),
 		EnqueueTime:           tutils.TimestampProto(r.EnqueueTime),
 		ProvisionableLabelIds: mb.ForSet(r.ProvisionableLabels),
 		BaseLabelIds:          mb.ForSet(r.BaseLabels),
@@ -147,6 +153,10 @@ type Worker struct {
 	// directly confirmed as idle by external authority (via a call to MarkIdle or
 	// NotifyRequest).
 	confirmedTime time.Time
+
+	// modifiedTime is the most recent time at which the Worker either became
+	// idle or had its labels change.
+	modifiedTime time.Time
 }
 
 // ConfirmedTime returns the latest time at which the worker's state was

@@ -77,6 +77,8 @@ message TaskRequest {
 
   // BaseLabelIds represents the task's base labels.
   repeated uint64 base_label_ids = 7;
+
+  google.protobuf.Timestamp examined_time = 8;
 }
 
 // TaskRun represents a task that has been assigned to a worker and is
@@ -116,6 +118,8 @@ message Worker {
 
   // LabelIds represents the worker's labels.
   repeated uint64 label_ids = 4;
+
+  google.protobuf.Timestamp modified_time = 5;
 
   // TODO(akeshet): Add the concept of an Inactive worker, which will exist
   // in the scheduler State object, but will be ignored for scheduling purposes.

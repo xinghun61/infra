@@ -24,6 +24,8 @@ import (
 	"go.chromium.org/luci/common/data/stringset"
 )
 
+var unixZeroTime = time.Unix(0, 0).UTC()
+
 // NewConfig creates an returns a new Config instance with all maps initialized.
 func NewConfig() *protos.SchedulerConfig {
 	return &protos.SchedulerConfig{
@@ -59,14 +61,7 @@ func newStateFromProto(sp *protos.SchedulerState) *state {
 	s.lastUpdateTime = tutils.Timestamp(sp.LastUpdateTime)
 	s.queuedRequests = make(map[RequestID]*TaskRequest, len(sp.QueuedRequests))
 	for rid, req := range sp.QueuedRequests {
-		s.queuedRequests[RequestID(rid)] = &TaskRequest{
-			ID:                  RequestID(rid),
-			AccountID:           AccountID(req.AccountId),
-			confirmedTime:       tutils.Timestamp(req.ConfirmedTime),
-			EnqueueTime:         tutils.Timestamp(req.EnqueueTime),
-			ProvisionableLabels: toLabels(req.ProvisionableLabelIds, sp.LabelMap),
-			BaseLabels:          toLabels(req.BaseLabelIds, sp.LabelMap),
-		}
+		s.queuedRequests[RequestID(rid)] = protoToTaskRequest(RequestID(rid), req, sp.LabelMap)
 	}
 
 	s.runningRequestsCache = make(map[RequestID]WorkerID, len(sp.Workers))
@@ -79,20 +74,18 @@ func newStateFromProto(sp *protos.SchedulerState) *state {
 			tr = &taskRun{
 				cost:     cost,
 				priority: Priority(w.RunningTask.Priority),
-				request: &TaskRequest{
-					ID:                  RequestID(w.RunningTask.RequestId),
-					AccountID:           AccountID(w.RunningTask.Request.AccountId),
-					confirmedTime:       tutils.Timestamp(w.RunningTask.Request.ConfirmedTime),
-					EnqueueTime:         tutils.Timestamp(w.RunningTask.Request.EnqueueTime),
-					ProvisionableLabels: toLabels(w.RunningTask.Request.ProvisionableLabelIds, sp.LabelMap),
-					BaseLabels:          toLabels(w.RunningTask.Request.BaseLabelIds, sp.LabelMap),
-				},
+				request:  protoToTaskRequest(RequestID(w.RunningTask.RequestId), w.RunningTask.Request, sp.LabelMap),
 			}
 			s.runningRequestsCache[RequestID(w.RunningTask.RequestId)] = WorkerID(wid)
+		}
+		modifiedTime := s.lastUpdateTime
+		if w.ModifiedTime != nil {
+			modifiedTime = tutils.Timestamp(w.ModifiedTime)
 		}
 		s.workers[WorkerID(wid)] = &Worker{
 			ID:            WorkerID(wid),
 			confirmedTime: tutils.Timestamp(w.ConfirmedTime),
+			modifiedTime:  modifiedTime,
 			Labels:        toLabels(w.LabelIds, sp.LabelMap),
 			runningTask:   tr,
 		}
@@ -106,6 +99,22 @@ func newStateFromProto(sp *protos.SchedulerState) *state {
 	}
 
 	return s
+}
+
+func protoToTaskRequest(rid RequestID, p *protos.TaskRequest, labelMap map[uint64]string) *TaskRequest {
+	examinedTime := unixZeroTime
+	if p.ExaminedTime != nil {
+		examinedTime = tutils.Timestamp(p.ExaminedTime)
+	}
+	return &TaskRequest{
+		ID:                  rid,
+		AccountID:           AccountID(p.AccountId),
+		confirmedTime:       tutils.Timestamp(p.ConfirmedTime),
+		examinedTime:        examinedTime,
+		EnqueueTime:         tutils.Timestamp(p.EnqueueTime),
+		ProvisionableLabels: toLabels(p.ProvisionableLabelIds, labelMap),
+		BaseLabels:          toLabels(p.BaseLabelIds, labelMap),
+	}
 }
 
 // TODO(akeshet): Move mapBuilder to internal package.
@@ -186,6 +195,7 @@ func (s *state) toProto() *protos.SchedulerState {
 		}
 		workers[string(wid)] = &protos.Worker{
 			ConfirmedTime: tutils.TimestampProto(w.confirmedTime),
+			ModifiedTime:  tutils.TimestampProto(w.modifiedTime),
 			RunningTask:   rt,
 			LabelIds:      mb.ForSet(w.Labels),
 		}

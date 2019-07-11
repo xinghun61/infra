@@ -26,6 +26,7 @@ import (
 	. "github.com/smartystreets/goconvey/convey"
 
 	"infra/qscheduler/qslib/protos"
+	"infra/qscheduler/qslib/tutils"
 
 	"go.chromium.org/luci/common/data/stringset"
 )
@@ -221,6 +222,35 @@ func TestUpdateBalance(t *testing.T) {
 					So(s.state.balances[aID], ShouldResemble, Balance{-1, 2, 3})
 				})
 			})
+		})
+	})
+}
+
+// TestDefaultProtoTimes tests that worker.modifiedTime and request.examinedTime
+// deserialize correctly from proto, including default values when they are
+// not defined in proto.
+func TestDefaultProtoTimes(t *testing.T) {
+	Convey("Given a state proto with workers and requests, some with undefined examinedTime or modifiedTime", t, func() {
+		t1 := tutils.TimestampProto(time.Unix(100, 0))
+		t2 := tutils.TimestampProto(time.Unix(200, 0))
+		stateProto := &protos.SchedulerState{
+			LastUpdateTime: t2,
+			QueuedRequests: map[string]*protos.TaskRequest{
+				"r1": {ConfirmedTime: t1, EnqueueTime: t1},
+				"r2": {ConfirmedTime: t1, EnqueueTime: t1, ExaminedTime: t1},
+			},
+			Workers: map[string]*protos.Worker{
+				"w1": {ConfirmedTime: t1},
+				"w2": {ConfirmedTime: t1, ModifiedTime: t1},
+			},
+		}
+
+		Convey("then the deserialized state has correct timestamps.", func() {
+			state := newStateFromProto(stateProto)
+			So(state.queuedRequests["r1"].examinedTime, ShouldEqual, time.Unix(0, 0))
+			So(state.queuedRequests["r2"].examinedTime, ShouldEqual, time.Unix(100, 0))
+			So(state.workers["w1"].modifiedTime, ShouldEqual, time.Unix(200, 0))
+			So(state.workers["w2"].modifiedTime, ShouldEqual, time.Unix(100, 0))
 		})
 	})
 }

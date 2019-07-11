@@ -28,6 +28,7 @@ func NewTaskRequest(id RequestID, accountID AccountID, provisionableLabels strin
 		BaseLabels:          baseLabels,
 		ProvisionableLabels: provisionableLabels,
 		EnqueueTime:         enqueueTime,
+		examinedTime:        unixZeroTime,
 		ID:                  id,
 	}
 }
