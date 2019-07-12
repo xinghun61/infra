@@ -16,10 +16,7 @@ build:
 	cd frontend/ui && make build
 
 deploy_prod: build
-	# Use gcloud app commands instead of appcfg.py; see crbug.com/978627.
-	# This will become default later so the LUCI_PY_USE_GCLOUD=1
-	# can be removed after crbug.com/835919 is fixed.
-	LUCI_PY_USE_GCLOUD=1 gae.py upload --switch --app-id=tricium-prod
+	gae.py upload --switch --app-id=tricium-prod
 
 deploy_dev: build
-	LUCI_PY_USE_GCLOUD=1 gae.py upload --switch --app-id=tricium-dev
+	gae.py upload --switch --app-id=tricium-dev
