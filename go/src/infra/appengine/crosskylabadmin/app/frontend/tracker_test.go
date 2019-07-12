@@ -16,16 +16,82 @@ package frontend
 
 import (
 	"fmt"
+	"sort"
 	"testing"
 
 	"github.com/golang/mock/gomock"
 	. "github.com/smartystreets/goconvey/convey"
+	"go.chromium.org/gae/service/taskqueue"
 	swarming "go.chromium.org/luci/common/api/swarming/swarming/v1"
 
 	fleet "infra/appengine/crosskylabadmin/api/fleet/v1"
 	"infra/appengine/crosskylabadmin/app/clients"
 	"infra/appengine/crosskylabadmin/app/config"
 )
+
+const repairQ = "repair-bots"
+const resetQ = "reset-bots"
+
+func TestPushBotsForAdminTasks(t *testing.T) {
+	Convey("Handling 4 different state of bots", t, func() {
+		tf, validate := newTestFixture(t)
+		defer validate()
+		tqt := taskqueue.GetTestable(tf.C)
+		tqt.CreateQueue(repairQ)
+		tqt.CreateQueue(resetQ)
+		bot1 := botForDUT("dut_1", "needs_repair", "")
+		bot2 := botForDUT("dut_2", "repair_failed", "")
+		bot3 := botForDUT("dut_3", "needs_reset", "")
+		bots := []*swarming.SwarmingRpcsBotInfo{
+			botForDUT("dut_0", "ready", ""),
+			bot1,
+			bot2,
+			bot3,
+		}
+		getDutName := func(bot *swarming.SwarmingRpcsBotInfo) string {
+			h, err := extractSingleValuedDimension(swarmingDimensionsMap(bot.Dimensions), clients.DutNameDimensionKey)
+			if err != nil {
+				t.Fatalf("fail to extract dut_name for bot %s", bot1.BotId)
+			}
+			return h
+		}
+		h1 := getDutName(bot1)
+		h2 := getDutName(bot2)
+		h3 := getDutName(bot3)
+		tf.MockSwarming.EXPECT().ListAliveIdleBotsInPool(
+			gomock.Any(), gomock.Eq(config.Get(tf.C).Swarming.BotPool), gomock.Any(),
+		).AnyTimes().Return(bots, nil)
+		expectDefaultPerBotRefresh(tf)
+		_, err := tf.Tracker.PushBotsForAdminTasks(tf.C, &fleet.PushBotsForAdminTasksRequest{})
+		So(err, ShouldBeNil)
+
+		tasks := tqt.GetScheduledTasks()
+		repairTasks, ok := tasks[repairQ]
+		So(ok, ShouldBeTrue)
+		var repairPaths []string
+		for _, v := range repairTasks {
+			repairPaths = append(repairPaths, v.Path)
+		}
+		sort.Strings(repairPaths)
+		expectedPaths := []string{
+			fmt.Sprintf("/internal/task/repair/%s", h1),
+			fmt.Sprintf("/internal/task/repair/%s", h2),
+		}
+		sort.Strings(expectedPaths)
+		So(repairPaths, ShouldResemble, expectedPaths)
+
+		resetTasks, ok := tasks[resetQ]
+		So(ok, ShouldBeTrue)
+		var resetPaths []string
+		for _, v := range resetTasks {
+			resetPaths = append(resetPaths, v.Path)
+		}
+		expectedPaths = []string{
+			fmt.Sprintf("/internal/task/reset/%s", h3),
+		}
+		So(resetPaths, ShouldResemble, expectedPaths)
+	})
+}
 
 // This function only validates the DutID field, to ensure that the correct
 // bots are updated/summarized.

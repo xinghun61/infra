@@ -49,9 +49,9 @@ func resetTask(dn string) *taskqueue.Task {
 }
 
 func pushDUTs(ctx context.Context, dutNames []string, queueName string, taskGenerator func(string) *taskqueue.Task) error {
-	tasks := make([]*taskqueue.Task, len(dutNames))
-	for i, dn := range dutNames {
-		tasks[i] = taskGenerator(dn)
+	tasks := make([]*taskqueue.Task, 0, len(dutNames))
+	for _, dn := range dutNames {
+		tasks = append(tasks, taskGenerator(dn))
 	}
 	if err := taskqueue.Add(ctx, queueName, tasks...); err != nil {
 		return err
