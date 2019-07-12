@@ -25,3 +25,5 @@ reasons.sqlite
 .dockerbuild
 # Cache directory created by 3pp/run_locally.sh
 .3pp_wd
+# build/build.py script produces *.cipd binaries, they must not be committed.
+*.cipd
