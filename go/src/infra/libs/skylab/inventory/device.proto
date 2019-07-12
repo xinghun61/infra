@@ -219,6 +219,7 @@ message SchedulableLabels {
     OS_TYPE_CROS = 2;
     OS_TYPE_JETSTREAM = 3;
     OS_TYPE_MOBLAB = 4;
+    OS_TYPE_LABSTATION = 5;
   }
   optional OSType os_type = 15;
 
