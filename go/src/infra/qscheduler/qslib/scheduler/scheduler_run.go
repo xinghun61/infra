@@ -22,14 +22,39 @@ import (
 	"infra/qscheduler/qslib/protos/metrics"
 )
 
+type requestListItem struct {
+	req     *TaskRequest
+	matched bool
+}
+
+// requestList implements sort.Interface, and sorts items in ascending
+// examinedTime order.
+type requestList []*requestListItem
+
+func (r requestList) Len() int {
+	return len(r)
+}
+
+func (r requestList) Less(i, j int) bool {
+	return r[i].req.examinedTime.Before(r[j].req.examinedTime)
+}
+
+func (r requestList) Swap(i, j int) {
+	temp := r[i]
+	r[i] = r[j]
+	r[j] = temp
+}
+
 // schedulerRun stores values that are used within a single run of the scheduling algorithm.
 // Its fields may be mutated during the run, as requests get assigned to workers.
 type schedulerRun struct {
 	// idleWorkers is a collection of currently idle workers.
 	idleWorkers map[WorkerID]*Worker
 
-	// requestsPerPriority is a per-priority linked list of queued requests, sorted by FIFO order within
-	// each priority level. It takes into account throttling of any requests whose account was
+	// requestsPerPriority is a per-priority list of queued requests, sorted in
+	// ascending examinedTime order.
+	//
+	// It takes into account throttling of any requests whose account was
 	// already at the fanout limit when the pass was started, but not newly throttled accounts
 	// as a result of newly assigned requests/workers.
 	requestsPerPriority [NumPriorities + 1]requestList
@@ -78,10 +103,10 @@ func (run *schedulerRun) Run(e EventSink) []*Assignment {
 
 // assignRequestToWorker updates the information in scheduler pass to reflect the fact that the given request
 // (from the given priority) was assigned to a worker.
-func (run *schedulerRun) assignRequestToWorker(w WorkerID, request requestNode, priority Priority) {
+func (run *schedulerRun) assignRequestToWorker(w WorkerID, item *requestListItem, priority Priority) {
 	delete(run.idleWorkers, w)
-	run.fanout.count(request.Value())
-	run.requestsPerPriority[priority].Remove(request.Element)
+	run.fanout.count(item.req)
+	item.matched = true
 }
 
 func (run *schedulerRun) updateExaminedTimes() {
@@ -137,12 +162,7 @@ type matchLevel struct {
 type matchListItem struct {
 	matchLevel
 
-	// request is the request for this item.
-	request *TaskRequest
-
-	// node is the node into the original linked list of requests that this
-	// item corresponds to.
-	node requestNode
+	item *requestListItem
 }
 
 // matcher is the type for functions that evaluates request to worker matching.
@@ -173,12 +193,15 @@ func provisionAwareMatch(w *Worker, r *TaskRequest) matchLevel {
 
 // computeWorkerMatch computes the match level for all given requests against a single worker,
 // and returns the matchable requests sorted by match quality.
-func computeWorkerMatch(w *Worker, requests requestList, mf matcher) []matchListItem {
-	matches := make([]matchListItem, 0, requests.Len())
-	for current := requests.Head(); current.Element != nil; current = current.Next() {
-		m := mf(w, current.Value())
+func computeWorkerMatch(w *Worker, items requestList, mf matcher) []matchListItem {
+	matches := make([]matchListItem, 0, len(items))
+	for _, item := range items {
+		if item.matched {
+			continue
+		}
+		m := mf(w, item.req)
 		if m.canMatch {
-			matches = append(matches, matchListItem{matchLevel: m, request: current.Value(), node: current})
+			matches = append(matches, matchListItem{matchLevel: m, item: item})
 		}
 	}
 	sort.SliceStable(matches, func(i, j int) bool {
@@ -196,26 +219,26 @@ func (run *schedulerRun) matchIdleBots(priority Priority, mf matcher, events Eve
 		matches := computeWorkerMatch(w, candidates, mf)
 		// select first non-throttled match
 		for _, match := range matches {
-			if run.shouldSkip(match.request, priority) {
+			if run.shouldSkip(match.item.req, priority) {
 				continue
 			}
 
 			m := &Assignment{
 				Type:      AssignmentIdleWorker,
 				WorkerID:  wid,
-				RequestID: match.request.ID,
+				RequestID: match.item.req.ID,
 				Priority:  priority,
 				Time:      run.scheduler.state.lastUpdateTime,
 			}
-			run.assignRequestToWorker(wid, match.node, priority)
+			run.assignRequestToWorker(wid, match.item, priority)
 			run.scheduler.state.applyAssignment(m)
 			output = append(output, m)
 			events.AddEvent(
-				eventAssigned(match.request, w, run.scheduler.state, run.scheduler.state.lastUpdateTime,
+				eventAssigned(match.item.req, w, run.scheduler.state, run.scheduler.state.lastUpdateTime,
 					&metrics.TaskEvent_AssignedDetails{
 						Preempting:        false,
 						Priority:          int32(priority),
-						ProvisionRequired: !w.Labels.Contains(match.request.ProvisionableLabels),
+						ProvisionRequired: !w.Labels.Contains(match.item.req.ProvisionableLabels),
 					}))
 			break
 		}
@@ -382,9 +405,14 @@ func (run *schedulerRun) preemptRunningTasks(priority Priority, events EventSink
 		// Select first matching request from an account that is:
 		// - non-throttled
 		// - non-banned
+		// - not already matched
 		// - has sufficient balance to refund cost of preempted job
 		for _, m := range matches {
-			r := m.request
+			if m.item.matched {
+				continue
+			}
+
+			r := m.item.req
 			if bannedAccounts[r.AccountID] {
 				continue
 			}
@@ -397,14 +425,14 @@ func (run *schedulerRun) preemptRunningTasks(priority Priority, events EventSink
 			mut := &Assignment{
 				Type:        AssignmentPreemptWorker,
 				Priority:    priority,
-				RequestID:   m.request.ID,
+				RequestID:   m.item.req.ID,
 				TaskToAbort: worker.runningTask.request.ID,
 				WorkerID:    worker.ID,
 				Time:        state.lastUpdateTime,
 			}
-			run.assignRequestToWorker(worker.ID, m.node, priority)
+			run.assignRequestToWorker(worker.ID, m.item, priority)
 			events.AddEvent(
-				eventAssigned(m.request, worker, state, state.lastUpdateTime,
+				eventAssigned(m.item.req, worker, state, state.lastUpdateTime,
 					&metrics.TaskEvent_AssignedDetails{
 						Preempting:        true,
 						PreemptionCost:    worker.runningTask.cost[:],
@@ -415,9 +443,9 @@ func (run *schedulerRun) preemptRunningTasks(priority Priority, events EventSink
 			events.AddEvent(
 				eventPreempted(worker.runningTask.request, worker, state, state.lastUpdateTime,
 					&metrics.TaskEvent_PreemptedDetails{
-						PreemptingAccountId: string(m.request.AccountID),
+						PreemptingAccountId: string(m.item.req.AccountID),
 						PreemptingPriority:  int32(priority),
-						PreemptingTaskId:    string(m.request.ID),
+						PreemptingTaskId:    string(m.item.req.ID),
 						Priority:            int32(worker.runningTask.priority),
 					}))
 			state.applyAssignment(mut)
@@ -431,10 +459,12 @@ func (run *schedulerRun) preemptRunningTasks(priority Priority, events EventSink
 // in the scheduler pass, to give them a second chance to be scheduled if there are any idle workers left
 // once the FreeBucket pass is reached.
 func (run *schedulerRun) moveThrottledRequests(priority Priority) {
-	for current := run.requestsPerPriority[priority].Head(); current.Element != nil; current = current.Next() {
-		if run.fanout.getRemaining(current.Value()) <= 0 {
-			run.requestsPerPriority[FreeBucket].PushBack(current.Value())
-			run.requestsPerPriority[priority].Remove(current.Element)
+	for _, item := range run.requestsPerPriority[priority] {
+		if item.matched {
+			continue
+		}
+		if run.isThrottled(item.req) {
+			run.requestsPerPriority[FreeBucket] = append(run.requestsPerPriority[FreeBucket], item)
 		}
 	}
 }

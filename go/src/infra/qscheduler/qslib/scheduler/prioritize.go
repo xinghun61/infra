@@ -15,39 +15,8 @@
 package scheduler
 
 import (
-	"container/list"
 	"sort"
 )
-
-// requestList is a wrapper around container/list.List that is type safe as a linked list of
-// *request valued nodes.
-type requestList struct {
-	*list.List
-}
-
-// requestNode is a wrapper around container/list.Element that is type safe as a *request valued
-// node.
-type requestNode struct {
-	*list.Element
-}
-
-func (r *requestList) Head() requestNode {
-	elem := r.Front()
-	return requestNode{elem}
-}
-
-func (r *requestList) PushBack(req *TaskRequest) requestNode {
-	return requestNode{r.List.PushBack(req)}
-}
-
-func (n requestNode) Value() *TaskRequest {
-	return n.Element.Value.(*TaskRequest)
-}
-
-func (n requestNode) Next() requestNode {
-	elem := n.Element.Next()
-	return requestNode{elem}
-}
 
 // prioritizeRequests computes the priority of requests from state.Requests.
 //
@@ -57,16 +26,17 @@ func (n requestNode) Next() requestNode {
 //   - Max fanout: for any given account, if there are more than the max fanout
 //     number of requests already running, requests for that account will be
 //     deprioritized to the FreeBucket.
-//   - FIFO ordering as a tiebreaker.
+//
+// Within a priority bucket, items are sorted in ascending examinedTime order.
 //
 // This function does not modify state or config.
 func (s *Scheduler) prioritizeRequests(fanoutCounter *fanoutCounter) [NumPriorities + 1]requestList {
 	state := s.state
 
-	var prioritized [NumPriorities + 1][]*TaskRequest
+	var prioritized [NumPriorities + 1]requestList
 	// Preallocate slices at each priority level to avoid the need for any resizing later.
 	for i := range prioritized {
-		prioritized[i] = make([]*TaskRequest, 0, len(s.state.queuedRequests))
+		prioritized[i] = make([]*requestListItem, 0, len(s.state.queuedRequests))
 	}
 
 	for _, req := range state.queuedRequests {
@@ -80,19 +50,15 @@ func (s *Scheduler) prioritizeRequests(fanoutCounter *fanoutCounter) [NumPriorit
 			p = BestPriorityFor(state.balances[req.AccountID])
 		}
 
-		prioritized[p] = append(prioritized[p], req)
-	}
-
-	var output [NumPriorities + 1]requestList
-	for priority, p := range prioritized {
-		output[priority] = requestList{&list.List{}}
-		sort.SliceStable(p, func(i, j int) bool {
-			return p[i].EnqueueTime.Before(p[j].EnqueueTime)
+		prioritized[p] = append(prioritized[p], &requestListItem{
+			req:     req,
+			matched: false,
 		})
-		for _, r := range p {
-			output[priority].PushBack(r)
-		}
 	}
 
-	return output
+	for _, p := range prioritized {
+		sort.Sort(p)
+	}
+
+	return prioritized
 }
