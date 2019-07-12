@@ -1,4 +1,7 @@
 cron:
+- description: push bots for admin tasks
+  url: /internal/cron/push-bots-for-admin-tasks
+  schedule: every 5 minutes
 - description: refresh bots
   url: /internal/cron/refresh-bots
   schedule: every 5 minutes
