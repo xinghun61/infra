@@ -78,8 +78,8 @@ func BenchmarkSchedulerSimulation(b *testing.B) {
 			LabelsPerWorker: 30,
 			LabelsPerTask:   5,
 
-			Tasks:   100,
-			Workers: 5,
+			Tasks:   1000,
+			Workers: 50,
 		},
 	}
 	for i := 0; i < b.N; i++ {
