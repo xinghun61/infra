@@ -49,11 +49,12 @@ func runRepairQueueHandler(c *router.Context) (err error) {
 	}()
 
 	dutName := c.Request.FormValue("dutName")
-	if err := frontend.CreateRepairTask(c.Context, dutName); err != nil {
+	taskURL, err := frontend.CreateRepairTask(c.Context, dutName)
+	if err != nil {
 		return err
 	}
 
-	logging.Infof(c.Context, "Successfully run repair job for %s", dutName)
+	logging.Infof(c.Context, "Successfully run repair job for %s: %s", dutName, taskURL)
 	return nil
 }
 
@@ -63,10 +64,11 @@ func runResetQueueHandler(c *router.Context) (err error) {
 	}()
 
 	dutName := c.Request.FormValue("dutName")
-	if err := frontend.CreateResetTask(c.Context, dutName); err != nil {
+	taskURL, err := frontend.CreateResetTask(c.Context, dutName)
+	if err != nil {
 		return err
 	}
-	logging.Infof(c.Context, "Successfully run reset job for %s", dutName)
+	logging.Infof(c.Context, "Successfully run reset job for %s: %s", dutName, taskURL)
 	return nil
 }
 

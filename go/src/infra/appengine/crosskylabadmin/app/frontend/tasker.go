@@ -53,45 +53,55 @@ func (tsi *TaskerServerImpl) newSwarmingClient(c context.Context, host string) (
 }
 
 // CreateRepairTask kicks off a repair job.
-func CreateRepairTask(ctx context.Context, dutName string) error {
+func CreateRepairTask(ctx context.Context, dutName string) (string, error) {
 	at := worker.AdminTaskForType(ctx, fleet.TaskType_Repair)
-	if err := runTaskByDUTName(ctx, at, dutName); err != nil {
-		return errors.Annotate(err, "fail to create repair task for %s", dutName).Err()
+	sc, err := clients.NewSwarmingClient(ctx, config.Get(ctx).Swarming.Host)
+	if err != nil {
+		return "", errors.Annotate(err, "failed to obtain swarming client").Err()
 	}
-	return nil
+	taskURL, err := runTaskByDUTName(ctx, at, sc, dutName)
+	if err != nil {
+		return "", errors.Annotate(err, "fail to create repair task for %s", dutName).Err()
+	}
+	return taskURL, nil
 }
 
 // CreateResetTask kicks off a reset job.
-func CreateResetTask(ctx context.Context, dutName string) error {
+func CreateResetTask(ctx context.Context, dutName string) (string, error) {
 	at := worker.AdminTaskForType(ctx, fleet.TaskType_Reset)
-	if err := runTaskByDUTName(ctx, at, dutName); err != nil {
-		return errors.Annotate(err, "fail to create reset task for %s", dutName).Err()
+	sc, err := clients.NewSwarmingClient(ctx, config.Get(ctx).Swarming.Host)
+	if err != nil {
+		return "", errors.Annotate(err, "failed to obtain swarming client").Err()
 	}
-	return nil
+	taskURL, err := runTaskByDUTName(ctx, at, sc, dutName)
+	if err != nil {
+		return "", errors.Annotate(err, "fail to create reset task for %s", dutName).Err()
+	}
+	return taskURL, nil
 }
 
-func runTaskByDUTName(ctx context.Context, at worker.Task, dutName string) error {
+func runTaskByDUTName(ctx context.Context, at worker.Task, sc clients.SwarmingClient, dutName string) (string, error) {
 	cfg := config.Get(ctx)
-	sc, err := clients.NewSwarmingClient(ctx, config.Get(ctx).Swarming.Host)
 	tags := swarming.AddCommonTags(
 		ctx,
 		fmt.Sprintf("%s:%s", at.Name, dutName),
 		fmt.Sprintf("%s", at.Name),
 	)
 	tags = append(tags, at.Tags...)
-	tid, err := sc.CreateTask(ctx, at.Name, swarming.SetCommonTaskArgs(ctx, &clients.SwarmingCreateTaskArgs{
+	a := swarming.SetCommonTaskArgs(ctx, &clients.SwarmingCreateTaskArgs{
 		Cmd:                  at.Cmd,
 		DutName:              dutName,
 		ExecutionTimeoutSecs: cfg.Tasker.BackgroundTaskExecutionTimeoutSecs,
 		ExpirationSecs:       cfg.Tasker.BackgroundTaskExpirationSecs,
 		Priority:             cfg.Cron.FleetAdminTaskPriority,
 		Tags:                 tags,
-	}))
+	})
+	tid, err := sc.CreateTask(ctx, at.Name, a)
 	if err != nil {
-		return errors.Annotate(err, "failed to create task for dut %s", dutName).Err()
+		return "", errors.Annotate(err, "failed to create task for dut %s", dutName).Err()
 	}
 	logging.Infof(ctx, "successfully kick off task %s for dut %s", tid, dutName)
-	return nil
+	return swarming.URLForTask(ctx, tid), nil
 }
 
 // TriggerRepairOnIdle implements the fleet.TaskerService method.

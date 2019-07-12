@@ -28,7 +28,20 @@ import (
 	fleet "infra/appengine/crosskylabadmin/api/fleet/v1"
 	"infra/appengine/crosskylabadmin/app/clients"
 	"infra/appengine/crosskylabadmin/app/config"
+	"infra/appengine/crosskylabadmin/app/frontend/internal/worker"
 )
+
+func TestRunTaskByDUTName(t *testing.T) {
+	Convey("with run repair job with DUT name", t, func() {
+		tf, validate := newTestFixture(t)
+		defer validate()
+		expectTaskCreationForDUT(tf, "task1", "host1")
+		at := worker.AdminTaskForType(tf.C, fleet.TaskType_Repair)
+		taskURL, err := runTaskByDUTName(tf.C, at, tf.MockSwarming, "host1")
+		So(err, ShouldBeNil)
+		So(taskURL, ShouldContainSubstring, "task1")
+	})
+}
 
 func TestEnsureBackgroundTasks(t *testing.T) {
 	Convey("with 2 known bots", t, func() {
@@ -431,6 +444,14 @@ func expectTaskCreation(tf testFixture, taskID string, dutID string, dutState st
 	}
 	if tname != "" {
 		m.CmdSubString = fmt.Sprintf("-task-name %s", tname)
+	}
+	return tf.MockSwarming.EXPECT().CreateTask(gomock.Any(), gomock.Any(), m).Return(taskID, nil)
+}
+
+// expectTaskCreationByDUTName sets up the expectations for a single task creation based on DUT name.
+func expectTaskCreationForDUT(tf testFixture, taskID string, hostname string) *gomock.Call {
+	m := &createTaskArgsMatcher{
+		DutName: hostname,
 	}
 	return tf.MockSwarming.EXPECT().CreateTask(gomock.Any(), gomock.Any(), m).Return(taskID, nil)
 }

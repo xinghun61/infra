@@ -226,6 +226,7 @@ func timeOffsetFromNowInSwarmingFormat(offset time.Duration) string {
 // of clients.SwarmingCreateTaskArgs argument.
 type createTaskArgsMatcher struct {
 	DutID        string
+	DutName      string
 	DutState     string
 	Priority     int64
 	CmdSubString string
@@ -243,6 +244,7 @@ func (m *createTaskArgsMatcher) Matches(x interface{}) bool {
 	}
 
 	if (m.DutID != "" && args.DutID != m.DutID) ||
+		(m.DutName != "" && args.DutName != m.DutName) ||
 		(m.DutState != "" && args.DutState != m.DutState) ||
 		(m.Priority != 0 && args.Priority != m.Priority) {
 		return false
@@ -260,6 +262,9 @@ func (m *createTaskArgsMatcher) String() string {
 	s := "is clients.SwarmingCreateTaskArgs with fields like"
 	if m.DutID != "" {
 		s = fmt.Sprintf("%s DutID: %s", s, m.DutID)
+	}
+	if m.DutName != "" {
+		s = fmt.Sprintf("%s DutName: %s", s, m.DutName)
 	}
 	if m.DutState != "" {
 		s = fmt.Sprintf("%s DutState: %s", s, m.DutState)
