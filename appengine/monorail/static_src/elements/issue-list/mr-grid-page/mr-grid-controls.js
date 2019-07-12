@@ -16,37 +16,45 @@ export class MrGridControls extends LitElement {
   render() {
     return html`
     <div>
-    <div class="rowscols">
-      <mr-grid-dropdown
-        class="rows"
-        .text=${'Rows'}
-        .items=${this.issueProperties}
-        .selection=${this.queryParams.y}
-        @change=${this._rowChanged}>
-      </mr-grid-dropdown>
-      <mr-grid-dropdown
-        class="cols"
-        .text=${'Cols'}
-        .items=${this.issueProperties}
-        .selection=${this.queryParams.x}
-        @change=${this._colChanged}>
-      </mr-grid-dropdown>
+      <div class="rowscols">
+        <mr-grid-dropdown
+          class="rows"
+          .text=${'Rows'}
+          .items=${this.issueProperties}
+          .selection=${this.queryParams.y}
+          @change=${this._rowChanged}>
+        </mr-grid-dropdown>
+        <mr-grid-dropdown
+          class="cols"
+          .text=${'Cols'}
+          .items=${this.issueProperties}
+          .selection=${this.queryParams.x}
+          @change=${this._colChanged}>
+        </mr-grid-dropdown>
+      </div>
+      <div class="cell-selector">
+        <mr-choice-buttons
+          class='cells'
+          .options=${this.cells}
+          @change=${this._cellSelected}
+          .value=${this.cellType}>
+        </mr-choice-buttons>
+      </div>
     </div>
-    <div class="cell-selector">
-      <mr-choice-buttons
-        class='cells'
-        .options=${this.cells}
-        @change=${this._cellSelected}
-        .value=${this.cellType}>
-      </mr-choice-buttons>
-    </div>
-    </div>
-    <div class="view-selector">
-      <mr-choice-buttons
-        .options=${this.viewSelector}
-        @change=${this._viewSelected}
-        .value=${'grid'}>
-      </mr-choice-buttons>
+    <div class="right-controls">
+      <div class="issue-count">
+        ${this.issueCount}
+        ${this.issueCount === 1? html`
+          issue `: html`
+          issues `} shown
+      </div>
+      <div class="view-selector">
+        <mr-choice-buttons
+          .options=${this.viewSelector}
+          @change=${this._viewSelected}
+          .value=${'grid'}>
+        </mr-choice-buttons>
+      </div>
     </div>
       `;
   }
@@ -76,6 +84,7 @@ export class MrGridControls extends LitElement {
       viewSelector: {type: Array},
       queryParams: {type: Object},
       customIssueProperties: {type: Array},
+      issueCount: {type: Number},
     };
   };
 
@@ -114,6 +123,16 @@ export class MrGridControls extends LitElement {
       }
       .cell-selector {
         padding-left: 20px;
+        display: inline-block;
+      }
+      .right-controls {
+        display: inline-block;
+      }
+      .issue-count {
+        display: inline-block;
+        padding-right: 20px;
+      }
+      .view-selector {
         display: inline-block;
       }
     `;

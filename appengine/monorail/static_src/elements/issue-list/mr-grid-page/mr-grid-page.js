@@ -16,7 +16,8 @@ export class MrGridPage extends connectStore(LitElement) {
     return html`
     <mr-grid-controls
       .queryParams=${this.queryParams}
-      .customIssueProperties=${this.fields}>
+      .customIssueProperties=${this.fields}
+      .issueCount=${this.issues.length}>
     </mr-grid-controls>
     ${this.issues.map((issue) => html`
       <mr-issue-link
