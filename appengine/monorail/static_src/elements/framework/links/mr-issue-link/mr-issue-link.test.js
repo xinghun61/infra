@@ -36,6 +36,19 @@ describe('mr-issue-link', () => {
         'text-decoration').includes('line-through'));
   });
 
+  it('shortens link text when short is true', () => {
+    element.issue = {
+      projectName: 'test',
+      localId: 13,
+    };
+
+    assert.equal(element._linkText, 'Issue test:13');
+
+    element.short = true;
+
+    assert.equal(element._linkText, 'test:13');
+  });
+
   it('shows projectName only when different from global', async () => {
     element.issue = {
       projectName: 'test',

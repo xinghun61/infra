@@ -40,8 +40,8 @@ export class MrGridPage extends connectStore(LitElement) {
       <mr-issue-link
         .projectName=${this.projectName}
         .issue=${issue}
-        .text=${issue.localId}
         .queryParams=${this.queryParams}
+        short
       ></mr-issue-link>`)}
       <br>
       <mr-grid

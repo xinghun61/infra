@@ -113,6 +113,7 @@ export class MrIssueList extends LitElement {
             .projectName=${this.projectName}
             .issue=${issue}
             .queryParams=${this.queryParams}
+            short
           ></mr-issue-link>
         `;
       case 'Summary':

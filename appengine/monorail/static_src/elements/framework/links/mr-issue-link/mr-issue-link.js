@@ -40,7 +40,16 @@ export class MrIssueLink extends LitElement {
       // The global current project name. NOT the issue's project name.
       projectName: {type: String},
       queryParams: {type: Object},
+      short: {type: Boolean},
     };
+  }
+
+  constructor() {
+    super();
+
+    this.issue = {};
+    this.queryParams = {};
+    this.short = false;
   }
 
   get isClosed() {
@@ -50,16 +59,16 @@ export class MrIssueLink extends LitElement {
   }
 
   get _linkText() {
-    const projectName = this.projectName;
-    const issue = this.issue;
-    const text = this.text;
+    const {projectName, issue, text, short} = this;
     if (text) return text;
 
     if (issue && issue.extIdentifier) {
       return issue.extIdentifier;
     }
 
-    return `Issue ${issueRefToString(issue, projectName)}`;
+    const prefix = short ? '' : 'Issue ';
+
+    return prefix + issueRefToString(issue, projectName);
   }
 }
 
