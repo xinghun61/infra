@@ -34,15 +34,6 @@ cron:
     # retries is enough to paper over trasient Swarming service failures. Beyond
     # that, we can always catch the next cron train.
     job_retry_limit: 3
-- description: ensure critical pools are healthy
-  url: /internal/cron/ensure-critical-pools-healthy
-  schedule: every 1 hours
-  retry_parameters:
-    # The cron handlers are idempotent, and called frequently. A small number of
-    # retries is enough to paper over trasient service failures. Some transient
-    # errors are already retried internally by the RPC. Beyond that, we can
-    # always catch the next cron train.
-    job_retry_limit: 2
 - description: LUCI config datastore cache periodic refresh
   url: /admin/config/cache/manager
   schedule: every 10 minutes
