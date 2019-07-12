@@ -5,6 +5,8 @@
 package backend
 
 import (
+	"fmt"
+	"strings"
 	"testing"
 
 	. "github.com/smartystreets/goconvey/convey"
@@ -35,15 +37,34 @@ func TestSearchAndUpdateIssues(t *testing.T) {
 			&monorail.Issue{ProjectName: "test", LocalId: 456},
 		)
 
+		Convey("tickets with opt-out label are filtered in search", func() {
+			countOptOptLabel := func(query string) int {
+				assigner.IssueQuery.Q = query
+				_, err := searchAndUpdateIssues(c, assigner, task)
+				So(err, ShouldBeNil)
+				req := getListIssuesRequest(c)
+				So(req, ShouldNotBeNil)
+				return strings.Count(req.Query, fmt.Sprintf("-label:%s", OptOutLabel))
+			}
+			So(countOptOptLabel("ABC"), ShouldEqual, 1)
+			So(countOptOptLabel("ABC OR "), ShouldEqual, 1)
+			So(countOptOptLabel("ABC OR"), ShouldEqual, 1)
+			So(countOptOptLabel("ABC DEF"), ShouldEqual, 1)
+			So(countOptOptLabel(" OR ABC"), ShouldEqual, 1)
+			So(countOptOptLabel("OR ABC DEF"), ShouldEqual, 1)
+			So(countOptOptLabel("ABC OR DEF"), ShouldEqual, 2)
+			So(countOptOptLabel("ABC OR DEF OR FOO"), ShouldEqual, 3)
+		})
+
 		Convey("issues are updated", func() {
 			nUpdated, err := searchAndUpdateIssues(c, assigner, task)
 			So(err, ShouldBeNil)
 			So(nUpdated, ShouldEqual, 2)
 
-			req := getIssueUpdateRequests(c, "test", 123)
+			req := getIssueUpdateRequest(c, "test", 123)
 			So(req, ShouldNotBeNil)
 			So(req.Delta.OwnerRef.DisplayName, ShouldEqual, mockLegacyShifts["rotation1"].Primary)
-			req = getIssueUpdateRequests(c, "test", 456)
+			req = getIssueUpdateRequest(c, "test", 456)
 			So(req, ShouldNotBeNil)
 			So(req.Delta.OwnerRef.DisplayName, ShouldEqual, mockLegacyShifts["rotation1"].Primary)
 		})

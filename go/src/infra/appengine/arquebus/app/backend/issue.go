@@ -70,11 +70,25 @@ func searchAndUpdateIssues(c context.Context, assigner *model.Assigner, task *mo
 
 func searchIssues(c context.Context, mc monorail.IssuesClient, assigner *model.Assigner, task *model.Task) ([]*monorail.Issue, error) {
 	task.WriteLog(c, "Started searching issues")
-	query := assigner.IssueQuery
+
+	// Inject -label:Arquebus-Opt-Out into the search query.
+	var query strings.Builder
+	s := strings.Split(assigner.IssueQuery.Q, " OR ")
+	for i, q := range s {
+		// Split("ABC OR ", " OR ") returns ["ABC", ""]
+		if q == "" {
+			continue
+		}
+		query.WriteString(fmt.Sprintf("%s -label:%s", q, OptOutLabel))
+		if i < (len(s) - 1) {
+			query.WriteString(" OR ")
+		}
+	}
+
 	res, err := mc.ListIssues(c, &monorail.ListIssuesRequest{
-		Query:        fmt.Sprintf("%s -label:%s", query.Q, OptOutLabel),
+		Query:        query.String(),
 		CannedQuery:  uint32(monorail.SearchScope_OPEN),
-		ProjectNames: query.ProjectNames,
+		ProjectNames: assigner.IssueQuery.ProjectNames,
 
 		// This assumes that the search query includes a filter to exclude
 		// the previously updated issues.

@@ -191,8 +191,9 @@ func oncallUserSource(rotation string, position config.Oncall_Position) *config.
 // test Monorail Issue Client
 
 type testIssueClientStorage struct {
-	issuesToList   []*monorail.Issue
-	issuesToUpdate map[string]*monorail.UpdateIssueRequest
+	listIssuesRequest  *monorail.ListIssuesRequest
+	issuesToList       []*monorail.Issue
+	updateIssueRequest map[string]*monorail.UpdateIssueRequest
 }
 
 type testIssueClient struct {
@@ -203,19 +204,20 @@ type testIssueClient struct {
 func newTestIssueClient() testIssueClient {
 	return testIssueClient{
 		storage: &testIssueClientStorage{
-			issuesToUpdate: map[string]*monorail.UpdateIssueRequest{},
+			updateIssueRequest: map[string]*monorail.UpdateIssueRequest{},
 		},
 	}
 }
 
 func (client testIssueClient) UpdateIssue(c context.Context, in *monorail.UpdateIssueRequest, opts ...grpc.CallOption) (*monorail.IssueResponse, error) {
-	client.storage.issuesToUpdate[genIssueKey(
+	client.storage.updateIssueRequest[genIssueKey(
 		in.IssueRef.ProjectName, in.IssueRef.LocalId,
 	)] = in
 	return &monorail.IssueResponse{}, nil
 }
 
 func (client testIssueClient) ListIssues(c context.Context, in *monorail.ListIssuesRequest, opts ...grpc.CallOption) (*monorail.ListIssuesResponse, error) {
+	client.storage.listIssuesRequest = in
 	return &monorail.ListIssuesResponse{
 		Issues: client.storage.issuesToList,
 	}, nil
@@ -225,9 +227,13 @@ func mockListIssues(c context.Context, issues ...*monorail.Issue) {
 	getMonorailClient(c).(testIssueClient).storage.issuesToList = issues
 }
 
-func getIssueUpdateRequests(c context.Context, projectName string, localID uint32) *monorail.UpdateIssueRequest {
-	issuesToUpdate := getMonorailClient(c).(testIssueClient).storage.issuesToUpdate
-	return issuesToUpdate[genIssueKey(projectName, localID)]
+func getIssueUpdateRequest(c context.Context, projectName string, localID uint32) *monorail.UpdateIssueRequest {
+	updateIssueRequest := getMonorailClient(c).(testIssueClient).storage.updateIssueRequest
+	return updateIssueRequest[genIssueKey(projectName, localID)]
+}
+
+func getListIssuesRequest(c context.Context) *monorail.ListIssuesRequest {
+	return getMonorailClient(c).(testIssueClient).storage.listIssuesRequest
 }
 
 func genIssueKey(projectName string, localID uint32) string {
