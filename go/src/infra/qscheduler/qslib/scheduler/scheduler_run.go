@@ -219,12 +219,35 @@ func computeWorkerMatch(w *Worker, items requestList, mf matcher) []matchListIte
 // matchIdleBots matches requests with idle workers.
 func (run *schedulerRun) matchIdleBots(priority Priority, mf matcher, events EventSink) []*Assignment {
 	var output []*Assignment
+
+	// Compute per-worker matches concurrently, to make use of multiple cores.
+	matchesPerWorker := make(map[WorkerID][]matchListItem, len(run.idleWorkers))
+	type widAndItem struct {
+		wid     WorkerID
+		matches []matchListItem
+	}
+	mChan := make(chan widAndItem, len(run.idleWorkers))
+	candidates := run.requestsPerPriority[priority]
 	for wid, w := range run.idleWorkers {
-		// Try to match.
-		candidates := run.requestsPerPriority[priority]
-		matches := computeWorkerMatch(w, candidates, mf)
-		// select first non-throttled match
+		go func(wid WorkerID, w *Worker) {
+			matches := computeWorkerMatch(w, candidates, mf)
+			mChan <- widAndItem{wid: wid, matches: matches}
+		}(wid, w)
+	}
+	for len(matchesPerWorker) < len(run.idleWorkers) {
+		item := <-mChan
+		matchesPerWorker[item.wid] = item.matches
+	}
+
+	for wid, w := range run.idleWorkers {
+		matches := matchesPerWorker[wid]
+		// select first match that is:
+		// - non-throttled match
+		// - not already matched
 		for _, match := range matches {
+			if match.item.matched {
+				continue
+			}
 			if run.shouldSkip(match.item.req, priority) {
 				continue
 			}
