@@ -195,13 +195,10 @@ func provisionAwareMatch(w *Worker, r *TaskRequest) matchLevel {
 // and returns the matchable requests sorted by match quality.
 func computeWorkerMatch(w *Worker, items requestList, mf matcher) []matchListItem {
 	var matches []matchListItem
-	for _, item := range items {
-		if item.req.examinedTime.After(w.modifiedTime) {
-			// This request (and all remaining ones after it) have newer examinedTimes
-			// than the worker's modifiedTime. This means they have already failed
-			// to match this worker on previous runs of the scheduler.
-			break
-		}
+	end := sort.Search(len(items), func(i int) bool {
+		return items[i].req.examinedTime.After(w.modifiedTime)
+	})
+	for _, item := range items[:end] {
 		if item.matched {
 			continue
 		}
