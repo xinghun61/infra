@@ -891,10 +891,11 @@ def _sync_build_with_task_result_in_memory(build, build_infra, task_result):
       # Task started, but timed out.
       bp.status = common_pb2.INFRA_FAILURE
       bp.status_details.timeout.SetInParent()
-    elif state == 'BOT_DIED' or task_result.get('internal_failure'):
+    elif state == 'BOT_DIED' or task_result.get('failure'):
+      # If this truly was a non-infra failure, luci_runner would catch that and
+      # mark the build as FAILURE.
+      # That did not happen, so this is an infra failure.
       bp.status = common_pb2.INFRA_FAILURE
-    elif task_result.get('failure'):
-      bp.status = common_pb2.FAILURE
     else:
       assert state == 'COMPLETED'
       bp.status = common_pb2.SUCCESS
