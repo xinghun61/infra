@@ -15,6 +15,7 @@
 package inventory
 
 import (
+	"bytes"
 	"fmt"
 	"testing"
 
@@ -135,26 +136,28 @@ func setGitilesDUTs(c context.Context, g *fakes.GitilesClient, duts []testInvent
 	})
 }
 
+// dutFmt should follow the following rules:
+// 1) entries should be in alphabetical order.
+// 2) indent is 2 spaces, no tabs.
+const dutFmt = `duts {
+  common {
+    environment: ENVIRONMENT_STAGING
+    hostname: "%s"
+    id: "%s"
+    labels {
+      critical_pools: %s
+      model: "%s"
+    }
+  }
+}
+`
+
 func inventoryBytesFromDUTs(duts []testInventoryDut) []byte {
-	ptext := ""
+	var ptext bytes.Buffer
 	for _, dut := range duts {
-		ptext = fmt.Sprintf(`%s
-			duts {
-				common {
-					id: "%s"
-					hostname: "%s"
-					labels {
-						model: "%s"
-						critical_pools: %s
-					}
-					environment: ENVIRONMENT_STAGING
-				}
-			}`,
-			ptext,
-			dut.id, dut.hostname, dut.model, dut.pool,
-		)
+		ptext.WriteString(fmt.Sprintf(dutFmt, dut.hostname, dut.id, dut.pool, dut.model))
 	}
-	return []byte(ptext)
+	return ptext.Bytes()
 }
 
 // testDutOnServer contains a subset of the fields in infrastructure servers.

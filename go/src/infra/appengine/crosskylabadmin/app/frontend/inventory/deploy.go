@@ -186,6 +186,9 @@ func (is *ServerImpl) DeleteDuts(ctx context.Context, req *fleet.DeleteDutsReque
 		}
 		removedDUTs := removeDUTWithHostnames(s, req.Hostnames)
 		url, err2 := s.Commit(ctx, fmt.Sprintf("delete %d duts", len(removedDUTs)))
+		if gitstore.IsEmptyErr(err2) {
+			return nil
+		}
 		if err2 != nil {
 			return err2
 		}
