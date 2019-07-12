@@ -7,8 +7,8 @@ Description:
 Standalone binary and appengine app to serve Go vanity URLs.
 
 Local Modifications:
-Modified vanity.yaml to contain URL mappings for go.chromium.org
-and added govanityurls.infra_testing.
+  * Modified vanity.yaml to contain URL mappings for go.chromium.org.
+  * Adapted to work with go1.11 GAE runtime.
 
 To upload a new instance:
 gae.py upload -A chromium-go-url-redirector
