@@ -2,18 +2,37 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import {LitElement, html} from 'lit-element';
+import {LitElement, html, css} from 'lit-element';
 import {extractGridData} from './extract-grid-data.js';
 
 export class MrGrid extends LitElement {
   render() {
     return html`
-      <p>xHeadings</p>
-      ${this.xHeadings.map((heading) => html`
-        <p>${heading}</p>`)}
-      <p>yHeadings</p>
-      ${this.yHeadings.map((heading) => html`
-        <p>${heading}</p>`)}
+      <table>
+        <tr>
+          <th>&nbsp</th>
+          ${this.xHeadings.map((heading) => html`
+              <th>${heading}</th>`)}
+        </tr>
+        ${this.yHeadings.map((yHeading) => html`
+          <tr>
+            <th>${yHeading}</th>
+            ${this.xHeadings.map((xHeading) => html`
+              ${this.groupedIssues.has(xHeading + '-' + yHeading) ? html`
+                <td>${this.groupedIssues.get(
+                  xHeading + '-' + yHeading).map((issue) => html`
+                    <mr-issue-link
+                      .projectName=${this.projectName}
+                      .issue=${issue}
+                      .text=${issue.localId}
+                      .queryParams=${this.queryParams}
+                    ></mr-issue-link>
+                `)} </td>`: html`<td></td>
+              `}
+            `)}
+          </tr>
+        `)}
+      </table>
     `;
   }
 
@@ -25,13 +44,39 @@ export class MrGrid extends LitElement {
       yHeadings: {type: Array},
       issues: {type: Array},
       cellMode: {type: String},
+      groupedIssues: {type: Map},
     };
+  }
+
+  static get styles() {
+    return css`
+      table {
+        border-collapse: collapse;
+        margin: 20px 1%;
+        width: 98%;
+        text-align: left;
+      }
+      th {
+        border: 1px solid white;
+        padding: 5px;
+        background-color: var(--chops-table-header-bg);
+      }
+      td {
+        border: var(--chops-table-divider);
+        background-color: white;
+      }
+      td .issue-link {
+        margin-right: 0.6em;
+        margin-left: 0.6em;
+      }
+    `;
   }
 
   constructor() {
     super();
     this.xHeadings = [];
     this.yHeadings = [];
+    this.groupedIssues = new Map();
   }
 
   updated(changedProperties) {
@@ -40,6 +85,7 @@ export class MrGrid extends LitElement {
       const gridData = extractGridData(this.issues, this.xAttr, this.yAttr);
       this.xHeadings = gridData.xHeadings;
       this.yHeadings = gridData.yHeadings;
+      this.groupedIssues = gridData.sortedIssues;
     }
   }
 };

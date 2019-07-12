@@ -2,6 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+// TODO(juliacordero): Handle pRPC errors with a FE page
+
 import {LitElement, html} from 'lit-element';
 import {store, connectStore} from 'elements/reducers/base.js';
 import * as issue from 'elements/reducers/issue.js';
@@ -14,6 +16,21 @@ import './mr-grid.js';
 export class MrGridPage extends connectStore(LitElement) {
   render() {
     return html`
+<<<<<<< HEAD
+      <div id="grid-area">
+        <mr-grid-controls
+          .queryParams=${this.queryParams}
+          .customIssueProperties=${this.fields}>
+        </mr-grid-controls>
+        <br>
+        <mr-grid
+          .issues=${this.issues}
+          .xAttr=${this.queryParams.x}
+          .yAttr=${this.queryParams.y}
+          .cellMode=${this.queryParams.cells}
+        ></mr-grid>
+      </div>
+=======
     <mr-grid-controls
       .queryParams=${this.queryParams}
       .customIssueProperties=${this.fields}
@@ -33,6 +50,7 @@ export class MrGridPage extends connectStore(LitElement) {
         .yAttr=${this.queryParams.y}
         .cellMode=${this.queryParams.cells}
       ></mr-grid>
+>>>>>>> b70222051be37c8dace6c0a59b89e53dcbf49b85
     `;
   }
 
