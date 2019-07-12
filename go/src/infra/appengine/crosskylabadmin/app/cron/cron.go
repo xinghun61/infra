@@ -63,6 +63,12 @@ func pushBotsForAdminTasksCronHandler(c *router.Context) (err error) {
 		pushBotsForAdminTasksCronHandlerTick.Add(c.Context, 1, err == nil)
 	}()
 
+	cfg := config.Get(c.Context)
+	if cfg.RpcControl.DisablePushBotsForAdminTasks {
+		logging.Infof(c.Context, "PushBotsForAdminTasks is disabled via config.")
+		return nil
+	}
+
 	tsi := frontend.TrackerServerImpl{}
 	if _, err := tsi.PushBotsForAdminTasks(c.Context, &fleet.PushBotsForAdminTasksRequest{}); err != nil {
 		return err
@@ -76,6 +82,12 @@ func refreshBotsCronHandler(c *router.Context) (err error) {
 	defer func() {
 		refreshBotsTick.Add(c.Context, 1, err == nil)
 	}()
+
+	cfg := config.Get(c.Context)
+	if cfg.RpcControl.DisableRefreshBots {
+		logging.Infof(c.Context, "RefreshBots is disabled via config.")
+		return nil
+	}
 
 	tsi := frontend.TrackerServerImpl{}
 	resp, err := tsi.RefreshBots(c.Context, &fleet.RefreshBotsRequest{})
@@ -93,13 +105,18 @@ func ensureBackgroundTasksCronHandler(c *router.Context) (err error) {
 		ensureBackgroundTasksTick.Add(c.Context, 1, err == nil)
 	}()
 
-	cfg := config.Get(c.Context).Cron
+	cfg := config.Get(c.Context)
+	if cfg.RpcControl.DisableEnsureBackgroundTasks {
+		logging.Infof(c.Context, "EnableBackgroundTasks is disabled via config.")
+		return nil
+	}
+
 	ttypes := []fleet.TaskType{fleet.TaskType_Cleanup, fleet.TaskType_Reset, fleet.TaskType_Repair}
 	tsi := frontend.TaskerServerImpl{}
 	for _, ttype := range ttypes {
 		resp, err := tsi.EnsureBackgroundTasks(c.Context, &fleet.EnsureBackgroundTasksRequest{
-			Priority:  cfg.FleetAdminTaskPriority,
-			TaskCount: cfg.EnsureTasksCount,
+			Priority:  cfg.Cron.FleetAdminTaskPriority,
+			TaskCount: cfg.Cron.EnsureTasksCount,
 			Type:      ttype,
 		})
 		if err != nil {
@@ -108,7 +125,7 @@ func ensureBackgroundTasksCronHandler(c *router.Context) (err error) {
 		logging.Infof(c.Context, "Scheduled background %s tasks for %d bots", ttype.String(), len(resp.BotTasks))
 		numIncompleteBots := 0
 		for _, bt := range resp.BotTasks {
-			if len(bt.Tasks) != int(cfg.EnsureTasksCount) {
+			if len(bt.Tasks) != int(cfg.Cron.EnsureTasksCount) {
 				numIncompleteBots = numIncompleteBots + 1
 			}
 		}
@@ -125,11 +142,16 @@ func triggerRepairOnIdleCronHandler(c *router.Context) (err error) {
 		triggerRepairOnIdleTick.Add(c.Context, 1, err == nil)
 	}()
 
-	cfg := config.Get(c.Context).Cron
+	cfg := config.Get(c.Context)
+	if cfg.RpcControl.DisableTriggerRepairOnIdle {
+		logging.Infof(c.Context, "TriggerRepairOnIdle is disabled via config.")
+		return nil
+	}
+
 	tsi := frontend.TaskerServerImpl{}
 	resp, err := tsi.TriggerRepairOnIdle(c.Context, &fleet.TriggerRepairOnIdleRequest{
-		IdleDuration: cfg.RepairIdleDuration,
-		Priority:     cfg.FleetAdminTaskPriority,
+		IdleDuration: cfg.Cron.RepairIdleDuration,
+		Priority:     cfg.Cron.FleetAdminTaskPriority,
 	})
 	if err != nil {
 		return err
@@ -145,11 +167,16 @@ func triggerRepairOnRepairFailedCronHandler(c *router.Context) (err error) {
 		triggerRepairOnRepairFailedTick.Add(c.Context, 1, err == nil)
 	}()
 
-	cfg := config.Get(c.Context).Cron
+	cfg := config.Get(c.Context)
+	if cfg.RpcControl.DisableTriggerRepairOnRepairFailed {
+		logging.Infof(c.Context, "TriggerRepairOnRepairFailed is disabled via config.")
+		return nil
+	}
+
 	tsi := frontend.TaskerServerImpl{}
 	resp, err := tsi.TriggerRepairOnRepairFailed(c.Context, &fleet.TriggerRepairOnRepairFailedRequest{
-		Priority:            cfg.FleetAdminTaskPriority,
-		TimeSinceLastRepair: cfg.RepairAttemptDelayDuration,
+		Priority:            cfg.Cron.FleetAdminTaskPriority,
+		TimeSinceLastRepair: cfg.Cron.RepairAttemptDelayDuration,
 	})
 	if err != nil {
 		return err
@@ -168,12 +195,23 @@ func logAndSetHTTPErr(f func(c *router.Context) error) func(*router.Context) {
 }
 
 func refreshInventoryCronHandler(c *router.Context) error {
+	cfg := config.Get(c.Context)
+	if cfg.RpcControl.DisableRefreshInventory {
+		logging.Infof(c.Context, "RefreshInventory is disabled via config.")
+		return nil
+	}
 	inv := createInventoryServer(c)
 	_, err := inv.UpdateCachedInventory(c.Context, &fleet.UpdateCachedInventoryRequest{})
 	return err
 }
 
 func ensureCriticalPoolsHealthy(c *router.Context) (err error) {
+	cronCfg := config.Get(c.Context)
+	if cronCfg.RpcControl.DisableEnsureCriticalPoolsHealthy {
+		logging.Infof(c.Context, "EnsureCriticalPoolsHealthy is disabled via config.")
+		return nil
+	}
+
 	cfg := config.Get(c.Context).GetCron().GetPoolBalancer()
 	if cfg == nil {
 		return errors.New("invalid pool balancer configuration")

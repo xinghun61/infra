@@ -33,6 +33,9 @@ message Config {
 
   // endpoint contains configuration of specific API endpoints.
   Endpoint endpoint = 6;
+
+  // RPCcontrol controls rpc traffic.
+  RPCControl rpc_control = 7;
 }
 
 // Swarming contains information about the Swarming instance that hosts the bots
@@ -93,6 +96,18 @@ message Cron {
 
   // Configuration of automatic pool balancing to keep critical pools healthy.
   PoolBalancer pool_balancer = 5;
+}
+
+message RPCControl {
+  // Configuration of if disabling some rpc calls. It's used in experimental stage.
+  // Once an RPC call is verified to be working/useless, it will be added/deleted.
+  bool disable_ensure_background_tasks = 1;
+  bool disable_ensure_critical_pools_healthy = 2;
+  bool disable_push_bots_for_admin_tasks = 3;
+  bool disable_refresh_bots = 4;
+  bool disable_refresh_inventory = 5;
+  bool disable_trigger_repair_on_idle = 6;
+  bool disable_trigger_repair_on_repair_failed = 7;
 }
 
 // Skylab inventory is stored in a git project. A Gitiles server as well as
