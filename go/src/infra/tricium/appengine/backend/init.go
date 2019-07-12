@@ -57,7 +57,6 @@ func init() {
 	// Configure pRPC services.
 	s := common.NewRPCServer()
 	admin.RegisterTrackerServer(s, &trackerServer{})
-	admin.RegisterConfigServer(s, &configServer{})
 	admin.RegisterDriverServer(s, &driverServer{})
 	admin.RegisterReporterServer(s, &gerritReporterServer{})
 	admin.RegisterLauncherServer(s, &launcherServer{})
