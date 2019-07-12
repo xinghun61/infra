@@ -34,10 +34,6 @@ func (s *Scheduler) prioritizeRequests(fanoutCounter *fanoutCounter) [NumPriorit
 	state := s.state
 
 	var prioritized [NumPriorities + 1]requestList
-	// Preallocate slices at each priority level to avoid the need for any resizing later.
-	for i := range prioritized {
-		prioritized[i] = make([]*requestListItem, 0, len(s.state.queuedRequests))
-	}
 
 	for _, req := range state.queuedRequests {
 		if req.ID == "" {
