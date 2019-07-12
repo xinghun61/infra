@@ -34,17 +34,29 @@ type StateParams struct {
 	// or workers.
 	LabelCorpusSize int
 
+	// This many out of LabelCorpusSize labels will be considered provisionable
+	// labels; every worker will have at least 1 of these, and every task will
+	// will have 1 as a provisionable label. This is in addition to LabelsPerTask
+	// or LabelsPerWorker.
+	ProvisionableLabels int
+
 	LabelsPerTask   int
 	LabelsPerWorker int
 	Workers         int
 	Tasks           int
+
+	Accounts         int
+	ChargeRateMax    float32
+	ChargeTime       float32
+	Fanout           int
+	DisableFreeTasks bool
 }
 
 // NewSchedulerState returns a proto-representation of a qscheduler state, with
 // given size parameters.
 func NewSchedulerState(params StateParams) *scheduler.Scheduler {
 	ctx := context.Background()
-	state := scheduler.New(time.Now())
+	state := newStateWithAccount(ctx, params, time.Now())
 
 	corpus := labelCorpus(params.LabelCorpusSize)
 
@@ -53,6 +65,25 @@ func NewSchedulerState(params StateParams) *scheduler.Scheduler {
 	addTasks(ctx, time.Now(), params, corpus, state)
 
 	return state
+}
+
+func newStateWithAccount(ctx context.Context, params StateParams, t time.Time) *scheduler.Scheduler {
+	state := scheduler.New(t)
+	for i := 0; i < params.Accounts; i++ {
+		chargeRate := make([]float32, scheduler.NumPriorities)
+		for j := range chargeRate {
+			chargeRate[j] = rand.Float32() * params.ChargeRateMax
+		}
+		accountConfig := scheduler.NewAccountConfig(params.Fanout, params.ChargeTime, chargeRate)
+		accountConfig.DisableFreeTasks = params.DisableFreeTasks
+
+		state.AddAccount(ctx, accountName(i), accountConfig, nil)
+	}
+	return state
+}
+
+func accountName(i int) scheduler.AccountID {
+	return scheduler.AccountID(fmt.Sprintf("account%d", i))
 }
 
 func labelCorpus(size int) []string {
@@ -65,10 +96,11 @@ func labelCorpus(size int) []string {
 
 func addWorkers(ctx context.Context, t time.Time, params StateParams, corpus []string, s *scheduler.Scheduler) {
 	for i := 0; i < params.Workers; i++ {
-		labels := stringset.New(params.LabelsPerWorker)
+		labels := stringset.New(params.LabelsPerWorker + 1)
 		for j := 0; j < params.LabelsPerWorker; j++ {
 			labels.Add(corpus[rand.Intn(len(corpus))])
 		}
+		labels.Add(corpus[rand.Intn(params.ProvisionableLabels)])
 		s.MarkIdle(ctx, scheduler.WorkerID(randomString()), labels, t, scheduler.NullEventSink)
 	}
 }
@@ -79,10 +111,11 @@ func addTasks(ctx context.Context, t time.Time, params StateParams, corpus []str
 		for j := 0; j < params.LabelsPerTask; j++ {
 			labels.Add(corpus[rand.Intn(len(corpus))])
 		}
-		provisionableLabel := corpus[rand.Intn(len(corpus))]
+		provisionableLabel := corpus[rand.Intn(params.ProvisionableLabels)]
+		account := accountName(rand.Intn(params.Accounts))
 		request := scheduler.NewTaskRequest(
 			scheduler.RequestID(randomString()),
-			"foo-account-1",
+			account,
 			stringset.NewFromSlice(provisionableLabel),
 			labels,
 			t,
@@ -104,7 +137,8 @@ type SimulationParams struct {
 func RunSimulation(params SimulationParams) {
 	ctx := context.Background()
 	t := time.Now()
-	state := scheduler.New(t)
+	state := newStateWithAccount(ctx, params.StateParams, t)
+
 	// The preemption pass of scheduler has not yet been optimized for
 	// large state size. Disable it for simulation purposes.
 	state.Config().DisablePreemption = true

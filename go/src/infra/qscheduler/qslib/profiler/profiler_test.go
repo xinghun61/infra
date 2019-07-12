@@ -24,7 +24,8 @@ import (
 )
 
 var params = StateParams{
-	LabelCorpusSize: 1000,
+	LabelCorpusSize:     1000,
+	ProvisionableLabels: 20,
 
 	LabelsPerWorker: 30,
 	Workers:         5000,
@@ -70,16 +71,32 @@ func BenchmarkEntityZip(b *testing.B) {
 }
 
 func BenchmarkSchedulerSimulation(b *testing.B) {
+	// These parameters are chosen to try to mimick expected scaling limits.
+	// By the end of this simulation:
+	// - There are 5k workers.
+	// - There are 100k tasks.
+	// - If DisableFreeTasks were false, about 2.2k of the workers would be
+	//   running, and the others are idle.
+	// - With DisableFreeTasks set to true, only about 1.5k are running. This
+	// - is due to a combination of the limited maximum charge rate and the
+	//   fanout limit.
 	params := SimulationParams{
 		Iterations: 100,
 		StateParams: StateParams{
-			LabelCorpusSize: 1000,
+			LabelCorpusSize:     1000,
+			ProvisionableLabels: 50,
 
-			LabelsPerWorker: 30,
-			LabelsPerTask:   5,
+			LabelsPerWorker: 50,
+			LabelsPerTask:   4,
 
 			Tasks:   1000,
 			Workers: 50,
+
+			Accounts:         20,
+			ChargeRateMax:    10,
+			ChargeTime:       10,
+			DisableFreeTasks: true,
+			Fanout:           2,
 		},
 	}
 	for i := 0; i < b.N; i++ {
