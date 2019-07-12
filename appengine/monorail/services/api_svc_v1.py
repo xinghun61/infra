@@ -851,7 +851,7 @@ class MonorailApi(remote.Service):
 
     with work_env.WorkEnv(mar, self._services) as we:
       owner_id = None
-      if request.owner:
+      if request.owner and request.owner.name:
         try:
           owner_id = self._services.user.LookupUserID(
               mar.cnxn, request.owner.name)
@@ -862,7 +862,7 @@ class MonorailApi(remote.Service):
       cc_ids = []
       if request.cc:
         cc_ids = list(self._services.user.LookupUserIDs(
-            mar.cnxn, [ap.name for ap in request.cc],
+            mar.cnxn, [ap.name for ap in request.cc if ap.name],
             autocreate=True).values())
       comp_ids = api_pb2_v1_helpers.convert_component_ids(
           mar.config, request.components)

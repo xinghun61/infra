@@ -388,6 +388,34 @@ class MonorailApiTest(testing.EndpointsTestCase):
         'fake cnxn', new_issue.issue_id)
     self.assertIn(111, starrers)
 
+  def testIssuesInsert_EmptyOwnerCcNames(self):
+    """Create an issue as requested."""
+
+    self.services.project.TestAddProject(
+        'test-project', owner_ids=[222],
+        project_id=12345)
+    self.SetUpFieldDefs(1, 12345, 'Field1', tracker_pb2.FieldTypes.INT_TYPE)
+
+    issue_dict = {
+      'cc': [{'name': 'user@example.com'}, {'name': ''}],
+      'description': 'description',
+      'owner': {'name': ''},
+      'status': 'New',
+      'summary': 'Test issue'}
+    self.request.update(issue_dict)
+
+    resp = self.call_api('issues_insert', self.request).json_body
+    self.assertEqual('New', resp['status'])
+    self.assertEqual('requester@example.com', resp['author']['name'])
+    self.assertTrue('owner' not in resp)
+    self.assertEqual('user@example.com', resp['cc'][0]['name'])
+    self.assertEqual(len(resp['cc']), 1)
+    self.assertEqual('Test issue', resp['summary'])
+
+    new_issue = self.services.issue.GetIssueByLocalID(
+        'fake cnxn', 12345, resp['id'])
+    self.assertIsNone(new_issue.owner_id)
+
   def testIssuesList_NoPermission(self):
     """No permission for additional projects."""
     self.services.project.TestAddProject(
