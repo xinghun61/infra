@@ -69,10 +69,10 @@ type TaskRequest struct {
 	EnqueueTime time.Time
 
 	// ProvisionableLabels is the set of Provisionable Labels for this task.
-	ProvisionableLabels stringset.Set
+	ProvisionableLabels []string
 
 	// BaseLabels is the set of base labels for this task.
-	BaseLabels stringset.Set
+	BaseLabels []string
 
 	// confirmedTime is the most recent time at which the Request state was
 	// provided or confirmed by external authority (via a call to Enforce or
@@ -102,8 +102,8 @@ func requestProto(r *TaskRequest, mb *mapBuilder) *protos.TaskRequest {
 		ConfirmedTime:         tutils.TimestampProto(r.confirmedTime),
 		ExaminedTime:          tutils.TimestampProto(r.examinedTime),
 		EnqueueTime:           tutils.TimestampProto(r.EnqueueTime),
-		ProvisionableLabelIds: mb.ForSet(r.ProvisionableLabels),
-		BaseLabelIds:          mb.ForSet(r.BaseLabels),
+		ProvisionableLabelIds: mb.ForSlice(r.ProvisionableLabels),
+		BaseLabelIds:          mb.ForSlice(r.BaseLabels),
 	}
 }
 
@@ -121,7 +121,8 @@ func (t *TaskRequest) fanoutGroup() fanoutGroup {
 		return t.memoizedFanoutGroup
 	}
 
-	provisionable := t.ProvisionableLabels.ToSlice()
+	provisionable := make([]string, len(t.ProvisionableLabels))
+	copy(provisionable, t.ProvisionableLabels)
 	sort.Strings(provisionable)
 
 	elems := []string{string(t.AccountID)}

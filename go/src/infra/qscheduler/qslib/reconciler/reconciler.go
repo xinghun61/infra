@@ -141,7 +141,7 @@ func (state *State) AssignTasks(ctx context.Context, s *scheduler.Scheduler, t t
 			// using the determination used within the Scheduler, because we have the
 			// newest info about worker dimensions here.
 			r, _ := s.GetRequest(scheduler.RequestID(q.TaskToAssign))
-			provisionRequired := !w.Labels.Contains(r.ProvisionableLabels)
+			provisionRequired := !w.Labels.HasAll(r.ProvisionableLabels...)
 
 			assignments = append(assignments, Assignment{
 				RequestID:         scheduler.RequestID(q.TaskToAssign),

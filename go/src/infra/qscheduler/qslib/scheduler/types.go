@@ -45,6 +45,10 @@ func newState(t time.Time) *state {
 }
 
 func toLabels(IDs []uint64, m map[uint64]string) stringset.Set {
+	return stringset.NewFromSlice(toLabelsSlice(IDs, m)...)
+}
+
+func toLabelsSlice(IDs []uint64, m map[uint64]string) []string {
 	s := make([]string, len(IDs))
 	for i, id := range IDs {
 		if label, ok := m[id]; ok {
@@ -53,7 +57,7 @@ func toLabels(IDs []uint64, m map[uint64]string) stringset.Set {
 			panic(fmt.Sprintf("id %d does not exist in label map", id))
 		}
 	}
-	return stringset.NewFromSlice(s...)
+	return s
 }
 
 func newStateFromProto(sp *protos.SchedulerState) *state {
@@ -112,8 +116,8 @@ func protoToTaskRequest(rid RequestID, p *protos.TaskRequest, labelMap map[uint6
 		confirmedTime:       tutils.Timestamp(p.ConfirmedTime),
 		examinedTime:        examinedTime,
 		EnqueueTime:         tutils.Timestamp(p.EnqueueTime),
-		ProvisionableLabels: toLabels(p.ProvisionableLabelIds, labelMap),
-		BaseLabels:          toLabels(p.BaseLabelIds, labelMap),
+		ProvisionableLabels: toLabelsSlice(p.ProvisionableLabelIds, labelMap),
+		BaseLabels:          toLabelsSlice(p.BaseLabelIds, labelMap),
 	}
 }
 
@@ -158,6 +162,15 @@ func (mb *mapBuilder) ForSet(set stringset.Set) []uint64 {
 	for l := range set {
 		s[i] = mb.For(l)
 		i++
+	}
+	return s
+}
+
+// ForSet determines an ID slice for the given string slice and returns it.
+func (mb *mapBuilder) ForSlice(set []string) []uint64 {
+	s := make([]uint64, len(set))
+	for i, l := range set {
+		s[i] = mb.For(l)
 	}
 	return s
 }

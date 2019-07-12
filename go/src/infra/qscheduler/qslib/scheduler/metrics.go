@@ -51,8 +51,8 @@ var NullEventSink EventSink = &nullEventSink{}
 // eventCommon returns a metrics.TaskEvent with fields populated that are common
 // to all event types.
 func eventCommon(request *TaskRequest, w *Worker, s *state, t time.Time) *metrics.TaskEvent {
-	var baseLabels sort.StringSlice = request.BaseLabels.ToSlice()
-	var provLabels sort.StringSlice = request.ProvisionableLabels.ToSlice()
+	var baseLabels sort.StringSlice = request.BaseLabels
+	var provLabels sort.StringSlice = request.ProvisionableLabels
 	var botID string
 	var botLabels sort.StringSlice
 	var cost []float32

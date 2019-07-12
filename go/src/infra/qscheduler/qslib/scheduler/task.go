@@ -25,8 +25,8 @@ func NewTaskRequest(id RequestID, accountID AccountID, provisionableLabels strin
 	baseLabels stringset.Set, enqueueTime time.Time) *TaskRequest {
 	return &TaskRequest{
 		AccountID:           accountID,
-		BaseLabels:          baseLabels,
-		ProvisionableLabels: provisionableLabels,
+		BaseLabels:          baseLabels.ToSlice(),
+		ProvisionableLabels: provisionableLabels.ToSlice(),
 		EnqueueTime:         enqueueTime,
 		examinedTime:        unixZeroTime,
 		ID:                  id,

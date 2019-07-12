@@ -175,7 +175,7 @@ type matcher func(*Worker, *TaskRequest) matchLevel
 // This heuristic allows requests that have higher specificity to be preferentially matched to the
 // workers that can support them.
 func basicMatch(w *Worker, r *TaskRequest) matchLevel {
-	if w.Labels.Contains(r.BaseLabels) {
+	if w.Labels.HasAll(r.BaseLabels...) {
 		quality := len(r.BaseLabels)
 		return matchLevel{true, quality}
 	}
@@ -185,7 +185,7 @@ func basicMatch(w *Worker, r *TaskRequest) matchLevel {
 // provisionAwareMatch is a matcher function that requires both the base labels and the provisionable
 // labels of the request to be satisfied by the worker.
 func provisionAwareMatch(w *Worker, r *TaskRequest) matchLevel {
-	if !w.Labels.Contains(r.ProvisionableLabels) {
+	if !w.Labels.HasAll(r.ProvisionableLabels...) {
 		return matchLevel{false, 0}
 	}
 	return basicMatch(w, r)
@@ -267,7 +267,7 @@ func (run *schedulerRun) matchIdleBots(priority Priority, mf matcher, events Eve
 					&metrics.TaskEvent_AssignedDetails{
 						Preempting:        false,
 						Priority:          int32(priority),
-						ProvisionRequired: !w.Labels.Contains(match.item.req.ProvisionableLabels),
+						ProvisionRequired: !w.Labels.HasAll(match.item.req.ProvisionableLabels...),
 					}))
 			break
 		}
@@ -467,7 +467,7 @@ func (run *schedulerRun) preemptRunningTasks(priority Priority, events EventSink
 						PreemptionCost:    worker.runningTask.cost[:],
 						PreemptedTaskId:   string(worker.runningTask.request.ID),
 						Priority:          int32(priority),
-						ProvisionRequired: !worker.Labels.Contains(r.ProvisionableLabels),
+						ProvisionRequired: !worker.Labels.HasAll(r.ProvisionableLabels...),
 					}))
 			events.AddEvent(
 				eventPreempted(worker.runningTask.request, worker, state, state.lastUpdateTime,
