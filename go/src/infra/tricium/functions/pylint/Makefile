@@ -2,8 +2,6 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-OUT_BASE=pylint-deps
-
 .PHONY: test clean
 
 pylint_parser: python pylint
@@ -16,7 +14,10 @@ python:
 	cipd install -root python infra/python/cpython/linux-amd64
 
 pylint:
-	PYTHONUSERBASE=pylint pip install --ignore-installed --user pylint
+	# The following command fails when the vpython pip is used,
+	# but the pip from the python fetched doesn't work; instead,
+	# for now, depend on a system-wide pip. See crbug.com/983222.
+	PYTHONUSERBASE=pylint /usr/bin/pip install --ignore-installed --user pylint
 
 clean:
 	rm -rf pylint_parser pylint python out

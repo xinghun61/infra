@@ -9,8 +9,8 @@ Consumes Tricium FILES and producs Tricium RESULTS comments.
 Local testing:
 
 ```
-$ go build
-$ ./ --input=test --output=out
+$ go build -o pylint_parser
+$ ./pylint_parser --input=test --output=out
 ```
 
 ## Deployment
@@ -18,7 +18,7 @@ $ ./ --input=test --output=out
 Deploy a new version of the analyzer using CIPD:
 
 ```
-$ go build
+$ go build -o pylint_parser
 $ cipd create -pkg-def=cipd.yaml
 <outputs the VERSION>
 $ cipd set-ref infra/tricium/function/pylint -ref live -version VERSION
