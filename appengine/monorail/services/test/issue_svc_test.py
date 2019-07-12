@@ -53,7 +53,8 @@ def MakeIssueService(project_service, config_service, cache_manager,
       'issueformerlocations_tbl', 'comment_tbl', 'commentcontent_tbl',
       'issueupdate_tbl', 'attachment_tbl', 'reindexqueue_tbl',
       'localidcounter_tbl', 'issuephasedef_tbl', 'issue2approvalvalue_tbl',
-      'issueapproval2approver_tbl', 'issueapproval2comment_tbl']:
+      'issueapproval2approver_tbl', 'issueapproval2comment_tbl',
+      'commentimporter_tbl']:
     setattr(issue_service, table_var, my_mox.CreateMock(sql.SQLTableManager))
 
   return issue_service
@@ -557,6 +558,33 @@ class IssueServiceTest(unittest.TestCase):
         index_now=False, timestamp=self.now)
     self.mox.VerifyAll()
     self.assertEqual(1, actual_local_id)
+
+  def testCreateIssue_Imported(self):
+    settings.classifier_spam_thresh = 0.9
+    self.SetUpAllocateNextLocalID(789, None, None)
+    self.SetUpInsertIssue(label_rows=[])
+    self.SetUpInsertComment(7890101, is_description=True)
+    self.services.issue.commentimporter_tbl.InsertRow(
+        self.cnxn, comment_id=7890101, importer_id=222)
+    self.services.spam.ClassifyIssue(mox.IgnoreArg(),
+        mox.IgnoreArg(), self.reporter, False).AndReturn(
+        self.classifierResult(0.0))
+    self.services.spam.RecordClassifierIssueVerdict(self.cnxn,
+       mox.IsA(tracker_pb2.Issue), False, 1.0, False)
+    self.SetUpUpdateIssuesModified(set(), modified_timestamp=self.now)
+    self.SetUpEnqueueIssuesForIndexing([78901])
+    self.mox.ReplayAll()
+
+    actual_local_id, comment = self.services.issue.CreateIssue(
+        self.cnxn, self.services, 789, 'sum',
+        'New', 111, [], [',', '', ' ', ', '], [], [], 111, 'content',
+        index_now=False, timestamp=self.now, importer_id=222)
+
+    self.mox.VerifyAll()
+    self.assertEqual(1, actual_local_id)
+    self.assertEqual(111, comment.user_id)
+    self.assertEqual(222, comment.importer_id)
+    self.assertEqual(self.now, comment.timestamp)
 
   def testGetAllIssuesInProject_NoIssues(self):
     self.SetUpGetHighestLocalID(789, None, None)
@@ -1199,7 +1227,7 @@ class IssueServiceTest(unittest.TestCase):
     self.services.issue.CreateIssueComment(
         self.cnxn, issue, commenter_id, 'comment text', attachments=None,
         amendments=amendments, commit=False, is_description=False,
-        kept_attachments=None)
+        kept_attachments=None, importer_id=None, timestamp=ANY)
     self.services.issue._UpdateIssuesModified(
         self.cnxn, {issue.issue_id, target_issue.issue_id},
         modified_timestamp=self.now, invalidate=True)
@@ -1248,7 +1276,7 @@ class IssueServiceTest(unittest.TestCase):
     self.services.issue.CreateIssueComment(
         self.cnxn, issue, commenter_id, 'comment text', attachments=None,
         amendments=amendments, commit=False, is_description=False,
-        kept_attachments=None)
+        kept_attachments=None, importer_id=None, timestamp=ANY)
     # Call to find added blockedon issues.
     self.services.issue.GetIssues(
         self.cnxn, [blockedon_issue.issue_id]).AndReturn([blockedon_issue])
@@ -1256,7 +1284,8 @@ class IssueServiceTest(unittest.TestCase):
         self.cnxn, blockedon_issue, commenter_id, content='',
         amendments=[tracker_bizobj.MakeBlockingAmendment(
             [(issue.project_name, issue.local_id)], [],
-            default_project_name='proj')])
+            default_project_name='proj')],
+        importer_id=None, timestamp=ANY)
     # Call to find removed blockedon issues.
     self.services.issue.GetIssues(self.cnxn, []).AndReturn([])
     # Call to find added blocking issues.
@@ -1309,7 +1338,7 @@ class IssueServiceTest(unittest.TestCase):
     self.services.issue.CreateIssueComment(
         self.cnxn, issue, commenter_id, 'comment text', attachments=None,
         amendments=amendments, commit=False, is_description=False,
-        kept_attachments=None)
+        kept_attachments=None, importer_id=None, timestamp=ANY)
     # Call to find added blockedon issues.
     self.services.issue.GetIssues(self.cnxn, []).AndReturn([])
     # Call to find removed blockedon issues.
@@ -1321,7 +1350,8 @@ class IssueServiceTest(unittest.TestCase):
         self.cnxn, blocking_issue, commenter_id, content='',
         amendments=[tracker_bizobj.MakeBlockedOnAmendment(
             [(issue.project_name, issue.local_id)], [],
-            default_project_name='proj')])
+            default_project_name='proj')],
+        importer_id=None, timestamp=ANY)
     # Call to find removed blocking issues.
     self.services.issue.GetIssues(self.cnxn, []).AndReturn([])
     self.services.issue._UpdateIssuesModified(
@@ -1336,6 +1366,51 @@ class IssueServiceTest(unittest.TestCase):
         issue, delta, comment='comment text',
         index_now=False, timestamp=self.now)
     self.mox.VerifyAll()
+
+  def testDeltaUpdateIssue_Imported(self):
+    """If importer_id is specified, store it."""
+    commenter_id = 222
+    issue = fake.MakeTestIssue(
+        project_id=789, local_id=1, owner_id=111, summary='sum',
+        status='Live', issue_id=78901, project_name='proj')
+    issue.assume_stale = False
+    config = tracker_bizobj.MakeDefaultProjectIssueConfig(789)
+    delta = tracker_pb2.IssueDelta()
+
+    self.mox.StubOutWithMock(self.services.issue, 'GetIssue')
+    self.mox.StubOutWithMock(self.services.issue, 'GetIssues')
+    self.mox.StubOutWithMock(self.services.issue, 'UpdateIssue')
+    self.mox.StubOutWithMock(self.services.issue, 'CreateIssueComment')
+    self.mox.StubOutWithMock(self.services.issue, '_UpdateIssuesModified')
+    self.mox.StubOutWithMock(self.services.issue, "SortBlockedOn")
+    self.services.issue.UpdateIssue(
+        self.cnxn, issue, commit=False, invalidate=False)
+    # Call to find added blockedon issues.
+    self.services.issue.GetIssues(self.cnxn, []).AndReturn([])
+    # Call to find removed blockedon issues.
+    self.services.issue.GetIssues(self.cnxn, []).AndReturn([])
+    self.services.issue.CreateIssueComment(
+        self.cnxn, issue, commenter_id, 'a comment', attachments=None,
+        amendments=[], commit=False, is_description=False,
+        kept_attachments=None, importer_id=333, timestamp=ANY).AndReturn(
+          tracker_pb2.IssueComment(content='a comment', importer_id=333))
+    self.services.issue.GetIssues(self.cnxn, []).AndReturn([])
+    self.services.issue.GetIssues(self.cnxn, []).AndReturn([])
+    self.services.issue._UpdateIssuesModified(
+        self.cnxn, {issue.issue_id},
+        modified_timestamp=self.now, invalidate=True)
+    self.SetUpEnqueueIssuesForIndexing([78901])
+    self.mox.ReplayAll()
+
+    amendments, comment_pb = self.services.issue.DeltaUpdateIssue(
+        self.cnxn, self.services, commenter_id, issue.project_id, config,
+        issue, delta, comment='a comment', index_now=False, timestamp=self.now,
+        importer_id=333)
+
+    self.mox.VerifyAll()
+    self.assertEqual([], amendments)
+    self.assertEqual('a comment', comment_pb.content)
+    self.assertEqual(333, comment_pb.importer_id)
 
   def testApplyIssueComment(self):
     issue = fake.MakeTestIssue(
@@ -1677,7 +1752,7 @@ class IssueServiceTest(unittest.TestCase):
     self.assertEqual(expected, actual)
 
   def testDeserializeComments_Empty(self):
-    comments = self.services.issue._DeserializeComments([], [], [], [], [])
+    comments = self.services.issue._DeserializeComments([], [], [], [], [], [])
     self.assertEqual([], comments)
 
   def SetUpCommentRows(self):
@@ -1692,17 +1767,29 @@ class IssueServiceTest(unittest.TestCase):
         (1, 78901, 7890101, 'cc', 'old', 'new val', 222, None, None)]
     attachment_rows = []
     approval_rows = [(23, 7890102)]
+    importer_rows = []
     return (comment_rows, commentcontent_rows, amendment_rows,
-            attachment_rows, approval_rows)
+            attachment_rows, approval_rows, importer_rows)
 
   def testDeserializeComments_Normal(self):
     (comment_rows, commentcontent_rows, amendment_rows,
-     attachment_rows, approval_rows) = self.SetUpCommentRows()
+     attachment_rows, approval_rows, importer_rows) = self.SetUpCommentRows()
     commentcontent_rows = [(7890101, 'content', 'msg')]
     comments = self.services.issue._DeserializeComments(
         comment_rows, commentcontent_rows, amendment_rows, attachment_rows,
-        approval_rows)
+        approval_rows, importer_rows)
     self.assertEqual(2, len(comments))
+
+  def testDeserializeComments_Imported(self):
+    (comment_rows, commentcontent_rows, amendment_rows,
+     attachment_rows, approval_rows, _) = self.SetUpCommentRows()
+    importer_rows = [(7890101, 222)]
+    commentcontent_rows = [(7890101, 'content', 'msg')]
+    comments = self.services.issue._DeserializeComments(
+        comment_rows, commentcontent_rows, amendment_rows, attachment_rows,
+        approval_rows, importer_rows)
+    self.assertEqual(2, len(comments))
+    self.assertEqual(222, comments[0].importer_id)
 
   def MockTheRestOfGetCommentsByID(self, comment_ids):
     self.services.issue.commentcontent_tbl.Select = Mock(
@@ -1713,6 +1800,8 @@ class IssueServiceTest(unittest.TestCase):
     self.services.issue.attachment_tbl.Select = Mock(
         return_value=[])
     self.services.issue.issueapproval2comment_tbl.Select = Mock(
+        return_value=[])
+    self.services.issue.commentimporter_tbl.Select = Mock(
         return_value=[])
 
   def testGetCommentsByID_Normal(self):
@@ -1821,6 +1910,10 @@ class IssueServiceTest(unittest.TestCase):
         self.cnxn, cols=issue_svc.ATTACHMENT_COLS,
         comment_id=cids, shard_id=mox.IsA(int)).AndReturn(attachment_rows)
 
+    self.services.issue.commentimporter_tbl.Select(
+        self.cnxn, cols=issue_svc.COMMENTIMPORTER_COLS,
+        comment_id=cids, shard_id=mox.IsA(int)).AndReturn([])
+
   def testGetComments_Empty(self):
     self.SetUpGetComments([])
     self.mox.ReplayAll()
@@ -1864,6 +1957,9 @@ class IssueServiceTest(unittest.TestCase):
     self.services.issue.attachment_tbl.Select(
         self.cnxn, cols=issue_svc.ATTACHMENT_COLS,
         comment_id=[comment_id], shard_id=mox.IsA(int)).AndReturn([])
+    self.services.issue.commentimporter_tbl.Select(
+        self.cnxn, cols=issue_svc.COMMENTIMPORTER_COLS,
+        comment_id=[comment_id], shard_id=mox.IsA(int)).AndReturn([])
 
   def testGetComment_Found(self):
     self.SetUpGetComment_Found(7890101)
@@ -1892,6 +1988,9 @@ class IssueServiceTest(unittest.TestCase):
     self.services.issue.attachment_tbl.Select(
         self.cnxn, cols=issue_svc.ATTACHMENT_COLS, comment_id=[],
         shard_id=mox.IsA(int)).AndReturn([])
+    self.services.issue.commentimporter_tbl.Select(
+        self.cnxn, cols=issue_svc.COMMENTIMPORTER_COLS,
+        comment_id=[], shard_id=mox.IsA(int)).AndReturn([])
 
   def testGetComment_Missing(self):
     self.SetUpGetComment_Missing(7890101)
@@ -1914,7 +2013,6 @@ class IssueServiceTest(unittest.TestCase):
     self.services.issue.GetCommentsForIssues(
         self.cnxn, issue_ids=[100001, 100002])
     self.mox.VerifyAll()
-
 
   def SetUpInsertComment(
       self, comment_id, is_spam=False, is_description=False, approval_id=None,
@@ -1979,11 +2077,13 @@ class IssueServiceTest(unittest.TestCase):
 
   def testMakeIssueComment(self):
     comment = self.services.issue._MakeIssueComment(
-        789, 111, 'content', timestamp=self.now, approval_id=23)
+        789, 111, 'content', timestamp=self.now, approval_id=23,
+        importer_id=222)
     self.assertEqual('content', comment.content)
     self.assertEqual([], comment.amendments)
     self.assertEqual([], comment.attachments)
     self.assertEqual(comment.approval_id, 23)
+    self.assertEqual(222, comment.importer_id)
 
   def testMakeIssueComment_NonAscii(self):
     _ = self.services.issue._MakeIssueComment(

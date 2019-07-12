@@ -58,6 +58,7 @@ ISSUE2NOTIFY_TABLE_NAME = 'Issue2Notify'
 ISSUE2FIELDVALUE_TABLE_NAME = 'Issue2FieldValue'
 COMMENT_TABLE_NAME = 'Comment'
 COMMENTCONTENT_TABLE_NAME = 'CommentContent'
+COMMENTIMPORTER_TABLE_NAME = 'CommentImporter'
 ATTACHMENT_TABLE_NAME = 'Attachment'
 ISSUERELATION_TABLE_NAME = 'IssueRelation'
 DANGLINGRELATION_TABLE_NAME = 'DanglingIssueRelation'
@@ -97,6 +98,7 @@ COMMENT_COLS = [
     'commentcontent_id']  # Note: commentcontent_id must be last.
 COMMENTCONTENT_COLS = [
     'CommentContent.id', 'content', 'inbound_message']
+COMMENTIMPORTER_COLS = ['comment_id', 'importer_id']
 ABBR_COMMENT_COLS = ['Comment.id', 'commenter_id', 'deleted_by',
     'is_description']
 ATTACHMENT_COLS = [
@@ -456,9 +458,12 @@ class CommentTwoLevelCache(caches.AbstractTwoLevelCache):
         cnxn, cols=ISSUEUPDATE_COLS, comment_id=cids, shard_id=shard_id)
     attachment_rows = self.issue_svc.attachment_tbl.Select(
         cnxn, cols=ATTACHMENT_COLS, comment_id=cids, shard_id=shard_id)
+    importer_rows = self.issue_svc.commentimporter_tbl.Select(
+        cnxn, cols=COMMENTIMPORTER_COLS, comment_id=cids, shard_id=shard_id)
 
-    comments = self.issue_svc._DeserializeComments(comment_rows, content_rows,
-        amendment_rows, attachment_rows, approval_rows)
+    comments = self.issue_svc._DeserializeComments(
+        comment_rows, content_rows, amendment_rows, attachment_rows,
+        approval_rows, importer_rows)
 
     comments_dict = {}
     for comment in comments:
@@ -526,6 +531,7 @@ class IssueService(object):
     # Tables that represent comments.
     self.comment_tbl = sql.SQLTableManager(COMMENT_TABLE_NAME)
     self.commentcontent_tbl = sql.SQLTableManager(COMMENTCONTENT_TABLE_NAME)
+    self.commentimporter_tbl = sql.SQLTableManager(COMMENTIMPORTER_TABLE_NAME)
     self.issueupdate_tbl = sql.SQLTableManager(ISSUEUPDATE_TABLE_NAME)
     self.attachment_tbl = sql.SQLTableManager(ATTACHMENT_TABLE_NAME)
 
@@ -614,7 +620,8 @@ class IssueService(object):
       self, cnxn, services, project_id, summary, status,
       owner_id, cc_ids, labels, field_values, component_ids, reporter_id,
       marked_description, blocked_on=None, blocking=None, attachments=None,
-      timestamp=None, index_now=False, phases=None, approval_values=None):
+      timestamp=None, index_now=False, phases=None, approval_values=None,
+      importer_id=None):
     """Create and store a new issue with all the given information.
 
     Args:
@@ -638,6 +645,7 @@ class IssueService(object):
       index_now: True if the issue should be updated in the full text index.
       phases: list of Phase PBs, if any.
       approval_values: list of ApprovalValue PBs, if any.
+      importer_id: optional user ID of API client importing issues for users.
 
     Returns:
       A tuple (the integer local ID of the new issue, Comment PB for the
@@ -685,7 +693,7 @@ class IssueService(object):
     comment = self._MakeIssueComment(
         project_id, reporter_id, marked_description,
         attachments=attachments, timestamp=timestamp,
-        is_description=True)
+        is_description=True, importer_id=importer_id)
 
     # Set the closed_timestamp both before and after filter rules.
     if not tracker_helpers.MeansOpenInProject(
@@ -1426,7 +1434,8 @@ class IssueService(object):
       self, cnxn, services, reporter_id, project_id,
       config, issue, delta, index_now=False, comment=None, attachments=None,
       iids_to_invalidate=None, rules=None, predicate_asts=None,
-      is_description=False, timestamp=None, kept_attachments=None):
+      is_description=False, timestamp=None, kept_attachments=None,
+      importer_id=None):
     """Update the issue in the database and return a set of update tuples.
 
     Args:
@@ -1453,6 +1462,8 @@ class IssueService(object):
       kept_attachments: This should be a list of int attachment ids for
           attachments kept from previous descriptions, if the comment is
           a change to the issue description
+      importer_id: optional ID of user ID for an API client that is importing
+          issues and attributing them to other users.
 
     Returns:
       A tuple (amendments, comment_pb) with a list of Amendment PBs that
@@ -1518,7 +1529,8 @@ class IssueService(object):
     comment_pb = self.CreateIssueComment(
         cnxn, issue, reporter_id, comment, amendments=amendments,
         is_description=is_description, attachments=attachments, commit=False,
-        kept_attachments=kept_attachments)
+        kept_attachments=kept_attachments, timestamp=timestamp,
+        importer_id=importer_id)
     self._UpdateIssuesModified(
         cnxn, iids_to_invalidate, modified_timestamp=issue.modified_timestamp,
         invalidate=invalidate)
@@ -1530,7 +1542,8 @@ class IssueService(object):
           cnxn, add_issue, reporter_id, content='',
           amendments=[tracker_bizobj.MakeBlockingAmendment(
               [(issue.project_name, issue.local_id)], [],
-              default_project_name=add_issue.project_name)])
+              default_project_name=add_issue.project_name)],
+          timestamp=timestamp, importer_id=importer_id)
     # Add a comment to the newly removed issues saying they are no longer
     # blocking this issue.
     for remove_issue in self.GetIssues(cnxn, delta.blocked_on_remove):
@@ -1538,7 +1551,8 @@ class IssueService(object):
           cnxn, remove_issue, reporter_id, content='',
           amendments=[tracker_bizobj.MakeBlockingAmendment(
               [], [(issue.project_name, issue.local_id)],
-              default_project_name=remove_issue.project_name)])
+              default_project_name=remove_issue.project_name)],
+           timestamp=timestamp, importer_id=importer_id)
 
     # Add a comment to the newly added issues saying they are now blocked on
     # this issue.
@@ -1547,7 +1561,8 @@ class IssueService(object):
           cnxn, add_issue, reporter_id, content='',
           amendments=[tracker_bizobj.MakeBlockedOnAmendment(
               [(issue.project_name, issue.local_id)], [],
-              default_project_name=add_issue.project_name)])
+              default_project_name=add_issue.project_name)],
+          timestamp=timestamp, importer_id=importer_id)
     # Add a comment to the newly removed issues saying they are no longer
     # blocked on this issue.
     for remove_issue in self.GetIssues(cnxn, delta.blocking_remove):
@@ -1555,7 +1570,8 @@ class IssueService(object):
           cnxn, remove_issue, reporter_id, content='',
           amendments=[tracker_bizobj.MakeBlockedOnAmendment(
               [], [(issue.project_name, issue.local_id)],
-              default_project_name=remove_issue.project_name)])
+              default_project_name=remove_issue.project_name)],
+          timestamp=timestamp, importer_id=importer_id)
 
     if not invalidate:
       cnxn.Commit()
@@ -2210,7 +2226,8 @@ class IssueService(object):
   ### Comments
 
   def _UnpackComment(
-      self, comment_row, content_dict, inbound_message_dict, approval_dict):
+      self, comment_row, content_dict, inbound_message_dict, approval_dict,
+      importer_dict):
     """Partially construct a Comment PB from a DB row."""
     (comment_id, issue_id, created, project_id, commenter_id,
      deleted_by, is_spam, is_description, commentcontent_id) = comment_row
@@ -2226,6 +2243,7 @@ class IssueService(object):
     comment.is_spam = bool(is_spam)
     comment.is_description = bool(is_description)
     comment.approval_id = approval_dict.get(comment_id)
+    comment.importer_id = importer_dict.get(comment_id)
     return comment
 
   def _UnpackAmendment(self, amendment_row):
@@ -2292,7 +2310,7 @@ class IssueService(object):
 
   def _DeserializeComments(
       self, comment_rows, commentcontent_rows, amendment_rows, attachment_rows,
-      approval_rows):
+      approval_rows, importer_rows):
     """Turn rows into IssueComment PBs."""
     results = []  # keep objects in the same order as the rows
     results_dict = {}  # for fast access when joining.
@@ -2306,10 +2324,12 @@ class IssueService(object):
     approval_dict = dict(
         (comment_id, approval_id) for approval_id, comment_id in
         approval_rows)
+    importer_dict = dict(importer_rows)
 
     for comment_row in comment_rows:
       comment = self._UnpackComment(
-          comment_row, content_dict, inbound_message_dict, approval_dict)
+          comment_row, content_dict, inbound_message_dict, approval_dict,
+          importer_dict)
       results.append(comment)
       results_dict[comment.id] = comment
 
@@ -2351,15 +2371,18 @@ class IssueService(object):
         cnxn, cols=ISSUEAPPROVAL2COMMENT_COLS, comment_id=cids)
     amendment_rows = []
     attachment_rows = []
+    importer_rows = []
     if not content_only:
       amendment_rows = self.issueupdate_tbl.Select(
           cnxn, cols=ISSUEUPDATE_COLS, comment_id=cids, shard_id=shard_id)
       attachment_rows = self.attachment_tbl.Select(
           cnxn, cols=ATTACHMENT_COLS, comment_id=cids, shard_id=shard_id)
+      importer_rows = self.commentimporter_tbl.Select(
+          cnxn, cols=COMMENTIMPORTER_COLS, comment_id=cids, shard_id=shard_id)
 
     comments = self._DeserializeComments(
         comment_rows, content_rows, amendment_rows, attachment_rows,
-        approval_rows)
+        approval_rows, importer_rows)
     return comments
 
   def GetComment(self, cnxn, comment_id):
@@ -2472,6 +2495,9 @@ class IssueService(object):
         commentcontent_id=commentcontent_id,
         commit=False)
     comment.id = comment_id
+    if comment.importer_id:
+      self.commentimporter_tbl.InsertRow(
+          cnxn, comment_id=comment_id, importer_id=comment.importer_id)
 
     amendment_rows = []
     for amendment in comment.amendments:
@@ -2533,7 +2559,7 @@ class IssueService(object):
   def _MakeIssueComment(
       self, project_id, user_id, content, inbound_message=None,
       amendments=None, attachments=None, kept_attachments=None, timestamp=None,
-      is_spam=False, is_description=False, approval_id=None):
+      is_spam=False, is_description=False, approval_id=None, importer_id=None):
     """Create in IssueComment protocol buffer in RAM.
 
     Args:
@@ -2553,6 +2579,8 @@ class IssueService(object):
       is_description: True if the comment is a description for the issue.
       approval_id: id, if any, of the APPROVAL_TYPE FieldDef this comment
           belongs to.
+      importer_id: optional User ID of script that imported the comment on
+          behalf of a user.
 
     Returns:
       The new IssueComment protocol buffer.
@@ -2601,12 +2629,16 @@ class IssueService(object):
         comment.attachments.append(new_attach)
         logging.info("Copy attachment with object_id: %s" % gcs_object_id)
 
+    if importer_id:
+      comment.importer_id = importer_id
+
     return comment
 
   def CreateIssueComment(
       self, cnxn, issue, user_id, content, inbound_message=None,
       amendments=None, attachments=None, kept_attachments=None, timestamp=None,
-      is_spam=False, is_description=False, approval_id=None, commit=True):
+      is_spam=False, is_description=False, approval_id=None, commit=True,
+      importer_id=None):
     """Create and store a new comment on the specified issue.
 
     Args:
@@ -2629,6 +2661,7 @@ class IssueService(object):
       approval_id: id, if any, of the APPROVAL_TYPE FieldDef this comment
           belongs to.
       commit: set to False to not commit to DB yet.
+      importer_id: user ID of an API client that is importing issues.
 
     Returns:
       The new IssueComment protocol buffer.
@@ -2646,7 +2679,8 @@ class IssueService(object):
         issue.project_id, user_id, content, amendments=amendments,
         inbound_message=inbound_message, attachments=attachments,
         timestamp=timestamp, is_spam=is_spam, is_description=is_description,
-        kept_attachments=kept_attachments, approval_id=approval_id)
+        kept_attachments=kept_attachments, approval_id=approval_id,
+        importer_id=importer_id)
     comment.issue_id = issue.issue_id
 
     if attachments or kept_attachments:

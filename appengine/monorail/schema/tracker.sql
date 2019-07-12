@@ -380,6 +380,16 @@ CREATE TABLE Comment (
 ) ENGINE=INNODB CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
+CREATE TABLE CommentImporter (
+  comment_id INT NOT NULL,
+  importer_id INT UNSIGNED NOT NULL,
+
+  PRIMARY KEY (comment_id),
+  FOREIGN KEY (comment_id) REFERENCES Comment(id),
+  FOREIGN KEY (importer_id) REFERENCES User(user_id)
+) ENGINE=INNODB;
+
+
 CREATE TABLE Attachment (
   id INT NOT NULL AUTO_INCREMENT,
 

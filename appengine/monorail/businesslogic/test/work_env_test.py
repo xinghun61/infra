@@ -666,6 +666,43 @@ class WorkEnvTest(unittest.TestCase):
     self.assertEqual([], fake_pasicn.mock_calls)
     self.assertEqual([], fake_pasibn.mock_calls)
 
+  @mock.patch(
+      'features.send_notifications.PrepareAndSendIssueBlockingNotification')
+  @mock.patch(
+      'features.send_notifications.PrepareAndSendIssueChangeNotification')
+  def testCreateIssue_ImportedIssue_Allowed(self, _fake_pasicn, _fake_pasibn):
+    """We can create an imported issue, if the requester has permission."""
+    PAST_TIME = 123456
+    self.project.extra_perms = [project_pb2.Project.ExtraPerms(
+        member_id=111, perms=['ImportComment'])]
+    self.SignIn(user_id=111)
+    with self.work_env as we:
+      actual_issue, comment = we.CreateIssue(
+          789, 'sum', 'New', 222, [333], ['Hot'], [], [], 'desc',
+          send_email=False, reporter_id=222, timestamp=PAST_TIME)
+    self.assertEqual(789, actual_issue.project_id)
+    self.assertEqual('sum', actual_issue.summary)
+    self.assertEqual(222, actual_issue.reporter_id)
+    self.assertEqual(PAST_TIME, actual_issue.opened_timestamp)
+    self.assertEqual(222, comment.user_id)
+    self.assertEqual(111, comment.importer_id)
+    self.assertEqual(PAST_TIME, comment.timestamp)
+
+  @mock.patch(
+      'features.send_notifications.PrepareAndSendIssueBlockingNotification')
+  @mock.patch(
+      'features.send_notifications.PrepareAndSendIssueChangeNotification')
+  def testCreateIssue_ImportedIssue_Denied(self, _fake_pasicn, _fake_pasibn):
+    """We can refuse to import an issue, if requester lacks permission."""
+    PAST_TIME = 123456
+    # Note: no "ImportComment" permission is granted.
+    self.SignIn(user_id=111)
+    with self.assertRaises(permissions.PermissionException):
+      with self.work_env as we:
+        we.CreateIssue(
+            789, 'sum', 'New', 222, [333], ['Hot'], [], [], 'desc',
+            send_email=False, reporter_id=222, timestamp=PAST_TIME)
+
   @mock.patch('services.tracker_fulltext.IndexIssues')
   @mock.patch('services.tracker_fulltext.UnindexIssues')
   def testMoveIssue_Normal(self, mock_unindex, mock_index):

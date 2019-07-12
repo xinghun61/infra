@@ -696,7 +696,7 @@ class WorkEnv(object):
       self, project_id, summary, status, owner_id, cc_ids, labels,
       field_values, component_ids, marked_description, blocked_on=None,
       blocking=None, attachments=None, phases=None, approval_values=None,
-      send_email=True):
+      send_email=True, reporter_id=None, timestamp=None):
     """Create and store a new issue with all the given information.
 
     Args:
@@ -716,6 +716,9 @@ class WorkEnv(object):
       phases: list of Phase PBs.
       approval_values: list of ApprovalValue PBs.
       send_email: set to False to avoid email notifications.
+      reporter_id: optional user ID of a different user to attribute this
+          issue report to.  The requester must have the ImportComment perm.
+      timestamp: optional int timestamp of an imported issue.
 
     Returns:
       A tuple (newly created Issue, Comment PB for the description).
@@ -723,14 +726,21 @@ class WorkEnv(object):
     project = self.GetProject(project_id)
     self._AssertPermInProject(permissions.CREATE_ISSUE, project)
 
-    with self.mc.profiler.Phase('creating issue in project %r' % project_id):
+    if reporter_id and reporter_id != self.mc.auth.user_id:
+      self._AssertPermInProject(permissions.IMPORT_COMMENT, project)
+      importer_id = self.mc.auth.user_id
+    else:
       reporter_id = self.mc.auth.user_id
+      importer_id = None
+
+    with self.mc.profiler.Phase('creating issue in project %r' % project_id):
       new_local_id, comment = self.services.issue.CreateIssue(
           self.mc.cnxn, self.services, project_id, summary, status,
           owner_id, cc_ids, labels, field_values, component_ids, reporter_id,
           marked_description, blocked_on=blocked_on, blocking=blocking,
           attachments=attachments, index_now=False, phases=phases,
-          approval_values=approval_values)
+          approval_values=approval_values, timestamp=timestamp,
+          importer_id=importer_id)
       logging.info('created issue %r in project %r', new_local_id, project_id)
 
     with self.mc.profiler.Phase('following up after issue creation'):

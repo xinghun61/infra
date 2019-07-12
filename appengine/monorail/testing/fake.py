@@ -1391,7 +1391,7 @@ class IssueService(object):
   def ExpungeLocalIDCounters(self, _cnxn, project_id):
     self.expunged_local_ids.append(project_id)
 
-  def TestAddIssue(self, issue):
+  def TestAddIssue(self, issue, importer_id=None):
     project_id = issue.project_id
     self.issues_by_project.setdefault(project_id, {})
     self.issues_by_project[project_id][issue.local_id] = issue
@@ -1409,6 +1409,8 @@ class IssueService(object):
     comment.is_description = True
     if issue.reporter_id:
       comment.user_id = issue.reporter_id
+    if importer_id:
+      comment.importer_id = importer_id
     comment.sequence = 0
     self.TestAddComment(comment, issue.local_id)
 
@@ -1601,7 +1603,7 @@ class IssueService(object):
       summary, status, owner_id, cc_ids, labels, field_values,
       component_ids, reporter_id, marked_description, blocked_on=None,
       blocking=None, attachments=None, timestamp=None, index_now=False,
-      phases=None, approval_values=None):
+      phases=None, approval_values=None, importer_id=None):
     issue = tracker_pb2.Issue()
     issue.project_id = project_id
     issue.summary = summary
@@ -1635,7 +1637,7 @@ class IssueService(object):
     issue.local_id = self.AllocateNextLocalID(cnxn, project_id)
     issue.issue_id = project_id * 1000000 + issue.local_id
 
-    self.TestAddIssue(issue)
+    self.TestAddIssue(issue, importer_id=importer_id)
     comment = self.comments_by_iid[issue.issue_id][0]
     comment.content = marked_description
     return issue.local_id, comment
@@ -1796,7 +1798,7 @@ class IssueService(object):
   def _MakeIssueComment(
       self, project_id, user_id, content, inbound_message=None,
       amendments=None, attachments=None, kept_attachments=None, timestamp=None,
-      is_spam=False, is_description=False, approval_id=None):
+      is_spam=False, is_description=False, approval_id=None, importer_id=None):
     comment = tracker_pb2.IssueComment()
     comment.project_id = project_id
     comment.user_id = user_id
@@ -1812,6 +1814,8 @@ class IssueService(object):
       comment.amendments.extend(amendments)
     if approval_id:
       comment.approval_id = approval_id
+    if importer_id:
+      comment.importer_id = importer_id
     return comment
 
   def CopyIssues(self, cnxn, dest_project, issues, user_service, copier_id):
@@ -1882,7 +1886,8 @@ class IssueService(object):
       self, cnxn, services, reporter_id, project_id,
       config, issue, delta, index_now=False, comment=None, attachments=None,
       iids_to_invalidate=None, rules=None, predicate_asts=None,
-      is_description=False, timestamp=None, kept_attachments=None):
+      is_description=False, timestamp=None, kept_attachments=None,
+      importer_id=None):
     # Return a bogus amendments list if any of the fields changed
     amendments, _ = tracker_bizobj.ApplyIssueDelta(
         cnxn, self, issue, delta, config)
@@ -1893,7 +1898,7 @@ class IssueService(object):
     comment_pb = self.CreateIssueComment(
         cnxn, issue, reporter_id, comment, attachments=attachments,
         amendments=amendments, is_description=is_description,
-        kept_attachments=kept_attachments)
+        kept_attachments=kept_attachments, importer_id=importer_id)
 
     self.indexer_called = index_now
     return amendments, comment_pb
@@ -1906,7 +1911,8 @@ class IssueService(object):
       self, _cnxn, issue, user_id, content,
       inbound_message=None, amendments=None, attachments=None,
       kept_attachments=None, timestamp=None, is_spam=False,
-      is_description=False, approval_id=None, commit=True):
+      is_description=False, approval_id=None, commit=True,
+      importer_id=None):
     # Add a comment to an issue
     comment = tracker_pb2.IssueComment()
     comment.id = len(self.comments_by_cid)

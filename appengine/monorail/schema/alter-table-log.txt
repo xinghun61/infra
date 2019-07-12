@@ -1685,3 +1685,16 @@ ALTER TABLE DanglingIssueRelation DROP PRIMARY KEY, ADD PRIMARY KEY(issue_id, ds
 2019-06-25: Add unique constraint on SpamReport.
 
 ALTER IGNORE TABLE SpamReport ADD UNIQUE (user_id, comment_id, issue_id);
+
+
+================================================================
+2019-07-03: Add CommentImporter table.
+
+CREATE TABLE CommentImporter (
+  comment_id INT NOT NULL,
+  importer_id INT UNSIGNED NOT NULL,
+
+  PRIMARY KEY (comment_id),
+  FOREIGN KEY (comment_id) REFERENCES Comment(id),
+  FOREIGN KEY (importer_id) REFERENCES User(user_id)
+) ENGINE=INNODB;

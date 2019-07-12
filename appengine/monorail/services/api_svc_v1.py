@@ -18,6 +18,7 @@ from __future__ import print_function
 from __future__ import division
 from __future__ import absolute_import
 
+import calendar
 import datetime
 import endpoints
 import functools
@@ -363,6 +364,38 @@ class MonorailApi(remote.Service):
     """Delete a comment."""
     return self.aux_delete_comment(mar, request, True)
 
+  def parse_imported_reporter(self, mar, request):
+    """Handle the case where an API client is importing issues for users.
+
+    Args:
+      mar: monorail API request object including auth and perms.
+      request: A request PB that defines author and published fields.
+
+    Returns:
+      A pair (reporter_id, timestamp) with the user ID of the user to
+      attribute the comment to and timestamp of the original comment.
+      If the author field is not set, this is not an import request
+      and the comment is attributed to the API client as per normal.
+      An API client that is attempting to post on behalf of other
+      users must have the ImportComment permission in the current
+      project.
+    """
+    reporter_id = mar.auth.user_id
+    timestamp = None
+    if (request.author and request.author.name and
+        request.author.name != mar.auth.email):
+      if not mar.perms.HasPerm(
+          permissions.IMPORT_COMMENT, mar.auth.user_id, mar.project):
+        logging.info('name is %r', request.author.name)
+        raise permissions.PermissionException(
+            'User is not allowed to attribue comments to others')
+      reporter_id = self._services.user.LookupUserID(
+              mar.cnxn, request.author.name, autocreate=True)
+      if request.published:
+        timestamp = calendar.timegm(request.published.utctimetuple())
+
+    return reporter_id, timestamp
+
   @monorail_api_method(
       api_pb2_v1.ISSUES_COMMENTS_INSERT_REQUEST_RESOURCE_CONTAINER,
       api_pb2_v1.IssuesCommentsInsertResponse,
@@ -517,12 +550,19 @@ class MonorailApi(remote.Service):
         updates_dict.get('blocking_remove', []),
         updates_dict.get('merged_into'),
         updates_dict.get('summary'))
+
+    importer_id = None
+    reporter_id, timestamp = self.parse_imported_reporter(mar, request)
+    if reporter_id != mar.auth.user_id:
+      importer_id = mar.auth.user_id
+
+    # TODO(jrobbins): Finish refactoring to make everything go through work_env.
     _, comment = self._services.issue.DeltaUpdateIssue(
         cnxn=mar.cnxn, services=self._services,
-        reporter_id=mar.auth.user_id,
-        project_id=mar.project_id, config=mar.config, issue=issue,
-        delta=delta, index_now=False, comment=request.content,
-        is_description=updates_dict.get('is_description'))
+        reporter_id=reporter_id, project_id=mar.project_id, config=mar.config,
+        issue=issue, delta=delta, index_now=False, comment=request.content,
+        is_description=updates_dict.get('is_description'),
+        timestamp=timestamp, importer_id=importer_id)
 
     move_comment = None
     if move_to_project:
@@ -875,6 +915,8 @@ class MonorailApi(remote.Service):
         raise endpoints.BadRequestException(
             'Invalid field values: %s' % mar.errors.custom_fields)
 
+      logging.info('request.author is %r', request.author)
+      reporter_id, timestamp = self.parse_imported_reporter(mar, request)
       new_issue, _ = we.CreateIssue(
           mar.project_id, request.summary, request.status, owner_id,
           cc_ids, request.labels + fields_labels, fields_add,
@@ -883,6 +925,7 @@ class MonorailApi(remote.Service):
               request.blockedOn, mar, self._services),
           blocking=api_pb2_v1_helpers.convert_issueref_pbs(
               request.blocking, mar, self._services),
+          reporter_id=reporter_id, timestamp=timestamp,
           send_email=request.sendEmail)
       we.StarIssue(new_issue, True)
 

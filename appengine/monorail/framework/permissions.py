@@ -76,6 +76,10 @@ EDIT_ISSUE_STATUS = 'EditIssueStatus'
 EDIT_ISSUE_CC = 'EditIssueCc'
 EDIT_ISSUE_APPROVAL = 'EditIssueApproval'
 DELETE_ISSUE = 'DeleteIssue'
+# This allows certain API clients to attribute comments to other users.
+# The permission is not offered in the UI, but it can be typed in as
+# a custom permission name.  The ID of the API client is also recorded.
+IMPORT_COMMENT = 'ImportComment'
 ADD_ISSUE_COMMENT = 'AddIssueComment'
 VIEW_INBOUND_MESSAGES = 'ViewInboundMessages'
 CREATE_HOTLIST = 'CreateHotlist'

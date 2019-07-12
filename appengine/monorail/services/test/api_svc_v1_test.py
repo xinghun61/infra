@@ -8,9 +8,12 @@ from __future__ import print_function
 from __future__ import division
 from __future__ import absolute_import
 
+import datetime
 import endpoints
+import logging
 from mock import Mock, patch, ANY
 import os
+import time
 import unittest
 import webtest
 
@@ -25,6 +28,7 @@ from framework import exceptions
 from framework import permissions
 from framework import profiler
 from framework import template_helpers
+from proto import api_pb2_v1
 from proto import project_pb2
 from proto import tracker_pb2
 from search import frontendsearchpipeline
@@ -477,6 +481,63 @@ class MonorailApiTest(testing.EndpointsTestCase):
     self.assertEqual('user@example.com', comment2['author']['name'])
     self.assertEqual('this is a comment', comment2['content'])
 
+  def testParseImportedReporter_Normal(self):
+    """Normal attempt to post a comment under the requester's name."""
+    mar = FakeMonorailApiRequest(self.request, self.services)
+    container = api_pb2_v1.ISSUES_COMMENTS_INSERT_REQUEST_RESOURCE_CONTAINER
+    request = container.body_message_class()
+
+    monorail_api = self.api_service_cls()
+    monorail_api._set_services(self.services)
+    reporter_id, timestamp = monorail_api.parse_imported_reporter(mar, request)
+    self.assertEqual(111, reporter_id)
+    self.assertIsNone(timestamp)
+
+    # API users should not need to specify anything for author when posting
+    # as the signed-in user, but it is OK if they specify their own email.
+    request.author = api_pb2_v1.AtomPerson(name='requester@example.com')
+    request.published = datetime.datetime.now()  # Ignored
+    monorail_api = self.api_service_cls()
+    monorail_api._set_services(self.services)
+    reporter_id, timestamp = monorail_api.parse_imported_reporter(mar, request)
+    self.assertEqual(111, reporter_id)
+    self.assertIsNone(timestamp)
+
+  def testParseImportedReporter_Import_Allowed(self):
+    """User is importing a comment posted by a different user."""
+    project = self.services.project.TestAddProject(
+        'test-project', owner_ids=[222], contrib_ids=[111],
+        project_id=12345)
+    project.extra_perms = [project_pb2.Project.ExtraPerms(
+      member_id=111, perms=['ImportComment'])]
+    mar = FakeMonorailApiRequest(self.request, self.services)
+    container = api_pb2_v1.ISSUES_COMMENTS_INSERT_REQUEST_RESOURCE_CONTAINER
+    request = container.body_message_class()
+    request.author = api_pb2_v1.AtomPerson(name='user@example.com')
+    NOW = 1234567890
+    request.published = datetime.datetime.utcfromtimestamp(NOW)
+    monorail_api = self.api_service_cls()
+    monorail_api._set_services(self.services)
+
+    reporter_id, timestamp = monorail_api.parse_imported_reporter(mar, request)
+
+    self.assertEqual(222, reporter_id)  # that is user@
+    self.assertEqual(NOW, timestamp)
+
+  def testParseImportedReporter_Import_NotAllowed(self):
+    """User is importing a comment posted by a different user without perm."""
+    mar = FakeMonorailApiRequest(self.request, self.services)
+    container = api_pb2_v1.ISSUES_COMMENTS_INSERT_REQUEST_RESOURCE_CONTAINER
+    request = container.body_message_class()
+    request.author = api_pb2_v1.AtomPerson(name='user@example.com')
+    NOW = 1234567890
+    request.published = datetime.datetime.fromtimestamp(NOW)
+    monorail_api = self.api_service_cls()
+    monorail_api._set_services(self.services)
+
+    with self.assertRaises(permissions.PermissionException):
+      monorail_api.parse_imported_reporter(mar, request)
+
   def testIssuesCommentsInsert_ApprovalFields(self):
     """Attempts to update approval field values are blocked."""
     self.services.project.TestAddProject(
@@ -775,6 +836,72 @@ class MonorailApiTest(testing.EndpointsTestCase):
     self.assertEqual(
         'Moved issue test-project:1 to now be issue test-project2:2.',
         resp['content'])
+
+  def testIssuesCommentsInsert_Import_Allowed(self):
+    """Post a comment attributed to another user, with permission."""
+    project = self.services.project.TestAddProject(
+        'test-project', committer_ids=[111, 222], project_id=12345)
+    project.extra_perms = [project_pb2.Project.ExtraPerms(
+      member_id=111, perms=['ImportComment'])]
+    issue1 = fake.MakeTestIssue(
+        12345, 1, 'Issue 1', 'New', 222, project_name='test-project')
+    self.services.issue.TestAddIssue(issue1)
+
+    self.request['author'] = {'name': 'user@example.com'}  # 222
+    self.request['content'] = 'a comment'
+    self.request['updates'] = {
+        'owner': 'user@example.com',
+        }
+
+    resp = self.call_api('issues_comments_insert', self.request).json_body
+
+    self.assertEqual('a comment', resp['content'])
+    comments = self.services.issue.GetCommentsForIssue('cnxn', issue1.issue_id)
+    self.assertEqual(2, len(comments))
+    self.assertEqual(222, comments[1].user_id)
+    self.assertEqual('a comment', comments[1].content)
+
+
+  def testIssuesCommentsInsert_Import_Self(self):
+    """Specifying the comment author is OK if it is the requester."""
+    self.services.project.TestAddProject(
+        'test-project', committer_ids=[111, 222], project_id=12345)
+    # Note: No ImportComment permission has been granted.
+    issue1 = fake.MakeTestIssue(
+        12345, 1, 'Issue 1', 'New', 222, project_name='test-project')
+    self.services.issue.TestAddIssue(issue1)
+
+    self.request['author'] = {'name': 'requester@example.com'}  # 111
+    self.request['content'] = 'a comment'
+    self.request['updates'] = {
+        'owner': 'user@example.com',
+        }
+
+    resp = self.call_api('issues_comments_insert', self.request).json_body
+
+    self.assertEqual('a comment', resp['content'])
+    comments = self.services.issue.GetCommentsForIssue('cnxn', issue1.issue_id)
+    self.assertEqual(2, len(comments))
+    self.assertEqual(111, comments[1].user_id)
+    self.assertEqual('a comment', comments[1].content)
+
+  def testIssuesCommentsInsert_Import_Denied(self):
+    """Cannot post a comment attributed to another user without permission."""
+    self.services.project.TestAddProject(
+        'test-project', committer_ids=[111, 222], project_id=12345)
+    # Note: No ImportComment permission has been granted.
+    issue1 = fake.MakeTestIssue(
+        12345, 1, 'Issue 1', 'New', 222, project_name='test-project')
+    self.services.issue.TestAddIssue(issue1)
+
+    self.request['author'] = {'name': 'user@example.com'}  # 222
+    self.request['content'] = 'a comment'
+    self.request['updates'] = {
+        'owner': 'user@example.com',
+        }
+
+    with self.call_should_fail(403):
+      self.call_api('issues_comments_insert', self.request)
 
   def testIssuesCommentsDelete_NoComment(self):
     self.services.project.TestAddProject(
