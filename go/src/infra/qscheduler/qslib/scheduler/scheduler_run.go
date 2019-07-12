@@ -309,6 +309,24 @@ func (run *schedulerRun) shouldSkip(request *TaskRequest, priority Priority) boo
 func (run *schedulerRun) reprioritizeRunningTasks(priority Priority, events EventSink) {
 	state := run.scheduler.state
 	config := run.scheduler.config
+
+	type accountPriority struct {
+		p Priority
+		a AccountID
+	}
+
+	workersAt := make(map[accountPriority][]*Worker)
+	for _, worker := range run.scheduler.state.workers {
+		if worker.IsIdle() {
+			continue
+		}
+		ap := accountPriority{
+			worker.runningTask.priority,
+			worker.runningTask.request.AccountID,
+		}
+		workersAt[ap] = append(workersAt[ap], worker)
+	}
+
 	// TODO(akeshet): jobs that are currently running, but have no corresponding account,
 	// should be demoted immediately to the FreeBucket (probably their account
 	// was deleted while running).
@@ -325,7 +343,7 @@ func (run *schedulerRun) reprioritizeRunningTasks(priority Priority, events Even
 			continue
 		}
 
-		runningAtP := workersAt(state.workers, priority, accountID)
+		runningAtP := workersAt[accountPriority{priority, accountID}]
 
 		chargeRate := accountConfig.ChargeRate[priority] - float32(len(runningAtP))
 
@@ -375,20 +393,6 @@ func doPromote(state *state, candidates []*Worker, chargeRate float32, priority 
 		))
 		toPromote.runningTask.priority = priority
 	}
-}
-
-// workersAt is a helper function that returns the workers with a given
-// account id and running.
-func workersAt(ws map[WorkerID]*Worker, priority Priority, accountID AccountID) []*Worker {
-	ans := make([]*Worker, 0, len(ws))
-	for _, worker := range ws {
-		if !worker.IsIdle() &&
-			worker.runningTask.request.AccountID == accountID &&
-			worker.runningTask.priority == priority {
-			ans = append(ans, worker)
-		}
-	}
-	return ans
 }
 
 // workersBelow is a helper function that returns the workers with a given
