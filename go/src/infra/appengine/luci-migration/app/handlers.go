@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package app
+package main
 
 import (
 	"encoding/json"
@@ -24,6 +24,7 @@ import (
 	"time"
 
 	"golang.org/x/net/context"
+	"google.golang.org/appengine"
 
 	"go.chromium.org/gae/service/datastore"
 	"go.chromium.org/gae/service/info"
@@ -219,7 +220,7 @@ func handleBuildbucketPubSub(c *router.Context) error {
 	return handler.BuildCompleted(c.Context, b)
 }
 
-func init() {
+func main() {
 	// Dev server likes to restart a lot, and upon a restart math/rand seed is
 	// always set to 1, resulting in lots of presumably "random" IDs not being
 	// very random. Seed it with real randomness.
@@ -257,6 +258,7 @@ func init() {
 	r.GET("/masters/:master/builders/:builder/changes", mwMasterRoute, errHandler(handleBuilderUpdatesPage))
 
 	http.DefaultServeMux.Handle("/", r)
+	appengine.Main()
 }
 
 func respondWithJSON(r *http.Request) bool {
