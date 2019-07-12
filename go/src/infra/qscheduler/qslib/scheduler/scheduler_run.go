@@ -194,7 +194,7 @@ func provisionAwareMatch(w *Worker, r *TaskRequest) matchLevel {
 // computeWorkerMatch computes the match level for all given requests against a single worker,
 // and returns the matchable requests sorted by match quality.
 func computeWorkerMatch(w *Worker, items requestList, mf matcher) []matchListItem {
-	matches := make([]matchListItem, 0, len(items))
+	var matches []matchListItem
 	for _, item := range items {
 		if item.req.examinedTime.After(w.modifiedTime) {
 			// This request (and all remaining ones after it) have newer examinedTimes
