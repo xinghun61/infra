@@ -13,7 +13,7 @@ luci.builder(
     service_account = 'gatekeeper-builder@chops-service-accounts.iam.gserviceaccount.com',
     dimensions = {
         'builder': 'Chromium Gatekeeper',
-        'os': 'Ubuntu-14.04',
+        'os': 'Ubuntu-16.04',
         'cpu': 'x86-64',
         'pool': 'luci.infra.cron',
     },
