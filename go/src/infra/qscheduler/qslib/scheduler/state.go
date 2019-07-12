@@ -83,6 +83,9 @@ type TaskRequest struct {
 	// in a scheduler pass, without being ignored (due to fanout limit) and
 	// without being matched to a worker.
 	examinedTime time.Time
+
+	fanoutGroupIsMemoized bool
+	memoizedFanoutGroup   fanoutGroup
 }
 
 // ConfirmedTime returns the latest time at which the task request's state was
@@ -107,11 +110,15 @@ func requestProto(r *TaskRequest, mb *mapBuilder) *protos.TaskRequest {
 // fanoutGroup returns a string that uniquely identifies this task's account
 // and provisionable labels, and thus identifies the fanout group to be
 // used for this account.
-//
-// TODO(akeshet): Memoize the return value to avoid cost of recomputation.
 func (t *TaskRequest) fanoutGroup() fanoutGroup {
+	if t.fanoutGroupIsMemoized {
+		return t.memoizedFanoutGroup
+	}
+
 	if t.AccountID == "" {
-		return ""
+		t.memoizedFanoutGroup = ""
+		t.fanoutGroupIsMemoized = true
+		return t.memoizedFanoutGroup
 	}
 
 	provisionable := t.ProvisionableLabels.ToSlice()
@@ -122,7 +129,10 @@ func (t *TaskRequest) fanoutGroup() fanoutGroup {
 	// This separator is just an arbitrary string that is very unlikely to be
 	// encountered in the wild in account IDs or provisionable labels.
 	const separator = "$;~$"
-	return fanoutGroup(strings.Join(elems, separator))
+
+	t.memoizedFanoutGroup = fanoutGroup(strings.Join(elems, separator))
+	t.fanoutGroupIsMemoized = true
+	return t.memoizedFanoutGroup
 }
 
 // taskRun represents the run-related information about a running task.

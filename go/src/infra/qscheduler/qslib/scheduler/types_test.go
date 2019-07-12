@@ -43,6 +43,19 @@ func TestClone(t *testing.T) {
 		s.RunOnce(ctx, NullEventSink)
 		Convey("when state is Cloned via proto roundtrip, it should resemble itself.", func() {
 			sClone := s.state.Clone()
+
+			// Null out memoization fields.
+			for _, t := range s.state.queuedRequests {
+				t.memoizedFanoutGroup = ""
+				t.fanoutGroupIsMemoized = false
+			}
+			for _, w := range s.state.workers {
+				if !w.IsIdle() {
+					w.runningTask.request.memoizedFanoutGroup = ""
+					w.runningTask.request.fanoutGroupIsMemoized = false
+				}
+			}
+
 			diff := pretty.Compare(s.state, sClone)
 			So(diff, ShouldBeBlank)
 		})
