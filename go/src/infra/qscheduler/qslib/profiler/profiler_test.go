@@ -27,11 +27,13 @@ var params = StateParams{
 	LabelCorpusSize:     1000,
 	ProvisionableLabels: 20,
 
-	LabelsPerWorker: 30,
+	LabelsPerWorker: 50,
 	Workers:         5000,
 
 	LabelsPerTask: 5,
 	Tasks:         100000,
+
+	Accounts: 20,
 }
 
 // BenchmarkEntitySize prints the typical proto-serialized size
@@ -47,7 +49,7 @@ func BenchmarkEntitySize(b *testing.B) {
 		protoBytes, _ = proto.Marshal(stateProto)
 	}
 
-	fmt.Printf("proto size: %d bytes\n", len(protoBytes))
+	fmt.Printf("proto size: %.1f MiB\n", float64(len(protoBytes))/1024.0/1024.0)
 }
 
 func BenchmarkEntityZip(b *testing.B) {
@@ -67,7 +69,7 @@ func BenchmarkEntityZip(b *testing.B) {
 		compressedBytes = buffer.Bytes()
 	}
 
-	fmt.Printf("compressed proto size: %d bytes\n", len(compressedBytes))
+	fmt.Printf("compressed proto size: %.1f MiB\n", float64(len(compressedBytes))/1024.0/1024.0)
 }
 
 func BenchmarkSchedulerSimulation(b *testing.B) {
