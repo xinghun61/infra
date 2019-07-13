@@ -42,6 +42,12 @@ export class MrApprovalCard extends connectStore(LitElement) {
           box-sizing: border-box;
           display: block;
           border-left: 4px solid var(--approval-bg-color);
+
+          /* Default styles are for the NotSet case. */
+          --approval-bg-color: var(--chops-purple-50);
+          --approval-accent-color: var(--chops-purple-700);
+        }
+        :host(.status-na) {
           --approval-bg-color: hsl(227, 20%, 92%);
           --approval-accent-color: hsl(227, 80%, 40%);
         }

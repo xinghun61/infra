@@ -30,7 +30,7 @@ export const TEXT_TO_STATUS_ENUM = {
 export const STATUS_CLASS_MAP = {
   'NotSet': 'status-notset',
   'NeedsReview': 'status-pending',
-  'NA': 'status-notset',
+  'NA': 'status-na',
   'ReviewRequested': 'status-pending',
   'ReviewStarted': 'status-pending',
   'NeedInfo': 'status-pending',
@@ -50,7 +50,8 @@ export const STATUS_DOCSTRING_MAP = {
 };
 
 export const CLASS_ICON_MAP = {
-  'status-notset': 'remove',
+  'status-na': 'remove',
+  'status-notset': 'warning',
   'status-pending': 'autorenew',
   'status-approved': 'done',
   'status-rejected': 'close',
