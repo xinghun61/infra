@@ -29,6 +29,11 @@ const APPROVED_PHASE_MILESTONE_MAP = {
   'Stable-Full': 'stable_date',
 };
 
+// The following milestones are unique to ios.
+const IOS_APPROVED_PHASE_MILESTONE_MAP = {
+  'Beta': 'earliest_beta_ios',
+};
+
 // See monorail:4692 and the use of PHASES_WITH_MILESTONES
 // in tracker/issueentry.py
 const PHASES_WITH_MILESTONES = ['Beta', 'Stable', 'Stable-Exp', 'Stable-Full'];
@@ -107,6 +112,11 @@ export class MrPhase extends connectStore(LitElement) {
             <em ?hidden=${!this._nextDate}>
               ${this._dateDescriptor}
               <chops-timestamp .timestamp=${this._nextDate}></chops-timestamp>
+            </em>
+            <em ?hidden=${!this._nextUniqueiOSDate}>
+              <b>iOS</b> ${this._dateDescriptor}
+              <chops-timestamp .timestamp=${this._nextUniqueiOSDate}
+              ></chops-timestamp>
             </em>
           `: ''}
         </div>
@@ -201,7 +211,7 @@ export class MrPhase extends connectStore(LitElement) {
 
       if (milestone && milestone !== oldMilestone) {
         window.fetch(
-          `https://chromepmo.appspot.com/schedule/mstone/json?mstone=${milestone}`
+          `https://chromiumdash.appspot.com/fetch_milestone_schedule?mstone=${milestone}`
         ).then((resp) => resp.json()).then((resp) => {
           this._milestoneData = resp;
         });
@@ -253,16 +263,43 @@ export class MrPhase extends connectStore(LitElement) {
     const phaseName = this.phaseName;
     const status = this._status;
     let data = this._milestoneData && this._milestoneData.mstones;
-    // Data pulled from https://chromepmo.appspot.com/schedule/mstone/json?mstone=xx
+    // Data pull from https://chromiumdash.appspot.com/fetch_milestone_schedule?mstone=xx
     if (!phaseName || !status || !data || !data.length) return 0;
     data = data[0];
 
     let key = TARGET_PHASE_MILESTONE_MAP[phaseName];
     if (['Approved', 'Launched'].includes(status)) {
+      const osValues = this.fieldValueMap.get('OS');
+      // If iOS is the only OS and the phase is one where iOS has unique
+      // milestones, the only date we show should be this._nextUniqueiOSDate.
+      if (osValues && osValues.every((os) => {
+        return os === 'iOS';
+      }) && phaseName in IOS_APPROVED_PHASE_MILESTONE_MAP) {
+        return 0;
+      }
       key = APPROVED_PHASE_MILESTONE_MAP[phaseName];
     }
     if (!key || !(key in data)) return 0;
     return Math.floor((new Date(data[key])).getTime() / 1000);
+  }
+
+  get _nextUniqueiOSDate() {
+    const phaseName = this.phaseName;
+    const status = this._status;
+    let data = this._milestoneData && this._milestoneData.mstones;
+    // Data pull from https://chromiumdash.appspot.com/fetch_milestone_schedule?mstone=xx
+    if (!phaseName || !status || !data || !data.length) return 0;
+    data = data[0];
+
+    const osValues = this.fieldValueMap.get('OS');
+    if (['Approved', 'Launched'].includes(status) &&
+        osValues && osValues.includes('iOS')) {
+      const key = IOS_APPROVED_PHASE_MILESTONE_MAP[phaseName];
+      if (key) {
+        return Math.floor((new Date(data[key])).getTime() / 1000);
+      }
+    }
+    return 0;
   }
 
   get _dateDescriptor() {
