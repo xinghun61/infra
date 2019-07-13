@@ -13,10 +13,12 @@
 // limitations under the License.
 
 // Package arquebus is the entry point of this app.
-package arquebus
+package main
 
 import (
 	"net/http"
+
+	"google.golang.org/appengine"
 
 	"go.chromium.org/luci/appengine/gaemiddleware/standard"
 	"go.chromium.org/luci/appengine/tq"
@@ -30,7 +32,7 @@ import (
 	"infra/appengine/arquebus/app/frontend"
 )
 
-func init() {
+func main() {
 	// Dev server likes to restart a lot, and upon a restart math/rand
 	// seed is always set to 1, resulting in lots of presumably "random"
 	// IDs not being very random. Seed it with real randomness.
@@ -50,4 +52,6 @@ func init() {
 
 	config.SetupValidation(&validation.Rules)
 	http.DefaultServeMux.Handle("/", r)
+
+	appengine.Main()
 }

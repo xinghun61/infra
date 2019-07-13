@@ -12,9 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// A Go GAE module requires some .go files to be present, even if it is
-// a pure static module, and the gae.py tool does not support different
-// runtimes in the same deployment.
-// You can symlink dummy.go to your module like helloworld app does.
+package main
 
-package static
+import (
+	"google.golang.org/appengine"
+)
+
+func main() {
+	appengine.Main()
+}

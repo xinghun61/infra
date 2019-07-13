@@ -1,7 +1,5 @@
-version: 1
-module: static
-runtime: go
-api_version: go1
+service: static
+runtime: go111
 
 handlers:
 - url: /static/bootstrap
