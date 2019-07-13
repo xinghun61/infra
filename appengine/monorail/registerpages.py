@@ -349,6 +349,8 @@ class ServletRegistry(object):
         urls.GROUP_DELETE: grouplist.GroupList,
         urls.HOTLIST_CREATE: hotlistcreate.HotlistCreate,
         urls.BAN_SPAMMER_TASK: banspammer.BanSpammerTask,
+        urls.WIPEOUT_SYNC_CRON: deleteusers.WipeoutSyncCron,
+        urls.SEND_WIPEOUT_USER_LISTS_TASK: deleteusers.SendWipeoutUserListsTask,
         urls.DELETE_USERS_TASK: deleteusers.DeleteUsersTask,
         })
 

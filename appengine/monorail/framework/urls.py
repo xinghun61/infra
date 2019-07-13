@@ -58,6 +58,7 @@ SPAM_DATA_EXPORT_TASK = '/_task/spamDataExport'
 BAN_SPAMMER_TASK = '/_task/banSpammer'
 ISSUE_DATE_ACTION_TASK = '/_task/issueDateAction'
 COMPONENT_DATA_EXPORT_TASK = '/_task/componentDataExportTask'
+SEND_WIPEOUT_USER_LISTS_TASK = '/_task/sendWipeoutUserListsTask'
 DELETE_USERS_TASK = '/_task/deleteUsersTask'
 
 # URL for manually triggered FLT launch issue conversion job.
@@ -73,6 +74,7 @@ TRIM_VISITED_PAGES_CRON = '/_cron/trimVisitedPages'
 DATE_ACTION_CRON = '/_cron/dateAction'
 SPAM_TRAINING_CRON = '/_cron/spamTraining'
 COMPONENT_DATA_EXPORT_CRON = '/_cron/componentDataExport'
+WIPEOUT_SYNC_CRON = '/_cron/wipeoutSync'
 
 # URLs of handlers needed for GAE instance management.
 WARMUP = '/_ah/warmup'

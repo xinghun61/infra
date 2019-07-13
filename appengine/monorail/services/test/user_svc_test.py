@@ -547,7 +547,7 @@ class UserServiceTest(unittest.TestCase):
     self.user_service.user_tbl.Select.assert_called_once_with(
         self.cnxn, cols=['email'], limit=1000, offset=0,
         where=[('user_id != %s', [framework_constants.DELETED_USER_ID])],
-        order_by=[('user_id ASC'), []])
+        order_by=[('user_id ASC', [])])
     self.assertItemsEqual(
         emails, ['cow@test.com', 'pig@test.com', 'fox@test.com'])
 
@@ -559,6 +559,6 @@ class UserServiceTest(unittest.TestCase):
     self.user_service.user_tbl.Select.assert_called_once_with(
         self.cnxn, cols=['email'], limit=30, offset=60,
         where=[('user_id != %s', [framework_constants.DELETED_USER_ID])],
-        order_by=[('user_id ASC'), []])
+        order_by=[('user_id ASC', [])])
     self.assertItemsEqual(
         emails, ['cow@test.com', 'pig@test.com', 'fox@test.com'])

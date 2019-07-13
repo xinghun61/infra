@@ -731,5 +731,5 @@ class UserService(object):
         limit=limit,
         offset=offset,
         where=[('user_id != %s', [framework_constants.DELETED_USER_ID])],
-        order_by=[('user_id ASC'), []])
+        order_by=[('user_id ASC', [])])
     return [row[0] for row in rows]

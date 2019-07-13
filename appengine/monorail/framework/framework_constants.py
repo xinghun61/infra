@@ -46,6 +46,11 @@ DELETED_USER_NAME = 'a_deleted_user'
 DELETED_USER_ID = 1
 USER_NOT_FOUND_NAME = 'user_not_found'
 
+# Queues for deleting users tasks.
+QUEUE_SEND_WIPEOUT_USER_LISTS = 'wipeoutsendusers'
+QUEUE_FETCH_WIPEOUT_DELETED_USERS = 'wipeoutfetchusers'
+QUEUE_DELETE_USERS = 'deleteusers'
+
 # We remember the time of each user's last page view, but to reduce the
 # number of database writes, we only update it if it is newer by an hour.
 VISIT_RESOLUTION = 1 * SECS_PER_HOUR
