@@ -140,6 +140,11 @@ func TestHandleMember(t *testing.T) {
 func TestMemberGET(t *testing.T) {
 	ctx := newTestContext()
 
+	ausLoc, err := time.LoadLocation("Australia/Sydney")
+	if err != nil {
+		t.Fatalf("time.LoadLocation(%q) failed: %v", "Australia/Sydney", err)
+	}
+
 	tests := []struct {
 		name       string
 		fail       bool
@@ -203,9 +208,11 @@ func TestMemberGET(t *testing.T) {
 			},
 		},
 		want: MemberInfo{
-			Member: rotang.Member{
-				Name:  "Test Member",
-				Email: "test@member.com",
+			Member: JSONMember{
+				Member: rotang.Member{
+					Name:  "Test Member",
+					Email: "test@member.com",
+				},
 			},
 			Shifts: []RotaShift{
 				{
@@ -322,9 +329,91 @@ func TestMemberGET(t *testing.T) {
 			},
 		},
 		want: MemberInfo{
-			Member: rotang.Member{
+			Member: JSONMember{
+				Member: rotang.Member{
+					Name:  "Test Member",
+					Email: "test@member.com",
+				},
+			},
+		},
+	}, {
+		name: "Member with TZ info",
+		ctx: &router.Context{
+			Context: ctx,
+			Writer:  httptest.NewRecorder(),
+			Request: httptest.NewRequest("GET", "/memberjson", nil),
+		},
+		rota: "Test Rota",
+		member: &rotang.Member{
+			Name:  "Test Member",
+			Email: "test@member.com",
+			TZ:    *ausLoc,
+		},
+		memberPool: []rotang.Member{
+			{
 				Name:  "Test Member",
 				Email: "test@member.com",
+			},
+		},
+		cfgs: []rotang.Configuration{
+			{
+				Config: rotang.Config{
+					Name: "Test Rota",
+					Shifts: rotang.ShiftConfig{
+						Shifts: []rotang.Shift{
+							{
+								Name:     "Test All Day",
+								Duration: fullDay,
+							},
+						},
+					},
+				},
+				Members: []rotang.ShiftMember{
+					{
+						Email:     "test@member.com",
+						ShiftName: "Test All Day",
+					},
+				},
+			},
+		},
+		shifts: []rotang.ShiftEntry{
+			{
+				Name: "Test All Day",
+				OnCall: []rotang.ShiftMember{
+					{
+						Email:     "test@member.com",
+						ShiftName: "Test All Day",
+					},
+				},
+				StartTime: midnight,
+				EndTime:   midnight.Add(72 * time.Hour),
+			},
+		},
+		want: MemberInfo{
+			Member: JSONMember{
+				Member: rotang.Member{
+					Name:  "Test Member",
+					Email: "test@member.com",
+				},
+				TZString: "Australia/Sydney",
+			},
+			Shifts: []RotaShift{
+				{
+					Name: "Test Rota",
+					Entries: []rotang.ShiftEntry{
+						{
+							Name: "Test All Day",
+							OnCall: []rotang.ShiftMember{
+								{
+									Email:     "test@member.com",
+									ShiftName: "Test All Day",
+								},
+							},
+							StartTime: midnight,
+							EndTime:   midnight.Add(72 * time.Hour),
+						},
+					},
+				},
 			},
 		},
 	},
@@ -387,7 +476,7 @@ func TestMemberPOST(t *testing.T) {
 		name       string
 		fail       bool
 		ctx        *router.Context
-		member     *rotang.Member
+		member     *JSONMember
 		want       *rotang.Member
 		memberPool []rotang.Member
 	}{{
@@ -406,14 +495,16 @@ func TestMemberPOST(t *testing.T) {
 					"Preferences":null
 				}`)),
 		},
-		member: &rotang.Member{
-			Name:  "Test Testson",
-			Email: "test@user.com",
-			OOO: []rotang.OOO{{
-				Start:    midnight,
-				Duration: time.Hour * 72,
-				Comment:  "Out and about",
-			},
+		member: &JSONMember{
+			Member: rotang.Member{
+				Name:  "Test Testson",
+				Email: "test@user.com",
+				OOO: []rotang.OOO{{
+					Start:    midnight,
+					Duration: time.Hour * 72,
+					Comment:  "Out and about",
+				},
+				},
 			},
 		},
 		want: &rotang.Member{
@@ -450,14 +541,16 @@ func TestMemberPOST(t *testing.T) {
 					"Preferences":null
 				}`)),
 		},
-		member: &rotang.Member{
-			Name:  "Test Testson",
-			Email: "test@user.com",
-			OOO: []rotang.OOO{{
-				Start:    midnight,
-				Duration: time.Hour * 72,
-				Comment:  "Out and about",
-			},
+		member: &JSONMember{
+			Member: rotang.Member{
+				Name:  "Test Testson",
+				Email: "test@user.com",
+				OOO: []rotang.OOO{{
+					Start:    midnight,
+					Duration: time.Hour * 72,
+					Comment:  "Out and about",
+				},
+				},
 			},
 		},
 		memberPool: []rotang.Member{
@@ -487,14 +580,16 @@ func TestMemberPOST(t *testing.T) {
 					"Preferences":null,
 				}`)),
 		},
-		member: &rotang.Member{
-			Name:  "Test Testson",
-			Email: "test@user.com",
-			OOO: []rotang.OOO{{
-				Start:    midnight,
-				Duration: time.Hour * 72,
-				Comment:  "Out and about",
-			},
+		member: &JSONMember{
+			Member: rotang.Member{
+				Name:  "Test Testson",
+				Email: "test@user.com",
+				OOO: []rotang.OOO{{
+					Start:    midnight,
+					Duration: time.Hour * 72,
+					Comment:  "Out and about",
+				},
+				},
 			},
 		},
 		memberPool: []rotang.Member{
@@ -519,14 +614,16 @@ func TestMemberPOST(t *testing.T) {
 					"Preferences":null
 				}`)),
 		},
-		member: &rotang.Member{
-			Name:  "Test Testson",
-			Email: "test@user.com",
-			OOO: []rotang.OOO{{
-				Start:    midnight,
-				Duration: time.Hour * 72,
-				Comment:  "Out and about",
-			},
+		member: &JSONMember{
+			Member: rotang.Member{
+				Name:  "Test Testson",
+				Email: "test@user.com",
+				OOO: []rotang.OOO{{
+					Start:    midnight,
+					Duration: time.Hour * 72,
+					Comment:  "Out and about",
+				},
+				},
 			},
 		},
 		memberPool: []rotang.Member{

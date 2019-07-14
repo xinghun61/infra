@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"infra/appengine/rotang"
 	"net/http"
+	"time"
 
 	"go.chromium.org/luci/common/clock"
 	"go.chromium.org/luci/common/logging"
@@ -15,10 +16,17 @@ import (
 	"google.golang.org/grpc/status"
 )
 
+// JSONMember adds a TZString field to the rotang.Member structure.
+// This is needed due to time.Location not having an encoding to JSON.
+type JSONMember struct {
+	rotang.Member
+	TZString string
+}
+
 // MemberInfo is used by the shift-member element to get
 // relevant member information.
 type MemberInfo struct {
-	Member rotang.Member
+	Member JSONMember
 	Shifts []RotaShift
 }
 
@@ -55,7 +63,10 @@ func (h *State) HandleMember(ctx *router.Context) {
 
 	switch ctx.Request.Method {
 	case "POST":
-		if err := h.memberPOST(ctx, m); err != nil {
+		if err := h.memberPOST(ctx, &JSONMember{
+			Member:   *m,
+			TZString: m.TZ.String(),
+		}); err != nil {
 			http.Error(ctx.Writer, err.Error(), http.StatusInternalServerError)
 			return
 		}
@@ -70,7 +81,7 @@ func (h *State) HandleMember(ctx *router.Context) {
 	}
 }
 
-func (h *State) memberPOST(ctx *router.Context, member *rotang.Member) error {
+func (h *State) memberPOST(ctx *router.Context, member *JSONMember) error {
 	var res rotang.Member
 	if err := json.NewDecoder(ctx.Request.Body).Decode(&res); err != nil {
 		return err
@@ -86,6 +97,11 @@ func (h *State) memberPOST(ctx *router.Context, member *rotang.Member) error {
 		}
 		logging.Infof(ctx.Context, "res.OOO[i}", res.OOO[i])
 	}
+	loc, err := time.LoadLocation(member.TZString)
+	if err != nil {
+		return err
+	}
+	res.TZ = *loc
 	return h.memberStore(ctx.Context).UpdateMember(ctx.Context, &res)
 }
 
@@ -102,7 +118,10 @@ func (h *State) memberGET(ctx *router.Context, member *rotang.Member) error {
 
 	shiftStore := h.shiftStore(ctx.Context)
 	res := MemberInfo{
-		Member: *member,
+		Member: JSONMember{
+			Member:   *member,
+			TZString: member.TZ.String(),
+		},
 	}
 	for _, r := range rotas {
 		shifts, err := shiftStore.AllShifts(ctx.Context, r)
