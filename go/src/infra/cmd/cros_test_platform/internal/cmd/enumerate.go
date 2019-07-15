@@ -79,8 +79,12 @@ func (c *enumerateRun) innerRun(a subcommands.Application, args []string, env su
 	ctx := cli.GetContext(a, c, env)
 	ctx = setupLogging(ctx)
 
-	gsDir := gs.Path(request.GetMetadata().GetTestMetadataUrl())
-	lp, err := c.downloadArtifacts(ctx, gsDir, workspace)
+	gsPath, err := c.gsPath(&request)
+	if err != nil {
+		return err
+	}
+
+	lp, err := c.downloadArtifacts(ctx, gsPath, workspace)
 	if err != nil {
 		return err
 	}
@@ -106,6 +110,16 @@ func (c *enumerateRun) processCLIArgs(args []string) error {
 		return errors.Reason("-output_json not specified").Err()
 	}
 	return nil
+}
+
+func (c *enumerateRun) gsPath(request *steps.EnumerationRequest) (gs.Path, error) {
+	if request.Metadata == nil {
+		return "", errors.Reason("nil request.metadata").Err()
+	}
+	if request.Metadata.TestMetadataUrl == "" {
+		return "", errors.Reason("empty request.metadata.test_metadata_url").Err()
+	}
+	return gs.Path(request.Metadata.TestMetadataUrl), nil
 }
 
 func (c *enumerateRun) downloadArtifacts(ctx context.Context, gsDir gs.Path, workspace string) (artifacts.LocalPaths, error) {
