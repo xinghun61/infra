@@ -131,7 +131,7 @@ func (c *enumerateRun) downloadArtifacts(ctx context.Context, gsDir gs.Path, wor
 	if err != nil {
 		return artifacts.LocalPaths{}, errors.Annotate(err, "download artifacts").Err()
 	}
-	lp, err := artifacts.DownloadFromGoogleStorage(client, gsDir, outDir)
+	lp, err := artifacts.DownloadFromGoogleStorage(ctx, client, gsDir, outDir)
 	if err != nil {
 		return artifacts.LocalPaths{}, errors.Annotate(err, "download artifacts").Err()
 	}

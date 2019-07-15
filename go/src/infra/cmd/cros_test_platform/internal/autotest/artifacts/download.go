@@ -5,19 +5,22 @@
 package artifacts
 
 import (
+	"context"
 	"io"
 	"os"
 	"path/filepath"
 
 	"go.chromium.org/luci/common/errors"
 	"go.chromium.org/luci/common/gcloud/gs"
+	"go.chromium.org/luci/common/logging"
 )
 
 // DownloadFromGoogleStorage downloads autotest artifacts required to compute
 // test metadata from the Google Storage folder remoteDir to local outDir.
 //
 // This function returns the local paths to the downloaded artifacts.
-func DownloadFromGoogleStorage(client gs.Client, remoteDir gs.Path, outDir string) (LocalPaths, error) {
+func DownloadFromGoogleStorage(ctx context.Context, client gs.Client, remoteDir gs.Path, outDir string) (LocalPaths, error) {
+	logging.Debugf(ctx, "downloading autotest artifacts from %s", remoteDir)
 	lp := LocalPaths{
 		ControlFilesArchive: filepath.Join(outDir, "control_files.tar"),
 		TestSuitesArchive:   filepath.Join(outDir, "test_suites.tar.bz2"),
