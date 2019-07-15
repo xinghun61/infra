@@ -1,6 +1,10 @@
 queue:
 - name: repair-bots
   rate: 20/s
+  retry_parameters:
+    task_retry_limit: 0
 
 - name: reset-bots
   rate: 20/s
+  retry_parameters:
+    task_retry_limit: 0

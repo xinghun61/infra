@@ -64,7 +64,7 @@ func pushBotsForAdminTasksCronHandler(c *router.Context) (err error) {
 	}()
 
 	cfg := config.Get(c.Context)
-	if cfg.RpcControl.DisablePushBotsForAdminTasks {
+	if cfg.RpcControl != nil && cfg.RpcControl.GetDisablePushBotsForAdminTasks() {
 		logging.Infof(c.Context, "PushBotsForAdminTasks is disabled via config.")
 		return nil
 	}
@@ -84,7 +84,7 @@ func refreshBotsCronHandler(c *router.Context) (err error) {
 	}()
 
 	cfg := config.Get(c.Context)
-	if cfg.RpcControl.DisableRefreshBots {
+	if cfg.RpcControl != nil && cfg.RpcControl.GetDisableRefreshBots() {
 		logging.Infof(c.Context, "RefreshBots is disabled via config.")
 		return nil
 	}
@@ -106,7 +106,7 @@ func ensureBackgroundTasksCronHandler(c *router.Context) (err error) {
 	}()
 
 	cfg := config.Get(c.Context)
-	if cfg.RpcControl.DisableEnsureBackgroundTasks {
+	if cfg.RpcControl != nil && cfg.RpcControl.GetDisableEnsureBackgroundTasks() {
 		logging.Infof(c.Context, "EnableBackgroundTasks is disabled via config.")
 		return nil
 	}
@@ -143,7 +143,7 @@ func triggerRepairOnIdleCronHandler(c *router.Context) (err error) {
 	}()
 
 	cfg := config.Get(c.Context)
-	if cfg.RpcControl.DisableTriggerRepairOnIdle {
+	if cfg.RpcControl != nil && cfg.RpcControl.GetDisableTriggerRepairOnIdle() {
 		logging.Infof(c.Context, "TriggerRepairOnIdle is disabled via config.")
 		return nil
 	}
@@ -168,7 +168,7 @@ func triggerRepairOnRepairFailedCronHandler(c *router.Context) (err error) {
 	}()
 
 	cfg := config.Get(c.Context)
-	if cfg.RpcControl.DisableTriggerRepairOnRepairFailed {
+	if cfg.RpcControl != nil && cfg.RpcControl.GetDisableTriggerRepairOnRepairFailed() {
 		logging.Infof(c.Context, "TriggerRepairOnRepairFailed is disabled via config.")
 		return nil
 	}
@@ -196,8 +196,7 @@ func logAndSetHTTPErr(f func(c *router.Context) error) func(*router.Context) {
 
 func refreshInventoryCronHandler(c *router.Context) error {
 	cfg := config.Get(c.Context)
-	if cfg.RpcControl.DisableRefreshInventory {
-		logging.Infof(c.Context, "RefreshInventory is disabled via config.")
+	if cfg.RpcControl != nil && cfg.RpcControl.GetDisableRefreshInventory() {
 		return nil
 	}
 	inv := createInventoryServer(c)

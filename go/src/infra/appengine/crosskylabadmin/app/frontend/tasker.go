@@ -85,7 +85,7 @@ func runTaskByDUTName(ctx context.Context, at worker.Task, sc clients.SwarmingCl
 	tags := swarming.AddCommonTags(
 		ctx,
 		fmt.Sprintf("%s:%s", at.Name, dutName),
-		fmt.Sprintf("%s", at.Name),
+		fmt.Sprintf("task:%s", at.Name),
 	)
 	tags = append(tags, at.Tags...)
 	a := swarming.SetCommonTaskArgs(ctx, &clients.SwarmingCreateTaskArgs{

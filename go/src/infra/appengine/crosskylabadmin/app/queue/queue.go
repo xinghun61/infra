@@ -51,6 +51,7 @@ func runRepairQueueHandler(c *router.Context) (err error) {
 	dutName := c.Request.FormValue("dutName")
 	taskURL, err := frontend.CreateRepairTask(c.Context, dutName)
 	if err != nil {
+		logging.Infof(c.Context, "fail to run repair job in queue for %s: %s", dutName, err.Error())
 		return err
 	}
 
