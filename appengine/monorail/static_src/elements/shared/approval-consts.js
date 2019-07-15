@@ -29,7 +29,7 @@ export const TEXT_TO_STATUS_ENUM = {
 
 export const STATUS_CLASS_MAP = {
   'NotSet': 'status-notset',
-  'NeedsReview': 'status-pending',
+  'NeedsReview': 'status-notset',
   'NA': 'status-na',
   'ReviewRequested': 'status-pending',
   'ReviewStarted': 'status-pending',
