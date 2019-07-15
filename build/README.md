@@ -53,18 +53,6 @@ platforms:
   - windows-386
   - windows-amd64
 
-# Optional filter with a list of CI builders to build this package on. If not
-# specified the package will be build on all CI builders that target platforms
-# specified in the 'platforms' filter. When build.py script is invoked manually
-# (without --builder flag), this filter is ignored.
-# WARNING: as of June 2018, there are two builders:
-#  infra-continuous-x-y which just builds
-#  infra-packager-x-y   which also uploads.
-# You probably want to list both.
-builders:
-  - infra-continuous-precise-64
-  - ...
-
 # Optional list of go packages to 'go install' before zipping this package.
 go_packages:
   - go.chromium.org/luci/cipd/client/cmd/cipd
@@ -136,13 +124,12 @@ Following features of the package definition are implemented by `build.py`
 (basically anything related to the process of building the code and preparing
 all necessary files for packaging):
 
-* `builders`
 * `platforms`
 * `go_build_environ`
 * `go_packages`
+* `copies`
+* `posix_symlinks`
 * `generate_bat_shim`
-
-Packages that are defined in `*disabled.yaml` files are skipped by build.py.
 
 
 Strings interpolation

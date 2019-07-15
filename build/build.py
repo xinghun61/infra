@@ -124,20 +124,8 @@ class PackageDef(collections.namedtuple(
             self.path,
             'Only "CGO_ENABLED" is supported in "go_build_environ" currently')
 
-  def should_visit(self, builder):
-    """Returns True if package should be built in the current environment.
-
-    Takes into account 'builders' and 'platforms' properties of the package
-    definition file.
-    """
-    # If '--builder' is not specified, ignore 'builders' property. Otherwise, if
-    # 'builders' YAML attribute it not empty, verify --builder is listed there.
-    # This is useful to guarantee a package (usually platform independent) is
-    # built only by one builder.
-    builders = self.pkg_def.get('builders')
-    if builder and builders and builder not in builders:
-      return False
-
+  def should_visit(self):
+    """Returns True if package targets the current platform."""
     # If the package doesn't have 'platforms' set, assume it doesn't want to be
     # cross-compiled, and supports only native host platform or it's platform
     # independent. Otherwise build it only if the target of the compilation is
@@ -1039,7 +1027,7 @@ def run(
   except PackageDefException as exc:
     print >> sys.stderr, exc
     return 1
-  packages_to_visit = [p for p in defs if p.should_visit(builder)]
+  packages_to_visit = [p for p in defs if p.should_visit()]
 
   print_title('Overview')
   if upload:
