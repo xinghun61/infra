@@ -42,6 +42,7 @@ import (
 	lflag "go.chromium.org/luci/common/flag"
 	"go.chromium.org/luci/common/logging/gologger"
 
+	"infra/cmd/skylab_swarming_worker/internal/annotations"
 	"infra/cmd/skylab_swarming_worker/internal/autotest/constants"
 	"infra/cmd/skylab_swarming_worker/internal/event"
 	"infra/cmd/skylab_swarming_worker/internal/fifo"
@@ -145,12 +146,14 @@ func mainInner(a *args) error {
 		return errors.Wrap(err, "run lucifer task")
 	}
 	if a.isolatedOutdir != "" {
-		blob, err := parser.GetResults(i.ParserArgs())
+		blob, err := parser.GetResults(i.ParserArgs(), annotWriter)
 		if err != nil {
 			return errors.Wrap(err, "results parsing")
 		}
 
-		if err := writeResultsFile(a.isolatedOutdir, blob); err != nil {
+		err = writeResultsFile(a.isolatedOutdir, blob, annotWriter)
+
+		if err != nil {
 			return errors.Wrap(err, "writing results to isolated output file")
 		}
 	}
@@ -329,7 +332,20 @@ func runDeployTask(i *harness.Info, actions string, logdogOutput io.Writer, ta l
 const resultsFileName = "results.json"
 
 // writeResultsFile writes the results blob to "results.json" inside the given dir.
-func writeResultsFile(outdir string, b []byte) error {
+func writeResultsFile(outdir string, b []byte, logdogOutput io.Writer) error {
+	annotations.SeedStep(logdogOutput, "Write results.json")
+	annotations.StepCursor(logdogOutput, "Write results.json")
+	annotations.StepStarted(logdogOutput)
+	defer annotations.StepClosed(logdogOutput)
+
 	f := filepath.Join(outdir, resultsFileName)
-	return ioutil.WriteFile(f, b, 0644)
+	fmt.Fprintf(logdogOutput, "Writing results to %s", f)
+
+	err := ioutil.WriteFile(f, b, 0644)
+
+	if err != nil {
+		annotations.StepException(logdogOutput)
+		fmt.Fprint(logdogOutput, err.Error())
+	}
+	return err
 }
