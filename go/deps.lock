@@ -1,5 +1,5 @@
-hash: 3f61f28fb9e206029e050b34737670910b4b1b07131618d92ce0e1e1078c32c9
-updated: 2019-06-18T16:36:18.561510945-07:00
+hash: a311a294b055e65ac2cf072c070bed37920a165c47cc8e9eec33f3a4a32752be
+updated: 2019-07-14T07:21:05.733948-07:00
 imports:
 - name: cloud.google.com/go
   version: c78ab96201e0c8da64e78ecf15b8f56f8cdf5e4c
@@ -448,6 +448,9 @@ imports:
 - name: golang.org/x/text
   version: 342b2e1fbaa52c93f31447ad2c6abc048c63e475
   repo: https://go.googlesource.com/text.git
+- name: golang.org/x/time
+  repo: https://go.googlesource.com/time.git
+  version: 9d24e82272b4f38b78bc8cff74fa936d31ccd8ef
 - name: golang.org/x/tools
   version: 04b924abaa25159becde493bc31b979bcecd4887
   repo: https://go.googlesource.com/tools.git
