@@ -28,7 +28,7 @@ import (
 const (
 	migrationConfigGitilesHost = "chrome-internal.googlesource.com"
 	migrationConfigGitProject  = "chromeos/infra/config"
-	migrationConfigFilePath    = "crostestplatform/generated/scheduler_migration.cfg"
+	migrationConfigFilePath    = "testplatform/generated/scheduler_migration.cfg"
 	migrationConfigCommittish  = "refs/heads/master"
 )
 
