@@ -17,7 +17,6 @@ import (
 
 	"github.com/golang/protobuf/ptypes"
 	"go.chromium.org/luci/common/errors"
-	"go.chromium.org/luci/common/logging"
 
 	"infra/appengine/drone-queen/api"
 	"infra/cmd/drone-agent/internal/agent/state"
@@ -39,6 +38,8 @@ type Agent struct {
 	ReportingInterval time.Duration
 	DUTCapacity       int
 
+	// logger is used for Agent logging.  If nil, use the log package.
+	logger logger
 	// wrapStateFunc is called to wrap the agent state.  This is
 	// used for instrumenting the state for testing.  If nil, this
 	// is a no-op.
@@ -46,6 +47,11 @@ type Agent struct {
 	// startBotFunc is used to start Swarming bots.  If nil, a
 	// real implementation is used.  This is set for testing.
 	startBotFunc func(bot.Config) (bot.Bot, error)
+}
+
+// logger defines the logging interface used by Agent.
+type logger interface {
+	Printf(string, ...interface{})
 }
 
 // stateInterface is the state interface used by the agent.  The usual
@@ -64,11 +70,13 @@ type stateInterface interface {
 
 // Run runs the agent until it is canceled via the context.
 func (a *Agent) Run(ctx context.Context) {
+	a.log("Agent starting")
 	for {
 		if err := a.runOnce(ctx); err != nil {
 			log.Printf("Lost drone assignment: %v", err)
 		}
 		if draining.IsDraining(ctx) || ctx.Err() != nil {
+			a.log("Agent exited")
 			return
 		}
 	}
@@ -85,7 +93,7 @@ func (a *Agent) Run(ctx context.Context) {
 // If the assignment is lost or expired for whatever reason, this
 // function returns an error.
 func (a *Agent) runOnce(ctx context.Context) error {
-	// Register with queen.
+	a.log("Registering with queen")
 	res, err := a.Client.ReportDrone(ctx, a.reportRequest(ctx, ""))
 	if err != nil {
 		return errors.Annotate(err, "register with queen").Err()
@@ -124,8 +132,9 @@ reportLoop:
 			break reportLoop
 		case <-time.After(a.ReportingInterval):
 		}
+		a.log("Reporting to queen")
 		if err := a.reportDrone(ctx, s); err != nil {
-			logging.Errorf(ctx, "Error: %s", err)
+			a.log("Error reporting to queen: %s", err)
 			if _, ok := err.(fatalError); ok {
 				break reportLoop
 			}
@@ -189,6 +198,14 @@ func (a *Agent) reportRequest(ctx context.Context, uuid string) *api.ReportDrone
 		req.LoadIndicators.DutCapacity = 0
 	}
 	return &req
+}
+
+func (a *Agent) log(format string, args ...interface{}) {
+	if v := a.logger; v != nil {
+		v.Printf(format, args...)
+	} else {
+		log.Printf(format, args...)
+	}
 }
 
 func (a *Agent) wrapState(s *state.State) stateInterface {

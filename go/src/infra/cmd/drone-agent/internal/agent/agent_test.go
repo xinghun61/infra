@@ -353,9 +353,19 @@ func newTestAgent(t *testing.T) (a *Agent, cleanup func()) {
 		WorkingDir:        workDir,
 		ReportingInterval: time.Nanosecond,
 		DUTCapacity:       99999,
+		logger:            testLogger{t},
 		startBotFunc:      startFakeBot,
 	}
 	return a, cleanup
+}
+
+// testLogger implements the logger interface for tests.
+type testLogger struct {
+	t *testing.T
+}
+
+func (t testLogger) Printf(format string, args ...interface{}) {
+	t.t.Logf(format, args...)
 }
 
 // startFakeBot is a fake implementation of Agent.startBotFunc.
