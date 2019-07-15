@@ -46,14 +46,10 @@ def presubmit(
           'vpython_spec_path': vpython_spec_path,
       }
   }
-  # TODO(jbudorick): Remove after all users have switched to the new module
-  # properties.
-  if run_hooks:
-    props['runhooks'] = True
   luci.builder(
       name = name,
       bucket = 'try',
-      executable = build.recipe('run_presubmit'),
+      executable = build.recipe('presubmit'),
       properties = props,
       service_account = infra.SERVICE_ACCOUNT_TRY,
       dimensions = {
