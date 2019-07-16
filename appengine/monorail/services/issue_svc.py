@@ -3236,11 +3236,8 @@ class IssueService(object):
         {'reporter_id': framework_constants.DELETED_USER_ID},
         reporter_id=user_ids,
         commit=commit, limit=limit)
-    self.issuesnapshot2cc_tbl.Update(
-        cnxn,
-        {'cc_id': framework_constants.DELETED_USER_ID},
-        cc_id=user_ids,
-        commit=commit, limit=limit)
+    self.issuesnapshot2cc_tbl.Delete(
+        cnxn, cc_id=user_ids, commit=commit, limit=limit)
 
     return list(set(affected_issue_ids))
 

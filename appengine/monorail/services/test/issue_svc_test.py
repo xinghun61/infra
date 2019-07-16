@@ -2576,7 +2576,7 @@ class IssueServiceTest(unittest.TestCase):
     self.services.issue.issue_tbl.Update = Mock()
 
     self.services.issue.issuesnapshot_tbl.Update = Mock()
-    self.services.issue.issuesnapshot2cc_tbl.Update = Mock()
+    self.services.issue.issuesnapshot2cc_tbl.Delete = Mock()
 
     emails = ['cow@farm.com', 'pig@farm.com', 'chicken@farm.com']
     user_ids = [222, 888, 444]
@@ -2686,9 +2686,8 @@ Delete.assert_called_once_with(
     self.assertEqual(
         2, len(self.services.issue.issuesnapshot_tbl.Update.call_args_list))
 
-    self.services.issue.issuesnapshot2cc_tbl.Update.assert_called_once_with(
-        self.cnxn, {'cc_id': framework_constants.DELETED_USER_ID},
-        cc_id=user_ids, commit=commit, limit=limit)
+    self.services.issue.issuesnapshot2cc_tbl.Delete.assert_called_once_with(
+        self.cnxn, cc_id=user_ids, commit=commit, limit=limit)
 
 
 class IssueServiceFunctionsTest(unittest.TestCase):
