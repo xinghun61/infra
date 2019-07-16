@@ -298,6 +298,20 @@ wheel: <
 
 * *universal*
 
+## **altgraph**
+
+### 0.16.1
+
+```protobuf
+wheel: <
+  name: "infra/python/wheels/altgraph-py2_py3"
+  version: "version:0.16.1"
+>
+```
+
+
+* *universal*
+
 ## **apache-beam**
 
 ### 2.0.0
@@ -1685,6 +1699,20 @@ wheel: <
 * *manylinux-x86*
 * *windows-x64*
 * *windows-x86*
+
+## **macholib**
+
+### 1.11
+
+```protobuf
+wheel: <
+  name: "infra/python/wheels/macholib-py2_py3"
+  version: "version:1.11"
+>
+```
+
+
+* *universal*
 
 ## **mccabe**
 
