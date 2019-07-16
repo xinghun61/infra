@@ -43,11 +43,7 @@ export class MrDescription extends LitElement {
   static get styles() {
     return css`
       .select-container {
-        width: 100%;
-        float: left;
-      }
-      select {
-        float: right;
+        text-align: right;
       }
     `;
   }
