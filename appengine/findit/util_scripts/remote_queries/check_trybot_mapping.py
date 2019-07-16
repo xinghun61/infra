@@ -2,15 +2,10 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 """Identifies mismatches between main waterfall builders and Findit trybots."""
-import base64
 from collections import defaultdict
-import gzip
-import io
 import json
 import os
 import sys
-import urllib
-import urllib2
 
 _FINDIT_DIR = os.path.join(
     os.path.dirname(__file__), os.path.pardir, os.path.pardir)
@@ -19,161 +14,126 @@ sys.path.insert(1, _FINDIT_DIR)
 from local_libs import remote_api
 remote_api.EnableFinditRemoteApi()
 
+from common.findit_http_client import FinditHttpClient
+from common.swarmbucket import swarmbucket
+from infra_api_clients import http_client_util
 from model.wf_config import FinditConfig
 
-NOT_AVAILABLE = 'N/A'
 
-_MILO_RESPONSE_PREFIX = ')]}\'\n'
-_MILO_MASTER_ENDPOINT = ('https://luci-milo.appspot.com/prpc/milo.Buildbot/'
-                         'GetCompressedMasterJSON')
+def _GetCIBuilders():
+  """Gets CI builders' information in a format like:
 
+  {
+    'Linux Tests': {
+      'os': 'Ubuntu-16.04',
+      'cpu': 'x86-64',
+      ...
+    },
+    ...
+  }
+  """
 
-def _ProcessMiloData(data):
-  if not data.startswith(_MILO_RESPONSE_PREFIX):
-    return None
-  data = data[len(_MILO_RESPONSE_PREFIX):]
+  def get_dimensions_list(dimensions):
+    dimension_dict = {}
+    for dimension in dimensions:
+      d_key, d_value = dimension.split(':', 1)
+      dimension_dict[d_key] = d_value
+    return dimension_dict
 
-  try:
-    response_data = json.loads(data)
-  except Exception:
-    return None
+  all_builders = {}
 
-  try:
-    decoded_data = base64.b64decode(response_data.get('data'))
-  except Exception:
-    return None
-
-  try:
-    with io.BytesIO(decoded_data) as compressed_file:
-      with gzip.GzipFile(fileobj=compressed_file) as decompressed_file:
-        data_json = decompressed_file.read()
-  except Exception:
-    return None
-
-  return json.loads(data_json)
+  builders = swarmbucket.GetBuilders('luci.chromium.ci')
+  for builder, builder_info in builders.iteritems():
+    all_builders[builder] = get_dimensions_list(
+        builder_info.get('swarming_dimensions'))
+  return all_builders
 
 
-def _GetBuilderList(master_name):
-  try:
-    headers = {
-        'Accept': 'application/json',
-        'Content-Type': 'application/json',
+def _GetBotsInPool(pool='luci.chromium.findit'):
+  """Gets bots in the requested pool in the format like:
+
+  {
+    'vm1xxx': {
+      'os': ['Linux', 'Ubuntu', 'Ubuntu-16.04'],
+      'cpu': ['x86', 'x86-64']
     }
-    values = {'name': master_name}
-    data = urllib.urlencode(values)
-    req = urllib2.Request(_MILO_MASTER_ENDPOINT, None, headers)
-    f = urllib2.urlopen(req, json.dumps(values), timeout=60)
-  except Exception as e:
-    print('WARNING: Unable to reach builbot to retrieve trybot ' 'information')
-    raise e
+  }
 
-  data = _ProcessMiloData(f.read())
-  return [bot for bot in data.get('builders', {}).keys()]
+  """
+  bot_list_url = (
+      'https://chromium-swarm.appspot.com/_ah/api/swarming/v1/bots/list?'
+      'dimensions=pool:{}'.format(pool))
+  content, error = http_client_util.SendRequestToServer(bot_list_url,
+                                                        FinditHttpClient())
+  if error or not content:
+    return None
+  content_dict = json.loads(content)
+  bots_in_pool = {}
+  for item in content_dict.get('items', []):
+    dimensions = {d['key']: d['value'] for d in item.get('dimensions')}
+    bots_in_pool[item.get('bot_id')] = dimensions
+
+  return bots_in_pool
+
+
+def _GetBuildersInMaster(master_name):
+  url = (
+      'https://luci-migration.appspot.com/masters/{master}/?format=json'.format(
+          master=master_name))
+  content, error = http_client_util.SendRequestToServer(url, FinditHttpClient())
+  if error or not content:
+    return None
+  content_dict = json.loads(content)
+  return content_dict.get('builders').keys()
+
+
+def _GetSupportingFinditBots(builder_dimensions, bots_in_pool):
+  return [
+      bot_id for bot_id, bot_dims in bots_in_pool.iteritems()
+      if all(d_value in bot_dims[d_key]
+             for d_key, d_value in builder_dimensions.iteritems()
+             if d_key in ('os', 'cpu'))
+  ]
 
 
 if __name__ == '__main__':
-  trybots = FinditConfig.Get().builders_to_trybots
+  ci_builders = _GetCIBuilders()
+  findit_bots = _GetBotsInPool()
+
   steps_for_masters_rules = FinditConfig.Get().steps_for_masters_rules
-  main_waterfall_cache = {}
-  variable_builders_cache = defaultdict(list)
-  tryservers = set()
-
-  print 'Determining missing support...'
-
   supported_masters = steps_for_masters_rules.get('supported_masters',
                                                   {}).keys()
-  for master in supported_masters:
-    print 'Master: %s' % master
 
-    if not trybots.get(master):
-      print 'Not found. Tryjobs for %s may not be supported.' % master
-      print
-      continue
-
-    try:
-      main_waterfall_builders = _GetBuilderList(master)
-    except Exception:
-      print 'Data could not be retrieved for master %s. Skipping.' % master
-      print
-      main_waterfall_cache[master] = NOT_AVAILABLE
-      continue
-
-    # Cache the results for later when checking for deprecated trybots.
-    main_waterfall_cache[master] = main_waterfall_builders
-
-    any_missing = False
-    for builder in main_waterfall_builders:
-      if builder not in trybots[master]:
-        any_missing = True
-        print '\'%s\' is missing.' % builder
-        continue
-
-      # Cache the variable builders in use for determining if any should be
-      # deprecated.
-      tryserver = trybots[master][builder]['mastername']
-      tryservers.add(tryserver)
-      variable_builder = trybots[master][builder]['waterfall_trybot']
-      variable_builders_cache[variable_builder].append({
-          'master': master,
-          'builder': builder
-      })
-
-    if not any_missing:
-      print 'OK'
-
-    print
-
-  print 'Determining deprecated bots...'
-
-  for master, trybot_mapping in trybots.iteritems():
-    print 'Master: %s' % master
-
-    any_deprecated = False
+  used_findit_bots = set()
+  for master in sorted(supported_masters):
     if master not in supported_masters:
-      print '\'%s\' is deprecated.' % master
-      any_deprecated = False
-    elif main_waterfall_cache.get(master) == NOT_AVAILABLE:
-      print 'Unable to determine support. Skipping.'
+      print 'Master: %s not supported.' % master
       print
       continue
 
-    for builder in trybot_mapping.keys():
-      if builder not in main_waterfall_cache.get(master, []):
-        print '\'%s\' is deprecated.' % builder
-        any_deprecated = True
-
-    if not any_deprecated:
-      print 'OK'
-
+    builders_in_master = _GetBuildersInMaster(master)
+    print 'Master: %s' % master
+    not_supported_builders = {}
+    for builder_name in sorted(builders_in_master):
+      swarming_dimensions = ci_builders.get(builder_name)
+      if not swarming_dimensions:
+        print '{}/{} not found in ci_builders.'.format(master, builder_name)
+        continue
+      supporting_findit_bots = _GetSupportingFinditBots(swarming_dimensions,
+                                                        findit_bots)
+      if not supporting_findit_bots:
+        not_supported_builders[builder_name] = swarming_dimensions
+      else:
+        used_findit_bots |= set(supporting_findit_bots)
+        print builder_name, ':', supporting_findit_bots
+    print
+    if not_supported_builders:
+      print 'Not supported builders:'
+      print json.dumps(not_supported_builders, indent=2)
+    else:
+      print 'OK.'
     print
 
-  print 'Determining unused variable builders...'
-
-  # Keep track of all variable builders in config.
-  variable_builders_in_config = set()
-  for master, builders in trybots.iteritems():
-    for builder_info in builders.values():
-      variable_builder = builder_info['waterfall_trybot']
-      variable_builders_in_config.add(variable_builder)
-
-  for tryserver in tryservers:
-    print 'Tryserver: %s' % tryserver
-
-    try:
-      tryserver_builders = _GetBuilderList(tryserver)
-    except Exception:
-      print 'Data could not be retrieved for %s' % tryserver
-      print
-      continue
-
-    any_unused = False
-    for builder in tryserver_builders:
-      if ('variable' in builder and 'deflake' not in builder and
-          builder not in variable_builders_in_config):
-        print '\'%s\' is unused.' % builder
-        any_unused = True
-
-    if not any_unused:
-      print 'OK'
-
-    print
+  unused_bots = set(findit_bots.keys()) - used_findit_bots
+  print 'Unused Findit builders:'
+  print sorted(list(unused_bots))
