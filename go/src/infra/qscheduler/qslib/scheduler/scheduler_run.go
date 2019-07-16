@@ -23,8 +23,9 @@ import (
 )
 
 type requestListItem struct {
-	req     *TaskRequest
-	matched bool
+	req           *TaskRequest
+	matched       bool
+	disableIfFree bool
 }
 
 // requestList implements sort.Interface, and sorts items in ascending
@@ -124,8 +125,7 @@ func (run *schedulerRun) updateExaminedTimes() {
 			req := item.req
 			// A task request was fully examined unless it was throttled due to
 			// account fanout limit, for an account with free tasks disabled.
-			account, ok := run.scheduler.config.AccountConfigs[string(req.AccountID)]
-			if ok && account.DisableFreeTasks && run.isThrottled(req) {
+			if item.disableIfFree && run.isThrottled(req) {
 				continue
 			}
 
@@ -253,7 +253,7 @@ func (run *schedulerRun) matchIdleBots(priority Priority, matchesPerWorker map[W
 			if match.item.matched {
 				continue
 			}
-			if run.shouldSkip(match.item.req, priority) {
+			if run.shouldSkip(match.item, priority) {
 				continue
 			}
 			if requireProvisionMatch && !match.provisionMatch {
@@ -289,18 +289,14 @@ func (run *schedulerRun) isThrottled(request *TaskRequest) bool {
 }
 
 // shouldSkip computes if the given request should be skipped at the given priority.
-func (run *schedulerRun) shouldSkip(request *TaskRequest, priority Priority) bool {
+func (run *schedulerRun) shouldSkip(item *requestListItem, priority Priority) bool {
 	// Enforce fanout (except for Freebucket).
 	if priority != FreeBucket {
-		return run.isThrottled(request)
+		return run.isThrottled(item.req)
 	}
 
 	// Enforce DisableFreeTasks (for FreeBucket).
-	if account, ok := run.scheduler.config.AccountConfigs[string(request.AccountID)]; ok {
-		return account.DisableFreeTasks
-	}
-
-	return false
+	return item.disableIfFree
 }
 
 // reprioritizeRunningTasks changes the priority of running tasks by either
@@ -501,7 +497,7 @@ func (run *schedulerRun) preemptRunningTasks(priority Priority, events EventSink
 // once the FreeBucket pass is reached.
 func (run *schedulerRun) moveThrottledRequests(priority Priority) {
 	for _, item := range run.requestsPerPriority[priority] {
-		if item.matched {
+		if item.matched || item.disableIfFree {
 			continue
 		}
 		if run.isThrottled(item.req) {

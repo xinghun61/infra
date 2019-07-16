@@ -46,19 +46,21 @@ func (s *Scheduler) prioritizeRequests(fanoutCounter *fanoutCounter) [NumPriorit
 			p = BestPriorityFor(state.balances[req.AccountID])
 		}
 
-		if p == FreeBucket {
-			if c, ok := s.config.AccountConfigs[string(req.AccountID)]; ok {
-				if c.DisableFreeTasks {
-					// Free tasks from accounts with this flag have no chance of matching,
-					// omit them from scheduling.
-					continue
-				}
-			}
+		disableIfFree := false
+		if c, ok := s.config.AccountConfigs[string(req.AccountID)]; ok {
+			disableIfFree = c.DisableFreeTasks
+		}
+
+		if p == FreeBucket && disableIfFree {
+			// Free tasks from accounts with this flag have no chance of matching,
+			// omit them from scheduling.
+			continue
 		}
 
 		prioritized[p] = append(prioritized[p], &requestListItem{
-			req:     req,
-			matched: false,
+			req:           req,
+			matched:       false,
+			disableIfFree: disableIfFree,
 		})
 	}
 
