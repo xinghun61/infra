@@ -73,15 +73,23 @@ class Repo(object):
   url = property(lambda self: self._url)
   repo_path = property(lambda self: self._repo_path)
 
-  def reify(self, share_from=None, timeout=None):
+  def reify(self, share_from=None, timeout=None, partial_clone=False):
     """Ensures the local mirror of this Repo exists.
 
     Args:
       share_from - Either a Repo, or a path to a git repo (on disk). This will
                    cause objects/info/alternates to be set up to point to the
                    other repo for objects.
+      timeout - How long to wait for fetch operation to finish before killing
+                it, sec.
+      partial_clone - if True, only history will be fetched, but no file
+                objects. See also https://git-scm.com/docs/partial-clone
+                Can not be used with share_from.
+                Default: False.
     """
     assert self.repos_dir is not None
+    assert not partial_clone or share_from is None, (
+        'partial_clone can\'t be used with share_from')
 
     if not os.path.exists(self.repos_dir):
       try:
@@ -155,8 +163,9 @@ class Repo(object):
       self.run(
           'remote', 'add', '--mirror=fetch', 'origin', self.url, cwd=tmp_path)
       ensure_config(tmp_path)
+      fetch_args = ['--filter=blob:limit=0'] if partial_clone else []
       self.run(
-          'fetch', stdout=sys.stdout, stderr=sys.stderr,
+          'fetch', *fetch_args, stdout=sys.stdout, stderr=sys.stderr,
           cwd=tmp_path, silent=True, timeout=timeout)
       os.rename(tmp_path, os.path.join(self.repos_dir, folder))
     else:
