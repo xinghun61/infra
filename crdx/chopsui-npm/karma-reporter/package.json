@@ -1,6 +1,6 @@
 {
   "name": "@chopsui/karma-reporter",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "JSON reporter for ChOps apps running tests with Karma",
   "main": "test-reporter.js",
   "author": "The Chromium Authors",

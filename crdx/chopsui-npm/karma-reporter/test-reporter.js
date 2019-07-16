@@ -27,7 +27,18 @@ const ChOpsJSONReporter = function(
     baseReporterDecorator, config, helper, logger) {
   const log = logger.create('chopsui-json-reporter');
   baseReporterDecorator(this);
+  const reporterConfig = config.chopsUiReporter || {};
+  const stdout = typeof reporterConfig.stdout !== 'undefined' ?
+    reporterConfig.stdout : false;
+  const outputFile = reporterConfig.outputFile
+    ? helper.normalizeWinPath(path.resolve(
+      config.basePath, reporterConfig.outputFile))
+    : null;
+  const builderName = reporterConfig.builderName || 'infra-try-frontend';
+  const buildNumber = reporterConfig.buildNumber;
   const history = {
+    builder_name: builderName,
+    build_number: buildNumber,
     interrupted: false,
     num_failures_by_type: {},
     path_delimiter: '/',
@@ -35,13 +46,6 @@ const ChOpsJSONReporter = function(
     tests: {},
     version: 3,
   };
-  const reporterConfig = config.chopsUiReporter || {};
-  const stdout = typeof reporterConfig.stdout !== 'undefined' ?
-    reporterConfig.stdout : true;
-  const outputFile = reporterConfig.outputFile
-    ? helper.normalizeWinPath(path.resolve(
-      config.basePath, reporterConfig.outputFile))
-    : null;
 
   this.onSpecComplete = function(browser, result) {
     const res = nest([...result.suite, result.description], history.tests);
