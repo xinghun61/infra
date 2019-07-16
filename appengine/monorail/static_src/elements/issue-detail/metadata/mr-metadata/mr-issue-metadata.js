@@ -4,10 +4,11 @@
 
 import {LitElement, html, css} from 'lit-element';
 
-import {store, connectStore} from 'elements/reducers/base.js';
+import {connectStore} from 'elements/reducers/base.js';
 import * as issue from 'elements/reducers/issue.js';
 import * as project from 'elements/reducers/project.js';
 import * as user from 'elements/reducers/user.js';
+import 'elements/framework/mr-star-button/mr-star-button.js';
 import 'elements/framework/links/mr-user-link/mr-user-link.js';
 import 'elements/framework/links/mr-hotlist-link/mr-hotlist-link.js';
 import {SHARED_STYLES} from 'elements/shared/shared-styles.js';
@@ -87,24 +88,9 @@ export class MrIssueMetadata extends connectStore(LitElement) {
           align-items: center;
           justify-content: center;
         }
-        /* Wrap the star icon around a button for accessibility. */
-        .star-line button {
-          background: none;
-          border: none;
-          cursor: pointer;
-          padding: 0;
-          margin: 0;
+        mr-star-button {
           margin-right: 4px;
-        }
-        .star-line button[disabled] {
-          opacity: 0.5;
-          cursor: default;
-        }
-        .star-line i.material-icons {
-          color: hsl(120, 5%, 66%);
-        }
-        .star-line i.material-icons.starred {
-          color: cornflowerblue;
+          padding-bottom: 2px;
         }
       `,
     ];
@@ -115,20 +101,9 @@ export class MrIssueMetadata extends connectStore(LitElement) {
     return html`
       <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
       <div class="star-line">
-        <button class="star-button" @click=${this.toggleStar} ?disabled=${!this._canStar}>
-          ${this.isStarred ? html`
-            <i class="material-icons starred" title="You've starred this issue">
-              star
-            </i>
-          `: html`
-            <i
-              class="material-icons"
-              title="${this._userId ? 'Click' : 'Log in'} to star this issue"
-            >
-              star_border
-            </i>
-          `}
-        </button>
+        <mr-star-button
+          .issueRef=${this.issueRef}
+        ></mr-star-button>
         Starred by ${this.issue.starCount || 0} ${pluralize(this.issue.starCount, 'user')}
       </div>
       <mr-metadata
@@ -240,9 +215,6 @@ export class MrIssueMetadata extends connectStore(LitElement) {
       issueRef: {type: Object},
       projectConfig: String,
       user: {type: Object},
-      isStarred: {type: Boolean},
-      fetchingIsStarred: {type: Boolean},
-      starringIssue: {type: Boolean},
       issueHotlists: {type: Array},
       blocking: {type: Array},
       sortedBlockedOn: {type: Array},
@@ -259,9 +231,6 @@ export class MrIssueMetadata extends connectStore(LitElement) {
     this.issueRef = issue.issueRef(state);
     this.user = user.user(state);
     this.projectConfig = project.project(state).config;
-    this.isStarred = issue.isStarred(state);
-    this.fetchingIsStarred = issue.requests(state).fetchIsStarred.requesting;
-    this.starringIssue = issue.requests(state).star.requesting;
     this.blocking = issue.blockingIssues(state);
     this.sortedBlockedOn = issue.sortedBlockedOn(state);
     this.mergedInto = issue.mergedInto(state);
@@ -275,11 +244,6 @@ export class MrIssueMetadata extends connectStore(LitElement) {
 
   get _userId() {
     return this.user && this.user.userId;
-  }
-
-  get _canStar() {
-    const {fetchingIsStarred, starringIssue, _userId} = this;
-    return _userId && !fetchingIsStarred && !starringIssue;
   }
 
   get _hotlistsByRole() {
@@ -302,15 +266,6 @@ export class MrIssueMetadata extends connectStore(LitElement) {
       }
     });
     return hotlists;
-  }
-
-  toggleStar() {
-    if (!this._canStar) return;
-
-    const newIsStarred = !this.isStarred;
-    const issueRef = this.issueRef;
-
-    store.dispatch(issue.star(issueRef, newIsStarred));
   }
 
   openUpdateHotlists() {

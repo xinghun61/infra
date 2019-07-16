@@ -8,6 +8,7 @@ import debounce from 'debounce';
 
 import 'elements/chops/chops-button/chops-button.js';
 import 'elements/framework/mr-upload/mr-upload.js';
+import 'elements/framework/mr-star-button/mr-star-button.js';
 import 'elements/chops/chops-checkbox/chops-checkbox.js';
 import 'elements/chops/chops-chip/chops-chip.js';
 import 'elements/framework/mr-error/mr-error.js';
@@ -147,16 +148,6 @@ export class MrEditMetadata extends connectStore(LitElement) {
           margin-top: 4px;
           margin-bottom: -8px;
         }
-        i.inline-warning {
-          font-size: var(--chops-icon-font-size);
-          color: #FF6F00;
-          vertical-align: bottom;
-        }
-        i.inline-info {
-          font-size: var(--chops-icon-font-size);
-          color: gray;
-          vertical-align: bottom;
-        }
         .star-line {
           display: flex;
           align-items: center;
@@ -166,21 +157,8 @@ export class MrEditMetadata extends connectStore(LitElement) {
           margin-top: 4px;
           padding: 2px 4px 2px 8px;
         }
-        /* Wrap the star icon around a button for accessibility. */
-        .star-line button {
-          background: none;
-          border: none;
-          cursor: pointer;
-          padding: 0;
-          margin: 0;
-          margin-right: 8px;
-        }
-        .star-line i.material-icons {
-          font-size: var(--chops-icon-font-size);
-          color: hsl(120, 5%, 66%);
-        }
-        .star-line i.material-icons[starred] {
-          color: cornflowerblue;
+        mr-star-button {
+          margin-right: 4px;
         }
         .predicted-component {
           cursor: pointer;
@@ -241,17 +219,9 @@ export class MrEditMetadata extends connectStore(LitElement) {
 
     return html`
       <div class="star-line">
-        <button
-          class="star-button"
-          @click=${this.toggleStar}
-          ?disabled=${!this._canStar}
-        >
-          <i
-            class="material-icons"
-            ?starred=${this.isStarred}
-            title="${this.isStarred ? 'You\'ve starred' : 'Star'} this issue"
-          >star</i>
-        </button>
+        <mr-star-button
+          .issueRef=${this.issueRef}
+        ></mr-star-button>
         <span>
           ${this.isStarred ? `
             You have voted for this issue and will receive notifications.
@@ -603,8 +573,6 @@ export class MrEditMetadata extends connectStore(LitElement) {
       projectName: {type: String},
       isApproval: {type: Boolean},
       isStarred: {type: Boolean},
-      fetchingIsStarred: {type: Boolean},
-      starringIssue: {type: Boolean},
       issuePermissions: {type: Object},
       issueRef: {type: Object},
       hasApproverPrivileges: {type: Boolean},
@@ -649,11 +617,6 @@ export class MrEditMetadata extends connectStore(LitElement) {
   get _nicheFieldCount() {
     const fieldDefs = this.fieldDefs || [];
     return fieldDefs.reduce((acc, fd) => acc + (fd.isNiche | 0), 0);
-  }
-
-  get _canStar() {
-    const {fetchingIsStarred, starringIssue} = this;
-    return !fetchingIsStarred && !starringIssue;
   }
 
   get _canEditIssue() {
@@ -723,8 +686,6 @@ export class MrEditMetadata extends connectStore(LitElement) {
     this.issuePermissions = issue.permissions(state);
     this.optionsPerEnumField = project.optionsPerEnumField(state);
     this.isStarred = issue.isStarred(state);
-    this.fetchingIsStarred = issue.requests(state).fetchIsStarred.requesting;
-    this.starringIssue = issue.requests(state).star.requesting;
   }
 
   disconnectedCallback() {
@@ -780,16 +741,6 @@ export class MrEditMetadata extends connectStore(LitElement) {
     if (!isDirty || confirm('Discard your changes?')) {
       this.dispatchEvent(new CustomEvent('discard'));
     }
-  }
-
-  toggleStar(e) {
-    e.preventDefault();
-    if (!this._canStar) return;
-
-    const newIsStarred = !this.isStarred;
-    const issueRef = this.issueRef;
-
-    store.dispatch(issue.star(issueRef, newIsStarred));
   }
 
   async focus() {

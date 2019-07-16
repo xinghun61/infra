@@ -4,7 +4,6 @@
 
 import {assert} from 'chai';
 import {MrIssueMetadata} from './mr-issue-metadata.js';
-import sinon from 'sinon';
 
 let element;
 
@@ -20,28 +19,6 @@ describe('mr-issue-metadata', () => {
 
   it('initializes', () => {
     assert.instanceOf(element, MrIssueMetadata);
-  });
-
-  it('clicking star toggles star', async () => {
-    sinon.spy(element, 'toggleStar');
-    element.user = {userId: 1234};
-
-    await element.updateComplete;
-
-    assert.isTrue(element._canStar);
-    assert.isTrue(element.toggleStar.notCalled);
-
-    element.shadowRoot.querySelector('.star-button').click();
-    assert.isTrue(element.toggleStar.called);
-
-    element.toggleStar.restore();
-  });
-
-  it('starring is disabled when user is not logged-in', async () => {
-    await element.updateComplete;
-
-    const star = element.shadowRoot.querySelector('.star-button');
-    assert.isTrue(star.disabled);
   });
 
   it('labels render', async () => {
