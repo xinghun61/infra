@@ -30,10 +30,10 @@ import (
 // Within a priority bucket, items are sorted in ascending examinedTime order.
 //
 // This function does not modify state or config.
-func (s *Scheduler) prioritizeRequests(fanoutCounter *fanoutCounter) [NumPriorities + 1]requestList {
+func (s *Scheduler) prioritizeRequests(fanoutCounter *fanoutCounter) [NumPriorities + 1]matchableRequestList {
 	state := s.state
 
-	var prioritized [NumPriorities + 1]requestList
+	var prioritized [NumPriorities + 1]matchableRequestList
 
 	for _, req := range state.queuedRequests {
 		if req.ID == "" {
@@ -57,10 +57,10 @@ func (s *Scheduler) prioritizeRequests(fanoutCounter *fanoutCounter) [NumPriorit
 			continue
 		}
 
-		prioritized[p] = append(prioritized[p], &requestListItem{
-			req:           req,
-			matched:       false,
-			disableIfFree: disableIfFree,
+		prioritized[p] = append(prioritized[p], &matchableRequest{
+			req:            req,
+			alreadyMatched: false,
+			disableIfFree:  disableIfFree,
 		})
 	}
 
