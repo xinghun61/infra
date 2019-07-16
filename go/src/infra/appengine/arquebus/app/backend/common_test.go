@@ -6,16 +6,13 @@ package backend
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
-	"net/url"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes"
 	. "github.com/smartystreets/goconvey/convey"
 
 	"go.chromium.org/gae/service/datastore"
-	"go.chromium.org/gae/service/urlfetch"
 	"go.chromium.org/luci/appengine/tq"
 	"go.chromium.org/luci/appengine/tq/tqtesting"
 	"go.chromium.org/luci/common/clock/testclock"
@@ -35,25 +32,8 @@ var (
 	testStart, _ = ptypes.TimestampProto(testclock.TestRecentTimeUTC)
 	testEnd, _   = ptypes.TimestampProto(testclock.TestRecentTimeUTC)
 
-	// sample rotation shifts for the legacy JSON interface.
-	mockLegacyShifts = map[string]*oncallShift{
-		"rotation1": {
-			Primary:     "r1pri@@test.com",
-			Secondaries: []string{"r1sec1@test.com", "r1sec2@test.com"},
-			Started:     testclock.TestRecentTimeUTC.Unix(),
-		},
-		"rotation2": {
-			Primary:     "r2pri@@test.com",
-			Secondaries: []string{"r2sec1@test.com", "r2sec2@test.com"},
-			Started:     testclock.TestRecentTimeUTC.Unix(),
-		},
-		"rotation3": {
-			Primary:     "r3pri@@test.com",
-			Secondaries: []string{"r3sec1@test.com", "r3sec2@test.com"},
-			Started:     testclock.TestRecentTimeUTC.Unix(),
-		},
-	}
-	mockOncallShifts = map[string]*rotangapi.ShiftEntry{
+	// sample rotation shifts.
+	sampleOncallShifts = map[string]*rotangapi.ShiftEntry{
 		"Rotation 1": {
 			Start: testStart,
 			End:   testEnd,
@@ -107,12 +87,8 @@ func createTestContextWithTQ() context.Context {
 	c = setMonorailClient(c, newTestIssueClient())
 	c = setRotaNGClient(c, newTestOncallInfoClient())
 
-	// set sample rotation shifts for the legacy JSON and pRPC interface
-	for rotation, shift := range mockLegacyShifts {
-		setShiftResponse(c, rotation, shift)
-	}
 	// set sample rotation shifts for the legacy JSON interface
-	for rotation, shift := range mockOncallShifts {
+	for rotation, shift := range sampleOncallShifts {
 		mockOncall(c, rotation, shift)
 	}
 	return c
@@ -152,17 +128,6 @@ func triggerRunTaskHandler(c context.Context, assignerID string, taskID int64) *
 	return task
 }
 
-func setShiftResponse(c context.Context, rotation string, shift *oncallShift) {
-	data, _ := json.Marshal(shift)
-	url := fmt.Sprintf(
-		"https://%s/legacy/%s.json", config.Get(c).RotangHostname,
-		url.QueryEscape(rotation),
-	)
-
-	transport := urlfetch.Get(c).(*util.MockHTTPTransport)
-	transport.Responses[url] = string(data)
-}
-
 func createRawUserSources(sources ...*config.UserSource) [][]byte {
 	raw := make([][]byte, len(sources))
 	for i, source := range sources {
@@ -185,6 +150,24 @@ func oncallUserSource(rotation string, position config.Oncall_Position) *config.
 			Rotation: rotation, Position: position,
 		}},
 	}
+}
+
+func findPrimaryOncall(shift *rotangapi.ShiftEntry) *monorail.UserRef {
+	if len(shift.Oncallers) == 0 {
+		return nil
+	}
+	return monorailUser(shift.Oncallers[0].Email)
+}
+
+func findSecondaryOncalls(shift *rotangapi.ShiftEntry) []*monorail.UserRef {
+	var oncalls []*monorail.UserRef
+	if len(shift.Oncallers) < 2 {
+		return oncalls
+	}
+	for _, oc := range shift.Oncallers[1:] {
+		oncalls = append(oncalls, monorailUser(oc.Email))
+	}
+	return oncalls
 }
 
 // ----------------------------------

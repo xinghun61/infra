@@ -12,6 +12,7 @@ import (
 	. "github.com/smartystreets/goconvey/convey"
 
 	"infra/appengine/arquebus/app/config"
+	"infra/appengine/rotang/proto/rotangapi"
 	"infra/monorailv2/api/api_proto"
 )
 
@@ -25,7 +26,7 @@ func TestSearchAndUpdateIssues(t *testing.T) {
 		// create a sample assigner with tasks.
 		assigner := createAssigner(c, assignerID)
 		assigner.AssigneesRaw = createRawUserSources(
-			oncallUserSource("rotation1", config.Oncall_PRIMARY),
+			oncallUserSource("Rotation 1", config.Oncall_PRIMARY),
 		)
 		assigner.CCsRaw = createRawUserSources()
 		tasks := triggerScheduleTaskHandler(c, assignerID)
@@ -63,10 +64,16 @@ func TestSearchAndUpdateIssues(t *testing.T) {
 
 			req := getIssueUpdateRequest(c, "test", 123)
 			So(req, ShouldNotBeNil)
-			So(req.Delta.OwnerRef.DisplayName, ShouldEqual, mockLegacyShifts["rotation1"].Primary)
+			So(
+				req.Delta.OwnerRef.DisplayName, ShouldEqual,
+				findPrimaryOncall(sampleOncallShifts["Rotation 1"]).DisplayName,
+			)
 			req = getIssueUpdateRequest(c, "test", 456)
 			So(req, ShouldNotBeNil)
-			So(req.Delta.OwnerRef.DisplayName, ShouldEqual, mockLegacyShifts["rotation1"].Primary)
+			So(
+				req.Delta.OwnerRef.DisplayName, ShouldEqual,
+				findPrimaryOncall(sampleOncallShifts["Rotation 1"]).DisplayName,
+			)
 		})
 
 		Convey("no issues are updated", func() {
@@ -76,7 +83,7 @@ func TestSearchAndUpdateIssues(t *testing.T) {
 
 			Convey("if no oncaller is available", func() {
 				// simulate an oncall with empty shifts.
-				setShiftResponse(c, "rotation1", &oncallShift{})
+				mockOncall(c, "Rotation 1", &rotangapi.ShiftEntry{})
 
 				// nUpdated should be 0
 				nUpdated, err := searchAndUpdateIssues(c, assigner, task)

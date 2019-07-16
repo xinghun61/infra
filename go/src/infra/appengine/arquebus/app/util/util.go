@@ -17,15 +17,10 @@ package util
 
 import (
 	"context"
-	"encoding/base64"
 	"fmt"
-	"io/ioutil"
-	"net/http"
-	"strings"
 
 	"go.chromium.org/gae/impl/memory"
 	"go.chromium.org/gae/service/datastore"
-	"go.chromium.org/gae/service/urlfetch"
 	"go.chromium.org/luci/appengine/tq"
 	"go.chromium.org/luci/common/logging"
 	"go.chromium.org/luci/server/auth"
@@ -101,40 +96,7 @@ func CreateTestContext() context.Context {
 	c = auth.WithState(c, &authtest.FakeState{
 		Identity: "user:foo@example.org",
 	})
-
-	c = urlfetch.Set(c, &MockHTTPTransport{
-		Responses: map[string]string{},
-	})
 	return c
-}
-
-// MockHTTPTransport is a test support type to mock out request/response pairs.
-type MockHTTPTransport struct {
-	Responses map[string]string
-}
-
-// RoundTrip implements http.RoundTripper
-func (t MockHTTPTransport) RoundTrip(req *http.Request) (*http.Response, error) {
-	response := &http.Response{
-		Header:     make(http.Header),
-		Request:    req,
-		StatusCode: http.StatusOK,
-	}
-	responseBody, ok := t.Responses[req.URL.String()]
-	if !ok {
-		response.StatusCode = http.StatusNotFound
-		response.Body = ioutil.NopCloser(strings.NewReader(
-			fmt.Sprintf("Page not found: %s", req.URL.String()),
-		))
-		return response, nil
-	}
-
-	if strings.ToLower(req.FormValue("format")) == "text" {
-		responseBody = base64.StdEncoding.EncodeToString([]byte(responseBody))
-	}
-
-	response.Body = ioutil.NopCloser(strings.NewReader(responseBody))
-	return response, nil
 }
 
 // ErrStatus sends an HTTP response with the error status and message.

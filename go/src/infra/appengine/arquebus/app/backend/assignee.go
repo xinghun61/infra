@@ -18,14 +18,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"net/http"
-	"net/url"
 	"time"
 
 	"github.com/golang/protobuf/ptypes"
 	"go.chromium.org/gae/service/memcache"
-	"go.chromium.org/gae/service/urlfetch"
-	"go.chromium.org/luci/common/errors"
 	"go.chromium.org/luci/common/logging"
 
 	"infra/appengine/arquebus/app/backend/model"
@@ -110,58 +106,6 @@ func setShiftCache(c context.Context, key string, shift *oncallShift) error {
 	return memcache.Set(c, item)
 }
 
-func findLegacyShift(c context.Context, task *model.Task, rotation string) (*oncallShift, error) {
-	var shift oncallShift
-	u := fmt.Sprintf(
-		"https://%s/legacy/%s.json", config.Get(c).RotangHostname,
-		url.QueryEscape(rotation),
-	)
-	// ignore cache lookup failures, but log the error.
-	switch err := getCachedShift(c, u, &shift); {
-	case err != nil:
-		if err != memcache.ErrCacheMiss {
-			task.WriteLog(c, "Shift cache lookup failed: %s", err.Error())
-		}
-	default:
-		return &shift, nil
-	}
-
-	req, err := http.NewRequest(http.MethodGet, u, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	// Associate the request with the context, expecting that the context
-	// is set with a timeout.
-	req = req.WithContext(c)
-	client := &http.Client{Transport: urlfetch.Get(c)}
-	task.WriteLog(
-		c, "Querying the current shift information for rotation %s", rotation,
-	)
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		task.WriteLog(c, "HTTP request failed: %s", resp.Status)
-		return nil, errors.Reason("HTTP request failed: %s", resp.Status).Err()
-	}
-
-	decoder := json.NewDecoder(resp.Body)
-	if err := decoder.Decode(&shift); err != nil {
-		return nil, err
-	}
-	if err := setShiftCache(c, u, &shift); err != nil {
-		// ignore cache save failures, but log the error.
-		msg := fmt.Sprintf("Failed to cache the shift; %s", err.Error())
-		task.WriteLog(c, msg)
-		logging.Errorf(c, msg)
-	}
-
-	return &shift, nil
-}
-
 func findShift(c context.Context, task *model.Task, rotation string) (*oncallShift, error) {
 	var oc oncallShift
 	switch err := getCachedShift(c, rotation, &oc); {
@@ -204,13 +148,9 @@ func findShift(c context.Context, task *model.Task, rotation string) (*oncallShi
 }
 
 func findOncallers(c context.Context, task *model.Task, oncall *config.Oncall) ([]*monorail.UserRef, error) {
-	shift, err := findLegacyShift(c, task, oncall.Rotation)
+	shift, err := findShift(c, task, oncall.Rotation)
 	if err != nil {
-		// if it failed to retrieve the shift information via the legacy
-		// interface, retry it via the pRPC interface.
-		if shift, err = findShift(c, task, oncall.Rotation); err != nil {
-			return nil, err
-		}
+		return nil, err
 	}
 
 	var oncallers []*monorail.UserRef
