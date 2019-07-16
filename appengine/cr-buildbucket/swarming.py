@@ -709,16 +709,6 @@ def _create_swarming_task(build):
 
       sw.task_id = new_task_id
 
-    # TODO(crbug.com/970053): remove this block once all in-flight and future
-    # tasks have BuildInfra entity.
-    with build.mutate_infra() as infra:
-      sw = infra.swarming
-      if sw.task_id:  # pragma: no cover
-        logging.warning('build already has a task %r', sw.task_id)
-        return False
-
-      sw.task_id = new_task_id
-
     assert not build.swarming_task_key
     build.swarming_task_key = task_key
     bundle.put()
@@ -831,17 +821,6 @@ def _sync_build_with_task_result_in_memory(build, build_infra, task_result):
   bp = build.proto
 
   with build_infra.mutate() as infra:
-    sw = infra.swarming
-    sw.ClearField('bot_dimensions')
-    for d in (task_result or {}).get('bot_dimensions', []):
-      assert isinstance(d['value'], list)
-      for v in d['value']:
-        sw.bot_dimensions.add(key=d['key'], value=v)
-    sw.bot_dimensions.sort(key=lambda d: (d.key, d.value))
-
-  # TODO(crbug.com/970053): remove this block once all in-flight and future
-  # tasks have BuildInfra entity.
-  with build.mutate_infra() as infra:
     sw = infra.swarming
     sw.ClearField('bot_dimensions')
     for d in (task_result or {}).get('bot_dimensions', []):

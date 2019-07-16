@@ -135,11 +135,6 @@ def build_bundle(for_creation=False, **build_proto_fields):  # pragma: no cover
   b = model.Build(
       id=proto.id,
       proto=proto,
-      # TODO(crbug.com/970053): remove this in favor of
-      # model.BuildInputProperties.
-      input_properties_bytes=(
-          proto.input.properties.SerializeToString() if not for_creation else ''
-      ),
       created_by=auth.Identity.from_bytes(proto.created_by),
       create_time=proto.create_time.ToDatetime(),
       status_changed_time=now,

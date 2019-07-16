@@ -142,33 +142,6 @@ class Build(ndb.Model):
   # creation.py or fix_builds.py.
   proto = datastore_utils.ProtobufProperty(build_pb2.Build)
 
-  # Build.input.properties serialized to bytes.
-  input_properties_bytes = ndb.BlobProperty()
-
-  # Build.infra serialized to bytes.
-  infra_bytes = ndb.BlobProperty()
-
-  def parse_infra(self):  # pragma: no cover
-    """Deserializes infra_bytes."""
-    # TODO(crbug.com/970053): remove this function in favor of BuildInfra entity
-    infra = build_pb2.BuildInfra()
-    if self.infra_bytes:
-      infra.ParseFromString(self.infra_bytes)
-    else:  # Backward compatibility.
-      infra.CopyFrom(self.proto.infra)
-    return infra
-
-  @contextlib.contextmanager
-  def mutate_infra(self):  # pragma: no cover
-    """Returns a context manager that provides a mutable BuildInfra object.
-
-    Deserializes infra_bytes, yields it, and serializes back.
-    """
-    # TODO(crbug.com/970053): remove this function in favor of BuildInfra entity
-    infra = self.parse_infra()
-    yield infra
-    self.infra_bytes = infra.SerializeToString()
-
   # A randomly generated key associated with the created swarming task.
   # Embedded in a build token provided to a swarming task in secret bytes.
   # Needed in case Buildbucket unintentionally creates multiple swarming tasks

@@ -349,16 +349,12 @@ class NewBuild(object):
         key=model.BuildInputProperties.key_for(b.key),
         properties=bp.input.properties.SerializeToString(),
     )
-    # TODO(crbug.com/970053): stop writing input_properties_bytes.
-    b.input_properties_bytes = bp.input.properties.SerializeToString()
     bp.input.ClearField('properties')
 
     build_infra = model.BuildInfra(
         key=model.BuildInfra.key_for(b.key),
         infra=bp.infra.SerializeToString(),
     )
-    # TODO(crbug.com/970053): stop writing infra_bytes.
-    b.infra_bytes = bp.infra.SerializeToString()
     bp.ClearField('infra')
 
     @ndb.transactional_tasklet
