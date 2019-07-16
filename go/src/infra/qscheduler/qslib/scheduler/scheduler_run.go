@@ -71,12 +71,14 @@ func (run *schedulerRun) Run(e EventSink) []*Assignment {
 	// Proceed through multiple passes of the scheduling algorithm, from highest
 	// to lowest priority requests (high priority = low p).
 	for p := Priority(0); p < NumPriorities; p++ {
+		workerMatches := run.computeIdleWorkerMatches(p)
+
 		// Step 1: Match any requests to idle workers that have matching
 		// provisionable labels.
-		output = append(output, run.matchIdleBots(p, provisionAwareMatch, e)...)
+		output = append(output, run.matchIdleBots(p, workerMatches, true, e)...)
 		// Step 2: Match request to any remaining idle workers, regardless of
 		// provisionable labels.
-		output = append(output, run.matchIdleBots(p, basicMatch, e)...)
+		output = append(output, run.matchIdleBots(p, workerMatches, false, e)...)
 		// Step 3: Demote (out of this level) or promote (into this level) any
 		// already running tasks that qualify.
 		run.reprioritizeRunningTasks(p, e)
@@ -93,8 +95,9 @@ func (run *schedulerRun) Run(e EventSink) []*Assignment {
 	// idle workers. The reprioritize and preempt stages do not apply here.
 	// TODO(akeshet): Consider a final sorting step here, so that FIFO ordering is respected among
 	// FreeBucket jobs, including those that were moved the the throttled list during the pass above.
-	output = append(output, run.matchIdleBots(FreeBucket, provisionAwareMatch, e)...)
-	output = append(output, run.matchIdleBots(FreeBucket, basicMatch, e)...)
+	workerMatches := run.computeIdleWorkerMatches(FreeBucket)
+	output = append(output, run.matchIdleBots(FreeBucket, workerMatches, true, e)...)
+	output = append(output, run.matchIdleBots(FreeBucket, workerMatches, false, e)...)
 
 	run.updateExaminedTimes()
 
@@ -151,6 +154,10 @@ type matchLevel struct {
 	// canMatch indicates if the request can run on the worker.
 	canMatch bool
 
+	// provisionMatch indicates if the request's provisionable labels are
+	// matched by the worker
+	provisionMatch bool
+
 	// quality is a heuristic for the quality a match, used to break ties between multiple
 	// requests that can match a worker.
 	//
@@ -168,41 +175,51 @@ type matchListItem struct {
 // matcher is the type for functions that evaluates request to worker matching.
 type matcher func(*Worker, *TaskRequest) matchLevel
 
-// basicMatch is a matcher function that considers only whether all of the base labels of the
-// given request are satisfied by the worker.
-//
-// The quality heuristic is the number of the base labels in the request (the more, the better).
-// This heuristic allows requests that have higher specificity to be preferentially matched to the
-// workers that can support them.
+// basicMatch determines whether a request can run on a worker, and the quality
+// of the match.
 func basicMatch(w *Worker, r *TaskRequest) matchLevel {
-	if w.Labels.HasAll(r.BaseLabels...) {
-		quality := len(r.BaseLabels)
-		return matchLevel{true, quality}
+	if !w.Labels.HasAll(r.BaseLabels...) {
+		return matchLevel{canMatch: false}
 	}
-	return matchLevel{false, 0}
+	provisionMatch := w.Labels.HasAll(r.ProvisionableLabels...)
+	quality := len(r.BaseLabels)
+	return matchLevel{
+		canMatch:       true,
+		quality:        quality,
+		provisionMatch: provisionMatch,
+	}
 }
 
-// provisionAwareMatch is a matcher function that requires both the base labels and the provisionable
-// labels of the request to be satisfied by the worker.
-func provisionAwareMatch(w *Worker, r *TaskRequest) matchLevel {
-	if !w.Labels.HasAll(r.ProvisionableLabels...) {
-		return matchLevel{false, 0}
+func (run *schedulerRun) computeIdleWorkerMatches(priority Priority) map[WorkerID][]matchListItem {
+	matchesPerWorker := make(map[WorkerID][]matchListItem, len(run.idleWorkers))
+	type widAndItem struct {
+		wid     WorkerID
+		matches []matchListItem
 	}
-	return basicMatch(w, r)
+	mChan := make(chan widAndItem, len(run.idleWorkers))
+	candidates := run.requestsPerPriority[priority]
+	for wid, w := range run.idleWorkers {
+		go func(wid WorkerID, w *Worker) {
+			matches := computeWorkerMatch(w, candidates)
+			mChan <- widAndItem{wid: wid, matches: matches}
+		}(wid, w)
+	}
+	for len(matchesPerWorker) < len(run.idleWorkers) {
+		item := <-mChan
+		matchesPerWorker[item.wid] = item.matches
+	}
+	return matchesPerWorker
 }
 
-// computeWorkerMatch computes the match level for all given requests against a single worker,
-// and returns the matchable requests sorted by match quality.
-func computeWorkerMatch(w *Worker, items requestList, mf matcher) []matchListItem {
+// computeWorkerMatch computes the match level for all given requests against a
+// single worker, and returns the matchable requests sorted by match quality.
+func computeWorkerMatch(w *Worker, items requestList) []matchListItem {
 	var matches []matchListItem
 	end := sort.Search(len(items), func(i int) bool {
 		return items[i].req.examinedTime.After(w.modifiedTime)
 	})
 	for _, item := range items[:end] {
-		if item.matched {
-			continue
-		}
-		m := mf(w, item.req)
+		m := basicMatch(w, item.req)
 		if m.canMatch {
 			matches = append(matches, matchListItem{matchLevel: m, item: item})
 		}
@@ -214,38 +231,23 @@ func computeWorkerMatch(w *Worker, items requestList, mf matcher) []matchListIte
 }
 
 // matchIdleBots matches requests with idle workers.
-func (run *schedulerRun) matchIdleBots(priority Priority, mf matcher, events EventSink) []*Assignment {
+func (run *schedulerRun) matchIdleBots(priority Priority, matchesPerWorker map[WorkerID][]matchListItem, requireProvisionMatch bool, events EventSink) []*Assignment {
 	var output []*Assignment
-
-	// Compute per-worker matches concurrently, to make use of multiple cores.
-	matchesPerWorker := make(map[WorkerID][]matchListItem, len(run.idleWorkers))
-	type widAndItem struct {
-		wid     WorkerID
-		matches []matchListItem
-	}
-	mChan := make(chan widAndItem, len(run.idleWorkers))
-	candidates := run.requestsPerPriority[priority]
-	for wid, w := range run.idleWorkers {
-		go func(wid WorkerID, w *Worker) {
-			matches := computeWorkerMatch(w, candidates, mf)
-			mChan <- widAndItem{wid: wid, matches: matches}
-		}(wid, w)
-	}
-	for len(matchesPerWorker) < len(run.idleWorkers) {
-		item := <-mChan
-		matchesPerWorker[item.wid] = item.matches
-	}
 
 	for wid, w := range run.idleWorkers {
 		matches := matchesPerWorker[wid]
 		// select first match that is:
 		// - non-throttled match
 		// - not already matched
+		// - matches provision labels, if necessary
 		for _, match := range matches {
 			if match.item.matched {
 				continue
 			}
 			if run.shouldSkip(match.item.req, priority) {
+				continue
+			}
+			if requireProvisionMatch && !match.provisionMatch {
 				continue
 			}
 
@@ -430,7 +432,7 @@ func (run *schedulerRun) preemptRunningTasks(priority Priority, events EventSink
 
 	for _, worker := range candidates {
 		candidateRequests := run.requestsPerPriority[priority]
-		matches := computeWorkerMatch(worker, candidateRequests, basicMatch)
+		matches := computeWorkerMatch(worker, candidateRequests)
 
 		// Select first matching request from an account that is:
 		// - non-throttled
