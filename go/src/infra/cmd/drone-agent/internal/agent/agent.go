@@ -194,10 +194,15 @@ func (a *Agent) reportRequest(ctx context.Context, uuid string) *api.ReportDrone
 			DutCapacity: intToUint32(a.DUTCapacity),
 		},
 	}
-	if draining.IsDraining(ctx) {
+	if shouldRefuseNewDUTs(ctx) {
 		req.LoadIndicators.DutCapacity = 0
 	}
 	return &req
+}
+
+// shouldRefuseNewDUTs returns true if we should refuse new DUTs.
+func shouldRefuseNewDUTs(ctx context.Context) bool {
+	return draining.IsDraining(ctx) || ctx.Err() != nil
 }
 
 func (a *Agent) log(format string, args ...interface{}) {
