@@ -23,6 +23,7 @@ from oauth2client.client import GoogleCredentials
 
 WIPEOUT_ENDPOINT = 'https://emporia-pa.googleapis.com/v1/apps/%s'
 MAX_BATCH_SIZE = 10000
+MAX_DELETE_USERS_SIZE = 1000
 
 
 def authorize():
@@ -32,6 +33,8 @@ def authorize():
 
 
 class WipeoutSyncCron(jsonfeed.InternalTask):
+  """Enqueue tasks for sending user lists to wipeout-lite and deleting deleted
+     users fetched from wipeout-lite."""
 
   def HandleRequest(self, mr):
     batch_param = mr.GetIntParam('batchsize', default_value=MAX_BATCH_SIZE)
@@ -52,8 +55,13 @@ class WipeoutSyncCron(jsonfeed.InternalTask):
           url=urls.SEND_WIPEOUT_USER_LISTS_TASK + '.do', params=params,
           queue_name=framework_constants.QUEUE_SEND_WIPEOUT_USER_LISTS)
 
+    taskqueue.add(
+        url=urls.DELETE_WIPEOUT_USERS_TASK + '.do',
+        queue_name=framework_constants.QUEUE_FETCH_WIPEOUT_DELETED_USERS)
+
 
 class SendWipeoutUserListsTask(jsonfeed.InternalTask):
+  """Sends a batch of monorail users to wipeout-lite."""
 
   def HandleRequest(self, mr):
     limit = mr.GetIntParam('limit')
@@ -78,14 +86,49 @@ class SendWipeoutUserListsTask(jsonfeed.InternalTask):
         'Received response, %s with contents, %s', resp, data)
 
 
+class DeleteWipeoutUsersTask(jsonfeed.InternalTask):
+  """Fetches deleted users from wipeout-lite and enqueues tasks to delete
+     those users from Monorail's DB."""
+
+  def HandleRequest(self, mr):
+    limit = mr.GetIntParam('limit', MAX_DELETE_USERS_SIZE)
+    limit = min(limit, MAX_DELETE_USERS_SIZE)
+    service = authorize()
+    deleted_user_data = self.fetchDeletedUsers(service)
+    deleted_emails = [user_object['id'] for user_object in deleted_user_data]
+    total_batches = int(len(deleted_emails) / limit)
+    if len(deleted_emails) % limit:
+      total_batches += 1
+
+    for i in range(total_batches):
+      start = i * limit
+      end = start + limit
+      params = dict(emails=','.join(deleted_emails[start:end]))
+      taskqueue.add(
+          url=urls.DELETE_USERS_TASK + '.do', params=params,
+          queue_name=framework_constants.QUEUE_DELETE_USERS)
+
+  def fetchDeletedUsers(self, service):
+    app_id = app_identity.get_application_id()
+    endpoint = WIPEOUT_ENDPOINT % app_id
+    resp, data = service.request(
+        '%s/deletedaccounts' % endpoint,
+        method='GET',
+        headers={'Content-Type': 'application/json; charset=UTF-8'})
+    logging.info(
+        'Received response, %s with contents, %s', resp, data)
+    return json.loads(data)
+
+
 class DeleteUsersTask(jsonfeed.InternalTask):
+  """Deletes users from Monorail's DB."""
 
   def HandleRequest(self, mr):
     """Delete users with the emails given in the 'emails' param."""
     emails = mr.GetListParam('emails', default_value=[])
-    assert len(emails) <= framework_constants.MAX_DELETE_USERS_SIZE, (
+    assert len(emails) <= MAX_DELETE_USERS_SIZE, (
         'We cannot delete more than %d users at once, current users: %d' %
-        (framework_constants.MAX_DELETE_USERS_SIZE, len(emails)))
+        (MAX_DELETE_USERS_SIZE, len(emails)))
     if len(emails) == 0:
       logging.info("No user emails found in deletion request")
       return

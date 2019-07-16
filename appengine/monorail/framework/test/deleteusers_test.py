@@ -29,7 +29,7 @@ class TestWipeoutSyncCron(unittest.TestCase):
     self.testbed.init_taskqueue_stub()
     self.taskqueue_stub = self.testbed.get_stub(testbed.TASKQUEUE_SERVICE_NAME)
     self.taskqueue_stub._root_path = os.path.dirname(
-        os.path.dirname(os.path.dirname( __file__ )))
+        os.path.dirname(os.path.dirname(__file__)))
 
     self.services = service_manager.Services(user=fake.UserService())
     self.task = deleteusers.WipeoutSyncCron(
@@ -47,11 +47,15 @@ class TestWipeoutSyncCron(unittest.TestCase):
         services=self.services)
     self.task.HandleRequest(mr)
 
-    tasks = self.taskqueue_stub.get_filtered_tasks(
+    send_tasks = self.taskqueue_stub.get_filtered_tasks(
         url=urls.SEND_WIPEOUT_USER_LISTS_TASK + '.do')
-    self.assertEqual(2, len(tasks))
-    self.assertEqual(tasks[0].payload, 'limit=2&offset=0')
-    self.assertEqual(tasks[1].payload, 'limit=2&offset=2')
+    self.assertEqual(2, len(send_tasks))
+    self.assertEqual(send_tasks[0].payload, 'limit=2&offset=0')
+    self.assertEqual(send_tasks[1].payload, 'limit=2&offset=2')
+
+    delete_tasks = self.taskqueue_stub.get_filtered_tasks(
+        url=urls.DELETE_WIPEOUT_USERS_TASK + '.do')
+    self.assertEqual(1, len(delete_tasks))
 
   def testHandleRequest_NoBatchSizeParam(self):
     mr = testing_helpers.MakeMonorailRequest(services=self.services)
@@ -113,3 +117,56 @@ class SendWipeoutUserListsTaskTest(unittest.TestCase):
         'service', [
             {'id': self.user_1.email},
             {'id': self.user_2.email}])
+
+
+class DeleteWipeoutUsersTaskTest(unittest.TestCase):
+
+  def setUp(self):
+    self.testbed = testbed.Testbed()
+    self.testbed.activate()
+    self.testbed.init_taskqueue_stub()
+    self.taskqueue_stub = self.testbed.get_stub(testbed.TASKQUEUE_SERVICE_NAME)
+    self.taskqueue_stub._root_path = os.path.dirname(
+        os.path.dirname(os.path.dirname(__file__)))
+
+    self.services = service_manager.Services()
+    deleteusers.authorize = mock.Mock(return_value='service')
+    self.task = deleteusers.DeleteWipeoutUsersTask(
+        request=None, response=None, services=self.services)
+    deleted_users = [
+        {'id': 'user1@gmail.com'}, {'id': 'user2@gmail.com'},
+        {'id': 'user3@gmail.com'}, {'id': 'user4@gmail.com'}]
+    self.task.fetchDeletedUsers = mock.Mock(return_value=deleted_users)
+
+  def tearDown(self):
+    self.testbed.deactivate()
+
+  def testHandleRequest(self):
+    mr = testing_helpers.MakeMonorailRequest(path='url/url?limit=3')
+    self.task.HandleRequest(mr)
+
+    deleteusers.authorize.assert_called_once_with()
+    self.task.fetchDeletedUsers.assert_called_once_with('service')
+    tasks = self.taskqueue_stub.get_filtered_tasks(
+        url=urls.DELETE_USERS_TASK + '.do')
+    self.assertEqual(2, len(tasks))
+    self.assertEqual(
+        tasks[0].payload.replace("%40", "@").replace("%2C", ","),
+        'emails=user1@gmail.com,user2@gmail.com,user3@gmail.com')
+    self.assertEqual(
+        tasks[1].payload.replace("%40", "@"),
+        'emails=user4@gmail.com')
+
+  def testHandleRequest_DefaultMax(self):
+    mr = testing_helpers.MakeMonorailRequest(path='url/url')
+    self.task.HandleRequest(mr)
+
+    deleteusers.authorize.assert_called_once_with()
+    self.task.fetchDeletedUsers.assert_called_once_with('service')
+    tasks = self.taskqueue_stub.get_filtered_tasks(
+        url=urls.DELETE_USERS_TASK + '.do')
+    self.assertEqual(1, len(tasks))
+    self.assertEqual(
+        tasks[0].payload.replace("%40", "@").replace("%2C", ","),
+        'emails=user1@gmail.com,user2@gmail.com,'
+        'user3@gmail.com,user4@gmail.com')

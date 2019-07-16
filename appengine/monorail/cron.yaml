@@ -41,3 +41,7 @@ cron:
   url: /_cron/componentDataExport
   timezone: US/Pacific
   schedule: every mon 1:00
+- description: sync monorail's user lists with wipeout-lite
+  url: /_cron/wipeoutSync
+  timezone: US/Pacific
+  schedule: every day 01:00

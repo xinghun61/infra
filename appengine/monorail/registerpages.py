@@ -351,6 +351,7 @@ class ServletRegistry(object):
         urls.BAN_SPAMMER_TASK: banspammer.BanSpammerTask,
         urls.WIPEOUT_SYNC_CRON: deleteusers.WipeoutSyncCron,
         urls.SEND_WIPEOUT_USER_LISTS_TASK: deleteusers.SendWipeoutUserListsTask,
+        urls.DELETE_WIPEOUT_USERS_TASK: deleteusers.DeleteWipeoutUsersTask,
         urls.DELETE_USERS_TASK: deleteusers.DeleteUsersTask,
         })
 

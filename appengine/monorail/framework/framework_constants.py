@@ -35,9 +35,6 @@ FULLTEXT_MEMCACHE_EXPIRATION = 3 * SECS_PER_MINUTE
 # Size in bytes of the largest form submission that we will accept
 MAX_POST_BODY_SIZE = 10 * 1024 * 1024   # = 10 MB
 
-# Number of users that are be expunged from monorail
-MAX_DELETE_USERS_SIZE = 1000
-
 # Special user ID and name to use when no user was specified.
 NO_USER_SPECIFIED = 0
 NO_SESSION_SPECIFIED = 0
@@ -48,7 +45,7 @@ USER_NOT_FOUND_NAME = 'user_not_found'
 
 # Queues for deleting users tasks.
 QUEUE_SEND_WIPEOUT_USER_LISTS = 'wipeoutsendusers'
-QUEUE_FETCH_WIPEOUT_DELETED_USERS = 'wipeoutfetchusers'
+QUEUE_FETCH_WIPEOUT_DELETED_USERS = 'wipeoutdeleteusers'
 QUEUE_DELETE_USERS = 'deleteusers'
 
 # We remember the time of each user's last page view, but to reduce the

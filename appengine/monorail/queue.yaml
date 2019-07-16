@@ -44,4 +44,18 @@ queue:
     task_age_limit: 1h
     min_backoff_seconds: 30
 
+- name: wipeoutdeleteusers
+  rate: 5/s
+  retry_parameters:
+    task_retry_limit: 6
+    task_age_limit: 1h
+    min_backoff_seconds: 30
+
+- name: deleteusers
+  rate: 5/s
+  retry_parameters:
+    task_retry_limit: 3
+    task_age_limit: 1h
+    min_backoff_seconds: 30
+
 
