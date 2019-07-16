@@ -14,6 +14,7 @@ import (
 // interact with the external world.
 type ControllerHook interface {
 	// StartBot starts a bot process for the DUT.
+	// This method should be safe to call concurrently.
 	StartBot(dutID string) (bot.Bot, error)
 	// ReleaseDUT is called to release the DUT for a bot process
 	// that has finished.  This method should be idempotent.
@@ -28,8 +29,9 @@ type Controller struct {
 	wg   sync.WaitGroup
 
 	// The following fields are covered by the mutex.
-	m    sync.Mutex
-	duts map[string]dutSignals
+	m       sync.Mutex
+	blocked bool
+	duts    map[string]dutSignals
 }
 
 // NewController creates a new Controller.
@@ -43,11 +45,14 @@ func NewController(h ControllerHook) *Controller {
 
 // AddDUT adds a DUT to the Controller.
 // The controller ensures that a Swarming bot is running for the DUT.
-// If the DUT was already added, do nothing.
+// If the DUT was already added or if the controller is blocked, do nothing.
 // This method is concurrency safe.
 func (c *Controller) AddDUT(dutID string) {
 	c.m.Lock()
 	defer c.m.Unlock()
+	if c.blocked {
+		return
+	}
 	if _, ok := c.duts[dutID]; ok {
 		// DUT already has bot running.
 		return
@@ -143,8 +148,9 @@ func (c *Controller) TerminateDUT(dutID string) {
 	}
 }
 
-// DrainAll drains all DUTs.  This method is concurrency safe, but
-// beware calling AddDUT concurrently with this.
+// DrainAll drains all DUTs.
+// You almost certainly want to call Block first to make sure DUTs
+// don't get added right after calling this.
 func (c *Controller) DrainAll() {
 	c.m.Lock()
 	for _, s := range c.duts {
@@ -153,13 +159,22 @@ func (c *Controller) DrainAll() {
 	c.m.Unlock()
 }
 
-// TerminateAll terminates all DUTs.  This method is concurrency safe,
-// but beware calling AddDUT concurrently with this.
+// TerminateAll terminates all DUTs.
+// You almost certainly want to call Block first to make sure DUTs
+// don't get added right after calling this.
 func (c *Controller) TerminateAll() {
 	c.m.Lock()
 	for _, s := range c.duts {
 		s.sendTerminate()
 	}
+	c.m.Unlock()
+}
+
+// BlockDUTs marks the controller to not accept new DUTs.
+// This method is safe to call concurrently.
+func (c *Controller) BlockDUTs() {
+	c.m.Lock()
+	c.blocked = true
 	c.m.Unlock()
 }
 

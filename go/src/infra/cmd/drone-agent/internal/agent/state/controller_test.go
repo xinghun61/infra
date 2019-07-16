@@ -6,6 +6,7 @@ package state
 
 import (
 	"errors"
+	"sync"
 	"testing"
 	"time"
 
@@ -152,7 +153,7 @@ func TestController(t *testing.T) {
 		c := NewController(stubHook{})
 		c.AddDUT("ionasal")
 		c.AddDUT("nero")
-		assertDontHang(t, c.DrainAll, "TerminateAll hanged")
+		assertDontHang(t, c.DrainAll, "DrainAll hanged")
 		c.Wait()
 	})
 	t.Run("terminate all does not hang", func(t *testing.T) {
@@ -162,6 +163,31 @@ func TestController(t *testing.T) {
 		c.AddDUT("nero")
 		assertDontHang(t, c.TerminateAll, "TerminateAll hanged")
 		c.Wait()
+	})
+	t.Run("block DUTs stops add new DUT", func(t *testing.T) {
+		t.Parallel()
+		b := bot.NewFakeBot()
+		var m sync.Mutex
+		var started int
+		h := stubHook{
+			start: func(dutID string) (bot.Bot, error) {
+				m.Lock()
+				started++
+				m.Unlock()
+				return b, nil
+			},
+		}
+		c := NewController(h)
+
+		c.BlockDUTs()
+		const d = "some-dut"
+		c.AddDUT(d)
+		m.Lock()
+		got := started
+		m.Unlock()
+		if got != 0 {
+			t.Errorf("Got %v bots started; want 0", got)
+		}
 	})
 }
 
