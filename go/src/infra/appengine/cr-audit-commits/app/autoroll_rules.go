@@ -20,6 +20,8 @@ const (
 	fileFreeTypeReadme  = "third_party/freetype/README.chromium"
 	fileFuchsiaSDKLinux = "build/fuchsia/linux.sdk.sha1"
 	fileFuchsiaSDKMac   = "build/fuchsia/mac.sdk.sha1"
+	fileGoMod           = "go.mod"
+	fileGoSum           = "go.sum"
 	fileSkiaManifest    = "manifest/skia"
 	fileSkiaTasks       = "infra/bots/tasks.json"
 
@@ -71,8 +73,9 @@ func AutoRollRulesDEPS(account string) AccountRules {
 
 // AutoRollRulesDEPSAndTasks returns an AccountRules instance for an account
 // which should only modify the ``DEPS`` and ``infra/bots/tasks.json`` files.
+// The ``go.mod`` and ``go.sum`` files may also be updated in the process.
 func AutoRollRulesDEPSAndTasks(account string) AccountRules {
-	return AutoRollRulesForFileList(account, []string{fileDEPS, fileSkiaTasks})
+	return AutoRollRulesForFileList(account, []string{fileDEPS, fileGoMod, fileGoSum, fileSkiaTasks})
 }
 
 // AutoRollRulesFuchsiaSDKVersion returns an AccountRules instance for an
