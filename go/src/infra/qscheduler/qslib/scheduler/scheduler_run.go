@@ -113,15 +113,24 @@ func (run *schedulerRun) assignRequestToWorker(w WorkerID, item *requestListItem
 }
 
 func (run *schedulerRun) updateExaminedTimes() {
-	for _, req := range run.scheduler.state.queuedRequests {
-		// A task request was fully examined unless it was throttled due to
-		// account fanout limit, for an account with free tasks disabled.
-		account, ok := run.scheduler.config.AccountConfigs[string(req.AccountID)]
-		if ok && account.DisableFreeTasks && run.isThrottled(req) {
-			continue
-		}
+	// Consider updates only for requests in the requestsPerPriority lists. This
+	// already ignores many requests that were skipped due to being from accounts
+	// with free tasks disabled; those requests need to be skipped anyway.
+	for _, reqs := range run.requestsPerPriority {
+		for _, item := range reqs {
+			if item.matched {
+				continue
+			}
+			req := item.req
+			// A task request was fully examined unless it was throttled due to
+			// account fanout limit, for an account with free tasks disabled.
+			account, ok := run.scheduler.config.AccountConfigs[string(req.AccountID)]
+			if ok && account.DisableFreeTasks && run.isThrottled(req) {
+				continue
+			}
 
-		req.examinedTime = run.scheduler.state.lastUpdateTime
+			req.examinedTime = run.scheduler.state.lastUpdateTime
+		}
 	}
 }
 

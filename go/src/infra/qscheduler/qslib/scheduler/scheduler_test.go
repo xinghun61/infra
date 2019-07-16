@@ -355,6 +355,16 @@ func TestExaminedTime(t *testing.T) {
 			}
 		})
 
+		accountConfig.MaxFanout = 10
+		s.state.balances["a1"] = Balance{}
+		s.RunOnce(ctx, NullEventSink)
+		Convey("if the request is not throttled due to fanout, but it is still unable to match due to the account being out of quota, its examined time is not updated.", func() {
+			So(s.state.queuedRequests, ShouldHaveLength, 1)
+			for _, r := range s.state.queuedRequests {
+				So(r.examinedTime, ShouldEqual, t0)
+			}
+		})
+
 		s.config.AccountConfigs["a1"].DisableFreeTasks = false
 		t2 := t1.Add(10 * time.Second)
 		s.UpdateTime(ctx, t2)
