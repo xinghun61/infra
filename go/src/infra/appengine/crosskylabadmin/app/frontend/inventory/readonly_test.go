@@ -29,7 +29,6 @@ import (
 	. "github.com/smartystreets/goconvey/convey"
 	"go.chromium.org/gae/service/datastore"
 	"go.chromium.org/luci/appengine/gaetesting"
-	"go.chromium.org/luci/common/errors"
 	"go.chromium.org/luci/common/proto/google"
 	"go.chromium.org/luci/common/retry"
 	"golang.org/x/net/context"
@@ -141,46 +140,6 @@ func TestGetDutInfoWithConsistentDatastore(t *testing.T) {
 				dut := getDutInfo(t, resp)
 				So(dut.GetCommon().GetId(), ShouldEqual, "dut1_id")
 				So(dut.GetCommon().GetHostname(), ShouldEqual, "dut1_hostname")
-			})
-		})
-	})
-}
-
-func TestGetDutInfoWithConsistentDatastoreNoCacheValidity(t *testing.T) {
-	Convey("With no cache validity a single DUT in the inventory", t, func() {
-		ctx := testingContext()
-		ctx = withDutInfoCacheValidity(ctx, 0*time.Second)
-		tf, validate := newTestFixtureWithContext(ctx, t)
-		defer validate()
-
-		setGitilesDUTs(tf.C, tf.FakeGitiles, []testInventoryDut{
-			{id: "dut1_id", hostname: "dut1_hostname", model: "link", pool: "DUT_POOL_SUITES"},
-		})
-
-		Convey("after a call to UpdateCachedInventory", func() {
-			_, err := tf.Inventory.UpdateCachedInventory(tf.C, &fleet.UpdateCachedInventoryRequest{})
-			So(err, ShouldBeNil)
-
-			Convey("GetDutInfo (by ID) returns NotFound", func() {
-				// Cache will soon be invalid , so DUT will be purged.
-				//
-				// We retry GetDutInfo for a few seconds. When this test passes, it
-				// should pass in < 1 second (as soon as system clock moves forward).
-				// When this test fails, it will block till the end of retries, i.e., a
-				// few seconds.
-				err := retry.Retry(
-					tf.C,
-					testRetryIteratorFactory,
-					func() error {
-						_, err := tf.Inventory.GetDutInfo(tf.C, &fleet.GetDutInfoRequest{Id: "dut1_id"})
-						if status.Code(err) != codes.NotFound {
-							return errors.Reason("status.Code(err) is %s, want codes.NotFound", status.Code(err)).Err()
-						}
-						return nil
-					},
-					nil,
-				)
-				So(err, ShouldBeNil)
 			})
 		})
 	})

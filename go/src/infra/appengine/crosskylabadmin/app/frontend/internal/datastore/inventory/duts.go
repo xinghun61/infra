@@ -74,7 +74,7 @@ func GetSerializedDUTByID(ctx context.Context, id string) (dut *DeviceUnderTest,
 	if err := datastore.Get(ctx, e); err != nil {
 		return nil, err
 	}
-	return getDUTIfNotStale(ctx, e)
+	return getDUT(ctx, e)
 }
 
 // GetSerializedDUTByHostname gets the cached, serialized inventory.DeviceUnderTest for a DUT.
@@ -102,19 +102,13 @@ func GetSerializedDUTByHostname(ctx context.Context, hostname string) (data *Dev
 	case 0:
 		return nil, datastore.ErrNoSuchEntity
 	case 1:
-		return getDUTIfNotStale(ctx, es[0])
+		return getDUT(ctx, es[0])
 	default:
 		// Found more than 1 entity for the given hostname. This can happen when a
 		// DUT is swapped for a given hostname. The old DUT hasn't yet been removed
 		// from the cache, but the new one has been added. In this case, we return
 		// the DUT in the entity that was refreshed last.
-		return getDUTIfNotStale(ctx, getLatestDUTEntity(es))
-	}
-}
-
-func deleteDUTEntityIgnoringErrors(ctx context.Context, e *dutEntity) {
-	if err := datastore.Delete(ctx, e); err != nil {
-		logging.Warningf(ctx, "failed to delete dutEntity with ID %s: %s", e.ID, err)
+		return getDUT(ctx, getLatestDUTEntity(es))
 	}
 }
 
@@ -141,11 +135,9 @@ func getLatestDUTEntity(es []*dutEntity) *dutEntity {
 	return r
 }
 
-func getDUTIfNotStale(ctx context.Context, e *dutEntity) (*DeviceUnderTest, error) {
+func getDUT(ctx context.Context, e *dutEntity) (*DeviceUnderTest, error) {
 	if isEntityStale(ctx, e) {
-		logging.Infof(ctx, "Found stale dutEntity with ID %s. Purging.", e.ID)
-		deleteDUTEntityIgnoringErrors(ctx, e)
-		return nil, datastore.ErrNoSuchEntity
+		logging.Infof(ctx, "Found stale dutEntity with ID %s. Warning.", e.ID)
 	}
 	return &DeviceUnderTest{
 		Data:    e.Data,
