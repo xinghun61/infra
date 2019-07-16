@@ -187,8 +187,23 @@ type requestAndMatch struct {
 	matchableRequest *matchableRequest
 }
 
-// TODO(akeshet): Make matchList implement sort.Interface.
+// matchList is a list a request-worker matches, that sorts by descending
+// match quality.
 type matchList []requestAndMatch
+
+func (m matchList) Len() int {
+	return len(m)
+}
+
+func (m matchList) Less(i, j int) bool {
+	return m[i].quality > m[j].quality
+}
+
+func (m matchList) Swap(i, j int) {
+	temp := m[i]
+	m[i] = m[j]
+	m[j] = temp
+}
 
 // computeMatch determines whether a request can run on a worker, and the quality
 // of the match.
@@ -241,9 +256,7 @@ func computeMatchList(w *Worker, items matchableRequestList) matchList {
 			matches = append(matches, requestAndMatch{match: m, matchableRequest: item})
 		}
 	}
-	sort.SliceStable(matches, func(i, j int) bool {
-		return matches[i].quality > matches[j].quality
-	})
+	sort.Sort(matches)
 	return matches
 }
 
