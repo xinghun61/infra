@@ -112,7 +112,7 @@ func TestAgent_dont_add_draining_duts(t *testing.T) {
 	defer cleanup()
 
 	// Set up agent.
-	c := newStubClient()
+	c := newSpyClient()
 	c.res.AssignedDuts = []string{"ryza", "claudia"}
 	c.res.DrainingDuts = []string{"ryza", "claudia"}
 	a.Client = c
@@ -130,9 +130,19 @@ func TestAgent_dont_add_draining_duts(t *testing.T) {
 	s := f.waitForState()
 
 	t.Run("don't add draining DUTs", func(t *testing.T) {
-		// TODO(ayatane): Testing for bad behavior here is
-		// flaky.  We can make this more reliable by detecting
-		// report cycles in the agent.
+	drainChannel:
+		for {
+			select {
+			case <-c.reports:
+			default:
+				break drainChannel
+			}
+		}
+		select {
+		case <-c.reports:
+		case <-time.After(time.Second):
+			t.Fatalf("agent did not call ReportDrone")
+		}
 		select {
 		case d := <-s.addedDUTs:
 			t.Errorf("Added DUT %v; want no DUTs added", d)
