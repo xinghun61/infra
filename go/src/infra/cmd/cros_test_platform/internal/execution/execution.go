@@ -34,6 +34,6 @@ func NewSkylabRunner(tests []*build_api.AutotestTest, params *test_platform.Requ
 
 // NewAutotestRunner returns a Runner that will execute the given tests in
 // the autotest environment.
-func NewAutotestRunner(tests []*build_api.AutotestTest, params *test_platform.Request_Params) Runner {
-	return autotest.New(tests, params)
+func NewAutotestRunner(tests []*build_api.AutotestTest, params *test_platform.Request_Params, config *config.Config_AutotestBackend) Runner {
+	return autotest.New(tests, params, config)
 }

@@ -14,6 +14,7 @@ import (
 
 	build_api "go.chromium.org/chromiumos/infra/proto/go/chromite/api"
 	"go.chromium.org/chromiumos/infra/proto/go/test_platform"
+	"go.chromium.org/chromiumos/infra/proto/go/test_platform/config"
 	"go.chromium.org/chromiumos/infra/proto/go/test_platform/steps"
 	swarming_api "go.chromium.org/luci/common/api/swarming/swarming/v1"
 	"go.chromium.org/luci/common/clock"
@@ -33,13 +34,14 @@ const suiteName = "cros_test_platform"
 type Runner struct {
 	tests         []*build_api.AutotestTest
 	requestParams *test_platform.Request_Params
+	config        *config.Config_AutotestBackend
 
 	response *steps.ExecuteResponse
 }
 
 // New returns a new autotest runner.
-func New(tests []*build_api.AutotestTest, params *test_platform.Request_Params) *Runner {
-	return &Runner{tests: tests, requestParams: params}
+func New(tests []*build_api.AutotestTest, params *test_platform.Request_Params, config *config.Config_AutotestBackend) *Runner {
+	return &Runner{tests: tests, requestParams: params, config: config}
 }
 
 // LaunchAndWait launches an autotest execution and waits for it to complete.
@@ -105,6 +107,11 @@ func (r *Runner) proxyRequest() (*swarming_api.SwarmingRpcsNewTaskRequest, error
 		return nil, errors.Annotate(err, "create proxy request").Err()
 	}
 
+	afeHost := r.config.GetAfeHost()
+	if afeHost == "" {
+		return nil, errors.Reason("create proxy request: config specified no afe_host").Err()
+	}
+
 	dsArgs := dynamicsuite.Args{
 		Board:   r.requestParams.SoftwareAttributes.BuildTarget.Name,
 		Build:   build,
@@ -113,6 +120,7 @@ func (r *Runner) proxyRequest() (*swarming_api.SwarmingRpcsNewTaskRequest, error
 		// TODO(akeshet): Determine pool from request parameters, after remapping
 		// to autotest pool namespace.
 		Pool:              "",
+		AfeHost:           afeHost,
 		ReimageAndRunArgs: r.reimageAndRunArgs(),
 	}
 

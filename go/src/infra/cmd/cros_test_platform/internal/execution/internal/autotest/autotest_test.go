@@ -17,6 +17,7 @@ import (
 	build_api "go.chromium.org/chromiumos/infra/proto/go/chromite/api"
 	"go.chromium.org/chromiumos/infra/proto/go/chromiumos"
 	"go.chromium.org/chromiumos/infra/proto/go/test_platform"
+	"go.chromium.org/chromiumos/infra/proto/go/test_platform/config"
 	"go.chromium.org/chromiumos/infra/proto/go/test_platform/steps"
 	swarming_api "go.chromium.org/luci/common/api/swarming/swarming/v1"
 )
@@ -80,6 +81,12 @@ func basicParams() *test_platform.Request_Params {
 	}
 }
 
+func basicConfig() *config.Config_AutotestBackend {
+	return &config.Config_AutotestBackend{
+		AfeHost: "foo-afe-host",
+	}
+}
+
 func TestLaunch(t *testing.T) {
 	Convey("Given two enumerated test", t, func() {
 		ctx := context.Background()
@@ -93,7 +100,7 @@ func TestLaunch(t *testing.T) {
 		tests = append(tests, newTest("test1"), newTest("test2"))
 
 		Convey("when running a autotest execution", func() {
-			run := autotest.New(tests, basicParams())
+			run := autotest.New(tests, basicParams(), basicConfig())
 
 			run.LaunchAndWait(ctx, swarming, nil)
 			Convey("then a single run_suite proxy job is created, with correct arguments.", func() {
@@ -107,6 +114,7 @@ func TestLaunch(t *testing.T) {
 					"--board", "foo-build-target",
 					"--model", "foo-model",
 					"--suite_name", "cros_test_platform",
+					"-w", "foo-afe-host",
 					"--timeout_mins", "60",
 					"--suite_args_json", `{"args_dict_json":"{\"name\":\"cros_test_platform\",\"test_names\":[\"test1\",\"test2\"]}"}`,
 				}
@@ -122,7 +130,7 @@ func TestWaitAndCollect(t *testing.T) {
 	Convey("Given a launched autotest execution request", t, func() {
 		ctx, cancel := context.WithCancel(context.Background())
 		swarming := NewFakeSwarming()
-		run := autotest.New([]*build_api.AutotestTest{}, basicParams())
+		run := autotest.New([]*build_api.AutotestTest{}, basicParams(), basicConfig())
 
 		wg := sync.WaitGroup{}
 		wg.Add(1)

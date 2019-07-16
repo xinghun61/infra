@@ -26,6 +26,7 @@ type Args struct {
 	Build   string
 	Model   string
 	Pool    string
+	AfeHost string
 	Timeout time.Duration
 	// ReimageAndRunArgs specifies arguments to be passed into
 	// autotest.dynamic_suite.reimage_and_run. This object must be
@@ -47,6 +48,7 @@ func NewRequest(args Args) (*swarming.SwarmingRpcsNewTaskRequest, error) {
 			Build:     args.Build,
 			Model:     args.Model,
 			Pool:      args.Pool,
+			AfeHost:   args.AfeHost,
 			Timeout:   args.Timeout,
 			SuiteName: suiteName,
 			SuiteArgs: map[string]interface{}{
