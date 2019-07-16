@@ -119,6 +119,18 @@ service Inventory {
   // Cached inventory data is not used for inventory modification RPCs.
   rpc UpdateCachedInventory(UpdateCachedInventoryRequest)
       returns (UpdateCachedInventoryResponse);
+
+  // Update device config to inventory.
+  //
+  // Device config updating will be forbidden via repair jobs.
+  // Instead, this cron job will ensure device config is synced in time.
+  rpc UpdateDeviceConfig(UpdateDeviceConfigRequest) returns (UpdateDeviceConfigResponse);
+}
+
+message UpdateDeviceConfigRequest {
+}
+
+message UpdateDeviceConfigResponse {
 }
 
 message DeployDutRequest {

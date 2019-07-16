@@ -55,6 +55,22 @@ func InstallHandlers(r *router.Router, mwBase router.MiddlewareChain) {
 
 	// For Repair or Reset cron jobs.
 	r.GET("/internal/cron/push-bots-for-admin-tasks", mwCron, logAndSetHTTPErr(pushBotsForAdminTasksCronHandler))
+
+	// Update device config asynchronously.
+	r.GET("/internal/cron/update-device-configs", mwCron, logAndSetHTTPErr(updateDeviceConfigCronHandler))
+}
+
+func updateDeviceConfigCronHandler(c *router.Context) (err error) {
+	defer func() {
+		updateDeviceConfigCronHandlerTick.Add(c.Context, 1, err == nil)
+	}()
+	inv := createInventoryServer(c)
+	if _, err := inv.UpdateDeviceConfig(c.Context, &fleet.UpdateDeviceConfigRequest{}); err != nil {
+		logging.Errorf(c.Context, "fail to update device config: %s", err.Error())
+		return err
+	}
+	logging.Infof(c.Context, "update device config successfully")
+	return nil
 }
 
 // pushBotsForAdminTasksCronHandler pushes bots that require admin tasks to bot queue.

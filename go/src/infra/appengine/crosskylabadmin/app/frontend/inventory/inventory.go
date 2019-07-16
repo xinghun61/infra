@@ -22,7 +22,9 @@ import (
 	"time"
 
 	"github.com/golang/protobuf/proto"
+	"go.chromium.org/chromiumos/infra/proto/go/device"
 	"go.chromium.org/luci/common/errors"
+	"go.chromium.org/luci/common/logging"
 	"go.chromium.org/luci/common/proto/gerrit"
 	"go.chromium.org/luci/common/proto/gitiles"
 	"go.chromium.org/luci/common/retry"
@@ -132,6 +134,57 @@ func (is *ServerImpl) newStore(ctx context.Context) (*gitstore.InventoryStore, e
 		return nil, errors.Annotate(err, "create inventory store").Err()
 	}
 	return gitstore.NewInventoryStore(gerritC, gitilesC), nil
+}
+
+// UpdateDeviceConfig implements updating device config to inventory.
+func (is *ServerImpl) UpdateDeviceConfig(ctx context.Context, req *fleet.UpdateDeviceConfigRequest) (resp *fleet.UpdateDeviceConfigResponse, err error) {
+	defer func() {
+		err = grpcutil.GRPCifyAndLogErr(ctx, err)
+	}()
+	cfg := config.Get(ctx).Inventory
+	gitilesC, err := is.newGitilesClient(ctx, cfg.GitilesHost)
+	if err != nil {
+		return nil, errors.Annotate(err, "fail to update device config").Err()
+	}
+	deviceConfigs, err := GetDeviceConfig(ctx, gitilesC)
+	if err != nil {
+		return nil, errors.Annotate(err, "fail to fetch device configs").Err()
+	}
+	store, err := is.newStore(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if err := store.Refresh(ctx); err != nil {
+		return nil, errors.Annotate(err, "fail to refresh inventory store").Err()
+	}
+	url, err := updateDeviceConfig(ctx, deviceConfigs, store)
+	if err != nil {
+		return nil, err
+	}
+	logging.Infof(ctx, "successfully update device config: %s", url)
+
+	return &fleet.UpdateDeviceConfigResponse{}, nil
+}
+
+func updateDeviceConfig(ctx context.Context, deviceConfigs map[string]*device.Config, s *gitstore.InventoryStore) (string, error) {
+	for _, d := range s.Lab.GetDuts() {
+		c := d.GetCommon()
+		l := c.GetLabels()
+		dcID := getDeviceConfigIDStr(ctx, l.GetPlatform(), l.GetModel(), l.GetSku(), l.GetBrand())
+		standardDC, ok := deviceConfigs[dcID]
+		if !ok {
+			continue
+		}
+		inventory.ConvertDeviceConfig(standardDC, c)
+	}
+	url, err := s.Commit(ctx, fmt.Sprintf("Update device config"))
+	if gitstore.IsEmptyErr(err) {
+		return "no commit for empty diff", nil
+	}
+	if err != nil {
+		return "", errors.Annotate(err, "fail to update device config").Err()
+	}
+	return url, nil
 }
 
 // UpdateDutLabels implements the method from fleet.InventoryServer interface.

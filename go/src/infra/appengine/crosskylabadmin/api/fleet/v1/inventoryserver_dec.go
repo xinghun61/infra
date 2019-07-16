@@ -277,3 +277,20 @@ func (s *DecoratedInventory) UpdateCachedInventory(c context.Context, req *Updat
 	}
 	return
 }
+
+func (s *DecoratedInventory) UpdateDeviceConfig(c context.Context, req *UpdateDeviceConfigRequest) (rsp *UpdateDeviceConfigResponse, err error) {
+	if s.Prelude != nil {
+		var newCtx context.Context
+		newCtx, err = s.Prelude(c, "UpdateDeviceConfig", req)
+		if err == nil {
+			c = newCtx
+		}
+	}
+	if err == nil {
+		rsp, err = s.Service.UpdateDeviceConfig(c, req)
+	}
+	if s.Postlude != nil {
+		err = s.Postlude(c, "UpdateDeviceConfig", rsp, err)
+	}
+	return
+}

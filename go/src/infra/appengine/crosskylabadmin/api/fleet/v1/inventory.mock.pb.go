@@ -334,6 +334,26 @@ func (mr *MockInventoryClientMockRecorder) UpdateCachedInventory(ctx, in interfa
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateCachedInventory", reflect.TypeOf((*MockInventoryClient)(nil).UpdateCachedInventory), varargs...)
 }
 
+// UpdateDeviceConfig mocks base method
+func (m *MockInventoryClient) UpdateDeviceConfig(ctx context.Context, in *UpdateDeviceConfigRequest, opts ...grpc.CallOption) (*UpdateDeviceConfigResponse, error) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "UpdateDeviceConfig", varargs...)
+	ret0, _ := ret[0].(*UpdateDeviceConfigResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// UpdateDeviceConfig indicates an expected call of UpdateDeviceConfig
+func (mr *MockInventoryClientMockRecorder) UpdateDeviceConfig(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateDeviceConfig", reflect.TypeOf((*MockInventoryClient)(nil).UpdateDeviceConfig), varargs...)
+}
+
 // MockInventoryServer is a mock of InventoryServer interface
 type MockInventoryServer struct {
 	ctrl     *gomock.Controller
@@ -580,4 +600,19 @@ func (m *MockInventoryServer) UpdateCachedInventory(arg0 context.Context, arg1 *
 func (mr *MockInventoryServerMockRecorder) UpdateCachedInventory(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateCachedInventory", reflect.TypeOf((*MockInventoryServer)(nil).UpdateCachedInventory), arg0, arg1)
+}
+
+// UpdateDeviceConfig mocks base method
+func (m *MockInventoryServer) UpdateDeviceConfig(arg0 context.Context, arg1 *UpdateDeviceConfigRequest) (*UpdateDeviceConfigResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateDeviceConfig", arg0, arg1)
+	ret0, _ := ret[0].(*UpdateDeviceConfigResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// UpdateDeviceConfig indicates an expected call of UpdateDeviceConfig
+func (mr *MockInventoryServerMockRecorder) UpdateDeviceConfig(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateDeviceConfig", reflect.TypeOf((*MockInventoryServer)(nil).UpdateDeviceConfig), arg0, arg1)
 }
