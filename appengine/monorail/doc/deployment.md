@@ -89,7 +89,9 @@ If any step below fails. Stop the deploy and ping [Monorail chat](http://chat/ro
     1. Identify the "Deploy Monorail" Pipeline and click "Start Manual Execution". "BUILD_ID" should be empty. "ENV" should be set to "staging".
 1. Test on Staging (Pipeline: "Deploy Staging", Stage: "Continue?")
     1. For each commit since last deploy, verify affected functionality still works.
-       Test using a non-admin account, unless you're verifying admin-specific functionality.
+       1. Test using a non-admin account, unless you're verifying admin-specific functionality.
+       1. If you rolled back a previous attempt, make sure you test any changes that might have
+          landed in the mean time.
     1. If everything looks good, choose "Continue" for this stage.
     1. If there is an issue, choose "Rollback" for this stage.
 1. Update Prod Schema
