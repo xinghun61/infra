@@ -2,6 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+// +build !windows
+
 package cmd
 
 import (
@@ -64,6 +66,64 @@ func TestEmptyResultFile(t *testing.T) {
 		want := []*skylab_test_runner.Result_Autotest_TestCase(nil)
 		So(want, ShouldResemble, got)
 	})
+}
+
+func TestExitedWithoutErrors(t *testing.T) {
+	Convey("When exit code is zero, report no exit errors",
+		t, func() {
+			// Input format: three lines, each containing an integer. The integer on
+			// the second line is the exit status code.
+			input := "42\n0\n0"
+
+			So(exitedWithErrors(input), ShouldResemble, false)
+		})
+}
+
+func TestExitedWithErrors(t *testing.T) {
+	Convey("When the server job was aborted, report exit error",
+		t, func() {
+			// 256 = Exited with status 1.
+			input := "42\n256\n0"
+
+			So(exitedWithErrors(input), ShouldResemble, true)
+		})
+}
+
+func TestAborted(t *testing.T) {
+	Convey("When the server job was aborted, report exit error",
+		t, func() {
+			// 9 = Killed.
+			input := "42\n9\n0"
+
+			So(exitedWithErrors(input), ShouldResemble, true)
+		})
+}
+
+func TestFailedToParseExitCode(t *testing.T) {
+	Convey("When the exit code is not an integer, report exit error.",
+		t, func() {
+			input := "42\nnot_an_integer\n0"
+
+			So(exitedWithErrors(input), ShouldResemble, true)
+		})
+}
+
+func TestMissingExitCode(t *testing.T) {
+	Convey("When the exit code is missing, report exit error.",
+		t, func() {
+			input := "42"
+
+			So(exitedWithErrors(input), ShouldResemble, true)
+		})
+}
+
+func TestEmptyExitStatusFile(t *testing.T) {
+	Convey("When the exit status file is empty, report exit error.",
+		t, func() {
+			input := ""
+
+			So(exitedWithErrors(input), ShouldResemble, true)
+		})
 }
 
 func testCase(name string, passed bool) *skylab_test_runner.Result_Autotest_TestCase {

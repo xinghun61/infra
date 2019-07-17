@@ -21,10 +21,10 @@ import (
 const (
 	testSubdir         = "autoserv_test"
 	resultsSummaryFile = "status.log"
+	exitStatusFile     = ".autoserv_execute"
 
 	verdictStringPrefix = "END "
 	undefinedName       = "----"
-	serverJobName       = "SERVER_JOB"
 )
 
 // Parse subcommand: Extract test case results from status.log.
@@ -63,7 +63,14 @@ func (c *parseRun) innerRun(a subcommands.Application, args []string, env subcom
 	}
 	dir := c.Flags.Args()[0]
 
-	result := getTestResults(dir)
+	testDir := path.Join(dir, testSubdir)
+	autotestResult := getTestResults(testDir)
+
+	result := skylab_test_runner.Result{
+		Harness: &skylab_test_runner.Result_AutotestResult{
+			AutotestResult: &autotestResult,
+		},
+	}
 
 	return printProtoJSON(a.GetOut(), &result)
 }
@@ -77,31 +84,35 @@ func (c *parseRun) validateArgs() error {
 
 // getTestResults extracts all test case results from the status.log file
 // inside the given results directory.
-func getTestResults(dir string) skylab_test_runner.Result {
-	resultsSummaryPath := path.Join(dir, testSubdir, resultsSummaryFile)
+func getTestResults(dir string) skylab_test_runner.Result_Autotest {
+	resultsSummaryPath := path.Join(dir, resultsSummaryFile)
 	resultsSummaryContent, err := ioutil.ReadFile(resultsSummaryPath)
 
 	if err != nil {
 		// Errors in reading status.log are expected when the server
 		// job is aborted.
-		return skylab_test_runner.Result{
-			Harness: &skylab_test_runner.Result_AutotestResult{
-				AutotestResult: &skylab_test_runner.Result_Autotest{
-					Incomplete: true,
-				},
-			},
+		return skylab_test_runner.Result_Autotest{
+			Incomplete: true,
 		}
 	}
 
 	testCases := parseResultsFile(string(resultsSummaryContent))
 
-	// TODO(zamorzaev): also look at the exit value file.
-	return skylab_test_runner.Result{
-		Harness: &skylab_test_runner.Result_AutotestResult{
-			AutotestResult: &skylab_test_runner.Result_Autotest{
-				TestCases: testCases,
-			},
-		},
+	exitStatusFilePath := path.Join(dir, exitStatusFile)
+	exitStatusContent, err := ioutil.ReadFile(exitStatusFilePath)
+
+	if err != nil {
+		return skylab_test_runner.Result_Autotest{
+			TestCases:  testCases,
+			Incomplete: true,
+		}
+	}
+
+	incomplete := exitedWithErrors(string(exitStatusContent))
+
+	return skylab_test_runner.Result_Autotest{
+		TestCases:  testCases,
+		Incomplete: incomplete,
 	}
 
 }
