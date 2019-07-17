@@ -15,6 +15,7 @@ import (
 	"go.chromium.org/chromiumos/infra/proto/go/test_platform/steps"
 	"go.chromium.org/luci/auth"
 	"go.chromium.org/luci/common/errors"
+	"go.chromium.org/luci/common/logging"
 
 	"infra/cmd/cros_test_platform/internal/execution"
 	"infra/cmd/cros_test_platform/internal/execution/isolate"
@@ -84,6 +85,7 @@ func httpClient(ctx context.Context, authJSONPath string) (*http.Client, error) 
 }
 
 func swarmingClient(ctx context.Context, c *config.Config_Swarming) (*swarming.Client, error) {
+	logging.Debugf(ctx, "Creating swarming client from config %v", c)
 	hClient, err := httpClient(ctx, c.AuthJsonPath)
 	if err != nil {
 		return nil, err
