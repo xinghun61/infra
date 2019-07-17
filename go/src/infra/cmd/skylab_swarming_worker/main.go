@@ -142,9 +142,16 @@ func mainInner(a *args) error {
 		defer fc.Close()
 		ta.LogDogFile = fifoPath
 	}
-	if err := runLuciferTask(i, a, annotWriter, ta); err != nil {
-		return errors.Wrap(err, "run lucifer task")
+
+	luciferErr := runLuciferTask(i, a, annotWriter, ta)
+
+	if luciferErr != nil {
+		// Attempt to parse results regardless of lucifer errors.
+		luciferErr = errors.Wrap(luciferErr, "run lucifer task")
+		log.Printf("Encountered error, continuing with result parsing anyway."+
+			"Error: %s", luciferErr)
 	}
+
 	if a.isolatedOutdir != "" {
 		blob, err := parser.GetResults(i.ParserArgs(), annotWriter)
 		if err != nil {
@@ -160,7 +167,8 @@ func mainInner(a *args) error {
 	if err := i.Close(); err != nil {
 		return err
 	}
-	return nil
+
+	return luciferErr
 }
 
 func harnessOptions(a *args) []harness.Option {
