@@ -16,11 +16,11 @@ import './mr-grid.js';
 export class MrGridPage extends connectStore(LitElement) {
   render() {
     return html`
-<<<<<<< HEAD
       <div id="grid-area">
         <mr-grid-controls
           .queryParams=${this.queryParams}
-          .customIssueProperties=${this.fields}>
+          .customIssueProperties=${this.fields}
+          .issueCount=${this.issues.length}>
         </mr-grid-controls>
         <br>
         <mr-grid
@@ -28,29 +28,10 @@ export class MrGridPage extends connectStore(LitElement) {
           .xAttr=${this.queryParams.x}
           .yAttr=${this.queryParams.y}
           .cellMode=${this.queryParams.cells}
+          .queryParams=${this.queryParams}
+          .projectName=${this.projectName}
         ></mr-grid>
       </div>
-=======
-    <mr-grid-controls
-      .queryParams=${this.queryParams}
-      .customIssueProperties=${this.fields}
-      .issueCount=${this.issues.length}>
-    </mr-grid-controls>
-    ${this.issues.map((issue) => html`
-      <mr-issue-link
-        .projectName=${this.projectName}
-        .issue=${issue}
-        .queryParams=${this.queryParams}
-        short
-      ></mr-issue-link>`)}
-      <br>
-      <mr-grid
-        .issues=${this.issues}
-        .xAttr=${this.queryParams.x}
-        .yAttr=${this.queryParams.y}
-        .cellMode=${this.queryParams.cells}
-      ></mr-grid>
->>>>>>> b70222051be37c8dace6c0a59b89e53dcbf49b85
     `;
   }
 

@@ -3,7 +3,9 @@
 // found in the LICENSE file.
 
 import {LitElement, html, css} from 'lit-element';
-import {extractGridData} from './extract-grid-data.js';
+import {extractGridData, EMPTY_HEADER_VALUE} from './extract-grid-data.js';
+import {issueRefToUrl} from '../../shared/converters.js';
+import qs from 'qs';
 
 export class MrGrid extends LitElement {
   render() {
@@ -19,21 +21,80 @@ export class MrGrid extends LitElement {
             <th>${yHeading}</th>
             ${this.xHeadings.map((xHeading) => html`
               ${this.groupedIssues.has(xHeading + '-' + yHeading) ? html`
-                <td>${this.groupedIssues.get(
-                  xHeading + '-' + yHeading).map((issue) => html`
-                    <mr-issue-link
-                      .projectName=${this.projectName}
-                      .issue=${issue}
-                      .text=${issue.localId}
-                      .queryParams=${this.queryParams}
-                    ></mr-issue-link>
-                `)} </td>`: html`<td></td>
+                <td>
+                  ${this.renderCellMode(this.cellMode, xHeading, yHeading)}
+                </td>`: html`
+                <td></td>
               `}
             `)}
           </tr>
         `)}
       </table>
     `;
+  }
+
+  // TODO(juliacordero, zosha): Add option for cells=tiles
+  renderCellMode(cellMode, xHeading, yHeading) {
+    cellMode = cellMode.toLowerCase();
+    const cellHeading = xHeading + '-' + yHeading;
+    if (cellMode === 'ids') {
+      return html`
+        ${this.groupedIssues.get(cellHeading).map((issue) => html`
+          <mr-issue-link
+            .projectName=${this.projectName}
+            .issue=${issue}
+            .text=${issue.localId}
+            .queryParams=${this.queryParams}
+          ></mr-issue-link>
+        `)}
+      `;
+    } else if (cellMode === 'counts') {
+      const itemCount =
+        this.groupedIssues.get(cellHeading).length;
+      if (itemCount === 1) {
+        const issue = this.groupedIssues.get(cellHeading)[0];
+        return html`
+          <a href=${issueRefToUrl(issue, this.queryParams)} class="counts">
+            1 item
+          </a>
+        `;
+      } else {
+        return html`
+          <a href=${this.formatCountsURL(xHeading, yHeading)} class="counts">
+            ${itemCount} items
+          </a>
+        `;
+      }
+    }
+  }
+
+  formatCountsURL(xHeading, yHeading) {
+    let url = 'list?';
+    const params = Object.assign({}, this.queryParams);
+    params.mode = '';
+
+    params.q = this.addHeadingsToSearch(params.q, xHeading, this.xAttr);
+    params.q = this.addHeadingsToSearch(params.q, yHeading, this.yAttr);
+
+    url += qs.stringify(params);
+
+    return url;
+  }
+
+  addHeadingsToSearch(params, heading, attr) {
+    if (attr && attr !== 'None') {
+      if (heading === EMPTY_HEADER_VALUE) {
+        params += ' -has:' + attr;
+      // The following two cases are to handle grouping issues by Blocked
+      } else if (heading === 'No') {
+        params += ' -is:' + attr;
+      } else if (heading === 'Yes') {
+        params += ' is:' + attr;
+      } else {
+        params += ' ' + attr + '=' + heading;
+      }
+    }
+    return params;
   }
 
   static get properties() {
@@ -45,6 +106,8 @@ export class MrGrid extends LitElement {
       issues: {type: Array},
       cellMode: {type: String},
       groupedIssues: {type: Map},
+      queryParams: {type: Object},
+      projectName: {type: String},
     };
   }
 

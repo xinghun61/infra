@@ -140,12 +140,20 @@ export class MrGridControls extends LitElement {
 
   _rowChanged(e) {
     this.queryParams.y = e.target.selection;
-    this._changeUrlParams(this.queryParams);
+    const params = Object.assign({}, this.queryParams);
+    if (this.queryParams.y === 'None') {
+      params = Object.assign({}, this.queryParams, {'y': ''});
+    }
+    this._changeUrlParams(params);
   }
 
   _colChanged(e) {
     this.queryParams.x = e.target.selection;
-    this._changeUrlParams(this.queryParams);
+    const params = Object.assign({}, this.queryParams);
+    if (this.queryParams.x === 'None') {
+      params = Object.assign({}, this.queryParams, {'x': ''});
+    }
+    this._changeUrlParams(params);
   }
 
   _changeUrlParams(params) {

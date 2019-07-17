@@ -6,7 +6,7 @@ import {extractTypeForIssue} from '../../reducers/type.js';
 import {issueRefToString} from '../../shared/converters.js';
 
 const gridHeadings = new Map();
-const EMPTY_HEADER_VALUE = '----';
+export const EMPTY_HEADER_VALUE = '----';
 const DEFAULT_HEADER_VALUE = 'All';
 
 // TODO(juliacordero): write functions to extract from custom fields
