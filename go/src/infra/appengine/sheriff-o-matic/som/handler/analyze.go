@@ -101,6 +101,9 @@ func GetAnalyzeHandler(ctx *router.Context) {
 	// TODO: remove this check once we're off buildbot.
 	if source == "buildbucket" {
 		alertsSummary, err = generateBuildBucketAlerts(ctx, a)
+	} else if source == "bigquery" {
+		c = appengine.WithContext(c, r)
+		alertsSummary, err = generateBigQueryAlerts(c, a, tree)
 	} else {
 		alertsSummary, err = generateAlerts(ctx, a)
 	}
@@ -111,7 +114,6 @@ func GetAnalyzeHandler(ctx *router.Context) {
 		return
 	}
 
-	c = appengine.WithContext(c, r)
 	alertsSummary.Timestamp = messages.TimeToEpochTime(time.Now())
 	if err := putAlertsBigQuery(c, tree, alertsSummary); err != nil {
 		logging.Errorf(c, "error sending alerts to bigquery: %v", err)
@@ -125,6 +127,91 @@ func GetAnalyzeHandler(ctx *router.Context) {
 	}
 
 	w.Write([]byte("ok"))
+}
+
+func generateBigQueryAlerts(c context.Context, a *analyzer.Analyzer, tree string) (*messages.AlertsSummary, error) {
+	gkRules, err := getGatekeeperRules(c)
+	if err != nil {
+		logging.Errorf(c, "error getting gatekeeper rules: %v", err)
+		return nil, err
+	}
+
+	builderAlerts, err := analyzer.GetBigQueryAlerts(c, tree)
+	if err != nil {
+		return nil, err
+	}
+
+	// Filter out ignored builders/steps.
+	filteredBuilderAlerts := []messages.BuildFailure{}
+	for _, ba := range builderAlerts {
+		builders := []messages.AlertedBuilder{}
+		for _, b := range ba.Builders {
+			masterURL, err := url.Parse(fmt.Sprintf("https://build.chromium.org/p/%s", b.Master))
+			if err != nil {
+				return nil, err
+			}
+			master := &messages.MasterLocation{
+				URL: *masterURL,
+			}
+
+			if !gkRules.ExcludeFailure(c, tree, master, b.Name, ba.StepAtFault.Step.Name) {
+				builders = append(builders, b)
+			}
+		}
+		if len(builders) > 0 {
+			ba.Builders = builders
+			filteredBuilderAlerts = append(filteredBuilderAlerts, ba)
+		}
+	}
+	logging.Infof(c, "filtered alerts, before: %d after: %d", len(builderAlerts), len(filteredBuilderAlerts))
+	builderAlerts = filteredBuilderAlerts
+
+	alerts := []messages.Alert{}
+	for _, ba := range builderAlerts {
+		title := fmt.Sprintf("Step %q failing on %d builder(s)", ba.StepAtFault.Step.Name, len(ba.Builders))
+		startTime := messages.TimeToEpochTime(time.Now())
+		severity := messages.NewFailure
+		for _, b := range ba.Builders {
+			if b.StartTime > 0 && b.StartTime < startTime {
+				startTime = b.StartTime
+			}
+			if b.LatestFailure-b.FirstFailure != 0 {
+				severity = messages.ReliableFailure
+			}
+		}
+
+		alert := messages.Alert{
+			Key:       fmt.Sprintf("%s.%v", tree, ba.Reason.Signature()),
+			Title:     title,
+			Extension: ba,
+			StartTime: startTime,
+			Severity:  severity,
+		}
+
+		switch ba.Reason.Kind() {
+		case "test":
+			alert.Type = messages.AlertTestFailure
+		default:
+			alert.Type = messages.AlertBuildFailure
+		}
+
+		alerts = append(alerts, alert)
+	}
+
+	logging.Infof(c, "%d alerts generated for tree %q", len(alerts), tree)
+
+	alertsSummary := &messages.AlertsSummary{
+		Timestamp:         messages.TimeToEpochTime(time.Now()),
+		RevisionSummaries: map[string]messages.RevisionSummary{},
+		Alerts:            alerts,
+	}
+
+	if err := storeAlertsSummary(c, a, tree, alertsSummary); err != nil {
+		logging.Errorf(c, "error storing alerts: %v", err)
+		return nil, err
+	}
+
+	return alertsSummary, nil
 }
 
 func generateBuildBucketAlerts(ctx *router.Context, a *analyzer.Analyzer) (*messages.AlertsSummary, error) {
