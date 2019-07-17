@@ -17,6 +17,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 
 	"infra/appengine/drone-queen/api"
+	"infra/cmd/drone-agent/internal/bot"
 	"infra/cmd/drone-agent/internal/draining"
 )
 
@@ -242,7 +243,9 @@ func TestAgent_unknown_uuid_causes_termination(t *testing.T) {
 	}()
 
 	s := f.waitForState()
-	c.withLock(func() { c.res.Status = api.ReportDroneResponse_UNKNOWN_UUID })
+	c.withLock(func() {
+		c.res.Status = api.ReportDroneResponse_UNKNOWN_UUID
+	})
 	t.Run("terminated all DUTs", func(t *testing.T) {
 		select {
 		case <-s.terminatedAll:
@@ -282,7 +285,9 @@ func TestAgent_expiration_causes_termination(t *testing.T) {
 	}()
 
 	s := f.waitForState()
-	c.withLock(func() { c.res.ExpirationTime = protoTime(time.Now()) })
+	c.withLock(func() {
+		c.res.ExpirationTime = protoTime(time.Now())
+	})
 	t.Run("terminated all DUTs", func(t *testing.T) {
 		select {
 		case <-s.terminatedAll:
@@ -307,9 +312,21 @@ func TestAgent_draining_reports_lame_duck_mode(t *testing.T) {
 
 	// Set up agent.
 	c := newSpyClient()
+	c.res.AssignedDuts = []string{"ryza"}
 	a.Client = c
 	f := newStateSpyFactory()
 	a.wrapStateFunc = f.wrapState
+	b := bot.NewFakeBot()
+	b.DrainFunc = func(*bot.FakeBot) error { return nil }
+	b.TerminateFunc = func(*bot.FakeBot) error { return nil }
+	started := make(chan struct{}, 1)
+	a.startBotFunc = func(bot.Config) (bot.Bot, error) {
+		select {
+		case started <- struct{}{}:
+		default:
+		}
+		return b, nil
+	}
 
 	// Start running.
 	ctx := context.Background()
@@ -320,21 +337,31 @@ func TestAgent_draining_reports_lame_duck_mode(t *testing.T) {
 		close(done)
 	}()
 
-	drain()
-drainEvents:
-	for {
-		select {
-		case <-c.reports:
-		default:
-			break drainEvents
-		}
+	select {
+	case <-started:
+	case <-time.After(time.Second):
+		t.Errorf("agent did not start assigned bot")
 	}
+	drain()
 	t.Run("agent reports lame duck", func(t *testing.T) {
-		res := <-c.reports
-		if got := res.LoadIndicators.DutCapacity; got != 0 {
-			t.Errorf("agent reported DutCapacity %v; want 0", got)
+		now := time.Now()
+	checkReports:
+		for {
+			select {
+			case res := <-c.reports:
+				if got := res.LoadIndicators.DutCapacity; got == 0 {
+					break checkReports
+				}
+			case <-time.After(time.Second):
+				t.Errorf("agent did not call ReportDrone")
+			}
+			if time.Now().Sub(now) > time.Second {
+				t.Errorf("agent did not report lame duck")
+				break checkReports
+			}
 		}
 	})
+	b.Stop()
 	t.Run("agent exits", func(t *testing.T) {
 		select {
 		case <-done:
@@ -343,6 +370,12 @@ drainEvents:
 		}
 	})
 }
+
+// TODO(ayatane): Test that agent keeps reporting while drain/term
+// TODO(ayatane): Test that agent terminates bots when unknown_uuid
+// TODO(ayatane): Test that agent stops reporting when unknown_uuid
+// TODO(ayatane): Test that agent terminates unassigned DUTs
+// TODO(ayatane): Test that agent doesn't add new DUTs when drain/term
 
 // newTestAgent makes a new agent for tests with common values.  Tests
 // MUST NOT depend on the exact values here.  If something is

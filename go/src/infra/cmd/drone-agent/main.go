@@ -85,14 +85,19 @@ const checkDrainingInterval = time.Minute
 // file exists at the given path.
 func notifyDraining(ctx context.Context, path string) context.Context {
 	ctx, drain := draining.WithDraining(ctx)
+	_, err := os.Stat(path)
+	if err == nil {
+		drain()
+		return ctx
+	}
 	go func() {
 		for {
+			time.Sleep(checkDrainingInterval)
 			_, err := os.Stat(path)
 			if err == nil {
 				drain()
 				return
 			}
-			time.Sleep(checkDrainingInterval)
 		}
 	}()
 	return ctx

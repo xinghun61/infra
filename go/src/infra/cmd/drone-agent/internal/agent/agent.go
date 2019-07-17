@@ -13,6 +13,7 @@ import (
 	"log"
 	"math"
 	"os"
+	"sync"
 	"time"
 
 	"github.com/golang/protobuf/ptypes"
@@ -66,18 +67,19 @@ type stateInterface interface {
 	DrainAll()
 	TerminateAll()
 	Wait()
+	BlockDUTs()
 }
 
 // Run runs the agent until it is canceled via the context.
 func (a *Agent) Run(ctx context.Context) {
 	a.log("Agent starting")
 	for {
-		if err := a.runOnce(ctx); err != nil {
-			log.Printf("Lost drone assignment: %v", err)
-		}
 		if draining.IsDraining(ctx) || ctx.Err() != nil {
 			a.log("Agent exited")
 			return
+		}
+		if err := a.runOnce(ctx); err != nil {
+			a.log("Lost drone assignment: %v", err)
 		}
 	}
 }
@@ -121,27 +123,68 @@ func (a *Agent) runOnce(ctx context.Context) error {
 		return errors.Annotate(err, "register with queen").Err()
 	}
 
-reportLoop:
-	for {
+	return a.reportLoop(ctx, s)
+}
+
+// reportLoop implements the core reporting loop of the agent.
+// See also runOnce.
+func (a *Agent) reportLoop(ctx context.Context, s stateInterface) error {
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+	var wg sync.WaitGroup
+	defer wg.Wait()
+	readyToExit := make(chan struct{})
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
 		select {
 		case <-ctx.Done():
+			s.BlockDUTs()
 			s.TerminateAll()
-			break reportLoop
+		case <-readyToExit:
+		}
+	}()
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		select {
 		case <-draining.C(ctx):
+			s.BlockDUTs()
 			s.DrainAll()
-			break reportLoop
+		case <-readyToExit:
+		}
+	}()
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		select {
+		case <-draining.C(ctx):
+		case <-ctx.Done():
+		}
+		s.BlockDUTs()
+		s.Wait()
+		close(readyToExit)
+	}()
+
+	for {
+		select {
 		case <-time.After(a.ReportingInterval):
+		case <-readyToExit:
+			return nil
 		}
 		a.log("Reporting to queen")
 		if err := a.reportDrone(ctx, s); err != nil {
-			a.log("Error reporting to queen: %s", err)
 			if _, ok := err.(fatalError); ok {
-				break reportLoop
+				a.log("Terminating due to fatal error: %s", err)
+				cancel()
+				return err
 			}
+			a.log("Error reporting to queen: %s", err)
 		}
 	}
-	s.Wait()
-	return nil
 }
 
 // reportDrone does one cycle of calling the ReportDrone queen RPC and
