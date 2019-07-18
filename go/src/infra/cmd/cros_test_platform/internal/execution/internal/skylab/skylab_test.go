@@ -489,3 +489,30 @@ func TestQuotaSchedulerAccount(t *testing.T) {
 		})
 	})
 }
+
+func TestUnmanagedPool(t *testing.T) {
+	Convey("Given a client test and an unmanaged pool.", t, func() {
+		ctx := context.Background()
+		swarming := newFakeSwarming("")
+		tests := []*build_api.AutotestTest{newTest("name1", true)}
+		params := basicParams()
+		params.Scheduling.Pool = &test_platform.Request_Params_Scheduling_UnmanagedPool{
+			UnmanagedPool: "foo-pool",
+		}
+
+		run := skylab.NewTaskSet(tests, params, basicConfig())
+		run.LaunchAndWait(ctx, swarming, fakeGetterFactory(newFakeGetter()))
+
+		Convey("the launched task request run in the unmanaged pool.", func() {
+			So(swarming.createCalls, ShouldHaveLength, 1)
+			create := swarming.createCalls[0]
+			for _, slice := range create.TaskSlices {
+				flatDimensions := make([]string, len(slice.Properties.Dimensions))
+				for i, d := range slice.Properties.Dimensions {
+					flatDimensions[i] = d.Key + ":" + d.Value
+				}
+				So(flatDimensions, ShouldContain, "label-pool:foo-pool")
+			}
+		})
+	})
+}
