@@ -226,25 +226,7 @@ def _FetchFlakeOccurrences(flake, flake_type, max_occurrence_count):
               FlakeOccurrence.time_happened >
               start_date)).order(-FlakeOccurrence.time_happened)
 
-  occurrences_query_old_flakes = FlakeOccurrence.query(
-      ancestor=flake.key).filter(FlakeOccurrence.flake_type == flake_type
-                                ).order(-FlakeOccurrence.time_happened)
-
-  if max_occurrence_count:
-    flake_occurrences = occurrences_query.fetch(max_occurrence_count)
-
-    # No occurrences in the past 7 days.
-    if not flake_occurrences:
-      flake_occurrences = occurrences_query_old_flakes.fetch(
-          max_occurrence_count)
-  else:
-    flake_occurrences = occurrences_query.fetch()
-
-    # No occurrences in the past 7 days.
-    if not flake_occurrences:
-      flake_occurrences = occurrences_query_old_flakes.fetch()
-
-  return flake_occurrences
+  return occurrences_query.fetch(max_occurrence_count)
 
 
 def _GetLastUpdatedTimeDelta(flake_issue):
@@ -272,28 +254,32 @@ def GetFlakeInformation(flake, max_occurrence_count, with_occurrences=True):
     flake occurrences.
   """
   occurrences = []
-  for flake_type in [
-      FlakeType.CQ_FALSE_REJECTION, FlakeType.RETRY_WITH_PATCH,
-      FlakeType.CI_FAILED_STEP, FlakeType.CQ_HIDDEN_FLAKE
-  ]:
-    typed_occurrences = _FetchFlakeOccurrences(flake, flake_type,
-                                               max_occurrence_count)
-    occurrences.extend(typed_occurrences)
-
-    if max_occurrence_count:
-      max_occurrence_count = max_occurrence_count - len(typed_occurrences)
-      if max_occurrence_count == 0:
-        # Bails out if the number of occurrences with higher impact has hit the
-        # cap.
+  if not max_occurrence_count or flake.archived:
+    # fetch all occurrences regardless of types if is requested to show all
+    # occurrences or the flake is archived.
+    occurrences = FlakeOccurrence.query(
+        ancestor=flake.key).order(-FlakeOccurrence.time_happened).fetch()
+  else:
+    for flake_type in [
+        FlakeType.CQ_FALSE_REJECTION, FlakeType.RETRY_WITH_PATCH,
+        FlakeType.CI_FAILED_STEP, FlakeType.CQ_HIDDEN_FLAKE
+    ]:
+      occurrences.extend(
+          _FetchFlakeOccurrences(flake, flake_type,
+                                 max_occurrence_count - len(occurrences)))
+      if len(occurrences) >= max_occurrence_count:
+        # Bails out if the number of occurrences with higher impact has hit
+        # the cap.
         break
+
+    # Makes sure occurrences are sorted by time_happened in descending order,
+    # regardless of types.
+    occurrences.sort(key=lambda x: x.time_happened, reverse=True)
 
   if not occurrences and with_occurrences:
     # Flake must be with occurrences, but there is no occurrence, bail out.
     return None
 
-  # Makes sure occurrences are sorted by time_happened in descending order,
-  # regardless of types.
-  occurrences.sort(key=lambda x: x.time_happened, reverse=True)
   flake_dict = flake.to_dict()
   flake_dict['occurrences'] = _GetGroupedOccurrencesByBuilder(occurrences)
   flake_dict['flake_counts_last_week'] = _GetFlakeCountsList(
