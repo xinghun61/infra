@@ -204,7 +204,7 @@ For questions and general discussions, please use [findit group].
 [Example of gtests with different parameters]: images/gtests_with_different_parameters.png
 [Example of webkit layout tests with different queries]: images/webkit_layout_tests_with_different_queries.png
 [external/wpt/IndexedDB/interleaved-cursors-large.html]: https://analysis.chromium.org/p/chromium/flake-portal/flakes?flake_filter=test::external/wpt/IndexedDB/interleaved-cursors-large.html
-[file a bug]: https://bugs.chromium.org/p/chromium/issues/entry?components=Tools%3ETest%3EFindIt%3EFlakiness
+[file a bug]: https://bugs.chromium.org/p/chromium/issues/entry?components=Infra%3ETest%3EFlakiness
 [Filter Flakes Example]: images/filter_flakes.png
 [Findit]: https://analysis.chromium.org
 [findit group]: https://groups.google.com/a/chromium.org/forum/?pli=1#!forum/findit

@@ -8,7 +8,7 @@
   <link rel="import" href="/ui/elements/cats-app.html">
 </head>
 <body>
-  <cats-app id="app" components="Tools>Test>FindIt>Flakiness" page-header="Findit: flakes caused by the culprit">
+  <cats-app id="app" components="Infra>Test>Flakiness" page-header="Findit: flakes caused by the culprit">
     <b>Project:</b> {{project_name}}<br>
     <b>Commit:</b> <a href="https://crrev.com/{{commit_position or revision}}" target="_blank">{{commit_position or revision}}</a><br>
     {% if cr_notified %}
