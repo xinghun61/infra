@@ -31,6 +31,18 @@ import (
 	"infra/tricium/appengine/common/track"
 )
 
+var validPlatforms = [...]tricium.Platform_Name{
+	tricium.Platform_LINUX,
+	tricium.Platform_UBUNTU,
+	tricium.Platform_ANDROID,
+	tricium.Platform_MAC,
+	tricium.Platform_OSX,
+	tricium.Platform_IOS,
+	tricium.Platform_WINDOWS,
+	tricium.Platform_CHROMEOS,
+	tricium.Platform_FUCHSIA,
+}
+
 // WorkerDone tracks the completion of a worker.
 func (*trackerServer) WorkerDone(c context.Context, req *admin.WorkerDoneRequest) (res *admin.WorkerDoneResponse, err error) {
 	defer func() {
@@ -59,156 +71,6 @@ func validateWorkerDoneRequest(req *admin.WorkerDoneRequest) error {
 		return errors.New("too many results (both isolate and buildbucket exist)")
 	}
 	return nil
-}
-
-var validPlatforms = []tricium.Platform_Name{
-	tricium.Platform_LINUX,
-	tricium.Platform_UBUNTU,
-	tricium.Platform_ANDROID,
-	tricium.Platform_MAC,
-	tricium.Platform_OSX,
-	tricium.Platform_IOS,
-	tricium.Platform_WINDOWS,
-	tricium.Platform_CHROMEOS,
-	tricium.Platform_FUCHSIA,
-}
-
-// Given a bitfield whose bit positions correspond to tricium.Platform_Name
-// values return an array of tricium.Platform_Name values.
-func getPlatforms(platforms int64) ([]tricium.Platform_Name, error) {
-	if platforms == int64(tricium.Platform_ANY) {
-		return []tricium.Platform_Name{tricium.Platform_ANY}, nil
-	}
-
-	out := []tricium.Platform_Name{}
-	for _, p := range validPlatforms {
-		mask := int64(1<<uint64(p) - 1)
-		if platforms&mask != 0 {
-			out = append(out, p)
-			platforms = platforms &^ mask
-		}
-	}
-
-	if platforms != 0 {
-		return nil, errors.Reason("Unknown platform: %#x", platforms).Err()
-	}
-
-	return out, nil
-}
-
-// Create and populate an AnalysisRun given the datastore entities.
-func createAnalysisResults(wres *track.WorkerRunResult, areq *track.AnalyzeRequest, ares *track.AnalyzeRequestResult, comments []*track.Comment, selections []*track.CommentSelection) (*apibq.AnalysisRun, error) {
-	revisionNumber, err := strconv.Atoi(gerrit.PatchSetNumber(areq.GitRef))
-	if err != nil {
-		return nil, err
-	}
-
-	rev := tricium.GerritRevision{
-		Host:    areq.GerritHost,
-		Project: areq.Project,
-		Change:  areq.GerritChange,
-		GitUrl:  areq.GitURL,
-		GitRef:  areq.GitRef,
-	}
-
-	files := make([]*tricium.Data_File, len(areq.Files))
-	for i, f := range areq.Files {
-		fc := tricium.Data_File(f)
-		files[i] = &fc
-	}
-
-	gcomments := make([]*apibq.AnalysisRun_GerritComment, len(comments))
-	for i, comment := range comments {
-		ctime, err := ptypes.TimestampProto(comment.CreationTime)
-		if err != nil {
-			return nil, err
-		}
-		tcomment := tricium.Data_Comment{}
-		if err = jsonpb.UnmarshalString(string(comment.Comment), &tcomment); err != nil {
-			return nil, err
-		}
-		p, err := getPlatforms(comment.Platforms)
-		if err != nil {
-			return nil, err
-		}
-		cinfo := apibq.AnalysisRun_GerritComment{
-			Comment:     &tcomment,
-			CreatedTime: ctime,
-			Analyzer:    comment.Analyzer,
-			Platforms:   p,
-		}
-		if selections != nil {
-			cinfo.Selected = selections[i].Included
-		}
-		gcomments[i] = &cinfo
-	}
-
-	analysisRun := apibq.AnalysisRun{
-		GerritRevision: &rev,
-		RevisionNumber: int32(revisionNumber),
-		Files:          files,
-		RequestedTime:  tutils.TimestampProto(areq.Received),
-		ResultState:    ares.State,
-		ResultPlatform: wres.Platform,
-		Comments:       gcomments,
-	}
-
-	return &analysisRun, nil
-}
-
-// streamCommentsToBigQuery sends analyzer results to BigQuery for metrics and
-// ad hoc analysis.
-func streamAnalysisResultsToBigQuery(c context.Context, wres *track.WorkerRunResult, areq *track.AnalyzeRequest, ares *track.AnalyzeRequestResult, comments []*track.Comment, selections []*track.CommentSelection) error {
-	run, err := createAnalysisResults(wres, areq, ares, comments, selections)
-	if err != nil {
-		return err
-	}
-
-	return common.ResultsLog.Insert(c, &bq.Row{Message: run})
-}
-
-// Given the |request| and |comments| create an array of track.CommentSelection
-// the same size (and order) as |comments|. If |request| is for a Gerrit change
-// then also set CommentSelection.Included if the comment is to be reported to
-// Gerrit.
-func createCommentSelections(c context.Context, request *track.AnalyzeRequest, comments []*track.Comment) ([]*track.CommentSelection, error) {
-	selections := make([]*track.CommentSelection, len(comments))
-	for i, comment := range comments {
-		commentKey := ds.KeyForObj(c, comment)
-		selections[i] = &track.CommentSelection{
-			ID:       1,
-			Parent:   commentKey,
-			Included: true, // Default value, will override below.
-		}
-	}
-
-	if !gerrit.IsGerritProjectRequest(request) {
-		return selections, nil
-	}
-
-	// Get the changed lines for this revision.
-	changedLines, err := gerrit.FetchChangedLines(c, request.GerritHost, request.GerritChange, request.GitRef)
-	if err != nil {
-		// Upon error return a valid slice of selections which are all *not*
-		// included.
-		for _, s := range selections {
-			s.Included = false
-		}
-		return selections, errors.Annotate(err, "failed to get changed lines").Err()
-	}
-
-	gerrit.FilterRequestChangedLines(request, &changedLines)
-
-	for path, lines := range changedLines {
-		logging.Debugf(c, "Num changed lines for %s is %d.", path, len(lines))
-	}
-
-	for i, comment := range comments {
-		// TODO(crbug.com/869177): Merge results.
-		selections[i].Included = gerrit.CommentIsInChangedLines(c, comment, changedLines)
-	}
-
-	return selections, nil
 }
 
 func workerDone(c context.Context, req *admin.WorkerDoneRequest, isolator common.IsolateAPI) error {
@@ -495,6 +357,149 @@ func workerDone(c context.Context, req *admin.WorkerDoneRequest, isolator common
 		return errors.Annotate(err, "failed to get AnalyzeRequestResult entity").Err()
 	}
 	return streamAnalysisResultsToBigQuery(c, workerRes, request, result, comments, selections)
+}
+
+// streamCommentsToBigQuery sends analyzer results to BigQuery for metrics and
+// ad hoc analysis.
+func streamAnalysisResultsToBigQuery(c context.Context, wres *track.WorkerRunResult, areq *track.AnalyzeRequest, ares *track.AnalyzeRequestResult, comments []*track.Comment, selections []*track.CommentSelection) error {
+	run, err := createAnalysisResults(wres, areq, ares, comments, selections)
+	if err != nil {
+		return err
+	}
+
+	return common.ResultsLog.Insert(c, &bq.Row{Message: run})
+}
+
+// Create and populate an AnalysisRun given the datastore entities.
+func createAnalysisResults(wres *track.WorkerRunResult, areq *track.AnalyzeRequest, ares *track.AnalyzeRequestResult, comments []*track.Comment, selections []*track.CommentSelection) (*apibq.AnalysisRun, error) {
+	revisionNumber, err := strconv.Atoi(gerrit.PatchSetNumber(areq.GitRef))
+	if err != nil {
+		return nil, err
+	}
+
+	rev := tricium.GerritRevision{
+		Host:    areq.GerritHost,
+		Project: areq.Project,
+		Change:  areq.GerritChange,
+		GitUrl:  areq.GitURL,
+		GitRef:  areq.GitRef,
+	}
+
+	files := make([]*tricium.Data_File, len(areq.Files))
+	for i, f := range areq.Files {
+		fc := tricium.Data_File(f)
+		files[i] = &fc
+	}
+
+	gcomments := make([]*apibq.AnalysisRun_GerritComment, len(comments))
+	for i, comment := range comments {
+		ctime, err := ptypes.TimestampProto(comment.CreationTime)
+		if err != nil {
+			return nil, err
+		}
+		tcomment := tricium.Data_Comment{}
+		if err = jsonpb.UnmarshalString(string(comment.Comment), &tcomment); err != nil {
+			return nil, err
+		}
+		p, err := getPlatforms(comment.Platforms)
+		if err != nil {
+			return nil, err
+		}
+		cinfo := apibq.AnalysisRun_GerritComment{
+			Comment:     &tcomment,
+			CreatedTime: ctime,
+			Analyzer:    comment.Analyzer,
+			Platforms:   p,
+		}
+		if selections != nil {
+			cinfo.Selected = selections[i].Included
+		}
+		gcomments[i] = &cinfo
+	}
+
+	analysisRun := apibq.AnalysisRun{
+		GerritRevision: &rev,
+		RevisionNumber: int32(revisionNumber),
+		Files:          files,
+		RequestedTime:  tutils.TimestampProto(areq.Received),
+		ResultState:    ares.State,
+		ResultPlatform: wres.Platform,
+		Comments:       gcomments,
+	}
+
+	return &analysisRun, nil
+}
+
+// Given a bitfield whose bit positions correspond to tricium.Platform_Name
+// values return an array of tricium.Platform_Name values.
+func getPlatforms(platforms int64) ([]tricium.Platform_Name, error) {
+	if platforms == int64(tricium.Platform_ANY) {
+		return []tricium.Platform_Name{tricium.Platform_ANY}, nil
+	}
+
+	out := []tricium.Platform_Name{}
+	for _, p := range validPlatforms {
+		mask := int64(1<<uint64(p) - 1)
+		if platforms&mask != 0 {
+			out = append(out, p)
+			platforms = platforms &^ mask
+		}
+	}
+
+	if platforms != 0 {
+		return nil, errors.Reason("Unknown platform: %#x", platforms).Err()
+	}
+
+	return out, nil
+}
+
+// createCommentSelections creates and puts track.CommentSelection entities.
+//
+// The CommentSelection determines whether the parent Comment is "included"
+// (will be posted to Gerrit). The comment will be included if it is within
+// the changed lines.
+//
+// In the future when there are multi-platform results, this could also
+// decide which platform's results will be included. See: crbug.com/869177.
+//
+// The returned slice of track.CommentSelection will have the same size and
+// order as |comments|.
+func createCommentSelections(c context.Context, request *track.AnalyzeRequest, comments []*track.Comment) ([]*track.CommentSelection, error) {
+	selections := make([]*track.CommentSelection, len(comments))
+	for i, comment := range comments {
+		commentKey := ds.KeyForObj(c, comment)
+		selections[i] = &track.CommentSelection{
+			ID:       1,
+			Parent:   commentKey,
+			Included: true, // Default value, may be overridden below.
+		}
+	}
+
+	if !gerrit.IsGerritProjectRequest(request) {
+		return selections, nil
+	}
+
+	// Get the changed lines for this revision.
+	changedLines, err := gerrit.FetchChangedLines(c, request.GerritHost, request.GerritChange, request.GitRef)
+	if err != nil {
+		// Upon error, mark all of the comments as not selected.
+		for _, s := range selections {
+			s.Included = false
+		}
+		return selections, errors.Annotate(err, "failed to get changed lines").Err()
+	}
+
+	gerrit.FilterRequestChangedLines(request, &changedLines)
+
+	for path, lines := range changedLines {
+		logging.Debugf(c, "Num changed lines for %s is %d.", path, len(lines))
+	}
+
+	for i, comment := range comments {
+		selections[i].Included = gerrit.CommentIsInChangedLines(c, comment, changedLines)
+	}
+
+	return selections, nil
 }
 
 // collectComments collects the comments in the results from the analyzer.
