@@ -23,6 +23,7 @@ import (
 
 	"github.com/golang/protobuf/proto"
 	"go.chromium.org/chromiumos/infra/proto/go/device"
+	"go.chromium.org/luci/auth"
 	"go.chromium.org/luci/common/errors"
 	"go.chromium.org/luci/common/logging"
 	"go.chromium.org/luci/common/proto/gerrit"
@@ -30,6 +31,7 @@ import (
 	"go.chromium.org/luci/common/retry"
 	"go.chromium.org/luci/common/retry/transient"
 	"go.chromium.org/luci/grpc/grpcutil"
+	"go.chromium.org/luci/grpc/prpc"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -37,7 +39,9 @@ import (
 	fleet "infra/appengine/crosskylabadmin/api/fleet/v1"
 	"infra/appengine/crosskylabadmin/app/clients"
 	"infra/appengine/crosskylabadmin/app/config"
+	"infra/appengine/crosskylabadmin/app/frontend/internal/datastore/dronecfg"
 	"infra/appengine/crosskylabadmin/app/frontend/internal/gitstore"
+	"infra/appengine/drone-queen/api"
 	"infra/libs/skylab/inventory"
 )
 
@@ -222,8 +226,42 @@ func (is *ServerImpl) PushInventoryToQueen(ctx context.Context, req *fleet.PushI
 	defer func() {
 		err = grpcutil.GRPCifyAndLogErr(ctx, err)
 	}()
-	// TODO(ayatane): Implement this.
+	cfg := config.Get(ctx).Inventory
+	if cfg.QueenService == "" {
+		return &fleet.PushInventoryToQueenResponse{}, nil
+	}
+	e, err := dronecfg.Get(ctx, queenDroneName(cfg.Environment))
+	if err != nil {
+		return nil, err
+	}
+	duts := make([]string, len(e.DUTs))
+	for i, d := range e.DUTs {
+		duts[i] = d.Hostname
+	}
+
+	a := auth.NewAuthenticator(ctx, auth.SilentLogin, auth.Options{
+		Method:                 auth.ServiceAccountMethod,
+		ServiceAccountJSONPath: auth.GCEServiceAccount,
+	})
+	h, err := a.Client()
+	if err != nil {
+		return nil, errors.Annotate(err, "failed to create HTTP client").Err()
+	}
+	c := api.NewInventoryProviderPRPCClient(&prpc.Client{
+		C:    h,
+		Host: cfg.QueenService,
+	})
+	_, err = c.DeclareDuts(ctx, &api.DeclareDutsRequest{Duts: duts})
+	if err != nil {
+		return nil, err
+	}
 	return &fleet.PushInventoryToQueenResponse{}, nil
+}
+
+// queenDroneName returns the name of the fake drone whose DUTs should
+// be pushed to the drone queen service.
+func queenDroneName(env string) string {
+	return fmt.Sprintf("drone-queen-%s", env)
 }
 
 // initUpdateLimiterOnce initializes the updateLimiter.  This should
