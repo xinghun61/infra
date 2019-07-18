@@ -8,6 +8,7 @@ package autotest
 
 import (
 	"context"
+	"strings"
 	"time"
 
 	"github.com/golang/protobuf/ptypes"
@@ -107,19 +108,22 @@ func (r *Runner) proxyRequest() (*swarming_api.SwarmingRpcsNewTaskRequest, error
 		return nil, errors.Annotate(err, "create proxy request").Err()
 	}
 
+	pool, err := toPool(r.requestParams.GetScheduling())
+	if err != nil {
+		return nil, errors.Annotate(err, "create proxy request").Err()
+	}
+
 	afeHost := r.config.GetAfeHost()
 	if afeHost == "" {
 		return nil, errors.Reason("create proxy request: config specified no afe_host").Err()
 	}
 
 	dsArgs := dynamicsuite.Args{
-		Board:   r.requestParams.SoftwareAttributes.BuildTarget.Name,
-		Build:   build,
-		Model:   r.requestParams.HardwareAttributes.Model,
-		Timeout: timeout,
-		// TODO(akeshet): Determine pool from request parameters, after remapping
-		// to autotest pool namespace.
-		Pool:              "",
+		Board:             r.requestParams.SoftwareAttributes.BuildTarget.Name,
+		Build:             build,
+		Model:             r.requestParams.HardwareAttributes.Model,
+		Timeout:           timeout,
+		Pool:              pool,
 		AfeHost:           afeHost,
 		ReimageAndRunArgs: r.reimageAndRunArgs(),
 	}
@@ -130,6 +134,26 @@ func (r *Runner) proxyRequest() (*swarming_api.SwarmingRpcsNewTaskRequest, error
 	}
 
 	return req, nil
+}
+
+func toPool(params *test_platform.Request_Params_Scheduling) (string, error) {
+	switch v := params.GetPool().(type) {
+	case *test_platform.Request_Params_Scheduling_ManagedPool_:
+		if v.ManagedPool == test_platform.Request_Params_Scheduling_MANAGED_POOL_UNSPECIFIED {
+			return "", errors.Reason("unspecified managed pool").Err()
+		}
+		if v.ManagedPool == test_platform.Request_Params_Scheduling_MANAGED_POOL_QUOTA {
+			return "", errors.Reason("quota pool is not supported for autotest execution").Err()
+		}
+		longName := v.ManagedPool.String()
+		return strings.ToLower(strings.TrimPrefix(longName, "MANAGED_POOL_")), nil
+	case *test_platform.Request_Params_Scheduling_UnmanagedPool:
+		return v.UnmanagedPool, nil
+	case *test_platform.Request_Params_Scheduling_QuotaAccount:
+		return "", errors.Reason("quota accounts are not valid for autotest execution").Err()
+	default:
+		return "", errors.Reason("no pool").Err()
+	}
 }
 
 func toTimeout(params *test_platform.Request_Params) (time.Duration, error) {

@@ -75,6 +75,11 @@ func basicParams() *test_platform.Request_Params {
 				Dep: &test_platform.Request_Params_SoftwareDependency_ChromeosBuild{ChromeosBuild: "foo-build"},
 			},
 		},
+		Scheduling: &test_platform.Request_Params_Scheduling{
+			Pool: &test_platform.Request_Params_Scheduling_ManagedPool_{
+				ManagedPool: test_platform.Request_Params_Scheduling_MANAGED_POOL_CQ,
+			},
+		},
 		Time: &test_platform.Request_Params_Time{
 			MaximumDuration: &duration.Duration{Seconds: 60 * 60},
 		},
@@ -114,6 +119,7 @@ func TestLaunch(t *testing.T) {
 					"--board", "foo-build-target",
 					"--model", "foo-model",
 					"--suite_name", "cros_test_platform",
+					"--pool", "cq",
 					"-w", "foo-afe-host",
 					"--timeout_mins", "60",
 					"--suite_args_json", `{"args_dict_json":"{\"name\":\"cros_test_platform\",\"test_names\":[\"test1\",\"test2\"]}"}`,
