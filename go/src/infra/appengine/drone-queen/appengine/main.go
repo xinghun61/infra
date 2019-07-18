@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package appengine
+package main
 
 import (
 	crand "crypto/rand"
@@ -23,13 +23,14 @@ import (
 	"go.chromium.org/luci/appengine/gaemiddleware/standard"
 	"go.chromium.org/luci/config/validation"
 	"go.chromium.org/luci/server/router"
+	"google.golang.org/appengine"
 
 	"infra/appengine/drone-queen/internal/config"
 	"infra/appengine/drone-queen/internal/cron"
 	"infra/appengine/drone-queen/internal/frontend"
 )
 
-func init() {
+func main() {
 	seedRand()
 	setupConfigValidation()
 
@@ -39,6 +40,8 @@ func init() {
 	cron.InstallHandlers(r, mw)
 	frontend.InstallHandlers(r, mw)
 	http.DefaultServeMux.Handle("/", r)
+
+	appengine.Main()
 }
 
 func seedRand() {
