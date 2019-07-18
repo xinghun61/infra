@@ -5,6 +5,7 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"regexp"
@@ -12,9 +13,9 @@ import (
 	"sync"
 	"time"
 
-	structpb "github.com/golang/protobuf/ptypes/struct"
-
+	"github.com/golang/protobuf/jsonpb"
 	"github.com/golang/protobuf/proto"
+	structpb "github.com/golang/protobuf/ptypes/struct"
 	"google.golang.org/genproto/protobuf/field_mask"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
@@ -23,7 +24,6 @@ import (
 	"go.chromium.org/luci/buildbucket"
 	"go.chromium.org/luci/buildbucket/deprecated"
 	buildbucketpb "go.chromium.org/luci/buildbucket/proto"
-	"go.chromium.org/luci/common/api/gitiles"
 	"go.chromium.org/luci/common/clock"
 	"go.chromium.org/luci/common/errors"
 	"go.chromium.org/luci/common/logging"
@@ -242,22 +242,42 @@ var (
 
 // outputCommitFromLegacyProperties synthesizes an output commit from
 // legacy got_revision and got_revision_cp properties.
-// Uses "repository" property as a repo, which isn't entirely correct.
 func outputCommitFromLegacyProperties(props *structpb.Struct) (*buildbucketpb.GitilesCommit, error) {
-	repo := props.Fields["repository"].GetStringValue()
 	gotRevision := props.Fields["got_revision"].GetStringValue()
-	cp := props.Fields["got_revision_cp"].GetStringValue()
-
-	if gotRevision == "" || repo == "" {
+	if gotRevision == "" {
 		return nil, nil
 	}
 
-	// Parse repository.
-	var err error
-	ret := &buildbucketpb.GitilesCommit{Ref: "refs/heads/master"}
-	if ret.Host, ret.Project, err = gitiles.ParseRepoURL(repo); err != nil {
+	// Retrieve gitiles host and project from build input, using buildbucket
+	// internal property.
+	buildStruct := props.Fields["$recipe_engine/buildbucket"].GetStructValue().GetFields()["build"].GetStructValue()
+	if buildStruct == nil {
+		return nil, fmt.Errorf("no buildbucket build property")
+	}
+	build := &buildbucketpb.Build{}
+	if err := structToMessage(buildStruct, build); err != nil {
 		return nil, err
 	}
+	ret := &buildbucketpb.GitilesCommit{}
+	switch {
+	case build.GetInput().GetGitilesCommit() != nil:
+		ic := build.GetInput().GetGitilesCommit()
+		ret.Host = ic.Host
+		ret.Project = ic.Project
+		ret.Ref = ic.Ref
+	case len(build.GetInput().GetGerritChanges()) == 1:
+		cl := build.GetInput().GetGerritChanges()[0]
+		ret.Host = cl.Host
+		ret.Project = cl.Project
+	}
+	if ret.Host == "" || ret.Project == "" {
+		return nil, fmt.Errorf("failed to determine gitiles host or project")
+	}
+	if ret.Ref == "" {
+		ret.Ref = "refs/heads/master"
+	}
+
+	cp := props.Fields["got_revision_cp"].GetStringValue()
 
 	// Parse got_revision.
 	switch {
@@ -290,6 +310,16 @@ func outputCommitFromLegacyProperties(props *structpb.Struct) (*buildbucketpb.Gi
 	}
 
 	return ret, nil
+}
+
+// structToMessage converts the struct to msg via JSONPB format.
+// This is inefficient.
+func structToMessage(s *structpb.Struct, msg proto.Message) error {
+	buf := &bytes.Buffer{}
+	if err := (&jsonpb.Marshaler{}).Marshal(buf, s); err != nil {
+		return err
+	}
+	return (&jsonpb.Unmarshaler{AllowUnknownFields: true}).Unmarshal(buf, msg)
 }
 
 // AnnotationUpdated is an annotee.Options.AnnotationUpdated callback

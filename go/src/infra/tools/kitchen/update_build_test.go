@@ -325,37 +325,84 @@ func TestReadBuildSecrets(t *testing.T) {
 func TestOutputCommitFromLegacyProperties(t *testing.T) {
 	t.Parallel()
 
-	parse := func(repository, gotRevision, gotRevisionCP string) (*buildbucketpb.GitilesCommit, error) {
-		return outputCommitFromLegacyProperties(&structpb.Struct{
-			Fields: map[string]*structpb.Value{
-				"repository": {
-					Kind: &structpb.Value_StringValue{StringValue: repository},
-				},
-				"got_revision": {
-					Kind: &structpb.Value_StringValue{StringValue: gotRevision},
-				},
-				"got_revision_cp": {
-					Kind: &structpb.Value_StringValue{StringValue: gotRevisionCP},
-				},
-			},
-		})
+	parse := func(propJSON string) (*buildbucketpb.GitilesCommit, error) {
+		propStruct := &structpb.Struct{}
+		err := jsonpb.UnmarshalString(propJSON, propStruct)
+		So(err, ShouldBeNil)
+
+		return outputCommitFromLegacyProperties(propStruct)
 	}
 
 	Convey("TestOutputCommitFromLegacyProperties", t, func() {
 		Convey("no properties", func() {
-			actual, err := parse("", "", "")
-			So(err, ShouldBeNil)
-			So(actual, ShouldBeNil)
-		})
-
-		Convey("no repo", func() {
-			actual, err := parse("", "e57f4e87022d765b45e741e478a8351d9789bc37", "")
+			actual, err := parse(`{}`)
 			So(err, ShouldBeNil)
 			So(actual, ShouldBeNil)
 		})
 
 		Convey("got_revision id", func() {
-			actual, err := parse("https://chromium.googlesource.com/chromium/src", "e57f4e87022d765b45e741e478a8351d9789bc37", "")
+			actual, err := parse(`{
+				"$recipe_engine/buildbucket": {
+					"build": {
+						"input": {
+							"gitilesCommit": {
+								"host": "chromium.googlesource.com",
+								"project": "chromium/src"
+							}
+						}
+					}
+				},
+				"got_revision": "e57f4e87022d765b45e741e478a8351d9789bc37"
+			}`)
+			So(err, ShouldBeNil)
+			So(actual, ShouldResembleProto, &buildbucketpb.GitilesCommit{
+				Host:    "chromium.googlesource.com",
+				Project: "chromium/src",
+				Ref:     "refs/heads/master",
+				Id:      "e57f4e87022d765b45e741e478a8351d9789bc37",
+			})
+		})
+
+		Convey("got_revision non-default ref", func() {
+			actual, err := parse(`{
+				"$recipe_engine/buildbucket": {
+					"build": {
+						"input": {
+							"gitilesCommit": {
+								"host": "chromium.googlesource.com",
+								"project": "chromium/src",
+								"ref": "refs/heads/x"
+							}
+						}
+					}
+				},
+				"got_revision": "e57f4e87022d765b45e741e478a8351d9789bc37"
+			}`)
+			So(err, ShouldBeNil)
+			So(actual, ShouldResembleProto, &buildbucketpb.GitilesCommit{
+				Host:    "chromium.googlesource.com",
+				Project: "chromium/src",
+				Ref:     "refs/heads/x",
+				Id:      "e57f4e87022d765b45e741e478a8351d9789bc37",
+			})
+		})
+
+		Convey("got_revision id tryjob", func() {
+			actual, err := parse(`{
+				"$recipe_engine/buildbucket": {
+					"build": {
+						"input": {
+							"gerritChanges": [{
+								"host": "chromium.googlesource.com",
+								"project": "chromium/src",
+								"change": 1,
+								"patchset": 2
+							}]
+						}
+					}
+				},
+				"got_revision": "e57f4e87022d765b45e741e478a8351d9789bc37"
+			}`)
 			So(err, ShouldBeNil)
 			So(actual, ShouldResembleProto, &buildbucketpb.GitilesCommit{
 				Host:    "chromium.googlesource.com",
@@ -366,7 +413,19 @@ func TestOutputCommitFromLegacyProperties(t *testing.T) {
 		})
 
 		Convey("got_revision ref", func() {
-			actual, err := parse("https://chromium.googlesource.com/chromium/src", "refs/heads/master", "")
+			actual, err := parse(`{
+				"$recipe_engine/buildbucket": {
+					"build": {
+						"input": {
+							"gitilesCommit": {
+								"host": "chromium.googlesource.com",
+								"project": "chromium/src"
+							}
+						}
+					}
+				},
+				"got_revision": "refs/heads/master"
+			}`)
 			So(err, ShouldBeNil)
 			So(actual, ShouldResembleProto, &buildbucketpb.GitilesCommit{
 				Host:    "chromium.googlesource.com",
@@ -376,7 +435,21 @@ func TestOutputCommitFromLegacyProperties(t *testing.T) {
 		})
 
 		Convey("got_revision_cp", func() {
-			actual, err := parse("https://chromium.googlesource.com/chromium/src", "e57f4e87022d765b45e741e478a8351d9789bc37", "refs/heads/master@{#673406}")
+			actual, err := parse(`{
+				"$recipe_engine/buildbucket": {
+					"build": {
+						"input": {
+							"gitilesCommit": {
+								"host": "chromium.googlesource.com",
+								"project": "chromium/src"
+							}
+						}
+					}
+				},
+				"got_revision": "e57f4e87022d765b45e741e478a8351d9789bc37",
+				"got_revision_cp": "refs/heads/master@{#673406}"
+			}`)
+
 			So(err, ShouldBeNil)
 			So(actual, ShouldResembleProto, &buildbucketpb.GitilesCommit{
 				Host:     "chromium.googlesource.com",
