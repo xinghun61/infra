@@ -6,6 +6,7 @@ import {LitElement, html, css} from 'lit-element';
 import page from 'page';
 import 'elements/framework/links/mr-issue-link/mr-issue-link.js';
 import {issueRefToUrl} from 'elements/shared/converters.js';
+import {isTextInput} from 'elements/shared/dom-helpers';
 
 
 export class MrIssueList extends LitElement {
@@ -71,7 +72,7 @@ export class MrIssueList extends LitElement {
     const rowSelected = this._selectedIssues[i];
     return html`
       <tr
-        class=${i === this.srcIndex ? 'dragged' : ''}
+        class="row-${i} list-row ${i === this.srcIndex ? 'dragged' : ''}"
         ?selected=${rowSelected}
         draggable=${draggable}
         data-index=${i}
@@ -79,7 +80,9 @@ export class MrIssueList extends LitElement {
         @dragend=${this._dragend}
         @dragover=${this._dragover}
         @drop=${this._dragdrop}
-        @click=${this._navigateToIssue}
+        @click=${this._clickIssueRow}
+        @keydown=${this._runListHotkeys}
+        tabindex="0"
       >
         <td class="ignore-navigation">
           ${draggable ? html`
@@ -89,6 +92,7 @@ export class MrIssueList extends LitElement {
             <input
               class="issue-checkbox"
               .value=${i}
+              ?checked=${rowSelected}
               type="checkbox"
               aria-label="Select Issue ${issue.localId}"
               @change=${this._selectIssue}
@@ -170,7 +174,20 @@ export class MrIssueList extends LitElement {
     this.role = 'table';
 
     this.columns = ['Issue', 'Summary'];
+
+    this._boundRunNavigationHotKeys = this._runNavigationHotKeys.bind(this);
   };
+
+  firstUpdated() {
+    // Only attach an event listener once the DOM has rendered.
+    window.addEventListener('keydown', this._boundRunNavigationHotKeys);
+  }
+
+  disconnectedCallback() {
+    super.disconnectedCallback();
+
+    window.removeEventListener('keydown', this._boundRunNavigationHotKeys);
+  }
 
   update(changedProperties) {
     if (changedProperties.has('issues')) {
@@ -190,6 +207,75 @@ export class MrIssueList extends LitElement {
       (isSelected, i) => isSelected ? this.issues[i] : false).filter(Boolean);
   }
 
+  // Navigate between issues in the list by focusing them. These keys
+  // need to be bound globally because the user can run these actions
+  // even when they are not currently focusing an issue.
+  _runNavigationHotKeys(e) {
+    if (!this.issues || !this.issues.length) return;
+    const target = e.path ? e.path[0] : e.target;
+    if (!target || isTextInput(target)) return;
+    const key = e.key;
+    if (key === 'j' || key === 'k') {
+      let activeRow = this.shadowRoot.activeElement;
+
+      // If the focused element is a child of a table row, find the parent
+      // table row to navigate users to the prev/next issue relative to where
+      // they are focused.
+      while (activeRow && (activeRow.tagName.toUpperCase() !== 'TR'
+          || !activeRow.classList.contains('list-row'))) {
+        // This loop is guaranteed to run in the DOM within this component's
+        // template because of ShadowDOM. Neither HTMLElement.activeElement
+        // nor HTMLElement.parentElement penetrate shadow roots.
+        // This guarantees that we don't need to worry about <tr> tags or
+        // class="list-row" elements anywhere else on the page, including
+        // nested inside the element.
+        activeRow = activeRow.parentElement;
+      }
+
+      let i = -1;
+      if (activeRow) {
+        i = Number.parseInt(activeRow.dataset.index);
+      }
+
+      if (key === 'j') { // Navigate down the list.
+        i += 1;
+        if (i >= this.issues.length) {
+          i = 0;
+        }
+      } else if (key === 'k') { // Navigate up the list.
+        i -= 1;
+        if (i < 0) {
+          i = this.issues.length - 1;
+        }
+      }
+
+      const row = this.shadowRoot.querySelector(`.row-${i}`);
+      row.focus();
+    }
+  }
+
+  // Issue list hot key actions
+  _runListHotkeys(e) {
+    const target = e.target;
+    const i = Number.parseInt(target.dataset.index);
+    if (Number.isNaN(i)) return;
+
+    const issue = this.issues[i];
+
+    switch (e.key) {
+      case 's': // Star focused issue.
+        // TODO(zhangtiff): Add this hot key when adding issue starring.
+        break;
+      case 'x': // Toggle selection of focused issue.
+        this._updateSelectedIssue(i, !this._selectedIssues[i]);
+        break;
+      case 'o': // Open current issue.
+      case 'O': // Open current issue in new tab.
+        this._navigateToIssue(issue, e.shiftKey);
+        break;
+    }
+  }
+
   // TODO(zhangtiff): Add Shift+Click to select a range of issues.
   _selectIssue(e) {
     if (!this.selectionEnabled) return;
@@ -199,9 +285,13 @@ export class MrIssueList extends LitElement {
 
     if (i < 0 || i >= this._selectedIssues.length) return;
 
+    this._updateSelectedIssue(i, checkbox.checked);
+  }
+
+  _updateSelectedIssue(i, selected) {
     const oldSelection = this._selectedIssues[i];
 
-    if (checkbox.checked) {
+    if (selected) {
       this._selectedIssues[i] = true;
     } else {
       this._selectedIssues[i] = false;
@@ -214,7 +304,7 @@ export class MrIssueList extends LitElement {
     }
   }
 
-  _navigateToIssue(e) {
+  _clickIssueRow(e) {
     const containsIgnoredElement = e.path && e.path.find(
       (node) => node.classList
         && node.classList.contains('ignore-navigation'));
@@ -225,14 +315,23 @@ export class MrIssueList extends LitElement {
     const i = Number.parseInt(row.dataset.index);
 
     if (i >= 0 && i < this.issues.length) {
-      const issue = this.issues[i];
-      const url = issueRefToUrl(issue);
+      this._navigateToIssue(this.issues[i]);
+    }
+  }
 
-      // TODO(zhangtiff): Find a better way to handle carrying
-      // over query params.
-      let query = window.location.search;
-      query = query ? query.replace('?', '&') : '';
-      page(`${url}${query}`);
+  _navigateToIssue(issue, newTab) {
+    const url = issueRefToUrl(issue);
+
+    // TODO(zhangtiff): Find a better way to handle carrying
+    // over query params.
+    let query = window.location.search;
+    query = query ? query.replace('?', '&') : '';
+    const link = `${url}${query}`;
+
+    if (newTab) {
+      window.open(link, '_blank', 'noopener');
+    } else {
+      page(link);
     }
   }
 };
