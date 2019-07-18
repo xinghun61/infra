@@ -37,7 +37,6 @@ class ConnectionPool(object):
     self.poolsize = poolsize
     self.queues = {}
 
-  @framework_helpers.retry(3, delay=0.1, backoff=2)
   def get(self, instance, database):
     """Retun a database connection, or throw an exception if none can
     be made.
@@ -71,7 +70,7 @@ class ConnectionPool(object):
       q.put(cnxn)
 
 
-@framework_helpers.retry(2, delay=1, backoff=2)
+@framework_helpers.retry(1, delay=1, backoff=2)
 def cnxn_ctor(instance, database):
   logging.info('About to connect to SQL instance %r db %r', instance, database)
   if settings.unit_test_mode:
@@ -96,17 +95,21 @@ def cnxn_ctor(instance, database):
   cnxn.is_bad = False
   return cnxn
 
+
 # One connection pool per database instance (master, replicas are each an
 # instance). We'll have four connections per instance because we fetch
 # issue comments, stars, spam verdicts and spam verdict history in parallel
 # with promises.
 cnxn_pool = ConnectionPool(settings.db_cnxn_pool_size)
 
-
 # MonorailConnection maintains a dictionary of connections to SQL databases.
 # Each is identified by an int shard ID.
 # And there is one connection to the master DB identified by key MASTER_CNXN.
 MASTER_CNXN = 'master_cnxn'
+
+# When one replica is temporarily unresponseive, we can use a different one.
+BAD_SHARD_AVOIDANCE_MS = 15000
+
 
 CONNECTION_COUNT = ts_mon.CounterMetric(
     'monorail/sql/connection_count',
@@ -171,10 +174,12 @@ class MonorailConnection(object):
   across user requests.  The main purpose of this class is to make using
   sharded tables easier.
   """
+  unavailable_shards = {}  # {shard_id: timestamp of failed attempt}
 
   def __init__(self):
     self.sql_cnxns = {}   # {MASTER_CNXN: cnxn, shard_id: cnxn, ...}
 
+  @framework_helpers.retry(1, delay=0.1, backoff=2)
   def GetMasterConnection(self):
     """Return a connection to the master SQL DB."""
     if MASTER_CNXN not in self.sql_cnxns:
@@ -185,6 +190,7 @@ class MonorailConnection(object):
 
     return self.sql_cnxns[MASTER_CNXN]
 
+  @framework_helpers.retry(1, delay=0.1, backoff=2)
   def GetConnectionForShard(self, shard_id):
     """Return a connection to the DB replica that will be used for shard_id."""
     if shard_id not in self.sql_cnxns:
@@ -194,18 +200,25 @@ class MonorailConnection(object):
           physical_shard_id % len(settings.db_replica_names)]
       shard_instance_name = (
           settings.physical_db_name_format % replica_name)
+      self.unavailable_shards[shard_id] = int(time.time())
       self.sql_cnxns[shard_id] = cnxn_pool.get(
           shard_instance_name, settings.db_database_name)
+      del self.unavailable_shards[shard_id]
       logging.info('created a replica connection for shard %d', shard_id)
 
     return self.sql_cnxns[shard_id]
 
-  def Execute(self, stmt_str, stmt_args, shard_id=None, commit=True, retries=1):
+  def Execute(self, stmt_str, stmt_args, shard_id=None, commit=True, retries=2):
     """Execute the given SQL statement on one of the relevant databases."""
     if shard_id is None:
       # No shard was specified, so hit the master.
       sql_cnxn = self.GetMasterConnection()
     else:
+      if shard_id in self.unavailable_shards:
+        bad_age = int(time.time()) - self.unavailable_shards[shard_id]
+        if bad_age < BAD_SHARD_AVOIDANCE_MS:
+          logging.info('Avoiding bad replica %r, age %r', shard_id, bad_age)
+          shard_id = (shard_id + 1) % settings.num_logical_shards
       sql_cnxn = self.GetConnectionForShard(shard_id)
 
     try:

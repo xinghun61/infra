@@ -8,6 +8,8 @@ from __future__ import print_function
 from __future__ import division
 from __future__ import absolute_import
 
+import mock
+import time
 import unittest
 
 import settings
@@ -183,6 +185,61 @@ class MonorailConnectionTest(unittest.TestCase):
     sql_cnxn = self.cnxn.GetMasterConnection()
     self.cnxn.Close()
     self.assertFalse(sql_cnxn.has_uncommitted)
+
+  def testExecute_Master(self):
+    """Execute() with no shard passes the statement to the master sql cnxn."""
+    sql_cnxn = self.cnxn.GetMasterConnection()
+    with mock.patch.object(self.cnxn, '_ExecuteWithSQLConnection') as ewsc:
+      ewsc.return_value = 'db result'
+      actual_result = self.cnxn.Execute('statement', [])
+      self.assertEqual('db result', actual_result)
+      ewsc.assert_called_once_with(sql_cnxn, 'statement', [], commit=True)
+
+  def testExecute_Shard(self):
+    """Execute() with a shard passes the statement to the shard sql cnxn."""
+    shard_id = 1
+    sql_cnxn_1 = self.cnxn.GetConnectionForShard(shard_id)
+    with mock.patch.object(self.cnxn, '_ExecuteWithSQLConnection') as ewsc:
+      ewsc.return_value = 'db result'
+      actual_result = self.cnxn.Execute('statement', [], shard_id=shard_id)
+      self.assertEqual('db result', actual_result)
+      ewsc.assert_called_once_with(sql_cnxn_1, 'statement', [], commit=True)
+
+  def testExecute_Shard_Unavailable(self):
+    """If a shard is unavailable, we try the next one."""
+    shard_id = 1
+    sql_cnxn_1 = self.cnxn.GetConnectionForShard(shard_id)
+    sql_cnxn_2 = self.cnxn.GetConnectionForShard(shard_id + 1)
+
+    # Simulate a recent failure on shard 1.
+    self.cnxn.unavailable_shards[1] = int(time.time()) - 300
+
+    with mock.patch.object(self.cnxn, '_ExecuteWithSQLConnection') as ewsc:
+      ewsc.return_value = 'db result'
+      actual_result = self.cnxn.Execute('statement', [], shard_id=shard_id)
+      self.assertEqual('db result', actual_result)
+      ewsc.assert_called_once_with(sql_cnxn_2, 'statement', [], commit=True)
+
+    # Even a new MonorailConnection instance shares the same state.
+    other_cnxn = sql.MonorailConnection()
+    other_sql_cnxn_2 = other_cnxn.GetConnectionForShard(shard_id + 1)
+
+    with mock.patch.object(other_cnxn, '_ExecuteWithSQLConnection') as ewsc:
+      ewsc.return_value = 'db result'
+      actual_result = other_cnxn.Execute('statement', [], shard_id=shard_id)
+      self.assertEqual('db result', actual_result)
+      ewsc.assert_called_once_with(
+          other_sql_cnxn_2, 'statement', [], commit=True)
+
+    # Simulate an old failure on shard 1, allowing us to try using it again.
+    self.cnxn.unavailable_shards[1] = (
+        int(time.time()) - sql.BAD_SHARD_AVOIDANCE_MS - 1)
+
+    with mock.patch.object(self.cnxn, '_ExecuteWithSQLConnection') as ewsc:
+      ewsc.return_value = 'db result'
+      actual_result = self.cnxn.Execute('statement', [], shard_id=shard_id)
+      self.assertEqual('db result', actual_result)
+      ewsc.assert_called_once_with(sql_cnxn_1, 'statement', [], commit=True)
 
 
 class TableManagerTest(unittest.TestCase):
