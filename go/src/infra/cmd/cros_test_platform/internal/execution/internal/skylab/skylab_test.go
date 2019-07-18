@@ -389,7 +389,7 @@ func TestRequestArguments(t *testing.T) {
 			create := swarming.createCalls[0]
 			So(create.TaskSlices, ShouldHaveLength, 2)
 
-			So(create.Tags, ShouldContain, "luci-project:foo-luci-project")
+			So(create.Tags, ShouldContain, "luci_project:foo-luci-project")
 
 			prefix := "log_location:"
 			var logdogURL string

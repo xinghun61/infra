@@ -93,7 +93,7 @@ func (t *testRun) isClientTest() (bool, error) {
 
 func swarmingTags(cmd *worker.Command, conf *config.Config_SkylabWorker) []string {
 	return []string{
-		"luci-project:" + conf.LuciProject,
+		"luci_project:" + conf.LuciProject,
 		"log_location:" + cmd.LogDogAnnotationURL,
 	}
 }
