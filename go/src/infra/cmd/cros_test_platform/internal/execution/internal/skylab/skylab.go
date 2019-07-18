@@ -81,7 +81,7 @@ func (t *testRun) RequestArgs(params *test_platform.Request_Params, workerConfig
 		// TODO(akeshet): Determine priority correctly.
 		Priority:                0,
 		ProvisionableDimensions: provisionableDimensions,
-		SwarmingTags:            swarmingTags(cmd, workerConfig),
+		SwarmingTags:            swarmingTags(cmd, workerConfig, params),
 		Timeout:                 timeout,
 	}
 
@@ -96,11 +96,15 @@ func (t *testRun) isClientTest() (bool, error) {
 	return isClient, nil
 }
 
-func swarmingTags(cmd *worker.Command, conf *config.Config_SkylabWorker) []string {
-	return []string{
+func swarmingTags(cmd *worker.Command, conf *config.Config_SkylabWorker, params *test_platform.Request_Params) []string {
+	tags := []string{
 		"luci_project:" + conf.LuciProject,
 		"log_location:" + cmd.LogDogAnnotationURL,
 	}
+	if qa := params.GetScheduling().GetQuotaAccount(); qa != "" {
+		tags = append(tags, "qs_account:"+qa)
+	}
+	return tags
 }
 
 type attempt struct {

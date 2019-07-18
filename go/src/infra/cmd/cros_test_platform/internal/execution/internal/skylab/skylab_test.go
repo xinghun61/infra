@@ -461,3 +461,31 @@ func TestClientTestArg(t *testing.T) {
 		})
 	})
 }
+
+func TestQuotaSchedulerAccount(t *testing.T) {
+	Convey("Given a client test and a selected quota account", t, func() {
+		ctx := context.Background()
+		swarming := newFakeSwarming("")
+		tests := []*build_api.AutotestTest{newTest("name1", true)}
+		params := basicParams()
+		params.Scheduling.Pool = &test_platform.Request_Params_Scheduling_QuotaAccount{
+			QuotaAccount: "foo-account",
+		}
+
+		run := skylab.NewTaskSet(tests, params, basicConfig())
+		run.LaunchAndWait(ctx, swarming, fakeGetterFactory(newFakeGetter()))
+
+		Convey("the launched task request should have a tag specifying the correct quota account and run in the quota pool.", func() {
+			So(swarming.createCalls, ShouldHaveLength, 1)
+			create := swarming.createCalls[0]
+			So(create.Tags, ShouldContain, "qs_account:foo-account")
+			for _, slice := range create.TaskSlices {
+				flatDimensions := make([]string, len(slice.Properties.Dimensions))
+				for i, d := range slice.Properties.Dimensions {
+					flatDimensions[i] = d.Key + ":" + d.Value
+				}
+				So(flatDimensions, ShouldContain, "label-pool:DUT_POOL_QUOTA")
+			}
+		})
+	})
+}
