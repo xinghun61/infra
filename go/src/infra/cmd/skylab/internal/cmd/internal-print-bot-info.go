@@ -31,6 +31,7 @@ For internal use only.`,
 		c := &internalPrintBotInfoRun{}
 		c.authFlags.Register(&c.Flags, site.DefaultAuthOptions)
 		c.envFlags.Register(&c.Flags)
+		c.Flags.BoolVar(&c.byHostname, "by-hostname", false, "Lookup by hostname instead of ID.")
 		return c
 	},
 }
@@ -39,6 +40,8 @@ type internalPrintBotInfoRun struct {
 	subcommands.CommandRunBase
 	authFlags authcli.Flags
 	envFlags  envFlags
+
+	byHostname bool
 }
 
 func (c *internalPrintBotInfoRun) Run(a subcommands.Application, args []string, env subcommands.Env) int {
@@ -65,7 +68,12 @@ func (c *internalPrintBotInfoRun) innerRun(a subcommands.Application, args []str
 		Host:    siteEnv.AdminService,
 		Options: site.DefaultPRPCOptions,
 	})
-	req := fleet.GetDutInfoRequest{Id: dutID}
+	var req fleet.GetDutInfoRequest
+	if c.byHostname {
+		req.Hostname = dutID
+	} else {
+		req.Id = dutID
+	}
 	res, err := ic.GetDutInfo(ctx, &req)
 	if err != nil {
 		return err
