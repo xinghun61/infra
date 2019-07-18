@@ -231,21 +231,13 @@ class ChromeOSProjectAPITest(wf_testcase.TestCase):
                      ChromeOSProjectAPI().GetRerunBuilderId(build))
 
   def testGetCompileRerunBuildInputProperties(self):
-    build_target = 'abc'
     output_target1 = json.dumps({
         'category': 'chromeos-base',
         'packageName': 'target1'
     })
     targets = {'install packages': [output_target1]}
 
-    build = Build()
-    build.input.properties['build_target'] = {'name': build_target}
-
     expected_prop = {
-        'recipe': 'build_target',
-        'build_target': {
-            'name': build_target
-        },
         '$chromeos/cros_bisect': {
             'targets': [output_target1]
         },
@@ -253,15 +245,11 @@ class ChromeOSProjectAPITest(wf_testcase.TestCase):
 
     self.assertEqual(
         expected_prop,
-        ChromeOSProjectAPI().GetCompileRerunBuildInputProperties(
-            build, targets))
+        ChromeOSProjectAPI().GetCompileRerunBuildInputProperties(targets))
 
   def testGetCompileRerunBuildInputPropertiesOtherStep(self):
-    build = Build()
-    build.input.properties['build_target'] = {'name': 'abc'}
-
     self.assertIsNone(ChromeOSProjectAPI().GetCompileRerunBuildInputProperties(
-        build, {}))
+        {}))
 
   def testGetFailuresWithMatchingCompileFailureGroupsNoExistingGroup(self):
     build_id = 8000000000122

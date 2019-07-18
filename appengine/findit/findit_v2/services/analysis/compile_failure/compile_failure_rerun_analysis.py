@@ -101,13 +101,12 @@ def _GetRegressionRangesForCompileFailures(analysis):
   return analysis_util.GroupFailuresByRegerssionRange(failures_with_range)
 
 
-def _GetRerunBuildInputProperties(context, referred_build, targets):
+def _GetRerunBuildInputProperties(context, targets):
   luci_project = context.luci_project_name
   project_api = projects.GetProjectAPI(luci_project)
   assert project_api, 'Unsupported project {}'.format(luci_project)
 
-  return project_api.GetCompileRerunBuildInputProperties(
-      referred_build, targets)
+  return project_api.GetCompileRerunBuildInputProperties(targets)
 
 
 def _GetRerunBuildTags(analyzed_build_id):
@@ -123,8 +122,8 @@ def _GetRerunBuildTags(analyzed_build_id):
 
 # pylint: disable=E1120
 @ndb.transactional(xg=True)
-def TriggerRerunBuild(context, analyzed_build_id, referred_build, analysis_key,
-                      rerun_builder, rerun_commit, output_targets):
+def TriggerRerunBuild(context, analyzed_build_id, analysis_key, rerun_builder,
+                      rerun_commit, output_targets):
   """Triggers a rerun build if there's no existing one.
 
   Creates and saves a CompileRerunBuild entity if a new build is triggered.
@@ -135,9 +134,6 @@ def TriggerRerunBuild(context, analyzed_build_id, referred_build, analysis_key,
   Args:
     context (findit_v2.services.context.Context): Scope of the analysis.
     analyzed_build_id (int): Build id of the build that's being analyzed.
-    referred_build (buildbucket build.proto): Info about the build being
-      referred to trigger new rerun builds. This build could be the analyzed
-      build or a previous rerun build in the same analysis.
     analysis_key (Key to CompileFailureAnalysis): Key to the running analysis.
     rerun_builder (BuilderId): Builder to rerun the build.
     rerun_commit (GitilesCommit): Gitiles commit the build runs on.
@@ -157,8 +153,7 @@ def TriggerRerunBuild(context, analyzed_build_id, referred_build, analysis_key,
     return
 
   rerun_tags = _GetRerunBuildTags(analyzed_build_id)
-  input_properties = _GetRerunBuildInputProperties(context, referred_build,
-                                                   output_targets)
+  input_properties = _GetRerunBuildInputProperties(context, output_targets)
   if not input_properties:
     logging.error(
         'Failed to get input properties to trigger rerun build'
@@ -217,7 +212,7 @@ def _SaveCulpritInCompileFailures(compile_failures, culprit_commit):
   ndb.put_multi(compile_failures)
 
 
-def RerunBasedAnalysis(context, analyzed_build_id, referred_build):
+def RerunBasedAnalysis(context, analyzed_build_id):
   """Checks rerun build results and looks for either the culprit or the next
     commit to compile. Then wraps up the analysis with culprit or continues the
      analysis by triggering the next rerun build.
@@ -225,9 +220,6 @@ def RerunBasedAnalysis(context, analyzed_build_id, referred_build):
     Args:
       context (findit_v2.services.context.Context): Scope of the analysis.
       analyzed_build_id (int): Build id of the build that's being analyzed.
-      referred_build (buildbucket build.proto): Info about the build being
-        referred to trigger new rerun builds. This build could be the analyzed
-        build or a previous rerun build in the same analysis.
   """
   analysis = CompileFailureAnalysis.GetVersion(analyzed_build_id)
   assert analysis, 'Failed to get CompileFailureAnalysis for build {}'.format(
@@ -289,9 +281,8 @@ def RerunBasedAnalysis(context, analyzed_build_id, referred_build):
     # Triggers a rerun build unless there's an existing one.
     # It's possible if the existing one is still running so that Findit doesn't
     # know that build's result.
-    TriggerRerunBuild(context, analyzed_build_id, referred_build, analysis.key,
-                      rerun_builder, rerun_commit,
-                      compile_failure.GetFailedTargets(failures))
+    TriggerRerunBuild(context, analyzed_build_id, analysis.key, rerun_builder,
+                      rerun_commit, compile_failure.GetFailedTargets(failures))
 
   analysis.Update(
       status=analysis_status.COMPLETED

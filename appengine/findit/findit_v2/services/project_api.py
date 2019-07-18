@@ -68,13 +68,10 @@ class ProjectAPI(object):  # pragma: no cover.
     # pylint: disable=unused-argument
     raise NotImplementedError
 
-  def GetCompileRerunBuildInputProperties(self, referred_build, failed_targets):
+  def GetCompileRerunBuildInputProperties(self, failed_targets):
     """Gets input properties of a rerun build for compile failures.
 
     Args:
-      referred_build (buildbucket build.proto): ALL info about the
-        referred_build. This build could be the build being analyzed, or a
-        previous rerun build for the failed build.
       failed_targets (list of str): Targets Findit wants to rerun in the build.
 
     Returns:

@@ -34,18 +34,6 @@ class CompileFailureRerunAnalysisTest(wf_testcase.TestCase):
     self.build_number = 123
     self.builder = BuilderID(
         project='chromium', bucket='ci', builder='linux-rel')
-    self.build = Build(
-        id=self.build_id,
-        builder=self.builder,
-        number=self.build_number,
-        status=common_pb2.FAILURE)
-    self.build.input.gitiles_commit.host = 'gitiles.host.com'
-    self.build.input.gitiles_commit.project = 'project/name'
-    self.build.input.gitiles_commit.ref = 'ref/heads/master'
-    self.build.input.gitiles_commit.id = 'git_sha_123'
-    self.build.create_time.FromDatetime(datetime(2019, 4, 9))
-    self.build.start_time.FromDatetime(datetime(2019, 4, 9, 0, 1))
-    self.build.end_time.FromDatetime(datetime(2019, 4, 9, 1))
 
     self.context = Context(
         luci_project_name='chromium',
@@ -56,8 +44,8 @@ class CompileFailureRerunAnalysisTest(wf_testcase.TestCase):
 
     build_entity = LuciFailedBuild.Create(
         luci_project=self.context.luci_project_name,
-        luci_bucket=self.build.builder.bucket,
-        luci_builder=self.build.builder.builder,
+        luci_bucket=self.builder.bucket,
+        luci_builder=self.builder.builder,
         build_id=self.build_id,
         legacy_build_number=self.build_number,
         gitiles_host=self.context.gitiles_host,
@@ -82,8 +70,8 @@ class CompileFailureRerunAnalysisTest(wf_testcase.TestCase):
 
     self.analysis = CompileFailureAnalysis.Create(
         luci_project=self.context.luci_project_name,
-        luci_bucket=self.build.builder.bucket,
-        luci_builder=self.build.builder.builder,
+        luci_bucket=self.builder.bucket,
+        luci_builder=self.builder.builder,
         build_id=self.build_id,
         gitiles_host=self.context.gitiles_host,
         gitiles_project=self.context.gitiles_project,
@@ -147,8 +135,8 @@ class CompileFailureRerunAnalysisTest(wf_testcase.TestCase):
     mock_trigger_build.return_value = new_build
 
     compile_failure_rerun_analysis.TriggerRerunBuild(
-        self.context, self.build_id, self.build, self.analysis.key,
-        rerun_builder, rerun_commit, output_targets)
+        self.context, self.build_id, self.analysis.key, rerun_builder,
+        rerun_commit, output_targets)
 
     rerun_build = CompileRerunBuild.get_by_id(
         new_build_id, parent=self.analysis.key)
@@ -164,7 +152,7 @@ class CompileFailureRerunAnalysisTest(wf_testcase.TestCase):
             'value': 'compile-failure-culprit-finding',
             'key': 'purpose'
         }, {
-            'value': str(self.build.id),
+            'value': str(self.build_id),
             'key': 'analyzed_build_id'
         }])
 
@@ -190,8 +178,8 @@ class CompileFailureRerunAnalysisTest(wf_testcase.TestCase):
     self._CreateCompileRerunBuild()
 
     compile_failure_rerun_analysis.TriggerRerunBuild(
-        self.context, self.build_id, self.build, self.analysis.key,
-        rerun_builder, rerun_commit, output_targets)
+        self.context, self.build_id, self.analysis.key, rerun_builder,
+        rerun_commit, output_targets)
 
     self.assertFalse(mock_trigger_build.called)
 
@@ -215,8 +203,8 @@ class CompileFailureRerunAnalysisTest(wf_testcase.TestCase):
     output_targets = {'compile': ['a.o']}
 
     compile_failure_rerun_analysis.TriggerRerunBuild(
-        self.context, self.build_id, self.build, self.analysis.key,
-        rerun_builder, rerun_commit, output_targets)
+        self.context, self.build_id, self.analysis.key, rerun_builder,
+        rerun_commit, output_targets)
 
     self.assertFalse(mock_trigger_build.called)
 
@@ -240,8 +228,8 @@ class CompileFailureRerunAnalysisTest(wf_testcase.TestCase):
     output_targets = {'compile': ['a.o']}
 
     compile_failure_rerun_analysis.TriggerRerunBuild(
-        self.context, self.build_id, self.build, self.analysis.key,
-        rerun_builder, rerun_commit, output_targets)
+        self.context, self.build_id, self.analysis.key, rerun_builder,
+        rerun_commit, output_targets)
 
     self.assertTrue(mock_trigger_build.called)
     rerun_builds = CompileRerunBuild.query(ancestor=self.analysis.key).fetch()
@@ -290,7 +278,7 @@ class CompileFailureRerunAnalysisTest(wf_testcase.TestCase):
     mock_trigger_build.return_value = mock_rerun_build
 
     compile_failure_rerun_analysis.RerunBasedAnalysis(self.context,
-                                                      self.build_id, self.build)
+                                                      self.build_id)
     self.assertTrue(mock_trigger_build.called)
 
     analysis = CompileFailureAnalysis.GetVersion(self.build_id)
@@ -320,7 +308,7 @@ class CompileFailureRerunAnalysisTest(wf_testcase.TestCase):
     mock_revisions.return_value = {n: str(n) for n in xrange(6000000, 6000005)}
 
     compile_failure_rerun_analysis.RerunBasedAnalysis(self.context,
-                                                      self.build_id, self.build)
+                                                      self.build_id)
     self.assertFalse(mock_trigger_build.called)
 
     analysis = CompileFailureAnalysis.GetVersion(self.build_id)

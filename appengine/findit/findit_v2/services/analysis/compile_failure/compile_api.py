@@ -83,7 +83,7 @@ def AnalyzeCompileFailure(context, build, compile_steps):
   # Start a new analysis to analyze the first time failures.
   pre_compile_analysis.SaveCompileAnalysis(
       context, build, failures_without_existing_group, should_group_failures)
-  compile_failure_rerun_analysis.RerunBasedAnalysis(context, build.id, build)
+  compile_failure_rerun_analysis.RerunBasedAnalysis(context, build.id)
   return True
 
 
@@ -152,8 +152,7 @@ def OnCompileRerunBuildCompletion(context, rerun_build):
   if not build_saved:
     return False
 
-  compile_failure_rerun_analysis.RerunBasedAnalysis(context, analyzed_build_id,
-                                                    rerun_build)
+  compile_failure_rerun_analysis.RerunBasedAnalysis(context, analyzed_build_id)
   return True
 
 
