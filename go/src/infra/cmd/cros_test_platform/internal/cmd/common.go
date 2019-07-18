@@ -27,7 +27,7 @@ func newAuthenticatedTransport(ctx context.Context, f *authcli.Flags) (http.Roun
 	if err != nil {
 		return nil, errors.Annotate(err, "create authenticated transport").Err()
 	}
-	a := auth.NewAuthenticator(ctx, auth.OptionalLogin, o)
+	a := auth.NewAuthenticator(ctx, auth.SilentLogin, o)
 	return a.Transport()
 }
 

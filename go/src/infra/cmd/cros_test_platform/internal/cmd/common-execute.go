@@ -76,7 +76,7 @@ func httpClient(ctx context.Context, authJSONPath string) (*http.Client, error) 
 		ServiceAccountJSONPath: authJSONPath,
 		Scopes:                 []string{auth.OAuthScopeEmail},
 	}
-	a := auth.NewAuthenticator(ctx, auth.OptionalLogin, options)
+	a := auth.NewAuthenticator(ctx, auth.SilentLogin, options)
 	h, err := a.Client()
 	if err != nil {
 		return nil, errors.Annotate(err, "create http client").Err()
