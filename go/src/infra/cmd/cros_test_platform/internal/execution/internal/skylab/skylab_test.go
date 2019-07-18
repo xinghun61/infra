@@ -170,6 +170,11 @@ func basicParams() *test_platform.Request_Params {
 				Dep: &test_platform.Request_Params_SoftwareDependency_ChromeosBuild{ChromeosBuild: "foo-build"},
 			},
 		},
+		Scheduling: &test_platform.Request_Params_Scheduling{
+			Pool: &test_platform.Request_Params_Scheduling_ManagedPool_{
+				ManagedPool: test_platform.Request_Params_Scheduling_MANAGED_POOL_CQ,
+			},
+		},
 		Time: &test_platform.Request_Params_Time{
 			MaximumDuration: &duration.Duration{Seconds: 60},
 		},
@@ -429,6 +434,7 @@ func TestRequestArguments(t *testing.T) {
 				So(flatDimensions, ShouldContain, "label-cr50_phase:CR50_PHASE_PVT")
 				So(flatDimensions, ShouldContain, "label-model:foo-model")
 				So(flatDimensions, ShouldContain, "label-board:foo-board")
+				So(flatDimensions, ShouldContain, "label-pool:DUT_POOL_CQ")
 			}
 		})
 	})

@@ -68,9 +68,14 @@ func (t *testRun) RequestArgs(params *test_platform.Request_Params, workerConfig
 	}
 	cmd.Config(wrap(workerConfig))
 
+	labels, err := toInventoryLabels(params, t.test.Dependencies)
+	if err != nil {
+		return request.Args{}, errors.Annotate(err, "create request args").Err()
+	}
+
 	args := request.Args{
 		Cmd:               *cmd,
-		SchedulableLabels: toInventoryLabels(params, t.test.Dependencies),
+		SchedulableLabels: *labels,
 		// TODO(akeshet): Determine parent task ID correctly.
 		ParentTaskID: "",
 		// TODO(akeshet): Determine priority correctly.
@@ -224,22 +229,36 @@ func (r *TaskSet) tick(ctx context.Context, client swarming.Client, gf isolate.G
 	return complete, nil
 }
 
-func toInventoryLabels(params *test_platform.Request_Params, deps []*build_api.AutotestTaskDependency) inventory.SchedulableLabels {
+func toInventoryLabels(params *test_platform.Request_Params, deps []*build_api.AutotestTaskDependency) (*inventory.SchedulableLabels, error) {
 	flatDims := make([]string, len(deps))
 	for i, dep := range deps {
 		flatDims[i] = dep.Label
 	}
 
-	inventory := labels.Revert(flatDims)
+	inv := labels.Revert(flatDims)
 
 	if params.SoftwareAttributes.BuildTarget != nil {
-		inventory.Board = &params.SoftwareAttributes.BuildTarget.Name
+		inv.Board = &params.SoftwareAttributes.BuildTarget.Name
 	}
 	if params.HardwareAttributes.Model != "" {
-		inventory.Model = &params.HardwareAttributes.Model
+		inv.Model = &params.HardwareAttributes.Model
 	}
 
-	return *inventory
+	switch v := params.GetScheduling().GetPool().(type) {
+	case *test_platform.Request_Params_Scheduling_ManagedPool_:
+		pool, ok := poolMap[v.ManagedPool]
+		if !ok {
+			return nil, errors.Reason("unknown managed pool %s", v.ManagedPool.String()).Err()
+		}
+		inv.CriticalPools = append(inv.CriticalPools, pool)
+	case *test_platform.Request_Params_Scheduling_UnmanagedPool:
+		inv.SelfServePools = append(inv.SelfServePools, v.UnmanagedPool)
+	case *test_platform.Request_Params_Scheduling_QuotaAccount:
+		inv.CriticalPools = append(inv.CriticalPools, inventory.SchedulableLabels_DUT_POOL_QUOTA)
+		// TODO(akeshet): In this case, we need to set the quota account correctly.
+	}
+
+	return inv, nil
 }
 
 func toProvisionableDimensions(deps []*test_platform.Request_Params_SoftwareDependency) ([]string, error) {
@@ -272,6 +291,19 @@ func unpackResult(results []*swarming_api.SwarmingRpcsTaskResult, taskID string)
 	}
 
 	return result, nil
+}
+
+var poolMap = map[test_platform.Request_Params_Scheduling_ManagedPool]inventory.SchedulableLabels_DUTPool{
+	test_platform.Request_Params_Scheduling_MANAGED_POOL_ARC_PRESUBMIT: inventory.SchedulableLabels_DUT_POOL_ARC_PRESUBMIT,
+	test_platform.Request_Params_Scheduling_MANAGED_POOL_BVT:           inventory.SchedulableLabels_DUT_POOL_BVT,
+	test_platform.Request_Params_Scheduling_MANAGED_POOL_CONTINUOUS:    inventory.SchedulableLabels_DUT_POOL_CONTINUOUS,
+	test_platform.Request_Params_Scheduling_MANAGED_POOL_CQ:            inventory.SchedulableLabels_DUT_POOL_CQ,
+	test_platform.Request_Params_Scheduling_MANAGED_POOL_CTS_PERBUILD:  inventory.SchedulableLabels_DUT_POOL_CTS_PERBUILD,
+	test_platform.Request_Params_Scheduling_MANAGED_POOL_CTS:           inventory.SchedulableLabels_DUT_POOL_CTS,
+	// TODO(akeshet): This mapping is inexact. Requests that specify a quota account should not
+	// specify a pool, and should go routed to the quota pool automatically.
+	test_platform.Request_Params_Scheduling_MANAGED_POOL_QUOTA:  inventory.SchedulableLabels_DUT_POOL_QUOTA,
+	test_platform.Request_Params_Scheduling_MANAGED_POOL_SUITES: inventory.SchedulableLabels_DUT_POOL_SUITES,
 }
 
 var taskStateToLifeCycle = map[jsonrpc.TaskState]test_platform.TaskState_LifeCycle{
