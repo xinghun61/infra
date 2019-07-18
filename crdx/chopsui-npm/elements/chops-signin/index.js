@@ -211,13 +211,13 @@ export function reloadAuthorizationHeaders() {
 };
 
 let resolveAuthInitializedPromise;
-const authInitializedPromise = new Promise(function(resolve) {
+export const authInitializedPromise = new Promise(function(resolve) {
   resolveAuthInitializedPromise = resolve;
 });
 
 let gapi;
 
-export function init(clientId) {
+export function init(clientId, loadLibraries, extraScopes) {
   const callbackName = 'gapi' + Math.random();
   const gapiScript = document.createElement('script');
   gapiScript.src = 'https://apis.google.com/js/api.js?onload=' + callbackName;
@@ -229,7 +229,11 @@ export function init(clientId) {
 
   window[callbackName] = function(args) {
     gapi = window.gapi;
-    window.gapi.load('auth2', onAuthLoaded);
+    let libraries = 'auth2';
+    if (loadLibraries && loadLibraries.length > 0) {
+      libraries += ':' + loadLibraries.join(':');
+    }
+    window.gapi.load(libraries, onAuthLoaded);
     delete window[callbackName];
     removeScript();
   };
@@ -242,9 +246,13 @@ export function init(clientId) {
       window.addEventListener('load', onAuthLoaded);
       return;
     }
+    let scopes = 'email';
+    if (extraScopes && extraScopes.length > 0) {
+      scopes += ' ' + extraScopes.join(' ');
+    }
     const auth = window.gapi.auth2.init({
       client_id: clientId,
-      scope: 'email',
+      scope: scopes,
     });
     auth.currentUser.listen(function(user) {
       window.dispatchEvent(new CustomEvent('user-update', {detail: {user}}));
