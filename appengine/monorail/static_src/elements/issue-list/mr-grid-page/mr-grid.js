@@ -5,6 +5,7 @@
 import {LitElement, html, css} from 'lit-element';
 import {extractGridData, EMPTY_HEADER_VALUE} from './extract-grid-data.js';
 import {issueRefToUrl} from '../../shared/converters.js';
+import './mr-grid-tile.js';
 import qs from 'qs';
 
 export class MrGrid extends LitElement {
@@ -33,7 +34,6 @@ export class MrGrid extends LitElement {
     `;
   }
 
-  // TODO(juliacordero, zosha): Add option for cells=tiles
   renderCellMode(cellMode, xHeading, yHeading) {
     cellMode = cellMode.toLowerCase();
     const cellHeading = xHeading + '-' + yHeading;
@@ -65,6 +65,15 @@ export class MrGrid extends LitElement {
           </a>
         `;
       }
+    } else if (cellMode == 'tiles') {
+      return html`
+        ${this.groupedIssues.get(cellHeading).map((issue) => html`
+          <mr-grid-tile
+            .issue=${issue}
+            .queryParams=${this.queryParams}
+          ></mr-grid-tile>
+        `)}
+      `;
     }
   }
 

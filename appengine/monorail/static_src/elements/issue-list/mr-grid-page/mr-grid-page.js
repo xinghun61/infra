@@ -27,7 +27,7 @@ export class MrGridPage extends connectStore(LitElement) {
           .issues=${this.issues}
           .xAttr=${this.queryParams.x}
           .yAttr=${this.queryParams.y}
-          .cellMode=${this.queryParams.cells}
+          .cellMode=${this.queryParams.cells ? this.queryParams.cells : 'tiles'}
           .queryParams=${this.queryParams}
           .projectName=${this.projectName}
         ></mr-grid>
@@ -64,9 +64,5 @@ export class MrGridPage extends connectStore(LitElement) {
     this.issues = (issue.issueList(state) || []);
     this.fields = (project.fieldsList(state) || []);
   }
-
-  static get styles() {
-    // define css file.
-  };
 };
 customElements.define('mr-grid-page', MrGridPage);
