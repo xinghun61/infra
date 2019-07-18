@@ -58,6 +58,8 @@ func InstallHandlers(r *router.Router, mwBase router.MiddlewareChain) {
 
 	// Update device config asynchronously.
 	r.GET("/internal/cron/update-device-configs", mwCron, logAndSetHTTPErr(updateDeviceConfigCronHandler))
+
+	r.GET("/internal/cron/push-inventory-to-queen", mwCron, logAndSetHTTPErr(pushInventoryToQueenCronHandler))
 }
 
 func updateDeviceConfigCronHandler(c *router.Context) (err error) {
@@ -200,6 +202,15 @@ func triggerRepairOnRepairFailedCronHandler(c *router.Context) (err error) {
 	bc, tc := countBotsAndTasks(resp)
 	logging.Infof(c.Context, "Triggered %d tasks on %d bots", tc, bc)
 	return nil
+}
+
+func pushInventoryToQueenCronHandler(c *router.Context) (err error) {
+	defer func() {
+		pushInventoryToQueenTick.Add(c.Context, 1, err == nil)
+	}()
+	inv := createInventoryServer(c)
+	_, err = inv.PushInventoryToQueen(c.Context, &fleet.PushInventoryToQueenRequest{})
+	return err
 }
 
 func logAndSetHTTPErr(f func(c *router.Context) error) func(*router.Context) {

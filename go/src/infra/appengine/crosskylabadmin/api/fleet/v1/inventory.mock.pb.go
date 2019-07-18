@@ -294,6 +294,26 @@ func (mr *MockInventoryClientMockRecorder) ListRemovedDuts(ctx, in interface{}, 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListRemovedDuts", reflect.TypeOf((*MockInventoryClient)(nil).ListRemovedDuts), varargs...)
 }
 
+// PushInventoryToQueen mocks base method
+func (m *MockInventoryClient) PushInventoryToQueen(ctx context.Context, in *PushInventoryToQueenRequest, opts ...grpc.CallOption) (*PushInventoryToQueenResponse, error) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "PushInventoryToQueen", varargs...)
+	ret0, _ := ret[0].(*PushInventoryToQueenResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// PushInventoryToQueen indicates an expected call of PushInventoryToQueen
+func (mr *MockInventoryClientMockRecorder) PushInventoryToQueen(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PushInventoryToQueen", reflect.TypeOf((*MockInventoryClient)(nil).PushInventoryToQueen), varargs...)
+}
+
 // UpdateDutLabels mocks base method
 func (m *MockInventoryClient) UpdateDutLabels(ctx context.Context, in *UpdateDutLabelsRequest, opts ...grpc.CallOption) (*UpdateDutLabelsResponse, error) {
 	m.ctrl.T.Helper()
@@ -570,6 +590,21 @@ func (m *MockInventoryServer) ListRemovedDuts(arg0 context.Context, arg1 *ListRe
 func (mr *MockInventoryServerMockRecorder) ListRemovedDuts(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListRemovedDuts", reflect.TypeOf((*MockInventoryServer)(nil).ListRemovedDuts), arg0, arg1)
+}
+
+// PushInventoryToQueen mocks base method
+func (m *MockInventoryServer) PushInventoryToQueen(arg0 context.Context, arg1 *PushInventoryToQueenRequest) (*PushInventoryToQueenResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "PushInventoryToQueen", arg0, arg1)
+	ret0, _ := ret[0].(*PushInventoryToQueenResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// PushInventoryToQueen indicates an expected call of PushInventoryToQueen
+func (mr *MockInventoryServerMockRecorder) PushInventoryToQueen(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PushInventoryToQueen", reflect.TypeOf((*MockInventoryServer)(nil).PushInventoryToQueen), arg0, arg1)
 }
 
 // UpdateDutLabels mocks base method

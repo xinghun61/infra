@@ -107,6 +107,9 @@ service Inventory {
   // ///////////////////////////////////////////////////////////////////////////
   // RPCs used internally by the infrastructure. Not for end-user tools.
 
+  // PushInventoryToQueen is called by a cron job.
+  rpc PushInventoryToQueen(PushInventoryToQueenRequest) returns (PushInventoryToQueenResponse);
+
   // UpdateDutLabels sets the SchedulableLabels of a DUT.
   //
   // This API should only be used by the Skylab infrastructure
@@ -126,6 +129,9 @@ service Inventory {
   // Instead, this cron job will ensure device config is synced in time.
   rpc UpdateDeviceConfig(UpdateDeviceConfigRequest) returns (UpdateDeviceConfigResponse);
 }
+
+message PushInventoryToQueenRequest {}
+message PushInventoryToQueenResponse {}
 
 message UpdateDeviceConfigRequest {
 }

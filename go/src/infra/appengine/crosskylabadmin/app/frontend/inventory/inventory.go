@@ -217,6 +217,15 @@ func (is *ServerImpl) UpdateDutLabels(ctx context.Context, req *fleet.UpdateDutL
 	return resp, err
 }
 
+// PushInventoryToQueen implements the method from fleet.InventoryServer interface.
+func (is *ServerImpl) PushInventoryToQueen(ctx context.Context, req *fleet.PushInventoryToQueenRequest) (resp *fleet.PushInventoryToQueenResponse, err error) {
+	defer func() {
+		err = grpcutil.GRPCifyAndLogErr(ctx, err)
+	}()
+	// TODO(ayatane): Implement this.
+	return &fleet.PushInventoryToQueenResponse{}, nil
+}
+
 // initUpdateLimiterOnce initializes the updateLimiter.  This should
 // be called before using updateLimiter always.
 func (is *ServerImpl) initUpdateLimiterOnce(ctx context.Context) {

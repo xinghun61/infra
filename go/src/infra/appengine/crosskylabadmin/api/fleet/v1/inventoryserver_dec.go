@@ -244,6 +244,23 @@ func (s *DecoratedInventory) ListRemovedDuts(c context.Context, req *ListRemoved
 	return
 }
 
+func (s *DecoratedInventory) PushInventoryToQueen(c context.Context, req *PushInventoryToQueenRequest) (rsp *PushInventoryToQueenResponse, err error) {
+	if s.Prelude != nil {
+		var newCtx context.Context
+		newCtx, err = s.Prelude(c, "PushInventoryToQueen", req)
+		if err == nil {
+			c = newCtx
+		}
+	}
+	if err == nil {
+		rsp, err = s.Service.PushInventoryToQueen(c, req)
+	}
+	if s.Postlude != nil {
+		err = s.Postlude(c, "PushInventoryToQueen", rsp, err)
+	}
+	return
+}
+
 func (s *DecoratedInventory) UpdateDutLabels(c context.Context, req *UpdateDutLabelsRequest) (rsp *UpdateDutLabelsResponse, err error) {
 	if s.Prelude != nil {
 		var newCtx context.Context
