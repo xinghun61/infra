@@ -410,41 +410,6 @@ func TestValidateWorkerDoneRequestRequest(t *testing.T) {
 	})
 }
 
-func platformBitPosToMask(pos tricium.Platform_Name) int64 {
-	if pos == 0 {
-		return 0
-	}
-	return int64(1 << uint64(pos-1))
-}
-
-func TestGetPlatforms(t *testing.T) {
-	Convey("Platform: ANY", t, func() {
-		values, err := getPlatforms(platformBitPosToMask(tricium.Platform_ANY))
-		So(err, ShouldBeNil)
-		So(values, ShouldResemble, []tricium.Platform_Name{tricium.Platform_ANY})
-	})
-	Convey("Platform: UBUNTU", t, func() {
-		values, err := getPlatforms(platformBitPosToMask(tricium.Platform_UBUNTU))
-		So(err, ShouldBeNil)
-		So(values, ShouldResemble, []tricium.Platform_Name{tricium.Platform_UBUNTU})
-	})
-	Convey("Platform: ANDROID|OSX|WINDOWS", t, func() {
-		values, err := getPlatforms(platformBitPosToMask(tricium.Platform_ANDROID) +
-			platformBitPosToMask(tricium.Platform_OSX) +
-			platformBitPosToMask(tricium.Platform_WINDOWS))
-		So(err, ShouldBeNil)
-		So(values, ShouldResemble, []tricium.Platform_Name{tricium.Platform_ANDROID,
-			tricium.Platform_OSX,
-			tricium.Platform_WINDOWS})
-	})
-	Convey("Platform: Invalid", t, func() {
-		// Position 60 is currently unused in tricium.Platform_Name.
-		values, err := getPlatforms(platformBitPosToMask(60))
-		So(err, ShouldNotBeNil)
-		So(values, ShouldBeNil)
-	})
-}
-
 func TestCreateAnalysisResults(t *testing.T) {
 	Convey("Default objects", t, func() {
 		wres := track.WorkerRunResult{}
@@ -505,7 +470,7 @@ func TestCreateAnalysisResults(t *testing.T) {
 			{
 				UUID:         "1234",
 				Parent:       nil,
-				Platforms:    platformBitPosToMask(tricium.Platform_ANY),
+				Platforms:    tricium.PlatformBitPosToMask(tricium.Platform_ANY),
 				Analyzer:     "analyzerName",
 				Category:     "analyzerName/categoryName",
 				Comment:      []byte(deletedFileCommentJSON),
@@ -514,7 +479,7 @@ func TestCreateAnalysisResults(t *testing.T) {
 			{
 				UUID:         "1234",
 				Parent:       nil,
-				Platforms:    platformBitPosToMask(tricium.Platform_IOS) | platformBitPosToMask(tricium.Platform_WINDOWS),
+				Platforms:    tricium.PlatformBitPosToMask(tricium.Platform_IOS) | tricium.PlatformBitPosToMask(tricium.Platform_WINDOWS),
 				Analyzer:     "analyzerName",
 				Category:     "analyzerName/categoryName",
 				Comment:      []byte(inChangeCommentJSON),
@@ -523,7 +488,7 @@ func TestCreateAnalysisResults(t *testing.T) {
 			{
 				UUID:         "1234",
 				Parent:       nil,
-				Platforms:    platformBitPosToMask(tricium.Platform_OSX),
+				Platforms:    tricium.PlatformBitPosToMask(tricium.Platform_OSX),
 				Analyzer:     "notSelected",
 				Category:     "notSelected/categoryName",
 				Comment:      []byte(inChangeCommentJSON),
@@ -570,7 +535,7 @@ func TestCreateAnalysisResults(t *testing.T) {
 			So(&tcomment, ShouldResemble, gcomment.Comment)
 			So(gcomment.Analyzer, ShouldEqual, comments[i].Analyzer)
 			So(gcomment.CreatedTime, ShouldResemble, tutils.TimestampProto(comments[i].CreationTime))
-			platforms, _ := getPlatforms(comments[i].Platforms)
+			platforms, _ := tricium.GetPlatforms(comments[i].Platforms)
 			So(gcomment.Platforms, ShouldResemble, platforms)
 			So(gcomment.Selected, ShouldEqual, selections[i].Included)
 		}

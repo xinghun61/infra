@@ -31,18 +31,6 @@ import (
 	"infra/tricium/appengine/common/track"
 )
 
-var validPlatforms = [...]tricium.Platform_Name{
-	tricium.Platform_LINUX,
-	tricium.Platform_UBUNTU,
-	tricium.Platform_ANDROID,
-	tricium.Platform_MAC,
-	tricium.Platform_OSX,
-	tricium.Platform_IOS,
-	tricium.Platform_WINDOWS,
-	tricium.Platform_CHROMEOS,
-	tricium.Platform_FUCHSIA,
-}
-
 // WorkerDone tracks the completion of a worker.
 func (*trackerServer) WorkerDone(c context.Context, req *admin.WorkerDoneRequest) (res *admin.WorkerDoneResponse, err error) {
 	defer func() {
@@ -401,7 +389,7 @@ func createAnalysisResults(wres *track.WorkerRunResult, areq *track.AnalyzeReque
 		if err = jsonpb.UnmarshalString(string(comment.Comment), &tcomment); err != nil {
 			return nil, err
 		}
-		p, err := getPlatforms(comment.Platforms)
+		p, err := tricium.GetPlatforms(comment.Platforms)
 		if err != nil {
 			return nil, err
 		}
@@ -428,29 +416,6 @@ func createAnalysisResults(wres *track.WorkerRunResult, areq *track.AnalyzeReque
 	}
 
 	return &analysisRun, nil
-}
-
-// Given a bitfield whose bit positions correspond to tricium.Platform_Name
-// values return an array of tricium.Platform_Name values.
-func getPlatforms(platforms int64) ([]tricium.Platform_Name, error) {
-	if platforms == int64(tricium.Platform_ANY) {
-		return []tricium.Platform_Name{tricium.Platform_ANY}, nil
-	}
-
-	out := []tricium.Platform_Name{}
-	for _, p := range validPlatforms {
-		mask := int64(1<<uint64(p) - 1)
-		if platforms&mask != 0 {
-			out = append(out, p)
-			platforms = platforms &^ mask
-		}
-	}
-
-	if platforms != 0 {
-		return nil, errors.Reason("Unknown platform: %#x", platforms).Err()
-	}
-
-	return out, nil
 }
 
 // createCommentSelections creates and puts track.CommentSelection entities.
