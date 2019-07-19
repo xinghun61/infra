@@ -27,7 +27,7 @@ import (
 	"infra/cmd/drone-agent/internal/draining"
 )
 
-const drainingFilePath = "/var/spool/drone-agent-draining"
+const drainingFile = "drone-agent.drain"
 
 var (
 	queenService = os.Getenv("DRONE_AGENT_QUEEN_SERVICE")
@@ -46,9 +46,10 @@ var (
 )
 
 func main() {
+	// TODO(ayatane): Add environment validation.
 	ctx := context.Background()
 	ctx = notifySIGTERM(ctx)
-	ctx = notifyDraining(ctx, drainingFilePath)
+	ctx = notifyDraining(ctx, filepath.Join(workingDirPath, drainingFile))
 	h, err := httpClient(ctx, authOptions)
 	if err != nil {
 		log.Fatal(err)

@@ -64,7 +64,6 @@ func Start(c Config) (Bot, error) {
 	cmd = exec.Command("python2", c.botZipPath(), "start_bot")
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
-	cmd.Env = c.Env
 	if err := cmd.Start(); err != nil {
 		return nil, errors.Annotate(err, "start bot with %+v", c).Err()
 	}
@@ -80,20 +79,15 @@ type Config struct {
 	// a full URL without the path, e.g. https://host.example.com
 	SwarmingURL string
 	BotID       string
-	// WorkDirectory is the Swarming bot's work directory.  The
-	// caller should create this.
+	// WorkDirectory is the Swarming bot's work directory.
+	// The caller should create this.
+	// The parent directory should be writable to allow creation
+	// of the drain file.
 	WorkDirectory string
-	// Env specifies the environment of the process.
-	// Each entry is of the form "key=value".
-	// If Env is nil, the new process uses the current process's
-	// environment.
-	// If Env contains duplicate environment keys, only the last
-	// value in the slice for each duplicate key is used.
-	Env []string
 }
 
 func (c Config) drainFilePath() string {
-	return filepath.Join(c.WorkDirectory, "draining")
+	return c.WorkDirectory + ".drain"
 }
 
 func (c Config) botZipPath() string {
