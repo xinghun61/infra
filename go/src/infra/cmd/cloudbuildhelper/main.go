@@ -8,46 +8,58 @@ package main
 
 import (
 	"context"
-	"fmt"
-	"log"
 	"os"
 
-	"go.chromium.org/luci/auth"
-	"go.chromium.org/luci/hardcoded/chromeinfra"
+	"github.com/maruel/subcommands"
 
-	"infra/cmd/cloudbuildhelper/registry"
+	"go.chromium.org/luci/auth"
+	"go.chromium.org/luci/auth/client/authcli"
+	"go.chromium.org/luci/client/versioncli"
+	"go.chromium.org/luci/common/cli"
+	"go.chromium.org/luci/common/data/rand/mathrand"
+	"go.chromium.org/luci/common/flag/fixflagpos"
+	"go.chromium.org/luci/common/logging/gologger"
+	"go.chromium.org/luci/hardcoded/chromeinfra"
 )
 
-func main() {
-	ctx := context.Background()
+const userAgent = "cloudbuildhelper v0.0.1"
 
-	// TODO(vadimsh): This is temporary.
+func getApplication() *cli.Application {
+	return &cli.Application{
+		Name:  "cloudbuildhelper",
+		Title: "Helper for building docker images (" + userAgent + ")",
 
-	if len(os.Args) < 2 || len(os.Args) > 3 {
-		log.Fatalf("Expecting one or two arguments")
+		Context: func(ctx context.Context) context.Context {
+			return gologger.StdConfig.Use(ctx)
+		},
+
+		Commands: []*subcommands.Command{
+			subcommands.CmdHelp,
+			versioncli.CmdVersion(userAgent),
+
+			subcommands.Section(""),
+			authcli.SubcommandLogin(authOptions(), "login", false),
+			authcli.SubcommandLogout(authOptions(), "logout", false),
+			authcli.SubcommandInfo(authOptions(), "whoami", false),
+
+			subcommands.Section(""),
+			cmdStage,
+		},
 	}
+}
 
+func authOptions() auth.Options {
 	opts := chromeinfra.DefaultAuthOptions()
-	opts.Scopes = []string{"https://www.googleapis.com/auth/cloud-platform"}
-	a := auth.NewAuthenticator(ctx, auth.SilentLogin, opts)
-	ts, err := a.TokenSource()
-	if err != nil {
-		log.Fatalf("%s", err)
+	opts.Scopes = []string{
+		// For calling GCR, GCS and Cloud Build.
+		"https://www.googleapis.com/auth/cloud-platform",
+		// For calling LUCI and for displaying the email.
+		"https://www.googleapis.com/auth/userinfo.email",
 	}
+	return opts
+}
 
-	reg := registry.Client{TokenSource: ts}
-	img, err := reg.GetImage(ctx, os.Args[1])
-	if err != nil {
-		log.Fatalf("%s", err)
-	}
-	fmt.Printf("%s\n", img.Reference())
-
-	if len(os.Args) > 2 {
-		tag := os.Args[2]
-		fmt.Printf("Pushing it as %q\n", tag)
-		if err := reg.TagImage(ctx, img, tag); err != nil {
-			log.Fatalf("%s", err)
-		}
-		fmt.Println("Done!")
-	}
+func main() {
+	mathrand.SeedRandomly()
+	os.Exit(subcommands.Run(getApplication(), fixflagpos.FixSubcommands(os.Args[1:])))
 }
