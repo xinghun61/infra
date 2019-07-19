@@ -326,9 +326,11 @@ class ChartService(object):
       cnxn: connection to SQL database.
       hotlist_ids: list of hotlist_ids for hotlists we want to delete.
     """
+    vals_ph = sql.PlaceHolders(hotlist_ids)
     cnxn.Execute(
-        'DELETE FROM IssueSnapshot2Hotlist WHERE hotlist_id IN (%s)',
-        [','.join(str(hotlist_id) for hotlist_id in hotlist_ids)],
+        'DELETE FROM IssueSnapshot2Hotlist '
+        'WHERE hotlist_id IN ({vals_ph})'.format(vals_ph=vals_ph),
+        hotlist_ids,
         commit=False)
 
   def _currentTime(self):

@@ -976,8 +976,8 @@ Delete.assert_called_once_with(
     hotliststar_tbl.Delete.assert_has_calls(star_calls)
 
     self.cnxn.Execute.assert_called_once_with(
-        'DELETE FROM IssueSnapshot2Hotlist WHERE hotlist_id IN (%s)',
-        ['678,679'], commit=False)
+        'DELETE FROM IssueSnapshot2Hotlist WHERE hotlist_id IN (%s,%s)',
+        [678, 679], commit=False)
     user_service.hotlistvisithistory_tbl.Delete.assert_called_once_with(
         self.cnxn, commit=False, hotlist_id=hotlist_ids)
 
