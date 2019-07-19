@@ -34,11 +34,7 @@ func TestAgent_add_duts_and_drain_agent(t *testing.T) {
 	// Start running.
 	ctx := context.Background()
 	ctx, drain := draining.WithDraining(ctx)
-	done := make(chan struct{})
-	go func() {
-		a.Run(ctx)
-		close(done)
-	}()
+	done := runWithDoneChannel(ctx, a)
 
 	s := f.waitForState()
 	t.Run("added assigned DUTs", func(t *testing.T) {
@@ -79,11 +75,7 @@ func TestAgent_cancel_agent(t *testing.T) {
 	// Start running.
 	ctx := context.Background()
 	ctx, cancel := context.WithCancel(ctx)
-	done := make(chan struct{})
-	go func() {
-		a.Run(ctx)
-		close(done)
-	}()
+	done := runWithDoneChannel(ctx, a)
 
 	s := f.waitForState()
 	cancel()
@@ -117,13 +109,9 @@ func TestAgent_dont_add_draining_duts(t *testing.T) {
 	// Start running.
 	ctx := context.Background()
 	ctx, drain := draining.WithDraining(ctx)
-	done := make(chan struct{})
-	go func() {
-		a.Run(ctx)
-		close(done)
-	}()
-	s := f.waitForState()
+	done := runWithDoneChannel(ctx, a)
 
+	s := f.waitForState()
 	t.Run("don't add draining DUTs", func(t *testing.T) {
 	drainChannel:
 		for {
@@ -175,11 +163,7 @@ func TestAgent_add_duts_and_drain_duts(t *testing.T) {
 	// Start running.
 	ctx := context.Background()
 	ctx, drain := draining.WithDraining(ctx)
-	done := make(chan struct{})
-	go func() {
-		a.Run(ctx)
-		close(done)
-	}()
+	done := runWithDoneChannel(ctx, a)
 
 	s := f.waitForState()
 	t.Run("added assigned DUTs", func(t *testing.T) {
@@ -226,11 +210,7 @@ func TestAgent_unknown_uuid_causes_termination(t *testing.T) {
 	// Start running.
 	ctx := context.Background()
 	ctx, drain := draining.WithDraining(ctx)
-	done := make(chan struct{})
-	go func() {
-		a.Run(ctx)
-		close(done)
-	}()
+	done := runWithDoneChannel(ctx, a)
 
 	s := f.waitForState()
 	c.withLock(func() {
@@ -266,11 +246,7 @@ func TestAgent_expiration_causes_termination(t *testing.T) {
 	// Start running.
 	ctx := context.Background()
 	ctx, drain := draining.WithDraining(ctx)
-	done := make(chan struct{})
-	go func() {
-		a.Run(ctx)
-		close(done)
-	}()
+	done := runWithDoneChannel(ctx, a)
 
 	s := f.waitForState()
 	c.withLock(func() {
@@ -314,11 +290,7 @@ func TestAgent_draining_reports_lame_duck_mode(t *testing.T) {
 	// Start running.
 	ctx := context.Background()
 	ctx, drain := draining.WithDraining(ctx)
-	done := make(chan struct{})
-	go func() {
-		a.Run(ctx)
-		close(done)
-	}()
+	done := runWithDoneChannel(ctx, a)
 
 	select {
 	case <-started:
@@ -375,11 +347,7 @@ func TestAgent_keep_reporting_while_draining(t *testing.T) {
 	// Start running.
 	ctx := context.Background()
 	ctx, drain := draining.WithDraining(ctx)
-	done := make(chan struct{})
-	go func() {
-		a.Run(ctx)
-		close(done)
-	}()
+	done := runWithDoneChannel(ctx, a)
 
 	select {
 	case <-started:
@@ -427,11 +395,7 @@ func TestAgent_keep_reporting_while_terminating(t *testing.T) {
 	// Start running.
 	ctx := context.Background()
 	ctx, cancel := context.WithCancel(ctx)
-	done := make(chan struct{})
-	go func() {
-		a.Run(ctx)
-		close(done)
-	}()
+	done := runWithDoneChannel(ctx, a)
 
 	select {
 	case <-started:
@@ -482,6 +446,17 @@ func newTestAgent(t *testing.T) (a *Agent, cleanup func()) {
 		startBotFunc:      startFakeBot,
 	}
 	return a, cleanup
+}
+
+// runWithDoneChannel runs the agent and returns a channel that is
+// closed when the agent exits.
+func runWithDoneChannel(ctx context.Context, a *Agent) <-chan struct{} {
+	done := make(chan struct{})
+	go func() {
+		a.Run(ctx)
+		close(done)
+	}()
+	return done
 }
 
 // testLogger implements the logger interface for tests.
