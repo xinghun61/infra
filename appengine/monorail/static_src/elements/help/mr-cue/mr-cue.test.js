@@ -54,10 +54,25 @@ describe('mr-cue', () => {
     assert.isTrue(element.hidden);
   });
 
-  it('cue is shown if relevent message has not been dismissed', () => {
+  it('cue is shown if relevent message has not been dismissed', async () => {
     element.prefsLoaded = true;
     element.cuePrefName = 'code_of_conduct';
     assert.isFalse(element.hidden);
+
+    await element.updateComplete;
+    const messageEl = element.shadowRoot.querySelector('#message');
+    assert.include(messageEl.innerHTML, 'chromium.googlesource.com');
+  });
+
+  it('code of conduct is specific to the project', async () => {
+    element.prefsLoaded = true;
+    element.cuePrefName = 'code_of_conduct';
+    element.project.config.projectName = 'fuchsia';
+    assert.isFalse(element.hidden);
+
+    await element.updateComplete;
+    const messageEl = element.shadowRoot.querySelector('#message');
+    assert.include(messageEl.innerHTML, 'fuchsia.dev');
   });
 
   it('availability cue is hidden if no relevent issue particpants', () => {

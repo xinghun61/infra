@@ -7,6 +7,7 @@ import qs from 'qs';
 import {store, connectStore} from 'elements/reducers/base.js';
 import * as user from 'elements/reducers/user.js';
 import * as issue from 'elements/reducers/issue.js';
+import * as project from 'elements/reducers/project.js';
 import 'elements/chops/chops-button/chops-button.js';
 import 'elements/chops/chops-dialog/chops-dialog.js';
 import {SHARED_STYLES} from 'elements/shared/shared-styles.js';
@@ -99,7 +100,7 @@ export class MrCue extends connectStore(LitElement) {
       return html`
         Please keep discussions respectful and constructive.
         See our
-        <a href="https://chromium.googlesource.com/chromium/src/+/master/CODE_OF_CONDUCT.md"
+        <a href="${this.codeOfConductUrl}"
            target="_blank">code of conduct</a>.
         `;
     } else if (this.cuePrefName == 'availability_msgs') {
@@ -128,6 +129,17 @@ export class MrCue extends connectStore(LitElement) {
     }
   }
 
+  get codeOfConductUrl() {
+    const projectName = (this.project && this.project.config &&
+                         this.project.config.projectName);
+    // TODO(jrobbins): Store this in the DB and pass it via the API.
+    if (projectName === 'fuchsia') {
+      return 'https://fuchsia.dev/fuchsia-src/CODE_OF_CONDUCT';
+    }
+    return ('https://chromium.googlesource.com/' +
+            'chromium/src/+/master/CODE_OF_CONDUCT.md');
+  }
+
   _availablityMsgsRelevant(issue) {
     if (!issue) return false;
     return (this._anyUnvailable([issue.ownerRef]) ||
@@ -153,6 +165,7 @@ export class MrCue extends connectStore(LitElement) {
   }
 
   stateChanged(state) {
+    this.project = project.project(state);
     this.issue = issue.issue(state);
     this.referencedUsers = issue.referencedUsers(state);
     this.user = user.user(state);
