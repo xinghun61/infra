@@ -426,7 +426,47 @@ func TestAgent_terminate_unassigned_duts(t *testing.T) {
 	testAgentExits(t, done)
 }
 
-// TODO(ayatane): Test that agent doesn't add new DUTs when drain/term
+func TestAgent_block_new_duts_when_draining(t *testing.T) {
+	t.Parallel()
+	a, cleanup := newTestAgent(t)
+	defer cleanup()
+
+	// Set up agent.
+	c := injectSpyClient(a)
+	c.res.AssignedDuts = []string{"ryza"}
+	f := injectStateSpyFactory(a)
+	b := newPersistentBot()
+	started := make(chan struct{}, 1)
+	a.startBotFunc = func(bot.Config) (bot.Bot, error) {
+		select {
+		case started <- struct{}{}:
+		default:
+		}
+		return b, nil
+	}
+
+	// Start running.
+	ctx := context.Background()
+	ctx, drain := draining.WithDraining(ctx)
+	done := runWithDoneChannel(ctx, a)
+
+	s := <-f.states
+	select {
+	case <-started:
+	case <-time.After(time.Second):
+		t.Errorf("agent did not start assigned bot")
+	}
+	drain()
+	t.Run("agent blocks new DUTs", func(t *testing.T) {
+		select {
+		case <-s.blocked:
+		case <-time.After(time.Second):
+			t.Errorf("agent did not block new DUTs after draining")
+		}
+	})
+	b.Stop()
+	testAgentExits(t, done)
+}
 
 // newTestAgent makes a new agent for tests with common values.  Tests
 // MUST NOT depend on the exact values here.  If something is

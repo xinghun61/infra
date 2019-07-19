@@ -59,6 +59,7 @@ func (f stateSpyFactory) wrapState(s *state.State) stateInterface {
 		drainedDUTs:    make(chan string, 8),
 		terminatedAll:  make(chan struct{}, 1),
 		drainedAll:     make(chan struct{}, 1),
+		blocked:        make(chan struct{}, 1),
 	}
 	select {
 	case f.states <- s2:
@@ -75,6 +76,7 @@ type stateSpy struct {
 	drainedDUTs    chan string
 	terminatedAll  chan struct{}
 	drainedAll     chan struct{}
+	blocked        chan struct{}
 }
 
 func (s *stateSpy) AddDUT(dutID string) {
@@ -113,6 +115,14 @@ func (s *stateSpy) DrainAll() {
 	s.State.DrainAll()
 	select {
 	case s.drainedAll <- struct{}{}:
+	default:
+	}
+}
+
+func (s *stateSpy) BlockDUTs() {
+	s.State.BlockDUTs()
+	select {
+	case s.blocked <- struct{}{}:
 	default:
 	}
 }
