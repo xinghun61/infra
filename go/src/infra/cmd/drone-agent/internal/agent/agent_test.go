@@ -27,11 +27,9 @@ func TestAgent_add_duts_and_drain_agent(t *testing.T) {
 	defer cleanup()
 
 	// Set up agent.
-	c := newStubClient()
+	c := injectStubClient(a)
 	c.res.AssignedDuts = []string{"ryza", "claudia"}
-	a.Client = c
-	f := newStateSpyFactory()
-	a.wrapStateFunc = f.wrapState
+	f := injectStateSpyFactory(a)
 
 	// Start running.
 	ctx := context.Background()
@@ -74,11 +72,9 @@ func TestAgent_cancel_agent(t *testing.T) {
 	defer cleanup()
 
 	// Set up agent.
-	c := newStubClient()
+	c := injectStubClient(a)
 	c.res.AssignedDuts = []string{"ryza", "claudia"}
-	a.Client = c
-	f := newStateSpyFactory()
-	a.wrapStateFunc = f.wrapState
+	f := injectStateSpyFactory(a)
 
 	// Start running.
 	ctx := context.Background()
@@ -113,12 +109,10 @@ func TestAgent_dont_add_draining_duts(t *testing.T) {
 	defer cleanup()
 
 	// Set up agent.
-	c := newSpyClient()
+	c := injectSpyClient(a)
 	c.res.AssignedDuts = []string{"ryza", "claudia"}
 	c.res.DrainingDuts = []string{"ryza", "claudia"}
-	a.Client = c
-	f := newStateSpyFactory()
-	a.wrapStateFunc = f.wrapState
+	f := injectStateSpyFactory(a)
 
 	// Start running.
 	ctx := context.Background()
@@ -174,11 +168,9 @@ func TestAgent_add_duts_and_drain_duts(t *testing.T) {
 	defer cleanup()
 
 	// Set up agent.
-	c := newStubClient()
+	c := injectStubClient(a)
 	c.res.AssignedDuts = []string{"ryza", "claudia"}
-	a.Client = c
-	f := newStateSpyFactory()
-	a.wrapStateFunc = f.wrapState
+	f := injectStateSpyFactory(a)
 
 	// Start running.
 	ctx := context.Background()
@@ -227,11 +219,9 @@ func TestAgent_unknown_uuid_causes_termination(t *testing.T) {
 	defer cleanup()
 
 	// Set up agent.
-	c := newStubClient()
+	c := injectStubClient(a)
 	c.res.AssignedDuts = []string{"ryza", "claudia"}
-	a.Client = c
-	f := newStateSpyFactory()
-	a.wrapStateFunc = f.wrapState
+	f := injectStateSpyFactory(a)
 
 	// Start running.
 	ctx := context.Background()
@@ -269,11 +259,9 @@ func TestAgent_expiration_causes_termination(t *testing.T) {
 	defer cleanup()
 
 	// Set up agent.
-	c := newStubClient()
+	c := injectStubClient(a)
 	c.res.AssignedDuts = []string{"ryza", "claudia"}
-	a.Client = c
-	f := newStateSpyFactory()
-	a.wrapStateFunc = f.wrapState
+	f := injectStateSpyFactory(a)
 
 	// Start running.
 	ctx := context.Background()
@@ -311,11 +299,8 @@ func TestAgent_draining_reports_lame_duck_mode(t *testing.T) {
 	defer cleanup()
 
 	// Set up agent.
-	c := newSpyClient()
+	c := injectSpyClient(a)
 	c.res.AssignedDuts = []string{"ryza"}
-	a.Client = c
-	f := newStateSpyFactory()
-	a.wrapStateFunc = f.wrapState
 	b := newPersistentBot()
 	started := make(chan struct{}, 1)
 	a.startBotFunc = func(bot.Config) (bot.Bot, error) {
@@ -375,11 +360,8 @@ func TestAgent_keep_reporting_while_draining(t *testing.T) {
 	defer cleanup()
 
 	// Set up agent.
-	c := newSpyClient()
+	c := injectSpyClient(a)
 	c.res.AssignedDuts = []string{"ryza"}
-	a.Client = c
-	f := newStateSpyFactory()
-	a.wrapStateFunc = f.wrapState
 	b := newPersistentBot()
 	started := make(chan struct{}, 1)
 	a.startBotFunc = func(bot.Config) (bot.Bot, error) {
@@ -430,11 +412,8 @@ func TestAgent_keep_reporting_while_terminating(t *testing.T) {
 	defer cleanup()
 
 	// Set up agent.
-	c := newSpyClient()
+	c := injectSpyClient(a)
 	c.res.AssignedDuts = []string{"ryza"}
-	a.Client = c
-	f := newStateSpyFactory()
-	a.wrapStateFunc = f.wrapState
 	b := newPersistentBot()
 	started := make(chan struct{}, 1)
 	a.startBotFunc = func(bot.Config) (bot.Bot, error) {
@@ -531,4 +510,28 @@ func receiveStrings(c <-chan string, n int) []string {
 		s[i] = <-c
 	}
 	return s
+}
+
+// injectStateSpyFactory creates and injects a stateSpyFactory into
+// the test agent, and returns the stateSpyFactory.
+func injectStateSpyFactory(a *Agent) stateSpyFactory {
+	f := newStateSpyFactory()
+	a.wrapStateFunc = f.wrapState
+	return f
+}
+
+// injectStubClient creates and injects a stubClient into
+// the test agent, and returns the stubClient.
+func injectStubClient(a *Agent) *stubClient {
+	c := newStubClient()
+	a.Client = c
+	return c
+}
+
+// injectSpyClient creates and injects a spyClient into
+// the test agent, and returns the spyClient.
+func injectSpyClient(a *Agent) *spyClient {
+	c := newSpyClient()
+	a.Client = c
+	return c
 }
