@@ -183,6 +183,7 @@ func HandleShiftMembers(sc *rotang.Configuration, cm []rotang.Member) [][]rotang
 //
 // Eg. Members ["A", "B", "C", "D"] with shiftsToSchedule == 8 -> []rotang.ShiftEntry{"A", "B", "C", "D"}
 func MakeShifts(sc *rotang.Configuration, start time.Time, membersByShift [][]rotang.Member, shiftsToSchedule int) []rotang.ShiftEntry {
+	// TODO(olakar): Un-encrypt this function.
 	var res []rotang.ShiftEntry
 	perShiftIdx := make([]int, len(sc.Config.Shifts.Shifts))
 	for i := 0; i < shiftsToSchedule; i++ {

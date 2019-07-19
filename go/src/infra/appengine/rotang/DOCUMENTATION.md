@@ -320,7 +320,7 @@ Creating an External Rotation is done through prpc.
 Example text proto CCI_Trooper:
 
 ```
-me: "CCI Trooper",
+name: "CCI Trooper",
 calendar: "google.com_3aov6uidfjscpj2hrpsd8i4e7o@group.calendar.google.com",
 owners_emails: ["olakar@google.com"],
 description: "CCI Trooper external",
@@ -330,7 +330,7 @@ match: "CCI-Trooper:",
 Example usage:
 
 ```
-cat CCI_Trooper | prpc call -format text rota-ng-staging.appspot.com rotangapi.RotationAdmin.CreateExternal
+cat CCI_Trooper | prpc call -format text rota-ng.appspot.com rotangapi.RotationAdmin.CreateExternal
 ```
 
 #### Delete External Rotation
@@ -338,7 +338,7 @@ cat CCI_Trooper | prpc call -format text rota-ng-staging.appspot.com rotangapi.R
 Example usage:
 
 ```
-echo '{ "name": "CCI Trooper" }' | prpc call rota-ng-staging.appspot.com rotangapi.RotationAdmin.DeleteExternal
+echo '{ "name": "CCI Trooper" }' | prpc call rota-ng.appspot.com rotangapi.RotationAdmin.DeleteExternal
 ```
 
 

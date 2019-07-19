@@ -44,6 +44,10 @@ RotaNG has the following environments
 			return h.prodENV == "local"
 		}
 		```
+- **New Staging**
+	Another new staging environment was created, this lives in the `appspot.com` domain, making it more similar to the prod instance.
+	- Lives at [rota-ng-staging.appspot.com](https://rota-ng-staging.appspot.com)
+	- Will replace the `googleplex` environment.
 - **Production**
   The prod environment lives at [rota-ng.appspot.com](https://rota-ng.appspot.com)
 	- The endpoint for all js/json rotation oncall requests.
@@ -70,6 +74,8 @@ From the rotang folder.
 	Pushes to the staging environment.
 - `make deploy-prod`
   Pushes to the prod environment.
+- `make deploy-new-staging`
+	Pushes to the new `appspot` staging environment.
 
 ### Cron jobs
 
@@ -78,6 +84,11 @@ If changes are made to the `cron.yaml` file. It needs to be deployed to take eff
 #### Staging
 
 `cloud app deploy cmd/app/cron.yaml --project google.com:rota-ng-staging`
+
+New staging:
+
+`cloud app deploy cmd/app/cron.yaml --project rota-ng-staging`
+
 
 #### Production
 
@@ -112,6 +123,8 @@ information once per day to GC storage buckets.
 
 See [Exporting and Importing Entities](https://cloud.google.com/datastore/docs/export-import-entities) for
 further information on how to access the information using the `gcloud` command.
+
+Also in [OPS doc](https://g3doc.corp.google.com/company/teams/chrome/ops/devx/prod_tech/rotations/ops.md#backups)
 
 ### Staging
 
