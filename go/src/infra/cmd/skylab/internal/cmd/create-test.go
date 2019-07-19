@@ -15,6 +15,7 @@ import (
 	"go.chromium.org/luci/common/errors"
 	"go.chromium.org/luci/common/flag"
 
+	"infra/cmd/skylab/internal/cmd/recipe"
 	"infra/cmd/skylab/internal/site"
 	"infra/libs/skylab/inventory"
 	"infra/libs/skylab/request"
@@ -35,6 +36,9 @@ This command does not wait for the task to start running.`,
 		c := &createTestRun{}
 		c.authFlags.Register(&c.Flags, site.DefaultAuthOptions)
 		c.envFlags.Register(&c.Flags)
+		// TODO(akeshet): Deprecate this argument once recipe migration is complete;
+		// the recipe ignores this argument, and determines it independently during
+		// test enumeration.
 		c.Flags.BoolVar(&c.client, "client-test", false, "Task is a client-side test.")
 		c.Flags.StringVar(&c.image, "image", "",
 			`Fully specified image name to run test against,
@@ -59,6 +63,7 @@ will be executed in a low priority. If the tasks runs in a quotascheduler contro
 (e.g. cheets-version:git_pi-arc/cheets_x86_64).  May be specified
 multiple times.  Optional.`)
 		c.Flags.StringVar(&c.parentTaskID, "parent-task-run-id", "", "For internal use only. Task run ID of the parent (suite) task to this test. Note that this must be a run ID (i.e. not ending in 0).")
+		c.Flags.BoolVar(&c.buildBucket, "bb", false, "(Expert use only, not a stable API) use buildbucket recipe backend.")
 		return c
 	},
 }
@@ -80,6 +85,7 @@ type createTestRun struct {
 	qsAccount       string
 	provisionLabels []string
 	parentTaskID    string
+	buildBucket     bool
 }
 
 // validateArgs ensures that the command line arguments are
@@ -119,14 +125,31 @@ func (c *createTestRun) innerRun(a subcommands.Application, args []string, env s
 		return err
 	}
 
+	ctx := cli.GetContext(a, c, env)
+	e := c.envFlags.Env()
+
 	taskName := c.Flags.Arg(0)
+
+	if c.buildBucket {
+		if err := c.validateForBB(); err != nil {
+			return err
+		}
+		args := recipe.Args{
+			Board:        c.board,
+			Image:        c.image,
+			Model:        c.model,
+			Pool:         c.pool,
+			QuotaAccount: c.qsAccount,
+			TestNames:    []string{taskName},
+			Timeout:      time.Duration(c.timeoutMins) * time.Minute,
+		}
+		return buildbucketRun(ctx, args, e, c.authFlags)
+	}
 
 	keyvals, err := toKeyvalMap(c.keyvals)
 	if err != nil {
 		return err
 	}
-
-	e := c.envFlags.Env()
 
 	cmd := worker.Command{
 		TaskName:   taskName,
@@ -153,7 +176,6 @@ func (c *createTestRun) innerRun(a subcommands.Application, args []string, env s
 	}
 	req, err := request.New(ra)
 
-	ctx := cli.GetContext(a, c, env)
 	h, err := httpClient(ctx, &c.authFlags)
 	if err != nil {
 		return errors.Annotate(err, "failed to create http client").Err()
@@ -174,6 +196,29 @@ func (c *createTestRun) innerRun(a subcommands.Application, args []string, env s
 	}
 
 	fmt.Fprintf(a.GetOut(), "Created Swarming task %s\n", swarming.TaskURL(e.SwarmingService, resp.TaskId))
+	return nil
+}
+
+func (c *createTestRun) validateForBB() error {
+	// TODO(akeshet): support for all of these arguments, or deprecate them.
+	if len(c.keyvals) > 0 {
+		return errors.Reason("keyvals not yet supported in -bb mode").Err()
+	}
+	if c.testArgs != "" {
+		return errors.Reason("test args not yet supported in -bb mode").Err()
+	}
+	if len(c.tags) > 0 {
+		return errors.Reason("tags not yet supported in -bb mode").Err()
+	}
+	if c.parentTaskID != "" {
+		return errors.Reason("parent task id not yet supported in -bb mode").Err()
+	}
+	if c.priority != defaultTaskPriority {
+		return errors.Reason("nondefault priority not yet supported in -bb mode").Err()
+	}
+	if len(c.provisionLabels) != 0 {
+		return errors.Reason("freeform provisionable labels not yet supported in -bb mode").Err()
+	}
 	return nil
 }
 

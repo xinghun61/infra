@@ -18,6 +18,7 @@ import (
 	"go.chromium.org/luci/common/errors"
 	"go.chromium.org/luci/common/flag"
 
+	"infra/cmd/skylab/internal/cmd/recipe"
 	"infra/cmd/skylab/internal/site"
 	"infra/libs/skylab/swarming"
 )
@@ -50,9 +51,14 @@ suite. No retry if it is 0.`)
 			`Autotest keyval for test. Key may not contain : character. May be
 specified multiple times.`)
 		c.Flags.StringVar(&c.qsAccount, "qs-account", "", "Quotascheduler account for test jobs.")
+		// TODO(akeshet): Deprecate this arg; it will be irrelevant in the cros_test_platform
+		// recipe, and is problematic even in the swarming suite bot implementation
+		// (because of a latent swarming feature that cancels child tasks once
+		// parent task is killed).
 		c.Flags.BoolVar(&c.orphan, "orphan", false, "Create a suite that doesn't wait for its child tests to finish. Internal or expert use ONLY!")
 		c.Flags.BoolVar(&c.json, "json", false, "Format output as JSON")
 		c.Flags.StringVar(&c.taskName, "task-name", "", "Optional name to be used for the Swarming task.")
+		c.Flags.BoolVar(&c.buildBucket, "bb", false, "(Expert use only, not a stable API) use buildbucket recipe backend.")
 		return c
 	},
 }
@@ -74,6 +80,7 @@ type createSuiteRun struct {
 	orphan      bool
 	json        bool
 	taskName    string
+	buildBucket bool
 }
 
 func (c *createSuiteRun) Run(a subcommands.Application, args []string, env subcommands.Env) int {
@@ -92,6 +99,23 @@ func (c *createSuiteRun) innerRun(a subcommands.Application, args []string, env 
 	ctx := cli.GetContext(a, c, env)
 	e := c.envFlags.Env()
 	suiteName := c.Flags.Arg(0)
+
+	if c.buildBucket {
+		if err := c.validateForBB(); err != nil {
+			return err
+		}
+		args := recipe.Args{
+			Board:        c.board,
+			Image:        c.image,
+			Model:        c.model,
+			Pool:         c.pool,
+			QuotaAccount: c.qsAccount,
+			SuiteNames:   []string{suiteName},
+			Timeout:      time.Duration(c.timeoutMins) * time.Minute,
+		}
+
+		return buildbucketRun(ctx, args, e, c.authFlags)
+	}
 
 	dimensions := []string{"pool:ChromeOSSkylab-suite"}
 	keyvals, err := toKeyvalMap(c.keyvals)
@@ -164,6 +188,26 @@ func (c *createSuiteRun) validateArgs() error {
 		return NewUsageError(c.Flags, "priority should in [50,255]")
 	}
 
+	return nil
+}
+
+func (c *createSuiteRun) validateForBB() error {
+	// TODO(akeshet): support for all of these arguments, or deprecate them.
+	if len(c.keyvals) > 0 {
+		return errors.Reason("keyvals not yet supported in -bb mode").Err()
+	}
+	if len(c.tags) > 0 {
+		return errors.Reason("tags not yet supported in -bb mode").Err()
+	}
+	if c.priority != defaultTaskPriority {
+		return errors.Reason("nondefault priority not yet supported in -bb mode").Err()
+	}
+	if c.maxRetries != 0 {
+		return errors.Reason("retries not yet supported in -bb mode").Err()
+	}
+	if c.orphan {
+		return errors.Reason("orphan not supported in -bb mode").Err()
+	}
 	return nil
 }
 

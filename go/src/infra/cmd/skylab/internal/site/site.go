@@ -22,6 +22,12 @@ type Environment struct {
 	LogDogHost      string
 	AdminService    string
 	ServiceAccount  string
+
+	// Buildbucket-specific values.
+	BuildbucketHost    string
+	BuildbucketProject string
+	BuildbucketBucket  string
+	BuildbucketBuilder string
 }
 
 // Wrapped returns the environment wrapped in a helper type to satisfy
@@ -58,6 +64,11 @@ var Prod = Environment{
 	LogDogHost:      "luci-logdog.appspot.com",
 	AdminService:    "chromeos-skylab-bot-fleet.appspot.com",
 	ServiceAccount:  "skylab-admin-task@chromeos-service-accounts.iam.gserviceaccount.com",
+
+	BuildbucketHost:    "cr-buildbucket.appspot.com",
+	BuildbucketProject: "chromeos",
+	BuildbucketBucket:  "testplatform",
+	BuildbucketBuilder: "cros_test_platform",
 }
 
 // Dev is the environment for dev.
@@ -67,6 +78,11 @@ var Dev = Environment{
 	LogDogHost:      "luci-logdog-dev.appspot.com",
 	AdminService:    "skylab-staging-bot-fleet.appspot.com",
 	ServiceAccount:  "skylab-admin-task@chromeos-service-accounts-dev.iam.gserviceaccount.com",
+
+	BuildbucketHost:    "cr-buildbucket.appspot.com",
+	BuildbucketProject: "chromeos",
+	BuildbucketBucket:  "testplatform",
+	BuildbucketBuilder: "cros_test_platform-dev",
 }
 
 // DefaultAuthOptions is an auth.Options struct prefilled with chrome-infra
