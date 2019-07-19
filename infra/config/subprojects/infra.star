@@ -62,7 +62,7 @@ try_builder(name = 'infra-try-xenial-64', os = 'Ubuntu-16.04')
 try_builder(name = 'infra-try-trusty-64', os = 'Ubuntu-14.04')
 try_builder(name = 'infra-try-mac', os = 'Mac-10.13')
 try_builder(name = 'infra-try-win', os = 'Windows')
-try_builder(name = 'infra-try-frontend', os = 'Ubuntu-14.04', recipe = 'infra_frontend_tester')
+try_builder(name = 'infra-try-frontend', os = 'Ubuntu-16.04', recipe = 'infra_frontend_tester')
 
 # Presubmit trybot.
 build.presubmit(name = 'infra-try-presubmit', cq_group = 'infra cq', repo_name = 'infra')
