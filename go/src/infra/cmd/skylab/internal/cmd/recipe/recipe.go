@@ -9,6 +9,9 @@ package recipe
 import (
 	"net/url"
 	"strings"
+	"time"
+
+	"github.com/golang/protobuf/ptypes"
 
 	"go.chromium.org/chromiumos/infra/proto/go/chromiumos"
 	"go.chromium.org/chromiumos/infra/proto/go/test_platform"
@@ -28,6 +31,7 @@ type Args struct {
 	// then it will be mapped to an unmanaged pool.
 	Pool         string
 	QuotaAccount string
+	Timeout      time.Duration
 }
 
 // Request constructs a cros_test_platform request from the given arguments.
@@ -76,8 +80,11 @@ func Request(a Args) *test_platform.Request {
 		TestMetadataUrl: u.String(),
 	}
 
-	// TODO(akeshet): Determine timeout from arguments.
-	params.Time = nil
+	duration := ptypes.DurationProto(a.Timeout)
+	params.Time = &test_platform.Request_Params_Time{
+		MaximumDuration: duration,
+	}
+
 	// TODO(akeshet): Determine retry parameters.
 	params.Retry = nil
 

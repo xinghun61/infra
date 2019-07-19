@@ -6,7 +6,9 @@ package recipe
 
 import (
 	"testing"
+	"time"
 
+	"github.com/golang/protobuf/ptypes/duration"
 	"github.com/kylelemons/godebug/pretty"
 	. "github.com/smartystreets/goconvey/convey"
 
@@ -22,6 +24,7 @@ func TestRequest(t *testing.T) {
 		Pool:       "foo-pool",
 		SuiteNames: []string{"foo-suite-1", "foo-suite-2"},
 		TestNames:  []string{"foo-test-1", "foo-test-2"},
+		Timeout:    30 * time.Minute,
 	}
 	got := Request(a)
 	want := &test_platform.Request{
@@ -46,6 +49,12 @@ func TestRequest(t *testing.T) {
 			},
 			Metadata: &test_platform.Request_Params_Metadata{
 				TestMetadataUrl: "gs://chromeos-image-archive/foo-image",
+			},
+			Time: &test_platform.Request_Params_Time{
+				MaximumDuration: &duration.Duration{
+					Nanos:   0,
+					Seconds: 1800,
+				},
 			},
 		},
 		TestPlan: &test_platform.Request_TestPlan{
