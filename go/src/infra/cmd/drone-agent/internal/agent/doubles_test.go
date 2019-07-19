@@ -16,6 +16,16 @@ import (
 	"infra/cmd/drone-agent/internal/bot"
 )
 
+// newPersistentBot returns a FakeBot that does not exit when
+// drained/terminated.  The Stop method must be called to explicitly
+// stop the bot.
+func newPersistentBot() *bot.FakeBot {
+	b := bot.NewFakeBot()
+	b.DrainFunc = func(*bot.FakeBot) error { return nil }
+	b.TerminateFunc = func(*bot.FakeBot) error { return nil }
+	return b
+}
+
 // startFakeBot is a fake implementation of Agent.startBotFunc.
 func startFakeBot(bot.Config) (bot.Bot, error) {
 	return bot.NewFakeBot(), nil

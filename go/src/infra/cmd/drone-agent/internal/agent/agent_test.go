@@ -316,9 +316,7 @@ func TestAgent_draining_reports_lame_duck_mode(t *testing.T) {
 	a.Client = c
 	f := newStateSpyFactory()
 	a.wrapStateFunc = f.wrapState
-	b := bot.NewFakeBot()
-	b.DrainFunc = func(*bot.FakeBot) error { return nil }
-	b.TerminateFunc = func(*bot.FakeBot) error { return nil }
+	b := newPersistentBot()
 	started := make(chan struct{}, 1)
 	a.startBotFunc = func(bot.Config) (bot.Bot, error) {
 		select {
@@ -371,7 +369,116 @@ func TestAgent_draining_reports_lame_duck_mode(t *testing.T) {
 	})
 }
 
-// TODO(ayatane): Test that agent keeps reporting while drain/term
+func TestAgent_keep_reporting_while_draining(t *testing.T) {
+	t.Parallel()
+	a, cleanup := newTestAgent(t)
+	defer cleanup()
+
+	// Set up agent.
+	c := newSpyClient()
+	c.res.AssignedDuts = []string{"ryza"}
+	a.Client = c
+	f := newStateSpyFactory()
+	a.wrapStateFunc = f.wrapState
+	b := newPersistentBot()
+	started := make(chan struct{}, 1)
+	a.startBotFunc = func(bot.Config) (bot.Bot, error) {
+		select {
+		case started <- struct{}{}:
+		default:
+		}
+		return b, nil
+	}
+
+	// Start running.
+	ctx := context.Background()
+	ctx, drain := draining.WithDraining(ctx)
+	done := make(chan struct{})
+	go func() {
+		a.Run(ctx)
+		close(done)
+	}()
+
+	select {
+	case <-started:
+	case <-time.After(time.Second):
+		t.Errorf("agent did not start assigned bot")
+	}
+	drain()
+	t.Run("agent keeps reporting", func(t *testing.T) {
+		for i := 1; i < 3; i++ {
+			select {
+			case <-c.reports:
+			case <-time.After(time.Second):
+				t.Errorf("agent did not call ReportDrone")
+			}
+		}
+	})
+	b.Stop()
+	t.Run("agent exits", func(t *testing.T) {
+		select {
+		case <-done:
+		case <-time.After(time.Second):
+			t.Errorf("agent did not exit after draining")
+		}
+	})
+}
+
+func TestAgent_keep_reporting_while_terminating(t *testing.T) {
+	t.Parallel()
+	a, cleanup := newTestAgent(t)
+	defer cleanup()
+
+	// Set up agent.
+	c := newSpyClient()
+	c.res.AssignedDuts = []string{"ryza"}
+	a.Client = c
+	f := newStateSpyFactory()
+	a.wrapStateFunc = f.wrapState
+	b := newPersistentBot()
+	started := make(chan struct{}, 1)
+	a.startBotFunc = func(bot.Config) (bot.Bot, error) {
+		select {
+		case started <- struct{}{}:
+		default:
+		}
+		return b, nil
+	}
+
+	// Start running.
+	ctx := context.Background()
+	ctx, cancel := context.WithCancel(ctx)
+	done := make(chan struct{})
+	go func() {
+		a.Run(ctx)
+		close(done)
+	}()
+
+	select {
+	case <-started:
+	case <-time.After(time.Second):
+		t.Errorf("agent did not start assigned bot")
+	}
+	cancel()
+	t.Run("agent keeps reporting", func(t *testing.T) {
+		for i := 1; i < 3; i++ {
+			select {
+			case <-c.reports:
+			case <-time.After(time.Second):
+				t.Errorf("agent did not call ReportDrone")
+			}
+		}
+	})
+	b.Stop()
+	t.Run("agent exits", func(t *testing.T) {
+		select {
+		case <-done:
+		case <-time.After(time.Second):
+			t.Errorf("agent did not exit after draining")
+		}
+	})
+}
+
 // TODO(ayatane): Test that agent terminates bots when unknown_uuid
 // TODO(ayatane): Test that agent stops reporting when unknown_uuid
 // TODO(ayatane): Test that agent terminates unassigned DUTs
