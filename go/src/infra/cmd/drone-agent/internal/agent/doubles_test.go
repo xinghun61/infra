@@ -54,10 +54,11 @@ func (f stateSpyFactory) wrapState(s *state.State) stateInterface {
 		// These channels need to have big enough buffers to
 		// capture events needed by tests.  Events that
 		// overfill the channel buffers are discarded.
-		addedDUTs:     make(chan string, 8),
-		drainedDUTs:   make(chan string, 8),
-		terminatedAll: make(chan struct{}, 1),
-		drainedAll:    make(chan struct{}, 1),
+		addedDUTs:      make(chan string, 8),
+		terminatedDUTs: make(chan string, 8),
+		drainedDUTs:    make(chan string, 8),
+		terminatedAll:  make(chan struct{}, 1),
+		drainedAll:     make(chan struct{}, 1),
 	}
 	select {
 	case f.states <- s2:
@@ -69,16 +70,25 @@ func (f stateSpyFactory) wrapState(s *state.State) stateInterface {
 // stateSpy wraps a state and allows inspecting state manipulations.
 type stateSpy struct {
 	*state.State
-	addedDUTs     chan string
-	drainedDUTs   chan string
-	terminatedAll chan struct{}
-	drainedAll    chan struct{}
+	addedDUTs      chan string
+	terminatedDUTs chan string
+	drainedDUTs    chan string
+	terminatedAll  chan struct{}
+	drainedAll     chan struct{}
 }
 
 func (s *stateSpy) AddDUT(dutID string) {
 	s.State.AddDUT(dutID)
 	select {
 	case s.addedDUTs <- dutID:
+	default:
+	}
+}
+
+func (s *stateSpy) TerminateDUT(dutID string) {
+	s.State.TerminateDUT(dutID)
+	select {
+	case s.terminatedDUTs <- dutID:
 	default:
 	}
 }

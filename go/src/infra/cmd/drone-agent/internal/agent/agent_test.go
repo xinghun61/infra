@@ -385,7 +385,47 @@ func TestAgent_keep_reporting_while_terminating(t *testing.T) {
 	testAgentExits(t, done)
 }
 
-// TODO(ayatane): Test that agent terminates unassigned DUTs
+func TestAgent_terminate_unassigned_duts(t *testing.T) {
+	t.Parallel()
+	a, cleanup := newTestAgent(t)
+	defer cleanup()
+
+	// Set up agent.
+	c := injectStubClient(a)
+	c.res.AssignedDuts = []string{"ryza", "claudia"}
+	f := injectStateSpyFactory(a)
+
+	// Start running.
+	ctx := context.Background()
+	ctx, drain := draining.WithDraining(ctx)
+	done := runWithDoneChannel(ctx, a)
+
+	s := <-f.states
+	t.Run("added assigned DUTs", func(t *testing.T) {
+		got := receiveStrings(s.addedDUTs, 2)
+		sort.Strings(got)
+		want := []string{"claudia", "ryza"}
+		if diff := cmp.Diff(want, got); diff != "" {
+			t.Errorf("assigned DUTs mismatch (-want +got):\n%s", diff)
+		}
+	})
+	c.withLock(func() {
+		c.res.AssignedDuts = []string{"ryza"}
+	})
+	t.Run("terminated unassigned DUTs", func(t *testing.T) {
+		select {
+		case d := <-s.terminatedDUTs:
+			if d != "claudia" {
+				t.Errorf("Got terminated DUT %v; want claudia", d)
+			}
+		case <-time.After(time.Second):
+			t.Errorf("Did not get expected DUT termination")
+		}
+	})
+	drain()
+	testAgentExits(t, done)
+}
+
 // TODO(ayatane): Test that agent doesn't add new DUTs when drain/term
 
 // newTestAgent makes a new agent for tests with common values.  Tests
@@ -438,6 +478,11 @@ type testLogger struct {
 }
 
 func (t testLogger) Printf(format string, args ...interface{}) {
+	// Since we loop at nanosecond interval in tests, this message
+	// is very noisy.
+	if format == "Reporting to queen" {
+		return
+	}
 	t.t.Logf(format, args...)
 }
 

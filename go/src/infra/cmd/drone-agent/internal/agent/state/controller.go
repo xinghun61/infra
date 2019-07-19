@@ -178,6 +178,19 @@ func (c *Controller) BlockDUTs() {
 	c.m.Unlock()
 }
 
+// ActiveDUTs returns a slice of all DUTs the controller is keeping alive.
+// This includes DUTs that are draining or terminated but not exited yet.
+// This method is safe to call concurrently.
+func (c *Controller) ActiveDUTs() []string {
+	var ds []string
+	c.m.Lock()
+	for d := range c.duts {
+		ds = append(ds, d)
+	}
+	c.m.Unlock()
+	return ds
+}
+
 // Wait for all Swarming bots to finish.  It is the caller's
 // responsibility to make sure all bots are terminated or drained,
 // else this call will hang.

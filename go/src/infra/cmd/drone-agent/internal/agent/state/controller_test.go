@@ -10,6 +10,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/go-cmp/cmp"
+
 	"infra/cmd/drone-agent/internal/bot"
 )
 
@@ -50,6 +52,35 @@ func TestController(t *testing.T) {
 		default:
 			t.Fatalf("bot not released after draining DUT")
 		}
+	})
+	t.Run("active DUTs", func(t *testing.T) {
+		t.Parallel()
+		released := make(chan string, 1)
+		h := stubHook{
+			release: func(dutID string) { released <- dutID },
+		}
+		c := NewController(h)
+		t.Run("empty before adding", func(t *testing.T) {
+			if got := c.ActiveDUTs(); len(got) != 0 {
+				t.Errorf("ActiveDUTs() = %v; want empty", got)
+			}
+		})
+		const d = "some-dut"
+		c.AddDUT(d)
+		t.Run("added DUT is present", func(t *testing.T) {
+			want := []string{d}
+			got := c.ActiveDUTs()
+			if diff := cmp.Diff(want, got); diff != "" {
+				t.Errorf("ActiveDUTs() mismatch (-want +got):\n%s", diff)
+			}
+		})
+		t.Run("empty after draining", func(t *testing.T) {
+			c.DrainDUT(d)
+			c.Wait()
+			if got := c.ActiveDUTs(); len(got) != 0 {
+				t.Errorf("ActiveDUTs() = %v; want empty", got)
+			}
+		})
 	})
 	t.Run("draining missing DUT still releases", func(t *testing.T) {
 		t.Parallel()

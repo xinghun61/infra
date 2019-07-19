@@ -68,6 +68,7 @@ type stateInterface interface {
 	TerminateAll()
 	Wait()
 	BlockDUTs()
+	ActiveDUTs() []string
 }
 
 // Run runs the agent until it is canceled via the context.
@@ -220,9 +221,16 @@ func applyUpdateToState(res *api.ReportDroneResponse, s stateInterface) error {
 		s.DrainDUT(d)
 		draining[d] = true
 	}
+	assigned := make(map[string]bool)
 	for _, d := range res.GetAssignedDuts() {
+		assigned[d] = true
 		if !draining[d] {
 			s.AddDUT(d)
+		}
+	}
+	for _, d := range s.ActiveDUTs() {
+		if !assigned[d] {
+			s.TerminateDUT(d)
 		}
 	}
 	return nil
