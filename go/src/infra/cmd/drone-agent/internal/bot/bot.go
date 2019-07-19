@@ -55,7 +55,7 @@ func (b realBot) Drain() error {
 // Start starts a Swarming bot.  The returned Bot object can be used
 // to interact with the bot.
 func Start(c Config) (Bot, error) {
-	cmd := exec.Command("curl", "-sSLF", "-o", c.botZipPath(), c.botCodeURL())
+	cmd := exec.Command("curl", "-sSLf", "-o", c.botZipPath(), c.botCodeURL())
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	if err := cmd.Run(); err != nil {
