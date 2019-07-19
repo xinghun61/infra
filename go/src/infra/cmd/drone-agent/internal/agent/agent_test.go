@@ -53,13 +53,7 @@ func TestAgent_add_duts_and_drain_agent(t *testing.T) {
 			t.Errorf("Did not get expected DrainAll event")
 		}
 	})
-	t.Run("agent exits", func(t *testing.T) {
-		select {
-		case <-done:
-		case <-time.After(time.Second):
-			t.Errorf("agent did not exit after draining")
-		}
-	})
+	testAgentExits(t, done)
 }
 
 func TestAgent_cancel_agent(t *testing.T) {
@@ -86,13 +80,7 @@ func TestAgent_cancel_agent(t *testing.T) {
 			t.Errorf("Did not get expected TerminatedAll event")
 		}
 	})
-	t.Run("agent exits", func(t *testing.T) {
-		select {
-		case <-done:
-		case <-time.After(time.Second):
-			t.Errorf("agent did not exit after canceling")
-		}
-	})
+	testAgentExits(t, done)
 }
 
 func TestAgent_dont_add_draining_duts(t *testing.T) {
@@ -141,13 +129,7 @@ func TestAgent_dont_add_draining_duts(t *testing.T) {
 		}
 	})
 	drain()
-	t.Run("agent exits", func(t *testing.T) {
-		select {
-		case <-done:
-		case <-time.After(time.Second):
-			t.Errorf("agent did not exit after draining")
-		}
-	})
+	testAgentExits(t, done)
 }
 
 func TestAgent_add_duts_and_drain_duts(t *testing.T) {
@@ -188,13 +170,7 @@ func TestAgent_add_duts_and_drain_duts(t *testing.T) {
 		}
 	})
 	drain()
-	t.Run("agent exits", func(t *testing.T) {
-		select {
-		case <-done:
-		case <-time.After(time.Second):
-			t.Errorf("agent did not exit after draining")
-		}
-	})
+	testAgentExits(t, done)
 }
 
 func TestAgent_unknown_uuid_causes_termination(t *testing.T) {
@@ -224,13 +200,7 @@ func TestAgent_unknown_uuid_causes_termination(t *testing.T) {
 		}
 	})
 	drain()
-	t.Run("agent exits", func(t *testing.T) {
-		select {
-		case <-done:
-		case <-time.After(time.Second):
-			t.Errorf("agent did not exit after draining")
-		}
-	})
+	testAgentExits(t, done)
 }
 
 func TestAgent_expiration_causes_termination(t *testing.T) {
@@ -260,13 +230,7 @@ func TestAgent_expiration_causes_termination(t *testing.T) {
 		}
 	})
 	drain()
-	t.Run("agent exits", func(t *testing.T) {
-		select {
-		case <-done:
-		case <-time.After(time.Second):
-			t.Errorf("agent did not exit after draining")
-		}
-	})
+	testAgentExits(t, done)
 }
 
 func TestAgent_draining_reports_lame_duck_mode(t *testing.T) {
@@ -317,13 +281,7 @@ func TestAgent_draining_reports_lame_duck_mode(t *testing.T) {
 		}
 	})
 	b.Stop()
-	t.Run("agent exits", func(t *testing.T) {
-		select {
-		case <-done:
-		case <-time.After(time.Second):
-			t.Errorf("agent did not exit after draining")
-		}
-	})
+	testAgentExits(t, done)
 }
 
 func TestAgent_keep_reporting_while_draining(t *testing.T) {
@@ -365,13 +323,7 @@ func TestAgent_keep_reporting_while_draining(t *testing.T) {
 		}
 	})
 	b.Stop()
-	t.Run("agent exits", func(t *testing.T) {
-		select {
-		case <-done:
-		case <-time.After(time.Second):
-			t.Errorf("agent did not exit after draining")
-		}
-	})
+	testAgentExits(t, done)
 }
 
 func TestAgent_keep_reporting_while_terminating(t *testing.T) {
@@ -413,13 +365,7 @@ func TestAgent_keep_reporting_while_terminating(t *testing.T) {
 		}
 	})
 	b.Stop()
-	t.Run("agent exits", func(t *testing.T) {
-		select {
-		case <-done:
-		case <-time.After(time.Second):
-			t.Errorf("agent did not exit after draining")
-		}
-	})
+	testAgentExits(t, done)
 }
 
 // TODO(ayatane): Test that agent terminates bots when unknown_uuid
@@ -457,6 +403,18 @@ func runWithDoneChannel(ctx context.Context, a *Agent) <-chan struct{} {
 		close(done)
 	}()
 	return done
+}
+
+// testAgentExits runs a subtest testing that the agent exits using
+// the channel returned from runWithDoneChannel.
+func testAgentExits(t *testing.T, done <-chan struct{}) {
+	t.Run("agent exits", func(t *testing.T) {
+		select {
+		case <-done:
+		case <-time.After(time.Second):
+			t.Errorf("agent did not exit")
+		}
+	})
 }
 
 // testLogger implements the logger interface for tests.
