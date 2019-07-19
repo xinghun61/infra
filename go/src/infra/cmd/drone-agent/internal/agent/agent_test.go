@@ -36,7 +36,7 @@ func TestAgent_add_duts_and_drain_agent(t *testing.T) {
 	ctx, drain := draining.WithDraining(ctx)
 	done := runWithDoneChannel(ctx, a)
 
-	s := f.waitForState()
+	s := <-f.states
 	t.Run("added assigned DUTs", func(t *testing.T) {
 		got := receiveStrings(s.addedDUTs, 2)
 		sort.Strings(got)
@@ -71,7 +71,7 @@ func TestAgent_cancel_agent(t *testing.T) {
 	ctx, cancel := context.WithCancel(ctx)
 	done := runWithDoneChannel(ctx, a)
 
-	s := f.waitForState()
+	s := <-f.states
 	cancel()
 	t.Run("terminated all DUTs", func(t *testing.T) {
 		select {
@@ -99,7 +99,7 @@ func TestAgent_dont_add_draining_duts(t *testing.T) {
 	ctx, drain := draining.WithDraining(ctx)
 	done := runWithDoneChannel(ctx, a)
 
-	s := f.waitForState()
+	s := <-f.states
 	t.Run("don't add draining DUTs", func(t *testing.T) {
 	drainChannel:
 		for {
@@ -147,7 +147,7 @@ func TestAgent_add_duts_and_drain_duts(t *testing.T) {
 	ctx, drain := draining.WithDraining(ctx)
 	done := runWithDoneChannel(ctx, a)
 
-	s := f.waitForState()
+	s := <-f.states
 	t.Run("added assigned DUTs", func(t *testing.T) {
 		got := receiveStrings(s.addedDUTs, 2)
 		sort.Strings(got)
@@ -173,7 +173,7 @@ func TestAgent_add_duts_and_drain_duts(t *testing.T) {
 	testAgentExits(t, done)
 }
 
-func TestAgent_unknown_uuid_causes_termination(t *testing.T) {
+func TestAgent_unknown_uuid(t *testing.T) {
 	t.Parallel()
 	a, cleanup := newTestAgent(t)
 	defer cleanup()
@@ -188,7 +188,7 @@ func TestAgent_unknown_uuid_causes_termination(t *testing.T) {
 	ctx, drain := draining.WithDraining(ctx)
 	done := runWithDoneChannel(ctx, a)
 
-	s := f.waitForState()
+	s := <-f.states
 	c.withLock(func() {
 		c.res.Status = api.ReportDroneResponse_UNKNOWN_UUID
 	})
@@ -199,11 +199,21 @@ func TestAgent_unknown_uuid_causes_termination(t *testing.T) {
 			t.Errorf("Did not get expected TerminateAll event")
 		}
 	})
+	c.withLock(func() {
+		c.res.Status = api.ReportDroneResponse_OK
+	})
+	t.Run("create new state", func(t *testing.T) {
+		select {
+		case <-f.states:
+		case <-time.After(time.Second):
+			t.Errorf("Did not get expected new state")
+		}
+	})
 	drain()
 	testAgentExits(t, done)
 }
 
-func TestAgent_expiration_causes_termination(t *testing.T) {
+func TestAgent_expiration(t *testing.T) {
 	t.Parallel()
 	a, cleanup := newTestAgent(t)
 	defer cleanup()
@@ -218,7 +228,7 @@ func TestAgent_expiration_causes_termination(t *testing.T) {
 	ctx, drain := draining.WithDraining(ctx)
 	done := runWithDoneChannel(ctx, a)
 
-	s := f.waitForState()
+	s := <-f.states
 	c.withLock(func() {
 		c.res.ExpirationTime = protoTime(time.Now())
 	})
@@ -227,6 +237,13 @@ func TestAgent_expiration_causes_termination(t *testing.T) {
 		case <-s.terminatedAll:
 		case <-time.After(time.Second):
 			t.Errorf("Did not get expected TerminateAll event")
+		}
+	})
+	t.Run("create new state", func(t *testing.T) {
+		select {
+		case <-f.states:
+		case <-time.After(time.Second):
+			t.Errorf("Did not get expected new state")
 		}
 	})
 	drain()
@@ -368,8 +385,6 @@ func TestAgent_keep_reporting_while_terminating(t *testing.T) {
 	testAgentExits(t, done)
 }
 
-// TODO(ayatane): Test that agent terminates bots when unknown_uuid
-// TODO(ayatane): Test that agent stops reporting when unknown_uuid
 // TODO(ayatane): Test that agent terminates unassigned DUTs
 // TODO(ayatane): Test that agent doesn't add new DUTs when drain/term
 

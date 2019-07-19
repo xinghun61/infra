@@ -46,7 +46,7 @@ func newStateSpyFactory() stateSpyFactory {
 	}
 }
 
-// wrapState wraps a state in a stateSpy and sends it to waitForState.
+// wrapState wraps a state in a stateSpy and sends it to the channel.
 // This method is used as wrapStateFunc.
 func (f stateSpyFactory) wrapState(s *state.State) stateInterface {
 	s2 := &stateSpy{
@@ -64,10 +64,6 @@ func (f stateSpyFactory) wrapState(s *state.State) stateInterface {
 	default:
 	}
 	return s2
-}
-
-func (f stateSpyFactory) waitForState() *stateSpy {
-	return <-f.states
 }
 
 // stateSpy wraps a state and allows inspecting state manipulations.
@@ -120,6 +116,8 @@ type stubClient struct {
 	err error
 }
 
+var endOfTime = protoTime(time.Date(9999, 1, 2, 3, 4, 5, 6, time.UTC))
+
 // newStubClient makes a new stubClient with sane default values.
 // Tests MUST NOT rely on the exact drone UUID; the test should
 // explicitly set a UUID.
@@ -128,7 +126,7 @@ func newStubClient() *stubClient {
 		res: &api.ReportDroneResponse{
 			Status:         api.ReportDroneResponse_OK,
 			DroneUuid:      "3679687c-b341-4422-ad6d-a935887ed6a7",
-			ExpirationTime: protoTime(time.Date(9999, 1, 2, 3, 4, 5, 6, time.UTC)),
+			ExpirationTime: endOfTime,
 		},
 	}
 }
