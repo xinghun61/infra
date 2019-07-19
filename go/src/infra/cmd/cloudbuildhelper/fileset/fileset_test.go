@@ -6,10 +6,12 @@ package fileset
 
 import (
 	"fmt"
+	"io"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"testing"
 
 	. "github.com/smartystreets/goconvey/convey"
@@ -39,8 +41,7 @@ func TestSet(t *testing.T) {
 		So(s.AddFromDisk(dir1.join(""), ""), ShouldBeNil)
 		So(s.AddFromDisk(dir2.join(""), ""), ShouldBeNil)
 		So(s.AddFromDisk(dir3.join(""), "dir/deep/"), ShouldBeNil)
-		So(s.Add(File{Path: "some/deep/deep/path", Directory: true}), ShouldBeNil)
-		So(s.Len(), ShouldEqual, 14)
+		So(s.Len(), ShouldEqual, 10)
 		So(collect(s), ShouldResemble, []string{
 			"D dir",
 			"F dir/a",
@@ -52,10 +53,6 @@ func TestSet(t *testing.T) {
 			"F dir/nested/f",
 			"F f1",
 			"F f2",
-			"D some",
-			"D some/deep",
-			"D some/deep/deep",
-			"D some/deep/deep/path",
 		})
 	})
 
@@ -128,6 +125,16 @@ func TestSet(t *testing.T) {
 			"F filelink",
 		})
 	})
+
+	Convey("Materialize works", t, func(c C) {
+		s := prepSet()
+		d := newTempDir(c)
+		So(s.Materialize(d.join("")), ShouldBeNil)
+
+		scan := &Set{}
+		So(scan.AddFromDisk(d.join(""), ""), ShouldBeNil)
+		assertEqualSets(s, scan)
+	})
 }
 
 func collect(s *Set) []string {
@@ -144,12 +151,61 @@ func collect(s *Set) []string {
 }
 
 func read(f File) string {
+	if f.Directory {
+		return ""
+	}
 	r, err := f.Body()
 	So(err, ShouldBeNil)
 	defer r.Close()
 	body, err := ioutil.ReadAll(r)
 	So(err, ShouldBeNil)
 	return string(body)
+}
+
+func prepSet() *Set {
+	s := &Set{}
+	s.Add(memFile("f", "hello"))
+	s.Add(File{Path: "dir", Directory: true})
+	s.Add(memFile("dir/f", "another"))
+
+	rw := memFile("rw", "read-write")
+	rw.Writable = true
+	s.Add(rw)
+
+	exe := memFile("exe", "executable")
+	exe.Executable = runtime.GOOS != "windows"
+	s.Add(exe)
+
+	return s
+}
+
+func memFile(path, body string) File {
+	return File{
+		Path:     path,
+		Size:     int64(len(body)),
+		Writable: runtime.GOOS == "windows", // FileMode perms don't work on windows
+		Body: func() (io.ReadCloser, error) {
+			return ioutil.NopCloser(strings.NewReader(body)), nil
+		},
+	}
+}
+
+func assertEqualSets(a, b *Set) {
+	aMeta, aBodies := splitBodies(a.Files())
+	bMeta, bBodies := splitBodies(b.Files())
+	So(aMeta, ShouldResemble, bMeta)
+	So(aBodies, ShouldResemble, bBodies)
+}
+
+func splitBodies(fs []File) (files []File, bodies map[string]string) {
+	files = make([]File, len(fs))
+	bodies = make(map[string]string, len(fs))
+	for i, f := range fs {
+		bodies[f.Path] = read(f)
+		f.Body = nil
+		files[i] = f
+	}
+	return
 }
 
 type tmpDir struct {

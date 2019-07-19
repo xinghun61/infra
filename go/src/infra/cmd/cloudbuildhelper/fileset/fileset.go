@@ -8,7 +8,6 @@ package fileset
 import (
 	"archive/tar"
 	"io"
-	"io/ioutil"
 	"os"
 	"path"
 	"path/filepath"
@@ -47,6 +46,18 @@ func (f *File) normalize() error {
 	return nil
 }
 
+// filePerm returns FileMode with file permissions.
+func (f *File) filePerm() os.FileMode {
+	var mode os.FileMode = 0400
+	if f.Writable {
+		mode |= 0200
+	}
+	if f.Executable {
+		mode |= 0100
+	}
+	return mode
+}
+
 // Set represents a set of regular files and directories (no symlinks).
 //
 // Such set can be constructed from existing files on disk (perhaps scattered
@@ -72,17 +83,17 @@ func (s *Set) Add(f File) error {
 
 	// Add intermediary directories. Bail if some of them are already added as
 	// regular files.
-	for idx, chr := range f.Path {
-		if chr != '/' {
-			continue
+	cur := ""
+	for _, chr := range f.Path {
+		if chr == '/' {
+			switch existing, ok := s.files[cur]; {
+			case !ok:
+				s.files[cur] = File{Path: cur, Directory: true}
+			case ok && !existing.Directory:
+				return errors.Reason("%q in file path %q is not a directory", cur, f.Path).Err()
+			}
 		}
-		cur := f.Path[:idx]
-		switch existing, ok := s.files[cur]; {
-		case !ok:
-			s.files[cur] = File{Path: cur, Directory: true}
-		case ok && !existing.Directory:
-			return errors.Reason("%q in file path %q is not a directory", cur, f.Path).Err()
-		}
+		cur += string(chr)
 	}
 
 	// Add the leaf file.
@@ -100,12 +111,8 @@ func (s *Set) AddFromDisk(fsPath, setPath string) error {
 	if err != nil {
 		return err
 	}
-	fi, err := os.Lstat(fsPath)
-	if err != nil {
-		return err
-	}
 	setPath = path.Clean(filepath.ToSlash(setPath))
-	return s.addImpl(fsPath, setPath, fi)
+	return s.addImpl(fsPath, setPath)
 }
 
 // Len returns number of files in the set.
@@ -141,8 +148,40 @@ func (s *Set) Files() []File {
 }
 
 // Materialize dumps all files in this set into the given directory.
+//
+// The directory should already exist. The contents of 's' will be written on
+// top of whatever is in the directory.
+//
+// Doesn't cleanup on errors.
 func (s *Set) Materialize(root string) error {
-	panic("not implemented")
+	buf := make([]byte, 64*1024)
+	return s.Enumerate(func(f File) error {
+		p := filepath.Join(root, filepath.FromSlash(f.Path))
+		if f.Directory {
+			return os.Mkdir(p, 0700)
+		}
+
+		r, err := f.Body()
+		if err != nil {
+			return err
+		}
+		defer r.Close()
+
+		w, err := os.OpenFile(p, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, f.filePerm())
+		if err != nil {
+			return err
+		}
+		defer w.Close() // this is for early exits, we'll also explicitly close later
+
+		copied, err := io.CopyBuffer(w, r, buf)
+		if err != nil {
+			return err
+		}
+		if copied != f.Size {
+			return errors.Reason("file %q has unexpected size (expecting %d, got %d)", f.Path, f.Size, copied).Err()
+		}
+		return w.Close()
+	})
 }
 
 // Tarball dumps all files in this set into the tarball.
@@ -153,24 +192,21 @@ func (s *Set) Tarball(w *tar.Writer) error {
 ////////////////////////////////////////////////////////////////////////////////
 
 // addImpl implements AddFromDisk.
-func (s *Set) addImpl(fsPath, setPath string, fi os.FileInfo) error {
-	// If fsPath is a symlink, follow to whatever it points to.
-	if fi.Mode()&os.ModeSymlink != 0 {
-		var err error
-		switch fi, err = os.Stat(fsPath); {
-		case os.IsNotExist(err):
+func (s *Set) addImpl(fsPath, setPath string) error {
+	switch stat, err := os.Stat(fsPath); {
+	case os.IsNotExist(err):
+		if _, lerr := os.Lstat(fsPath); lerr == nil {
 			return nil // fsPath is a broken symlink, skip it
-		case err != nil:
-			return err
 		}
-	}
-	switch {
-	case fi.Mode().IsRegular():
-		return s.addReg(fsPath, setPath, fi)
-	case fi.Mode().IsDir():
+		return err
+	case err != nil:
+		return err
+	case stat.Mode().IsRegular():
+		return s.addReg(fsPath, setPath, stat)
+	case stat.Mode().IsDir():
 		return s.addDir(fsPath, setPath)
 	default:
-		return errors.Reason("file %q has unsupported type, its mode is %s", fsPath, fi.Mode()).Err()
+		return errors.Reason("file %q has unsupported type, its mode is %s", fsPath, stat.Mode()).Err()
 	}
 }
 
@@ -195,14 +231,18 @@ func (s *Set) addDir(fsPath, setPath string) error {
 		}
 	}
 
-	infos, err := ioutil.ReadDir(fsPath)
+	f, err := os.Open(fsPath)
 	if err != nil {
 		return err
 	}
+	files, err := f.Readdirnames(-1)
+	if err != nil {
+		return err
+	}
+	f.Close()
 
-	for _, fi := range infos {
-		err := s.addImpl(filepath.Join(fsPath, fi.Name()), path.Join(setPath, fi.Name()), fi)
-		if err != nil {
+	for _, f := range files {
+		if err := s.addImpl(filepath.Join(fsPath, f), path.Join(setPath, f)); err != nil {
 			return err
 		}
 	}
