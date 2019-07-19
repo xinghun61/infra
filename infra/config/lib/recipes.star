@@ -61,7 +61,7 @@ def simulation_tester(
     )
 
 
-def roll_trybots(upstream, downstream, cq_group, os = 'Ubuntu-14.04'):
+def roll_trybots(upstream, downstream, cq_group, os = 'Ubuntu-16.04'):
   """Defines a bunch of recipe roller trybots, one per downstream project."""
   for proj in downstream:
     name = '%s downstream Recipe Roll tester from %s' % (_friendly(proj), _friendly(upstream))
