@@ -64,6 +64,7 @@ func Start(c Config) (Bot, error) {
 	cmd = exec.Command("python2", c.botZipPath(), "start_bot")
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
+	cmd.Env = append(c.env(), os.Environ()...)
 	if err := cmd.Start(); err != nil {
 		return nil, errors.Annotate(err, "start bot with %+v", c).Err()
 	}
@@ -96,4 +97,10 @@ func (c Config) botZipPath() string {
 
 func (c Config) botCodeURL() string {
 	return fmt.Sprintf("%s/bot_code?bot_id=%s", c.SwarmingURL, c.BotID)
+}
+
+func (c Config) env() []string {
+	return []string{
+		"SWARMING_BOT_ID=" + c.BotID,
+	}
 }
