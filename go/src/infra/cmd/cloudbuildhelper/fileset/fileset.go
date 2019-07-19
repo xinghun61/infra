@@ -7,6 +7,7 @@ package fileset
 
 import (
 	"archive/tar"
+	"compress/gzip"
 	"io"
 	"os"
 	"path"
@@ -184,9 +185,58 @@ func (s *Set) Materialize(root string) error {
 	})
 }
 
-// Tarball dumps all files in this set into the tarball.
-func (s *Set) Tarball(w *tar.Writer) error {
-	panic("not implemented")
+// ToTar dumps all files in this set into a tar.Writer.
+func (s *Set) ToTar(w *tar.Writer) error {
+	buf := make([]byte, 64*1024)
+	return s.Enumerate(func(f File) error {
+		if f.Directory {
+			return w.WriteHeader(&tar.Header{
+				Typeflag: tar.TypeDir,
+				Name:     f.Path + "/",
+				Mode:     0700,
+			})
+		}
+
+		err := w.WriteHeader(&tar.Header{
+			Typeflag: tar.TypeReg,
+			Name:     f.Path,
+			Size:     f.Size,
+			Mode:     int64(f.filePerm()),
+		})
+		if err != nil {
+			return err
+		}
+
+		r, err := f.Body()
+		if err != nil {
+			return err
+		}
+		defer r.Close()
+
+		_, err = io.CopyBuffer(w, r, buf)
+		return err
+	})
+}
+
+// ToTarGz writes a *.tar.gz with files in the set.
+//
+// Uses default compression level.
+func (s *Set) ToTarGz(w io.Writer) error {
+	gz := gzip.NewWriter(w)
+	tb := tar.NewWriter(gz)
+	if err := s.ToTar(tb); err != nil {
+		tb.Close()
+		gz.Close()
+		return err
+	}
+	if err := tb.Close(); err != nil {
+		gz.Close()
+		return err
+	}
+	if err := gz.Close(); gz != nil {
+		return err
+	}
+	return nil
 }
 
 ////////////////////////////////////////////////////////////////////////////////
