@@ -39,7 +39,7 @@ message LineRange {
 }
 
 
-// Represents the code of an uncovered column range within the same line.
+// Represents column range within the same line.
 message ColumnRange {
   // The first column of the code block. Inclusive.
   int32 first = 1;
@@ -50,7 +50,7 @@ message ColumnRange {
 }
 
 
-// Represents multiple uncovered column ranges of a line.
+// Represents multiple column ranges of a line.
 message ColumnRanges {
   // The line number of the code block.
   int32 line = 1;
