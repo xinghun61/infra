@@ -59,6 +59,10 @@ func TestUpdateMetrics(t *testing.T) {
 		Battery: batteryStatus{
 			Charge: 50.56,
 		},
+		Temperature: map[string][]float64{
+			"CPU": {29.65, 28.95, 30.01, 29.02},
+			"GPU": {32.23},
+		},
 	}
 	Convey("UpdateMetrics Testing", t, func() {
 		updateMetrics(c, statusFile)
@@ -68,5 +72,9 @@ func TestUpdateMetrics(t *testing.T) {
 			"12317.0.0-rc1")
 		So(battCharge.Get(c, statusFile.ContainerHostname), ShouldEqual,
 			50.56)
+		So(temperature.Get(c, statusFile.ContainerHostname, "CPU"), ShouldEqual,
+			29.4075)
+		So(temperature.Get(c, statusFile.ContainerHostname, "GPU"), ShouldEqual,
+			32.23)
 	})
 }

@@ -29,11 +29,16 @@ var (
 		"DUT status (Online|Offline).",
 		nil,
 		field.String("container_hostname"))
+	temperature = metric.NewFloat("dev/cros/temperature",
+		"Temperature in °C",
+		nil,
+		field.String("container_hostname"), field.String("zone"))
 
 	allMetrics = []types.Metric{
 		battCharge,
 		crosVersion,
 		dutStatus,
+		temperature,
 	}
 )
 
@@ -94,5 +99,21 @@ func updateMetrics(c context.Context, deviceFile deviceStatusFile) {
 			deviceFile.ContainerHostname)
 	} else {
 		logging.Warningf(c, "Battery info unknown")
+	}
+	if len(deviceFile.Temperature) > 0 {
+		for zone, temp := range deviceFile.Temperature {
+			// Reporting average temperature per zone. Usually
+			// a single temperature is reported per zone. If a DUT
+			// reports multiple temperatures per zone, we are
+			// probably not interested.
+			avgTemp := 0.0
+			for _, tempInst := range temp {
+				avgTemp += tempInst
+			}
+			avgTemp = avgTemp / float64(len(temp))
+			temperature.Set(c, avgTemp, deviceFile.ContainerHostname, zone)
+		}
+	} else {
+		logging.Warningf(c, "Temperature info unknown")
 	}
 }
