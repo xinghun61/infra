@@ -22,7 +22,9 @@ type Environment struct {
 	LogDogHost      string
 	AdminService    string
 	QueenService    string
-	ServiceAccount  string
+	// QueenDroneHostname is only used by queen-push-duts.
+	QueenDroneHostname string
+	ServiceAccount     string
 
 	// Buildbucket-specific values.
 	BuildbucketHost    string
@@ -60,12 +62,13 @@ func (e EnvWrapper) GenerateLogPrefix() string {
 
 // Prod is the environment for prod.
 var Prod = Environment{
-	LUCIProject:     "chromeos",
-	SwarmingService: "https://chromeos-swarming.appspot.com/",
-	LogDogHost:      "luci-logdog.appspot.com",
-	AdminService:    "chromeos-skylab-bot-fleet.appspot.com",
-	QueenService:    "drone-queen-prod.appspot.com",
-	ServiceAccount:  "skylab-admin-task@chromeos-service-accounts.iam.gserviceaccount.com",
+	LUCIProject:        "chromeos",
+	SwarmingService:    "https://chromeos-swarming.appspot.com/",
+	LogDogHost:         "luci-logdog.appspot.com",
+	AdminService:       "chromeos-skylab-bot-fleet.appspot.com",
+	QueenService:       "drone-queen-prod.appspot.com",
+	QueenDroneHostname: "drone-queen-ENVIRONMENT_PROD",
+	ServiceAccount:     "skylab-admin-task@chromeos-service-accounts.iam.gserviceaccount.com",
 
 	BuildbucketHost:    "cr-buildbucket.appspot.com",
 	BuildbucketProject: "chromeos",
@@ -75,12 +78,13 @@ var Prod = Environment{
 
 // Dev is the environment for dev.
 var Dev = Environment{
-	LUCIProject:     "chromeos",
-	SwarmingService: "https://chromium-swarm-dev.appspot.com/",
-	LogDogHost:      "luci-logdog-dev.appspot.com",
-	AdminService:    "skylab-staging-bot-fleet.appspot.com",
-	QueenService:    "drone-queen-dev.appspot.com",
-	ServiceAccount:  "skylab-admin-task@chromeos-service-accounts-dev.iam.gserviceaccount.com",
+	LUCIProject:        "chromeos",
+	SwarmingService:    "https://chromium-swarm-dev.appspot.com/",
+	LogDogHost:         "luci-logdog-dev.appspot.com",
+	AdminService:       "skylab-staging-bot-fleet.appspot.com",
+	QueenService:       "drone-queen-dev.appspot.com",
+	QueenDroneHostname: "drone-queen-ENVIRONMENT_STAGING",
+	ServiceAccount:     "skylab-admin-task@chromeos-service-accounts-dev.iam.gserviceaccount.com",
 
 	BuildbucketHost:    "cr-buildbucket.appspot.com",
 	BuildbucketProject: "chromeos",

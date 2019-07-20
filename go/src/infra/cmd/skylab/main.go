@@ -57,6 +57,7 @@ func getApplication() *cli.Application {
 			subcommands.Section("Drone Queen Inspection"),
 			cmd.QueenInspectDuts,
 			cmd.QueenInspectDrones,
+			cmd.QueenPushDuts,
 			subcommands.Section("Internal use"),
 			cmd.InternalListDroneDuts,
 			cmd.InternalPrintBotInfo,
