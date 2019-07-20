@@ -21,6 +21,7 @@ type Environment struct {
 	SwarmingService string
 	LogDogHost      string
 	AdminService    string
+	QueenService    string
 	ServiceAccount  string
 
 	// Buildbucket-specific values.
@@ -63,6 +64,7 @@ var Prod = Environment{
 	SwarmingService: "https://chromeos-swarming.appspot.com/",
 	LogDogHost:      "luci-logdog.appspot.com",
 	AdminService:    "chromeos-skylab-bot-fleet.appspot.com",
+	QueenService:    "drone-queen-prod.appspot.com",
 	ServiceAccount:  "skylab-admin-task@chromeos-service-accounts.iam.gserviceaccount.com",
 
 	BuildbucketHost:    "cr-buildbucket.appspot.com",
@@ -77,6 +79,7 @@ var Dev = Environment{
 	SwarmingService: "https://chromium-swarm-dev.appspot.com/",
 	LogDogHost:      "luci-logdog-dev.appspot.com",
 	AdminService:    "skylab-staging-bot-fleet.appspot.com",
+	QueenService:    "drone-queen-dev.appspot.com",
 	ServiceAccount:  "skylab-admin-task@chromeos-service-accounts-dev.iam.gserviceaccount.com",
 
 	BuildbucketHost:    "cr-buildbucket.appspot.com",
