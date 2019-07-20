@@ -41,3 +41,14 @@ up-dev:
 .PHONY: cleanup-dev
 cleanup-dev:
 	gae.py cleanup -A $(GCP_PROJECT_DEV) --app-dir $(APP_DIR)
+
+GCP_PROJECT_PROD = drone-queen-prod
+
+.PHONY: up-prod
+up-prod:
+	gae.py upload -A $(GCP_PROJECT_PROD) --app-dir $(APP_DIR) -f
+	gae.py switch -A $(GCP_PROJECT_PROD) --app-dir $(APP_DIR) -f
+
+.PHONY: cleanup-prod
+cleanup-prod:
+	gae.py cleanup -A $(GCP_PROJECT_PROD) --app-dir $(APP_DIR)
