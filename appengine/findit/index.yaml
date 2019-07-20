@@ -188,6 +188,12 @@ indexes:
   - name: time_happened
     direction: desc
 
+- kind: FlakeOccurrence
+  ancestor: yes
+  properties:
+  - name: time_happened
+    direction: desc
+
 # For flake report to get distinct impacted CLs
 - kind: FlakeOccurrence
   properties:
