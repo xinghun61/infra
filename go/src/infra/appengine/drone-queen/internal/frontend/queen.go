@@ -200,6 +200,47 @@ func (q *DroneQueenImpl) DeclareDuts(ctx context.Context, req *api.DeclareDutsRe
 	return &api.DeclareDutsResponse{}, nil
 }
 
+// ListDrones implements service interfaces.
+func (q *DroneQueenImpl) ListDrones(ctx context.Context, req *api.ListDronesRequest) (res *api.ListDronesResponse, err error) {
+	defer func() {
+		err = grpcutil.GRPCifyAndLogErr(ctx, err)
+	}()
+	var drones []entities.Drone
+	if err := datastore.GetAll(ctx, datastore.NewQuery(entities.DroneKind), &drones); err != nil {
+		return nil, errors.Annotate(err, "get all drones").Err()
+	}
+	res = &api.ListDronesResponse{}
+	for _, d := range drones {
+		// TODO(ayatane): Log this error?
+		t, _ := ptypes.TimestampProto(d.Expiration)
+		res.Drones = append(res.Drones, &api.ListDronesResponse_Drone{
+			Id:             string(d.ID),
+			ExpirationTime: t,
+		})
+	}
+	return res, nil
+}
+
+// ListDuts implements service interfaces.
+func (q *DroneQueenImpl) ListDuts(ctx context.Context, req *api.ListDutsRequest) (res *api.ListDutsResponse, err error) {
+	defer func() {
+		err = grpcutil.GRPCifyAndLogErr(ctx, err)
+	}()
+	var duts []entities.DUT
+	if err := datastore.GetAll(ctx, datastore.NewQuery(entities.DUTKind), &duts); err != nil {
+		return nil, errors.Annotate(err, "get all DUTs").Err()
+	}
+	res = &api.ListDutsResponse{}
+	for _, d := range duts {
+		res.Duts = append(res.Duts, &api.ListDutsResponse_Dut{
+			Id:            string(d.ID),
+			AssignedDrone: string(d.AssignedDrone),
+			Draining:      d.Draining,
+		})
+	}
+	return res, nil
+}
+
 func (q *DroneQueenImpl) now() time.Time {
 	if q.nowFunc != nil {
 		return q.nowFunc()

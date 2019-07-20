@@ -18,3 +18,4 @@ package api
 //go:generate cproto
 //go:generate svcdec -type DroneServer
 //go:generate svcdec -type InventoryProviderServer
+//go:generate svcdec -type InspectServer

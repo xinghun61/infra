@@ -49,6 +49,10 @@ func InstallHandlers(r *router.Router, mw router.MiddlewareChain) {
 		Service: &q,
 		Prelude: checkInventoryProviderAccess,
 	})
+	api.RegisterInspectServer(&s, &api.DecoratedInspect{
+		Service: &q,
+		Prelude: checkInspectAccess,
+	})
 	discovery.Enable(&s)
 	s.InstallHandlers(r, mw)
 }
@@ -68,6 +72,18 @@ func checkDroneAccess(ctx context.Context, _ string, _ proto.Message) (context.C
 func checkInventoryProviderAccess(ctx context.Context, _ string, _ proto.Message) (context.Context, error) {
 	g := config.Get(ctx).GetAccessGroups()
 	allow, err := auth.IsMember(ctx, g.GetInventoryProviders())
+	if err != nil {
+		return ctx, status.Errorf(codes.Internal, "can't check access group membership: %s", err)
+	}
+	if !allow {
+		return ctx, status.Errorf(codes.PermissionDenied, "permission denied")
+	}
+	return ctx, nil
+}
+
+func checkInspectAccess(ctx context.Context, _ string, _ proto.Message) (context.Context, error) {
+	g := config.Get(ctx).GetAccessGroups()
+	allow, err := auth.IsMember(ctx, g.GetInspectors())
 	if err != nil {
 		return ctx, status.Errorf(codes.Internal, "can't check access group membership: %s", err)
 	}

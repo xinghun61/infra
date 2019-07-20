@@ -30,4 +30,6 @@ message AccessGroups {
   string drones = 1;
   // inventory_providers is the group for calling inventory RPCs.
   string inventory_providers = 2;
+  // inspectors is the group for calling inspection RPCs.
+  string inspectors = 3;
 }

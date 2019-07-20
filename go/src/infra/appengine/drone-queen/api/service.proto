@@ -28,6 +28,13 @@ service InventoryProvider {
   rpc DeclareDuts(DeclareDutsRequest) returns (DeclareDutsResponse);
 }
 
+// Inspect service provides RPCs for interactive inspection/debugging.
+// These RPCs have no backward compatibility or stability guarantees.
+service Inspect {
+  rpc ListDrones(ListDronesRequest) returns (ListDronesResponse);
+  rpc ListDuts(ListDutsRequest) returns (ListDutsResponse);
+}
+
 message ReportDroneRequest {
   // drone_uuid is the UUID assigned to the drone.  New drones should
   // leave this empty; a new UUID will be assigned to the drone.
@@ -81,3 +88,22 @@ message DeclareDutsRequest {
   repeated string duts = 1;
 }
 message DeclareDutsResponse {}
+
+message ListDronesRequest {}
+message ListDronesResponse {
+  message Drone {
+    string id = 1;
+    google.protobuf.Timestamp expiration_time = 2;
+  }
+  repeated Drone drones = 1;
+}
+
+message ListDutsRequest {}
+message ListDutsResponse {
+  message Dut {
+    string id = 1;
+    string assigned_drone = 2;
+    bool draining = 3;
+  }
+  repeated Dut duts = 1;
+}
