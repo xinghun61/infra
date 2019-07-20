@@ -9,7 +9,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"path"
+	"path/filepath"
 	"strings"
 
 	"github.com/golang/protobuf/jsonpb"
@@ -26,6 +26,8 @@ const (
 	verdictStringPrefix = "END "
 	undefinedName       = "----"
 )
+
+var prejobPrefixes = []string{"provision", "prejob"}
 
 // Parse subcommand: Extract test case results from status.log.
 var Parse = &subcommands.Command{
@@ -63,13 +65,16 @@ func (c *parseRun) innerRun(a subcommands.Application, args []string, env subcom
 	}
 	dir := c.Flags.Args()[0]
 
-	testDir := path.Join(dir, testSubdir)
+	testDir := filepath.Join(dir, testSubdir)
 	autotestResult := getTestResults(testDir)
+
+	prejobResult := getPrejobResults(dir)
 
 	result := skylab_test_runner.Result{
 		Harness: &skylab_test_runner.Result_AutotestResult{
 			AutotestResult: &autotestResult,
 		},
+		Prejob: &prejobResult,
 	}
 
 	return printProtoJSON(a.GetOut(), &result)
@@ -85,7 +90,7 @@ func (c *parseRun) validateArgs() error {
 // getTestResults extracts all test case results from the status.log file
 // inside the given results directory.
 func getTestResults(dir string) skylab_test_runner.Result_Autotest {
-	resultsSummaryPath := path.Join(dir, resultsSummaryFile)
+	resultsSummaryPath := filepath.Join(dir, resultsSummaryFile)
 	resultsSummaryContent, err := ioutil.ReadFile(resultsSummaryPath)
 
 	if err != nil {
@@ -98,7 +103,7 @@ func getTestResults(dir string) skylab_test_runner.Result_Autotest {
 
 	testCases := parseResultsFile(string(resultsSummaryContent))
 
-	exitStatusFilePath := path.Join(dir, exitStatusFile)
+	exitStatusFilePath := filepath.Join(dir, exitStatusFile)
 	exitStatusContent, err := ioutil.ReadFile(exitStatusFilePath)
 
 	if err != nil {
@@ -114,7 +119,76 @@ func getTestResults(dir string) skylab_test_runner.Result_Autotest {
 		TestCases:  testCases,
 		Incomplete: incomplete,
 	}
+}
 
+type prejobInfo struct {
+	Name string
+	Dir  string
+}
+
+func getPrejobResults(dir string) skylab_test_runner.Result_Prejob {
+	var steps []*skylab_test_runner.Result_Prejob_Step
+
+	prejobs, err := getPrejobs(dir)
+
+	if err != nil {
+		// TODO(zamorzaev): find a better way to surface this error.
+		return skylab_test_runner.Result_Prejob{
+			Step: []*skylab_test_runner.Result_Prejob_Step{
+				{
+					Name:    "unknown",
+					Verdict: skylab_test_runner.Result_Prejob_Step_VERDICT_FAIL,
+				},
+			},
+		}
+	}
+
+	for _, prejob := range prejobs {
+		steps = append(steps, &skylab_test_runner.Result_Prejob_Step{
+			Name:    prejob.Name,
+			Verdict: getPrejobVerdict(prejob.Dir),
+		})
+	}
+	return skylab_test_runner.Result_Prejob{
+		Step: steps,
+	}
+}
+
+func getPrejobs(parentDir string) ([]prejobInfo, error) {
+	prejobs := []prejobInfo{}
+	for _, prefix := range prejobPrefixes {
+		fullPrefix := filepath.Join(parentDir, prefix)
+		regex := fullPrefix + "*"
+		prejobDirList, err := filepath.Glob(regex)
+		if err != nil {
+			return nil, fmt.Errorf("bad regex: %s", regex)
+		}
+		if len(prejobDirList) > 1 {
+			return nil, errors.New("more than one directory for the same prejob type")
+		}
+		if len(prejobDirList) == 1 {
+			prejobs = append(prejobs, prejobInfo{
+				Name: prefix,
+				Dir:  prejobDirList[0],
+			})
+		}
+	}
+	return prejobs, nil
+}
+
+func getPrejobVerdict(prejobDir string) skylab_test_runner.Result_Prejob_Step_Verdict {
+	exitStatusFilePath := filepath.Join(prejobDir, exitStatusFile)
+	exitStatusContent, err := ioutil.ReadFile(exitStatusFilePath)
+
+	if err != nil {
+		return skylab_test_runner.Result_Prejob_Step_VERDICT_FAIL
+	}
+
+	if exitedWithErrors(string(exitStatusContent)) {
+		return skylab_test_runner.Result_Prejob_Step_VERDICT_FAIL
+	}
+
+	return skylab_test_runner.Result_Prejob_Step_VERDICT_PASS
 }
 
 // parseResultsFile extracts all test case results from contents of a
