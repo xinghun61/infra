@@ -217,6 +217,7 @@ def lazy_repo_dirs():
   if remote_repos_dir is None:
     remote_repos_dir = tempfile.mkdtemp(suffix='.TestRepo.remote_repos_dir')
 
+
 class TestRepo(git2.Repo):
   """A testing version of git2.Repo, which adds a couple useful methods:
 

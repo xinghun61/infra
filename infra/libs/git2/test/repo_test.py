@@ -67,6 +67,12 @@ class TestRepo(test_util.TestBasis):
                                 ok_ret={128})
     self.assertIn('fatal', err)
 
+  def testDefaultPartialClone(self):
+    r = git2.Repo(self.repo.repo_path)
+    r.repos_dir = os.path.join(self.repos_dir, 'repos')
+    self.capture_stdio(r.reify, partial_clone=True)
+    self.assertEqual(r.run('rev-parse', 'branch_F').strip(), self.repo['F'])
+
   def testDefaultRepoGit(self):
     shutil.move(self.repo.repo_path, self.repo.repo_path + '.git')
     self.repo.repo_path += '.git'

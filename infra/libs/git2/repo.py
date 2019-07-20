@@ -163,9 +163,12 @@ class Repo(object):
       self.run(
           'remote', 'add', '--mirror=fetch', 'origin', self.url, cwd=tmp_path)
       ensure_config(tmp_path)
-      fetch_args = ['--filter=blob:limit=0'] if partial_clone else []
+      if partial_clone:
+        self.run('config', 'extensions.partialclone', 'origin', cwd=tmp_path)
+        self.run('config', 'core.repositoryformatversion', '1', cwd=tmp_path)
+        self.run('config', 'core.partialclonefilter', 'blob:none', cwd=tmp_path)
       self.run(
-          'fetch', *fetch_args, stdout=sys.stdout, stderr=sys.stderr,
+          'fetch', stdout=sys.stdout, stderr=sys.stderr,
           cwd=tmp_path, silent=True, timeout=timeout)
       os.rename(tmp_path, os.path.join(self.repos_dir, folder))
     else:
