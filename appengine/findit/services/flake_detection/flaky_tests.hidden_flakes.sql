@@ -1,9 +1,11 @@
   # To detect hidden flaky tests causing test retries in the past 1 day.
   #
   # Assumptions for the hidden flakes in this query are:
-  # 1. A hidden flaky test is a test passed eventually in a test step and has
+  # 1. A hidden flaky test is a test passed eveutally in a test step and has
   #    * At least one PASS or expected test result
-  #    * At least one FAILED or unexpected test result
+  #    * At least two FAILED or unexpected test result
+  #    These two imply that the test was retried at least twice to avoid flake
+  #    due to resource starvation in parallel test execution mode.
   #
   # 2. For disabled tests, they should not be run at all and have an empty list
   #    or just ['SKIP'] for run.actual of test-results-hrd:events.test_results
@@ -208,7 +210,9 @@ WITH
       # 1. All Luci-based builds.
       # 2. A subset of buildbot-based builds, e.g. all CQ builds.
       AND build_id != ''
-      AND ARRAY_LENGTH(run.actual) >= 2
+      # Due to resource starvation, a test may pass in the first retry. so
+      # hidden flakes are required to have at least 2 retries after the failure.
+      AND ARRAY_LENGTH(run.actual) >= 3
       # Ignore disabled tests and tests with 'UNKNOWN' or 'NOTRUN' statuses.
       AND NOT EXISTS (SELECT *
                       FROM UNNEST(run.actual) AS x
