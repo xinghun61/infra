@@ -219,6 +219,9 @@ func (c *createTestRun) validateForBB() error {
 	if len(c.provisionLabels) != 0 {
 		return errors.Reason("freeform provisionable labels not yet supported in -bb mode").Err()
 	}
+	if c.Flags.NArg() > 1 {
+		return errors.Reason("custom dimensions are not yet supported in -bb mode").Err()
+	}
 	return nil
 }
 
