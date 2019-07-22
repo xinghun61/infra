@@ -386,6 +386,19 @@
  </form>
 [end]
 
+[if-any can_delete_user]
+<h3 style="clear:both">Delete user account</h3>
+  <p>Deleting a user account deletes the user and most user owned items from the site.
+     The user's email will be removed from any issues that the user participated in.
+     Hotlists owned by the user will either be transferred to another editor or get deleted.
+     Any Project Rules that the user is involved in will get deleted.
+  </p>
+  <div style="margin:0 0 2em 2em">
+    <input id="delete_btn" type="submit" name="btn" value="Delete user account">
+    <div id="delete_error" class="fielderror"></div>
+  </div>
+[end]
+
 </div>
 </div>
 
@@ -439,6 +452,18 @@ runOnLoad(function() {
        if (!ok) {
          evt.preventDefault();
        }
+     });
+   }
+
+   if ($("delete_btn")) {
+     $("delete_btn").addEventListener("click", async function(event) {
+       const expungeCall = window.prpcClient.call(
+         'monorail.Users', 'ExpungeUser', {email: "[viewed_user_display_name]"});
+       expungeCall.then((resp) => {
+         location.replace(location.origin);
+       }).catch((reason) => {
+         $("delete_error").textContent = reason;
+       });
      });
    }
 });

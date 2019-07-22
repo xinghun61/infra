@@ -913,6 +913,11 @@ class PermissionsTest(unittest.TestCase):
     user.email = 'user+shadystuff@example.com'
     self.assertTrue(permissions.IsBanned(user, None))
 
+  def testCanExpungeUser_Admin(self):
+    mr = testing_helpers.MakeMonorailRequest()
+    mr.perms = permissions.ADMIN_PERMISSIONSET
+    self.assertTrue(permissions.CanExpungeUsers(mr))
+
   def testGetCustomPermissions(self):
     project = project_pb2.Project()
     self.assertListEqual([], permissions.GetCustomPermissions(project))

@@ -10,7 +10,9 @@ from __future__ import absolute_import
 
 import mock
 import unittest
+import logging
 import webapp2
+from third_party import ezt
 
 from framework import framework_helpers
 from framework import framework_views
@@ -34,8 +36,9 @@ STATES = {
 
 
 def MakeReqInfo(
-    user_pb, user_id, viewed_user_pb, viewed_user_id, viewed_user_name):
-  mr = fake.MonorailRequest(None, perms=permissions.USER_PERMISSIONSET)
+    user_pb, user_id, viewed_user_pb, viewed_user_id, viewed_user_name,
+    perms=permissions.USER_PERMISSIONSET):
+  mr = fake.MonorailRequest(None, perms=perms)
   mr.auth.user_pb = user_pb
   mr.auth.user_id = user_id
   mr.auth.effective_ids = {user_id}
@@ -122,7 +125,8 @@ class UserProfileTest(unittest.TestCase):
     self.assertProjectsAnyOrder(page_data['committer_of_projects'],
                                 'other-member-live')
     self.assertFalse(page_data['owner_of_archived_projects'])
-    self.assertEquals('ot...@xyz.com', page_data['viewed_user_display_name'])
+    self.assertEqual('ot...@xyz.com', page_data['viewed_user_display_name'])
+    self.assertEqual(ezt.boolean(False), page_data['can_delete_user'])
     self.mock_guspd.assert_called_once_with(
         111, mr.viewed_user_auth.user_view, mr.viewed_user_auth.user_pb,
         None)
@@ -135,7 +139,8 @@ class UserProfileTest(unittest.TestCase):
 
     page_data = self.servlet.GatherPageData(mr)
 
-    self.assertEquals('self@xyz.com', page_data['viewed_user_display_name'])
+    self.assertEqual('self@xyz.com', page_data['viewed_user_display_name'])
+    self.assertEqual(ezt.boolean(False), page_data['can_delete_user'])
     self.assertProjectsAnyOrder(page_data['owner_of_projects'],
                                 'regular-owner-live')
     self.assertProjectsAnyOrder(page_data['committer_of_projects'],
@@ -169,11 +174,13 @@ class UserProfileTest(unittest.TestCase):
     """Site admins always see full email addresses of other users."""
     mr = MakeReqInfo(
         self.admin_user, ADMIN_USER_ID, self.other_user,
-        OTHER_USER_ID, 'other@xyz.com')
+        OTHER_USER_ID, 'other@xyz.com',
+        perms=permissions.ADMIN_PERMISSIONSET)
 
     page_data = self.servlet.GatherPageData(mr)
 
-    self.assertEquals('other@xyz.com', page_data['viewed_user_display_name'])
+    self.assertEqual('other@xyz.com', page_data['viewed_user_display_name'])
+    self.assertEqual(ezt.boolean(True), page_data['can_delete_user'])
     self.mock_guspd.assert_called_once_with(
         222, mr.viewed_user_auth.user_view, mr.viewed_user_auth.user_pb,
         mock.ANY)
@@ -201,7 +208,8 @@ class UserProfileTest(unittest.TestCase):
 
     page_data = self.servlet.GatherPageData(mr)
 
-    self.assertEquals('ot...@xyz.com', page_data['viewed_user_display_name'])
+    self.assertEqual('ot...@xyz.com', page_data['viewed_user_display_name'])
+    self.assertEqual(ezt.boolean(False), page_data['can_delete_user'])
     self.mock_guspd.assert_called_once_with(
         111, mr.viewed_user_auth.user_view, mr.viewed_user_auth.user_pb,
         None)

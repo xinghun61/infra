@@ -2845,6 +2845,20 @@ class WorkEnvTest(unittest.TestCase):
   # FUTURE: DeleteUser()
   # FUTURE: ListStarredUsers()
 
+  def testExpungeUsers_PermissionException(self):
+    with self.assertRaises(permissions.PermissionException):
+      with self.work_env as we:
+        we.ExpungeUsers([])
+
+  @mock.patch(
+      'features.send_notifications.'
+      'PrepareAndSendDeletedFilterRulesNotification')
+  def testExpungeUsers_SkipPermissieons(self, _fake_pasdfrn):
+    self.mr.cnxn = mock.Mock()
+    self.services.usergroup.group_dag = mock.Mock()
+    with self.work_env as we:
+      we.ExpungeUsers([], check_perms=False)
+
   @mock.patch(
       'features.send_notifications.'
       'PrepareAndSendDeletedFilterRulesNotification')
@@ -2890,6 +2904,7 @@ class WorkEnvTest(unittest.TestCase):
     self.services.usergroup.group_dag = mock.Mock()
 
     # call ExpungeUsers
+    self.mr.perms = permissions.ADMIN_PERMISSIONSET
     with self.work_env as we:
       we.ExpungeUsers(wipeout_emails)
 

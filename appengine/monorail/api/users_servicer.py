@@ -207,3 +207,11 @@ class UsersServicer(monorail_servicer.MonorailServicer):
         user_projects.starred_projects.extend(p.project_name for p in starred)
 
     return result
+
+  @monorail_servicer.PRPCMethod
+  def ExpungeUser(self, mc, request):
+    with work_env.WorkEnv(mc, self.services) as we:
+      we.ExpungeUsers([request.email])
+
+    response = users_pb2.ExpungeUserResponse()
+    return response

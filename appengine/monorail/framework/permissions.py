@@ -926,6 +926,12 @@ def CanBan(mr, services):
       mr.auth.effective_ids)
   return len(owned) > 0
 
+
+def CanExpungeUsers(mr):
+  """Return True is the user is allowed to delete user accounts."""
+  return mr.perms.HasPerm(ADMINISTER_SITE, None, None)
+
+
 def CanViewContributorList(mr, project):
   """Return True if we should display the list project contributors.
 

@@ -1751,9 +1751,9 @@ class WorkEnv(object):
       succeed.  E.g. ExpungeUsersIngroups().
     """
     if check_perms:
-      # TODO(jojwang): check that user is an admin and allowed to delete
-      # users.
-      pass
+      if not permissions.CanExpungeUsers(self.mc):
+        raise permissions.PermissionException(
+            'User is not allowed to delete users.')
 
     user_ids_by_email = self.services.user.LookupExistingUserIDs(
         self.mc.cnxn, emails)

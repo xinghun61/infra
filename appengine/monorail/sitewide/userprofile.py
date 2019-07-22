@@ -151,6 +151,8 @@ class UserProfile(servlet.Servlet):
       form_token_path = mr.request.path + 'banSpammer.do'
       ban_spammer_token = xsrf.GenerateToken(mr.auth.user_id, form_token_path)
 
+    can_delete_user = permissions.CanExpungeUsers(mr)
+
     page_data = {
         'user_tab_mode': 'st2',
         'viewed_user_display_name': viewed_user_display_name,
@@ -193,6 +195,7 @@ class UserProfile(servlet.Servlet):
         'possible_parent_accounts': possible_parent_accounts,
         'can_edit_invites': ezt.boolean(can_edit_invites),
         'offer_unlink': ezt.boolean(offer_unlink),
+        'can_delete_user': ezt.boolean(can_delete_user),
         }
 
     viewed_user_prefs = None

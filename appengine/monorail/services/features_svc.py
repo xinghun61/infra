@@ -1097,8 +1097,9 @@ class FeaturesService(object):
         adder_id=user_ids, commit=False)
     user_svc.ExpungeUsersHotlistsHistory(cnxn, user_ids, commit=False)
     # Delete hotlists
-    self.ExpungeHotlists(
-        cnxn, hotlists_to_delete, star_svc, user_svc, chart_svc)
+    if hotlists_to_delete:
+      self.ExpungeHotlists(
+          cnxn, hotlists_to_delete, star_svc, user_svc, chart_svc)
 
 
 class HotlistAlreadyExists(Exception):
