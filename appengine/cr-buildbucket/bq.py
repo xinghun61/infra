@@ -49,7 +49,17 @@ class CronExportBuilds(webapp2.RequestHandler):  # pragma: no cover
 
   @decorators.require_cronjob
   def get(self):
-    _process_pull_task_batch('bq-export', 'raw', 'completed_builds')
+    deadline = utils.utcnow() + datetime.timedelta(minutes=9)
+    while utils.utcnow() < deadline:
+      inserted, total = _process_pull_task_batch(
+          'bq-export', 'raw', 'completed_builds'
+      )
+      if total > 0 and inserted == 0:
+        logging.error('Failed to insert a single row out of %d', total)
+        self.abort(500)
+      if total < 100:
+        # Too few for a tight loop.
+        return
 
 
 # TODO(crbug.com/926536): remove this in favor of CronExportBuilds
@@ -83,6 +93,8 @@ def _process_pull_task_batch(queue_name, dataset, table_name):
     assumes the build failed to register LogDog prefix and saves it as is.
   - otherwise logs a warning/error, does not save to BigQuery and retries the
     task later.
+
+  Returns: (inserted_count, total_count) tuple.
   """
   now = utils.utcnow()
 
@@ -96,7 +108,7 @@ def _process_pull_task_batch(queue_name, dataset, table_name):
   # limit.
   tasks = q.lease_tasks(lease_duration.total_seconds(), 300)
   if not tasks:
-    return
+    return 0, 0
 
   build_ids = [json.loads(t.payload)['id'] for t in tasks]
 
@@ -133,6 +145,7 @@ def _process_pull_task_batch(queue_name, dataset, table_name):
   logging.info(
       'inserted %d rows, processed %d tasks', row_count, len(done_tasks)
   )
+  return len(done_tasks), len(tasks)
 
 
 def _export_builds(dataset, table_name, builds, deadline):
