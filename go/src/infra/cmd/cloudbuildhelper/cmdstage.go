@@ -6,10 +6,19 @@ package main
 
 import (
 	"context"
+	"fmt"
+	"os"
+	"path/filepath"
+	"strings"
 
 	"github.com/maruel/subcommands"
 
+	"go.chromium.org/luci/common/errors"
 	"go.chromium.org/luci/common/logging"
+
+	"infra/cmd/cloudbuildhelper/builder"
+	"infra/cmd/cloudbuildhelper/fileset"
+	"infra/cmd/cloudbuildhelper/manifest"
 )
 
 var cmdStage = &subcommands.Command{
@@ -56,10 +65,72 @@ func (c *cmdStageRun) exec(ctx context.Context) error {
 		return errBadFlag("-output-location", "this flag is required")
 	}
 
-	// TODO(vadimsh): Validate formal correctness of CLI flags, then call the
-	// actual implementation that lives in a proper go package with proper API and
-	// unit tests.
+	// Read the input manifest, make sure it parses correctly.
+	r, err := os.Open(c.targetManifest)
+	if err != nil {
+		return errBadFlag("-target-manifest", err.Error())
+	}
+	defer r.Close()
+	m, err := manifest.Read(r, filepath.Dir(c.targetManifest))
+	if err != nil {
+		return errBadFlag("-target-manifest", fmt.Sprintf("bad manifest file %q", c.targetManifest))
+	}
 
-	logging.Infof(ctx, "Hello, world!")
-	return nil
+	// Verify -output-location, prepare the corresponding writer (tar.gz or dir).
+	var outWriter filesetWriter
+	if strings.HasSuffix(c.outputLocation, ".tar.gz") {
+		outWriter, err = tarballWriter(c.outputLocation)
+	} else {
+		outWriter, err = directoryWriter(c.outputLocation)
+	}
+	if err != nil {
+		return errBadFlag("-output-location", err.Error())
+	}
+
+	// Execute all build steps to get the resulting fileset.Set.
+	b, err := builder.New()
+	if err != nil {
+		return errors.Annotate(err, "failed to initialize Builder").Err()
+	}
+	defer b.Close()
+	out, err := b.Build(ctx, m)
+	if err != nil {
+		return errors.Annotate(err, "local build failed").Err()
+	}
+
+	// Save the build result.
+	if err := outWriter(ctx, out); err != nil {
+		return errors.Annotate(err, "failed to save the output").Err()
+	}
+	return b.Close()
+}
+
+type filesetWriter func(context.Context, *fileset.Set) error
+
+func tarballWriter(location string) (filesetWriter, error) {
+	return func(c context.Context, fs *fileset.Set) error {
+		logging.Infof(c, "Writing %d files to %s...", fs.Len(), location)
+		hash, err := fs.ToTarGzFile(location)
+		if err != nil {
+			return err
+		}
+		logging.Infof(c, "Resulting tarball SHA256 is %q", hash)
+		return nil
+	}, nil
+}
+
+func directoryWriter(location string) (filesetWriter, error) {
+	if _, err := os.Stat(location); !os.IsNotExist(err) {
+		if err == nil {
+			return nil, errors.Reason("directory %q already exists, overwrites aren't allowed", location).Err()
+		}
+		return nil, err
+	}
+	return func(c context.Context, fs *fileset.Set) error {
+		logging.Infof(c, "Copying %d files into %s...", fs.Len(), location)
+		if err := os.Mkdir(location, 0777); err != nil {
+			return err
+		}
+		return fs.Materialize(location)
+	}, nil
 }
