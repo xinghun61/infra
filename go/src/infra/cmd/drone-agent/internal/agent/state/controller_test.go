@@ -168,6 +168,52 @@ func TestController(t *testing.T) {
 		c.TerminateDUT(d)
 		assertDontHang(t, c.Wait, "Wait hanged")
 	})
+	t.Run("drain crashlooping bot still releases", func(t *testing.T) {
+		t.Parallel()
+		released := make(chan string, 1)
+		h := stubHook{
+			start: func(dutID string) (bot.Bot, error) {
+				return nil, errors.New("some error")
+			},
+			release: func(dutID string) { released <- dutID },
+		}
+		c := NewController(h)
+		const d = "some-dut"
+		c.AddDUT(d)
+		c.DrainDUT(d)
+		c.Wait()
+		select {
+		case got := <-released:
+			if got != d {
+				t.Errorf("Got released bot %v; want %v", got, d)
+			}
+		case <-time.After(time.Second):
+			t.Errorf("Did not release DUT")
+		}
+	})
+	t.Run("terminate crashlooping bot still releases", func(t *testing.T) {
+		t.Parallel()
+		released := make(chan string, 1)
+		h := stubHook{
+			start: func(dutID string) (bot.Bot, error) {
+				return nil, errors.New("some error")
+			},
+			release: func(dutID string) { released <- dutID },
+		}
+		c := NewController(h)
+		const d = "some-dut"
+		c.AddDUT(d)
+		c.TerminateDUT(d)
+		c.Wait()
+		select {
+		case got := <-released:
+			if got != d {
+				t.Errorf("Got released bot %v; want %v", got, d)
+			}
+		case <-time.After(time.Second):
+			t.Errorf("Did not release DUT")
+		}
+	})
 	t.Run("stopped DUTs are removed", func(t *testing.T) {
 		t.Parallel()
 		c := NewController(stubHook{})

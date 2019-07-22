@@ -73,6 +73,7 @@ func (c *Controller) AddDUT(dutID string) {
 // Signals to drain or terminate should be sent using dutSignals.
 // This function otherwise runs forever.
 func runBotForDUT(h ControllerHook, dutID string, s dutSignals) {
+	defer h.ReleaseDUT(dutID)
 	for {
 		select {
 		case <-s.drain:
@@ -108,7 +109,6 @@ func runBotForDUT(h ControllerHook, dutID string, s dutSignals) {
 			}
 		}
 		if stop {
-			h.ReleaseDUT(dutID)
 			return
 		}
 	}
