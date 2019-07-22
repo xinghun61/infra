@@ -17,6 +17,8 @@ import collections
 import itertools
 import logging
 
+from functools import total_ordering
+
 from third_party import ezt
 
 from framework import framework_constants
@@ -474,6 +476,7 @@ def _AccumulateLabelValues(
       non_col_labels.append((label_name, is_derived))
 
 
+@total_ordering
 class TableRow(object):
   """A tiny auxiliary class to represent a row in an HTML table."""
 
@@ -486,9 +489,15 @@ class TableRow(object):
     self.rows_in_group = None
     self.starred = None
 
-  def __cmp__(self, other):
+  def __eq__(self, other):
     """A row is == if each cell is == to the cells in the other row."""
-    return cmp(self.cells, other.cells) if other else -1
+    return other and self.cells == other.cells
+
+  def __ne__(self, other):
+    return not other and self.cells != other.cells
+
+  def __lt__(self, other):
+    return other and self.cells < other.cells
 
   def DebugString(self):
     """Return a string that is useful for on-page debugging."""
@@ -506,6 +515,7 @@ CELL_TYPE_PROJECT = 'project'
 CELL_TYPE_URL = 'url'
 
 
+@total_ordering
 class TableCell(object):
   """Helper class to represent a table cell when rendering using EZT."""
 
@@ -535,9 +545,15 @@ class TableCell(object):
       for v in (sorted(derived_values) if sort_values else derived_values):
         self.values.append(CellItem(v, is_derived=True))
 
-  def __cmp__(self, other):
-    """A cell is == if each value is == to the values in the other cells."""
-    return cmp(self.values, other.values) if other else -1
+  def __eq__(self, other):
+    """A row is == if each cell is == to the cells in the other row."""
+    return other and self.values == other.values
+
+  def __ne__(self, other):
+    return not other and self.values != other.values
+
+  def __lt__(self, other):
+    return other and self.values < other.values
 
   def DebugString(self):
     return 'TC(%r, %r, %r)' % (
@@ -572,6 +588,7 @@ def CompositeColTableCell(columns_to_combine, cell_factories, config):
   return CompositeFactoryTableCell(factory_col_list)
 
 
+@total_ordering
 class CellItem(object):
   """Simple class to display one part of a table cell's value, with style."""
 
@@ -579,8 +596,15 @@ class CellItem(object):
     self.item = item
     self.is_derived = ezt.boolean(is_derived)
 
-  def __cmp__(self, other):
-    return cmp(self.item, other.item) if other else -1
+  def __eq__(self, other):
+    """A row is == if each cell is == to the item in the other row."""
+    return other and self.item == other.item
+
+  def __ne__(self, other):
+    return not other and self.item != other.item
+
+  def __lt__(self, other):
+    return other and self.item < other.item
 
   def DebugString(self):
     if self.is_derived:
