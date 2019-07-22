@@ -5,7 +5,6 @@
 package config
 
 import (
-	"encoding/json"
 	"fmt"
 	"path/filepath"
 	"strings"
@@ -198,36 +197,6 @@ func createWorker(s *tricium.Selection, sc *tricium.ServiceConfig, f *tricium.Fu
 	}
 	switch ii := i.Impl.(type) {
 	case *tricium.Impl_Recipe:
-		recipe := ii.Recipe
-		properties := make(map[string]interface{})
-		if recipe.Properties != "" {
-			err := json.Unmarshal([]byte(recipe.Properties), &properties)
-			if err != nil {
-				return nil, errors.Annotate(err, "failed to unmarshal").Err()
-			}
-		}
-		for _, c := range s.Configs {
-			switch v := c.ValueType.(type) {
-			case *tricium.Config_Value:
-				properties[c.Name] = v.Value
-			case *tricium.Config_ValueJ:
-				var value interface{}
-				err := json.Unmarshal([]byte(v.ValueJ), &value)
-				if err != nil {
-					return nil, errors.Annotate(err, "failed to unmarshal value_j").Err()
-				}
-				properties[c.Name] = value
-			default:
-				return nil, errors.Reason("please specify value or value_j").Err()
-			}
-		}
-		properties["ref"] = gitRef
-		properties["repository"] = gitURL
-		bytes, err := json.Marshal(properties)
-		if err != nil {
-			return nil, errors.Annotate(err, "failed to marshal").Err()
-		}
-		recipe.Properties = string(bytes)
 		w.Impl = &admin.Worker_Recipe{Recipe: ii.Recipe}
 	case *tricium.Impl_Cmd:
 		cmd := ii.Cmd

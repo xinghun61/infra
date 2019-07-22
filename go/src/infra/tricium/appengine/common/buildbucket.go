@@ -6,23 +6,16 @@ package common
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
-	"strings"
+	"strconv"
 
-	"go.chromium.org/luci/buildbucket/proto"
-	bbapi "go.chromium.org/luci/common/api/buildbucket/buildbucket/v1"
+	buildbucketpb "go.chromium.org/luci/buildbucket/proto"
 	"go.chromium.org/luci/common/errors"
 	"go.chromium.org/luci/common/logging"
 	"go.chromium.org/luci/grpc/prpc"
 	fm "google.golang.org/genproto/protobuf/field_mask"
 
 	admin "infra/tricium/api/admin/v1"
-	tricium "infra/tricium/api/v1"
-)
-
-const (
-	buildbucketBasePath = "/_ah/api/buildbucket/v1/builds"
 )
 
 // BuildbucketServer implements the ServerAPI for the buildbucket service.
@@ -38,44 +31,57 @@ func (s buildbucketServer) Trigger(c context.Context, params *TriggerParameters)
 	if err != nil {
 		return nil, errors.Annotate(err, "failed to create oauth client").Err()
 	}
-	buildbucketService, err := bbapi.New(oauthClient)
-	if err != nil {
-		return nil, errors.Annotate(err, "failed to create buildbucket client").Err()
-	}
 
-	buildbucketService.BasePath = fmt.Sprintf("https://%s%s", params.Server, buildbucketBasePath)
+	client := buildbucketpb.NewBuildsPRPCClient(&prpc.Client{
+		C:    oauthClient,
+		Host: params.Server,
+	})
 
+	return trigger(c, params, client)
+}
+
+func trigger(c context.Context, params *TriggerParameters, client buildbucketpb.BuildsClient) (*TriggerResult, error) {
 	// Prepare recipe details.
 	recipe, ok := params.Worker.Impl.(*admin.Worker_Recipe)
 	if !ok {
-		return nil, errors.Annotate(err, "buildbucket client function must be a recipe").Err()
+		return nil, errors.Reason("buildbucket client function must be a recipe").Err()
 	}
 
-	parametersJSON, err := swarmingParametersJSON(c, params.Worker, recipe)
+	// Extract change and patchset.
+	change, err := strconv.ParseInt(params.Patch.GerritCl, 10, 64)
 	if err != nil {
-		return nil, err
+		return nil, errors.Annotate(err, "unable to parse Gerrit change").Err()
+	}
+	patchset, err := strconv.ParseInt(params.Patch.GerritPatch, 10, 64)
+	if err != nil {
+		return nil, errors.Annotate(err, "unable to parse Gerrit patchset").Err()
 	}
 
-	req := makeRequest(c, params.PubsubUserdata, parametersJSON, params.Tags, recipe.Recipe)
-	logging.Fields{
-		"bucket": req.Bucket,
-		"tags":   req.Tags,
-		"params": req.ParametersJson,
-	}.Infof(c, "Making Buildbucket Trigger request.")
-	res, err := buildbucketService.Put(req).Context(c).Do()
+	// Trigger build.
+	build, err := client.ScheduleBuild(c, &buildbucketpb.ScheduleBuildRequest{
+		RequestId: fmt.Sprintf("%s~%s~%s", params.Patch.GerritProject, params.Patch.GerritCl, params.Patch.GerritPatch),
+		Builder: &buildbucketpb.BuilderID{
+			Project: recipe.Recipe.Project,
+			Bucket:  recipe.Recipe.Bucket,
+			Builder: recipe.Recipe.Builder,
+		},
+		GerritChanges: []*buildbucketpb.GerritChange{{
+			Host:     params.Patch.GerritHost,
+			Project:  params.Patch.GerritProject,
+			Change:   change,
+			Patchset: patchset,
+		}},
+		Notify: &buildbucketpb.NotificationConfig{
+			PubsubTopic: topic(c),
+			UserData:    []byte(params.PubsubUserdata),
+		},
+	})
 	if err != nil {
-		return nil, errors.Annotate(err, "failed to trigger buildbucket build").Err()
-	}
-	if res == nil || res.Build == nil {
-		return nil, errors.Reason("empty buildbucket response %+v", res).Err()
+		return nil, errors.Annotate(err, "failed to trigger for buildbucket task").Err()
 	}
 
-	resJSON, err := json.MarshalIndent(res, "", "  ")
-	if err != nil {
-		return nil, errors.Annotate(err, "could not marshal JSON response").Err()
-	}
-	logging.Infof(c, "Scheduled new build: %s", resJSON)
-	return &TriggerResult{BuildID: res.Build.Id}, nil
+	logging.Infof(c, "Scheduled new build: %s", build.String())
+	return &TriggerResult{BuildID: build.Id}, nil
 }
 
 // Collect implements the TaskServerAPI.
@@ -84,13 +90,17 @@ func (s buildbucketServer) Collect(c context.Context, params *CollectParameters)
 	if err != nil {
 		return nil, errors.Annotate(err, "failed to create oauth client").Err()
 	}
-	buildbucketService := buildbucketpb.NewBuildsPRPCClient(&prpc.Client{
+	client := buildbucketpb.NewBuildsPRPCClient(&prpc.Client{
 		C:    oauthClient,
 		Host: params.Server,
 	})
 
+	return collect(c, params, client)
+}
+
+func collect(c context.Context, params *CollectParameters, client buildbucketpb.BuildsClient) (*CollectResult, error) {
 	// Collect result.
-	build, err := buildbucketService.GetBuild(c, &buildbucketpb.GetBuildRequest{
+	build, err := client.GetBuild(c, &buildbucketpb.GetBuildRequest{
 		Id:     params.BuildID,
 		Fields: &fm.FieldMask{Paths: []string{"output.properties.fields.tricium", "status"}},
 	})
@@ -119,86 +129,4 @@ func (s buildbucketServer) Collect(c context.Context, params *CollectParameters)
 		}.Infof(c, "Result had no output.")
 	}
 	return result, nil
-}
-
-func swarmingParametersJSON(c context.Context, worker *admin.Worker, recipe *admin.Worker_Recipe) (string, error) {
-	// Set up properties.
-	properties := make(map[string]interface{})
-	if recipe.Recipe.Properties != "" {
-		err := json.Unmarshal([]byte(recipe.Recipe.Properties), &properties)
-		if err != nil {
-			return "", errors.Annotate(err, "failed to unmarshal").Err()
-		}
-	}
-
-	// We don't want to include "pool" in the request to buildbucket; the pool
-	// is already defined in the builder definition in cr-buildbucket.cfg.
-	var dimensions []string
-	for _, d := range worker.Dimensions {
-		if !strings.HasPrefix(d, "pool:") {
-			dimensions = append(dimensions, d)
-		}
-	}
-
-	// TODO(crbug/979730): Migrate all analyzers to specify builder explicitly.
-	// Set default builder here for backwards compatibility until then.
-	var builder string
-	// If any of these are unset, we default to tricium builder in the luci.tricium.try bucket.
-	if recipe.Recipe.Project == "" || recipe.Recipe.Bucket == "" || recipe.Recipe.Builder == "" {
-		logging.Fields{
-			"project": recipe.Recipe.Project,
-			"bucket":  recipe.Recipe.Bucket,
-			"builder": recipe.Recipe.Builder,
-		}.Debugf(c, "One or more builder IDs empty; using builder tricium in luci.tricium.try instead.")
-		builder = "tricium"
-	} else {
-		builder = recipe.Recipe.Builder
-	}
-
-	parameters := map[string]interface{}{
-		"builder_name": builder,
-		"properties":   properties,
-		"swarming": map[string]interface{}{
-			"override_builder_cfg": map[string]interface{}{
-				"dimensions": dimensions,
-				"recipe": map[string]interface{}{
-					"name":         recipe.Recipe.Name,
-					"cipd_package": recipe.Recipe.CipdPackage,
-					"cipd_version": recipe.Recipe.CipdVersion,
-				},
-				"execution_timeout_secs": worker.Deadline,
-			},
-		},
-	}
-	parametersJSON, err := json.Marshal(parameters)
-	if err != nil {
-		return "", errors.Annotate(err, "could not marshal recipe into JSON").Err()
-	}
-
-	return string(parametersJSON), err
-}
-
-func makeRequest(c context.Context, pubsubUserdata, parametersJSON string, tags []string, recipe *tricium.Recipe) *bbapi.LegacyApiPutRequestMessage {
-	// TODO(crbug/979730): Migrate all analyzers to specify bucket explicitly.
-	// Set default bucket here for backwards compatibility until then.
-	var bucket string
-	if recipe.Project == "" || recipe.Bucket == "" || recipe.Builder == "" {
-		logging.Fields{
-			"project": recipe.Project,
-			"bucket":  recipe.Bucket,
-			"builder": recipe.Builder,
-		}.Debugf(c, "One or more builder IDs empty; using bucket luci.tricium.try instead.")
-		bucket = "luci.tricium.try"
-	} else {
-		bucket = fmt.Sprintf("luci.%s.%s", recipe.Project, recipe.Bucket)
-	}
-	return &bbapi.LegacyApiPutRequestMessage{
-		Bucket: bucket,
-		PubsubCallback: &bbapi.LegacyApiPubSubCallbackMessage{
-			Topic:    topic(c),
-			UserData: pubsubUserdata,
-		},
-		Tags:           tags,
-		ParametersJson: parametersJSON,
-	}
 }

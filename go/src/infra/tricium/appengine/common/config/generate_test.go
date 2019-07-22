@@ -5,7 +5,6 @@
 package config
 
 import (
-	"encoding/json"
 	"fmt"
 	"testing"
 
@@ -397,10 +396,7 @@ func TestCreateWorker(t *testing.T) {
 						},
 						Impl: &tricium.Impl_Recipe{
 							Recipe: &tricium.Recipe{
-								CipdPackage: "path/to/cipd/package",
-								CipdVersion: "version",
-								Name:        "recipe",
-								Properties:  "{\"prop\": \"infra\"}",
+								Project: "chromium",
 							},
 						},
 						Deadline: deadline,
@@ -421,80 +417,7 @@ func TestCreateWorker(t *testing.T) {
 			if wi == nil {
 				fail("Incorrect worker type")
 			}
-			So(wi.Recipe.CipdPackage, ShouldEqual, "path/to/cipd/package")
-			So(wi.Recipe.CipdVersion, ShouldEqual, "version")
-			So(wi.Recipe.Name, ShouldEqual, "recipe")
-			var actualProperties map[string]interface{}
-			err = json.Unmarshal([]byte(wi.Recipe.Properties), &actualProperties)
-			if err != nil {
-				fail("Unable to marshal properties")
-			}
-			expectedProperties := map[string]interface{}{
-				"prop":       "infra",
-				"json":       []interface{}{"one", "two"},
-				"enable":     "all",
-				"ref":        "refs/1234/2",
-				"repository": "https://chromium-review.googlesource.com/infra",
-			}
-			So(actualProperties, ShouldResemble, expectedProperties)
-		})
-
-		Convey("Correctly creates recipe-based worker with no properties", func() {
-			f := &tricium.Function{
-				Name:       analyzer,
-				Needs:      tricium.Data_FILES,
-				Provides:   tricium.Data_RESULTS,
-				ConfigDefs: []*tricium.ConfigDef{{Name: config}, {Name: configJSON}},
-				Impls: []*tricium.Impl{
-					{
-						ProvidesForPlatform: platform,
-						RuntimePlatform:     platform,
-						CipdPackages: []*tricium.CipdPackage{
-							{
-								PackageName: "package",
-								Path:        "path/to/folder",
-								Version:     "git-revision:abcdefg",
-							},
-						},
-						Impl: &tricium.Impl_Recipe{
-							Recipe: &tricium.Recipe{
-								CipdPackage: "path/to/cipd/package",
-								CipdVersion: "version",
-								Name:        "recipe",
-							},
-						},
-						Deadline: deadline,
-					},
-				},
-			}
-			w, err := createWorker(selection, sc2, f, gitRef, gitURL)
-			So(err, ShouldBeNil)
-			So(w.Name, ShouldEqual, fmt.Sprintf("%s_%s", analyzer, platform))
-			So(w.Needs, ShouldEqual, f.Needs)
-			So(w.Provides, ShouldEqual, f.Provides)
-			So(w.ProvidesForPlatform, ShouldEqual, platform)
-			So(w.Dimensions, ShouldResemble, []string{dimension})
-			So(len(w.CipdPackages), ShouldEqual, 1)
-			So(w.Deadline, ShouldEqual, deadline)
-			wi := w.Impl.(*admin.Worker_Recipe)
-			if wi == nil {
-				fail("Incorrect worker type")
-			}
-			So(wi.Recipe.CipdPackage, ShouldEqual, "path/to/cipd/package")
-			So(wi.Recipe.CipdVersion, ShouldEqual, "version")
-			So(wi.Recipe.Name, ShouldEqual, "recipe")
-			var actualProperties map[string]interface{}
-			err = json.Unmarshal([]byte(wi.Recipe.Properties), &actualProperties)
-			if err != nil {
-				fail("Unable to marshal properties")
-			}
-			expectedProperties := map[string]interface{}{
-				"enable":     "all",
-				"json":       []interface{}{"one", "two"},
-				"ref":        "refs/1234/2",
-				"repository": "https://chromium-review.googlesource.com/infra",
-			}
-			So(actualProperties, ShouldResemble, expectedProperties)
+			So(wi.Recipe.Project, ShouldEqual, "chromium")
 		})
 	})
 }

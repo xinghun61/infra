@@ -141,17 +141,21 @@ message Impl {
 
 // Specification of a recipe for a recipe-based analyzer.
 message Recipe {
-  // Recipe CIPD package.
-  string cipd_package = 1;
+  // Recipe CIPD package. Deprecated because CIPD package will be determined
+  // by the builder config.
+  string cipd_package = 1 [deprecated=true];
 
-  // CIPD package version.
-  string cipd_version = 2;
+  // CIPD package version. Deprecated because CIPD package version will be
+  // determined by the builder config.
+  string cipd_version = 2 [deprecated=true];
 
   // Extra recipe properties to add, as a JSON mapping of keys to values.
-  string properties = 3;
+  // Deprecated because properties will be determined by the builder config.
+  string properties = 3 [deprecated=true];
 
-  // Name of the recipe to run.
-  string name = 4;
+  // Name of the recipe to run. Deprecated because recipe will be determined by
+  // the builder config.
+  string name = 4 [deprecated=true];
 
   // Project ID, e.g. "chromium".
   string project = 5;
