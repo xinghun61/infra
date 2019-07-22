@@ -8,6 +8,8 @@ package fileset
 import (
 	"archive/tar"
 	"compress/gzip"
+	"crypto/sha256"
+	"encoding/hex"
 	"io"
 	"os"
 	"path"
@@ -218,7 +220,7 @@ func (s *Set) ToTar(w *tar.Writer) error {
 	})
 }
 
-// ToTarGz writes a *.tar.gz with files in the set.
+// ToTarGz writes a *.tar.gz with files in the set to an io.Writer.
 //
 // Uses default compression level.
 func (s *Set) ToTarGz(w io.Writer) error {
@@ -237,6 +239,25 @@ func (s *Set) ToTarGz(w io.Writer) error {
 		return err
 	}
 	return nil
+}
+
+// ToTarGzFile writes a *.tar.gz with files in the set to a file on disk.
+//
+// Calculates its SHA256 on the fly and returns the digest as a hex string.
+func (s *Set) ToTarGzFile(path string) (sha256hex string, err error) {
+	out, err := os.Create(path)
+	if err != nil {
+		return "", errors.Annotate(err, "failed to open for writing %s", path).Err()
+	}
+	defer out.Close() // for early exits
+	h := sha256.New()
+	if err := s.ToTarGz(io.MultiWriter(out, h)); err != nil {
+		return "", errors.Annotate(err, "failed to write to %s", path).Err()
+	}
+	if err := out.Close(); err != nil {
+		return "", errors.Annotate(err, "failed to flush %s", path).Err()
+	}
+	return hex.EncodeToString(h.Sum(nil)), nil
 }
 
 ////////////////////////////////////////////////////////////////////////////////

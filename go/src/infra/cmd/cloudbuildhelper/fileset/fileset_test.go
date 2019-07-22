@@ -183,6 +183,12 @@ func TestSet(t *testing.T) {
 		So(prepSet().ToTarGz(&buf), ShouldBeNil)
 		So(buf.Len(), ShouldNotEqual, 0) // writes something...
 	})
+
+	Convey("ToTarGzFile works", t, func(c C) {
+		hash, err := prepSet().ToTarGzFile(newTempDir(c).join("tmp"))
+		So(err, ShouldBeNil)
+		So(hash, ShouldHaveLength, 64)
+	})
 }
 
 func collect(s *Set) []string {
