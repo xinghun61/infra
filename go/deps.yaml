@@ -429,7 +429,7 @@ import:
   version: master
   repo: https://chromium.googlesource.com/external/github.com/go-warnings/warnings.git
 - package: go.skia.org/infra
-  version: 326c4dc30d5cb08b5b0596796ad06c0d65a998d9
+  version: 159008b8e534f2a4ab68c9e1396f3ebac99dd48b
   repo: https://skia.googlesource.com/buildbot.git
   subpackages:
   - gold-client/cmd/goldctl
@@ -525,3 +525,11 @@ import:
   subpackages:
   - profile
 - package: golang.org/x/time
+  version: master
+  repo: https://go.googlesource.com/time.git
+- package: github.com/jcgregorio/logger
+  version: master
+  repo: https://chromium.googlesource.com/external/github.com/jcgregorio/logger.git
+- package: github.com/jcgregorio/slog
+  version: master
+  repo: https://chromium.googlesource.com/external/github.com/jcgregorio/slog.git
