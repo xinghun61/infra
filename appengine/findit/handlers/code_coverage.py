@@ -36,6 +36,7 @@ from model.code_coverage import PostsubmitReport
 from model.code_coverage import FileCoverageData
 from model.code_coverage import PresubmitCoverageData
 from model.code_coverage import SummaryCoverageData
+from services.code_coverage import GetMetricsBasedOnLanguage
 from waterfall import waterfall_config
 
 # List of Gerrit projects that the Code Coverage service supports.
@@ -1283,6 +1284,8 @@ class ServeCodeCoverageData(BaseHandler):
                   _POSTSUBMIT_PLATFORM_INFO_MAP[platform]['ui_name'],
               'path_root':
                   path_root,
+              'metrics':
+                  GetMetricsBasedOnLanguage('clang'),
               'data':
                   data,
               'data_type':

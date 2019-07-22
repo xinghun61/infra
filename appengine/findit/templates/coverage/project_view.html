@@ -68,9 +68,9 @@
             <th title="Commit position used to build targets and generate code coverage report.">Commit Position</th>
             <th title="Time when the revision was commited into the source tree.">Commit Time (PST)</th>
             <th title="Link to code coverage report for the particular commit position.">Report</th>
-            <th title="Line coverage is the percentage of code lines which have been executed at least once. Only executable lines within function bodies are considered to be code lines.">Line</th>
-            <th title="Function coverage is the percentage of functions which have been executed at least once. A function is considered to be executed if any of its instantiations are executed.">Function</th>
-            <th title="Region coverage is the percentage of code regions which have been executed at least once. A code region may span multiple lines (e.g in a large function body with no control flow). However, it's also possible for a single line to contain multiple code regions (e.g in 'return x || y &amp;&amp; z').">Region</th>
+            {% for m in metrics %}
+              <th title="{{ m.detail }}">{{ m.name | capitalize }} </th>
+            {% endfor %}
             <th title="Link to the build that generated this report.">Data Source</th>
             {% if user_info and user_info.is_admin %}
               <th>Is Visible</th>
@@ -91,11 +91,11 @@
               <td>
                 <a href="/p/chromium/coverage/dir?host={{host}}&project={{project}}&ref={{ref}}&revision={{datum.gitiles_commit.revision}}&path=//&platform={{platform}}">Link</a>
               </td>
-              {% for name in ('line', 'function', 'region') %}
+              {% for target_metric in metrics %}
                 {% set found = False %}
                 <td>
                 {% for metric in datum.summary_metrics %}
-                  {% if not found and metric.name == name %}
+                  {% if not found and metric.name == target_metric.name %}
                     {% set found = True %}
                     {% set percent = (metric.covered*100.0/metric.total) | int %}
                     {{ ('%3d' % percent).replace(' ', '&nbsp;') | safe }}%

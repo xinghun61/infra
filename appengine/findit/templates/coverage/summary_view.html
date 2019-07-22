@@ -169,9 +169,9 @@
             {% else %}
             <th>Path</th>
             {% endif %}
-            <th title="Line coverage is the percentage of code lines which have been executed at least once. Only executable lines within function bodies are considered to be code lines.">Line</th>
-            <th title="Function coverage is the percentage of functions which have been executed at least once. A function is considered to be executed if any of its instantiations are executed.">Function</th>
-            <th title="Region coverage is the percentage of code regions which have been executed at least once. A code region may span multiple lines (e.g in a large function body with no control flow). However, it's also possible for a single line to contain multiple code regions (e.g in 'return x || y &amp;&amp; z').">Region</th>
+            {% for m in metrics %}
+              <th title="{{ m.detail }}">{{ m.name | capitalize }} </th>
+            {% endfor %}
           </tr>
         </thead>
 
@@ -197,10 +197,10 @@
                 <a href="/p/chromium/coverage/{{url_path}}?host={{host}}&project={{project}}&ref={{ref}}&revision={{revision}}&path={{datum.path}}&data_type={{real_data_type}}&platform={{platform}}">{{datum.path}}</a>
               {% endif %}
             </td>
-            {% for name in ('line', 'function', 'region') %}
+            {% for target_metric in metrics %}
               {% set found = False %}
               {% for metric in datum.summaries %}
-                {% if not found and metric.name == name %}
+                {% if not found and metric.name == target_metric.name %}
                   {% set found = True %}
                   {% set percent = (metric.covered*100.0/metric.total) | int %}
                   {% if percent >= 90 %}
@@ -225,10 +225,10 @@
         <tfoot>
           <tr>
             <td>TOTALS</td>
-            {% for name in ('line', 'function', 'region') %}
+            {% for target_metric in metrics %}
               {% set found = False %}
               {% for metric in data.metadata.summaries %}
-                {% if not found and metric.name == name %}
+                {% if not found and metric.name == target_metric.name %}
                   {% set found = True %}
                   {% set percent = (metric.covered*100.0/metric.total) | int %}
                   {% if percent >= 90 %}
