@@ -4,6 +4,7 @@
  * license that can be found in the LICENSE file or at
  * https://developers.google.com/open-source/licenses/bsd
  */
+/* eslint-disable no-var */
 
 // Defined in framework/js:core_scripts
 var _hideID;
@@ -93,7 +94,6 @@ var _acrob;
 var _d;
 
 var _getColspec;
-var _getSearchColspec;
 
 var issueRefs;
 

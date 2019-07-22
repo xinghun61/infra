@@ -4,6 +4,7 @@
  * license that can be found in the LICENSE file or at
  * https://developers.google.com/open-source/licenses/bsd
  */
+/* eslint-disable no-var */
 
 /**
  * This file contains JS functions that implement various navigation
@@ -45,22 +46,6 @@ function TKR_goToAnchor(anchor) {
 function TKR_getColspecElement() {
   const elem = document.getElementById('colspec_field');
   return elem && elem.firstChild;
-}
-
-
-/**
- * Get the hidden form field for colspec.  This is a type="hidden" input field
- * that is submitted as part of the artfact search query.  We need a
- * function to get this element because there are multiple form fields on the
- * page with name="colspec", and an IE misfeature sets their id attributes
- * as well, which makes document.getElementById() fail.
- * @return {Element} colspec hidden form field.
- */
-function TKR_getSearchColspecElement() {
-  const element = _getSearchBarComponent();
-  if (!element) return;
-
-  return element.shadowRoot.querySelector('#colspec');
 }
 
 

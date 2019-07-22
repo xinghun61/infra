@@ -40,8 +40,8 @@ function TKR_onload() {
     }
     if (input.id == 'owner_editor' || input.dataset.acType === 'owner') return TKR_ownerStore;
     if (input.className.indexOf('userautocomplete') != -1) {
-      let customFieldIDStr = input.name;
-      let uac = TKR_userAutocompleteStores[customFieldIDStr];
+      const customFieldIDStr = input.name;
+      const uac = TKR_userAutocompleteStores[customFieldIDStr];
       if (uac) return uac;
       return TKR_ownerStore;
     }
@@ -153,7 +153,6 @@ _allColumnNames = [];
 
 _go = TKR_go;
 _getColspec = TKR_getColspecElement;
-_getSearchColspec = TKR_getSearchColspecElement;
 
 // Make the document actually listen for click events, otherwise the
 // event handlers above would never get called.

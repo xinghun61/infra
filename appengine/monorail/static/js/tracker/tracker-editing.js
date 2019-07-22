@@ -4,6 +4,8 @@
  * license that can be found in the LICENSE file or at
  * https://developers.google.com/open-source/licenses/bsd
  */
+/* eslint-disable no-var */
+/* eslint-disable prefer-const */
 
 /**
  * This file contains JS functions that support various issue editing
@@ -123,12 +125,15 @@ function TKR_addAttachmentFields(id, attachprompt_id,
   if (TKR_nextFileID >= 16) {
     return;
   }
-  if (typeof attachprompt_id === 'undefined')
-    {attachprompt_id = TKR_ATTACHPROMPT_ID;}
-  if (typeof attachafile_id === 'undefined')
-    {attachafile_id = TKR_ATTACHAFILE_ID;}
-  if (typeof attachmaxsize_id === 'undefined')
-    {attachmaxsize_id = TKR_ATTACHMAXSIZE_ID;}
+  if (typeof attachprompt_id === 'undefined') {
+    attachprompt_id = TKR_ATTACHPROMPT_ID;
+  }
+  if (typeof attachafile_id === 'undefined') {
+    attachafile_id = TKR_ATTACHAFILE_ID;
+  }
+  if (typeof attachmaxsize_id === 'undefined') {
+    attachmaxsize_id = TKR_ATTACHMAXSIZE_ID;
+  }
   let el = $(id);
   el.style.marginTop = '4px';
   let div = document.createElement('div');
@@ -169,8 +174,8 @@ function TKR_openIssueUpdateForm() {
   TKR_forceProperTableWidth();
   window.setTimeout(
     function() {
-document.getElementById('addCommentTextArea').focus();
-},
+      document.getElementById('addCommentTextArea').focus();
+    },
     100);
 }
 
@@ -392,8 +397,9 @@ function TKR_deleteTemplate() {
  */
 function TKR_rebuildTemplateMenu() {
   let parentEl = $('template_menu');
-  while (parentEl.childNodes.length)
-    {parentEl.removeChild(parentEl.childNodes[0]);}
+  while (parentEl.childNodes.length) {
+    parentEl.removeChild(parentEl.childNodes[0]);
+  }
   for (let i = 0; i < TKR_templateNames.length; i++) {
     if (TKR_templateNames[i] != TKR_DELETED_PROMPT_NAME) {
       let option = TKR_createChild(
@@ -410,8 +416,9 @@ function TKR_rebuildTemplateMenu() {
 function TKR_rebuildDefaultTemplateMenu(menuID) {
   let defaultTemplateName = $(menuID).value;
   let parentEl = $(menuID);
-  while (parentEl.childNodes.length)
-    {parentEl.removeChild(parentEl.childNodes[0]);}
+  while (parentEl.childNodes.length) {
+    parentEl.removeChild(parentEl.childNodes[0]);
+  }
   for (let i = 0; i < TKR_templateNames.length; i++) {
     if (TKR_templateNames[i] != TKR_DELETED_PROMPT_NAME) {
       let option = TKR_createChild(
@@ -1406,7 +1413,6 @@ function TKR_toggleColumnUpdate(colIndex) {
   }
 
   TKR_getColspecElement().value = filteredCols.join(' ');
-  TKR_getSearchColspecElement().value = filteredCols.join(' ');
   TKR_toggleColumn('hide_col_' + colIndex);
   _ctxArgs = _formatContextQueryArgs();
   window.history.replaceState({}, '', '?' + _ctxArgs);
