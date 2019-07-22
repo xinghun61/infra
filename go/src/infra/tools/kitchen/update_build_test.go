@@ -347,7 +347,8 @@ func TestOutputCommitFromLegacyProperties(t *testing.T) {
 						"input": {
 							"gitilesCommit": {
 								"host": "chromium.googlesource.com",
-								"project": "chromium/src"
+								"project": "chromium/src",
+								"id": "deadbeef"
 							}
 						}
 					}
