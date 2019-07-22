@@ -48,13 +48,12 @@ class BigQueryExportTest(testing.AppengineTestCase):
     ndb.transactional(  # pylint: disable=no-value-for-parameter
         lambda: bq.enqueue_bq_export_async(build).get_result())()
 
-    enqueue_async.assert_called_once_with(
-        'bq-export-prod',
-        [{
-            'method': 'PULL',
-            'payload': {'id': 1},
-        }],
-    )
+    task_def = {
+        'method': 'PULL',
+        'payload': {'id': 1},
+    }
+    enqueue_async.assert_any_call('bq-export', [task_def])
+    enqueue_async.assert_any_call('bq-export-prod', [task_def])
 
   def test_cron_export_builds_to_bq(self):
     bundles = [
@@ -103,12 +102,12 @@ class BigQueryExportTest(testing.AppengineTestCase):
         for b in builds
     ])
 
-    bq._process_pull_task_batch(self.queue.name, 'builds')
+    bq._process_pull_task_batch(self.queue.name, 'raw', 'completed_builds')
     net.json_request.assert_called_once_with(
         url=(
             'https://www.googleapis.com/bigquery/v2/'
-            'projects/testbed-test/datasets/builds/tables/'
-            'completed_BETA/insertAll'
+            'projects/testbed-test/datasets/raw/tables/'
+            'completed_builds/insertAll'
         ),
         method='POST',
         payload={
@@ -141,11 +140,11 @@ class BigQueryExportTest(testing.AppengineTestCase):
     self.queue.add([
         taskqueue.Task(method='PULL', payload=json.dumps({'id': 1}))
     ])
-    bq._process_pull_task_batch(self.queue.name, 'builds')
+    bq._process_pull_task_batch(self.queue.name, 'raw', 'completed_builds')
     self.assertFalse(net.json_request.called)
 
   def test_cron_export_builds_to_bq_no_tasks(self):
-    bq._process_pull_task_batch(self.queue.name, 'builds')
+    bq._process_pull_task_batch(self.queue.name, 'raw', 'completed_builds')
     self.assertFalse(net.json_request.called)
 
   @mock.patch(
@@ -172,7 +171,7 @@ class BigQueryExportTest(testing.AppengineTestCase):
         }]
     }
 
-    bq._process_pull_task_batch(self.queue.name, 'builds')
+    bq._process_pull_task_batch(self.queue.name, 'raw', 'completed_builds')
     self.assertTrue(net.json_request.called)
 
     # assert second task is not deleted

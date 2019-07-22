@@ -23,46 +23,54 @@ import model
 import tq
 
 
+@ndb.tasklet
 def enqueue_bq_export_async(build):
   """Enqueues a pull task to export a completed build to BigQuery."""
   assert ndb.in_transaction()
   assert build
   assert build.is_ended
 
-  return tq.enqueue_async(
-      'bq-export-experimental' if build.experimental else 'bq-export-prod',
-      [{
-          'method': 'PULL',
-          'payload': {'id': build.key.id()},
-      }],
+  task_def = {
+      'method': 'PULL',
+      'payload': {'id': build.key.id()},
+  }
+  yield (
+      tq.enqueue_async('bq-export', [task_def]),
+      # TODO(crbug.com/926536): remove legacy exporters.
+      tq.enqueue_async(
+          'bq-export-experimental' if build.experimental else 'bq-export-prod',
+          [task_def],
+      ),
   )
 
 
 class CronExportBuilds(webapp2.RequestHandler):  # pragma: no cover
   """Exports builds to a BigQuery table."""
 
-  queue_name = None
-  dataset = None
+  @decorators.require_cronjob
+  def get(self):
+    _process_pull_task_batch('bq-export', 'raw', 'completed_builds')
+
+
+# TODO(crbug.com/926536): remove this in favor of CronExportBuilds
+class CronExportBuildsProd(webapp2.RequestHandler):  # pragma: no cover
 
   @decorators.require_cronjob
   def get(self):
-    assert self.queue_name
-    assert self.dataset
-
-    _process_pull_task_batch(self.queue_name, self.dataset)
+    _process_pull_task_batch('bq-export-prod', 'builds', 'completed_BETA')
 
 
-class CronExportBuildsProd(CronExportBuilds):
-  queue_name = 'bq-export-prod'
-  dataset = 'builds'
+# TODO(crbug.com/926536): remove this in favor of CronExportBuilds
+class CronExportBuildsExperimental(webapp2.RequestHandler):  # pragma: no cover
+
+  @decorators.require_cronjob
+  def get(self):
+    _process_pull_task_batch(
+        'bq-export-experimental', 'builds_experimental', 'completed_BETA'
+    )
 
 
-class CronExportBuildsExperimental(CronExportBuilds):
-  queue_name = 'bq-export-experimental'
-  dataset = 'builds_experimental'
-
-
-def _process_pull_task_batch(queue_name, dataset):
+def _process_pull_task_batch(queue_name, dataset, table_name):
   """Exports up to 300 builds to BigQuery.
 
   Leases pull tasks, fetches build entities and inserts them into BigQuery.
@@ -109,7 +117,9 @@ def _process_pull_task_batch(queue_name, dataset):
 
   row_count = 0
   if to_insert:
-    not_inserted_ids = _export_builds(dataset, to_insert, lease_deadline)
+    not_inserted_ids = _export_builds(
+        dataset, table_name, to_insert, lease_deadline
+    )
     row_count = len(to_insert) - len(not_inserted_ids)
     ids_to_retry.update(not_inserted_ids)
 
@@ -125,13 +135,12 @@ def _process_pull_task_batch(queue_name, dataset):
   )
 
 
-def _export_builds(dataset, builds, deadline):
+def _export_builds(dataset, table_name, builds, deadline):
   """Saves builds to BigQuery.
 
   Logs insert errors and returns a list of ids of builds that could not be
   inserted.
   """
-  table_name = 'completed_BETA'  # TODO(nodir): remove beta suffix.
   # BigQuery API doc:
   # https://cloud.google.com/bigquery/docs/reference/rest/v2/tabledata/insertAll
   logging.info('sending %d rows', len(builds))
