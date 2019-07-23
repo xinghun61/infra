@@ -156,6 +156,25 @@ var RuleMap = map[string]*RepoConfig{
 			},
 		},
 	},
+	"chromium-infra-config": {
+		BaseRepoURL: "https://chrome-internal.googlesource.com/infradata/config.git",
+		GerritURL:   "https://chrome-internal-review.googlesource.com",
+		BranchName:  "master",
+		// No special meaning, ToT as of the time this line was added.
+		StartingCommit:  "62923d0bcfeca4683bb28f5ecbfa34eb840e791e",
+		MonorailAPIURL:  "https://monorail-prod.appspot.com/_ah/api/monorail/v1",
+		MonorailProject: "chromium",
+		NotifierEmail:   "notifier@cr-audit-commits.appspotmail.com",
+		Rules: map[string]RuleSet{
+			"manual-changes": AccountRules{
+				Account: "*",
+				Rules: []Rule{
+					ChangeReviewed{},
+				},
+				notificationFunction: fileBugForTBRViolation,
+			},
+		},
+	},
 	"chromium-src-release-branches": {
 		BaseRepoURL:     "https://chromium.googlesource.com/chromium/src.git",
 		GerritURL:       "https://chromium-review.googlesource.com",
