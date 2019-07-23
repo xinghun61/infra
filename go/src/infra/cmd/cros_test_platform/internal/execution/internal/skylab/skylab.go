@@ -137,7 +137,7 @@ func NewTaskSet(tests []*build_api.AutotestTest, params *test_platform.Request_P
 // is encountered, this method returns whatever partial execution response
 // was visible to it prior to that error.
 func (r *TaskSet) LaunchAndWait(ctx context.Context, swarming swarming.Client, gf isolate.GetterFactory) error {
-	if err := r.launch(ctx, swarming); err != nil {
+	if err := r.launchAll(ctx, swarming); err != nil {
 		return err
 	}
 
@@ -149,27 +149,34 @@ var isClientTest = map[build_api.AutotestTest_ExecutionEnvironment]bool{
 	build_api.AutotestTest_EXECUTION_ENVIRONMENT_SERVER: false,
 }
 
-func (r *TaskSet) launch(ctx context.Context, swarming swarming.Client) error {
+func (r *TaskSet) launchAll(ctx context.Context, swarming swarming.Client) error {
 	for _, testRun := range r.testRuns {
-		args, err := testRun.RequestArgs(r.params, r.workerConfig)
-		if err != nil {
-			return errors.Annotate(err, "launch test named %s", testRun.test.Name).Err()
+		if err := r.launchSingle(ctx, swarming, testRun); err != nil {
+			return err
 		}
-
-		req, err := request.New(args)
-		if err != nil {
-			return errors.Annotate(err, "launch test named %s", testRun.test.Name).Err()
-		}
-
-		resp, err := swarming.CreateTask(ctx, req)
-		if err != nil {
-			return errors.Annotate(err, "launch test named %s", testRun.test.Name).Err()
-		}
-
-		logging.Infof(ctx, "Launched test named %s as task %s", testRun.test.Name, swarming.GetTaskURL(resp.TaskId))
-
-		testRun.attempts = append(testRun.attempts, &attempt{taskID: resp.TaskId})
 	}
+	return nil
+}
+
+func (r *TaskSet) launchSingle(ctx context.Context, swarming swarming.Client, testRun *testRun) error {
+	args, err := testRun.RequestArgs(r.params, r.workerConfig)
+	if err != nil {
+		return errors.Annotate(err, "launch test named %s", testRun.test.Name).Err()
+	}
+
+	req, err := request.New(args)
+	if err != nil {
+		return errors.Annotate(err, "launch test named %s", testRun.test.Name).Err()
+	}
+
+	resp, err := swarming.CreateTask(ctx, req)
+	if err != nil {
+		return errors.Annotate(err, "launch test named %s", testRun.test.Name).Err()
+	}
+
+	logging.Infof(ctx, "Launched test named %s as task %s", testRun.test.Name, swarming.GetTaskURL(resp.TaskId))
+
+	testRun.attempts = append(testRun.attempts, &attempt{taskID: resp.TaskId})
 	return nil
 }
 
