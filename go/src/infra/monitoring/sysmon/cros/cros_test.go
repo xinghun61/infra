@@ -63,6 +63,10 @@ func TestUpdateMetrics(t *testing.T) {
 			"CPU": {29.65, 28.95, 30.01, 29.02},
 			"GPU": {32.23},
 		},
+		Memory: memory{
+			Avail: 1221444,
+			Total: 1899548,
+		},
 	}
 	Convey("UpdateMetrics Testing", t, func() {
 		updateMetrics(c, statusFile)
@@ -76,5 +80,9 @@ func TestUpdateMetrics(t *testing.T) {
 			29.4075)
 		So(temperature.Get(c, statusFile.ContainerHostname, "GPU"), ShouldEqual,
 			32.23)
+		So(totalMem.Get(c, statusFile.ContainerHostname), ShouldEqual,
+			1899548)
+		So(availMem.Get(c, statusFile.ContainerHostname), ShouldEqual,
+			1221444)
 	})
 }

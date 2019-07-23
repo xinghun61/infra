@@ -29,6 +29,14 @@ var (
 		"DUT status (Online|Offline).",
 		nil,
 		field.String("container_hostname"))
+	totalMem = metric.NewInt("dev/cros/mem/total",
+		"Total memory of DUT.",
+		nil,
+		field.String("container_hostname"))
+	availMem = metric.NewInt("dev/cros/mem/available",
+		"Available memory of DUT.",
+		nil,
+		field.String("container_hostname"))
 	temperature = metric.NewFloat("dev/cros/temperature",
 		"Temperature in °C",
 		nil,
@@ -115,5 +123,11 @@ func updateMetrics(c context.Context, deviceFile deviceStatusFile) {
 		}
 	} else {
 		logging.Warningf(c, "Temperature info unknown")
+	}
+	if &(deviceFile.Memory) != nil {
+		totalMem.Set(c, deviceFile.Memory.Total, deviceFile.ContainerHostname)
+		availMem.Set(c, deviceFile.Memory.Avail, deviceFile.ContainerHostname)
+	} else {
+		logging.Warningf(c, "Memory info unknown")
 	}
 }

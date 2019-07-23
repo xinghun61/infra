@@ -18,16 +18,22 @@ const (
 // deviceStatusFile is the contents of ~/*cros_device_status.json file, but
 // only the fields we care about
 type deviceStatusFile struct {
-	ContainerHostname string               `json:"container_hostname"`
-	Timestamp         float64              `json:"timestamp"`
-	Status            string               `json:"status"`
-	OSVersion         string               `json:"os_version"`
 	Battery           batteryStatus        `json:"battery"`
+	ContainerHostname string               `json:"container_hostname"`
+	Memory            memory               `json:"memory"`
+	OSVersion         string               `json:"os_version"`
+	Status            string               `json:"status"`
 	Temperature       map[string][]float64 `json:"temperature"`
+	Timestamp         float64              `json:"timestamp"`
 }
 
 type batteryStatus struct {
 	Charge float64 `json:"battery_percent"`
+}
+
+type memory struct {
+	Avail int64 `json:"MemAvailable"`
+	Total int64 `json:"MemTotal"`
 }
 
 func loadfile(c context.Context, path string) (df deviceStatusFile, err error) {
