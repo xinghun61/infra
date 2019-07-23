@@ -46,7 +46,7 @@ func TestBackend(t *testing.T) {
 		So(tasks, ShouldNotBeNil)
 
 		Convey("works", func() {
-			mockListIssues(
+			mockGetAndListIssues(
 				c, &monorail.Issue{ProjectName: "test", LocalId: 123},
 			)
 

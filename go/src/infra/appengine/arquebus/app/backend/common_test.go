@@ -7,6 +7,7 @@ package backend
 import (
 	"context"
 	"fmt"
+	"sync"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes"
@@ -175,8 +176,11 @@ func findSecondaryOncalls(shift *rotangapi.ShiftEntry) []*monorail.UserRef {
 
 type testIssueClientStorage struct {
 	listIssuesRequest  *monorail.ListIssuesRequest
-	issuesToList       []*monorail.Issue
-	updateIssueRequest map[string]*monorail.UpdateIssueRequest
+	listIssuesResponse []*monorail.Issue
+	getIssueResponse   map[string]*monorail.Issue
+
+	updateIssueRequestLock sync.Mutex
+	updateIssueRequest     map[string]*monorail.UpdateIssueRequest
 }
 
 type testIssueClient struct {
@@ -188,11 +192,14 @@ func newTestIssueClient() testIssueClient {
 	return testIssueClient{
 		storage: &testIssueClientStorage{
 			updateIssueRequest: map[string]*monorail.UpdateIssueRequest{},
+			getIssueResponse:   map[string]*monorail.Issue{},
 		},
 	}
 }
 
 func (client testIssueClient) UpdateIssue(c context.Context, in *monorail.UpdateIssueRequest, opts ...grpc.CallOption) (*monorail.IssueResponse, error) {
+	client.storage.updateIssueRequestLock.Lock()
+	defer client.storage.updateIssueRequestLock.Unlock()
 	client.storage.updateIssueRequest[genIssueKey(
 		in.IssueRef.ProjectName, in.IssueRef.LocalId,
 	)] = in
@@ -202,12 +209,34 @@ func (client testIssueClient) UpdateIssue(c context.Context, in *monorail.Update
 func (client testIssueClient) ListIssues(c context.Context, in *monorail.ListIssuesRequest, opts ...grpc.CallOption) (*monorail.ListIssuesResponse, error) {
 	client.storage.listIssuesRequest = in
 	return &monorail.ListIssuesResponse{
-		Issues: client.storage.issuesToList,
+		Issues: client.storage.listIssuesResponse,
 	}, nil
 }
 
+func (client testIssueClient) GetIssue(c context.Context, in *monorail.GetIssueRequest, opts ...grpc.CallOption) (*monorail.IssueResponse, error) {
+	response := getMonorailClient(c).(testIssueClient).storage.getIssueResponse
+	issue, ok := response[genIssueKey(in.IssueRef.ProjectName, in.IssueRef.LocalId)]
+	if !ok {
+		return nil, status.Errorf(codes.NotFound, "The issue does not exist.")
+	}
+	return &monorail.IssueResponse{Issue: issue}, nil
+}
+
+func mockGetAndListIssues(c context.Context, issues ...*monorail.Issue) {
+	mockGetIssues(c, issues...)
+	mockListIssues(c, issues...)
+}
+
 func mockListIssues(c context.Context, issues ...*monorail.Issue) {
-	getMonorailClient(c).(testIssueClient).storage.issuesToList = issues
+	getMonorailClient(c).(testIssueClient).storage.listIssuesResponse = issues
+}
+
+func mockGetIssues(c context.Context, issues ...*monorail.Issue) {
+	response := map[string]*monorail.Issue{}
+	for _, issue := range issues {
+		response[genIssueKey(issue.ProjectName, issue.LocalId)] = issue
+	}
+	getMonorailClient(c).(testIssueClient).storage.getIssueResponse = response
 }
 
 func getIssueUpdateRequest(c context.Context, projectName string, localID uint32) *monorail.UpdateIssueRequest {
@@ -246,10 +275,7 @@ func newTestOncallInfoClient() testOncallInfoClient {
 func (client testOncallInfoClient) Oncall(c context.Context, in *rotangapi.OncallRequest, opts ...grpc.CallOption) (*rotangapi.OncallResponse, error) {
 	shift, exist := client.storage.shiftsByRotation[in.Name]
 	if !exist {
-		return nil, status.Error(
-			codes.NotFound,
-			fmt.Errorf("\"%s\" not found", in.Name).Error(),
-		)
+		return nil, status.Errorf(codes.NotFound, `"%s" not found`, in.Name)
 	}
 	return &rotangapi.OncallResponse{Shift: shift}, nil
 }

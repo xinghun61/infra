@@ -262,12 +262,8 @@ func startTaskRun(c context.Context, assignerID string, taskID int64) (assigner 
 
 // endTaskRun updates the task status, based on the current status of
 // the assigner and task.
-func endTaskRun(c context.Context, task *model.Task, nIssuesUpdated int, issueUpdateError error) error {
+func endTaskRun(c context.Context, task *model.Task, nIssuesUpdated int32, issueUpdateError error) error {
 	switch {
-	// As long as at least one issue has been updated, then it should be
-	// marked as succeeded, even if it stopped after an error or timeout.
-	case nIssuesUpdated > 0:
-		task.Status = model.TaskStatus_Succeeded
 	case issueUpdateError == context.DeadlineExceeded:
 		task.Status = model.TaskStatus_Aborted
 	case issueUpdateError != nil:
@@ -275,7 +271,7 @@ func endTaskRun(c context.Context, task *model.Task, nIssuesUpdated int, issueUp
 	default:
 		// TODO(crbug/967525): replace Task.WasNoopSuccess with
 		// Task.nIssuesUpdated.
-		task.WasNoopSuccess = true
+		task.WasNoopSuccess = nIssuesUpdated == 0
 		task.Status = model.TaskStatus_Succeeded
 	}
 	task.Ended = clock.Now(c).UTC()
@@ -301,10 +297,6 @@ func runAssignerTaskHandler(c context.Context, tqTask proto.Message) error {
 	// At this moment, the assigner might have been drained. However, this
 	// task run should continue, as draining an assigner doesn't cancel
 	// a running task.
-	//
-	// If errors occur within searchAndUpdateIssues(), that means either
-	// Monorail is flaky or unavailable. searchAndUpdateIssues() just marks
-	// the Task as failed, and the Task run ends here without retries.
 	timedCtx, cancel := context.WithTimeout(c, maxIssueUpdatesExecutionTime)
 	defer cancel()
 	nIssuesUpdated, issueUpdateErr := searchAndUpdateIssues(

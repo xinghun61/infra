@@ -33,10 +33,13 @@ func TestSearchAndUpdateIssues(t *testing.T) {
 		So(tasks, ShouldNotBeNil)
 		task := tasks[0]
 
-		mockListIssues(
-			c, &monorail.Issue{ProjectName: "test", LocalId: 123},
-			&monorail.Issue{ProjectName: "test", LocalId: 456},
-		)
+		var sampleIssues []*monorail.Issue
+		for i := 0; i < 20; i++ {
+			sampleIssues = append(sampleIssues, &monorail.Issue{
+				ProjectName: "test", LocalId: uint32(i),
+			})
+		}
+		mockGetAndListIssues(c, sampleIssues...)
 
 		Convey("tickets with opt-out label are filtered in search", func() {
 			countOptOptLabel := func(query string) int {
@@ -60,24 +63,20 @@ func TestSearchAndUpdateIssues(t *testing.T) {
 		Convey("issues are updated", func() {
 			nUpdated, err := searchAndUpdateIssues(c, assigner, task)
 			So(err, ShouldBeNil)
-			So(nUpdated, ShouldEqual, 2)
+			So(nUpdated, ShouldEqual, len(sampleIssues))
 
-			req := getIssueUpdateRequest(c, "test", 123)
-			So(req, ShouldNotBeNil)
-			So(
-				req.Delta.OwnerRef.DisplayName, ShouldEqual,
-				findPrimaryOncall(sampleOncallShifts["Rotation 1"]).DisplayName,
-			)
-			req = getIssueUpdateRequest(c, "test", 456)
-			So(req, ShouldNotBeNil)
-			So(
-				req.Delta.OwnerRef.DisplayName, ShouldEqual,
-				findPrimaryOncall(sampleOncallShifts["Rotation 1"]).DisplayName,
-			)
+			for _, issue := range sampleIssues {
+				req := getIssueUpdateRequest(c, issue.ProjectName, issue.LocalId)
+				So(req, ShouldNotBeNil)
+				So(
+					req.Delta.OwnerRef.DisplayName, ShouldEqual,
+					findPrimaryOncall(sampleOncallShifts["Rotation 1"]).DisplayName,
+				)
+			}
 		})
 
 		Convey("no issues are updated", func() {
-			mockListIssues(
+			mockGetAndListIssues(
 				c, &monorail.Issue{ProjectName: "test", LocalId: 123},
 			)
 
@@ -108,7 +107,7 @@ func TestSearchAndUpdateIssues(t *testing.T) {
 				assigner.CCsRaw = createRawUserSources(
 					emailUserSource("bar@example.net"),
 				)
-				mockListIssues(
+				mockGetAndListIssues(
 					c, &monorail.Issue{
 						ProjectName: "test", LocalId: 123,
 						OwnerRef: monorailUser("foo@example.org"),
@@ -130,9 +129,44 @@ func TestSearchAndUpdateIssues(t *testing.T) {
 				assigner.CCsRaw = createRawUserSources(
 					emailUserSource("bar@example.net"),
 				)
+				mockGetAndListIssues(
+					c, &monorail.Issue{ProjectName: "test", LocalId: 123},
+				)
+				nUpdated, err := searchAndUpdateIssues(c, assigner, task)
+				So(err, ShouldBeNil)
+				So(nUpdated, ShouldEqual, 0)
+			})
+		})
+
+		Convey("search response contains stale data", func() {
+			// These are to ensure that Arquebus makes a decision for issue
+			// updates, based on the latest status of the issues that are found
+			// in search responses.
+			Convey("the issue no longer exists", func() {
+				// mock GetIssues() without any issue objects.
+				mockGetIssues(c)
+				nUpdated, err := searchAndUpdateIssues(c, assigner, task)
+				// NotFound should not result in searchAndUpdateIssues() failed.
+				So(err, ShouldBeNil)
+				So(nUpdated, ShouldEqual, 0)
+			})
+			Convey("there is an owner already", func() {
+				assigner.AssigneesRaw = createRawUserSources(
+					emailUserSource("foo@example.org"),
+				)
+				assigner.CCsRaw = createRawUserSources()
+				// mock ListIssues() with an unassigned issue.
 				mockListIssues(
 					c, &monorail.Issue{ProjectName: "test", LocalId: 123},
 				)
+				// mock GetIssue() with an owner.
+				mockGetIssues(
+					c, &monorail.Issue{
+						ProjectName: "test", LocalId: 123,
+						OwnerRef: monorailUser("foo@example.org"),
+					},
+				)
+				// Therefore, an update shouldn't be made.
 				nUpdated, err := searchAndUpdateIssues(c, assigner, task)
 				So(err, ShouldBeNil)
 				So(nUpdated, ShouldEqual, 0)

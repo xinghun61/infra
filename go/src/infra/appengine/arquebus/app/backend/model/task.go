@@ -17,6 +17,7 @@ package model
 import (
 	"context"
 	"fmt"
+	"sync"
 	"time"
 
 	"go.chromium.org/gae/service/datastore"
@@ -35,8 +36,9 @@ const (
 // Task keeps track of a single Assigner invocation before, during, and after
 // its execution.
 type Task struct {
-	_kind  string                `gae:"$kind,Task"`
-	_extra datastore.PropertyMap `gae:"-,extra"`
+	_kind    string                `gae:"$kind,Task"`
+	_extra   datastore.PropertyMap `gae:"-,extra"`
+	_logLock sync.Mutex            `gae:"-"`
 
 	ID          int64          `gae:"$id"`
 	AssignerKey *datastore.Key `gae:"$parent"`
@@ -64,6 +66,8 @@ type Task struct {
 
 // WriteLog appends a new line with the message into the Task entity.
 func (task *Task) WriteLog(c context.Context, format string, args ...interface{}) {
+	task._logLock.Lock()
+	defer task._logLock.Unlock()
 	task.Logs = append(task.Logs, logEntry{
 		Timestamp: clock.Now(c).UTC(),
 		Message:   fmt.Sprintf(format, args...),

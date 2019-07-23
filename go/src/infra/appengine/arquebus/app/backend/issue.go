@@ -16,15 +16,21 @@ package backend
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/url"
 	"strings"
+	"sync/atomic"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes/wrappers"
 
 	"go.chromium.org/gae/service/info"
 	"go.chromium.org/luci/common/logging"
+	"go.chromium.org/luci/common/sync/parallel"
+
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
 	"infra/appengine/arquebus/app/backend/model"
 	"infra/appengine/arquebus/app/config"
@@ -34,17 +40,13 @@ import (
 const (
 	// OptOutLabel stops Arquebus updating the issue, if added.
 	OptOutLabel = "Arquebus-Opt-Out"
+	// IssueUpdateMaxConcurrency is the maximum number of
+	// monorail.UpdateIssue()s that can be invoked in parallel.
+	IssueUpdateMaxConcurrency = 4
 )
 
-func issueLink(c context.Context, issue *monorail.Issue) string {
-	return fmt.Sprintf(
-		"https://%s/p/%s/issues/detail?id=%d",
-		config.Get(c).MonorailHostname, issue.ProjectName, issue.LocalId,
-	)
-}
-
 // searchAndUpdateIssues searches and update issues for the Assigner.
-func searchAndUpdateIssues(c context.Context, assigner *model.Assigner, task *model.Task) (int, error) {
+func searchAndUpdateIssues(c context.Context, assigner *model.Assigner, task *model.Task) (int32, error) {
 	assignee, ccs, err := findAssigneeAndCCs(c, assigner, task)
 	if err != nil {
 		task.WriteLog(c, "Failed to find assignees and CCs; %s", err)
@@ -65,7 +67,14 @@ func searchAndUpdateIssues(c context.Context, assigner *model.Assigner, task *mo
 		task.WriteLog(c, "Failed to search issues; %s", err)
 		return 0, err
 	}
-	return updateIssues(c, mc, assigner, task, issues, assignee, ccs)
+
+	// As long as it succeeded to update at least one issue, the task is
+	// not marked as failed.
+	nUpdated, nFailed := updateIssues(c, mc, assigner, task, issues, assignee, ccs)
+	if nUpdated == 0 && nFailed > 0 {
+		return 0, errors.New("all issue updates failed")
+	}
+	return nUpdated, nil
 }
 
 func searchIssues(c context.Context, mc monorail.IssuesClient, assigner *model.Assigner, task *model.Task) ([]*monorail.Issue, error) {
@@ -102,33 +111,39 @@ func searchIssues(c context.Context, mc monorail.IssuesClient, assigner *model.A
 	if err != nil {
 		return nil, err
 	}
-	if len(res.Issues) == 0 {
-	}
 
 	task.WriteLog(c, "Found %d issues", len(res.Issues))
 	return res.Issues, nil
 }
 
-func updateIssues(c context.Context, mc monorail.IssuesClient, assigner *model.Assigner, task *model.Task, issues []*monorail.Issue, assignee *monorail.UserRef, ccs []*monorail.UserRef) (int, error) {
-	nUpdated := 0
-
-	for _, issue := range issues {
-		delta, actionable := createIssueDelta(c, task, issue, assignee, ccs)
-		if !actionable {
-			// no delta found - skip updating the issue.
-			continue
-		}
-
-		task.WriteLog(c, "Updating %s", issueLink(c, issue))
-		if assigner.IsDryRun {
-			task.WriteLog(
-				c, "Dry-run is set; skip updating %s", issueLink(c, issue),
+// updateIssues update the issues with the desired status and property values.
+//
+// It is expected that Monorail may become flaky, unavailable, or slow
+// temporarily. Therefore, updateIssues tries to update as many issues as
+// possible.
+func updateIssues(c context.Context, mc monorail.IssuesClient, assigner *model.Assigner, task *model.Task, issues []*monorail.Issue, assignee *monorail.UserRef, ccs []*monorail.UserRef) (nUpdated, nFailed int32) {
+	update := func(issue *monorail.Issue) {
+		delta, err := createIssueDelta(c, mc, task, issue, assignee, ccs)
+		switch {
+		case err != nil:
+			atomic.AddInt32(&nFailed, 1)
+			return
+		case delta == nil:
+			writeTaskLogWithLink(
+				c, task, issue, "No delta found; skip updating",
 			)
-			continue
+			return
 		}
-		// TODO(crbug/monorail/5629) - If Monorail supports test-and-update API
-		// for issues, then use the API instead.
-		_, err := mc.UpdateIssue(c, &monorail.UpdateIssueRequest{
+		if assigner.IsDryRun {
+			// dry-run is checked here, because it is expected to run all
+			// the steps, but UpdateIssue.
+			writeTaskLogWithLink(
+				c, task, issue, "Dry-run is set; skip updating",
+			)
+			return
+		}
+		writeTaskLogWithLink(c, task, issue, "Updating")
+		_, err = mc.UpdateIssue(c, &monorail.UpdateIssueRequest{
 			IssueRef: &monorail.IssueRef{
 				ProjectName: issue.ProjectName,
 				LocalId:     issue.LocalId,
@@ -137,34 +152,96 @@ func updateIssues(c context.Context, mc monorail.IssuesClient, assigner *model.A
 			Delta:          delta,
 			CommentContent: genCommentContent(c, assigner, task),
 		})
-
 		if err != nil {
-			logging.Errorf(c, "failed to update the issue: %s", err)
-			task.WriteLog(c, "Failed to update the issue: %s", err)
-		} else {
-			nUpdated++
+			writeTaskLogWithLink(c, task, issue, "UpdateIssue failed: %s", err)
+			atomic.AddInt32(&nFailed, 1)
+			return
 		}
+		atomic.AddInt32(&nUpdated, 1)
+		return
 	}
-	task.WriteLog(c, "%d issues updated", nUpdated)
-	return nUpdated, nil
+
+	parallel.WorkPool(IssueUpdateMaxConcurrency, func(tasks chan<- func() error) {
+		for _, issue := range issues {
+			// In-Scope variable for goroutine closure.
+			issue := issue
+			tasks <- func() error {
+				update(issue)
+				return nil
+			}
+		}
+	})
+	return
 }
 
-func createIssueDelta(c context.Context, task *model.Task, issue *monorail.Issue, assignee *monorail.UserRef, ccs []*monorail.UserRef) (delta *monorail.IssueDelta, actionable bool) {
-	// Note that Arquebus never unassigns issues from the current owner.
-	delta = &monorail.IssueDelta{
+// writeTaskLogWithLink invokes task.WriteLog with a link to the issue.
+//
+// It's necessary to have a link of the issue added to each log, because
+// multiple issue updates are performed in parallel, and it will be hard to
+// group logs by the issue, if there is no issue information in each log.
+func writeTaskLogWithLink(c context.Context, task *model.Task, issue *monorail.Issue, format string, args ...interface{}) {
+	format = fmt.Sprintf(
+		"[https://%s/p/%s/issues/detail?id=%d] %s",
+		config.Get(c).MonorailHostname, issue.ProjectName, issue.LocalId,
+		format,
+	)
+	task.WriteLog(c, format, args...)
+}
+
+func createIssueDelta(c context.Context, mc monorail.IssuesClient, task *model.Task, issue *monorail.Issue, assignee *monorail.UserRef, ccs []*monorail.UserRef) (*monorail.IssueDelta, error) {
+	// Monorail search responses often contain several minutes old snapshot
+	// of Issue property values. Therefore, it is necessary to invoke
+	// GetIssues() to get the fresh data before generating IssueDelta.
+	//
+	// TODO(crbug/monorail/5629) - If Monorail supports test-and-update API,
+	// then use the API instead of GetIssue() + UpdateIssue()
+	res, err := mc.GetIssue(c, &monorail.GetIssueRequest{
+		IssueRef: &monorail.IssueRef{
+			ProjectName: issue.ProjectName,
+			LocalId:     issue.LocalId,
+		},
+	})
+	if err != nil {
+		// NotFound shouldn't be considered as an error. It is just that
+		// the search response contained stale data.
+		if status.Code(err) == codes.NotFound {
+			writeTaskLogWithLink(c, task, issue, "The issue no longer exists")
+			return nil, nil
+		}
+		writeTaskLogWithLink(c, task, issue, "GetIssue failed: %s", err)
+		logging.Errorf(c, "GetIssue failed: %s", err)
+		return nil, err
+	}
+	if issue = res.GetIssue(); issue == nil {
+		// If a response doesn't contain a valid Issue object, then it's
+		// likely a bug of Monorail.
+		writeTaskLogWithLink(c, task, issue, "Invalid response from GetIssue")
+		return nil, errors.New("invalid response from GetIssue")
+	}
+
+	delta := &monorail.IssueDelta{
+		// Arquebus never unassigns issues from the current owner.
 		Status:    &wrappers.StringValue{Value: "Assigned"},
 		CcRefsAdd: findCcsToAdd(task, issue.CcRefs, ccs),
 	}
+	needUpdate := false
 	if assignee != nil && !proto.Equal(issue.OwnerRef, assignee) {
-		actionable = true
+		needUpdate = true
 		delta.OwnerRef = assignee
-		task.WriteLog(c, "Found a new issue owner %s", assignee.DisplayName)
+		writeTaskLogWithLink(
+			c, task, issue, "Found a new owner: %s", assignee.DisplayName,
+		)
 	}
 	if len(delta.CcRefsAdd) > 0 {
-		actionable = true
-		task.WriteLog(c, "Found %s to add in CC", delta.CcRefsAdd)
+		needUpdate = true
+		writeTaskLogWithLink(
+			c, task, issue, "Found new CC(s): %s", delta.CcRefsAdd,
+		)
 	}
-	return
+	if needUpdate {
+		return delta, nil
+	}
+	return nil, nil
 }
 
 // findCcsToAdd() returns a list of UserRefs that have not been cc-ed yet, but
