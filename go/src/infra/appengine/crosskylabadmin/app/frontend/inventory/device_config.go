@@ -17,8 +17,11 @@ package inventory
 import (
 	"bytes"
 	"strings"
+	"time"
 
 	"github.com/golang/protobuf/jsonpb"
+	"github.com/golang/protobuf/proto"
+	"go.chromium.org/gae/service/datastore"
 	"go.chromium.org/luci/common/errors"
 	"go.chromium.org/luci/common/logging"
 	"go.chromium.org/luci/common/proto/gitiles"
@@ -94,4 +97,47 @@ func GetDeviceConfig(ctx context.Context, gitilesC gitiles.GitilesClient) (map[s
 		}
 	}
 	return deviceConfigs, nil
+}
+
+// SaveDeviceConfig save device configs to datastore for updateDutLabel check.
+func SaveDeviceConfig(ctx context.Context, deviceConfigs map[string]*device.Config) error {
+	updated := time.Now().UTC()
+	dcs := make([]*deviceConfigEntity, 0, len(deviceConfigs))
+	for configID, v := range deviceConfigs {
+		key := datastore.MakeKey(ctx, DeviceConfigKind, configID)
+		res, err := datastore.Exists(ctx, key)
+		if err != nil {
+			logging.Warningf(ctx, "fail to check if device config id %s exists", configID)
+		}
+		if err == nil && res.Any() {
+			logging.Warningf(ctx, "device config id %s already exists", configID)
+		}
+		data, err := proto.Marshal(v)
+		if err != nil {
+			logging.Warningf(ctx, "cannot marshal device config %s (id %s)", v.String(), configID)
+			continue
+		}
+		dcs = append(dcs, &deviceConfigEntity{
+			ID:           configID,
+			DeviceConfig: data,
+			Updated:      updated,
+		})
+	}
+	if err := datastore.Put(ctx, dcs); err != nil {
+		return errors.Annotate(err, "save device config").Err()
+	}
+	return nil
+}
+
+const (
+	// DeviceConfigKind is the datastore entity kind for device config entities.
+	DeviceConfigKind string = "DeviceConfig"
+)
+
+type deviceConfigEntity struct {
+	_kind string `gae:"$kind,DeviceConfig"`
+	ID    string `gae:"$id"`
+	// Serialized *device.Config
+	DeviceConfig []byte `gae:",noindex"`
+	Updated      time.Time
 }

@@ -55,10 +55,11 @@ const (
 `
 )
 
-func fakeDeviceConfig(ctx context.Context, id DeviceConfigID) map[string]*device.Config {
-	dcID := getDeviceConfigIDStr(ctx, id)
-	return map[string]*device.Config{
-		dcID: {
+func fakeDeviceConfig(ctx context.Context, ids []DeviceConfigID) map[string]*device.Config {
+	deviceConfigs := map[string]*device.Config{}
+	for _, id := range ids {
+		dcID := getDeviceConfigIDStr(ctx, id)
+		deviceConfigs[dcID] = &device.Config{
 			Id: &device.ConfigId{
 				PlatformId: &device.PlatformId{
 					Value: id.PlatformID,
@@ -74,8 +75,9 @@ func fakeDeviceConfig(ctx context.Context, id DeviceConfigID) map[string]*device
 				},
 			},
 			GpuFamily: gpu,
-		},
+		}
 	}
+	return deviceConfigs
 }
 
 func TestUpdateDeviceConfig(t *testing.T) {
@@ -108,7 +110,7 @@ func TestUpdateDeviceConfig(t *testing.T) {
 			VariantID:  "",
 			BrandID:    "",
 		}
-		deviceConfigs := fakeDeviceConfig(ctx, id)
+		deviceConfigs := fakeDeviceConfig(ctx, []DeviceConfigID{id})
 
 		err := tf.FakeGitiles.SetInventory(config.Get(ctx).Inventory, fakes.InventoryData{
 			Lab: inventoryBytesFromDUTs([]testInventoryDut{
@@ -133,7 +135,7 @@ func TestUpdateDeviceConfig(t *testing.T) {
 			VariantID:  "",
 			BrandID:    "",
 		}
-		deviceConfigs := fakeDeviceConfig(ctx, id)
+		deviceConfigs := fakeDeviceConfig(ctx, []DeviceConfigID{id})
 		err := tf.FakeGitiles.SetInventory(config.Get(ctx).Inventory, fakes.InventoryData{
 			Lab: inventoryBytesFromDUTs([]testInventoryDut{
 				{"dut_id_1", "dut_hostname", "link", "DUT_POOL_SUITES"},
@@ -158,7 +160,7 @@ func TestUpdateDeviceConfig(t *testing.T) {
 			VariantID:  "",
 			BrandID:    "",
 		}
-		deviceConfigs := fakeDeviceConfig(ctx, id)
+		deviceConfigs := fakeDeviceConfig(ctx, []DeviceConfigID{id})
 		err := tf.FakeGitiles.SetInventory(
 			config.Get(ctx).Inventory, fakes.InventoryData{
 				Lab: []byte(fmt.Sprintf(dut, gpu)),
