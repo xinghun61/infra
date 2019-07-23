@@ -7,12 +7,16 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/golang/protobuf/jsonpb"
 	structpb "github.com/golang/protobuf/ptypes/struct"
+	"google.golang.org/genproto/protobuf/field_mask"
 
+	"go.chromium.org/chromiumos/infra/proto/go/test_platform/steps"
 	"go.chromium.org/luci/auth/client/authcli"
 	buildbucket_pb "go.chromium.org/luci/buildbucket/proto"
+	"go.chromium.org/luci/common/errors"
 	"go.chromium.org/luci/grpc/prpc"
 
 	"infra/cmd/skylab/internal/cmd/recipe"
@@ -47,17 +51,11 @@ func buildbucketRun(ctx context.Context, args recipe.Args, env site.Environment,
 		Properties: recipeStruct,
 	}
 
-	hClient, err := httpClient(ctx, &authFlags)
+	bClient, err := bbClient(ctx, env, authFlags)
 	if err != nil {
 		return err
 	}
 
-	pClient := &prpc.Client{
-		C:    hClient,
-		Host: env.BuildbucketHost,
-	}
-
-	bClient := buildbucket_pb.NewBuildsPRPCClient(pClient)
 	build, err := bClient.ScheduleBuild(ctx, bbReq)
 	if err != nil {
 		return err
@@ -66,6 +64,81 @@ func buildbucketRun(ctx context.Context, args recipe.Args, env site.Environment,
 	fmt.Printf("Created request at %s\n", bbURL(env, build.Id))
 
 	return nil
+}
+
+func bbClient(ctx context.Context, env site.Environment, authFlags authcli.Flags) (buildbucket_pb.BuildsClient, error) {
+	hClient, err := httpClient(ctx, &authFlags)
+	if err != nil {
+		return nil, err
+	}
+
+	pClient := &prpc.Client{
+		C:    hClient,
+		Host: env.BuildbucketHost,
+	}
+
+	return buildbucket_pb.NewBuildsPRPCClient(pClient), nil
+}
+
+// getBuildFields is the list of buildbucket fields that are needed.
+var getBuildFields = []string{
+	// Build details are parsed from the build's output properties.
+	"output.properties",
+	// Build status is used to determine whether the build is complete.
+	"status",
+}
+
+func bbWaitBuild(ctx context.Context, env site.Environment, authFlags authcli.Flags, buildID int64) (*buildbucket_pb.Build, error) {
+	bClient, err := bbClient(ctx, env, authFlags)
+	if err != nil {
+		return nil, err
+	}
+
+	fields := &field_mask.FieldMask{Paths: getBuildFields}
+	req := &buildbucket_pb.GetBuildRequest{
+		Id:     buildID,
+		Fields: fields,
+	}
+
+	for {
+		build, err := bClient.GetBuild(ctx, req)
+		if err != nil {
+			return nil, err
+		}
+		if isFinal(build.Status) {
+			return build, nil
+		}
+		select {
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		case <-time.After(15 * time.Second):
+		}
+	}
+}
+
+func bbExtractResponse(build *buildbucket_pb.Build) (*steps.ExecuteResponse, error) {
+	properties := build.GetOutput().GetProperties()
+	responseStruct, ok := properties.GetFields()["response"]
+	if !ok {
+		return nil, errors.Reason("build properties contained no `response` field").Err()
+	}
+
+	// Do a JSON roundtrip to turn response (a structpb) into response proto.
+	m := jsonpb.Marshaler{}
+	json, err := m.MarshalToString(responseStruct)
+	if err != nil {
+		return nil, err
+	}
+	response := &steps.ExecuteResponse{}
+	if err := jsonpb.UnmarshalString(json, response); err != nil {
+		return nil, err
+	}
+
+	return response, nil
+}
+
+func isFinal(status buildbucket_pb.Status) bool {
+	return (status & buildbucket_pb.Status_ENDED_MASK) == buildbucket_pb.Status_ENDED_MASK
 }
 
 func bbURL(e site.Environment, buildID int64) string {
