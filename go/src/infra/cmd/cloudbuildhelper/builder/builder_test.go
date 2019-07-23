@@ -47,6 +47,7 @@ func TestBuilder(t *testing.T) {
 			put("f2", "file 2")
 
 			out, err := build(manifest.Manifest{
+				Name:       "test",
 				ContextDir: tmpDir,
 			})
 			So(err, ShouldBeNil)
@@ -64,6 +65,7 @@ func TestBuilder(t *testing.T) {
 			put("copy/dir/f", "f")
 
 			out, err := build(manifest.Manifest{
+				Name:       "test",
 				ContextDir: filepath.Join(tmpDir, "ctx"),
 				Build: []*manifest.BuildStep{
 					{

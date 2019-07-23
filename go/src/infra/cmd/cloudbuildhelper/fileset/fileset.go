@@ -53,12 +53,12 @@ func (f *File) normalize() error {
 
 // filePerm returns FileMode with file permissions.
 func (f *File) filePerm() os.FileMode {
-	var mode os.FileMode = 0400
+	var mode os.FileMode = 0444
 	if f.Writable {
 		mode |= 0200
 	}
 	if f.Executable {
-		mode |= 0100
+		mode |= 0111
 	}
 	return mode
 }
@@ -179,7 +179,7 @@ func (s *Set) ToTar(w *tar.Writer) error {
 			return w.WriteHeader(&tar.Header{
 				Typeflag: tar.TypeDir,
 				Name:     f.Path + "/",
-				Mode:     0700,
+				Mode:     0777,
 			})
 		}
 

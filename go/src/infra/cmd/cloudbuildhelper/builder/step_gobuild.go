@@ -37,9 +37,8 @@ func runGoBuildStep(ctx context.Context, inv *stepRunnerInv) error {
 	}
 	args = append(args, "-o", tmpName, inv.BuildStep.GoBuildStep.GoBinary)
 
-	logging.Infof(ctx, "Running %s %s",
-		strings.Join(extraEnv.Sorted(), " "),
-		strings.Join(args, " "))
+	logging.Infof(ctx, "Running %q",
+		strings.Join(extraEnv.Sorted(), " ")+" "+strings.Join(args, " "))
 
 	cmd := exec.CommandContext(ctx, args[0], args[1:]...)
 	cmd.Dir = inv.TempDir

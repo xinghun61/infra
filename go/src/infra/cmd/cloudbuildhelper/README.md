@@ -60,6 +60,12 @@ This is work in progress. Only implemented arguments are documented.
 ***
 
 ```yaml
+# Name of this target.
+#
+# When building Docker images it is an image name (without registry or any
+# tags).
+name: some-image
+
 # Path to the image's Dockerfile, relative to this YAML file.
 #
 # All images referenced in this Dockerfile are resolved into concrete digests

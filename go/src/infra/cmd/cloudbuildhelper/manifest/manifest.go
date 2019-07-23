@@ -11,6 +11,7 @@ import (
 	"io/ioutil"
 	"path"
 	"path/filepath"
+	"strings"
 
 	"gopkg.in/yaml.v2"
 
@@ -22,6 +23,12 @@ import (
 // Comments here describe the structure of the manifest file on disk. In the
 // loaded form all paths use filepath.Separator as a directory separator.
 type Manifest struct {
+	// Name is the name of this target, required.
+	//
+	// When building Docker images it is an image name (without registry or any
+	// tags).
+	Name string `yaml:"name"`
+
 	// Dockerfile is a unix-style path to the image's Dockerfile, relative to this
 	// YAML file.
 	//
@@ -40,8 +47,9 @@ type Manifest struct {
 	// the image).
 	//
 	// All symlinks there are resolved to their targets. Only +w and +x file mode
-	// bits are preserved. All other file metadata (owners, setuid bits,
-	// modification times) are ignored.
+	// bits are preserved (all files have 0444 mode by default, +w adds additional
+	// 0200 bit and +x adds additional 0111 bis). All other file metadata (owners,
+	// setuid bits, modification times) are ignored.
 	//
 	// The default value depends on whether Dockerfile is set. If it is, then
 	// ContextDir defaults to the directory with Dockerfile. Otherwise the context
@@ -199,6 +207,9 @@ func Read(r io.Reader, cwd string) (*Manifest, error) {
 // Must be called if Manifest{} was allocated in the code (e.g. in unit tests)
 // rather than was read via Read(...).
 func (m *Manifest) Initialize(cwd string) error {
+	if err := validateName(m.Name); err != nil {
+		return errors.Annotate(err, `bad "name" field`).Err()
+	}
 	normPath(&m.Dockerfile, cwd)
 	normPath(&m.ContextDir, cwd)
 	normPath(&m.ImagePins, cwd)
@@ -211,6 +222,19 @@ func (m *Manifest) Initialize(cwd string) error {
 		}
 	}
 	return nil
+}
+
+// validateName validates "name" field in the manifest.
+func validateName(t string) error {
+	const forbidden = "/\\:@"
+	switch {
+	case t == "":
+		return errors.Reason("can't be empty, it's required").Err()
+	case strings.ContainsAny(t, forbidden):
+		return errors.Reason("%q contains forbidden symbols (any of %q)", t, forbidden).Err()
+	default:
+		return nil
+	}
 }
 
 func initAndSetDefaults(bs *BuildStep, cwd string) error {

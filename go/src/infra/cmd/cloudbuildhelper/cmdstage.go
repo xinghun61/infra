@@ -16,6 +16,7 @@ import (
 
 	"infra/cmd/cloudbuildhelper/builder"
 	"infra/cmd/cloudbuildhelper/dockerfile"
+	"infra/cmd/cloudbuildhelper/fileset"
 	"infra/cmd/cloudbuildhelper/manifest"
 )
 
@@ -56,16 +57,29 @@ func (c *cmdStageRun) exec(ctx context.Context) error {
 	if c.outputTarball == "" {
 		return errBadFlag("-output-tarball", "this flag is required")
 	}
+	return stage(ctx, c.targetManifest, func(m *manifest.Manifest, out *fileset.Set) error {
+		logging.Infof(ctx, "Writing %d files to %s...", out.Len(), c.outputTarball)
+		hash, err := out.ToTarGzFile(c.outputTarball)
+		if err != nil {
+			return errors.Annotate(err, "failed to save the output").Err()
+		}
+		logging.Infof(ctx, "Resulting tarball SHA256 is %q", hash)
+		return nil
+	})
+}
 
+// stage executes logic of 'stage' subcommand, calling the callback in the
+// end to handle the resulting fileset.
+func stage(ctx context.Context, targetManifest string, cb func(*manifest.Manifest, *fileset.Set) error) error {
 	// Read the input manifest, make sure it parses correctly.
-	r, err := os.Open(c.targetManifest)
+	r, err := os.Open(targetManifest)
 	if err != nil {
 		return errors.Annotate(err, "when opening manifest file").Tag(isCLIError).Err()
 	}
 	defer r.Close()
-	m, err := manifest.Read(r, filepath.Dir(c.targetManifest))
+	m, err := manifest.Read(r, filepath.Dir(targetManifest))
 	if err != nil {
-		return errors.Annotate(err, "bad manifest file %q", c.targetManifest).Tag(isCLIError).Err()
+		return errors.Annotate(err, "bad manifest file %q", targetManifest).Tag(isCLIError).Err()
 	}
 
 	// Load Dockerfile and resolve image tags there into digests using pins.yaml.
@@ -97,12 +111,9 @@ func (c *cmdStageRun) exec(ctx context.Context) error {
 		}
 	}
 
-	// Save the build result.
-	logging.Infof(ctx, "Writing %d files to %s...", out.Len(), c.outputTarball)
-	hash, err := out.ToTarGzFile(c.outputTarball)
-	if err != nil {
-		return errors.Annotate(err, "failed to save the output").Err()
+	// Let the callback do the rest.
+	if err := cb(m, out); err != nil {
+		return err
 	}
-	logging.Infof(ctx, "Resulting tarball SHA256 is %q", hash)
 	return b.Close()
 }
