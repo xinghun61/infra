@@ -29,7 +29,6 @@ func main() {
 
 	exclude := flag.String("exclude", "", "Exclude warnings (see shellcheck")
 	shell := flag.String("shell", "", "Specify dialect (see shellcheck")
-	usesShflags := flag.Bool("uses_shflags", false, "Enable shflags semantics (see shellcheck)")
 
 	// This is needed until/unless crbug.com/863106 is fixed.
 	pathFilters := flag.String("path_filters", "", "Patterns to filter file list")
@@ -40,12 +39,11 @@ func main() {
 	}
 
 	r := &runner.Runner{
-		Path:        *shellCheckPath,
-		Dir:         *inputDir,
-		Exclude:     *exclude,
-		Shell:       *shell,
-		Logger:      runnerLogger,
-		UsesShflags: *usesShflags,
+		Path:    *shellCheckPath,
+		Dir:     *inputDir,
+		Exclude: *exclude,
+		Shell:   *shell,
+		Logger:  runnerLogger,
 	}
 
 	if r.Path == "" {

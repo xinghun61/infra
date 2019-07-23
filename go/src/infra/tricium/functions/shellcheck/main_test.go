@@ -27,10 +27,9 @@ const (
 
 func TestRun(t *testing.T) {
 	r := &runner.Runner{
-		Path:        findShellCheckBin(),
-		Dir:         testInputDir,
-		Logger:      runnerLogger,
-		UsesShflags: true,
+		Path:   findShellCheckBin(),
+		Dir:    testInputDir,
+		Logger: runnerLogger,
 	}
 	version, err := r.Version()
 	if err != nil {

@@ -27,8 +27,6 @@ type Runner struct {
 	Logger interface {
 		Printf(string, ...interface{})
 	}
-
-	UsesShflags bool
 }
 
 // Version returns the version of the shellcheck binary. It will return an
@@ -65,9 +63,6 @@ func (r *Runner) Warnings(paths ...string) ([]Warning, error) {
 	}
 	if r.Shell != "" {
 		args = append(args, fmt.Sprintf("--shell=%s", r.Shell))
-	}
-	if r.UsesShflags {
-		args = append(args, "--uses-shflags")
 	}
 	args = append(args, paths...)
 
