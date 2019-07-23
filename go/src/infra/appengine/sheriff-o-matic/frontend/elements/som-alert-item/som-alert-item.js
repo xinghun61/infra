@@ -182,6 +182,9 @@ class SomAlertItem extends Polymer.mixinBehaviors(
     let later = moment(snoozeTime);
     let duration = moment.duration(later.diff(now));
     let text = '';
+    if (duration.days()) {
+      text += duration.days() + 'd ';
+    }
     if (duration.hours()) {
       text += duration.hours() + 'h ';
     }

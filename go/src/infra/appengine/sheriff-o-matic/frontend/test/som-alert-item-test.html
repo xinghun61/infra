@@ -83,6 +83,26 @@
       });
     });
 
+    test('snoozed works for durations > 24h', function(done) {
+      element.annotation = {
+        snoozed: false,
+      };
+
+      expect(element.$$('#snoozeTitle')).be.hidden;
+
+      element.annotation = {
+        snoozed: true,
+        snoozeTime: 26 * 60 * 60 * 1000, // 1 day, 2hrs in milliseconds
+      };
+
+      flush(function () {
+        expect(element.$$('#snoozeTitle')).be.visible;
+        assert.equal(element.$$('#snoozeTitle').textContent.trim(),
+          'Snoozed (1d 2h left):');
+        done();
+      });
+    });
+
     test('snoozed affects class', function() {
       element.alert = {
         resolved: false,
