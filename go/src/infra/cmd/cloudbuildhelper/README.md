@@ -80,13 +80,17 @@ target: some-image-name
 # If not set, the context directory is assumed empty.
 contextdir: "../../../src/proj/image"
 
-# An optional list of local build steps. Each one may add more files to the
+# An optional list of local build steps. Each step may add more files to the
 # context directory. The actual `contextdir` directory on disk won't be
 # modified. Files produced here are stored in a temp directory and the final
-# context directory is constructed from full recursive copy of `contextdir` and
-# filed produced here. Use `cloudbuildhelper stage` subcommand to see what ends
-# up in the context directory.
+# context directory is constructed from the full recursive copy of `contextdir`
+# and files produced here. Use `cloudbuildhelper stage` subcommand to see what
+# ends up in the context directory after all build steps are finished.
 build:
+  # Copy a file or directory into the context dir.
+  - copy: ../../../src/stuff
+    dest: stuff
+
   # Build and install a go binary given by its path relative to GOPATH.
   # All builds happen with CGO_ENABLED=0 GOOS=linux GOARCH=amd64.
   - go_binary: go.chromium.org/cmd/something

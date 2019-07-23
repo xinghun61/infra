@@ -7,6 +7,7 @@ package builder
 
 import (
 	"context"
+	"fmt"
 	"io/ioutil"
 	"os"
 
@@ -66,7 +67,43 @@ func (b *Builder) Build(ctx context.Context, m *manifest.Manifest) (*fileset.Set
 		}
 	}
 
-	// TODO(vadimsh): Interpret build steps specified in the manifest.
+	for idx, bs := range m.Build {
+		concrete := bs.Concrete()
+		logging.Debugf(ctx, "Executing local build step #%d - %s", idx+1, concrete)
+
+		var runner stepRunner
+		switch concrete.(type) {
+		case *manifest.CopyBuildStep:
+			runner = runCopyBuildStep
+		case *manifest.GoBuildStep:
+			runner = runGoBuildStep
+		default:
+			panic("impossible, did you forget to implement a step?")
+		}
+
+		err := runner(ctx, &stepRunnerInv{
+			Manifest:   m,
+			BuildStep:  bs,
+			Output:     out,
+			TempDir:    b.tmpDir,
+			TempSuffix: fmt.Sprintf("_%d", idx),
+		})
+		if err != nil {
+			return nil, errors.Annotate(err, "local build step #%d (%s) failed", idx+1, concrete).Err()
+		}
+	}
 
 	return out, nil
+}
+
+// stepRunner executes on local build step 'bs', writing result to 'out'.
+type stepRunner func(ctx context.Context, inv *stepRunnerInv) error
+
+// stepRunnerInv is a bundle of parameters for a stepRunner invocation.
+type stepRunnerInv struct {
+	Manifest   *manifest.Manifest  // fully populated target manifest
+	BuildStep  *manifest.BuildStep // build step we are executing
+	Output     *fileset.Set        // where to put output files
+	TempDir    string              // can be used to drop arbitrary files into
+	TempSuffix string              // unique per-step suffix, to name temp files
 }

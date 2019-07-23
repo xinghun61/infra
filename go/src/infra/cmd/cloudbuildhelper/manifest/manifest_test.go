@@ -36,4 +36,43 @@ func TestManifest(t *testing.T) {
 			ContextDir: filepath.FromSlash("root/1/blarg"),
 		})
 	})
+
+	Convey("Empty build step", t, func() {
+		_, err := Read(strings.NewReader(`{"build": [
+			{"dest": "zzz"}
+		]}`), "")
+		So(err, ShouldErrLike, "bad build step #1: unrecognized or empty")
+	})
+
+	Convey("Ambiguous build step", t, func() {
+		_, err := Read(strings.NewReader(`{"build": [
+			{"copy": "zzz", "go_binary": "zzz"}
+		]}`), "")
+		So(err, ShouldErrLike, "bad build step #1: ambiguous")
+	})
+
+	Convey("Defaults in CopyBuildStep", t, func() {
+		m, err := Read(strings.NewReader(`{"build": [
+			{"copy": "../../../blarg/zzz"}
+		]}`), filepath.FromSlash("root/1/2/3/4"))
+		So(err, ShouldBeNil)
+		So(m.Build, ShouldHaveLength, 1)
+		So(m.Build[0].Dest, ShouldEqual, "zzz")
+		So(m.Build[0].Concrete(), ShouldResemble, &CopyBuildStep{
+			Copy: filepath.FromSlash("root/1/blarg/zzz"),
+		})
+	})
+
+	Convey("Defaults in GoBuildStep", t, func() {
+		m, err := Read(strings.NewReader(`{"build": [
+			{"go_binary": "go.pkg/some/tool"}
+		]}`), filepath.FromSlash("root/1/2/3/4"))
+		So(err, ShouldBeNil)
+		So(err, ShouldBeNil)
+		So(m.Build, ShouldHaveLength, 1)
+		So(m.Build[0].Dest, ShouldEqual, "tool")
+		So(m.Build[0].Concrete(), ShouldResemble, &GoBuildStep{
+			GoBinary: "go.pkg/some/tool",
+		})
+	})
 }
