@@ -7,10 +7,12 @@ package fileset
 
 import (
 	"archive/tar"
+	"bytes"
 	"compress/gzip"
 	"crypto/sha256"
 	"encoding/hex"
 	"io"
+	"io/ioutil"
 	"os"
 	"path"
 	"path/filepath"
@@ -116,6 +118,26 @@ func (s *Set) AddFromDisk(fsPath, setPath string) error {
 	}
 	setPath = path.Clean(filepath.ToSlash(setPath))
 	return s.addImpl(fsPath, setPath)
+}
+
+// AddFromMemory adds the given blob to the set as a file.
+//
+// 'blob' is retained as a pointer, the memory is not copied.
+//
+// 'f', if not nil, is used to populate the file metadata. If nil, the blob is
+// added as a non-executable read-only file.
+func (s *Set) AddFromMemory(setPath string, blob []byte, f *File) error {
+	nf := File{}
+	if f != nil {
+		nf = *f
+	}
+	nf.Path = setPath
+	nf.Directory = false
+	nf.Size = int64(len(blob))
+	nf.Body = func() (io.ReadCloser, error) {
+		return ioutil.NopCloser(bytes.NewReader(blob)), nil
+	}
+	return s.Add(nf)
 }
 
 // Len returns number of files in the set.

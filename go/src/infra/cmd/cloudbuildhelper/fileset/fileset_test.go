@@ -43,7 +43,8 @@ func TestSet(t *testing.T) {
 		So(s.AddFromDisk(dir1.join(""), ""), ShouldBeNil)
 		So(s.AddFromDisk(dir2.join(""), ""), ShouldBeNil)
 		So(s.AddFromDisk(dir3.join(""), "dir/deep/"), ShouldBeNil)
-		So(s.Len(), ShouldEqual, 10)
+		So(s.AddFromMemory("mem", nil, nil), ShouldBeNil)
+		So(s.Len(), ShouldEqual, 11)
 		So(collect(s), ShouldResemble, []string{
 			"D dir",
 			"F dir/a",
@@ -55,6 +56,7 @@ func TestSet(t *testing.T) {
 			"F dir/nested/f",
 			"F f1",
 			"F f2",
+			"F mem",
 		})
 	})
 
@@ -77,6 +79,19 @@ func TestSet(t *testing.T) {
 		files = s.Files()
 		So(files, ShouldHaveLength, 1)
 		So(read(files[0]), ShouldEqual, "2")
+	})
+
+	Convey("Reading memfile", t, func(c C) {
+		s := &Set{}
+		So(s.AddFromMemory("mem", []byte("123456"), &File{
+			Writable:   true,
+			Executable: true,
+		}), ShouldBeNil)
+		files := s.Files()
+		So(files, ShouldHaveLength, 1)
+		So(files[0].Writable, ShouldBeTrue)
+		So(files[0].Executable, ShouldBeTrue)
+		So(read(files[0]), ShouldEqual, "123456")
 	})
 
 	if runtime.GOOS != "windows" {
