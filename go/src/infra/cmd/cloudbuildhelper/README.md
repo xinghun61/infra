@@ -65,10 +65,11 @@ This is work in progress. Only implemented arguments are documented.
 ***
 
 ```yaml
-# Name of the image to build (excluding the registry or any tags).
+# Path to the image's Dockerfile, relative to this YAML file.
 #
-# Required.
-target: some-image-name
+# All images referenced in this Dockerfile are resolved into concrete digests
+# via an external file. See 'imagepins' field below for more information.
+dockerfile: "../../../src/proj/image/Dockerfile"
 
 # Path to the docker context directory to ingest (usually a directory with
 # Dockerfile), relative to this YAML file.
@@ -79,6 +80,28 @@ target: some-image-name
 #
 # If not set, the context directory is assumed empty.
 contextdir: "../../../src/proj/image"
+
+# Path to the YAML file with pre-resolved mapping from (docker image, tag) pair
+# to the corresponding docker image digest.
+#
+# The path is relative to the manifest YAML file. See "Image pins YAML" section
+# below for the expected structure.
+#
+# This file will be used to rewrite the input Dockerfile to reference all
+# images (in "FROM ..." lines) only by their digests. This is useful for
+# reproducibility of builds.
+#
+# Only following forms of "FROM ..." statement are allowed:
+#   * FROM <image> [AS <name>] (assumes "latest" tag)
+#   * FROM <image>[:<tag>] [AS <name>] (resolves the given tag)
+#   * FROM <image>[@<digest>] [AS <name>] (passes the definition through)
+#
+# In particular ARGs in FROM line (e.g. "FROM base:${CODE_VERSION}") are
+# not supported.
+#
+# If not set, the Dockerfile must use only digests to begin with, i.e.
+# all FROM statements should have form "FROM <image>@<digest>".
+imagepins: "pins.yaml"
 
 # An optional list of local build steps. Each step may add more files to the
 # context directory. The actual `contextdir` directory on disk won't be
@@ -96,4 +119,23 @@ build:
   - go_binary: go.chromium.org/cmd/something
     # Where to put it in the contextdir, defaults to go package name
     dest: something
+```
+
+
+Image pins YAML
+---------------
+
+*** note
+This is work in progress. Only implemented arguments are documented.
+***
+
+```yaml
+- pins:
+  - image: ubuntu
+    tag: latest
+    digest: sha256:1234567...
+  - image: gcr.io/distroless/static
+    tag: latest
+    digest: sha256:1234567...
+  ...
 ```

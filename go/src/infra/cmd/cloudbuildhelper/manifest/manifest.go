@@ -18,16 +18,70 @@ import (
 )
 
 // Manifest is a definition of what to build, how and where.
+//
+// Comments here describe the structure of the manifest file on disk. In the
+// loaded form all paths use filepath.Separator as a directory separator.
 type Manifest struct {
-	// ContextDir is a unix-style path to the docker context directory to ingest
-	// (usually a directory with Dockerfile), relative to this YAML file.
+	// Dockerfile is a unix-style path to the image's Dockerfile, relative to this
+	// YAML file.
+	//
+	// Presence of this field indicates that the manifest describes how to build
+	// a docker image. If its missing, docker related subcommands won't work.
+	//
+	// All images referenced in this Dockerfile are resolved into concrete digests
+	// via an external file. See ImagePins field for more information.
+	Dockerfile string `yaml:"dockerfile,omitempty"`
+
+	// ContextDir is a unix-style path to the directory to use as a basis for
+	// the build. The path is relative to this YAML file.
+	//
+	// All files there end up available to the remote builder (e.g. a docker
+	// daemon will see this directory as a context directory when building
+	// the image).
 	//
 	// All symlinks there are resolved to their targets. Only +w and +x file mode
 	// bits are preserved. All other file metadata (owners, setuid bits,
 	// modification times) are ignored.
 	//
-	// If not set, the context directory is assumed empty.
+	// The default value depends on whether Dockerfile is set. If it is, then
+	// ContextDir defaults to the directory with Dockerfile. Otherwise the context
+	// directory is assumed to be empty.
 	ContextDir string `yaml:"contextdir,omitempty"`
+
+	// ImagePins is a unix-style path to the YAML file with pre-resolved mapping
+	// from (docker image, tag) pair to the corresponding docker image digest.
+	//
+	// The path is relative to the manifest YAML file. It should point to a YAML
+	// file with the following structure:
+	//
+	//    pins:
+	//      - image: <img>
+	//        tag: <tag>
+	//        digest: sha256:<sha256>
+	//      - image: <img>
+	//        tag: <tag>
+	//        digest: sha256:<sha256>
+	//      ...
+	//
+	// See dockerfile.Pins struct for more details.
+	//
+	// This file will be used to rewrite the input Dockerfile to reference all
+	// images (in "FROM ..." lines) only by their digests. This is useful for
+	// reproducibility of builds.
+	//
+	// Only following forms of "FROM ..." statement are allowed:
+	//  * FROM <image> [AS <name>] (assumes "latest" tag)
+	//  * FROM <image>[:<tag>] [AS <name>] (resolves the given tag)
+	//  * FROM <image>[@<digest>] [AS <name>] (passes the definition through)
+	//
+	// In particular ARGs in FROM line (e.g. "FROM base:${CODE_VERSION}") are
+	// not supported.
+	//
+	// If not set, the Dockerfile must use only digests to begin with, i.e.
+	// all FROM statements should have form "FROM <image>@<digest>".
+	//
+	// Ignored if Dockerfile field is not set.
+	ImagePins string `yaml:"imagepins,omitempty"`
 
 	// Build defines a series of local build steps.
 	//
@@ -145,7 +199,12 @@ func Read(r io.Reader, cwd string) (*Manifest, error) {
 // Must be called if Manifest{} was allocated in the code (e.g. in unit tests)
 // rather than was read via Read(...).
 func (m *Manifest) Initialize(cwd string) error {
+	normPath(&m.Dockerfile, cwd)
 	normPath(&m.ContextDir, cwd)
+	normPath(&m.ImagePins, cwd)
+	if m.ContextDir == "" && m.Dockerfile != "" {
+		m.ContextDir = filepath.Dir(m.Dockerfile)
+	}
 	for i := range m.Build {
 		if err := initAndSetDefaults(m.Build[i], cwd); err != nil {
 			return errors.Annotate(err, "bad build step #%d", i+1).Err()

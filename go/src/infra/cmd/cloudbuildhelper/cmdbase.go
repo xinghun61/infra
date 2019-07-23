@@ -85,6 +85,8 @@ func handleErr(ctx context.Context, err error) int {
 		fmt.Fprintf(os.Stderr, "%s: %s\n", executable, err)
 		return 2
 	default:
+		logging.Errorf(ctx, "%s", err)
+		logging.Errorf(ctx, "Full context:")
 		errors.Log(ctx, err)
 		return 1
 	}

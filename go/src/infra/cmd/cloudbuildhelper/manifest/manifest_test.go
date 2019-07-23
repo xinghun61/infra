@@ -37,6 +37,27 @@ func TestManifest(t *testing.T) {
 		})
 	})
 
+	Convey("Deriving contextdir from dockerfile", t, func() {
+		m, err := Read(
+			strings.NewReader(`dockerfile: ../../../blarg/Dockerfile`),
+			filepath.FromSlash("root/1/2/3/4"))
+		So(err, ShouldBeNil)
+		So(m, ShouldResemble, &Manifest{
+			Dockerfile: filepath.FromSlash("root/1/blarg/Dockerfile"),
+			ContextDir: filepath.FromSlash("root/1/blarg"),
+		})
+	})
+
+	Convey("Resolving imagepins", t, func() {
+		m, err := Read(
+			strings.NewReader(`imagepins: ../../../blarg/pins.yaml`),
+			filepath.FromSlash("root/1/2/3/4"))
+		So(err, ShouldBeNil)
+		So(m, ShouldResemble, &Manifest{
+			ImagePins: filepath.FromSlash("root/1/blarg/pins.yaml"),
+		})
+	})
+
 	Convey("Empty build step", t, func() {
 		_, err := Read(strings.NewReader(`{"build": [
 			{"dest": "zzz"}

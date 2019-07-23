@@ -17,6 +17,7 @@ import (
 	"go.chromium.org/luci/common/logging"
 
 	"infra/cmd/cloudbuildhelper/builder"
+	"infra/cmd/cloudbuildhelper/dockerfile"
 	"infra/cmd/cloudbuildhelper/fileset"
 	"infra/cmd/cloudbuildhelper/manifest"
 )
@@ -87,6 +88,15 @@ func (c *cmdStageRun) exec(ctx context.Context) error {
 		return errBadFlag("-output-location", err.Error())
 	}
 
+	// Load Dockerfile and resolve image tags there into digests using pins.yaml.
+	var dockerFileBody []byte
+	if m.Dockerfile != "" {
+		dockerFileBody, err = dockerfile.LoadAndResolve(m.Dockerfile, m.ImagePins)
+		if err != nil {
+			return errors.Annotate(err, "when resolving Dockerfile").Err()
+		}
+	}
+
 	// Execute all build steps to get the resulting fileset.Set.
 	b, err := builder.New()
 	if err != nil {
@@ -96,6 +106,15 @@ func (c *cmdStageRun) exec(ctx context.Context) error {
 	out, err := b.Build(ctx, m)
 	if err != nil {
 		return errors.Annotate(err, "local build failed").Err()
+	}
+
+	// Append resolved Dockerfile to outputs (perhaps overwriting an existing
+	// unresolved one). In tarballs produced by cloudbuildhelper the Dockerfile
+	// *always* lives in the root of the context directory.
+	if m.Dockerfile != "" {
+		if err := out.AddFromMemory("Dockerfile", dockerFileBody, nil); err != nil {
+			return errors.Annotate(err, "failed to add Dockerfile to output").Err()
+		}
 	}
 
 	// Save the build result.

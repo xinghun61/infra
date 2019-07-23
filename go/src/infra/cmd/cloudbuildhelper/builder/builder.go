@@ -18,7 +18,7 @@ import (
 	"infra/cmd/cloudbuildhelper/manifest"
 )
 
-// Builder executes local build steps.
+// Builder executes build steps specified via "build" field in the manifest.
 type Builder struct {
 	tmpDir string
 }
@@ -50,8 +50,10 @@ func (b *Builder) Close() error {
 
 // Build executes all local builds steps specified in the manifest.
 //
-// The result of this process is a fully populated fileset.Set with all files
-// that should be sent to a remote builder.
+// The result of this process is a fileset.Set with m.ContextDir and outputs of
+// all build steps. Note that Builder is oblivious of Dockerfile or any other
+// docker specifics. It just executes local steps specified via "build" field in
+// the manifest.
 //
 // The returned fileset should not outlive Builder, since it may reference
 // temporary files owned by Builder.
