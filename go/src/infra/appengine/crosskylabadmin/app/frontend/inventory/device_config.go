@@ -64,6 +64,37 @@ func getIDForInventoryLabels(ctx context.Context, sl *inventory.SchedulableLabel
 	})
 }
 
+// UpdateLabelsWithDeviceConfig update skylab inventory labels with cached device config.
+func UpdateLabelsWithDeviceConfig(ctx context.Context, sl *inventory.SchedulableLabels) error {
+	dcID := getIDForInventoryLabels(ctx, sl)
+	if dcID == getDeviceConfigIDStr(ctx, DeviceConfigID{}) {
+		return errors.Reason("no platform, model, variant, brand are specified in inventory labels").Err()
+	}
+	dce := &deviceConfigEntity{
+		ID: dcID,
+	}
+	if err := datastore.Get(ctx, dce); err != nil {
+		if datastore.IsErrNoSuchEntity(err) {
+			logging.Infof(ctx, "cannot find device id %s in datastore, no sync", dcID)
+			return nil
+		}
+		return errors.Annotate(err, "fail to get device config by id %s", dcID).Err()
+	}
+
+	var dc device.Config
+	if err := proto.Unmarshal(dce.DeviceConfig, &dc); err != nil {
+		return errors.Annotate(err, "fail to unmarshal device config for id %s", dce.ID).Err()
+	}
+	spec := &inventory.CommonDeviceSpecs{
+		Labels: &inventory.SchedulableLabels{},
+	}
+	inventory.ConvertDeviceConfig(&dc, spec)
+	logging.Infof(ctx, "successfully convert device config")
+	inventory.CopyDCAmongLabels(sl, spec.GetLabels())
+	logging.Infof(ctx, "successfully copy device config")
+	return nil
+}
+
 // GetDeviceConfig fetch device configs from git.
 func GetDeviceConfig(ctx context.Context, gitilesC gitiles.GitilesClient) (map[string]*device.Config, error) {
 	cfg := config.Get(ctx).Inventory

@@ -601,6 +601,9 @@ message UpdateDutLabelsRequest {
   // should not be capitalized since it will get formatted with other
   // information.
   string reason = 3;
+  // old_labels are the old labels for the DUT before this update. Same
+  // format with labels.
+  bytes old_labels = 4;
 }
 
 message UpdateDutLabelsResponse {
