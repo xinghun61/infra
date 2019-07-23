@@ -67,6 +67,7 @@ func New(args Args) (*swarming.SwarmingRpcsNewTaskRequest, error) {
 func getSlices(cmd worker.Command, provisionableDimensions []string, dimensions []string, inv inventory.SchedulableLabels, timeout time.Duration) ([]*swarming.SwarmingRpcsTaskSlice, error) {
 	slices := make([]*swarming.SwarmingRpcsTaskSlice, 1, 2)
 
+	// TODO(crbug.com/939976): Generalize request library to support non-test tasks.
 	basePairs, _ := stringToPairs("pool:ChromeOSSkylab", "dut_state:ready")
 
 	rawPairs, err := stringToPairs(dimensions...)
