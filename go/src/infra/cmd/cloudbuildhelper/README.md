@@ -43,13 +43,12 @@ This is work in progress. Only implemented arguments are documented.
 ***
 
 ```shell
-# Evaluates input YAML manifest specified via "-target-manifest" and executes
-# all local build steps there. Writes the resulting context dir to a *.tar.gz
-# file specified via "-output-tarball". The contents of this tarball is exactly
-# what will be sent to the docker daemon or to a Cloud Build worker.
-./cloudbuildhelper stage \
-    -target-manifest image.yaml \
-    -output-tarball some.tar.gz
+# Evaluates input YAML manifest specified via the positional argument, executes
+# all local build steps there, and rewrites Dockerfile to use pinned digests
+# instead of tags. Writes the resulting context dir to a *.tar.gz file specified
+# via "-output-tarball". The contents of this tarball is exactly what will be
+# sent to the docker daemon or to a Cloud Build worker.
+./cloudbuildhelper image.yaml -output-tarball some.tar.gz
 ```
 
 

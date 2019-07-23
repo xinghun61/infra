@@ -6,7 +6,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"path/filepath"
 
@@ -21,14 +20,15 @@ import (
 )
 
 var cmdStage = &subcommands.Command{
-	UsageLine: "stage -target-manifest <path> -output-tarball <path> [...]",
+	UsageLine: "stage <target-manifest-path> -output-tarball <path> [...]",
 	ShortDesc: "prepares the tarball with the context directory",
 	LongDesc: `Prepares the tarball with the context directory.
 
-Evaluates input YAML manifest specified via "-target-manifest" and executes all
-local build steps there. Writes the resulting context dir to a *.tar.gz file
-specified via "-output-tarball". The contents of this tarball is exactly what
-will be sent to the docker daemon or to a Cloud Build worker.
+Evaluates input YAML manifest specified via the positional argument, executes
+all local build steps there, and rewrites Dockerfile to use pinned digests
+instead of tags. Writes the resulting context dir to a *.tar.gz file specified
+via "-output-tarball". The contents of this tarball is exactly what will be sent
+to the docker daemon or to a Cloud Build worker.
 `,
 
 	CommandRun: func() subcommands.CommandRun {
@@ -46,29 +46,26 @@ type cmdStageRun struct {
 }
 
 func (c *cmdStageRun) init() {
-	c.commandBase.init(c.exec, false) // no auth
-
-	c.Flags.StringVar(&c.targetManifest, "target-manifest", "", "Where to read YAML with input from.")
+	c.commandBase.init(c.exec, false, []*string{
+		&c.targetManifest,
+	})
 	c.Flags.StringVar(&c.outputTarball, "output-tarball", "", "Where to write the tarball with the context dir.")
 }
 
 func (c *cmdStageRun) exec(ctx context.Context) error {
-	switch {
-	case c.targetManifest == "":
-		return errBadFlag("-target-manifest", "this flag is required")
-	case c.outputTarball == "":
+	if c.outputTarball == "" {
 		return errBadFlag("-output-tarball", "this flag is required")
 	}
 
 	// Read the input manifest, make sure it parses correctly.
 	r, err := os.Open(c.targetManifest)
 	if err != nil {
-		return errBadFlag("-target-manifest", err.Error())
+		return errors.Annotate(err, "when opening manifest file").Tag(isCLIError).Err()
 	}
 	defer r.Close()
 	m, err := manifest.Read(r, filepath.Dir(c.targetManifest))
 	if err != nil {
-		return errBadFlag("-target-manifest", fmt.Sprintf("bad manifest file %q", c.targetManifest))
+		return errors.Annotate(err, "bad manifest file %q", c.targetManifest).Tag(isCLIError).Err()
 	}
 
 	// Load Dockerfile and resolve image tags there into digests using pins.yaml.

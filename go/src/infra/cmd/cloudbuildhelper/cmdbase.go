@@ -25,15 +25,17 @@ type execCb func(ctx context.Context) error
 type commandBase struct {
 	subcommands.CommandRunBase
 
-	exec execCb // called to actually execute the command
+	exec    execCb    // called to actually execute the command
+	posArgs []*string // will be filled in by positional arguments
 
 	logConfig logging.Config // -log-* flags
 	authFlags authcli.Flags  // -auth-* flags
 }
 
 // init register base flags. Must be called.
-func (c *commandBase) init(exec execCb, needAuth bool) {
+func (c *commandBase) init(exec execCb, needAuth bool, posArgs []*string) {
 	c.exec = exec
+	c.posArgs = posArgs
 
 	c.logConfig.Level = logging.Info // default logging level
 	c.logConfig.AddFlags(&c.Flags)
@@ -53,9 +55,20 @@ func (c *commandBase) ModifyContext(ctx context.Context) context.Context {
 // Run implements the subcommands.CommandRun interface.
 func (c *commandBase) Run(a subcommands.Application, args []string, env subcommands.Env) int {
 	ctx := cli.GetContext(a, c, env)
-	if len(args) != 0 {
-		return handleErr(ctx, errors.Reason("unexpected positional arguments %q", args).Tag(isCLIError).Err())
+
+	if len(args) != len(c.posArgs) {
+		if len(c.posArgs) == 0 {
+			return handleErr(ctx, errors.Reason("unexpected positional arguments %q", args).Tag(isCLIError).Err())
+		}
+		return handleErr(ctx, errors.Reason(
+			"expected %d positional argument(s), got %d",
+			len(c.posArgs), len(args)).Tag(isCLIError).Err())
 	}
+
+	for i, arg := range args {
+		*c.posArgs[i] = arg
+	}
+
 	if err := c.exec(ctx); err != nil {
 		return handleErr(ctx, err)
 	}
