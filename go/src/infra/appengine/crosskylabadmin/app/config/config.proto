@@ -161,6 +161,16 @@ message Inventory {
 
   // Queen service to push inventory to.
   string queen_service = 11;
+
+  // Git project containing the device config.
+  string device_config_project = 12;
+
+  // Git branch from the device config project to be used.
+  string device_config_branch = 13;
+
+  // The device config file path.
+  // e.g. deviceconfig/generated/device_configs.cfg
+  string device_config_path = 14;
 }
 
 message PoolBalancer {

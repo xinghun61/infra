@@ -23,6 +23,7 @@ import (
 	"infra/appengine/crosskylabadmin/app/config"
 	"strings"
 
+	"go.chromium.org/luci/common/errors"
 	"go.chromium.org/luci/common/proto/git"
 	"go.chromium.org/luci/common/proto/gitiles"
 	"google.golang.org/grpc"
@@ -86,6 +87,8 @@ type InventoryData struct {
 	Infrastructure []byte
 }
 
+const fullPerm = 0777
+
 // SetInventory sets the serialized lab and infrastructure data as the inventory
 // archive returned from gitiles.
 func (g *GitilesClient) SetInventory(ic *config.Inventory, data InventoryData) error {
@@ -95,7 +98,7 @@ func (g *GitilesClient) SetInventory(ic *config.Inventory, data InventoryData) e
 
 	if err := tw.WriteHeader(&tar.Header{
 		Name: ic.LabDataPath,
-		Mode: 0777,
+		Mode: fullPerm,
 		Size: int64(len(data.Lab)),
 	}); err != nil {
 		return err
@@ -105,7 +108,7 @@ func (g *GitilesClient) SetInventory(ic *config.Inventory, data InventoryData) e
 	}
 	if err := tw.WriteHeader(&tar.Header{
 		Name: ic.InfrastructureDataPath,
-		Mode: 0777,
+		Mode: fullPerm,
 		Size: int64(len(data.Infrastructure)),
 	}); err != nil {
 		return err
@@ -120,6 +123,34 @@ func (g *GitilesClient) SetInventory(ic *config.Inventory, data InventoryData) e
 		return err
 	}
 	g.Archived[projectRefKey(ic.Project, ic.Branch)] = buf.Bytes()
+	return nil
+}
+
+// SetDeviceConfigs sets the serialized device configs as returned from gitiles.
+func (g *GitilesClient) SetDeviceConfigs(ic *config.Inventory, configs []byte) error {
+	var buf bytes.Buffer
+	gw := gzip.NewWriter(&buf)
+	tw := tar.NewWriter(gw)
+	defer tw.Close()
+	defer gw.Close()
+
+	if err := tw.WriteHeader(&tar.Header{
+		Name: ic.DeviceConfigPath,
+		Mode: fullPerm,
+		Size: int64(len(configs)),
+	}); err != nil {
+		return errors.Annotate(err, "set device config").Err()
+	}
+	if _, err := tw.Write(configs); err != nil {
+		return err
+	}
+	if err := tw.Close(); err != nil {
+		return err
+	}
+	if err := gw.Close(); err != nil {
+		return err
+	}
+	g.Archived[projectRefKey(ic.DeviceConfigProject, ic.DeviceConfigBranch)] = buf.Bytes()
 	return nil
 }
 

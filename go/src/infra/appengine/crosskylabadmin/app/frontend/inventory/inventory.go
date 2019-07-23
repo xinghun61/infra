@@ -173,8 +173,7 @@ func (is *ServerImpl) UpdateDeviceConfig(ctx context.Context, req *fleet.UpdateD
 func updateDeviceConfig(ctx context.Context, deviceConfigs map[string]*device.Config, s *gitstore.InventoryStore) (string, error) {
 	for _, d := range s.Lab.GetDuts() {
 		c := d.GetCommon()
-		l := c.GetLabels()
-		dcID := getDeviceConfigIDStr(ctx, l.GetPlatform(), l.GetModel(), l.GetSku(), l.GetBrand())
+		dcID := getIDForInventoryLabels(ctx, c.GetLabels())
 		standardDC, ok := deviceConfigs[dcID]
 		if !ok {
 			continue

@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"testing"
 
+	"go.chromium.org/chromiumos/infra/proto/go/device"
 	fleet "infra/appengine/crosskylabadmin/api/fleet/v1"
 	"infra/appengine/crosskylabadmin/app/clients"
 	"infra/appengine/crosskylabadmin/app/clients/mock"
@@ -27,6 +28,7 @@ import (
 	"infra/libs/skylab/inventory"
 
 	"github.com/golang/mock/gomock"
+	"github.com/golang/protobuf/jsonpb"
 	"github.com/golang/protobuf/proto"
 	"go.chromium.org/gae/service/datastore"
 	"go.chromium.org/luci/appengine/gaetesting"
@@ -101,6 +103,9 @@ func testingContext() context.Context {
 			LabDataPath:            "data/skylab/lab.textpb",
 			InfrastructureDataPath: "data/skylab/server_db.textpb",
 			Environment:            "ENVIRONMENT_STAGING",
+			DeviceConfigProject:    "device-config-project",
+			DeviceConfigBranch:     "master",
+			DeviceConfigPath:       "deviceconfig/generated/device_configs.cfg",
 		},
 		Tasker: &config.Tasker{
 			BackgroundTaskExecutionTimeoutSecs: 3600,
@@ -158,6 +163,44 @@ func inventoryBytesFromDUTs(duts []testInventoryDut) []byte {
 		ptext.WriteString(fmt.Sprintf(dutFmt, dut.hostname, dut.id, dut.pool, dut.model))
 	}
 	return ptext.Bytes()
+}
+
+// testDeviceConfig contains a subset of device config fields.
+type testDeviceConfig struct {
+	dcID      DeviceConfigID
+	gpuFamily string
+}
+
+// setDeviceConfig sets up fake gitiles to return device configs.
+func setDeviceConfigs(c context.Context, g *fakes.GitilesClient, configs []testDeviceConfig) error {
+	return g.SetDeviceConfigs(config.Get(c).Inventory, deviceConfigBytes(configs))
+}
+
+func deviceConfigBytes(configs []testDeviceConfig) []byte {
+	dcAll := device.AllConfigs{}
+	for _, dc := range configs {
+		c := device.Config{
+			Id: &device.ConfigId{
+				PlatformId: &device.PlatformId{
+					Value: dc.dcID.PlatformID,
+				},
+				ModelId: &device.ModelId{
+					Value: dc.dcID.ModelID,
+				},
+				VariantId: &device.VariantId{
+					Value: dc.dcID.VariantID,
+				},
+				BrandId: &device.BrandId{
+					Value: dc.dcID.BrandID,
+				},
+			},
+			GpuFamily: dc.gpuFamily,
+		}
+		dcAll.Configs = append(dcAll.Configs, &c)
+	}
+	marshaler := jsonpb.Marshaler{}
+	dc, _ := marshaler.MarshalToString(&dcAll)
+	return []byte(dc)
 }
 
 // testDutOnServer contains a subset of the fields in infrastructure servers.

@@ -28,6 +28,26 @@ import (
 	"golang.org/x/net/context"
 )
 
+// FilesSpec includes required gitiles information to fetch files.
+type FilesSpec struct {
+	Project string
+	Branch  string
+	Paths   []string
+}
+
+// FetchFiles download files from gitiles.
+func FetchFiles(ctx context.Context, gc gitiles.GitilesClient, fs FilesSpec) (map[string]string, error) {
+	sha1, err := fetchLatestSHA1(ctx, gc, fs.Project, fs.Branch)
+	if err != nil {
+		return nil, errors.Annotate(err, "fail to fetch latest SHA1").Err()
+	}
+	files, err := fetchFilesFromGitiles(ctx, gc, fs.Project, sha1, fs.Paths)
+	if err != nil {
+		return nil, errors.Annotate(err, "fail to fetch device config file").Err()
+	}
+	return files, nil
+}
+
 // fetchLatestSHA1 fetches the SHA1 for the latest commit on a branch.
 func fetchLatestSHA1(ctx context.Context, gc gitiles.GitilesClient, project string, branch string) (string, error) {
 	resp, err := gc.Log(ctx, &gitiles.LogRequest{
@@ -113,7 +133,7 @@ func extractGitilesArchive(ctx context.Context, data []byte, paths []string) (ma
 			continue
 		}
 
-		logging.Debugf(ctx, "Inventory data file %s size %s", h.Name, humanize.Bytes(uint64(h.Size)))
+		logging.Debugf(ctx, "file: %s, size: %s", h.Name, humanize.Bytes(uint64(h.Size)))
 		data := make([]byte, h.Size)
 		if _, err := io.ReadFull(tr, data); err != nil {
 			return res, errors.Annotate(err, "extract gitiles archive").Err()
