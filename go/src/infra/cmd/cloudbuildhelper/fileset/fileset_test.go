@@ -143,16 +143,6 @@ func TestSet(t *testing.T) {
 		})
 	})
 
-	Convey("Materialize works", t, func(c C) {
-		s := prepSet()
-		d := newTempDir(c)
-		So(s.Materialize(d.join("")), ShouldBeNil)
-
-		scan := &Set{}
-		So(scan.AddFromDisk(d.join(""), ""), ShouldBeNil)
-		assertEqualSets(s, scan)
-	})
-
 	Convey("ToTar works", t, func(c C) {
 		s := prepSet()
 

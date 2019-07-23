@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"github.com/maruel/subcommands"
 
@@ -18,23 +17,18 @@ import (
 
 	"infra/cmd/cloudbuildhelper/builder"
 	"infra/cmd/cloudbuildhelper/dockerfile"
-	"infra/cmd/cloudbuildhelper/fileset"
 	"infra/cmd/cloudbuildhelper/manifest"
 )
 
 var cmdStage = &subcommands.Command{
-	UsageLine: "stage -target-manifest <path> -output-location <path> [...]",
-	ShortDesc: "prepares the context directory or tarball",
-	LongDesc: `Prepares the context directory or tarball.
+	UsageLine: "stage -target-manifest <path> -output-tarball <path> [...]",
+	ShortDesc: "prepares the tarball with the context directory",
+	LongDesc: `Prepares the tarball with the context directory.
 
 Evaluates input YAML manifest specified via "-target-manifest" and executes all
-local build steps there. Materializes the resulting context dir in a location
-specified by "-output-location". If it ends in "*.tar.gz", then the result is
-a tarball, otherwise it is a new directory (attempting to output to an existing
-directory is an error).
-
-The contents of this directory/tarball is exactly what will be sent to the
-docker daemon or to a Cloud Build worker.
+local build steps there. Writes the resulting context dir to a *.tar.gz file
+specified via "-output-tarball". The contents of this tarball is exactly what
+will be sent to the docker daemon or to a Cloud Build worker.
 `,
 
 	CommandRun: func() subcommands.CommandRun {
@@ -48,22 +42,22 @@ type cmdStageRun struct {
 	commandBase
 
 	targetManifest string
-	outputLocation string
+	outputTarball  string
 }
 
 func (c *cmdStageRun) init() {
 	c.commandBase.init(c.exec, false) // no auth
 
 	c.Flags.StringVar(&c.targetManifest, "target-manifest", "", "Where to read YAML with input from.")
-	c.Flags.StringVar(&c.outputLocation, "output-location", "", "Where to put the prepared context dir.")
+	c.Flags.StringVar(&c.outputTarball, "output-tarball", "", "Where to write the tarball with the context dir.")
 }
 
 func (c *cmdStageRun) exec(ctx context.Context) error {
 	switch {
 	case c.targetManifest == "":
 		return errBadFlag("-target-manifest", "this flag is required")
-	case c.outputLocation == "":
-		return errBadFlag("-output-location", "this flag is required")
+	case c.outputTarball == "":
+		return errBadFlag("-output-tarball", "this flag is required")
 	}
 
 	// Read the input manifest, make sure it parses correctly.
@@ -75,17 +69,6 @@ func (c *cmdStageRun) exec(ctx context.Context) error {
 	m, err := manifest.Read(r, filepath.Dir(c.targetManifest))
 	if err != nil {
 		return errBadFlag("-target-manifest", fmt.Sprintf("bad manifest file %q", c.targetManifest))
-	}
-
-	// Verify -output-location, prepare the corresponding writer (tar.gz or dir).
-	var outWriter filesetWriter
-	if strings.HasSuffix(c.outputLocation, ".tar.gz") {
-		outWriter, err = tarballWriter(c.outputLocation)
-	} else {
-		outWriter, err = directoryWriter(c.outputLocation)
-	}
-	if err != nil {
-		return errBadFlag("-output-location", err.Error())
 	}
 
 	// Load Dockerfile and resolve image tags there into digests using pins.yaml.
@@ -118,38 +101,11 @@ func (c *cmdStageRun) exec(ctx context.Context) error {
 	}
 
 	// Save the build result.
-	if err := outWriter(ctx, out); err != nil {
+	logging.Infof(ctx, "Writing %d files to %s...", out.Len(), c.outputTarball)
+	hash, err := out.ToTarGzFile(c.outputTarball)
+	if err != nil {
 		return errors.Annotate(err, "failed to save the output").Err()
 	}
+	logging.Infof(ctx, "Resulting tarball SHA256 is %q", hash)
 	return b.Close()
-}
-
-type filesetWriter func(context.Context, *fileset.Set) error
-
-func tarballWriter(location string) (filesetWriter, error) {
-	return func(c context.Context, fs *fileset.Set) error {
-		logging.Infof(c, "Writing %d files to %s...", fs.Len(), location)
-		hash, err := fs.ToTarGzFile(location)
-		if err != nil {
-			return err
-		}
-		logging.Infof(c, "Resulting tarball SHA256 is %q", hash)
-		return nil
-	}, nil
-}
-
-func directoryWriter(location string) (filesetWriter, error) {
-	if _, err := os.Stat(location); !os.IsNotExist(err) {
-		if err == nil {
-			return nil, errors.Reason("directory %q already exists, overwrites aren't allowed", location).Err()
-		}
-		return nil, err
-	}
-	return func(c context.Context, fs *fileset.Set) error {
-		logging.Infof(c, "Copying %d files into %s...", fs.Len(), location)
-		if err := os.Mkdir(location, 0777); err != nil {
-			return err
-		}
-		return fs.Materialize(location)
-	}, nil
 }

@@ -44,16 +44,12 @@ This is work in progress. Only implemented arguments are documented.
 
 ```shell
 # Evaluates input YAML manifest specified via "-target-manifest" and executes
-# all local build steps there. Materializes the resulting context dir in
-# a location specified by "-output-location". If it ends in "*.tar.gz", then
-# the result is a tarball, otherwise it is a new directory (attempting to output
-# to an existing directory is an error).
-#
-# The contents of this directory/tarball is exactly what will be sent to the
-# docker daemon or to a Cloud Build worker.
+# all local build steps there. Writes the resulting context dir to a *.tar.gz
+# file specified via "-output-tarball". The contents of this tarball is exactly
+# what will be sent to the docker daemon or to a Cloud Build worker.
 ./cloudbuildhelper stage \
     -target-manifest image.yaml \
-    -output-location some/path
+    -output-tarball some.tar.gz
 ```
 
 
