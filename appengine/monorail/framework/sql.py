@@ -108,7 +108,7 @@ cnxn_pool = ConnectionPool(settings.db_cnxn_pool_size)
 MASTER_CNXN = 'master_cnxn'
 
 # When one replica is temporarily unresponseive, we can use a different one.
-BAD_SHARD_AVOIDANCE_MS = 15000
+BAD_SHARD_AVOIDANCE_SEC = 15
 
 
 CONNECTION_COUNT = ts_mon.CounterMetric(
@@ -215,9 +215,9 @@ class MonorailConnection(object):
       sql_cnxn = self.GetMasterConnection()
     else:
       if shard_id in self.unavailable_shards:
-        bad_age = int(time.time()) - self.unavailable_shards[shard_id]
-        if bad_age < BAD_SHARD_AVOIDANCE_MS:
-          logging.info('Avoiding bad replica %r, age %r', shard_id, bad_age)
+        bad_age_sec = int(time.time()) - self.unavailable_shards[shard_id]
+        if bad_age_sec < BAD_SHARD_AVOIDANCE_SEC:
+          logging.info('Avoiding bad replica %r, age %r', shard_id, bad_age_sec)
           shard_id = (shard_id + 1) % settings.num_logical_shards
       sql_cnxn = self.GetConnectionForShard(shard_id)
 

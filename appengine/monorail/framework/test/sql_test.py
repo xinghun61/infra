@@ -212,7 +212,7 @@ class MonorailConnectionTest(unittest.TestCase):
     sql_cnxn_2 = self.cnxn.GetConnectionForShard(shard_id + 1)
 
     # Simulate a recent failure on shard 1.
-    self.cnxn.unavailable_shards[1] = int(time.time()) - 300
+    self.cnxn.unavailable_shards[1] = int(time.time()) - 3
 
     with mock.patch.object(self.cnxn, '_ExecuteWithSQLConnection') as ewsc:
       ewsc.return_value = 'db result'
@@ -233,7 +233,7 @@ class MonorailConnectionTest(unittest.TestCase):
 
     # Simulate an old failure on shard 1, allowing us to try using it again.
     self.cnxn.unavailable_shards[1] = (
-        int(time.time()) - sql.BAD_SHARD_AVOIDANCE_MS - 1)
+        int(time.time()) - sql.BAD_SHARD_AVOIDANCE_SEC - 2)
 
     with mock.patch.object(self.cnxn, '_ExecuteWithSQLConnection') as ewsc:
       ewsc.return_value = 'db result'
