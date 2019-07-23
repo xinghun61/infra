@@ -10,6 +10,10 @@ In order to train a new model locally or in the cloud, follow the instructions b
 
 > Note: you must be logged into the correct GCP project with `gcloud` in order to run the below commands.
 
+### New model in trainer2/
+
+The new code is used for local training and exporting model using Python3 and TensorFlow 2.0. Future predictor should also be migrated to use the training files in trainer2/.
+
 ### Trainer
 
 Both trainers are Python modules that do the following:
