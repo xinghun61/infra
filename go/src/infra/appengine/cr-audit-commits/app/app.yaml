@@ -26,7 +26,7 @@ handlers:
 - url: /view.*
   script: _go_app
   secure: always
-  login: required
+  login: admin
 
 - url: /.*
   script: _go_app
