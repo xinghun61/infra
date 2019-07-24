@@ -13,7 +13,6 @@ def cron(name, recipe, execution_timeout=None):
       bucket = 'cron',
       executable = infra.recipe(recipe),
       dimensions = {
-          'builder': name,
           'os': 'Ubuntu-16.04',
           'cpu': 'x86-64',
           'pool': 'luci.infra.cron',
