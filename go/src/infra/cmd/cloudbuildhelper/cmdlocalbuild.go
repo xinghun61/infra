@@ -17,7 +17,6 @@ import (
 
 	"infra/cmd/cloudbuildhelper/docker"
 	"infra/cmd/cloudbuildhelper/fileset"
-	"infra/cmd/cloudbuildhelper/manifest"
 )
 
 var cmdLocalBuild = &subcommands.Command{
@@ -51,7 +50,12 @@ func (c *cmdLocalBuildRun) init() {
 }
 
 func (c *cmdLocalBuildRun) exec(ctx context.Context) error {
-	return stage(ctx, c.targetManifest, func(m *manifest.Manifest, out *fileset.Set) error {
+	m, err := readManifest(c.targetManifest)
+	if err != nil {
+		return err
+	}
+
+	return stage(ctx, m, func(out *fileset.Set) error {
 		logging.Infof(ctx, "Sending tarball with %d files to the docker...", out.Len())
 
 		r, w := io.Pipe()

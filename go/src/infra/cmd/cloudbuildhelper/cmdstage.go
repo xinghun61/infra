@@ -57,7 +57,12 @@ func (c *cmdStageRun) exec(ctx context.Context) error {
 	if c.outputTarball == "" {
 		return errBadFlag("-output-tarball", "this flag is required")
 	}
-	return stage(ctx, c.targetManifest, func(m *manifest.Manifest, out *fileset.Set) error {
+	m, err := readManifest(c.targetManifest)
+	if err != nil {
+		return err
+	}
+
+	return stage(ctx, m, func(out *fileset.Set) error {
 		logging.Infof(ctx, "Writing %d files to %s...", out.Len(), c.outputTarball)
 		hash, err := out.ToTarGzFile(c.outputTarball)
 		if err != nil {
@@ -68,23 +73,29 @@ func (c *cmdStageRun) exec(ctx context.Context) error {
 	})
 }
 
-// stage executes logic of 'stage' subcommand, calling the callback in the
-// end to handle the resulting fileset.
-func stage(ctx context.Context, targetManifest string, cb func(*manifest.Manifest, *fileset.Set) error) error {
-	// Read the input manifest, make sure it parses correctly.
-	r, err := os.Open(targetManifest)
+// readManifest reads the input manifest, makes sure it parses correctly.
+//
+// Returns annotate errors suitable for displaying in CLI.
+func readManifest(path string) (*manifest.Manifest, error) {
+	r, err := os.Open(path)
 	if err != nil {
-		return errors.Annotate(err, "when opening manifest file").Tag(isCLIError).Err()
+		return nil, errors.Annotate(err, "when opening manifest file").Tag(isCLIError).Err()
 	}
 	defer r.Close()
-	m, err := manifest.Read(r, filepath.Dir(targetManifest))
+	m, err := manifest.Read(r, filepath.Dir(path))
 	if err != nil {
-		return errors.Annotate(err, "bad manifest file %q", targetManifest).Tag(isCLIError).Err()
+		return nil, errors.Annotate(err, "bad manifest file %q", path).Tag(isCLIError).Err()
 	}
+	return m, nil
+}
 
+// stage executes logic of 'stage' subcommand, calling the callback in the
+// end to handle the resulting fileset.
+func stage(ctx context.Context, m *manifest.Manifest, cb func(*fileset.Set) error) error {
 	// Load Dockerfile and resolve image tags there into digests using pins.yaml.
 	var dockerFileBody []byte
 	if m.Dockerfile != "" {
+		var err error
 		dockerFileBody, err = dockerfile.LoadAndResolve(m.Dockerfile, m.ImagePins)
 		if err != nil {
 			return errors.Annotate(err, "when resolving Dockerfile").Err()
@@ -112,7 +123,7 @@ func stage(ctx context.Context, targetManifest string, cb func(*manifest.Manifes
 	}
 
 	// Let the callback do the rest.
-	if err := cb(m, out); err != nil {
+	if err := cb(out); err != nil {
 		return err
 	}
 	return b.Close()
