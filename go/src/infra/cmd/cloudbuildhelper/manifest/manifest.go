@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"net/url"
 	"path"
 	"path/filepath"
 	"strings"
@@ -91,6 +92,13 @@ type Manifest struct {
 	// Ignored if Dockerfile field is not set.
 	ImagePins string `yaml:"imagepins,omitempty"`
 
+	// Infra is configuration of the build infrastructure to use: Google Storage
+	// bucket, Cloud Build project, etc.
+	//
+	// Keys are names of presets (like "dev", "prod"). What preset is used is
+	// controlled via "-infra" command line flag (defaults to "dev").
+	Infra map[string]Infra `yaml:"infra"`
+
 	// Build defines a series of local build steps.
 	//
 	// Each step may add more files to the context directory. The actual
@@ -98,6 +106,23 @@ type Manifest struct {
 	// stored in a temp directory and the final context directory is constructed
 	// from the full recursive copy of `contextdir` and files emitted here.
 	Build []*BuildStep `yaml:"build,omitempty"`
+}
+
+// Infra contains configuration of build infrastructure to use: Google Storage
+// bucket, Cloud Build project, etc.
+type Infra struct {
+	// Storage specifies Google Storage location to store *.tar.gz tarballs
+	// produced after executing all local build steps.
+	//
+	// Expected format is "gs://<bucket>/<prefix>". Tarballs will be stored as
+	// "gs://<bucket>/<prefix>/<name>/<sha256>.tar.gz", where <name> comes from
+	// the manifest and <sha256> is a hex sha256 digest of the tarball.
+	//
+	// The bucket should exist already. Its contents is trusted, i.e. if there's
+	// an object with desired <sha256>.tar.gz there already, it won't be replaced.
+	//
+	// Required when using Cloud Build.
+	Storage string `yaml:"storage"`
 }
 
 // BuildStep is one local build operation.
@@ -216,6 +241,11 @@ func (m *Manifest) Initialize(cwd string) error {
 	if m.ContextDir == "" && m.Dockerfile != "" {
 		m.ContextDir = filepath.Dir(m.Dockerfile)
 	}
+	for k, v := range m.Infra {
+		if err := validateInfra(v); err != nil {
+			return errors.Annotate(err, "in infra section %q", k).Err()
+		}
+	}
 	for i := range m.Build {
 		if err := initAndSetDefaults(m.Build[i], cwd); err != nil {
 			return errors.Annotate(err, "bad build step #%d", i+1).Err()
@@ -235,6 +265,22 @@ func validateName(t string) error {
 	default:
 		return nil
 	}
+}
+
+func validateInfra(i Infra) error {
+	if i.Storage != "" {
+		url, err := url.Parse(i.Storage)
+		if err != nil {
+			return errors.Annotate(err, "bad storage %q", i.Storage).Err()
+		}
+		switch {
+		case url.Scheme != "gs":
+			return errors.Reason("bad storage %q, only gs:// is supported currently", i.Storage).Err()
+		case url.Host == "":
+			return errors.Reason("bad storage %q, bucket name is missing", i.Storage).Err()
+		}
+	}
+	return nil
 }
 
 func initAndSetDefaults(bs *BuildStep, cwd string) error {

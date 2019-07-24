@@ -109,4 +109,30 @@ func TestManifest(t *testing.T) {
 			GoBinary: "go.pkg/some/tool",
 		})
 	})
+
+	Convey("Good infra", t, func() {
+		m, err := Read(strings.NewReader(`{"name": "zzz", "infra": {
+			"infra1": {"storage": "gs://bucket"},
+			"infra2": {"storage": "gs://bucket/path"}
+		}}`), "")
+		So(err, ShouldBeNil)
+		So(m.Infra, ShouldResemble, map[string]Infra{
+			"infra1": {Storage: "gs://bucket"},
+			"infra2": {Storage: "gs://bucket/path"},
+		})
+	})
+
+	Convey("Unsupported storage", t, func() {
+		_, err := Read(strings.NewReader(`{"name": "zzz", "infra": {
+			"infra1": {"storage": "ftp://bucket"}
+		}}`), "")
+		So(err, ShouldErrLike, `in infra section "infra1": bad storage "ftp://bucket", only gs:// is supported currently`)
+	})
+
+	Convey("No bucket in storage", t, func() {
+		_, err := Read(strings.NewReader(`{"name": "zzz", "infra": {
+			"infra1": {"storage": "gs:///zzz"}
+		}}`), "")
+		So(err, ShouldErrLike, `in infra section "infra1": bad storage "gs:///zzz", bucket name is missing`)
+	})
 }
