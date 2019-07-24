@@ -362,8 +362,8 @@ def _ParseIssueRequestUsers(cnxn, post_data, services):
     owner_id = framework_constants.NO_USER_SPECIFIED
 
   # Lookup the user IDs of the Cc addresses to add or remove.
-  cc_ids = [all_user_ids.get(cc) for cc in cc_usernames]
-  cc_ids_remove = [all_user_ids.get(cc) for cc in cc_usernames_remove]
+  cc_ids = [all_user_ids.get(cc) for cc in cc_usernames if cc]
+  cc_ids_remove = [all_user_ids.get(cc) for cc in cc_usernames_remove if cc]
 
   return ParsedUsers(owner_email, owner_id, cc_usernames, cc_usernames_remove,
                      cc_ids, cc_ids_remove)
@@ -957,7 +957,7 @@ def ParseAdminUsers(cnxn, admins_str, user_service):
   admins, _remove = _ClassifyPlusMinusItems(
       re.split('[,;\s]+', admins_str))
   all_user_ids = user_service.LookupUserIDs(cnxn, admins, autocreate=True)
-  admin_ids = [all_user_ids[username] for username in admins]
+  admin_ids = [all_user_ids[username] for username in admins if username]
   return admin_ids, admins_str
 
 

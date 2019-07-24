@@ -330,10 +330,12 @@ class UserService(object):
       exceptions.NoSuchUserException: if some users were not found and
           autocreate is False.
     """
-    # Skip any addresses that look like "--", because that means "no user".
+    # Skip any addresses that look like "--" or are empty,
+    # because that means "no user".
     # Also, make sure all email addresses are lower case.
     needed_emails = [email.lower() for email in emails
-                     if not framework_constants.NO_VALUE_RE.match(email)]
+                     if email
+                     and not framework_constants.NO_VALUE_RE.match(email)]
 
     # Look up these users in the RAM cache
     user_id_dict = self.LookupExistingUserIDs(cnxn, needed_emails)

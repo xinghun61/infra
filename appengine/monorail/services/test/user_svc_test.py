@@ -214,6 +214,15 @@ class UserServiceTest(unittest.TestCase):
     self.mox.VerifyAll()
     self.assertEqual({}, user_id_dict)
 
+  def testLookupUserIDs_NoUserValue(self):
+    self.user_service.user_tbl.Select = mock.Mock(
+        return_value=[('b@example.com', 222)])
+    user_id_dict = self.user_service.LookupUserIDs(
+        self.cnxn, [framework_constants.NO_VALUES, '', 'b@example.com'])
+    self.assertEqual({'b@example.com': 222}, user_id_dict)
+    self.user_service.user_tbl.Select.assert_called_once_with(
+        self.cnxn, cols=['email', 'user_id'], email=['b@example.com'])
+
   def testLookupUserID(self):
     self.SetUpLookupUserIDs()  # Same as testLookupUserIDs()
     self.user_service.user_id_cache.CacheItem('a@example.com', 111)

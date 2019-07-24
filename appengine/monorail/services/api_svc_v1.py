@@ -900,9 +900,10 @@ class MonorailApi(remote.Service):
               'The specified owner %s does not exist.' % request.owner.name)
 
       cc_ids = []
+      request.cc = [cc for cc in request.cc if cc]
       if request.cc:
         cc_ids = list(self._services.user.LookupUserIDs(
-            mar.cnxn, [ap.name for ap in request.cc if ap.name],
+            mar.cnxn, [ap.name for ap in request.cc],
             autocreate=True).values())
       comp_ids = api_pb2_v1_helpers.convert_component_ids(
           mar.config, request.components)
@@ -1173,7 +1174,9 @@ class MonorailApi(remote.Service):
     user_emails.update([mar.auth.email] + request.admin + request.cc)
     user_ids_dict = self._services.user.LookupUserIDs(
         mar.cnxn, list(user_emails), autocreate=False)
+    request.admin = [admin for admin in request.admin if admin]
     admin_ids = [user_ids_dict[uname] for uname in request.admin]
+    request.cc = [cc for cc in request.cc if cc]
     cc_ids = [user_ids_dict[uname] for uname in request.cc]
     label_ids = []  # TODO(jrobbins): allow API clients to specify this too.
 
@@ -1282,11 +1285,11 @@ class MonorailApi(remote.Service):
       elif update.field == api_pb2_v1.ComponentUpdateFieldID.ADMIN:
         user_ids_dict = self._services.user.LookupUserIDs(
             mar.cnxn, list(update.admin), autocreate=True)
-        new_admin_ids = [user_ids_dict[email] for email in update.admin]
+        new_admin_ids = list(set(user_ids_dict.values()))
       elif update.field == api_pb2_v1.ComponentUpdateFieldID.CC:
         user_ids_dict = self._services.user.LookupUserIDs(
             mar.cnxn, list(update.cc), autocreate=True)
-        new_cc_ids = [user_ids_dict[email] for email in update.cc]
+        new_cc_ids = list(set(user_ids_dict.values()))
         update_filterrule = True
       elif update.field == api_pb2_v1.ComponentUpdateFieldID.DEPRECATED:
         new_deprecated = update.deprecated

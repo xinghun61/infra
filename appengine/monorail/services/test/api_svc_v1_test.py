@@ -365,7 +365,7 @@ class MonorailApiTest(testing.EndpointsTestCase):
 
     issue_dict = {
       'blockedOn': [{'issueId': 1}],
-      'cc': [{'name': 'user@example.com'}],
+      'cc': [{'name': 'user@example.com'}, {'name': ''}, {'name': ' '}],
       'description': 'description',
       'labels': ['label1', 'label2'],
       'owner': {'name': 'requester@example.com'},
@@ -1555,7 +1555,7 @@ class MonorailApiTest(testing.EndpointsTestCase):
     cd_dict = {
       'componentName': 'Test',
       'description':'test comp',
-      'cc': ['requester@example.com']}
+      'cc': ['requester@example.com', '']}
     self.request.update(cd_dict)
 
     resp = self.call_api('components_create', self.request).json_body
@@ -1666,7 +1666,8 @@ class MonorailApiTest(testing.EndpointsTestCase):
       'componentPath': 'API',
       'updates': [
           {'field': 'DESCRIPTION', 'description': ''},
-          {'field': 'CC', 'cc': ['requester@example.com', 'user@example.com']},
+          {'field': 'CC', 'cc': [
+              'requester@example.com', 'user@example.com', '', ' ']},
           {'field': 'DEPRECATED', 'deprecated': True}]}
     self.request.update(cd_dict)
     _ = self.call_api('components_update', self.request).json_body
@@ -1674,7 +1675,7 @@ class MonorailApiTest(testing.EndpointsTestCase):
         'API', self.config)
     self.assertIsNotNone(component_def)
     self.assertEqual('', component_def.docstring)
-    self.assertEqual([111, 222], component_def.cc_ids)
+    self.assertItemsEqual([111, 222], component_def.cc_ids)
     self.assertTrue(component_def.deprecated)
 
     cd_dict = {

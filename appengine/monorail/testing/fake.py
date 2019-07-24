@@ -533,7 +533,10 @@ class UserService(object):
   def LookupUserIDs(self, cnxn, emails, autocreate=False,
                     allowgroups=False):
     email_dict = {}
-    for email in emails:
+    needed_emails = [email.lower() for email in emails
+                     if email
+                     and not framework_constants.NO_VALUE_RE.match(email)]
+    for email in needed_emails:
       user_id = self.users_by_email.get(email)
       if not user_id:
         if autocreate and validate.IsValidEmail(email):

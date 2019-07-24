@@ -201,9 +201,9 @@ class AssignmentParser(object):
       try:
         add, remove = _ParsePlusMinusList(value)
         self.cc_add = [_LookupMeOrUsername(cnxn, cc, services, user_id)
-                       for cc in add]
+                       for cc in add if cc]
         self.cc_remove = [_LookupMeOrUsername(cnxn, cc, services, user_id)
-                          for cc in remove]
+                          for cc in remove if cc]
         for user_id in self.cc_add:
           if user_id not in self.cc_list:
             self.cc_list.append(user_id)
