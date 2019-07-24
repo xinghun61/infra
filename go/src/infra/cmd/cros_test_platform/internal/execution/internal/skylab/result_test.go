@@ -122,9 +122,10 @@ func TestSingleAutotestTaskResults(t *testing.T) {
 			Convey(c.description, func() {
 				Convey("then task results are correctly converted to verdict.", func() {
 					attempt := &attempt{autotestResult: c.result, state: jsonrpc.TaskState_COMPLETED}
-					result := toTaskResult("", attempt, urler)
+					result := toTaskResult("", attempt, 5, urler)
 					So(result.State.LifeCycle, ShouldEqual, test_platform.TaskState_LIFE_CYCLE_COMPLETED)
 					So(result.State.Verdict, ShouldEqual, c.expectVerdict)
+					So(result.Attempt, ShouldEqual, 5)
 				})
 			})
 		}

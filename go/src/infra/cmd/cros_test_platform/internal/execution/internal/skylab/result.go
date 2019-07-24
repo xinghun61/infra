@@ -65,14 +65,14 @@ func getAutotestResult(ctx context.Context, sResult *swarming_api.SwarmingRpcsTa
 func toTaskResults(testRuns []*testRun, urler swarming.URLer) []*steps.ExecuteResponse_TaskResult {
 	var results []*steps.ExecuteResponse_TaskResult
 	for _, test := range testRuns {
-		for _, attempt := range test.attempts {
-			results = append(results, toTaskResult(test.test.Name, attempt, urler))
+		for num, attempt := range test.attempts {
+			results = append(results, toTaskResult(test.test.Name, attempt, num, urler))
 		}
 	}
 	return results
 }
 
-func toTaskResult(testName string, attempt *attempt, urler swarming.URLer) *steps.ExecuteResponse_TaskResult {
+func toTaskResult(testName string, attempt *attempt, attemptNum int, urler swarming.URLer) *steps.ExecuteResponse_TaskResult {
 	var verdict test_platform.TaskState_Verdict
 
 	switch {
@@ -91,6 +91,7 @@ func toTaskResult(testName string, attempt *attempt, urler swarming.URLer) *step
 			Verdict:   verdict,
 		},
 		TaskUrl: urler.GetTaskURL(attempt.taskID),
+		Attempt: int32(attemptNum),
 	}
 }
 
