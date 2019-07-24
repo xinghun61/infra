@@ -25,15 +25,15 @@ from recipe_engine.recipe_api import Property
 DEPS = [
   'build/puppet_service_account',
   'depot_tools/bot_update',
-  'depot_tools/cipd',
   'depot_tools/gclient',
   'recipe_engine/context',
-  'recipe_engine/file',
   'recipe_engine/path',
   'recipe_engine/properties',
   'recipe_engine/python',
   'recipe_engine/runtime',
   'recipe_engine/step',
+
+  'cloudkms',
 ]
 
 PROPERTIES = {
@@ -103,23 +103,6 @@ KMS_CRYPTO_KEY = ('projects/chops-kms/locations/global/keyRings/'
 CREDS_FILE = 'dataflow-launcher'
 
 
-def _install_creds(api):
-  cloudkms_dir = api.path['start_dir'].join('cloudkms')
-  api.cipd.ensure(
-      cloudkms_dir, {'infra/tools/luci/cloudkms/${platform}': 'latest'})
-  # Stick into directory which is guaranteed to be cleaned up by recipe.
-  creds_dir = api.path['cleanup'].join('creds')
-  api.file.ensure_directory('ensure creds dir', creds_dir)
-  creds_file = api.path.join(creds_dir, 'decrypted.json')
-  api.step('decrypt', [
-      cloudkms_dir.join('cloudkms'), 'decrypt',
-      '-input', api.repo_resource('recipes', 'recipes', 'assets', CREDS_FILE),
-      '-output', creds_file,
-      KMS_CRYPTO_KEY,
-  ])
-  return creds_file
-
-
 def RunSteps(api, workflow, job_name, gcp_project_id, num_workers, timeout):
   num_workers = int(num_workers)
   timeout = int(timeout)
@@ -133,11 +116,17 @@ def RunSteps(api, workflow, job_name, gcp_project_id, num_workers, timeout):
   workflow_path = workflow_path.join(*workflow.split('/'))
   setup_path = api.path['checkout'].join('packages', 'dataflow', 'setup.py')
   python_path = api.path['checkout'].join('ENV', 'bin', 'python')
+  creds_path = api.path['cleanup'].join(CREDS_FILE + '.json')
+  api.cloudkms.decrypt(
+    KMS_CRYPTO_KEY,
+    api.repo_resource('recipes', 'recipes', 'assets', CREDS_FILE),
+    creds_path,
+  )
   # Clear PYTHONPATH since we want to use infra/ENV and not whatever the recipe
   # sets
   env = {
     'PYTHONPATH': '',
-    'GOOGLE_APPLICATION_CREDENTIALS': _install_creds(api),
+    'GOOGLE_APPLICATION_CREDENTIALS': creds_path,
   }
   with api.context(env=env):
     cmd = [python_path, workflow_path,

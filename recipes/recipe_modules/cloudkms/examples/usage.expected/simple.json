@@ -1,0 +1,53 @@
+[
+  {
+    "cmd": [
+      "cipd",
+      "ensure",
+      "-root",
+      "[START_DIR]/cloudkms",
+      "-ensure-file",
+      "infra/tools/luci/cloudkms/${platform} latest",
+      "-json-output",
+      "/path/to/tmp/json"
+    ],
+    "name": "ensure_installed",
+    "~followup_annotations": [
+      "@@@STEP_LOG_LINE@json.output@{@@@",
+      "@@@STEP_LOG_LINE@json.output@  \"result\": [@@@",
+      "@@@STEP_LOG_LINE@json.output@    {@@@",
+      "@@@STEP_LOG_LINE@json.output@      \"instance_id\": \"resolved-instance_id-of-latest----------\", @@@",
+      "@@@STEP_LOG_LINE@json.output@      \"package\": \"infra/tools/luci/cloudkms/${platform}\"@@@",
+      "@@@STEP_LOG_LINE@json.output@    }@@@",
+      "@@@STEP_LOG_LINE@json.output@  ]@@@",
+      "@@@STEP_LOG_LINE@json.output@}@@@",
+      "@@@STEP_LOG_END@json.output@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "[START_DIR]/cloudkms/cloudkms",
+      "decrypt",
+      "-input",
+      "[START_DIR]/ciphertext",
+      "-output",
+      "[CLEANUP]/plaintext",
+      "projects/PROJECT/locations/global/keyRings/KEYRING/cryptoKeys/KEY"
+    ],
+    "name": "decrypt"
+  },
+  {
+    "cmd": [
+      "[START_DIR]/cloudkms/cloudkms",
+      "decrypt",
+      "-input",
+      "[START_DIR]/encrypted",
+      "-output",
+      "[CLEANUP]/decrypted",
+      "projects/PROJECT/locations/global/keyRings/KEYRING/cryptoKeys/KEY"
+    ],
+    "name": "decrypt (2)"
+  },
+  {
+    "name": "$result"
+  }
+]

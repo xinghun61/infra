@@ -13,11 +13,12 @@ See: //docs/testing/web_platform_tests.md (https://goo.gl/rSRGmZ)
 """
 
 DEPS = [
+  'cloudkms',
+
   'build/chromium',
   'depot_tools/bot_update',
   'depot_tools/gclient',
   'depot_tools/git',
-  'recipe_engine/json',
   'recipe_engine/path',
   'recipe_engine/properties',
   'recipe_engine/python',
@@ -25,16 +26,26 @@ DEPS = [
 ]
 
 
+# See wpt_import.py for details.
+CREDS_NAME = 'wpt-import-export'
+KMS_CRYPTO_KEY = (
+    'projects/chops-kms/locations/global/keyRings/%s/cryptoKeys/default'
+    % CREDS_NAME)
+
+
 def RunSteps(api):
   api.gclient.set_config('chromium')
   api.bot_update.ensure_checkout()
+  creds = api.path['cleanup'].join(CREDS_NAME + '.json')
+  api.cloudkms.decrypt(
+      KMS_CRYPTO_KEY,
+      api.repo_resource('recipes', 'recipes', 'assets', CREDS_NAME),
+      creds,
+  )
 
   script = api.path['checkout'].join('third_party', 'blink', 'tools',
                                      'wpt_export.py')
-  args = [
-    '--credentials-json',
-    '/creds/json/wpt-export.json',
-  ]
+  args = ['--credentials-json', creds]
   api.python('Export Chromium commits and in-flight CLs to WPT', script, args)
 
 

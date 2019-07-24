@@ -3,6 +3,7 @@
 ## Table of Contents
 
 **[Recipe Modules](#Recipe-Modules)**
+  * [cloudkms](#recipe_modules-cloudkms)
   * [conda](#recipe_modules-conda) &mdash; Functions to work with Miniconda python environment.
   * [infra_checkout](#recipe_modules-infra_checkout)
   * [infra_cipd](#recipe_modules-infra_cipd)
@@ -19,6 +20,7 @@
   * [build_conda_cipd_pkg](#recipes-build_conda_cipd_pkg) &mdash; Recipe to build CIPD package with sealed Conda environment.
   * [build_from_tarball](#recipes-build_from_tarball)
   * [build_gsutil_cipd_pkg](#recipes-build_gsutil_cipd_pkg)
+  * [cloudkms:examples/usage](#recipes-cloudkms_examples_usage)
   * [cros_flash](#recipes-cros_flash) &mdash; This recipe is used to flash a CrOS DUT on a Chromium bot.
   * [cros_flash_scheduler](#recipes-cros_flash_scheduler) &mdash; This recipe is used to keep Chrome's pools of CrOS DUTs up to date.
   * [depot_tools_builder](#recipes-depot_tools_builder) &mdash; Recipe to build windows depot_tools bootstrap zipfile.
@@ -71,6 +73,32 @@
   * [wpt_import](#recipes-wpt_import) &mdash; Imports changes from web-platform-tests into Chromium.
 ## Recipe Modules
 
+### *recipe_modules* / [cloudkms](/recipes/recipe_modules/cloudkms)
+
+[DEPS](/recipes/recipe_modules/cloudkms/__init__.py#5): [depot\_tools/cipd][depot_tools/recipe_modules/cipd], [recipe\_engine/path][recipe_engine/recipe_modules/path], [recipe\_engine/step][recipe_engine/recipe_modules/step]
+
+#### **class [CloudKMSApi](/recipes/recipe_modules/cloudkms/api.py#8)([RecipeApi][recipe_engine/wkt/RecipeApi]):**
+
+API for interacting with CloudKMS using the LUCI cloudkms tool.
+
+&emsp; **@property**<br>&mdash; **def [cloudkms\_path](/recipes/recipe_modules/cloudkms/api.py#15)(self):**
+
+Returns the path to LUCI cloudkms binary.
+
+When the property is accessed the first time, cloudkms will be installed
+using cipd.
+
+&mdash; **def [decrypt](/recipes/recipe_modules/cloudkms/api.py#29)(self, kms_crypto_key, input_file, output_file):**
+
+Decrypt a ciphertext file with a CloudKMS key.
+
+Args:
+  * kms_crypto_key (str) - The name of the encryption key, e.g.
+    projects/chops-kms/locations/global/keyRings/[KEYRING]/cryptoKeys/[KEY]
+  * input_file (Path) - The path to the input (ciphertext) file.
+  * output_file (Path) - The path to the output (plaintext) file. It is
+    recommended that this is inside api.path['cleanup'] to ensure the
+    plaintext file will be cleaned up by recipe.
 ### *recipe_modules* / [conda](/recipes/recipe_modules/conda)
 
 [DEPS](/recipes/recipe_modules/conda/__init__.py#1): [depot\_tools/cipd][depot_tools/recipe_modules/cipd], [recipe\_engine/context][recipe_engine/recipe_modules/context], [recipe\_engine/file][recipe_engine/recipe_modules/file], [recipe\_engine/path][recipe_engine/recipe_modules/path], [recipe\_engine/platform][recipe_engine/recipe_modules/platform], [recipe\_engine/python][recipe_engine/recipe_modules/python], [recipe\_engine/step][recipe_engine/recipe_modules/step], [recipe\_engine/url][recipe_engine/recipe_modules/url]
@@ -685,6 +713,11 @@ To build a new package for all platforms:
 [DEPS](/recipes/recipes/build_gsutil_cipd_pkg.py#5): [build/zip][build/recipe_modules/zip], [depot\_tools/cipd][depot_tools/recipe_modules/cipd], [depot\_tools/gsutil][depot_tools/recipe_modules/gsutil], [recipe\_engine/file][recipe_engine/recipe_modules/file], [recipe\_engine/path][recipe_engine/recipe_modules/path], [recipe\_engine/platform][recipe_engine/recipe_modules/platform], [recipe\_engine/properties][recipe_engine/recipe_modules/properties], [recipe\_engine/python][recipe_engine/recipe_modules/python], [recipe\_engine/raw\_io][recipe_engine/recipe_modules/raw_io], [recipe\_engine/step][recipe_engine/recipe_modules/step]
 
 &mdash; **def [RunSteps](/recipes/recipes/build_gsutil_cipd_pkg.py#52)(api):**
+### *recipes* / [cloudkms:examples/usage](/recipes/recipe_modules/cloudkms/examples/usage.py)
+
+[DEPS](/recipes/recipe_modules/cloudkms/examples/usage.py#5): [cloudkms](#recipe_modules-cloudkms), [recipe\_engine/path][recipe_engine/recipe_modules/path]
+
+&mdash; **def [RunSteps](/recipes/recipe_modules/cloudkms/examples/usage.py#11)(api):**
 ### *recipes* / [cros\_flash](/recipes/recipes/cros_flash.py)
 
 [DEPS](/recipes/recipes/cros_flash.py#26): [build/chromite][build/recipe_modules/chromite], [build/repo][build/recipe_modules/repo], [depot\_tools/gsutil][depot_tools/recipe_modules/gsutil], [recipe\_engine/context][recipe_engine/recipe_modules/context], [recipe\_engine/path][recipe_engine/recipe_modules/path], [recipe\_engine/platform][recipe_engine/recipe_modules/platform], [recipe\_engine/properties][recipe_engine/recipe_modules/properties], [recipe\_engine/python][recipe_engine/recipe_modules/python], [recipe\_engine/raw\_io][recipe_engine/recipe_modules/raw_io], [recipe\_engine/step][recipe_engine/recipe_modules/step], [recipe\_engine/tempfile][recipe_engine/recipe_modules/tempfile]
@@ -953,7 +986,7 @@ A continuous builder which runs recipe tests.
 &mdash; **def [RunSteps](/recipes/recipes/recipes_py_continuous.py#17)(api):**
 ### *recipes* / [remote\_execute\_dataflow\_workflow](/recipes/recipes/remote_execute_dataflow_workflow.py)
 
-[DEPS](/recipes/recipes/remote_execute_dataflow_workflow.py#25): [build/puppet\_service\_account][build/recipe_modules/puppet_service_account], [depot\_tools/bot\_update][depot_tools/recipe_modules/bot_update], [depot\_tools/cipd][depot_tools/recipe_modules/cipd], [depot\_tools/gclient][depot_tools/recipe_modules/gclient], [recipe\_engine/context][recipe_engine/recipe_modules/context], [recipe\_engine/file][recipe_engine/recipe_modules/file], [recipe\_engine/path][recipe_engine/recipe_modules/path], [recipe\_engine/properties][recipe_engine/recipe_modules/properties], [recipe\_engine/python][recipe_engine/recipe_modules/python], [recipe\_engine/runtime][recipe_engine/recipe_modules/runtime], [recipe\_engine/step][recipe_engine/recipe_modules/step]
+[DEPS](/recipes/recipes/remote_execute_dataflow_workflow.py#25): [build/puppet\_service\_account][build/recipe_modules/puppet_service_account], [depot\_tools/bot\_update][depot_tools/recipe_modules/bot_update], [depot\_tools/gclient][depot_tools/recipe_modules/gclient], [cloudkms](#recipe_modules-cloudkms), [recipe\_engine/context][recipe_engine/recipe_modules/context], [recipe\_engine/path][recipe_engine/recipe_modules/path], [recipe\_engine/properties][recipe_engine/recipe_modules/properties], [recipe\_engine/python][recipe_engine/recipe_modules/python], [recipe\_engine/runtime][recipe_engine/recipe_modules/runtime], [recipe\_engine/step][recipe_engine/recipe_modules/step]
 
 This recipe is used to execute Dataflow workflows.
 
@@ -970,7 +1003,7 @@ This recipe uses dataflow-launcher service account
 `dataflow-launcher@chrome-infra-events.iam.gserviceaccount.com`.
 It must have the permission to schedule a Dataflow job for your project.
 
-&mdash; **def [RunSteps](/recipes/recipes/remote_execute_dataflow_workflow.py#123)(api, workflow, job_name, gcp_project_id, num_workers, timeout):**
+&mdash; **def [RunSteps](/recipes/recipes/remote_execute_dataflow_workflow.py#106)(api, workflow, job_name, gcp_project_id, num_workers, timeout):**
 ### *recipes* / [snapshots/builder](/recipes/recipes/snapshots/builder.py)
 
 [DEPS](/recipes/recipes/snapshots/builder.py#5): [recipe\_engine/buildbucket][recipe_engine/recipe_modules/buildbucket], [recipe\_engine/cipd][recipe_engine/recipe_modules/cipd], [recipe\_engine/json][recipe_engine/recipe_modules/json], [recipe\_engine/path][recipe_engine/recipe_modules/path], [recipe\_engine/platform][recipe_engine/recipe_modules/platform], [recipe\_engine/properties][recipe_engine/recipe_modules/properties], [recipe\_engine/step][recipe_engine/recipe_modules/step]
@@ -1146,7 +1179,7 @@ but harmless.
 &mdash; **def [RunSteps](/recipes/recipe_modules/windows_sdk/examples/full.py#13)(api):**
 ### *recipes* / [wpt\_export](/recipes/recipes/wpt_export.py)
 
-[DEPS](/recipes/recipes/wpt_export.py#15): [build/chromium][build/recipe_modules/chromium], [depot\_tools/bot\_update][depot_tools/recipe_modules/bot_update], [depot\_tools/gclient][depot_tools/recipe_modules/gclient], [depot\_tools/git][depot_tools/recipe_modules/git], [recipe\_engine/json][recipe_engine/recipe_modules/json], [recipe\_engine/path][recipe_engine/recipe_modules/path], [recipe\_engine/properties][recipe_engine/recipe_modules/properties], [recipe\_engine/python][recipe_engine/recipe_modules/python], [recipe\_engine/runtime][recipe_engine/recipe_modules/runtime]
+[DEPS](/recipes/recipes/wpt_export.py#15): [build/chromium][build/recipe_modules/chromium], [depot\_tools/bot\_update][depot_tools/recipe_modules/bot_update], [depot\_tools/gclient][depot_tools/recipe_modules/gclient], [depot\_tools/git][depot_tools/recipe_modules/git], [cloudkms](#recipe_modules-cloudkms), [recipe\_engine/path][recipe_engine/recipe_modules/path], [recipe\_engine/properties][recipe_engine/recipe_modules/properties], [recipe\_engine/python][recipe_engine/recipe_modules/python], [recipe\_engine/runtime][recipe_engine/recipe_modules/runtime]
 
 Exports commits in Chromium to the web-platform-tests repo.
 
@@ -1157,10 +1190,10 @@ pull requests.
 
 See: //docs/testing/web_platform_tests.md (https://goo.gl/rSRGmZ)
 
-&mdash; **def [RunSteps](/recipes/recipes/wpt_export.py#28)(api):**
+&mdash; **def [RunSteps](/recipes/recipes/wpt_export.py#36)(api):**
 ### *recipes* / [wpt\_import](/recipes/recipes/wpt_import.py)
 
-[DEPS](/recipes/recipes/wpt_import.py#17): [build/chromium][build/recipe_modules/chromium], [depot\_tools/bot\_update][depot_tools/recipe_modules/bot_update], [depot\_tools/gclient][depot_tools/recipe_modules/gclient], [depot\_tools/git][depot_tools/recipe_modules/git], [depot\_tools/git\_cl][depot_tools/recipe_modules/git_cl], [recipe\_engine/context][recipe_engine/recipe_modules/context], [recipe\_engine/file][recipe_engine/recipe_modules/file], [recipe\_engine/json][recipe_engine/recipe_modules/json], [recipe\_engine/path][recipe_engine/recipe_modules/path], [recipe\_engine/properties][recipe_engine/recipe_modules/properties], [recipe\_engine/python][recipe_engine/recipe_modules/python], [recipe\_engine/runtime][recipe_engine/recipe_modules/runtime], [recipe\_engine/step][recipe_engine/recipe_modules/step]
+[DEPS](/recipes/recipes/wpt_import.py#17): [build/chromium][build/recipe_modules/chromium], [depot\_tools/bot\_update][depot_tools/recipe_modules/bot_update], [depot\_tools/gclient][depot_tools/recipe_modules/gclient], [depot\_tools/git][depot_tools/recipe_modules/git], [depot\_tools/git\_cl][depot_tools/recipe_modules/git_cl], [cloudkms](#recipe_modules-cloudkms), [recipe\_engine/context][recipe_engine/recipe_modules/context], [recipe\_engine/json][recipe_engine/recipe_modules/json], [recipe\_engine/path][recipe_engine/recipe_modules/path], [recipe\_engine/properties][recipe_engine/recipe_modules/properties], [recipe\_engine/python][recipe_engine/recipe_modules/python], [recipe\_engine/runtime][recipe_engine/recipe_modules/runtime]
 
 Imports changes from web-platform-tests into Chromium.
 
@@ -1171,9 +1204,9 @@ before committing to Chromium.
 
 See: //docs/testing/web_platform_tests.md (https://goo.gl/rSRGmZ)
 
-&mdash; **def [RunSteps](/recipes/recipes/wpt_import.py#34)(api):**
+&mdash; **def [RunSteps](/recipes/recipes/wpt_import.py#45)(api):**
 
-&mdash; **def [git\_cl\_issue\_link](/recipes/recipes/wpt_import.py#74)(api):**
+&mdash; **def [git\_cl\_issue\_link](/recipes/recipes/wpt_import.py#91)(api):**
 
 Runs a step which adds a link to the current CL if there is one.
 

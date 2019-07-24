@@ -103,27 +103,12 @@
   },
   {
     "cmd": [
-      "python",
-      "-u",
-      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
-      "--json-output",
-      "/path/to/tmp/json",
-      "ensure-directory",
-      "--mode",
-      "0777",
-      "[CLEANUP]/creds"
-    ],
-    "infra_step": true,
-    "name": "ensure creds dir"
-  },
-  {
-    "cmd": [
       "[START_DIR]/cloudkms/cloudkms",
       "decrypt",
       "-input",
       "RECIPE_REPO[infra]/recipes/recipes/assets/dataflow-launcher",
       "-output",
-      "[CLEANUP]/creds/decrypted.json",
+      "[CLEANUP]/dataflow-launcher.json",
       "projects/chops-kms/locations/global/keyRings/dataflow-launcher/cryptoKeys/default"
     ],
     "name": "decrypt"
@@ -149,7 +134,7 @@
       "5"
     ],
     "env": {
-      "GOOGLE_APPLICATION_CREDENTIALS": "[CLEANUP]/creds/decrypted.json",
+      "GOOGLE_APPLICATION_CREDENTIALS": "[CLEANUP]/dataflow-launcher.json",
       "PYTHONPATH": ""
     },
     "name": "Remote execute",

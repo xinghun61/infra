@@ -162,11 +162,47 @@
   },
   {
     "cmd": [
+      "cipd",
+      "ensure",
+      "-root",
+      "[START_DIR]/cloudkms",
+      "-ensure-file",
+      "infra/tools/luci/cloudkms/${platform} latest",
+      "-json-output",
+      "/path/to/tmp/json"
+    ],
+    "name": "ensure_installed",
+    "~followup_annotations": [
+      "@@@STEP_LOG_LINE@json.output@{@@@",
+      "@@@STEP_LOG_LINE@json.output@  \"result\": [@@@",
+      "@@@STEP_LOG_LINE@json.output@    {@@@",
+      "@@@STEP_LOG_LINE@json.output@      \"instance_id\": \"resolved-instance_id-of-latest----------\", @@@",
+      "@@@STEP_LOG_LINE@json.output@      \"package\": \"infra/tools/luci/cloudkms/${platform}\"@@@",
+      "@@@STEP_LOG_LINE@json.output@    }@@@",
+      "@@@STEP_LOG_LINE@json.output@  ]@@@",
+      "@@@STEP_LOG_LINE@json.output@}@@@",
+      "@@@STEP_LOG_END@json.output@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "[START_DIR]/cloudkms/cloudkms",
+      "decrypt",
+      "-input",
+      "RECIPE_REPO[infra]/recipes/recipes/assets/wpt-import-export",
+      "-output",
+      "[CLEANUP]/wpt-import-export.json",
+      "projects/chops-kms/locations/global/keyRings/wpt-import-export/cryptoKeys/default"
+    ],
+    "name": "decrypt"
+  },
+  {
+    "cmd": [
       "python",
       "-u",
       "[START_DIR]/src/third_party/blink/tools/wpt_export.py",
       "--credentials-json",
-      "/creds/json/wpt-export.json"
+      "[CLEANUP]/wpt-import-export.json"
     ],
     "name": "Export Chromium commits and in-flight CLs to WPT"
   },

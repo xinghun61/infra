@@ -15,20 +15,31 @@ See: //docs/testing/web_platform_tests.md (https://goo.gl/rSRGmZ)
 import contextlib
 
 DEPS = [
+  'cloudkms',
+
   'build/chromium',
   'depot_tools/bot_update',
   'depot_tools/gclient',
   'depot_tools/git',
   'depot_tools/git_cl',
   'recipe_engine/context',
-  'recipe_engine/file',
   'recipe_engine/json',
   'recipe_engine/path',
   'recipe_engine/properties',
   'recipe_engine/python',
   'recipe_engine/runtime',
-  'recipe_engine/step',
 ]
+
+
+# The credentials JSON is encrypted with KMS_CRYPTO_KEY and then stored in
+# assets/CREDS_NAME.
+# See the following comment for how to update the credentials:
+# https://cs.chromium.org/chromium/infra/recipes/recipes/remote_execute_dataflow_workflow.py?l=72&rcl=7bc161db4cc3c89acb8577c25011f5c0758e5956
+# Note that the file name and the key name are different.
+CREDS_NAME = 'wpt-import-export'
+KMS_CRYPTO_KEY = (
+    'projects/chops-kms/locations/global/keyRings/%s/cryptoKeys/default'
+    % CREDS_NAME)
 
 
 def RunSteps(api):
@@ -40,6 +51,12 @@ def RunSteps(api):
   api.git_cl.set_config('basic')
   api.git_cl.c.repo_location = api.path['checkout']
   blink_dir = api.path['checkout'].join('third_party', 'blink')
+  creds = api.path['cleanup'].join(CREDS_NAME + '.json')
+  api.cloudkms.decrypt(
+      KMS_CRYPTO_KEY,
+      api.repo_resource('recipes', 'recipes', 'assets', CREDS_NAME),
+      creds,
+  )
 
   @contextlib.contextmanager
   def new_branch(name):
@@ -58,7 +75,7 @@ def RunSteps(api):
     script = blink_dir.join('tools', 'wpt_import.py')
     args = [
       '--credentials-json',
-      '/creds/json/wpt-import.json',
+      creds,
       '--auto-update',
       '--auto-file-bugs',
     ]
