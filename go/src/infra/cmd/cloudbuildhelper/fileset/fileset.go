@@ -179,7 +179,7 @@ func (s *Set) ToTar(w *tar.Writer) error {
 			return w.WriteHeader(&tar.Header{
 				Typeflag: tar.TypeDir,
 				Name:     f.Path + "/",
-				Mode:     0777,
+				Mode:     0755,
 			})
 		}
 
