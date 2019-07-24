@@ -8,10 +8,11 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"path/filepath"
 
 	"github.com/maruel/subcommands"
+	"golang.org/x/oauth2"
 
+	"go.chromium.org/luci/auth"
 	"go.chromium.org/luci/auth/client/authcli"
 	"go.chromium.org/luci/common/cli"
 	"go.chromium.org/luci/common/errors"
@@ -25,8 +26,9 @@ type execCb func(ctx context.Context) error
 type commandBase struct {
 	subcommands.CommandRunBase
 
-	exec    execCb    // called to actually execute the command
-	posArgs []*string // will be filled in by positional arguments
+	exec     execCb    // called to actually execute the command
+	needAuth bool      // set in init, true if we have auth flags registered
+	posArgs  []*string // will be filled in by positional arguments
 
 	logConfig logging.Config // -log-* flags
 	authFlags authcli.Flags  // -auth-* flags
@@ -35,12 +37,13 @@ type commandBase struct {
 // init register base flags. Must be called.
 func (c *commandBase) init(exec execCb, needAuth bool, posArgs []*string) {
 	c.exec = exec
+	c.needAuth = needAuth
 	c.posArgs = posArgs
 
 	c.logConfig.Level = logging.Info // default logging level
 	c.logConfig.AddFlags(&c.Flags)
 
-	if needAuth {
+	if c.needAuth {
 		c.authFlags.Register(&c.Flags, authOptions()) // see main.go
 	}
 }
@@ -75,6 +78,28 @@ func (c *commandBase) Run(a subcommands.Application, args []string, env subcomma
 	return 0
 }
 
+// tokenSource returns a source of OAuth2 tokens (based on CLI flags) or
+// auth.ErrLoginRequired if the user needs to login first.
+//
+// This error is sniffed by Run(...) and converted into a comprehensible error
+// message, so no need to handle it specially.
+//
+// Panics if the command was not configured to use auth in c.init(...).
+func (c *commandBase) tokenSource(ctx context.Context) (oauth2.TokenSource, error) {
+	if !c.needAuth {
+		panic("needAuth is false")
+	}
+	opts, err := c.authFlags.Options()
+	if err != nil {
+		return nil, errors.Annotate(err, "bad auth options").Tag(isCLIError).Err()
+	}
+	authn := auth.NewAuthenticator(ctx, auth.SilentLogin, opts)
+	if email, err := authn.GetEmail(); err == nil {
+		logging.Infof(ctx, "Running as %s", email)
+	}
+	return authn.TokenSource()
+}
+
 // isCLIError is tagged into errors caused by bad CLI flags.
 var isCLIError = errors.BoolTag{Key: errors.NewTagKey("bad CLI invocation")}
 
@@ -88,14 +113,11 @@ func handleErr(ctx context.Context, err error) int {
 	switch {
 	case err == nil:
 		return 0
+	case errors.Contains(err, auth.ErrLoginRequired):
+		fmt.Fprintf(os.Stderr, "Need to login first by running:\n  $ %s login\n", os.Args[0])
+		return 3
 	case isCLIError.In(err):
-		executable, eErr := os.Executable()
-		if eErr != nil {
-			executable = "<unknown executable>"
-		} else {
-			executable = filepath.Base(executable)
-		}
-		fmt.Fprintf(os.Stderr, "%s: %s\n", executable, err)
+		fmt.Fprintf(os.Stderr, "%s: %s\n", os.Args[0], err)
 		return 2
 	default:
 		logging.Errorf(ctx, "%s", err)
