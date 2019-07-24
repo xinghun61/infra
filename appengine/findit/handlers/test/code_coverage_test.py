@@ -255,12 +255,12 @@ class ProcessCodeCoverageDataTest(WaterfallTestCase):
     build = mock.Mock()
     build.builder.project = 'chromium'
     build.builder.bucket = 'try'
-    build.builder.builder = 'linux-coverage-rel'
+    build.builder.builder = 'linux-rel'
     build.output.properties.items.return_value = [
         ('coverage_gs_bucket', 'code-coverage-data'),
         ('coverage_metadata_gs_path',
          ('presubmit/chromium-review.googlesource.com/138000/4/try/'
-          'linux-coverage-rel/123456789/metadata'))
+          'linux-rel/123456789/metadata'))
     ]
     build.input.gerrit_changes = [
         mock.Mock(
@@ -301,7 +301,7 @@ class ProcessCodeCoverageDataTest(WaterfallTestCase):
 
     mocked_get_validated_data.assert_called_with(
         '/code-coverage-data/presubmit/chromium-review.googlesource.com/138000/'
-        '4/try/linux-coverage-rel/123456789/metadata/all.json.gz')
+        '4/try/linux-rel/123456789/metadata/all.json.gz')
 
     expected_entity = PresubmitCoverageData.Create(
         server_host='chromium-review.googlesource.com',

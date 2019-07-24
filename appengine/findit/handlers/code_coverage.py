@@ -830,12 +830,12 @@ class ProcessCodeCoverageData(BaseHandler):
               bucket in ('master.tryserver.cast-chromecast-internal.gce') and
               builder in ('libassistant-absolute_coverage'))
 
-    return (
-        project in ('chromium', 'chrome') and
-        bucket in ('coverage', 'ci', 'try') and
-        builder in ('chromeos-vm-code-coverage', 'linux-chromeos-code-coverage',
-                    'linux-chromeos-oobe-code-coverage', 'linux-code-coverage',
-                    'linux-coverage-rel', 'android-code-coverage'))
+    return (project in ('chromium', 'chrome') and
+            bucket in ('coverage', 'ci', 'try') and
+            builder in ('linux-rel', 'chromeos-vm-code-coverage',
+                        'linux-chromeos-code-coverage',
+                        'linux-chromeos-oobe-code-coverage',
+                        'linux-code-coverage', 'android-code-coverage'))
 
   def HandlePost(self):
     """Loads the data from GS bucket, and dumps them into ndb."""
