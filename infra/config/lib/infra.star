@@ -42,6 +42,7 @@ def cq_group(name, repo=None, tree_status_host=None):
       ),
       tree_status_host = tree_status_host,
       retry_config = cq.RETRY_NONE,
+      cancel_stale_tryjobs = True,
   )
 
 

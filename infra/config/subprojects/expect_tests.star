@@ -13,6 +13,7 @@ luci.cq_group(
     name = 'expect_tests cq',
     watch = cq.refset(repo = REPO_URL, refs = [r'refs/heads/master']),
     retry_config = cq.RETRY_NONE,
+    cancel_stale_tryjobs = True,
 )
 
 
