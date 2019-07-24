@@ -74,10 +74,11 @@ var (
 	// Selects words i.e. consecutive letters and numbers
 	justWord = regexp.MustCompile(`[a-zA-Z0-9'-]+`)
 
-	// Patterns within which we don't want to flag misspellings.
-	emailPattern = regexp.MustCompile(`^\w+@\w+\.\w+$`)
-	urlPattern   = regexp.MustCompile(`^https?:\/\/\S+$`)
-	todoPattern  = regexp.MustCompile(`^TODO.*$`)
+	// Patterns that indicate we don't want to flag misspellings. To prevent
+	// false positives, we also match when there are prefixes or suffixes.
+	emailPattern = regexp.MustCompile(`\w+@\w+\.\w+`)
+	urlPattern   = regexp.MustCompile(`https?:\/\/\S+`)
+	todoPattern  = regexp.MustCompile(`TODO\S*`)
 
 	// selects everything except whitespace.
 	whitespaceBreak = regexp.MustCompile(`[^\s]+`)

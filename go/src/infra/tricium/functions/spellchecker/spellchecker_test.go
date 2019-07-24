@@ -137,8 +137,36 @@ func TestSpellCheckerAnalyzeFiles(t *testing.T) {
 		})
 	})
 
+	Convey("TODO notes are not checcked even if there's no space beforehand.", t, func() {
+		fileContent := "//TODO(exmaple): ..."
+		results := &tricium.Data_Results{}
+		analyzeFile(bufio.NewScanner(strings.NewReader(fileContent)), "test.c", false, cp[".c"], results)
+		So(results.Comments, ShouldBeEmpty)
+	})
+
 	Convey("Email addresses are not checked.", t, func() {
 		fileContent := "nams@chromium.org"
+		results := &tricium.Data_Results{}
+		analyzeFile(bufio.NewScanner(strings.NewReader(fileContent)), "test.txt", true, cp[".txt"], results)
+		So(results.Comments, ShouldBeEmpty)
+	})
+
+	Convey("Email addresses are ignored regardless of prefix part.", t, func() {
+		fileContent := "...someting@chromium.org... \n\nTBR=alph@chromium.org\n"
+		results := &tricium.Data_Results{}
+		analyzeFile(bufio.NewScanner(strings.NewReader(fileContent)), "test.txt", true, cp[".txt"], results)
+		So(results.Comments, ShouldBeEmpty)
+	})
+
+	Convey("URLs are ignored regardless of prefix part.", t, func() {
+		fileContent := "URL: (https://exmaple.com/urrl)"
+		results := &tricium.Data_Results{}
+		analyzeFile(bufio.NewScanner(strings.NewReader(fileContent)), "test.txt", true, cp[".txt"], results)
+		So(results.Comments, ShouldBeEmpty)
+	})
+
+	Convey("TODOs are ignored even if there's no space beforehand", t, func() {
+		fileContent := "//TODO(exmaple): ..."
 		results := &tricium.Data_Results{}
 		analyzeFile(bufio.NewScanner(strings.NewReader(fileContent)), "test.txt", true, cp[".txt"], results)
 		So(results.Comments, ShouldBeEmpty)
