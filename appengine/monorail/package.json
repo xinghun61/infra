@@ -32,11 +32,12 @@
     "webpack-cli": "^3.3.2"
   },
   "scripts": {
-    "test": "karma start --coverage --no-colors"
+    "test": "karma start --coverage --no-colors && curl -F \"file=@full_results.json\" -F \"master=luci.infra.try\" -F \"builder=infra-try-frontend\" -F \"testtype=monorail\" --request POST https://test-results-test-hrd.appspot.com/testfile/upload --verbose"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@chopsui/karma-reporter": "^1.0.5",
     "@chopsui/prpc-client": "0.0.2",
     "@chopsui/tsmon-client": "1.0.1",
     "@webcomponents/webcomponentsjs": "^2.2.7",

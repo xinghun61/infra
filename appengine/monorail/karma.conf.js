@@ -77,6 +77,7 @@ module.exports = function(config) {
       'karma-sourcemap-loader',
       'karma-spec-reporter',
       'karma-webpack',
+      '@chopsui/karma-reporter',
     ],
 
     parallelOptions: {
@@ -111,7 +112,8 @@ module.exports = function(config) {
     // test results reporter to use
     // possible values: 'dots', 'progress'
     // available reporters: https://npmjs.org/browse/keyword/karma-reporter
-    reporters: ['mocha', 'spec'].concat(coverage ? ['coverage'] : []),
+    reporters: ['mocha', 'spec', 'chopsui-json'].concat(
+      coverage ? ['coverage'] : []),
 
 
     // configure coverage reporter
@@ -125,6 +127,11 @@ module.exports = function(config) {
       ],
     },
 
+    chopsUiReporter: {
+      stdout: false,
+      buildNumber: String(new Date().getTime()),
+      outputFile: 'full_results.json',
+    },
 
     // web server port
     port: 9876,
