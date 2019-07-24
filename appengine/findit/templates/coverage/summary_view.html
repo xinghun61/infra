@@ -202,7 +202,11 @@
               {% for metric in datum.summaries %}
                 {% if not found and metric.name == target_metric.name %}
                   {% set found = True %}
-                  {% set percent = (metric.covered*100.0/metric.total) | int %}
+                  {% if metric.total == 0 %}
+                    {% set percent = 100 %}
+                  {% else %}
+                    {% set percent = (metric.covered*100.0/metric.total) | int %}
+                  {% endif %}
                   {% if percent >= 90 %}
                     {% set css_class = 'high-coverage' %}
                   {% elif percent >= 75 %}
@@ -230,7 +234,11 @@
               {% for metric in data.metadata.summaries %}
                 {% if not found and metric.name == target_metric.name %}
                   {% set found = True %}
-                  {% set percent = (metric.covered*100.0/metric.total) | int %}
+                  {% if metric.total == 0 %}
+                    {% set percent = 100 %}
+                  {% else %}
+                    {% set percent = (metric.covered*100.0/metric.total) | int %}
+                  {% endif %}
                   {% if percent >= 90 %}
                     {% set css_class = 'high-coverage' %}
                   {% elif percent >= 75 %}

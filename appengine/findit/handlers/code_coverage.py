@@ -36,7 +36,7 @@ from model.code_coverage import PostsubmitReport
 from model.code_coverage import FileCoverageData
 from model.code_coverage import PresubmitCoverageData
 from model.code_coverage import SummaryCoverageData
-from services.code_coverage import GetMetricsBasedOnLanguage
+from services.code_coverage import GetMetricsBasedOnCoverageTool
 from waterfall import waterfall_config
 
 # List of Gerrit projects that the Code Coverage service supports.
@@ -74,23 +74,33 @@ _POSTSUBMIT_PLATFORM_INFO_MAP = {
     'linux': {
         'bucket': 'coverage',
         'builder': 'linux-code-coverage',
-        'ui_name': 'Linux',
+        'coverage_tool': 'clang',
+        'ui_name': 'Linux (C/C++)',
     },
     'chromeos-vm': {
         'bucket': 'ci',
         'builder': 'chromeos-vm-code-coverage',
-        'ui_name': 'ChromeOS VM',
+        'coverage_tool': 'clang',
+        'ui_name': 'ChromeOS VM (C/C++)',
     },
     'linux-chromeos': {
         'bucket': 'ci',
         'builder': 'linux-chromeos-code-coverage',
-        'ui_name': 'ChromeOS on Linux',
+        'coverage_tool': 'clang',
+        'ui_name': 'ChromeOS on Linux (C/C++)',
     },
     'oobe-code-mauve': {
         'bucket': 'ci',
         'builder': 'linux-chromeos-oobe-code-coverage',
-        'ui_name': 'ChromeOS on Linux for OOBE',
+        'coverage_tool': 'clang',
+        'ui_name': 'ChromeOS on Linux for OOBE (C/C++)',
         'hidden': True,
+    },
+    'android-java': {
+        'bucket': 'ci',
+        'builder': 'android-code-coverage',
+        'coverage_tool': 'jacoco',
+        'ui_name': 'Android (Java)'
     },
     'libassistant': {
         'bucket': 'master.tryserver.cast-chromecast-internal.gce',
@@ -800,7 +810,7 @@ class ProcessCodeCoverageData(BaseHandler):
     build.input.gitiles_commit.ref = output_properties.get('gitiles_commit_ref')
     build.input.gitiles_commit.id = output_properties.get('gitiles_commit_id')
 
-  # TODO(crbug.com/965559): Move this to a config, which can be easily changed
+  # TODO(crbug.com/982811): Move this to a config, which can be easily changed
   # without commit/deployment cycles.
   def _IsCoverageBuild(self, project, bucket, builder):
     """Returns True if the given build is related to code coverage.
@@ -820,12 +830,12 @@ class ProcessCodeCoverageData(BaseHandler):
               bucket in ('master.tryserver.cast-chromecast-internal.gce') and
               builder in ('libassistant-absolute_coverage'))
 
-    return (project in ('chromium', 'chrome') and
-            bucket in ('coverage', 'ci', 'try') and
-            builder in ('chromeos-vm-code-coverage',
-                        'linux-chromeos-code-coverage',
-                        'linux-chromeos-oobe-code-coverage',
-                        'linux-code-coverage', 'linux-coverage-rel'))
+    return (
+        project in ('chromium', 'chrome') and
+        bucket in ('coverage', 'ci', 'try') and
+        builder in ('chromeos-vm-code-coverage', 'linux-chromeos-code-coverage',
+                    'linux-chromeos-oobe-code-coverage', 'linux-code-coverage',
+                    'linux-coverage-rel', 'android-code-coverage'))
 
   def HandlePost(self):
     """Loads the data from GS bucket, and dumps them into ndb."""
@@ -1285,7 +1295,8 @@ class ServeCodeCoverageData(BaseHandler):
               'path_root':
                   path_root,
               'metrics':
-                  GetMetricsBasedOnLanguage('clang'),
+                  GetMetricsBasedOnCoverageTool(
+                      _POSTSUBMIT_PLATFORM_INFO_MAP[platform]['coverage_tool']),
               'data':
                   data,
               'data_type':

@@ -27,24 +27,25 @@ _METRIC_NAME_DETAIL_MAPPING = {
 }
 
 
-def GetMetricsBasedOnLanguage(language):
-  """Gets a list of metrics for the given language.
+def GetMetricsBasedOnCoverageTool(coverage_tool):
+  """Gets a list of metrics for the given coverage tool.
 
   Args:
-    language(str): Name of the language, such as clang and java.
+    coverage_tool(str): Name of the coverage tool, such as clang and jacoco.
 
   Returns:
     A list of dict of following format:
     {'name': clang, 'detail': blala}, where the name is the name of the metric
     and detail is an explanation of what the metric stands for.
   """
+  assert coverage_tool in ('clang', 'jacoco'), (
+      'Unrecognized coverage tool: %s' % coverage_tool)
+
   metrics = []
-  if language == 'clang':
+  if coverage_tool == 'clang':
     metrics = ['line', 'function', 'region']
-  elif language == 'java':
-    metrics = ['line', 'branch', 'instruction']
   else:
-    assert False, 'Unrecognized language: %s' % language
+    metrics = ['line', 'branch', 'instruction']
 
   return [{
       'name': m,

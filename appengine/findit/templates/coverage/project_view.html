@@ -97,7 +97,11 @@
                 {% for metric in datum.summary_metrics %}
                   {% if not found and metric.name == target_metric.name %}
                     {% set found = True %}
-                    {% set percent = (metric.covered*100.0/metric.total) | int %}
+                    {% if metric.total == 0 %}
+                      {% set percent = 100 %}
+                    {% else %}
+                      {% set percent = (metric.covered*100.0/metric.total) | int %}
+                    {% endif %}
                     {{ ('%3d' % percent).replace(' ', '&nbsp;') | safe }}%
                     ({{ metric.covered }}/{{ metric.total }})
                   {% endif %}
