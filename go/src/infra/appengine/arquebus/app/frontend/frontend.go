@@ -90,7 +90,7 @@ func hasAccess(rc *router.Context, next router.Handler) {
 		util.ErrStatus(rc, http.StatusInternalServerError, err.Error())
 		return
 	} else if !isMember {
-		url, err := auth.LoginURL(c, rc.Params.ByName("path"))
+		url, err := auth.LoginURL(c, rc.Request.URL.RequestURI())
 		if err != nil {
 			util.ErrStatus(
 				rc, http.StatusForbidden,
