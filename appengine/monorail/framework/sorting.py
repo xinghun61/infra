@@ -64,8 +64,8 @@ class DescendingValue(object):
 
   def __lt__(self, other):
     if isinstance(other, DescendingValue):
-      return self.val < other.val
-    return self.val < other
+      return other.val < self.val
+    return other < self.val
 
   def __repr__(self):
     return 'DescendingValue(%r)' % self.val
