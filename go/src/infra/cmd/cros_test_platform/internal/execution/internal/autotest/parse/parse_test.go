@@ -75,7 +75,7 @@ func TestFullSample(t *testing.T) {
 			So(resultByName["tast.video.DecodeAccelH264ResolutionSwitch"].State, ShouldResemble, failed)
 			So(resultByName["tast.example.Keyboard"].State, ShouldResemble, passed)
 			So(resultByName["tast.video.SeekSwitchVP8"], ShouldResemble, &steps.ExecuteResponse_TaskResult{
-				TaskUrl: "cautotest/afe/#tab_id=view_job&object_id=319091084",
+				TaskUrl: "http://cautotest/afe/#tab_id=view_job&object_id=319091084",
 				State:   passed,
 				Name:    "tast.video.SeekSwitchVP8",
 				LogUrl:  "http://cautotest/tko/retrieve_logs.cgi?job=/results/319091084-chromeos-test/",

@@ -195,5 +195,5 @@ func taskURL(autotestInstance string, jobID int) string {
 	if jobID == 0 {
 		return ""
 	}
-	return fmt.Sprintf("%s/afe/#tab_id=view_job&object_id=%d", autotestInstance, jobID)
+	return fmt.Sprintf("http://%s/afe/#tab_id=view_job&object_id=%d", autotestInstance, jobID)
 }
