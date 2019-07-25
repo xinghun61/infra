@@ -10,6 +10,7 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/golang/protobuf/ptypes/duration"
@@ -21,6 +22,8 @@ import (
 	"go.chromium.org/chromiumos/infra/proto/go/test_platform/config"
 	"go.chromium.org/chromiumos/infra/proto/go/test_platform/skylab_test_runner"
 	swarming_api "go.chromium.org/luci/common/api/swarming/swarming/v1"
+	"go.chromium.org/luci/common/clock"
+	"go.chromium.org/luci/common/clock/testclock"
 	"go.chromium.org/luci/common/isolated"
 	"go.chromium.org/luci/swarming/proto/jsonrpc"
 
@@ -314,7 +317,7 @@ func TestServiceError(t *testing.T) {
 				swarming.setError(fmt.Errorf("foo error"))
 			})
 			err := run.LaunchAndWait(ctx, swarming, gf)
-			So(err.Error(), ShouldContainSubstring, "wait for task")
+			So(err.Error(), ShouldContainSubstring, "tick for task")
 			So(err.Error(), ShouldContainSubstring, "foo error")
 		})
 	})
@@ -437,6 +440,147 @@ func TestRequestArguments(t *testing.T) {
 				So(flatDimensions, ShouldContain, "label-pool:DUT_POOL_CQ")
 			}
 		})
+	})
+}
+
+func passingResult() *skylab_test_runner.Result_Autotest {
+	return &skylab_test_runner.Result_Autotest{
+		Incomplete: false,
+		TestCases: []*skylab_test_runner.Result_Autotest_TestCase{
+			{Name: "foo", Verdict: skylab_test_runner.Result_Autotest_TestCase_VERDICT_PASS},
+		},
+	}
+}
+
+func failingResult() *skylab_test_runner.Result_Autotest {
+	return &skylab_test_runner.Result_Autotest{
+		Incomplete: false,
+		TestCases: []*skylab_test_runner.Result_Autotest_TestCase{
+			{Name: "foo", Verdict: skylab_test_runner.Result_Autotest_TestCase_VERDICT_FAIL},
+		},
+	}
+}
+
+func TestRetries(t *testing.T) {
+	Convey("Given a test with", t, func() {
+		ctx := context.Background()
+		ctx, ts := testclock.UseTime(ctx, time.Now())
+		// Setup testclock to immediately advance whenever timer is set; this
+		// avoids slowdown due to timer inside of LaunchAndWait.
+		ts.SetTimerCallback(func(d time.Duration, t clock.Timer) {
+			ts.Add(2 * d)
+		})
+		swarming := newFakeSwarming("")
+		tests := []*build_api.AutotestTest{newTest("name1", true)}
+		params := basicParams()
+		getter := newFakeGetter()
+		gf := fakeGetterFactory(getter)
+
+		cases := []struct {
+			name string
+			// autotestResult will be returned by all attempts of this test.
+			autotestResult *skylab_test_runner.Result_Autotest
+			retryParams    *test_platform.Request_Params_Retry
+			testAllowRetry bool
+			testMaxRetry   int32
+
+			// Total number of expected tasks is this +1
+			expectedRetryCount int
+		}{
+			{
+				name:           "no retry configuration in test or request params",
+				autotestResult: failingResult(),
+
+				expectedRetryCount: 0,
+			},
+			{
+				name: "passing test; retries allowed",
+				retryParams: &test_platform.Request_Params_Retry{
+					Allow: true,
+				},
+				testAllowRetry: true,
+				testMaxRetry:   1,
+				autotestResult: passingResult(),
+
+				expectedRetryCount: 0,
+			},
+			{
+				name: "failing test; retries disabled globally",
+				retryParams: &test_platform.Request_Params_Retry{
+					Allow: false,
+				},
+				testAllowRetry: true,
+				testMaxRetry:   1,
+				autotestResult: failingResult(),
+
+				expectedRetryCount: 0,
+			},
+			{
+				name: "failing test; retries allowed globally and for test",
+				retryParams: &test_platform.Request_Params_Retry{
+					Allow: true,
+				},
+				testAllowRetry: true,
+				testMaxRetry:   1,
+				autotestResult: failingResult(),
+
+				expectedRetryCount: 1,
+			},
+			{
+				name: "failing test; retries allowed globally, disabled for test",
+				retryParams: &test_platform.Request_Params_Retry{
+					Allow: true,
+				},
+				testAllowRetry: false,
+				autotestResult: failingResult(),
+
+				expectedRetryCount: 0,
+			},
+			{
+				name: "failing test; retries allowed globally with test maximum",
+				retryParams: &test_platform.Request_Params_Retry{
+					Allow: true,
+				},
+				testAllowRetry: true,
+				testMaxRetry:   10,
+				autotestResult: failingResult(),
+
+				expectedRetryCount: 10,
+			},
+			{
+				name: "failing test; retries allowed globally with global maximum",
+				retryParams: &test_platform.Request_Params_Retry{
+					Allow: true,
+					Max:   5,
+				},
+				testAllowRetry: true,
+				testMaxRetry:   10,
+				autotestResult: failingResult(),
+
+				expectedRetryCount: 5,
+			},
+		}
+		for _, c := range cases {
+			Convey(c.name, func() {
+				getter.SetAutotestResult(c.autotestResult)
+				params.Retry = c.retryParams
+				tests[0].AllowRetries = c.testAllowRetry
+				tests[0].MaxRetries = c.testMaxRetry
+
+				run := skylab.NewTaskSet(tests, params, basicConfig())
+				err := run.LaunchAndWait(ctx, swarming, gf)
+				So(err, ShouldBeNil)
+				response := run.Response(swarming)
+				Convey("then the launched task count should be correct.", func() {
+					So(response.TaskResults, ShouldHaveLength, c.expectedRetryCount+1)
+				})
+				Convey("then task attempt numbers should be correct.", func() {
+					for i, res := range response.TaskResults {
+						So(res.Attempt, ShouldEqual, i)
+					}
+				})
+			})
+		}
 	})
 }
 

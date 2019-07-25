@@ -38,6 +38,7 @@ type TaskSet struct {
 	testRuns     []*testRun
 	params       *test_platform.Request_Params
 	workerConfig *config.Config_SkylabWorker
+	retries      int32
 }
 
 type testRun struct {
@@ -114,6 +115,10 @@ type attempt struct {
 	// then this field will change to a *skylab_test_runner.Result.
 	// For now, the autotest-specific variant is more convenient.
 	autotestResult *skylab_test_runner.Result_Autotest
+}
+
+func (a *attempt) complete() bool {
+	return a.autotestResult != nil
 }
 
 // NewTaskSet creates a new TaskSet.
@@ -199,45 +204,112 @@ func (r *TaskSet) tick(ctx context.Context, client swarming.Client, gf isolate.G
 	complete = true
 
 	for _, testRun := range r.testRuns {
-		attempt := testRun.attempts[len(testRun.attempts)-1]
-		if attempt.autotestResult != nil {
+		latestAttempt := testRun.attempts[len(testRun.attempts)-1]
+		if latestAttempt.complete() {
 			continue
 		}
 
-		results, err := client.GetResults(ctx, []string{attempt.taskID})
-		if err != nil {
-			return false, errors.Annotate(err, "wait for task %s", attempt.taskID).Err()
+		if err := r.fetchResults(ctx, latestAttempt, client, gf); err != nil {
+			return false, errors.Annotate(err, "tick for task %s", latestAttempt.taskID).Err()
 		}
 
-		result, err := unpackResult(results, attempt.taskID)
-		if err != nil {
-			return false, errors.Annotate(err, "wait for task %s", attempt.taskID).Err()
-		}
-
-		state, err := swarming.AsTaskState(result.State)
-		if err != nil {
-			return false, errors.Annotate(err, "wait for task %s", attempt.taskID).Err()
-		}
-		attempt.state = state
-
-		switch {
-		// Task ran to completion.
-		case swarming.CompletedTaskStates[state]:
-			r, err := getAutotestResult(ctx, result, gf)
-			if err != nil {
-				return false, errors.Annotate(err, "wait for task %s", attempt.taskID).Err()
-			}
-			attempt.autotestResult = r
-		// Task no longer running, but didn't run to completion.
-		case !swarming.UnfinishedTaskStates[state]:
-			attempt.autotestResult = &skylab_test_runner.Result_Autotest{Incomplete: true}
-		// Task still pending or running; at least 1 task not complete.
-		default:
+		if !latestAttempt.complete() {
 			complete = false
+			continue
+		}
+
+		shouldRetry, err := r.shouldRetry(testRun)
+		if err != nil {
+			return false, errors.Annotate(err, "tick for task %s", latestAttempt.taskID).Err()
+		}
+		if shouldRetry {
+			complete = false
+			logging.Debugf(ctx, "retrying test %s", testRun.test.Name)
+			if err := r.launchSingle(ctx, client, testRun); err != nil {
+				return false, errors.Annotate(err, "tick for task %s: retry test", latestAttempt.taskID).Err()
+			}
+			r.retries++
 		}
 	}
 
 	return complete, nil
+}
+
+// fetchResults fetches the latest swarming and isolate state of the given attempt,
+// and updates the attempt accordingly.
+func (r *TaskSet) fetchResults(ctx context.Context, a *attempt, client swarming.Client, gf isolate.GetterFactory) error {
+	results, err := client.GetResults(ctx, []string{a.taskID})
+	if err != nil {
+		return errors.Annotate(err, "fetch results").Err()
+	}
+
+	result, err := unpackResult(results, a.taskID)
+	if err != nil {
+		return errors.Annotate(err, "fetch results").Err()
+	}
+
+	state, err := swarming.AsTaskState(result.State)
+	if err != nil {
+		return errors.Annotate(err, "fetch results").Err()
+	}
+	a.state = state
+
+	switch {
+	// Task ran to completion.
+	case swarming.CompletedTaskStates[state]:
+		r, err := getAutotestResult(ctx, result, gf)
+		if err != nil {
+			return errors.Annotate(err, "fetch results").Err()
+		}
+		a.autotestResult = r
+	// Task no longer running, but didn't run to completion.
+	case !swarming.UnfinishedTaskStates[state]:
+		a.autotestResult = &skylab_test_runner.Result_Autotest{Incomplete: true}
+	// Task is still running.
+	default:
+	}
+
+	return nil
+}
+
+// shouldRetry computes if the given testRun should be retried.
+//
+// This will panic if the testRun has never been launched.
+func (r *TaskSet) shouldRetry(testRun *testRun) (bool, error) {
+	if r.params.Retry == nil {
+		return false, nil
+	}
+	if !r.params.Retry.Allow {
+		return false, nil
+	}
+	max := r.params.Retry.Max
+	if max != 0 && r.retries >= max {
+		return false, nil
+	}
+	if !testRun.test.AllowRetries {
+		return false, nil
+	}
+	attempts := len(testRun.attempts)
+	if attempts < 1 {
+		return false, errors.Reason("should retry: can't retry a never-tried test").Err()
+	}
+	// Allow up to MaxRetries + 1 total attempts of a given test.
+	if attempts > int(testRun.test.MaxRetries) {
+		return false, nil
+	}
+	latestAttempt := testRun.attempts[attempts-1]
+	switch verdict := flattenToVerdict(latestAttempt.autotestResult.GetTestCases()); verdict {
+	case test_platform.TaskState_VERDICT_UNSPECIFIED:
+		fallthrough
+	case test_platform.TaskState_VERDICT_FAILED:
+		return true, nil
+	case test_platform.TaskState_VERDICT_NO_VERDICT:
+		fallthrough
+	case test_platform.TaskState_VERDICT_PASSED:
+		return false, nil
+	default:
+		return false, errors.Reason("should retry: unknown verdict %s", verdict.String()).Err()
+	}
 }
 
 func toInventoryLabels(params *test_platform.Request_Params, deps []*build_api.AutotestTaskDependency) (*inventory.SchedulableLabels, error) {
