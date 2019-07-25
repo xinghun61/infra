@@ -203,7 +203,8 @@ class IssuesServicerTest(unittest.TestCase):
     self.assertEqual(200, ref.local_id)
     self.assertEqual('other', ref.project_name)
 
-  def testListIssues(self):
+  @patch('search.frontendsearchpipeline.FrontendSearchPipeline')
+  def testListIssues(self, mock_pipeline):
     """We can get a list of issues from a search."""
     mc = monorailcontext.MonorailContext(
         self.services, cnxn=self.cnxn, requester='approver3@example.com',
@@ -212,17 +213,16 @@ class IssuesServicerTest(unittest.TestCase):
         mc.cnxn, self.services.user, [111])
     config = self.services.config.GetProjectConfig(self.cnxn, 789)
 
-    patcher = patch(
-        'search.frontendsearchpipeline.FrontendSearchPipeline',
+    instance = Mock(
         spec=True, visible_results=[self.issue_1, self.issue_2],
-        users_by_id=users_by_id, harmonized_config=config)
-    mock_pipeline = patcher.start()
-    mock_pipeline.SearchForIIDs = Mock()
-    mock_pipeline.MergeAndSortIssues = Mock()
-    mock_pipeline.Paginate = Mock()
+        users_by_id=users_by_id, harmonized_config=config,
+        pagination=Mock(total_count=2))
+    mock_pipeline.return_value = instance
+    instance.SearchForIIDs = Mock()
+    instance.MergeAndSortIssues = Mock()
+    instance.Paginate = Mock()
 
-    request = issues_pb2.ListIssuesRequest(
-        query='', project_names=['proj'])
+    request = issues_pb2.ListIssuesRequest(query='',project_names=['proj'])
     response = self.CallWrapped(self.issues_svcr.ListIssues, mc, request)
 
     actual_issue_1 = response.issues[0]
@@ -235,8 +235,6 @@ class IssuesServicerTest(unittest.TestCase):
     self.assertEqual('owner@example.com', actual_issue_2.owner_ref.display_name)
     self.assertEqual(actual_issue_2.local_id, 2)
     self.assertEqual(2, response.total_results)
-
-    patcher.stop()
 
   def testListReferencedIssues(self):
     """We can get the referenced issues that exist."""

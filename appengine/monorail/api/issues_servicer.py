@@ -164,7 +164,7 @@ class IssuesServicer(monorail_servicer.MonorailServicer):
             converters.ConvertIssue(issue, pipeline.users_by_id, related_refs,
                                     pipeline.harmonized_config))
     return issues_pb2.ListIssuesResponse(
-        issues=converted_results, total_results=len(converted_results))
+        issues=converted_results, total_results=pipeline.pagination.total_count)
 
 
   @monorail_servicer.PRPCMethod
