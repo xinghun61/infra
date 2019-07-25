@@ -8,15 +8,13 @@ from __future__ import absolute_import
 import os
 
 import train_ml_helpers
-
+from stopwords import STOP_WORDS
 
 def GenerateTopWords(word_dict):
   """Requires ./stopwords.txt exist in folder for the function to run.
   """
-  with open('./stopwords.txt', 'r') as f:
-    stop_words = f.read().encode('utf-8').split()
+  stop_words = [s.encode('utf-8') for s in STOP_WORDS]
   sorted_words = sorted(word_dict, key=word_dict.get, reverse=True)
-
   top_words = []
   index = 0
 
