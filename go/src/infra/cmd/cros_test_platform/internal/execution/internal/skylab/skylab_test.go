@@ -172,6 +172,12 @@ func basicParams() *test_platform.Request_Params {
 			{
 				Dep: &test_platform.Request_Params_SoftwareDependency_ChromeosBuild{ChromeosBuild: "foo-build"},
 			},
+			{
+				Dep: &test_platform.Request_Params_SoftwareDependency_RoFirmwareBuild{RoFirmwareBuild: "foo-ro-firmware"},
+			},
+			{
+				Dep: &test_platform.Request_Params_SoftwareDependency_RwFirmwareBuild{RwFirmwareBuild: "foo-rw-firmware"},
+			},
 		},
 		Scheduling: &test_platform.Request_Params_Scheduling{
 			Pool: &test_platform.Request_Params_Scheduling_ManagedPool_{
@@ -423,7 +429,8 @@ func TestRequestArguments(t *testing.T) {
 				// Logdog annotation url argument should match the associated tag's url.
 				So(flatCommand, ShouldContainSubstring, "-logdog-annotation-url "+logdogURL)
 
-				provisionArg := "-provision-labels cros-version:foo-build"
+				provisionArg := "-provision-labels cros-version:foo-build,fwro-version:foo-ro-firmware,fwrw-version:foo-rw-firmware"
+
 				if i == 0 {
 					So(flatCommand, ShouldNotContainSubstring, provisionArg)
 				} else {

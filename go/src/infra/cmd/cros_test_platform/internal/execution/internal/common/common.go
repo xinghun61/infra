@@ -11,27 +11,37 @@ import (
 	"go.chromium.org/luci/common/errors"
 )
 
-// GetChromeOSBuild determines the ChromeOS build name specified within the
-// given software dependencies (e.g. reef-release/R77-12345.0.0)
-func GetChromeOSBuild(deps []*test_platform.Request_Params_SoftwareDependency) (string, error) {
-	filter := func(d *test_platform.Request_Params_SoftwareDependency) bool {
-		return d.GetChromeosBuild() != ""
-	}
-	buildDeps := filterDeps(deps, filter)
-
-	if len(buildDeps) != 1 {
-		return "", errors.Reason("get ChromeOS build: expected 1 build, got %d", len(buildDeps)).Err()
-	}
-
-	return buildDeps[0].GetChromeosBuild(), nil
+// Builds describes the build names that were requested by a test_platform
+// invocation.
+type Builds struct {
+	ChromeOS   string
+	FirmwareRW string
+	FirmwareRO string
 }
 
-func filterDeps(deps []*test_platform.Request_Params_SoftwareDependency, filter func(*test_platform.Request_Params_SoftwareDependency) bool) []*test_platform.Request_Params_SoftwareDependency {
-	var result []*test_platform.Request_Params_SoftwareDependency
-	for _, d := range deps {
-		if filter(d) {
-			result = append(result, d)
+// ExtractBuilds extracts builds that were requested by the test_platform invocation.
+func ExtractBuilds(deps []*test_platform.Request_Params_SoftwareDependency) (*Builds, error) {
+	b := &Builds{}
+	for _, dep := range deps {
+		switch d := dep.Dep.(type) {
+		case *test_platform.Request_Params_SoftwareDependency_ChromeosBuild:
+			if already := b.ChromeOS; already != "" {
+				return nil, errors.Reason("duplicate ChromeOS builds (%s, %s)", already, d.ChromeosBuild).Err()
+			}
+			b.ChromeOS = d.ChromeosBuild
+		case *test_platform.Request_Params_SoftwareDependency_RoFirmwareBuild:
+			if already := b.FirmwareRO; already != "" {
+				return nil, errors.Reason("duplicate RO Firmware builds (%s, %s)", already, d.RoFirmwareBuild).Err()
+			}
+			b.FirmwareRO = d.RoFirmwareBuild
+		case *test_platform.Request_Params_SoftwareDependency_RwFirmwareBuild:
+			if already := b.FirmwareRW; already != "" {
+				return nil, errors.Reason("duplicate RW Firmware builds (%s, %s)", already, d.RwFirmwareBuild).Err()
+			}
+			b.FirmwareRW = d.RwFirmwareBuild
+		default:
+			return nil, errors.Reason("unknown dep %+v", dep).Err()
 		}
 	}
-	return result
+	return b, nil
 }

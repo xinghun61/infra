@@ -344,12 +344,32 @@ func toInventoryLabels(params *test_platform.Request_Params, deps []*build_api.A
 	return inv, nil
 }
 
+const (
+	// These prefixes are interpreted by autotest's provisioning behavior;
+	// they are defined in the autotest repo, at utils/labellib.py
+	prefixChromeOS   = "cros-version"
+	prefixFirmwareRO = "fwro-version"
+	prefixFirmwareRW = "fwrw-version"
+)
+
 func toProvisionableDimensions(deps []*test_platform.Request_Params_SoftwareDependency) ([]string, error) {
-	crosBuild, err := common.GetChromeOSBuild(deps)
+	builds, err := common.ExtractBuilds(deps)
 	if err != nil {
 		return nil, errors.Annotate(err, "get provisionable dimensions").Err()
 	}
-	return []string{"provisionable-cros-version:" + crosBuild}, nil
+
+	var dims []string
+	if b := builds.ChromeOS; b != "" {
+		dims = append(dims, "provisionable-"+prefixChromeOS+":"+b)
+	}
+	if b := builds.FirmwareRO; b != "" {
+		dims = append(dims, "provisionable-"+prefixFirmwareRO+":"+b)
+	}
+	if b := builds.FirmwareRW; b != "" {
+		dims = append(dims, "provisionable-"+prefixFirmwareRW+":"+b)
+	}
+
+	return dims, nil
 }
 
 func toTimeout(params *test_platform.Request_Params) (time.Duration, error) {

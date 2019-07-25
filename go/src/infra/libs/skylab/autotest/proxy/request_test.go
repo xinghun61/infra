@@ -16,12 +16,14 @@ import (
 func TestRunSuite(t *testing.T) {
 	Convey("When creating a request for a set of RunSuite arguments", t, func() {
 		args := proxy.RunSuiteArgs{
-			Board:     "foo-board",
-			Build:     "foo-build",
-			Model:     "foo-model",
-			Pool:      "foo-pool",
-			SuiteName: "foo-suite",
-			SuiteArgs: map[string]int{"arg1": 1},
+			Board:           "foo-board",
+			Build:           "foo-build",
+			FirmwareRWBuild: "foo-rw-build",
+			FirmwareROBuild: "foo-ro-build",
+			Model:           "foo-model",
+			Pool:            "foo-pool",
+			SuiteName:       "foo-suite",
+			SuiteArgs:       map[string]int{"arg1": 1},
 		}
 		req, err := proxy.NewRunSuite(args)
 		So(err, ShouldBeNil)
@@ -32,6 +34,8 @@ func TestRunSuite(t *testing.T) {
 			flatCmd := strings.Join(slice.Properties.Command, " ")
 			So(flatCmd, ShouldContainSubstring, "--board foo-board")
 			So(flatCmd, ShouldContainSubstring, "--build foo-build")
+			So(flatCmd, ShouldContainSubstring, "--firmware_rw_build foo-rw-build")
+			So(flatCmd, ShouldContainSubstring, "--firmware_ro_build foo-ro-build")
 			So(flatCmd, ShouldContainSubstring, "--model foo-model")
 			So(flatCmd, ShouldContainSubstring, "--pool foo-pool")
 			So(flatCmd, ShouldContainSubstring, "--suite_name foo-suite")

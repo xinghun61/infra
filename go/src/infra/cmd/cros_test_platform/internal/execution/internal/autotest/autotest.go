@@ -98,7 +98,7 @@ func (r *Runner) proxyRequest() (*swarming_api.SwarmingRpcsNewTaskRequest, error
 		return nil, errors.Annotate(err, "create proxy request").Err()
 	}
 
-	build, err := common.GetChromeOSBuild(r.requestParams.SoftwareDependencies)
+	builds, err := common.ExtractBuilds(r.requestParams.SoftwareDependencies)
 	if err != nil {
 		return nil, errors.Annotate(err, "create proxy request").Err()
 	}
@@ -120,7 +120,9 @@ func (r *Runner) proxyRequest() (*swarming_api.SwarmingRpcsNewTaskRequest, error
 
 	dsArgs := dynamicsuite.Args{
 		Board:             r.requestParams.SoftwareAttributes.BuildTarget.Name,
-		Build:             build,
+		Build:             builds.ChromeOS,
+		FirmwareRWBuild:   builds.FirmwareRW,
+		FirmwareROBuild:   builds.FirmwareRO,
 		Model:             r.requestParams.HardwareAttributes.Model,
 		Timeout:           timeout,
 		Pool:              pool,

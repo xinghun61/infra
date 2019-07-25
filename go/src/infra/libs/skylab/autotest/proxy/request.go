@@ -19,13 +19,15 @@ const runSuitePath = "/usr/local/autotest/site_utils/run_suite.py"
 
 // RunSuiteArgs defines the set of arguments for creating a run_suite request.
 type RunSuiteArgs struct {
-	Build     string
-	Board     string
-	Model     string
-	SuiteName string
-	Pool      string
-	AfeHost   string
-	Timeout   time.Duration
+	Build           string
+	FirmwareRWBuild string
+	FirmwareROBuild string
+	Board           string
+	Model           string
+	SuiteName       string
+	Pool            string
+	AfeHost         string
+	Timeout         time.Duration
 	// SuiteArgs are the arguments to be passed into the suite. This object
 	// must be json-encodable, or an error will be returned.
 	SuiteArgs interface{}
@@ -53,6 +55,12 @@ func runSuiteCmd(args RunSuiteArgs) ([]string, error) {
 
 	if args.Build != "" {
 		cmd = append(cmd, "--build", args.Build)
+	}
+	if args.FirmwareROBuild != "" {
+		cmd = append(cmd, "--firmware_ro_build", args.FirmwareROBuild)
+	}
+	if args.FirmwareRWBuild != "" {
+		cmd = append(cmd, "--firmware_rw_build", args.FirmwareRWBuild)
 	}
 	if args.Board != "" {
 		cmd = append(cmd, "--board", args.Board)
