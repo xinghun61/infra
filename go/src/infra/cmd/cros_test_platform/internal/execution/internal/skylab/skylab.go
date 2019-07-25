@@ -39,6 +39,10 @@ type TaskSet struct {
 	params       *test_platform.Request_Params
 	workerConfig *config.Config_SkylabWorker
 	retries      int32
+	// complete indicates that the TaskSet ran to completion of all tasks.
+	complete bool
+	// running indicates that the TaskSet is still running.
+	running bool
 }
 
 type testRun struct {
@@ -131,6 +135,7 @@ func NewTaskSet(tests []*build_api.AutotestTest, params *test_platform.Request_P
 		testRuns:     testRuns,
 		params:       params,
 		workerConfig: workerConfig,
+		running:      true,
 	}
 }
 
@@ -142,6 +147,8 @@ func NewTaskSet(tests []*build_api.AutotestTest, params *test_platform.Request_P
 // is encountered, this method returns whatever partial execution response
 // was visible to it prior to that error.
 func (r *TaskSet) LaunchAndWait(ctx context.Context, swarming swarming.Client, gf isolate.GetterFactory) error {
+	defer func() { r.running = false }()
+
 	if err := r.launchAll(ctx, swarming); err != nil {
 		return err
 	}
@@ -189,6 +196,7 @@ func (r *TaskSet) wait(ctx context.Context, swarming swarming.Client, gf isolate
 	for {
 		complete, err := r.tick(ctx, swarming, gf)
 		if complete || err != nil {
+			r.complete = complete
 			return err
 		}
 
@@ -429,6 +437,38 @@ func (r *TaskSet) Response(swarming swarming.URLer) *steps.ExecuteResponse {
 	resp := &steps.ExecuteResponse{}
 	resp.TaskResults = toTaskResults(r.testRuns, swarming)
 
-	// TODO(akeshet): Compute overall execution task state.
+	var verdict test_platform.TaskState_Verdict
+	var lifecycle test_platform.TaskState_LifeCycle
+
+	switch {
+	case r.complete:
+		// The default verdict for a completed TaskSet is passed; if any tasks
+		// failed, they will overwrite this below.
+		verdict = test_platform.TaskState_VERDICT_PASSED
+		lifecycle = test_platform.TaskState_LIFE_CYCLE_COMPLETED
+	case r.running:
+		lifecycle = test_platform.TaskState_LIFE_CYCLE_RUNNING
+	default:
+		// TODO(akeshet): The task set is neither running nor complete, so it
+		// was cancelled due to an error while in flight. It's not clear yet
+		// if this is the right lifecycle mapping for this state.
+		lifecycle = test_platform.TaskState_LIFE_CYCLE_ABORTED
+	}
+
+	for _, t := range resp.TaskResults {
+		switch t.State.Verdict {
+		case test_platform.TaskState_VERDICT_UNSPECIFIED:
+			fallthrough
+		case test_platform.TaskState_VERDICT_FAILED:
+			verdict = test_platform.TaskState_VERDICT_FAILED
+			break
+		}
+	}
+
+	resp.State = &test_platform.TaskState{
+		Verdict:   verdict,
+		LifeCycle: lifecycle,
+	}
+
 	return resp
 }

@@ -667,3 +667,99 @@ func TestUnmanagedPool(t *testing.T) {
 		})
 	})
 }
+
+func TestResponseVerdict(t *testing.T) {
+	Convey("Given a client test", t, func() {
+		ctx := context.Background()
+		ctx, cancel := context.WithCancel(ctx)
+		defer cancel()
+
+		// Setup testclock to immediately advance whenever timer is set; this
+		// avoids slowdown due to timer inside of LaunchAndWait.
+		ctx, ts := testclock.UseTime(ctx, time.Now())
+		ts.SetTimerCallback(func(d time.Duration, t clock.Timer) {
+			ts.Add(2 * d)
+		})
+
+		swarming := newFakeSwarming("")
+		tests := []*build_api.AutotestTest{newTest("name1", true)}
+		params := basicParams()
+		getter := newFakeGetter()
+		gf := fakeGetterFactory(getter)
+
+		run := skylab.NewTaskSet(tests, params, basicConfig())
+
+		Convey("when tests are still running, response verdict is correct.", func() {
+			swarming.setTaskState(jsonrpc.TaskState_RUNNING)
+
+			wg := sync.WaitGroup{}
+			wg.Add(1)
+			go func() {
+				run.LaunchAndWait(ctx, swarming, gf)
+				wg.Done()
+			}()
+
+			resp := run.Response(swarming)
+			So(resp.State.LifeCycle, ShouldEqual, test_platform.TaskState_LIFE_CYCLE_RUNNING)
+			So(resp.State.Verdict, ShouldEqual, test_platform.TaskState_VERDICT_UNSPECIFIED)
+
+			// Clean up after test.
+			cancel()
+			wg.Wait()
+		})
+
+		Convey("when the test passed, response verdict is correct.", func() {
+			getter.SetAutotestResult(&skylab_test_runner.Result_Autotest{
+				Incomplete: false,
+				TestCases: []*skylab_test_runner.Result_Autotest_TestCase{
+					{
+						Name:    "foo",
+						Verdict: skylab_test_runner.Result_Autotest_TestCase_VERDICT_PASS,
+					},
+				},
+			})
+
+			run.LaunchAndWait(ctx, swarming, gf)
+			resp := run.Response(swarming)
+			So(resp.State.LifeCycle, ShouldEqual, test_platform.TaskState_LIFE_CYCLE_COMPLETED)
+			So(resp.State.Verdict, ShouldEqual, test_platform.TaskState_VERDICT_PASSED)
+		})
+
+		Convey("when the test failed, response verdict is correct.", func() {
+			getter.SetAutotestResult(&skylab_test_runner.Result_Autotest{
+				Incomplete: false,
+				TestCases: []*skylab_test_runner.Result_Autotest_TestCase{
+					{
+						Name:    "foo",
+						Verdict: skylab_test_runner.Result_Autotest_TestCase_VERDICT_FAIL,
+					},
+				},
+			})
+
+			run.LaunchAndWait(ctx, swarming, gf)
+			resp := run.Response(swarming)
+			So(resp.State.LifeCycle, ShouldEqual, test_platform.TaskState_LIFE_CYCLE_COMPLETED)
+			So(resp.State.Verdict, ShouldEqual, test_platform.TaskState_VERDICT_FAILED)
+		})
+
+		Convey("when an error cancels the run, response verdict is correct.", func() {
+			swarming.setTaskState(jsonrpc.TaskState_RUNNING)
+
+			wg := sync.WaitGroup{}
+			wg.Add(1)
+			var err error
+			go func() {
+				err = run.LaunchAndWait(ctx, swarming, gf)
+				wg.Done()
+			}()
+
+			cancel()
+			wg.Wait()
+			So(err, ShouldNotBeNil)
+
+			resp := run.Response(swarming)
+			So(resp.State.LifeCycle, ShouldEqual, test_platform.TaskState_LIFE_CYCLE_ABORTED)
+			So(resp.State.Verdict, ShouldEqual, test_platform.TaskState_VERDICT_FAILED)
+		})
+	})
+}
