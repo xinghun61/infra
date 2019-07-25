@@ -534,14 +534,14 @@ def CollateRevisionHistory(builds, repo):
   """
   build_history = {}
   revisions = set()
-  for master, master_data in builds.iteritems():
-    LOGGER.debug('Collating master %s', master)
-    master_history = build_history.setdefault(master, {})
-    for builder, builder_data in master_data.iteritems():
+  for category, category_data in builds.iteritems():
+    LOGGER.debug('Collating category %s', category)
+    category_history = build_history.setdefault(category, {})
+    for builder, builder_data in category_data.iteritems():
       LOGGER.debug('Collating builder %s', builder)
       for build in builder_data:
         revisions.add(str(build.revision))
-      master_history[builder] = repo.sort(
+      category_history[builder] = repo.sort(
           builder_data, keyfunc=lambda b: b.revision)
   revisions = repo.sort(revisions)
   return (build_history, revisions)
@@ -569,10 +569,10 @@ def FindLKGRCandidate(build_history, revisions, revkey, status_gen=None):
 
   lkgr = None
   builders = []
-  for master, master_history in sorted(build_history.items(),
-                                       key=lowercase_key):
-    status_gen.master_cb(master)
-    for builder, builder_history in sorted(master_history.items(),
+  for category, category_history in sorted(build_history.items(),
+                                           key=lowercase_key):
+    status_gen.category_cb(category)
+    for builder, builder_history in sorted(category_history.items(),
                                            key=lowercase_key):
       status_gen.builder_cb(builder)
       gen = reversed(builder_history)
@@ -581,11 +581,11 @@ def FindLKGRCandidate(build_history, revisions, revkey, status_gen=None):
         prev.append(gen.next())
       except StopIteration:
         prev.append(Build(-1, STATUS.UNKNOWN, NOREV))
-      builders.append((master, builder, gen, prev))
+      builders.append((category, builder, gen, prev))
   for revision in reversed(revisions):
     status_gen.revision_cb(revision)
     good_revision = True
-    for master, builder, gen, prev in builders:
+    for category, builder, gen, prev in builders:
       try:
         while revkey(revision) < revkey(prev[-1].revision):
           prev.append(gen.next())
@@ -614,7 +614,7 @@ def FindLKGRCandidate(build_history, revisions, revkey, status_gen=None):
       build_num = None
       if revkey(revision) == revkey(prev[-1].revision):
         build_num = prev[-1].number
-      status_gen.build_cb(master, builder, status, build_num)
+      status_gen.build_cb(category, builder, status, build_num)
       if status != STATUS.SUCCESS:
         good_revision = False
     if not lkgr and good_revision:

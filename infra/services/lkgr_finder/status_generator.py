@@ -13,7 +13,7 @@ from infra.services.lkgr_finder.lkgr_lib import STATUS
 
 class StatusGeneratorStub(object):  # pragma: no cover
 
-  def master_cb(self, master):
+  def category_cb(self, category):
     pass
 
   def builder_cb(self, builder):
@@ -22,7 +22,7 @@ class StatusGeneratorStub(object):  # pragma: no cover
   def revision_cb(self, revision):
     pass
 
-  def build_cb(self, master, builder, status, build_num=None):
+  def build_cb(self, category, builder, status, build_num=None):
     pass
 
   def lkgr_cb(self, revision):
@@ -31,8 +31,8 @@ class StatusGeneratorStub(object):  # pragma: no cover
 
 class DebugStatusGenerator(StatusGeneratorStub):  # pragma: no cover
 
-  def master_cb(self, master):
-    print master
+  def category_cb(self, category):
+    print category
 
   def builder_cb(self, builder):
     print '  %s' % builder
@@ -40,8 +40,8 @@ class DebugStatusGenerator(StatusGeneratorStub):  # pragma: no cover
   def revision_cb(self, revision):
     print '    %s' % revision
 
-  def build_cb(self, master, builder, status, build_num=None):
-    print '%s : %s : %s : %s' % (master, builder, build_num, status)
+  def build_cb(self, category, builder, status, build_num=None):
+    print '%s : %s : %s : %s' % (category, builder, build_num, status)
 
   def lkgr_cb(self, revision):
     print 'LKGR %s' % revision
@@ -50,16 +50,16 @@ class DebugStatusGenerator(StatusGeneratorStub):  # pragma: no cover
 class HTMLStatusGenerator(StatusGeneratorStub):  # pragma: no cover
 
   def __init__(self, viewvc, config):
-    self.masters = []
+    self.categories = []
     self.rows = []
     self.config = config
     self.viewvc = viewvc
 
-  def master_cb(self, master):
-    self.masters.append((master, []))
+  def category_cb(self, category):
+    self.categories.append((category, []))
 
   def builder_cb(self, builder):
-    self.masters[-1][1].append(builder)
+    self.categories[-1][1].append(builder)
 
   def revision_cb(self, revision):
     row = [
@@ -68,18 +68,30 @@ class HTMLStatusGenerator(StatusGeneratorStub):  # pragma: no cover
             self.viewvc % urllib.quote(revision), revision)]
     self.rows.append(row)
 
-  def build_cb(self, master, builder, status, build_num=None):
+  def _get_luci_location(self, category):
+    master_config = self.config.get('masters', {}).get(category)
+    bucket_config = self.config.get('buckets', {}).get(category)
+    if master_config:
+      return (master_config.get('luci_project'),
+              master_config.get('luci_bucket'))
+    elif bucket_config:
+      luci_project, luci_bucket = category.split('/', 1)
+      old_style_luci_bucket = 'luci.%s.%s' % (luci_project, luci_bucket)
+      return (luci_project, old_style_luci_bucket)
+    return (None, None)
+
+
+  def build_cb(self, category, builder, status, build_num=None):
     stat_txt = STATUS.tostr(status)
     cell = '  <td class="%s">' % stat_txt
     if build_num is not None:
-      master_config = self.config['masters'][master]
-      if 'luci_project' in master_config and 'luci_bucket' in master_config:
+      luci_project, luci_bucket = self._get_luci_location(category)
+      if luci_project and luci_bucket:
         build_url = 'ci.chromium.org/p/%s/builders/%s/%s/%s' % (
-            master_config['luci_project'], master_config['luci_bucket'],
-            builder, build_num)
+            luci_project, luci_bucket, builder, build_num)
       else:
         build_url = 'build.chromium.org/p/%s/builders/%s/builds/%s' % (
-            master, builder, build_num)
+            category, builder, build_num)
       cell += '<a href="http://%s" target="_blank">X</a>' % (
           urllib.quote(build_url))
     cell += '</td>\n'
@@ -112,36 +124,27 @@ class HTMLStatusGenerator(StatusGeneratorStub):  # pragma: no cover
         </head>
         <body><table>
         """)]
-    master_headers = ['<tr class="header"><th></th>\n']
+    category_headers = ['<tr class="header"><th></th>\n']
     builder_headers = ['<tr class="header">']
     builder_headers.append('<th>chromium revision</th>\n')
-    for master, builders in self.masters:
-      master_config = self.config['masters'][master]
-      if ('luci_project' in master_config and
-          'luci_builder_ui_group' in master_config):
-        master_url = 'ci.chromium.org/p/%s/g/%s' % (
-            master_config['luci_project'],
-            master_config['luci_builder_ui_group'])
-      else:
-        master_url = 'build.chromium.org/p/%s' % master
-      hdr = '  <th colspan="%d" class="header">' % len(builders)
-      hdr += '<a href="%s" target="_blank">%s</a></th>\n' % (
-          'http://%s' % urllib.quote(master_url), master)
-      master_headers.append(hdr)
+    for category, builders in self.categories:
+      hdr = '  <th colspan="%d" class="header">%s</th>' % (
+          len(builders), category)
+      category_headers.append(hdr)
       for builder in builders:
-        if 'luci_project' in master_config and 'luci_bucket' in master_config:
+        luci_project, luci_bucket = self._get_luci_location(category)
+        if luci_project and luci_bucket:
           builder_url = 'ci.chromium.org/p/%s/builders/%s/%s' % (
-              master_config['luci_project'], master_config['luci_bucket'],
-              builder)
+              luci_project, luci_bucket, builder)
         else:
           builder_url = 'build.chromium.org/p/%s/builders/%s' % (
-              master, builder)
+              category, builder)
         hdr = '  <th><a href="%s" target="_blank">%s</a></th>\n' % (
             'http://%s' % urllib.quote(builder_url), builder)
         builder_headers.append(hdr)
-    master_headers.append('</tr>\n')
+    category_headers.append('</tr>\n')
     builder_headers.append('</tr>\n')
-    html_chunks.extend(master_headers)
+    html_chunks.extend(category_headers)
     html_chunks.extend(builder_headers)
     for row in self.rows:
       html_chunks.extend(row[1:])
