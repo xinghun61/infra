@@ -7,6 +7,7 @@ package skylab
 import (
 	"bytes"
 	"context"
+	"fmt"
 
 	"go.chromium.org/chromiumos/infra/proto/go/test_platform"
 	"go.chromium.org/chromiumos/infra/proto/go/test_platform/skylab_test_runner"
@@ -84,6 +85,13 @@ func toTaskResult(testName string, attempt *attempt, attemptNum int, urler swarm
 		verdict = flattenToVerdict(attempt.autotestResult.TestCases)
 	}
 
+	// TODO(akeshet): Determine this URL in a more principled way. See crbug.com/987487
+	// for context.
+	logURL := fmt.Sprintf(
+		"https://stainless.corp.google.com/browse/chromeos-autotest-results/swarming-%s/",
+		attempt.taskID,
+	)
+
 	return &steps.ExecuteResponse_TaskResult{
 		Name: testName,
 		State: &test_platform.TaskState{
@@ -91,6 +99,7 @@ func toTaskResult(testName string, attempt *attempt, attemptNum int, urler swarm
 			Verdict:   verdict,
 		},
 		TaskUrl: urler.GetTaskURL(attempt.taskID),
+		LogUrl:  logURL,
 		Attempt: int32(attemptNum),
 	}
 }
