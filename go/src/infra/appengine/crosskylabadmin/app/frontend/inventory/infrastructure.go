@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"math/rand"
 	"sort"
+	"strings"
 
 	fleet "infra/appengine/crosskylabadmin/api/fleet/v1"
 	"infra/appengine/crosskylabadmin/app/config"
@@ -379,6 +380,9 @@ func (dr *dutRemover) unpackRequestReason(r *fleet.RemoveDutsFromDronesRequest_I
 // Note that this function may return a nil server along with a nil
 // error, if the DUT is not found but the request should not consider
 // this an error.
+//
+// DUTs assigned to the drone queen don't check the drone in the
+// removeRequest.
 func (dr *dutRemover) findDroneForRequestDUT(rr removeRequest) (*inventory.Server, error) {
 	srv, ok := dr.droneForDUT[rr.dutID]
 	if !ok {
@@ -386,6 +390,9 @@ func (dr *dutRemover) findDroneForRequestDUT(rr removeRequest) (*inventory.Serve
 			return nil, status.Errorf(codes.FailedPrecondition, "DUT %s is not assigned to a drone", rr.dutID)
 		}
 		return nil, nil
+	}
+	if strings.HasPrefix(srv.GetHostname(), queenDronePrefix) {
+		return srv, nil
 	}
 	if rr.drone != "" && rr.drone != srv.GetHostname() {
 		return nil, status.Errorf(codes.FailedPrecondition, "DUT %s is not on drone %s", rr.dutID, rr.drone)

@@ -264,8 +264,10 @@ func (is *ServerImpl) PushInventoryToQueen(ctx context.Context, req *fleet.PushI
 // queenDroneName returns the name of the fake drone whose DUTs should
 // be pushed to the drone queen service.
 func queenDroneName(env string) string {
-	return fmt.Sprintf("drone-queen-%s", env)
+	return queenDronePrefix + env
 }
+
+const queenDronePrefix = "drone-queen-"
 
 // UpdateDCAndCheckIfSkipLabelUpdate updates DUT labels with cached device config and checks if skipping DUT label update.
 func UpdateDCAndCheckIfSkipLabelUpdate(ctx context.Context, req updateDutLabelsRequest) bool {

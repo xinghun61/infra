@@ -440,6 +440,8 @@ message RemoveDutsFromDronesRequest {
     //
     // If specified, the DUT must currently be assigned to the
     // specified drone.
+    //
+    // This is ignored if the DUT is assigned to a queen drone.
     string drone_hostname = 2;
 
     // removal_reason is the reason for removal.
