@@ -32,14 +32,53 @@ class ProjectAPI(object):  # pragma: no cover.
         'step_name': {
           'failures': {
             frozenset(['target1', 'target2']): {
-              'rule': 'emerge',
               'first_failed_build': {
                 'id': 8765432109,
                 'number': 123,
                 'commit_id': 654321
               },
               'last_passed_build': None,
-              'failure_group_build': None,
+              'properties': {
+                # Arbitrary information about the failure if exists.
+              }
+            },
+          'first_failed_build': {
+            'id': 8765432109,
+            'number': 123,
+            'commit_id': 654321
+          },
+          'last_passed_build': None,
+          'properties': {
+            # Arbitrary information about the failure if exists.
+          }
+        },
+      }
+    """
+    # pylint: disable=unused-argument
+    raise NotImplementedError
+
+  def GetTestFailures(self, build, test_steps):
+    """Returns the detailed test failures from a failed build.
+
+    Args:
+      build (buildbucket build.proto): ALL info about the build.
+      test_steps (list of buildbucket step.proto): The failed test steps.
+
+    Returns:
+      (dict): Information about detailed test failures.
+      {
+        'step_name1': {
+          'failures': {
+            frozenset(['test_name']): {
+              'first_failed_build': {
+                'id': 8765432109,
+                'number': 123,
+                'commit_id': 654321
+              },
+              'last_passed_build': None,
+              'properties': {
+                # Arbitrary information about the failure if exists.
+              }
             },
             ...
           },
@@ -49,7 +88,20 @@ class ProjectAPI(object):  # pragma: no cover.
             'commit_id': 654321
           },
           'last_passed_build': None
-          'failure_group_build': None,
+          'properties': None,
+        },
+        'step_name2': {
+          # No test level information.
+          'failures': {},
+          'first_failed_build': {
+            'id': 8765432109,
+            'number': 123,
+            'commit_id': 654321
+          },
+          'last_passed_build': None
+          'properties': {
+            # Arbitrary information about the failure if exists.
+          },
         },
       }
     """
@@ -89,22 +141,26 @@ class ProjectAPI(object):  # pragma: no cover.
       first_failures_in_current_build (dict): A dict for failures that happened
       the first time in current build.
       {
-      'failures': {
-        'compile': {
-          'output_targets': ['target4', 'target1', 'target2'],
-          'last_passed_build': {
-            'id': 8765432109,
-            'number': 122,
-            'commit_id': 'git_sha1'
+        'failures': {
+          'step': {
+            'atomic_failures': [
+              frozenset(['target4']),
+              frozenset(['target1', 'target2'])],
+            'last_passed_build': {
+              'id': 8765432109,
+              'number': 122,
+              'commit_id': 'git_sha1'
+            },
           },
         },
-      },
-      'last_passed_build': {
-        'id': 8765432109,
-        'number': 122,
-        'commit_id': 'git_sha1'
+        'last_passed_build': {
+          # In this build all the failures that happened in the build being
+          # analyzed passed.
+          'id': 8765432108,
+          'number': 121,
+          'commit_id': 'git_sha0'
+        }
       }
-    }
     """
     # For projects that don't need to group failures (e.g. chromium), this is
     # a no-op.

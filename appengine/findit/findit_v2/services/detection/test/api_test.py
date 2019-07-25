@@ -29,6 +29,9 @@ class DummyProjectAPI(ProjectAPI):
   def GetRerunBuilderId(self, _):  # pragma: no cover.
     pass
 
+  def GetTestFailures(self, *_):  # pragma: no cover.
+    pass
+
 
 class APITest(unittest.TestCase):
 

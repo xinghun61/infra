@@ -12,7 +12,8 @@ from findit_v2.model.compile_failure import CompileFailureGroup
 from findit_v2.services.failure_type import StepTypeEnum
 from findit_v2.services.project_api import ProjectAPI
 
-_COMPILE_FAILURE_OUTPUT_NAME = 'build_compile_failure_output'
+_COMPILE_FAILURE_OUTPUT_NAME = 'compile_failure'
+_TEST_FAILURE_OUTPUT_NAME = 'test_failure'
 
 
 class ChromeOSProjectAPI(ProjectAPI):
@@ -26,45 +27,80 @@ class ChromeOSProjectAPI(ProjectAPI):
     return build_failure_output
 
   def ClassifyStepType(self, build, step):
-    """ Returns the failure type of the given build step.
+    """Returns the failure type of the given build step.
 
-    In ChromeOS builds, if they have compile failures, they will produce an
-    output property called 'build_compile_failure_output', which includes the
-    failed step name. So that step will be classified as the compile step.
+    In ChromeOS builds,
+    - if they have compile failures, they will produce an
+      output property called 'compile_failure', which includes the
+      failed step name. So that step will be classified as the compile step.
+    - if they have test failures, they will produce an
+      output property called 'test_failure', which includes the
+      failed step name. So that step will be classified as the test step.
 
     Args:
       build (buildbucket build.proto): ALL info about the build.
       step (buildbucket step.proto): ALL info about the build step.
     """
+
+    def classify_compile_step(compile_failure_output):
+      # Format of compile_failure_output:
+      # {
+      #   'failures': [{
+      #     'output_targets': ['target'],
+      #     'rule': 'emerge',
+      #   }, ],
+      #   'failed_step': 'step'
+      # }
+      failed_compile_step = compile_failure_output.get('failed_step')
+      if not failed_compile_step:
+        logging.error(
+            'No failed_step in compile_failure property of ChromeOS'
+            ' build %d.', build.id)
+        return StepTypeEnum.INFRA
+
+      if step.name == failed_compile_step:
+        # Noted for ChromeOS the current supported compile step is nested.
+        # To be consistent with sheriff-o-matic, the matching step name is a
+        # leaf step. Although in reality the parent step also has 'FAILIURE'
+        # state and is a compile step, Findit still returns a StepTypeEnum.INFRA
+        # to intentionality ignore it.
+        return StepTypeEnum.COMPILE
+      return StepTypeEnum.INFRA
+
+    def classify_test_step(test_failure_output):
+      # Format of test_failure_output:
+      # {
+      #   'xx_test_failures': [  # failure type
+      #     {
+      #       'failed_step': 'step',
+      #       'test_spec': 'test_spec'
+      #     }
+      #   ]
+      # }
+      for failures in test_failure_output.itervalues():
+        for failure in failures:
+          if step.name == failure.get('failed_step'):
+            return StepTypeEnum.TEST
+      return StepTypeEnum.INFRA
+
     compile_failure_output = self._GetFailureOutput(
         build, _COMPILE_FAILURE_OUTPUT_NAME)
-    if not compile_failure_output:
-      # No compile failure in the build, so far classifies every failed step as
-      # infra failure and ignore them.
-      return StepTypeEnum.INFRA
+    if compile_failure_output:
+      return classify_compile_step(compile_failure_output)
 
-    failed_compile_step = compile_failure_output.get('failed_step')
-    if not failed_compile_step:
-      logging.error(
-          'No failed_step in build_compile_failure_output of ChromeOS'
-          ' build %d.', build.id)
-      return StepTypeEnum.INFRA
+    test_failure_output = self._GetFailureOutput(build,
+                                                 _TEST_FAILURE_OUTPUT_NAME)
+    if test_failure_output:
+      return classify_test_step(test_failure_output)
 
-    if step.name == failed_compile_step:
-      # Noted for ChromeOS the current supported compile step is nested.
-      # To be consistent with sheriff-o-matic, the matching step name is a leaf
-      # step. Although in reality the parent step also has 'FAILIURE' state and
-      # is a compile step, Findit will still return a StepTypeEnum.INFRA for it
-      # to intentionality ignore it.
-      return StepTypeEnum.COMPILE
-
+    # No compile/test failure output, classifies step as INFRA failure.
     return StepTypeEnum.INFRA
 
   def GetCompileFailures(self, build, compile_steps):
     """Returns the detailed compile failures from a failed build.
 
     For ChromeOS builds, the failures are stored in the build's output
-    property 'build_compile_failure_output'.
+    property 'compile_failure'.
 
     Args:
       build (buildbucket build.proto): ALL info about the build.
@@ -76,22 +112,25 @@ class ChromeOSProjectAPI(ProjectAPI):
         'step_name': {
           'failures': {
             frozenset(['target1', 'target2']): {
-              'rule': 'emerge',
               'first_failed_build': {
                 'id': 8765432109,
                 'number': 123,
                 'commit_id': 654321
               },
               'last_passed_build': None,
+              'properties': {
+                # Arbitrary information about the failure if exists.
+              }
             },
-            ...
-          },
           'first_failed_build': {
             'id': 8765432109,
             'number': 123,
             'commit_id': 654321
           },
           'last_passed_build': None,
+          'properties': {
+            # Arbitrary information about the failure if exists.
+          }
         },
       }
     """
@@ -113,7 +152,7 @@ class ChromeOSProjectAPI(ProjectAPI):
     failed_step = build_compile_failure_output.get('failed_step')
     if not failed_step:
       logging.error(
-          'No failed_step in build_compile_failure_output of ChromeOS'
+          'No failed_step in compile_failure property of ChromeOS'
           ' build %d.', build.id)
       return {}
 
@@ -130,12 +169,97 @@ class ChromeOSProjectAPI(ProjectAPI):
       # "{\"category\": \"chromeos-base\", \"packageName\": \"cryptohome\"}"
       output_targets = frozenset(failure['output_targets'])
       failures_dict[output_targets] = {
-          'rule': failure.get('rule'),
+          'properties': {
+              'rule': failure.get('rule')
+          },
           'first_failed_build': build_info,
           'last_passed_build': None,
       }
 
     return detailed_compile_failures
+
+  def GetTestFailures(self, build, test_steps):
+    """Returns the detailed test failures from a failed build.
+
+    For ChromeOS builds, the failures are stored in the build's output
+    property 'build_test_failure_output'.
+
+    Args:
+      build (buildbucket build.proto): ALL info about the build.
+      test_steps (list of buildbucket step.proto): The failed test steps.
+
+    Returns:
+      (dict): Information about detailed test failures.
+      {
+        'step_name1': {
+          'failures': {},
+          'first_failed_build': {
+            'id': 8765432109,
+            'number': 123,
+            'commit_id': 654321
+          },
+          'last_passed_build': None,
+          'properties': {
+            'failure_type': 'xx_test_failures',
+            'test_spec': 'test_spec'
+          }
+        },
+        ...
+      }
+    """
+    # pylint: disable=unused-argument
+    build_info = {
+        'id': build.id,
+        'number': build.number,
+        'commit_id': build.input.gitiles_commit.id
+    }
+
+    # The format of test_failure property is like:
+    # 'test_failure': {
+    #   'xx_test_failures': [
+    #     {
+    #       'failed_step': 'results|xx test results|[FAILED] <suite1>',
+    #       'test_spec': 'json serialized proto for suite1'
+    #     }
+    #   ],
+    #   'yy_test_failures': [
+    #     {
+    #       'failed_step': 'results|yy test results|[FAILED] <suite2>',
+    #       'test_spec': 'json serialized proto for suite2'
+    #     }
+    #   ],
+    # }
+    build_test_failure_output = self._GetFailureOutput(
+        build, _TEST_FAILURE_OUTPUT_NAME)
+
+    if not build_test_failure_output:
+      logging.error('No %s for ChromeOS build %d.', _TEST_FAILURE_OUTPUT_NAME,
+                    build.id)
+      return {}
+
+    detailed_test_failures = {}
+    for failure_type, failures in build_test_failure_output.iteritems():
+      for failure in failures:
+        failed_step = failure.get('failed_step')
+        test_spec = failure.get('test_spec')
+        if not failed_step or not test_spec:
+          logging.error(
+              'Malformed %s for ChromeOs build %d - failure_type: %s,'
+              ' failure_info: %r.', _TEST_FAILURE_OUTPUT_NAME, build.id,
+              failure_type, failure)
+          continue
+
+        detailed_test_failures[failed_step] = {
+            'failures': {},
+            'first_failed_build': build_info,
+            'last_passed_build': None,
+            'properties': {
+                'failure_type': failure_type,
+                'test_spec': test_spec
+            }
+        }
+
+    return detailed_test_failures
 
   def GetFailuresWithMatchingCompileFailureGroups(
       self, context, build, first_failures_in_current_build):
@@ -176,7 +300,7 @@ class ChromeOSProjectAPI(ProjectAPI):
       {
         'failures': {
           'install packages': {
-            'output_targets': [
+            'atomic_failures': [
               frozenset(['target4']),
               frozenset(['target1', 'target2'])],
             'last_passed_build': {
@@ -233,12 +357,12 @@ class ChromeOSProjectAPI(ProjectAPI):
           continue
 
         failed_targets_in_current_build = frozenset.union(
-            *step_failure['output_targets'])
+            *step_failure['atomic_failures'])
         if not failed_targets_in_current_build == set(
             failures_in_group[step_ui_name]):
           continue
         # Matching failure found in the group. Should reuse this group.
-        for output_target_frozenset in step_failure['output_targets']:
+        for output_target_frozenset in step_failure['atomic_failures']:
           failures_with_existing_group[step_ui_name][
               output_target_frozenset] = group.key.id()
 

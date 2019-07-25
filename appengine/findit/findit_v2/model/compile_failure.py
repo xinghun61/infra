@@ -34,8 +34,8 @@ class CompileFailure(AtomicFailure):
   # Compile rule, e.g. ACTION, CXX, etc.
   # For chromium builds, it can be found in json.output[ninja_info] log of
   # compile step.
-  # For chromeos builds, it can be found in build_compile_failure_output of
-  # build.
+  # For chromeos builds, it can be found in an output property 'compile_failure'
+  # of the build.
   rule = ndb.StringProperty()
 
   # The checked-in source files in the code base that the build edge takes as

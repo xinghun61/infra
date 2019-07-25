@@ -160,7 +160,7 @@ class CompileApiTest(wf_testcase.TestCase):
         'category': 'chromeos-base',
         'packageName': 'target2'
     })
-    build.output.properties['build_compile_failure_output'] = {
+    build.output.properties['compile_failure'] = {
         'failures': [{
             'output_targets': [output_target],
             'rule': 'emerge'
@@ -172,7 +172,9 @@ class CompileApiTest(wf_testcase.TestCase):
         self.compile_step_name: {
             'failures': {
                 frozenset(['target1.o', 'target2.o']): {
-                    'rule': 'CXX',
+                    'properties': {
+                        'rule': 'CXX'
+                    },
                     'first_failed_build': {
                         'id': build_id,
                         'number': build_number,

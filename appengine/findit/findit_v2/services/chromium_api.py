@@ -36,17 +36,53 @@ class ChromiumProjectAPI(ProjectAPI):
     Returns:
       (dict): Information about detailed compile failures.
       {
-        'install packages': {
+        'step_name': {
           'failures': {
-            'pkg': {
-              'rule': 'emerge',
-              'output_targets': ['pkg'],
+            frozenset(['target1', 'target2']): {
               'first_failed_build': {
                 'id': 8765432109,
                 'number': 123,
                 'commit_id': 654321
               },
-              'last_passed_build': None
+              'last_passed_build': None,
+              'properties': {
+                # Arbitrary information about the failure if exists.
+              }
+            },
+          'first_failed_build': {
+            'id': 8765432109,
+            'number': 123,
+            'commit_id': 654321
+          },
+          'last_passed_build': None,
+          'properties': {
+            # Arbitrary information about the failure if exists.
+          }
+        },
+      }
+    """
+    raise NotImplementedError
+
+  def GetTestFailures(self, build, test_steps):  # pragma: no cover.
+    """Returns the detailed test failures from a failed build.
+
+    Args:
+      build (buildbucket build.proto): ALL info about the build.
+      test_steps (list of buildbucket step.proto): The failed test steps.
+
+    Returns:
+      (dict): Information about detailed test failures.
+      {
+        'step_name1': {
+          'failures': {
+            frozenset(['test_name']): {
+              'first_failed_build': {
+                'id': 8765432109,
+                'number': 123,
+                'commit_id': 654321
+              },
+              'last_passed_build': None,
+              'properties': None,  # Arbitrary information about a failure.
             },
             ...
           },
@@ -56,6 +92,18 @@ class ChromiumProjectAPI(ProjectAPI):
             'commit_id': 654321
           },
           'last_passed_build': None
+          'properties': None,
+        },
+        'step_name2': {
+          # No test level information.
+          'failures': {},
+          'first_failed_build': {
+            'id': 8765432109,
+            'number': 123,
+            'commit_id': 654321
+          },
+          'last_passed_build': None
+          'properties': None,
         },
       }
     """

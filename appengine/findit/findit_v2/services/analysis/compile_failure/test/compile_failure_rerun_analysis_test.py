@@ -248,7 +248,9 @@ class CompileFailureRerunAnalysisTest(wf_testcase.TestCase):
         'compile': {
             'failures': {
                 frozenset(['a.o']): {
-                    'rule': 'CXX'
+                    'properties': {
+                        'rule': 'CXX'
+                    }
                 }
             }
         }
@@ -296,7 +298,9 @@ class CompileFailureRerunAnalysisTest(wf_testcase.TestCase):
         'compile': {
             'failures': {
                 frozenset(['a.o']): {
-                    'rule': 'CXX'
+                    'properties': {
+                        'rule': 'CXX'
+                    }
                 }
             }
         }
