@@ -71,8 +71,8 @@ def SaveCompileFailures(context, build, detailed_compile_failures):
           'Cannot get detailed compile failure info for build %d,'
           ' saving step level info only.', build.id)
       first_failed_build_id = step_info.get('first_failed_build', {}).get('id')
-      merged_failure_key = compile_failure.GetMergedFailureKey(
-          first_failures, first_failed_build_id, step_ui_name, None)
+      merged_failure_key = CompileFailure.GetMergedFailureKey(
+          first_failures, first_failed_build_id, step_ui_name, frozenset([]))
 
       new_entity = CompileFailure.Create(
           failed_build_key=failed_build_key,
@@ -89,7 +89,7 @@ def SaveCompileFailures(context, build, detailed_compile_failures):
 
     for output_targets, failure in failures.iteritems():
       first_failed_build_id = failure.get('first_failed_build', {}).get('id')
-      merged_failure_key = compile_failure.GetMergedFailureKey(
+      merged_failure_key = CompileFailure.GetMergedFailureKey(
           first_failures, first_failed_build_id, step_ui_name, output_targets)
 
       new_entity = CompileFailure.Create(
@@ -150,14 +150,13 @@ def _GetPreviousCompileStepsAndFailuresInPreviousBuild(
       if s.name in detailed_compile_failures
   }
   # Looks for compile steps that failed in both current build and this build.
-  prev_failed_compile_steps = {
-      step_name: step
-      for step_name, step in prev_compile_steps.iteritems()
+  prev_failed_compile_steps = [
+      step for step in prev_compile_steps.itervalues()
       if step.status == common_pb2.FAILURE
-  }
+  ]
   prev_failures = project_api.GetCompileFailures(
       detailed_prev_build,
-      prev_failed_compile_steps.values()) if prev_failed_compile_steps else {}
+      prev_failed_compile_steps) if prev_failed_compile_steps else {}
   return prev_compile_steps, prev_failures
 
 
@@ -485,12 +484,12 @@ def _UpdateCompileFailureEntitiesWithGroupInfo(build,
   group_failures = {}
   for failure_entity in compile_failure_entities:
     failure_group_build_id = failures_with_existing_group.get(
-        failure_entity.step_ui_name, {}).get(
-            frozenset(failure_entity.output_targets))
-    merged_failure_key = compile_failure.GetMergedFailureKey(
-        group_failures, failure_group_build_id, failure_entity.step_ui_name,
-        failure_entity.output_targets)
+        failure_entity.step_ui_name,
+        {}).get(failure_entity.GetFailureIdentifier())
     if failure_group_build_id:
+      merged_failure_key = CompileFailure.GetMergedFailureKey(
+          group_failures, failure_group_build_id, failure_entity.step_ui_name,
+          failure_entity.GetFailureIdentifier())
       failure_entity.failure_group_build_id = failure_group_build_id
       failure_entity.merged_failure_key = merged_failure_key
       entities_to_save.append(failure_entity)

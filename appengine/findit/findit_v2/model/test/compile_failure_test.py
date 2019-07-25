@@ -7,7 +7,6 @@ from datetime import datetime
 from buildbucket_proto import common_pb2
 from google.appengine.ext import ndb
 
-from findit_v2.model import compile_failure
 from findit_v2.model.compile_failure import CompileFailure
 from findit_v2.model.compile_failure import CompileFailureAnalysis
 from findit_v2.model.compile_failure import CompileFailureGroup
@@ -57,7 +56,7 @@ class CompileFailureTest(wf_testcase.WaterfallTestCase):
     build_key = ndb.Key('LuciFailedBuild', self.build_id)
     failures_in_build = CompileFailure.query(ancestor=build_key).fetch()
     self.assertEqual(2, len(failures_in_build))
-    self.assertItemsEqual([['target1.o'], ['target2.o']],
+    self.assertItemsEqual([{'target1.o'}, {'target2.o'}],
                           [f.GetFailureIdentifier() for f in failures_in_build])
     self.assertEqual(self.build_id, failures_in_build[0].build_id)
 
@@ -76,11 +75,13 @@ class CompileFailureTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(dummy_merged_failure, failure.GetMergedFailure())
 
   def testGetMergedFailureForNonFirstFailure(self):
+    first_failed_build_id = 9876543201
     dummy_merged_failure = CompileFailure.Create(
-        ndb.Key(LuciFailedBuild, 9876543201), 'compile', ['target1.o'])
+        ndb.Key(LuciFailedBuild, first_failed_build_id), 'compile',
+        ['target1.o'])
     dummy_merged_failure.put()
     failure = self.target_entities[0]
-    failure.merged_failure_key = dummy_merged_failure.key
+    failure.first_failed_build_id = first_failed_build_id
     self.assertEqual(dummy_merged_failure, failure.GetMergedFailure())
 
   def testCompileFailureGroup(self):
@@ -127,6 +128,8 @@ class CompileFailureTest(wf_testcase.WaterfallTestCase):
     self.assertItemsEqual({
         'compile': ['target1.o', 'target2.o']
     }, analysis.failed_targets)
+    self.assertEqual('chromium', analysis.luci_project)
+    self.assertEqual('chromium/ci', analysis.bucket_id)
 
   def testUpdateCompileFailureAnalysis(self):
     analysis = self._CreateCompileFailureAnalysis()
@@ -164,7 +167,9 @@ class CompileFailureTest(wf_testcase.WaterfallTestCase):
         'compile': {
             'failures': {
                 frozenset(['target1.o', 'target2.o']): {
-                    'rule': 'CXX',
+                    'properties': {
+                        'rule': 'CXX'
+                    },
                     'first_failed_build': {
                         'id': 8000000000121,
                         'number': 121,
@@ -228,14 +233,15 @@ class CompileFailureTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(build_id, rerun_builds[0].build_id)
 
   def testGetMergedFailureKeyNoBuildId(self):
-    self.assertIsNone(compile_failure.GetMergedFailureKey({}, None, 's', None))
+    with self.assertRaises(AssertionError):
+      CompileFailure.GetMergedFailureKey({}, None, 's', frozenset([]))
 
   def testGetMergedFailureKey(self):
     self.assertEqual(
         self.target_entities[0].key,
-        compile_failure.GetMergedFailureKey(
+        CompileFailure.GetMergedFailureKey(
             {}, self.build_id, 'compile',
-            self.target_entities[0].output_targets))
+            self.target_entities[0].GetFailureIdentifier()))
 
   def testGetMergedFailure(self):
     failure = CompileFailure.Create(

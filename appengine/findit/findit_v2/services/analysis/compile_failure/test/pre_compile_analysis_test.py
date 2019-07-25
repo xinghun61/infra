@@ -1013,7 +1013,6 @@ class PreCompileAnalysisTest(wf_testcase.TestCase):
     build = LuciFailedBuild.get_by_id(self.build_id)
     compile_failures = CompileFailure.query(ancestor=build.key).fetch()
     self.assertEqual(2, len(compile_failures))
-
     for failure in compile_failures:
       if failure.output_targets == ['target1']:
         self.assertEqual(group_failure1.key, failure.merged_failure_key)

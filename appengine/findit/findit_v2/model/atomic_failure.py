@@ -5,6 +5,7 @@
 from google.appengine.ext import ndb
 
 from findit_v2.model.gitiles_commit import Culprit
+from findit_v2.model.luci_build import LuciFailedBuild
 
 
 class FileInFailureLog(ndb.Model):
@@ -24,7 +25,10 @@ class AtomicFailure(ndb.Model):
   - In compile failure atom failure is a failed compile target.
   - In test failure atom failure is a failed test.
 
-  Atom failures in the same build have the same parent.
+  Key to an AtomicFailure entity is
+  Key(LuciFailedBuild, <build_id>, AtomicFailure, <numeric_id>(no meaning)).
+  Atomic failures happened in the same build have the same parent. And they'll
+  be queried together, so their identifier is not a part of the key.
   """
 
   # Full step name.
@@ -61,6 +65,9 @@ class AtomicFailure(ndb.Model):
   # Mentioned files in failure log for the failure.
   files = ndb.LocalStructuredProperty(FileInFailureLog, repeated=True)
 
+  # Arbitrary properties of the failure.
+  properties = ndb.JsonProperty(compressed=True)
+
   @property
   def build_id(self):
     """Gets the id of the build that this failure belongs to."""
@@ -73,7 +80,8 @@ class AtomicFailure(ndb.Model):
              first_failed_build_id=None,
              last_passed_build_id=None,
              failure_group_build_id=None,
-             files=None):  # pragma: no cover
+             files=None,
+             properties=None):  # pragma: no cover
     instance = cls(step_ui_name=step_ui_name, parent=failed_build_key)
 
     files_objs = []
@@ -86,19 +94,45 @@ class AtomicFailure(ndb.Model):
     instance.first_failed_build_id = first_failed_build_id
     instance.last_passed_build_id = last_passed_build_id
     instance.failure_group_build_id = failure_group_build_id
+    instance.properties = properties
     return instance
+
+  @classmethod
+  def GetMergedFailureKey(cls, failure_entities, referred_build_id,
+                          step_ui_name, atomic_failures):
+
+    def get_failures_by_build_id(build_id):
+      """Gets failure entities by build id."""
+      build_key = ndb.Key(LuciFailedBuild, build_id)
+      return cls.query(ancestor=build_key).fetch()
+
+    assert referred_build_id, (
+        'Missing referred_build_id when looking for merged failure key.')
+    assert isinstance(
+        atomic_failures,
+        (type(None), frozenset)), ('Unexpected atomic_failures type: {}'.format(
+            type(atomic_failures)))
+
+    if referred_build_id not in failure_entities:
+      failure_entities[referred_build_id] = (
+          get_failures_by_build_id(referred_build_id))
+
+    for failure in failure_entities[referred_build_id]:
+      if (failure.step_ui_name == step_ui_name and
+          failure.GetFailureIdentifier() == atomic_failures):
+        # Found the same failure in the first failed build. Uses that
+        # failure's merged_failure_key or key to be the current failure's
+        # merged_failure_key.
+        return failure.merged_failure_key or failure.key
+    return None
 
   def GetFailureIdentifier(self):
     """Returns the identifier for the failure within its step.
 
     Returns:
-    (list): information to identify a failure.
+    (frozenset): information to identify a failure.
       - For compile failures, it'll be the output_targets.
-      - For test failures, it'll be the [test_name].
+      - For test failures, it'll be the frozenset([test_name]).
 
     """
-    raise NotImplementedError
-
-  def GetMergedFailure(self):
-    """Gets the most up-to-date merged_failure for the current failure."""
     raise NotImplementedError

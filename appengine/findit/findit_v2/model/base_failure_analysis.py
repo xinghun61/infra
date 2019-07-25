@@ -11,18 +11,6 @@ from libs import analysis_status
 
 class BaseFailureAnalysis(ndb.Model):
   """A base class for a luci build."""
-
-  # Information about the build the analysis uses to analyze.
-  # High level information to scale a build.
-  # ID of the LUCI project to which this build belongs.
-  # E.g. 'chromium', 'chromeos'.
-  luci_project = ndb.StringProperty(required=True)
-  # Indexed string "<luci_project>/<bucket_name>".
-  # Example: "chromium/ci".
-  # Includes luci_project since buckets are bounded within project, and it
-  # should always be searching for <luci_project>/<bucket_name> instead of
-  # only bucket_name.
-  bucket_id = ndb.StringProperty(required=True)
   # Indexed string "<luci_project>/<bucket_name>/builder_name".
   # Example: "chromium/ci/Linux Tests".
   builder_id = ndb.StringProperty(required=True)
@@ -53,3 +41,20 @@ class BaseFailureAnalysis(ndb.Model):
   @property
   def completed(self):
     return self.status in (analysis_status.COMPLETED, analysis_status.ERROR)
+
+  @ndb.ComputedProperty
+  def luci_project(self):
+    """ID of the LUCI project to which this build belongs.
+    E.g. 'chromium', 'chromeos'.
+    """
+    return self.builder_id.split('/', 1)[0]
+
+  @property
+  def bucket_id(self):
+    """
+    Format in "<luci_project>/<bucket_name>". Example: "chromium/ci".
+    Includes luci_project since buckets are bounded within project, and it
+    should always be searching for <luci_project>/<bucket_name> instead of
+    only bucket_name.
+    """
+    return self.builder_id.rsplit('/', 1)[0]
