@@ -19,7 +19,6 @@ import (
 	"go.chromium.org/luci/common/clock"
 	"go.chromium.org/luci/common/errors"
 	"go.chromium.org/luci/common/logging"
-	"go.chromium.org/luci/common/sync/parallel"
 	"go.chromium.org/luci/grpc/grpcutil"
 
 	"infra/qscheduler/qslib/tutils"
@@ -208,113 +207,96 @@ func workerDone(c context.Context, req *admin.WorkerDoneRequest, isolator common
 
 	// Now that all prerequisite data was loaded, run the mutations in a transaction.
 	if err := ds.RunInTransaction(c, func(c context.Context) (err error) {
-		return parallel.FanOutIn(func(taskC chan<- func() error) {
-			// Add comments.
-			taskC <- func() error {
-				// Stop if there are no comments.
-				if len(comments) == 0 {
-					return nil
-				}
-				if err = ds.Put(c, comments); err != nil {
-					return errors.Annotate(err, "failed to add Comment entries").Err()
-				}
-				entities := make([]interface{}, 0, len(comments)*2)
-				selections, err = createCommentSelections(c, request, comments)
-				if err != nil {
-					logging.Warningf(c, "Error creating comment selections: %v", err)
-					// On error still write the comment selections which specify they
-					// were not included.
-				}
-				for i, comment := range comments {
-					commentKey := ds.KeyForObj(c, comment)
-					entities = append(entities, []interface{}{
-						selections[i],
-						&track.CommentFeedback{ID: 1, Parent: commentKey},
-					}...)
-					if selections[i].Included {
-						numSelectedComments++
-					}
-				}
-				if err := ds.Put(c, entities); err != nil {
-					return errors.Annotate(err, "failed to add CommentSelection/CommentFeedback entries").Err()
-				}
-				// Monitor comment count per category.
-				commentCount.Set(c, int64(len(comments)), functionName, platformName)
-				return nil
+		// If there were comments produced, add all Comment, CommentFeedback,
+		// and CommentSelection entities.
+		if len(comments) > 0 {
+			if err = ds.Put(c, comments); err != nil {
+				return errors.Annotate(err, "failed to add Comment entries").Err()
 			}
+			entities := make([]interface{}, 0, len(comments)*2)
+			selections, err = createCommentSelections(c, request, comments)
+			if err != nil {
+				logging.Warningf(c, "Error creating comment selections: %v", err)
+				// On error still write the comment selections which specify they
+				// were not included.
+			}
+			for i, comment := range comments {
+				commentKey := ds.KeyForObj(c, comment)
+				entities = append(entities, []interface{}{
+					selections[i],
+					&track.CommentFeedback{ID: 1, Parent: commentKey},
+				}...)
+				if selections[i].Included {
+					numSelectedComments++
+				}
+			}
+			if err := ds.Put(c, entities); err != nil {
+				return errors.Annotate(err, "failed to add CommentSelection/CommentFeedback entries").Err()
+			}
+			// Monitor comment count per category.
+			commentCount.Set(c, int64(len(comments)), functionName, platformName)
+		}
 
-			// Update worker state, isolated output, and number of result comments.
-			taskC <- func() error {
-				workerRes.State = req.State
-				workerRes.IsolatedOutput = req.IsolatedOutputHash
-				workerRes.BuildbucketOutput = req.BuildbucketOutput
-				workerRes.NumComments = len(comments)
-				if err := ds.Put(c, workerRes); err != nil {
-					return errors.Annotate(err, "failed to update WorkerRunResult").Err()
-				}
-				// Monitor worker success/failure.
-				if req.State == tricium.State_SUCCESS {
-					workerSuccessCount.Add(c, 1, functionName, platformName)
-				} else {
-					workerFailureCount.Add(c, 1, functionName, platformName, req.State.String())
-				}
-				return nil
-			}
+		// Update WorkerRunResult state, isolated or buildbucket output, and
+		// comment count.
+		workerRes.State = req.State
+		workerRes.IsolatedOutput = req.IsolatedOutputHash
+		workerRes.BuildbucketOutput = req.BuildbucketOutput
+		workerRes.NumComments = len(comments)
+		if err := ds.Put(c, workerRes); err != nil {
+			return errors.Annotate(err, "failed to update WorkerRunResult").Err()
+		}
+		// Monitor worker success/failure.
+		if req.State == tricium.State_SUCCESS {
+			workerSuccessCount.Add(c, 1, functionName, platformName)
+		} else {
+			workerFailureCount.Add(c, 1, functionName, platformName, req.State.String())
+		}
 
-			// Update function state.
-			taskC <- func() error {
-				fr := &track.FunctionRunResult{ID: 1, Parent: functionRunKey}
-				if err := ds.Get(c, fr); err != nil {
-					return errors.Annotate(err, "failed to get FunctionRunResult (function: %s)", functionName).Err()
-				}
-				if fr.State != functionState {
-					fr.State = functionState
-					fr.NumComments = functionNumComments
-					logging.Fields{
-						"function":    fr.Name,
-						"numComments": fr.NumComments,
-					}.Debugf(c, "Updating state of FunctionRunResult.")
-					if err := ds.Put(c, fr); err != nil {
-						return errors.Annotate(err, "failed to update FunctionRunResult").Err()
-					}
-				}
-				return nil
+		// Update FunctionRunResult state and comment count.
+		fr := &track.FunctionRunResult{ID: 1, Parent: functionRunKey}
+		if err := ds.Get(c, fr); err != nil {
+			return errors.Annotate(err, "failed to get FunctionRunResult (function: %s)", functionName).Err()
+		}
+		if fr.State != functionState {
+			fr.State = functionState
+			fr.NumComments = functionNumComments
+			logging.Fields{
+				"function":    fr.Name,
+				"numComments": fr.NumComments,
+			}.Debugf(c, "Updating state of FunctionRunResult.")
+			if err := ds.Put(c, fr); err != nil {
+				return errors.Annotate(err, "failed to update FunctionRunResult").Err()
 			}
+		}
 
-			// Update run state.
-			taskC <- func() error {
-				rr := &track.WorkflowRunResult{ID: 1, Parent: workflowRunKey}
-				if err := ds.Get(c, rr); err != nil {
-					return errors.Annotate(err, "failed to get WorkflowRunResult entity").Err()
-				}
-				if rr.State != runState {
-					rr.State = runState
-					rr.NumComments = runNumComments
-					if err := ds.Put(c, rr); err != nil {
-						return errors.Annotate(err, "failed to update WorkflowRunResult entity").Err()
-					}
-				}
-				return nil
+		// Update WorkflowRunResult state and comment count.
+		rr := &track.WorkflowRunResult{ID: 1, Parent: workflowRunKey}
+		if err := ds.Get(c, rr); err != nil {
+			return errors.Annotate(err, "failed to get WorkflowRunResult entity").Err()
+		}
+		if rr.State != runState {
+			rr.State = runState
+			rr.NumComments = runNumComments
+			if err := ds.Put(c, rr); err != nil {
+				return errors.Annotate(err, "failed to update WorkflowRunResult entity").Err()
 			}
+		}
 
-			// Update request state.
-			taskC <- func() error {
-				if !tricium.IsDone(runState) {
-					return nil
-				}
-				ar := &track.AnalyzeRequestResult{ID: 1, Parent: requestKey}
-				if err := ds.Get(c, ar); err != nil {
-					return errors.Annotate(err, "failed to get AnalyzeRequestResult entity").Err()
-				}
-				if ar.State != runState {
-					ar.State = runState
-					if err := ds.Put(c, ar); err != nil {
-						return errors.Annotate(err, "failed to update AnalyzeRequestResult entity").Err()
-					}
-				}
-				return nil
+		// Update AnalyzeRequestResult state.
+		if tricium.IsDone(runState) {
+			ar := &track.AnalyzeRequestResult{ID: 1, Parent: requestKey}
+			if err := ds.Get(c, ar); err != nil {
+				return errors.Annotate(err, "failed to get AnalyzeRequestResult entity").Err()
 			}
-		})
+			if ar.State != runState {
+				ar.State = runState
+				if err := ds.Put(c, ar); err != nil {
+					return errors.Annotate(err, "failed to update AnalyzeRequestResult entity").Err()
+				}
+			}
+		}
+		return nil
 	}, nil); err != nil {
 		return err
 	}
