@@ -15,6 +15,7 @@ import (
 
 	"github.com/golang/protobuf/proto"
 	"github.com/maruel/subcommands"
+	"go.chromium.org/chromiumos/infra/proto/go/test_platform/config"
 	"go.chromium.org/chromiumos/infra/proto/go/test_platform/migration/scheduler"
 	"go.chromium.org/chromiumos/infra/proto/go/test_platform/steps"
 	"go.chromium.org/luci/auth/client/authcli"
@@ -22,14 +23,6 @@ import (
 	"go.chromium.org/luci/common/cli"
 	"go.chromium.org/luci/common/errors"
 	gitilespb "go.chromium.org/luci/common/proto/gitiles"
-)
-
-// TODO(pprabhu) Move these constants to cros_test_platform common Config.
-const (
-	migrationConfigGitilesHost = "chrome-internal.googlesource.com"
-	migrationConfigGitProject  = "chromeos/infra/config"
-	migrationConfigFilePath    = "testplatform/generated/scheduler_migration.cfg"
-	migrationConfigCommittish  = "refs/heads/master"
 )
 
 // SchedulerTrafficSplit implements the `scheduler-traffic-split` subcommand.
@@ -77,7 +70,7 @@ func (c *schedulerTrafficSplitRun) innerRun(a subcommands.Application, args []st
 	ctx := cli.GetContext(a, c, env)
 	ctx = setupLogging(ctx)
 
-	split, err := c.getTrafficSplitConfig(ctx)
+	split, err := c.getTrafficSplitConfig(ctx, request.Config)
 	if err != nil {
 		return err
 	}
@@ -101,12 +94,12 @@ func (c *schedulerTrafficSplitRun) processCLIArgs(args []string) error {
 	return nil
 }
 
-func (c *schedulerTrafficSplitRun) getTrafficSplitConfig(ctx context.Context) (*scheduler.TrafficSplit, error) {
-	g, err := c.newGitilesClient(ctx)
+func (c *schedulerTrafficSplitRun) getTrafficSplitConfig(ctx context.Context, config *config.Config_SchedulerMigration) (*scheduler.TrafficSplit, error) {
+	g, err := c.newGitilesClient(ctx, config.GitilesHost)
 	if err != nil {
 		return nil, errors.Annotate(err, "get traffic split config").Err()
 	}
-	text, err := c.downloadTrafficSplitConfig(ctx, g)
+	text, err := c.downloadTrafficSplitConfig(ctx, g, config)
 	if err != nil {
 		return nil, errors.Annotate(err, "get traffic split config").Err()
 	}
@@ -117,20 +110,20 @@ func (c *schedulerTrafficSplitRun) getTrafficSplitConfig(ctx context.Context) (*
 	return &split, nil
 }
 
-func (c *schedulerTrafficSplitRun) newGitilesClient(ctx context.Context) (gitilespb.GitilesClient, error) {
+func (c *schedulerTrafficSplitRun) newGitilesClient(ctx context.Context, host string) (gitilespb.GitilesClient, error) {
 	h, err := newAuthenticatedHTTPClient(ctx, &c.authFlags)
 	if err != nil {
 		return nil, errors.Annotate(err, "new gitiles client").Err()
 	}
-	return gitiles.NewRESTClient(h, migrationConfigGitilesHost, true)
+	return gitiles.NewRESTClient(h, host, true)
 }
 
 // downloadTrafficSplitConfig returns the contents of the config downloaded from Gitiles.
-func (c *schedulerTrafficSplitRun) downloadTrafficSplitConfig(ctx context.Context, client gitilespb.GitilesClient) (string, error) {
+func (c *schedulerTrafficSplitRun) downloadTrafficSplitConfig(ctx context.Context, client gitilespb.GitilesClient, config *config.Config_SchedulerMigration) (string, error) {
 	res, err := client.DownloadFile(ctx, &gitilespb.DownloadFileRequest{
-		Project:    migrationConfigGitProject,
-		Committish: migrationConfigCommittish,
-		Path:       migrationConfigFilePath,
+		Project:    config.GitProject,
+		Committish: config.Commitish,
+		Path:       config.FilePath,
 		Format:     gitilespb.DownloadFileRequest_TEXT,
 	})
 	if err != nil {
