@@ -5,25 +5,25 @@
 
 _METRIC_NAME_DETAIL_MAPPING = {
     'line': (
-        '''Line coverage is the percentage of code lines which have been
-           executed at least once. Only executable lines within function bodies
-           are considered to be code lines.'''),
+        "Line coverage is the percentage of code lines which have been "
+        "executed at least once. Only executable lines within function bodies "
+        "are considered to be code lines."),
     'function': (
-        '''Function coverage is the percentage of functions which have been
-           executed at least once. A function is considered to be executed if
-           any of its instantiations are executed.'''),
+        "Function coverage is the percentage of functions which have been "
+        "executed at least once. A function is considered to be executed if "
+        "any of its instantiations are executed."),
     'region': (
-        '''Region coverage is the percentage of code regions which have been
-           executed at least once. A code region may span multiple lines (e.g in
-           a large function body with no control flow). However, it's also
-           possible for a single line to contain multiple code regions (e.g in
-           'return x || y &amp;&amp; z').'''),
+        "Region coverage is the percentage of code regions which have been "
+        "executed at least once. A code region may span multiple lines (e.g in "
+        "a large function body with no control flow). However, it's also "
+        "possible for a single line to contain multiple code regions (e.g in "
+        "'return x || y &amp;&amp; z')."),
     'branch': (
-        '''Branch coverage is the percentage of branches from each decision
-           point is executed at least once.'''),
+        "Branch coverage is the percentage of branches from each decision "
+        "point is executed at least once."),
     'instruction': (
-        '''Java instruction coverage is the percentage of the Java byte code
-           instructions which have been executed at least once.'''),
+        "Java instruction coverage is the percentage of the Java byte code "
+        "instructions which have been executed at least once."),
 }
 
 
