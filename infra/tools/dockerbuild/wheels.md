@@ -1547,12 +1547,12 @@ wheel: <
 
 ## **infra_libs**
 
-### 2.0.7
+### 2.0.8
 
 ```protobuf
 wheel: <
   name: "infra/python/wheels/infra_libs-py2"
-  version: "version:2.0.7"
+  version: "version:2.0.8"
 >
 ```
 
@@ -2143,6 +2143,20 @@ wheel: <
 wheel: <
   name: "infra/python/wheels/pefile-py2_py3"
   version: "version:2018.8.8"
+>
+```
+
+
+* *universal*
+
+## **perfect-hash**
+
+### 0.2.1
+
+```protobuf
+wheel: <
+  name: "infra/python/wheels/perfect-hash-py2_py3"
+  version: "version:0.2.1"
 >
 ```
 
