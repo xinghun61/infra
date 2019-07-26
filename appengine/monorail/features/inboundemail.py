@@ -279,19 +279,6 @@ class InboundEmail(webapp2.RequestHandler):
 
           if latest_issue:
             updated_issue = latest_issue
-            # Find all comments on the issue by the current user.
-            comments = self.services.issue.GetComments(cnxn,
-                issue_id=[updated_issue.issue_id], commenter_id=[auth.user_id])
-
-            # Timestamp for 24 hours ago in seconds from epoch.
-            yesterday = int(time.time()) - 24 * 60 * 60
-
-            for comment in comments:
-              # Stop early if we find a comment created in the last 24 hours.
-              if comment.timestamp > yesterday:
-                  logging.info('Alert fired again with incident id: %s',
-                      incident_id)
-                  return None
 
             # Add a reply to the existing issue for this incident.
             self.services.issue.CreateIssueComment(

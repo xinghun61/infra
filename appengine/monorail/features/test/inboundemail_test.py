@@ -347,10 +347,6 @@ class InboundEmailTest(unittest.TestCase):
     self.services.issue.GetOpenAndClosedIssues(
         self.cnxn, [1]).AndReturn(([self.issue], []))
 
-    self.mox.StubOutWithMock(self.services.issue, 'GetComments')
-    self.services.issue.GetComments(self.cnxn,
-        issue_id=[self.issue.issue_id], commenter_id=[111]).AndReturn([])
-
     self.mox.StubOutWithMock(self.services.issue, 'CreateIssueComment')
     self.services.issue.CreateIssueComment(
         self.cnxn, self.issue, 111,
@@ -376,44 +372,6 @@ class InboundEmailTest(unittest.TestCase):
 
     self.mox.VerifyAll()
     self.assertIsNone(ret)
-
-  def testProcessAlert_ExistingIssueTimeDelay(self):
-      """Don't add a comment if it's been less than 24 hours."""
-      self.issue.labels = ['Incident-Id-incident-1']
-      self.mox.StubOutWithMock(self.services.config, 'LookupLabelID')
-      self.services.config.LookupLabelID(
-          self.cnxn, self.project.project_id, 'Incident-Id-incident-1'
-      ).AndReturn(1234)
-
-      self.mox.StubOutWithMock(self.services.issue, 'GetIIDsByLabelIDs')
-      self.services.issue.GetIIDsByLabelIDs(
-          self.cnxn, [1234], self.project.project_id, None
-          ).AndReturn([1])
-
-      self.mox.StubOutWithMock(self.services.issue, 'GetOpenAndClosedIssues')
-      self.services.issue.GetOpenAndClosedIssues(
-          self.cnxn, [1]).AndReturn(([self.issue], []))
-
-      comment = tracker_pb2.IssueComment()
-      comment.timestamp = int(time.time())
-
-      self.mox.StubOutWithMock(self.services.issue, 'GetComments')
-      self.services.issue.GetComments(self.cnxn,
-          issue_id=[self.issue.issue_id], commenter_id=[111]).AndReturn(
-          [comment])
-
-      # CreateIssueComment should not be called.
-      self.mox.StubOutWithMock(self.services.issue, 'CreateIssueComment')
-
-      self.mox.ReplayAll()
-
-      auth = authdata.AuthData(user_id=111, email='user@example.com')
-      ret = self.inbound.ProcessAlert(
-          self.cnxn, self.project, self.project_addr, 'user@google.com',
-          auth, 'issue title', 'issue body', 'incident-1')
-
-      self.mox.VerifyAll()
-      self.assertIsNone(ret)
 
   def testProcessIssueReply_NoIssue(self):
     nonexistant_local_id = 200
