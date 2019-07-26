@@ -17,6 +17,7 @@ import (
 	"go.chromium.org/luci/common/cli"
 	"go.chromium.org/luci/common/errors"
 	"go.chromium.org/luci/common/logging"
+	"go.chromium.org/luci/common/system/signals"
 )
 
 // execCb a signature of a function that executes a subcommand.
@@ -72,6 +73,9 @@ func (c *commandBase) Run(a subcommands.Application, args []string, env subcomma
 		*c.posArgs[i] = arg
 	}
 
+	ctx, cancel := context.WithCancel(ctx)
+	signals.HandleInterrupt(cancel)
+
 	if err := c.exec(ctx); err != nil {
 		return handleErr(ctx, err)
 	}
@@ -113,6 +117,9 @@ func handleErr(ctx context.Context, err error) int {
 	switch {
 	case err == nil:
 		return 0
+	case errors.Contains(err, context.Canceled): // happens on Ctrl+C
+		fmt.Fprintf(os.Stderr, "%s\n", err)
+		return 4
 	case errors.Contains(err, auth.ErrLoginRequired):
 		fmt.Fprintf(os.Stderr, "Need to login first by running:\n  $ %s login\n", os.Args[0])
 		return 3
