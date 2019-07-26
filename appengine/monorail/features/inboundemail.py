@@ -87,6 +87,35 @@ class InboundEmail(webapp2.RequestHandler):
   def IsWhitelisted(self, email_addr):
     return email_addr.endswith(settings.alert_whitelisted_suffixes)
 
+  def FindAlertIssue(self, cnxn, project_id, incident_label):
+    """Find the existing issue with the incident_label."""
+    label_id = self.services.config.LookupLabelID(
+        cnxn, project_id, incident_label)
+    if not label_id:
+      return None
+
+    # If a new notification is sent with an existing incident ID, then it
+    # should be added as a new comment into the existing issue.
+    #
+    # If there are more than one issues with a given incident ID, then
+    # it's either
+    # - there is a bug in this module,
+    # - the issues were manually updated with the same incident ID, OR
+    # - an issue auto update program updated the issues with the same
+    #  incident ID, which also sounds like a bug.
+    #
+    # In any cases, the latest issue should be used, whichever status it has.
+    # - The issue of an ongoing incident can be mistakenly closed by
+    # engineers.
+    # - A closed incident can be reopened, and, therefore, the issue also
+    # needs to be re-opened.
+    issue_ids = self.services.issue.GetIIDsByLabelIDs(
+        cnxn, [label_id], project_id, None)
+    issues = self.services.issue.GetIssues(cnxn, issue_ids)
+    if issues:
+      return max(issues, key=lambda issue: issue.modified_timestamp)
+    return None
+
   def ProcessMail(self, msg, project_addr):
     """Process an inbound email message."""
     # TODO(jrobbins): If the message is HUGE, don't even try to parse
@@ -253,45 +282,27 @@ class InboundEmail(webapp2.RequestHandler):
     mc = monorailcontext.MonorailContext(self.services, auth=auth, cnxn=cnxn)
     mc.LookupLoggedInUserPerms(project)
     with work_env.WorkEnv(mc, self.services) as we:
-      updated_issue = None
+      alert_issue = None
 
       if incident_id:
         incident_label = 'Incident-Id-' + incident_id
         labels.add(incident_label)
-
-        label_id = self.services.config.LookupLabelID(
+        alert_issue = self.FindAlertIssue(
             cnxn, project.project_id, incident_label)
 
-        if label_id:
-          issue_ids = self.services.issue.GetIIDsByLabelIDs(
-              cnxn, [label_id], project.project_id, None)
-
-          issues, _ = self.services.issue.GetOpenAndClosedIssues(
-              cnxn, issue_ids)
-
-          latest_issue = None
-          # Find the most recently modified open issue.
-          for issue in issues:
-            if not latest_issue:
-              latest_issue = issue
-            elif issue.modified_timestamp > latest_issue.modified_timestamp:
-              latest_issue = issue
-
-          if latest_issue:
-            updated_issue = latest_issue
-
-            # Add a reply to the existing issue for this incident.
+      if alert_issue:
+        # Add a reply to the existing issue for this incident.
             self.services.issue.CreateIssueComment(
-                cnxn, updated_issue, auth.user_id, formatted_body)
-
-      if not updated_issue:
-        updated_issue, _ = we.CreateIssue(
+                cnxn, alert_issue, auth.user_id, formatted_body)
+      else:
+        # Create a new issue for this incident.
+        alert_issue, _ = we.CreateIssue(
             project.project_id, subject, status, None,
             cc_ids, list(labels), [], component_ids, formatted_body)
 
       # Update issue using commands.
       lines = body.strip().split('\n')
-      uia = commitlogcommands.UpdateIssueAction(updated_issue.local_id)
+      uia = commitlogcommands.UpdateIssueAction(alert_issue.local_id)
       commands_found = uia.Parse(
           cnxn, project.project_name, auth.user_id, lines,
           self.services, strip_quoted_lines=True)

@@ -343,9 +343,9 @@ class InboundEmailTest(unittest.TestCase):
         self.cnxn, [1234], self.project.project_id, None
         ).AndReturn([1])
 
-    self.mox.StubOutWithMock(self.services.issue, 'GetOpenAndClosedIssues')
-    self.services.issue.GetOpenAndClosedIssues(
-        self.cnxn, [1]).AndReturn(([self.issue], []))
+    self.mox.StubOutWithMock(self.services.issue, 'GetIssues')
+    self.services.issue.GetIssues(
+        self.cnxn, [1]).AndReturn([self.issue])
 
     self.mox.StubOutWithMock(self.services.issue, 'CreateIssueComment')
     self.services.issue.CreateIssueComment(
