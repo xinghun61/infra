@@ -2,11 +2,16 @@
 [is cue "privacy_click_through"][define show_code_of_conduct]True[end][end]
 [is cue "code_of_conduct"][define show_code_of_conduct]True[end][end]
 
+[define code_of_conduct_url]https://chromium.googlesource.com/chromium/src/+/master/CODE_OF_CONDUCT.md[end]
+[is projectname "fuchsia"]
+  [define code_of_conduct_url]https://fuchsia.dev/fuchsia-src/CODE_OF_CONDUCT[end]
+[end]
+
 [is show_code_of_conduct "True"]
  <table border="0" cellspacing="0" cellpadding="0" class="cue" style="margin: 2px">
   <tr><td><span>
       Please keep discussions respectful and constructive.
-      See our <a href="https://chromium.googlesource.com/chromium/src/+/master/CODE_OF_CONDUCT.md" target="_blank">code of conduct</a>.
+      See our <a href="[code_of_conduct_url]" target="_blank">code of conduct</a>.
       <a href="#" title="Don't show this message again" style="margin-left: 1em" class="dismiss_cue x_icon"></a>
   </span></td></tr>
  </table>
