@@ -70,6 +70,7 @@ func (t *testRun) RequestArgs(params *test_platform.Request_Params, workerConfig
 		TaskName:        t.invocation.Test.Name,
 		ClientTest:      isClient,
 		OutputToIsolate: true,
+		TestArgs:        t.invocation.TestArgs,
 	}
 	cmd.Config(wrap(workerConfig))
 

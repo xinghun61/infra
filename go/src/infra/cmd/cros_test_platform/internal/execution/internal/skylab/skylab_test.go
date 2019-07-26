@@ -153,13 +153,14 @@ func fakeGetterFactory(getter isolate.Getter) isolate.GetterFactory {
 	}
 }
 
-func invocation(name string, client bool, deps ...*build_api.AutotestTaskDependency) *steps.EnumerationResponse_AutotestInvocation {
+func invocation(name string, args string, client bool, deps ...*build_api.AutotestTaskDependency) *steps.EnumerationResponse_AutotestInvocation {
 	ee := build_api.AutotestTest_EXECUTION_ENVIRONMENT_SERVER
 	if client {
 		ee = build_api.AutotestTest_EXECUTION_ENVIRONMENT_CLIENT
 	}
 	return &steps.EnumerationResponse_AutotestInvocation{
-		Test: &build_api.AutotestTest{Name: name, ExecutionEnvironment: ee, Dependencies: deps},
+		Test:     &build_api.AutotestTest{Name: name, ExecutionEnvironment: ee, Dependencies: deps},
+		TestArgs: args,
 	}
 }
 
@@ -209,7 +210,7 @@ func TestLaunchAndWaitTest(t *testing.T) {
 		gf := fakeGetterFactory(getter)
 
 		var invs []*steps.EnumerationResponse_AutotestInvocation
-		invs = append(invs, invocation("", false), invocation("", true))
+		invs = append(invs, invocation("", "", false), invocation("", "", true))
 
 		Convey("when running a skylab execution", func() {
 			run := skylab.NewTaskSet(invs, basicParams(), basicConfig())
@@ -244,7 +245,7 @@ func TestTaskStates(t *testing.T) {
 		ctx := context.Background()
 
 		var invs []*steps.EnumerationResponse_AutotestInvocation
-		invs = append(invs, invocation("", false))
+		invs = append(invs, invocation("", "", false))
 
 		cases := []struct {
 			description     string
@@ -310,7 +311,7 @@ func TestServiceError(t *testing.T) {
 		getter := newFakeGetter()
 		gf := fakeGetterFactory(getter)
 
-		invs := []*steps.EnumerationResponse_AutotestInvocation{invocation("", false)}
+		invs := []*steps.EnumerationResponse_AutotestInvocation{invocation("", "", false)}
 		run := skylab.NewTaskSet(invs, basicParams(), basicConfig())
 
 		Convey("when the swarming service immediately returns errors, that error is surfaced as a launch error.", func() {
@@ -340,7 +341,7 @@ func TestTaskURL(t *testing.T) {
 		getter := newFakeGetter()
 		gf := fakeGetterFactory(getter)
 
-		invs := []*steps.EnumerationResponse_AutotestInvocation{invocation("", false)}
+		invs := []*steps.EnumerationResponse_AutotestInvocation{invocation("", "", false)}
 		run := skylab.NewTaskSet(invs, basicParams(), basicConfig())
 		run.LaunchAndWait(ctx, swarming, gf)
 
@@ -361,7 +362,7 @@ func TestIncompleteWait(t *testing.T) {
 		getter := newFakeGetter()
 		gf := fakeGetterFactory(getter)
 
-		invs := []*steps.EnumerationResponse_AutotestInvocation{invocation("", false)}
+		invs := []*steps.EnumerationResponse_AutotestInvocation{invocation("", "", false)}
 		run := skylab.NewTaskSet(invs, basicParams(), basicConfig())
 
 		wg := sync.WaitGroup{}
@@ -395,7 +396,7 @@ func TestRequestArguments(t *testing.T) {
 		gf := fakeGetterFactory(getter)
 
 		invs := []*steps.EnumerationResponse_AutotestInvocation{
-			invocation("name1", false, &build_api.AutotestTaskDependency{Label: "cr50:pvt"}),
+			invocation("name1", "foo-arg1 foo-arg2", false, &build_api.AutotestTaskDependency{Label: "cr50:pvt"}),
 		}
 
 		run := skylab.NewTaskSet(invs, basicParams(), basicConfig())
@@ -431,6 +432,10 @@ func TestRequestArguments(t *testing.T) {
 
 				// Logdog annotation url argument should match the associated tag's url.
 				So(flatCommand, ShouldContainSubstring, "-logdog-annotation-url "+logdogURL)
+
+				So(flatCommand, ShouldContainSubstring, "-test-args foo-arg1 foo-arg2")
+				So(slice.Properties.Command, ShouldContain, "-test-args")
+				So(slice.Properties.Command, ShouldContain, "foo-arg1 foo-arg2")
 
 				provisionArg := "-provision-labels cros-version:foo-build,fwro-version:foo-ro-firmware,fwrw-version:foo-rw-firmware"
 
@@ -481,7 +486,7 @@ func TestRetries(t *testing.T) {
 			ts.Add(2 * d)
 		})
 		swarming := newFakeSwarming("")
-		invs := []*steps.EnumerationResponse_AutotestInvocation{invocation("name1", true)}
+		invs := []*steps.EnumerationResponse_AutotestInvocation{invocation("name1", "", true)}
 		params := basicParams()
 		getter := newFakeGetter()
 		gf := fakeGetterFactory(getter)
@@ -599,7 +604,7 @@ func TestClientTestArg(t *testing.T) {
 		ctx := context.Background()
 		swarming := newFakeSwarming("")
 
-		invs := []*steps.EnumerationResponse_AutotestInvocation{invocation("name1", true)}
+		invs := []*steps.EnumerationResponse_AutotestInvocation{invocation("name1", "", true)}
 
 		run := skylab.NewTaskSet(invs, basicParams(), basicConfig())
 		run.LaunchAndWait(ctx, swarming, fakeGetterFactory(newFakeGetter()))
@@ -620,7 +625,7 @@ func TestQuotaSchedulerAccount(t *testing.T) {
 	Convey("Given a client test and a selected quota account", t, func() {
 		ctx := context.Background()
 		swarming := newFakeSwarming("")
-		invs := []*steps.EnumerationResponse_AutotestInvocation{invocation("name1", true)}
+		invs := []*steps.EnumerationResponse_AutotestInvocation{invocation("name1", "", true)}
 		params := basicParams()
 		params.Scheduling.Pool = &test_platform.Request_Params_Scheduling_QuotaAccount{
 			QuotaAccount: "foo-account",
@@ -648,7 +653,7 @@ func TestUnmanagedPool(t *testing.T) {
 	Convey("Given a client test and an unmanaged pool.", t, func() {
 		ctx := context.Background()
 		swarming := newFakeSwarming("")
-		invs := []*steps.EnumerationResponse_AutotestInvocation{invocation("name1", true)}
+		invs := []*steps.EnumerationResponse_AutotestInvocation{invocation("name1", "", true)}
 		params := basicParams()
 		params.Scheduling.Pool = &test_platform.Request_Params_Scheduling_UnmanagedPool{
 			UnmanagedPool: "foo-pool",
@@ -685,7 +690,7 @@ func TestResponseVerdict(t *testing.T) {
 		})
 
 		swarming := newFakeSwarming("")
-		invs := []*steps.EnumerationResponse_AutotestInvocation{invocation("name1", true)}
+		invs := []*steps.EnumerationResponse_AutotestInvocation{invocation("name1", "", true)}
 		params := basicParams()
 		getter := newFakeGetter()
 		gf := fakeGetterFactory(getter)
