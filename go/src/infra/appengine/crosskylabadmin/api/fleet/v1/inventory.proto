@@ -487,10 +487,8 @@ message AssignDutsToDronesRequest {
     // Exactly one of dut_id or hostname must be provided.
     string dut_hostname = 3;
 
-    // drone_hostname is the drone to assign the dut to.
-    //
-    // if absent, inventory service will use a heuristic to select a drone.
-    string drone_hostname = 2;
+    // drone_hostname is deprecated and does nothing.
+    string drone_hostname = 2 [deprecated=true];
   }
 
   // assignments is the set of Duts to assign.

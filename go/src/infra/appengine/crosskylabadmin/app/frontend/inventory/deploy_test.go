@@ -95,8 +95,7 @@ func TestDeployDut(t *testing.T) {
 		err := tf.FakeGitiles.SetInventory(config.Get(tf.C).Inventory, fakes.InventoryData{
 			Infrastructure: inventoryBytesFromServers([]testInventoryServer{
 				{
-					hostname:    "fake-drone.google.com",
-					environment: inventory.Environment_ENVIRONMENT_STAGING,
+					hostname: "drone-queen-ENVIRONMENT_STAGING",
 				},
 			}),
 		})
@@ -148,7 +147,7 @@ func TestDeployDut(t *testing.T) {
 			So(err, ShouldBeNil)
 			So(infra.Servers, ShouldHaveLength, 1)
 			server := infra.Servers[0]
-			So(server.GetHostname(), ShouldEqual, "fake-drone.google.com")
+			So(server.GetHostname(), ShouldEqual, "drone-queen-ENVIRONMENT_STAGING")
 			So(server.DutUids, ShouldHaveLength, 1)
 			So(server.DutUids[0], ShouldEqual, common.GetId())
 
@@ -291,8 +290,7 @@ func TestDeployMultipleDuts(t *testing.T) {
 		err = tf.FakeGitiles.SetInventory(config.Get(tf.C).Inventory, fakes.InventoryData{
 			Infrastructure: inventoryBytesFromServers([]testInventoryServer{
 				{
-					hostname:    "fake-drone.google.com",
-					environment: inventory.Environment_ENVIRONMENT_STAGING,
+					hostname: "drone-queen-ENVIRONMENT_STAGING",
 				},
 			}),
 			Lab: []byte(lab),

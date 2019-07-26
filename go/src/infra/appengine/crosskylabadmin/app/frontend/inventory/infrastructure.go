@@ -18,7 +18,6 @@ package inventory
 
 import (
 	"fmt"
-	"math/rand"
 	"sort"
 	"strings"
 
@@ -34,13 +33,6 @@ import (
 	"golang.org/x/net/context"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-)
-
-const (
-	// Number of drones least loaded drones to consider when picking a drone for a DUT.
-	//
-	// A random drone from these is assigned to the DUT.
-	leastLoadedDronesCount = 8
 )
 
 // AssignDutsToDrones implements the method from fleet.InventoryServer interface.
@@ -114,7 +106,44 @@ func (is *ServerImpl) RemoveDutsFromDrones(ctx context.Context, req *fleet.Remov
 	return resp, err
 }
 
+// globalInvCache wraps an InventoryStore and keeps various lookup caches.
+// Unlike invCache, this ignores the environment and includes the entire inventory.
+type globalInvCache struct {
+	store           *gitstore.InventoryStore
+	hostnameToID    map[string]string
+	droneForDUT     map[string]*inventory.Server
+	idToDUT         map[string]*inventory.DeviceUnderTest
+	hostnameToDrone map[string]*inventory.Server
+}
+
+func newGlobalInvCache(ctx context.Context, s *gitstore.InventoryStore) *globalInvCache {
+	ic := globalInvCache{
+		store:           s,
+		hostnameToID:    make(map[string]string),
+		droneForDUT:     make(map[string]*inventory.Server),
+		idToDUT:         make(map[string]*inventory.DeviceUnderTest),
+		hostnameToDrone: make(map[string]*inventory.Server),
+	}
+	for _, d := range s.Lab.GetDuts() {
+		c := d.GetCommon()
+		ic.hostnameToID[c.GetHostname()] = c.GetId()
+		ic.idToDUT[c.GetId()] = d
+	}
+	for _, srv := range s.Infrastructure.GetServers() {
+		if !isDrone(srv) {
+			continue
+		}
+		ic.hostnameToDrone[srv.GetHostname()] = srv
+		for _, d := range srv.DutUids {
+			ic.droneForDUT[d] = srv
+		}
+	}
+	return &ic
+}
+
 // invCache wraps an InventoryStore and keeps various lookup caches.
+//
+// TODO(ayatane): Delete or replace usages of this with globalInvCache.
 type invCache struct {
 	store           *gitstore.InventoryStore
 	hostnameToID    map[string]string
@@ -167,12 +196,12 @@ func (ic *invCache) purgeDUT(dutID string) {
 // dutAssigner wraps an InventoryStore and implements assigning DUTs
 // to drones.  This struct contains various internal lookup caches.
 type dutAssigner struct {
-	*invCache
+	*globalInvCache
 }
 
 func newDUTAssigner(ctx context.Context, s *gitstore.InventoryStore) *dutAssigner {
 	return &dutAssigner{
-		invCache: newInvCache(ctx, s),
+		globalInvCache: newGlobalInvCache(ctx, s),
 	}
 }
 
@@ -186,10 +215,9 @@ func (da *dutAssigner) assignDUT(ctx context.Context, a *fleet.AssignDutsToDrone
 	if err != nil {
 		return nil, err
 	}
-	if ar.drone == "" {
-		ar.drone = pickDroneForDUT(ctx, da.store.Infrastructure)
-		logging.Debugf(ctx, "Picked drone %s for DUT %s", ar.drone, a.DutId)
-	}
+	cfg := config.Get(ctx).Inventory
+	ar.drone = queenDroneName(cfg.Environment)
+	logging.Debugf(ctx, "Using pseudo-drone %s for DUT %s", ar.drone, a.DutId)
 	if _, ok := da.idToDUT[ar.dutID]; !ok {
 		return nil, status.Error(codes.NotFound, fmt.Sprintf("DUT %s does not exist", ar.dutID))
 	}
@@ -245,22 +273,6 @@ func (da *dutAssigner) unpackRequestDUTID(r *fleet.AssignDutsToDronesRequest_Ite
 		return status.Errorf(codes.InvalidArgument, "must supply one of DUT hostname or ID")
 	}
 	return nil
-}
-
-// pickDroneForDUT returns hostname of a drone to use for the DUT with the given ID.
-//
-// Returns "" if no drone can be found.
-func pickDroneForDUT(ctx context.Context, infra *inventory.Infrastructure) string {
-	ds := filterSkylabDronesInEnvironment(ctx, infra.GetServers())
-	// ds is a new slice. Sorting it does not modify infra.
-	sortDronesByAscendingDUTCount(ds)
-
-	dc := minInt(leastLoadedDronesCount, len(ds))
-	ds = ds[:dc]
-	if len(ds) == 0 {
-		return ""
-	}
-	return ds[rand.Intn(len(ds))].GetHostname()
 }
 
 // commitRemoveDuts commits an in-progress response returned from
