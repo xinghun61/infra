@@ -80,9 +80,13 @@ type AnalyzeRequest struct {
 	// Git ref to use in the git repo.
 	GitRef string `gae:",noindex"`
 	// Gerrit details if applicable.
-	GerritHost    string `gae:",noindex"`
+	// GerritHost and GerritChange can be used to uniquely identify a Gerrit
+	// change; these fields are indexed to enable querying for all runs for a
+	// particular change.
+	GerritHost    string
 	GerritProject string `gae:",noindex"`
-	GerritChange  string `gae:",noindex"`
+	// GerritChange includes project, branch, and Change-Id footer.
+	GerritChange string
 	// Disabled Gerrit reporting means that no progress or result messages
 	// are sent to Gerrit.
 	GerritReportingDisabled bool `gae:",noindex"`

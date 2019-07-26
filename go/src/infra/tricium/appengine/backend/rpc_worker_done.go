@@ -17,8 +17,10 @@ import (
 	tq "go.chromium.org/gae/service/taskqueue"
 	"go.chromium.org/luci/common/bq"
 	"go.chromium.org/luci/common/clock"
+	"go.chromium.org/luci/common/data/stringset"
 	"go.chromium.org/luci/common/errors"
 	"go.chromium.org/luci/common/logging"
+	"go.chromium.org/luci/common/sync/parallel"
 	"go.chromium.org/luci/grpc/grpcutil"
 
 	"infra/qscheduler/qslib/tutils"
@@ -442,15 +444,27 @@ func createCommentSelections(c context.Context, request *track.AnalyzeRequest, c
 		}
 		return selections, errors.Annotate(err, "failed to get changed lines").Err()
 	}
-
 	gerrit.FilterRequestChangedLines(request, &changedLines)
-
 	for path, lines := range changedLines {
 		logging.Debugf(c, "Num changed lines for %s is %d.", path, len(lines))
 	}
 
+	// We want to suppress comments that are "similar" to those that have
+	// been reported as not useful.
+	//
+	// One simple way to match "similar" comments is by the comment category
+	// string. This could potentially be changed to match by comment text or
+	// some combination of comment properties.
+	categories := suppressedCategories(c, request.GerritHost, request.GerritChange)
+
 	for i, comment := range comments {
-		selections[i].Included = gerrit.CommentIsInChangedLines(c, comment, changedLines)
+		isChanged := gerrit.CommentIsInChangedLines(c, comment, changedLines)
+		isSuppressed := categories.Has(comment.Category)
+		tcomment := tricium.Data_Comment{}
+		if err = jsonpb.UnmarshalString(string(comment.Comment), &tcomment); err != nil {
+			return nil, err
+		}
+		selections[i].Included = isChanged && !isSuppressed
 	}
 
 	return selections, nil
@@ -500,4 +514,106 @@ func collectComments(c context.Context, isolator common.IsolateAPI, isolateServe
 		})
 	}
 	return comments, nil
+}
+
+// suppressedCategories returns the categories of all comments that have been
+// reported as not useful for a given Gerrit CL.
+//
+// This is a potentially expensive operation; it requires
+//   (1) querying runs (AnalyzeRequests) for a given Gerrit change
+//   (2) querying descendant CommentFeedback for each run with not useful reports
+//   (3) getting all relevant comments, including comment category.
+//
+// In the case of an error, this function will only log an error and
+// return an empty set.
+func suppressedCategories(c context.Context, host, change string) stringset.Set {
+	comments, err := fetchNotUsefulComments(c, host, change)
+	if err != nil {
+		logging.WithError(err).Errorf(c, "Failed to fetch past not useful comments.")
+		return stringset.NewFromSlice()
+	}
+	categories := stringset.New(len(comments))
+	for _, comment := range comments {
+		categories.Add(comment.Category)
+	}
+	return categories
+}
+
+// fetchNotUsefulComments returns all comments for a given CL that have had
+// not-useful feedback.
+func fetchNotUsefulComments(c context.Context, host, change string) ([]*track.Comment, error) {
+	// Each AnalyzeRequest key represents one run, usually one for each
+	// patchset.
+	arKeys, err := fetchRequestKeysByChange(c, host, change)
+	if err != nil {
+		return nil, err
+	}
+	// In order to get only comments with "not useful" reports, we do a
+	// query for CommentFeedback keys.
+	cfKeys, err := fetchAllCommentFeedback(c, arKeys)
+	if err != nil {
+		return nil, err
+	}
+	// The parents of those CommentFeedback entities are the comments we're
+	// interested in.
+	var comments []*track.Comment
+	for _, k := range cfKeys {
+		comments = append(comments, &track.Comment{
+			Parent: k.Parent().Parent(),
+			ID:     k.Parent().IntID(),
+		})
+	}
+	err = ds.Get(c, comments)
+	return comments, err
+}
+
+// fetchRequestKeysByChange returns keys for all AnalyzeRequest entities that
+// are for one particular CL.
+func fetchRequestKeysByChange(c context.Context, host, change string) ([]*ds.Key, error) {
+	// If an empty string is passed, there is no Gerrit change to match.
+	if host == "" || change == "" {
+		return nil, errors.Reason("unexpectedly got an empty host or change").Err()
+	}
+	q := ds.NewQuery("AnalyzeRequest").Eq("GerritHost", host).Eq("GerritChange", change)
+	var keys []*ds.Key
+	if err := ds.GetAll(c, q.KeysOnly(true), &keys); err != nil {
+		return nil, errors.Annotate(err, "failed to get AnalyzeRequest keys").Err()
+	}
+	return keys, nil
+}
+
+// FetchAllCommentFeedback fetches keys of CommentFeedback entities
+// that have at least one "not useful" report.
+//
+// This does multiple ancestor queries in parallel for some number of
+// AnalyzeRequest keys, and returns the keys of all CommentFeedback entities
+// with "not useful" reports.
+func fetchAllCommentFeedback(c context.Context, arKeys []*ds.Key) ([]*ds.Key, error) {
+	// There will be multiple queries running in different goroutines, and
+	// appending them to a single slice is not threadsafe. By making a 2D
+	// slice, we can add keys for each AnalyzeRequest without conflict.
+	cfKeys := make([][]*ds.Key, len(arKeys))
+
+	// It's possible that too many parallel requests will result in some
+	// aborting due to timeout. Hard-limiting number of parallel requests
+	// may help with this.
+	if err := parallel.WorkPool(8, func(taskC chan<- func() error) {
+		for i, arKey := range arKeys {
+			ancestor := arKey // Declare a new variable for the closure below.
+			taskC <- func() error {
+				q := ds.NewQuery("CommentFeedback").Ancestor(ancestor).Gt("NotUsefulReports", 0)
+				err := ds.GetAll(c, q.KeysOnly(true), &cfKeys[i])
+				return err
+			}
+		}
+	}); err != nil {
+		return nil, errors.Annotate(err, "failed to fetch CommentFeedback keys").Err()
+	}
+
+	// The CommentFeedback keys must be flattened before returning.
+	var ret []*ds.Key
+	for _, keys := range cfKeys {
+		ret = append(ret, keys...)
+	}
+	return ret, nil
 }

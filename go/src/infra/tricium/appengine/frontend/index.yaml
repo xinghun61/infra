@@ -1,7 +1,14 @@
 indexes:
 
-# Used by tricium.Feedback for analyzer feedback aggregation.
-- kind: Comment
-  properties:
-  - name: Analyzer
-  - name: CreationTime
+ # Used by tricium.Feedback for analyzer feedback aggregation.
+ - kind: Comment
+   properties:
+   - name: Analyzer
+   - name: CreationTime
+
+ # Used when deciding which comments to suppress based on past
+ # comments on a CL with "not useful" reports.
+ - kind: CommentFeedback
+   ancestor: yes
+   properties:
+   - name: NotUsefulReports

@@ -12,6 +12,7 @@ import (
 	"github.com/golang/protobuf/jsonpb"
 	. "github.com/smartystreets/goconvey/convey"
 	ds "go.chromium.org/gae/service/datastore"
+	"go.chromium.org/luci/common/data/stringset"
 
 	"infra/qscheduler/qslib/tutils"
 	admin "infra/tricium/api/admin/v1"
@@ -539,5 +540,133 @@ func TestCreateAnalysisResults(t *testing.T) {
 			So(gcomment.Platforms, ShouldResemble, platforms)
 			So(gcomment.Selected, ShouldEqual, selections[i].Included)
 		}
+	})
+}
+
+func TestCommentFetchingFunctions(t *testing.T) {
+	Convey("Test Environment", t, func() {
+		ctx := triciumtest.Context()
+
+		// Add a request with no Gerrit details; it will not be fetched.
+		So(ds.Put(ctx, &track.AnalyzeRequest{ID: 11}), ShouldBeNil)
+		// Add two requests for the same CL.
+		So(ds.Put(ctx, &track.AnalyzeRequest{
+			ID:           22,
+			GitRef:       "refs/changes/99/99/1",
+			GerritHost:   "example.com",
+			GerritChange: "p~master~I2222",
+		}), ShouldBeNil)
+		So(ds.Put(ctx, &track.AnalyzeRequest{
+			ID:           23,
+			GitRef:       "refs/changes/99/99/2",
+			GerritHost:   "example.com",
+			GerritChange: "p~master~I2222",
+		}), ShouldBeNil)
+		// And one more request with the same change ID but different host.
+		So(ds.Put(ctx, &track.AnalyzeRequest{
+			ID:           33,
+			GitRef:       "refs/changes/99/99/1",
+			GerritHost:   "other.test",
+			GerritChange: "p~master~I2222",
+		}), ShouldBeNil)
+
+		Convey("A non-existent change has no runs", func() {
+			keys, err := fetchRequestKeysByChange(ctx, "none.test", "none~m~Iabcd")
+			So(len(keys), ShouldEqual, 0)
+			So(err, ShouldBeNil)
+		})
+
+		Convey("No runs match if there are no Gerrit details", func() {
+			keys, err := fetchRequestKeysByChange(ctx, "none.test", "")
+			So(keys, ShouldBeNil)
+			So(err, ShouldNotBeNil)
+		})
+
+		Convey("Two keys are fetched for a change with two runs", func() {
+			keys, err := fetchRequestKeysByChange(ctx, "example.com", "p~master~I2222")
+			So(len(keys), ShouldEqual, 2)
+			So(err, ShouldBeNil)
+		})
+
+		Convey("One key is fetched for a change with one runs", func() {
+			keys, err := fetchRequestKeysByChange(ctx, "other.test", "p~master~I2222")
+			So(len(keys), ShouldEqual, 1)
+			So(err, ShouldBeNil)
+		})
+
+		// In addition to the runs, add some comments and comment feedback.
+		// In this example, run 22 has comments, some of which have not useful feedback.
+		// Run 23 (same CL, different run) has one comment with not useful feedback.
+		run22WorkerKey := ds.MakeKey(
+			ctx, "AnalyzeRequest", 22, "WorkflowRun", 1,
+			"FunctionRun", "Foo", "WorkerRun", "Foo_UBUNTU")
+
+		c1 := &track.Comment{Parent: run22WorkerKey, Category: "Foo/C1"}
+		So(ds.Put(ctx, c1), ShouldBeNil)
+		c1Key := ds.KeyForObj(ctx, c1)
+		So(ds.Put(ctx, &track.CommentFeedback{Parent: c1Key, ID: 1, NotUsefulReports: 1}), ShouldBeNil)
+
+		c2 := &track.Comment{Parent: run22WorkerKey, Category: "Foo/C2"}
+		So(ds.Put(ctx, c2), ShouldBeNil)
+		c2Key := ds.KeyForObj(ctx, c2)
+		So(ds.Put(ctx, &track.CommentFeedback{Parent: c2Key, ID: 1, NotUsefulReports: 2}), ShouldBeNil)
+
+		c3 := &track.Comment{Parent: run22WorkerKey, Category: "Foo/C3"}
+		So(ds.Put(ctx, c3), ShouldBeNil)
+		c3Key := ds.KeyForObj(ctx, c3)
+		So(ds.Put(ctx, &track.CommentFeedback{Parent: c3Key, ID: 1, NotUsefulReports: 0}), ShouldBeNil)
+
+		run23WorkerKey := ds.MakeKey(
+			ctx, "AnalyzeRequest", 23, "WorkflowRun", 1,
+			"FunctionRun", "Foo", "WorkerRun", "Foo_UBUNTU")
+
+		c4 := &track.Comment{Parent: run23WorkerKey, Category: "Foo/C4"}
+		So(ds.Put(ctx, c4), ShouldBeNil)
+		c4Key := ds.KeyForObj(ctx, c4)
+		So(ds.Put(ctx, &track.CommentFeedback{Parent: c4Key, ID: 1, NotUsefulReports: 1}), ShouldBeNil)
+
+		Convey("No CommentFeedback keys fetched for empty input", func() {
+			keys, err := fetchAllCommentFeedback(ctx, nil)
+			So(len(keys), ShouldEqual, 0)
+			So(err, ShouldBeNil)
+		})
+
+		Convey("No CommentFeedback keys fetched for run with no comments", func() {
+			keys, err := fetchAllCommentFeedback(ctx, []*ds.Key{ds.MakeKey(ctx, "AnalyzeRequest", 33)})
+			So(len(keys), ShouldEqual, 0)
+			So(err, ShouldBeNil)
+		})
+
+		Convey("Two CommentFeedback keys fetched for run with two comments", func() {
+			keys, err := fetchAllCommentFeedback(ctx, []*ds.Key{ds.MakeKey(ctx, "AnalyzeRequest", 22)})
+			// Comments c1 and c2 have "not useful" feedback.
+			So(len(keys), ShouldEqual, 2)
+			So(err, ShouldBeNil)
+		})
+
+		Convey("One CommentFeedback key fetched for run with one comment", func() {
+			keys, err := fetchAllCommentFeedback(ctx, []*ds.Key{ds.MakeKey(ctx, "AnalyzeRequest", 23)})
+			So(len(keys), ShouldEqual, 1)
+			So(err, ShouldBeNil)
+		})
+
+		Convey("Three CommentFeedback keys for both of those runs together", func() {
+			keys, err := fetchAllCommentFeedback(ctx, []*ds.Key{
+				ds.MakeKey(ctx, "AnalyzeRequest", 22),
+				ds.MakeKey(ctx, "AnalyzeRequest", 23),
+			})
+			So(len(keys), ShouldEqual, 3)
+			So(err, ShouldBeNil)
+		})
+
+		Convey("suppressedCategories returns all not useful categories for all patchsets", func() {
+			categories := suppressedCategories(ctx, "example.com", "p~master~I2222")
+			So(categories, ShouldResemble, stringset.NewFromSlice("Foo/C1", "Foo/C2", "Foo/C4"))
+		})
+
+		Convey("suppressedCategories returns an empty set for nonexistent CLs", func() {
+			categories := suppressedCategories(ctx, "example.com", "p~master~I999")
+			So(categories, ShouldBeEmpty)
+		})
 	})
 }

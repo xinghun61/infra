@@ -34,6 +34,17 @@ func Context() context.Context {
 	tq.GetTestable(ctx).CreateQueue(common.TrackerQueue)
 	tq.GetTestable(ctx).CreatePullQueue(common.AnalysisResultsQueue)
 	tq.GetTestable(ctx).CreatePullQueue(common.FeedbackEventsQueue)
+	index := &ds.IndexDefinition{
+		Kind:     "CommentFeedback",
+		Ancestor: true,
+		SortBy: []ds.IndexColumn{
+			{
+				Property:   "NotUsefulReports",
+				Descending: false,
+			},
+		},
+	}
+	ds.GetTestable(ctx).AddIndexes(index)
 	ds.GetTestable(ctx).Consistent(true)
 	return ctx
 }
