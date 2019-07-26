@@ -25,6 +25,7 @@ type deviceStatusFile struct {
 	Status            string               `json:"status"`
 	Temperature       map[string][]float64 `json:"temperature"`
 	Timestamp         float64              `json:"timestamp"`
+	Uptime            float64              `json:"uptime"`
 }
 
 type batteryStatus struct {

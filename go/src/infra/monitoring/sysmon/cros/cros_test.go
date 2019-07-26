@@ -67,6 +67,7 @@ func TestUpdateMetrics(t *testing.T) {
 			Avail: 1221444,
 			Total: 1899548,
 		},
+		Uptime: 9233.61,
 	}
 	Convey("UpdateMetrics Testing", t, func() {
 		updateMetrics(c, statusFile)
@@ -84,5 +85,7 @@ func TestUpdateMetrics(t *testing.T) {
 			1899548)
 		So(availMem.Get(c, statusFile.ContainerHostname), ShouldEqual,
 			1221444)
+		So(uptime.Get(c, statusFile.ContainerHostname), ShouldEqual,
+			9233.61)
 	})
 }

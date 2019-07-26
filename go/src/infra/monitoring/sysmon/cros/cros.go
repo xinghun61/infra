@@ -17,6 +17,10 @@ import (
 )
 
 var (
+	availMem = metric.NewInt("dev/cros/mem/available",
+		"Available memory of DUT.",
+		nil,
+		field.String("container_hostname"))
 	battCharge = metric.NewFloat("dev/cros/battery/charge",
 		"Percentage charge of battery.",
 		nil,
@@ -29,24 +33,27 @@ var (
 		"DUT status (Online|Offline).",
 		nil,
 		field.String("container_hostname"))
-	totalMem = metric.NewInt("dev/cros/mem/total",
-		"Total memory of DUT.",
-		nil,
-		field.String("container_hostname"))
-	availMem = metric.NewInt("dev/cros/mem/available",
-		"Available memory of DUT.",
-		nil,
-		field.String("container_hostname"))
 	temperature = metric.NewFloat("dev/cros/temperature",
 		"Temperature in °C",
 		nil,
 		field.String("container_hostname"), field.String("zone"))
+	totalMem = metric.NewInt("dev/cros/mem/total",
+		"Total memory of DUT.",
+		nil,
+		field.String("container_hostname"))
+	uptime = metric.NewFloat("dev/cros/uptime",
+		"Uptime of DUT in seconds",
+		nil,
+		field.String("container_hostname"))
 
 	allMetrics = []types.Metric{
+		availMem,
 		battCharge,
 		crosVersion,
 		dutStatus,
 		temperature,
+		totalMem,
+		uptime,
 	}
 )
 
@@ -129,5 +136,8 @@ func updateMetrics(c context.Context, deviceFile deviceStatusFile) {
 		availMem.Set(c, deviceFile.Memory.Avail, deviceFile.ContainerHostname)
 	} else {
 		logging.Warningf(c, "Memory info unknown")
+	}
+	if deviceFile.Uptime != 0.0 {
+		uptime.Set(c, deviceFile.Uptime, deviceFile.ContainerHostname)
 	}
 }
