@@ -12,9 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package appengine is the entry point of this app.
-// Appengine requires the entry point to be a leaf package.
-package appengine
+package main
 
 import (
 	"net/http"
@@ -22,6 +20,7 @@ import (
 	"go.chromium.org/luci/appengine/gaemiddleware/standard"
 	"go.chromium.org/luci/common/data/rand/mathrand"
 	"go.chromium.org/luci/server/router"
+	"google.golang.org/appengine"
 
 	"infra/appengine/crosskylabadmin/app/config"
 	"infra/appengine/crosskylabadmin/app/cron"
@@ -29,7 +28,7 @@ import (
 	"infra/appengine/crosskylabadmin/app/queue"
 )
 
-func init() {
+func main() {
 	// Dev server likes to restart a lot, and upon a restart math/rand seed is
 	// always set to 1, resulting in lots of presumably "random" IDs not being
 	// very random. Seed it with real randomness.
@@ -47,4 +46,6 @@ func init() {
 	config.SetupValidation()
 
 	http.DefaultServeMux.Handle("/", r)
+
+	appengine.Main()
 }
