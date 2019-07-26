@@ -207,8 +207,21 @@ func workerDone(c context.Context, req *admin.WorkerDoneRequest, isolator common
 	if err := ds.Get(c, request); err != nil {
 		return errors.Reason("failed to get AnalyzeRequest entity (run ID: %d): %v", req.RunId, err).Err()
 	}
-	var selections []*track.CommentSelection
+	selections, err := createCommentSelections(c, request, comments)
+	// Even on error, createCommentSelections is expected to always return a
+	// slice of CommentSelection that may be used below.
+	if len(selections) != len(comments) {
+		return errors.Reason("unexpected number of CommentSelections (%d, expected %d)", len(selections), len(comments)).Err()
+	}
+	if err != nil {
+		logging.Warningf(c, "Error creating CommentSelections: %v", err)
+	}
 	numSelectedComments := 0
+	for _, s := range selections {
+		if s.Included {
+			numSelectedComments++
+		}
+	}
 
 	// Now that all prerequisite data was loaded, run the mutations in a transaction.
 	if err := ds.RunInTransaction(c, func(c context.Context) (err error) {
@@ -216,27 +229,17 @@ func workerDone(c context.Context, req *admin.WorkerDoneRequest, isolator common
 		// and CommentSelection entities.
 		if len(comments) > 0 {
 			if err = ds.Put(c, comments); err != nil {
-				return errors.Annotate(err, "failed to add Comment entries").Err()
+				return errors.Annotate(err, "failed to add Comment entities ").Err()
 			}
 			entities := make([]interface{}, 0, len(comments)*2)
-			selections, err = createCommentSelections(c, request, comments)
-			if err != nil {
-				logging.Warningf(c, "Error creating comment selections: %v", err)
-				// On error still write the comment selections which specify they
-				// were not included.
-			}
 			for i, comment := range comments {
 				commentKey := ds.KeyForObj(c, comment)
-				entities = append(entities, []interface{}{
-					selections[i],
-					&track.CommentFeedback{ID: 1, Parent: commentKey},
-				}...)
-				if selections[i].Included {
-					numSelectedComments++
-				}
+				selections[i].Parent = commentKey
+				entities = append(entities, selections[i])
+				entities = append(entities, &track.CommentFeedback{ID: 1, Parent: commentKey})
 			}
 			if err := ds.Put(c, entities); err != nil {
-				return errors.Annotate(err, "failed to add CommentSelection/CommentFeedback entries").Err()
+				return errors.Annotate(err, "failed to add CommentFeedback or CommentSelection entries").Err()
 			}
 			// Monitor comment count per category.
 			commentCount.Set(c, int64(len(comments)), functionName, platformName)
@@ -415,15 +418,15 @@ func createAnalysisResults(wres *track.WorkerRunResult, areq *track.AnalyzeReque
 //
 // The returned slice of track.CommentSelection will have the same size and
 // order as |comments|.
+//
+// The given comments may not have been put in datastore and thus may not yet
+// have valid IDs, so the Parent key is not set in any of the returned
+// CommentSelection entities.
 func createCommentSelections(c context.Context, request *track.AnalyzeRequest, comments []*track.Comment) ([]*track.CommentSelection, error) {
 	selections := make([]*track.CommentSelection, len(comments))
-	for i, comment := range comments {
-		commentKey := ds.KeyForObj(c, comment)
-		selections[i] = &track.CommentSelection{
-			ID:       1,
-			Parent:   commentKey,
-			Included: true, // Default value, may be overridden below.
-		}
+	for i := range comments {
+		// Default to Included: true; this value may be overridden below.
+		selections[i] = &track.CommentSelection{ID: 1, Included: true}
 	}
 
 	if !gerrit.IsGerritProjectRequest(request) {
