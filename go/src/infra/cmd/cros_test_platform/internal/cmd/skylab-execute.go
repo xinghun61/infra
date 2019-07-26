@@ -72,7 +72,7 @@ func (c *skylabExecuteRun) innerRun(a subcommands.Application, args []string, en
 
 	gf := c.getterFactory(request.Config.SkylabIsolate)
 
-	runner := execution.NewSkylabRunner(request.Enumeration.AutotestTests, request.RequestParams, request.Config.SkylabWorker)
+	runner := execution.NewSkylabRunner(request.Enumeration.AutotestInvocations, request.RequestParams, request.Config.SkylabWorker)
 
 	response, err := c.handleRequest(ctx, runner, client, gf)
 	if err != nil && response == nil {

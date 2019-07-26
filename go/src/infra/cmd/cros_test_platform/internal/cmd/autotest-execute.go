@@ -65,7 +65,7 @@ func (c *autotestExecuteRun) innerRun(a subcommands.Application, args []string, 
 		return err
 	}
 
-	runner := execution.NewAutotestRunner(request.Enumeration.AutotestTests, request.RequestParams, request.GetConfig().GetAutotestBackend())
+	runner := execution.NewAutotestRunner(request.Enumeration.AutotestInvocations, request.RequestParams, request.GetConfig().GetAutotestBackend())
 
 	response, err := c.handleRequest(ctx, runner, client, nil)
 	if err != nil && response == nil {

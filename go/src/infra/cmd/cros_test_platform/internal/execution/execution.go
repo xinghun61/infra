@@ -8,7 +8,6 @@ package execution
 import (
 	"context"
 
-	build_api "go.chromium.org/chromiumos/infra/proto/go/chromite/api"
 	"go.chromium.org/chromiumos/infra/proto/go/test_platform"
 	"go.chromium.org/chromiumos/infra/proto/go/test_platform/config"
 	"go.chromium.org/chromiumos/infra/proto/go/test_platform/steps"
@@ -28,12 +27,12 @@ type Runner interface {
 
 // NewSkylabRunner returns a Runner that will execute the given tests in
 // the skylab environment.
-func NewSkylabRunner(tests []*build_api.AutotestTest, params *test_platform.Request_Params, workerConfig *config.Config_SkylabWorker) Runner {
+func NewSkylabRunner(tests []*steps.EnumerationResponse_AutotestInvocation, params *test_platform.Request_Params, workerConfig *config.Config_SkylabWorker) Runner {
 	return skylab.NewTaskSet(tests, params, workerConfig)
 }
 
 // NewAutotestRunner returns a Runner that will execute the given tests in
 // the autotest environment.
-func NewAutotestRunner(tests []*build_api.AutotestTest, params *test_platform.Request_Params, config *config.Config_AutotestBackend) Runner {
+func NewAutotestRunner(tests []*steps.EnumerationResponse_AutotestInvocation, params *test_platform.Request_Params, config *config.Config_AutotestBackend) Runner {
 	return autotest.New(tests, params, config)
 }

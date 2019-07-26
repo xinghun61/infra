@@ -46,8 +46,8 @@ type TaskSet struct {
 }
 
 type testRun struct {
-	test     *build_api.AutotestTest
-	attempts []*attempt
+	invocation *steps.EnumerationResponse_AutotestInvocation
+	attempts   []*attempt
 }
 
 func (t *testRun) RequestArgs(params *test_platform.Request_Params, workerConfig *config.Config_SkylabWorker) (request.Args, error) {
@@ -67,13 +67,13 @@ func (t *testRun) RequestArgs(params *test_platform.Request_Params, workerConfig
 	}
 
 	cmd := &worker.Command{
-		TaskName:        t.test.Name,
+		TaskName:        t.invocation.Test.Name,
 		ClientTest:      isClient,
 		OutputToIsolate: true,
 	}
 	cmd.Config(wrap(workerConfig))
 
-	labels, err := toInventoryLabels(params, t.test.Dependencies)
+	labels, err := toInventoryLabels(params, t.invocation.Test.Dependencies)
 	if err != nil {
 		return request.Args{}, errors.Annotate(err, "create request args").Err()
 	}
@@ -94,9 +94,9 @@ func (t *testRun) RequestArgs(params *test_platform.Request_Params, workerConfig
 }
 
 func (t *testRun) isClientTest() (bool, error) {
-	isClient, ok := isClientTest[t.test.ExecutionEnvironment]
+	isClient, ok := isClientTest[t.invocation.Test.ExecutionEnvironment]
 	if !ok {
-		return false, errors.Reason("unknown exec environment %s", t.test.ExecutionEnvironment).Err()
+		return false, errors.Reason("unknown exec environment %s", t.invocation.Test.ExecutionEnvironment).Err()
 	}
 	return isClient, nil
 }
@@ -126,10 +126,10 @@ func (a *attempt) complete() bool {
 }
 
 // NewTaskSet creates a new TaskSet.
-func NewTaskSet(tests []*build_api.AutotestTest, params *test_platform.Request_Params, workerConfig *config.Config_SkylabWorker) *TaskSet {
+func NewTaskSet(tests []*steps.EnumerationResponse_AutotestInvocation, params *test_platform.Request_Params, workerConfig *config.Config_SkylabWorker) *TaskSet {
 	testRuns := make([]*testRun, len(tests))
 	for i, test := range tests {
-		testRuns[i] = &testRun{test: test}
+		testRuns[i] = &testRun{invocation: test}
 	}
 	return &TaskSet{
 		testRuns:     testRuns,
@@ -170,25 +170,25 @@ func (r *TaskSet) launchAll(ctx context.Context, swarming swarming.Client) error
 	return nil
 }
 
-func (r *TaskSet) launchSingle(ctx context.Context, swarming swarming.Client, testRun *testRun) error {
-	args, err := testRun.RequestArgs(r.params, r.workerConfig)
+func (r *TaskSet) launchSingle(ctx context.Context, swarming swarming.Client, tr *testRun) error {
+	args, err := tr.RequestArgs(r.params, r.workerConfig)
 	if err != nil {
-		return errors.Annotate(err, "launch test named %s", testRun.test.Name).Err()
+		return errors.Annotate(err, "launch test named %s", tr.invocation.Test.Name).Err()
 	}
 
 	req, err := request.New(args)
 	if err != nil {
-		return errors.Annotate(err, "launch test named %s", testRun.test.Name).Err()
+		return errors.Annotate(err, "launch test named %s", tr.invocation.Test.Name).Err()
 	}
 
 	resp, err := swarming.CreateTask(ctx, req)
 	if err != nil {
-		return errors.Annotate(err, "launch test named %s", testRun.test.Name).Err()
+		return errors.Annotate(err, "launch test named %s", tr.invocation.Test.Name).Err()
 	}
 
-	logging.Infof(ctx, "Launched test named %s as task %s", testRun.test.Name, swarming.GetTaskURL(resp.TaskId))
+	logging.Infof(ctx, "Launched test named %s as task %s", tr.invocation.Test.Name, swarming.GetTaskURL(resp.TaskId))
 
-	testRun.attempts = append(testRun.attempts, &attempt{taskID: resp.TaskId})
+	tr.attempts = append(tr.attempts, &attempt{taskID: resp.TaskId})
 	return nil
 }
 
@@ -232,7 +232,7 @@ func (r *TaskSet) tick(ctx context.Context, client swarming.Client, gf isolate.G
 		}
 		if shouldRetry {
 			complete = false
-			logging.Debugf(ctx, "retrying test %s", testRun.test.Name)
+			logging.Debugf(ctx, "retrying test %s", testRun.invocation.Test.Name)
 			if err := r.launchSingle(ctx, client, testRun); err != nil {
 				return false, errors.Annotate(err, "tick for task %s: retry test", latestAttempt.taskID).Err()
 			}
@@ -283,7 +283,7 @@ func (r *TaskSet) fetchResults(ctx context.Context, a *attempt, client swarming.
 // shouldRetry computes if the given testRun should be retried.
 //
 // This will panic if the testRun has never been launched.
-func (r *TaskSet) shouldRetry(testRun *testRun) (bool, error) {
+func (r *TaskSet) shouldRetry(tr *testRun) (bool, error) {
 	if r.params.Retry == nil {
 		return false, nil
 	}
@@ -294,18 +294,18 @@ func (r *TaskSet) shouldRetry(testRun *testRun) (bool, error) {
 	if max != 0 && r.retries >= max {
 		return false, nil
 	}
-	if !testRun.test.AllowRetries {
+	if !tr.invocation.Test.AllowRetries {
 		return false, nil
 	}
-	attempts := len(testRun.attempts)
+	attempts := len(tr.attempts)
 	if attempts < 1 {
 		return false, errors.Reason("should retry: can't retry a never-tried test").Err()
 	}
 	// Allow up to MaxRetries + 1 total attempts of a given test.
-	if attempts > int(testRun.test.MaxRetries) {
+	if attempts > int(tr.invocation.Test.MaxRetries) {
 		return false, nil
 	}
-	latestAttempt := testRun.attempts[attempts-1]
+	latestAttempt := tr.attempts[attempts-1]
 	switch verdict := flattenToVerdict(latestAttempt.autotestResult.GetTestCases()); verdict {
 	case test_platform.TaskState_VERDICT_UNSPECIFIED:
 		fallthrough

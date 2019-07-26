@@ -101,11 +101,11 @@ func TestLaunch(t *testing.T) {
 		// immediately after launching.
 		swarming.SetResult(&swarming_api.SwarmingRpcsTaskResult{State: "COMPLETED"})
 
-		var tests []*build_api.AutotestTest
-		tests = append(tests, newTest("test1"), newTest("test2"))
+		var invs []*steps.EnumerationResponse_AutotestInvocation
+		invs = append(invs, invocation("test1"), invocation("test2"))
 
 		Convey("when running a autotest execution", func() {
-			run := autotest.New(tests, basicParams(), basicConfig())
+			run := autotest.New(invs, basicParams(), basicConfig())
 
 			run.LaunchAndWait(ctx, swarming, nil)
 			Convey("then a single run_suite proxy job is created, with correct arguments.", func() {
@@ -136,7 +136,7 @@ func TestWaitAndCollect(t *testing.T) {
 	Convey("Given a launched autotest execution request", t, func() {
 		ctx, cancel := context.WithCancel(context.Background())
 		swarming := NewFakeSwarming()
-		run := autotest.New([]*build_api.AutotestTest{}, basicParams(), basicConfig())
+		run := autotest.New(nil, basicParams(), basicConfig())
 
 		wg := sync.WaitGroup{}
 		wg.Add(1)
@@ -174,6 +174,8 @@ func TestWaitAndCollect(t *testing.T) {
 	})
 }
 
-func newTest(name string) *build_api.AutotestTest {
-	return &build_api.AutotestTest{Name: name}
+func invocation(name string) *steps.EnumerationResponse_AutotestInvocation {
+	return &steps.EnumerationResponse_AutotestInvocation{
+		Test: &build_api.AutotestTest{Name: name},
+	}
 }

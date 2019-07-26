@@ -7,27 +7,28 @@ package enumeration
 import (
 	"go.chromium.org/chromiumos/infra/proto/go/chromite/api"
 	"go.chromium.org/chromiumos/infra/proto/go/test_platform"
+	"go.chromium.org/chromiumos/infra/proto/go/test_platform/steps"
 	"go.chromium.org/luci/common/data/stringset"
 )
 
 // GetForTests returns the test metadata for specified tests.
-func GetForTests(metadata *api.AutotestTestMetadata, tests []*test_platform.Request_Test) []*api.AutotestTest {
+func GetForTests(metadata *api.AutotestTestMetadata, tests []*test_platform.Request_Test) []*steps.EnumerationResponse_AutotestInvocation {
 	tNames := testNames(tests)
 	return testsByName(metadata.GetTests(), tNames)
 }
 
 // GetForSuites returns the test metadata for specified suites.
-func GetForSuites(metadata *api.AutotestTestMetadata, suites []*test_platform.Request_Suite) []*api.AutotestTest {
+func GetForSuites(metadata *api.AutotestTestMetadata, suites []*test_platform.Request_Suite) []*steps.EnumerationResponse_AutotestInvocation {
 	sNames := suiteNames(suites)
 	tNames := testsInSuites(metadata.GetSuites(), sNames)
 	return testsByName(metadata.GetTests(), tNames)
 }
 
-func testsByName(tests []*api.AutotestTest, names stringset.Set) []*api.AutotestTest {
-	ret := make([]*api.AutotestTest, 0, len(names))
+func testsByName(tests []*api.AutotestTest, names stringset.Set) []*steps.EnumerationResponse_AutotestInvocation {
+	ret := make([]*steps.EnumerationResponse_AutotestInvocation, 0, len(names))
 	for _, t := range tests {
 		if names.Has(t.GetName()) {
-			ret = append(ret, t)
+			ret = append(ret, &steps.EnumerationResponse_AutotestInvocation{Test: t})
 		}
 	}
 	return ret

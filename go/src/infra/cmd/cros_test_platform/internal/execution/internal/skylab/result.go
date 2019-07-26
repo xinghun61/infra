@@ -67,7 +67,7 @@ func toTaskResults(testRuns []*testRun, urler swarming.URLer) []*steps.ExecuteRe
 	var results []*steps.ExecuteResponse_TaskResult
 	for _, test := range testRuns {
 		for num, attempt := range test.attempts {
-			results = append(results, toTaskResult(test.test.Name, attempt, num, urler))
+			results = append(results, toTaskResult(test.invocation.Test.Name, attempt, num, urler))
 		}
 	}
 	return results

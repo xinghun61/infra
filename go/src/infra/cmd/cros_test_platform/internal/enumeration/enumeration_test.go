@@ -12,6 +12,7 @@ import (
 	"github.com/kylelemons/godebug/pretty"
 	"go.chromium.org/chromiumos/infra/proto/go/chromite/api"
 	"go.chromium.org/chromiumos/infra/proto/go/test_platform"
+	"go.chromium.org/chromiumos/infra/proto/go/test_platform/steps"
 	"go.chromium.org/luci/common/data/stringset"
 )
 
@@ -44,10 +45,10 @@ func addTestMetadata(m *api.AutotestTestMetadata, tNames ...string) {
 	}
 }
 
-func extractTestNames(ts []*api.AutotestTest) stringset.Set {
+func extractTestNames(ts []*steps.EnumerationResponse_AutotestInvocation) stringset.Set {
 	ns := make([]string, 0, len(ts))
 	for _, t := range ts {
-		ns = append(ns, t.GetName())
+		ns = append(ns, t.Test.GetName())
 	}
 	return stringset.NewFromSlice(ns...)
 }

@@ -21,6 +21,7 @@ import (
 	"go.chromium.org/chromiumos/infra/proto/go/test_platform"
 	"go.chromium.org/chromiumos/infra/proto/go/test_platform/config"
 	"go.chromium.org/chromiumos/infra/proto/go/test_platform/skylab_test_runner"
+	"go.chromium.org/chromiumos/infra/proto/go/test_platform/steps"
 	swarming_api "go.chromium.org/luci/common/api/swarming/swarming/v1"
 	"go.chromium.org/luci/common/clock"
 	"go.chromium.org/luci/common/clock/testclock"
@@ -152,12 +153,14 @@ func fakeGetterFactory(getter isolate.Getter) isolate.GetterFactory {
 	}
 }
 
-func newTest(name string, client bool, deps ...*build_api.AutotestTaskDependency) *build_api.AutotestTest {
+func invocation(name string, client bool, deps ...*build_api.AutotestTaskDependency) *steps.EnumerationResponse_AutotestInvocation {
 	ee := build_api.AutotestTest_EXECUTION_ENVIRONMENT_SERVER
 	if client {
 		ee = build_api.AutotestTest_EXECUTION_ENVIRONMENT_CLIENT
 	}
-	return &build_api.AutotestTest{Name: name, ExecutionEnvironment: ee, Dependencies: deps}
+	return &steps.EnumerationResponse_AutotestInvocation{
+		Test: &build_api.AutotestTest{Name: name, ExecutionEnvironment: ee, Dependencies: deps},
+	}
 }
 
 func basicParams() *test_platform.Request_Params {
@@ -205,11 +208,11 @@ func TestLaunchAndWaitTest(t *testing.T) {
 		getter := newFakeGetter()
 		gf := fakeGetterFactory(getter)
 
-		var tests []*build_api.AutotestTest
-		tests = append(tests, newTest("", false), newTest("", true))
+		var invs []*steps.EnumerationResponse_AutotestInvocation
+		invs = append(invs, invocation("", false), invocation("", true))
 
 		Convey("when running a skylab execution", func() {
-			run := skylab.NewTaskSet(tests, basicParams(), basicConfig())
+			run := skylab.NewTaskSet(invs, basicParams(), basicConfig())
 
 			err := run.LaunchAndWait(ctx, swarming, gf)
 			So(err, ShouldBeNil)
@@ -240,8 +243,8 @@ func TestTaskStates(t *testing.T) {
 	Convey("Given a single test", t, func() {
 		ctx := context.Background()
 
-		var tests []*build_api.AutotestTest
-		tests = append(tests, newTest("", false))
+		var invs []*steps.EnumerationResponse_AutotestInvocation
+		invs = append(invs, invocation("", false))
 
 		cases := []struct {
 			description     string
@@ -286,7 +289,7 @@ func TestTaskStates(t *testing.T) {
 				getter.SetAutotestResult(&skylab_test_runner.Result_Autotest{})
 				gf := fakeGetterFactory(getter)
 
-				run := skylab.NewTaskSet(tests, basicParams(), basicConfig())
+				run := skylab.NewTaskSet(invs, basicParams(), basicConfig())
 				err := run.LaunchAndWait(ctx, swarming, gf)
 				So(err, ShouldBeNil)
 
@@ -307,8 +310,8 @@ func TestServiceError(t *testing.T) {
 		getter := newFakeGetter()
 		gf := fakeGetterFactory(getter)
 
-		tests := []*build_api.AutotestTest{newTest("", false)}
-		run := skylab.NewTaskSet(tests, basicParams(), basicConfig())
+		invs := []*steps.EnumerationResponse_AutotestInvocation{invocation("", false)}
+		run := skylab.NewTaskSet(invs, basicParams(), basicConfig())
 
 		Convey("when the swarming service immediately returns errors, that error is surfaced as a launch error.", func() {
 			swarming.setError(fmt.Errorf("foo error"))
@@ -337,8 +340,8 @@ func TestTaskURL(t *testing.T) {
 		getter := newFakeGetter()
 		gf := fakeGetterFactory(getter)
 
-		tests := []*build_api.AutotestTest{newTest("", false)}
-		run := skylab.NewTaskSet(tests, basicParams(), basicConfig())
+		invs := []*steps.EnumerationResponse_AutotestInvocation{invocation("", false)}
+		run := skylab.NewTaskSet(invs, basicParams(), basicConfig())
 		run.LaunchAndWait(ctx, swarming, gf)
 
 		resp := run.Response(swarming)
@@ -358,8 +361,8 @@ func TestIncompleteWait(t *testing.T) {
 		getter := newFakeGetter()
 		gf := fakeGetterFactory(getter)
 
-		tests := []*build_api.AutotestTest{newTest("", false)}
-		run := skylab.NewTaskSet(tests, basicParams(), basicConfig())
+		invs := []*steps.EnumerationResponse_AutotestInvocation{invocation("", false)}
+		run := skylab.NewTaskSet(invs, basicParams(), basicConfig())
 
 		wg := sync.WaitGroup{}
 		wg.Add(1)
@@ -391,11 +394,11 @@ func TestRequestArguments(t *testing.T) {
 		getter := newFakeGetter()
 		gf := fakeGetterFactory(getter)
 
-		tests := []*build_api.AutotestTest{
-			newTest("name1", false, &build_api.AutotestTaskDependency{Label: "cr50:pvt"}),
+		invs := []*steps.EnumerationResponse_AutotestInvocation{
+			invocation("name1", false, &build_api.AutotestTaskDependency{Label: "cr50:pvt"}),
 		}
 
-		run := skylab.NewTaskSet(tests, basicParams(), basicConfig())
+		run := skylab.NewTaskSet(invs, basicParams(), basicConfig())
 		run.LaunchAndWait(ctx, swarming, gf)
 
 		Convey("the launched task request should have correct parameters.", func() {
@@ -478,7 +481,7 @@ func TestRetries(t *testing.T) {
 			ts.Add(2 * d)
 		})
 		swarming := newFakeSwarming("")
-		tests := []*build_api.AutotestTest{newTest("name1", true)}
+		invs := []*steps.EnumerationResponse_AutotestInvocation{invocation("name1", true)}
 		params := basicParams()
 		getter := newFakeGetter()
 		gf := fakeGetterFactory(getter)
@@ -571,10 +574,10 @@ func TestRetries(t *testing.T) {
 			Convey(c.name, func() {
 				getter.SetAutotestResult(c.autotestResult)
 				params.Retry = c.retryParams
-				tests[0].AllowRetries = c.testAllowRetry
-				tests[0].MaxRetries = c.testMaxRetry
+				invs[0].Test.AllowRetries = c.testAllowRetry
+				invs[0].Test.MaxRetries = c.testMaxRetry
 
-				run := skylab.NewTaskSet(tests, params, basicConfig())
+				run := skylab.NewTaskSet(invs, params, basicConfig())
 				err := run.LaunchAndWait(ctx, swarming, gf)
 				So(err, ShouldBeNil)
 				response := run.Response(swarming)
@@ -596,9 +599,9 @@ func TestClientTestArg(t *testing.T) {
 		ctx := context.Background()
 		swarming := newFakeSwarming("")
 
-		tests := []*build_api.AutotestTest{newTest("name1", true)}
+		invs := []*steps.EnumerationResponse_AutotestInvocation{invocation("name1", true)}
 
-		run := skylab.NewTaskSet(tests, basicParams(), basicConfig())
+		run := skylab.NewTaskSet(invs, basicParams(), basicConfig())
 		run.LaunchAndWait(ctx, swarming, fakeGetterFactory(newFakeGetter()))
 
 		Convey("the launched task request should have correct parameters.", func() {
@@ -617,13 +620,13 @@ func TestQuotaSchedulerAccount(t *testing.T) {
 	Convey("Given a client test and a selected quota account", t, func() {
 		ctx := context.Background()
 		swarming := newFakeSwarming("")
-		tests := []*build_api.AutotestTest{newTest("name1", true)}
+		invs := []*steps.EnumerationResponse_AutotestInvocation{invocation("name1", true)}
 		params := basicParams()
 		params.Scheduling.Pool = &test_platform.Request_Params_Scheduling_QuotaAccount{
 			QuotaAccount: "foo-account",
 		}
 
-		run := skylab.NewTaskSet(tests, params, basicConfig())
+		run := skylab.NewTaskSet(invs, params, basicConfig())
 		run.LaunchAndWait(ctx, swarming, fakeGetterFactory(newFakeGetter()))
 
 		Convey("the launched task request should have a tag specifying the correct quota account and run in the quota pool.", func() {
@@ -645,13 +648,13 @@ func TestUnmanagedPool(t *testing.T) {
 	Convey("Given a client test and an unmanaged pool.", t, func() {
 		ctx := context.Background()
 		swarming := newFakeSwarming("")
-		tests := []*build_api.AutotestTest{newTest("name1", true)}
+		invs := []*steps.EnumerationResponse_AutotestInvocation{invocation("name1", true)}
 		params := basicParams()
 		params.Scheduling.Pool = &test_platform.Request_Params_Scheduling_UnmanagedPool{
 			UnmanagedPool: "foo-pool",
 		}
 
-		run := skylab.NewTaskSet(tests, params, basicConfig())
+		run := skylab.NewTaskSet(invs, params, basicConfig())
 		run.LaunchAndWait(ctx, swarming, fakeGetterFactory(newFakeGetter()))
 
 		Convey("the launched task request run in the unmanaged pool.", func() {
@@ -682,12 +685,12 @@ func TestResponseVerdict(t *testing.T) {
 		})
 
 		swarming := newFakeSwarming("")
-		tests := []*build_api.AutotestTest{newTest("name1", true)}
+		invs := []*steps.EnumerationResponse_AutotestInvocation{invocation("name1", true)}
 		params := basicParams()
 		getter := newFakeGetter()
 		gf := fakeGetterFactory(getter)
 
-		run := skylab.NewTaskSet(tests, params, basicConfig())
+		run := skylab.NewTaskSet(invs, params, basicConfig())
 
 		Convey("when tests are still running, response verdict is correct.", func() {
 			swarming.setTaskState(jsonrpc.TaskState_RUNNING)

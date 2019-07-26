@@ -95,7 +95,7 @@ func (c *enumerateRun) innerRun(a subcommands.Application, args []string, env su
 		return err
 	}
 	ts := c.enumerate(tm, &request)
-	resp := steps.EnumerationResponse{AutotestTests: ts}
+	resp := steps.EnumerationResponse{AutotestInvocations: ts}
 	return writeResponse(c.outputPath, &resp, err)
 }
 
@@ -146,8 +146,8 @@ func (c *enumerateRun) newGSClient(ctx context.Context) (gs.Client, error) {
 	return gs.NewProdClient(ctx, t)
 }
 
-func (c *enumerateRun) enumerate(tm *api.TestMetadataResponse, request *steps.EnumerationRequest) []*api.AutotestTest {
-	var ts []*api.AutotestTest
+func (c *enumerateRun) enumerate(tm *api.TestMetadataResponse, request *steps.EnumerationRequest) []*steps.EnumerationResponse_AutotestInvocation {
+	var ts []*steps.EnumerationResponse_AutotestInvocation
 	ts = append(ts, enumeration.GetForTests(tm.Autotest, request.TestPlan.Test)...)
 	ts = append(ts, enumeration.GetForSuites(tm.Autotest, request.TestPlan.Suite)...)
 	return ts

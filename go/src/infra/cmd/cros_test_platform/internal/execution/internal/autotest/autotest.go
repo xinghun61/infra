@@ -13,7 +13,6 @@ import (
 
 	"github.com/golang/protobuf/ptypes"
 
-	build_api "go.chromium.org/chromiumos/infra/proto/go/chromite/api"
 	"go.chromium.org/chromiumos/infra/proto/go/test_platform"
 	"go.chromium.org/chromiumos/infra/proto/go/test_platform/config"
 	"go.chromium.org/chromiumos/infra/proto/go/test_platform/steps"
@@ -33,7 +32,7 @@ const suiteName = "cros_test_platform"
 
 // Runner runs a set of tests in autotest.
 type Runner struct {
-	tests         []*build_api.AutotestTest
+	invocations   []*steps.EnumerationResponse_AutotestInvocation
 	requestParams *test_platform.Request_Params
 	config        *config.Config_AutotestBackend
 
@@ -41,8 +40,8 @@ type Runner struct {
 }
 
 // New returns a new autotest runner.
-func New(tests []*build_api.AutotestTest, params *test_platform.Request_Params, config *config.Config_AutotestBackend) *Runner {
-	return &Runner{tests: tests, requestParams: params, config: config}
+func New(tests []*steps.EnumerationResponse_AutotestInvocation, params *test_platform.Request_Params, config *config.Config_AutotestBackend) *Runner {
+	return &Runner{invocations: tests, requestParams: params, config: config}
 }
 
 // LaunchAndWait launches an autotest execution and waits for it to complete.
@@ -243,9 +242,9 @@ func (r Runner) collect(ctx context.Context, client swarming.Client, taskID stri
 }
 
 func (r *Runner) reimageAndRunArgs() interface{} {
-	testNames := make([]string, len(r.tests))
-	for i, v := range r.tests {
-		testNames[i] = v.Name
+	testNames := make([]string, len(r.invocations))
+	for i, v := range r.invocations {
+		testNames[i] = v.Test.Name
 	}
 	return map[string]interface{}{
 		// test_names is in argument to reimage_and_run which, if provided, short
