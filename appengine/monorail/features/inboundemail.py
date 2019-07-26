@@ -116,10 +116,6 @@ class InboundEmail(webapp2.RequestHandler):
     project_name, verb, label = emailfmt.IdentifyProjectVerbAndLabel(
         project_addr)
 
-    labels = None
-    if label:
-        labels = [label]
-
     is_alert = bool(verb and verb.lower() == 'alert')
     error_addr = from_addr
     local_id = None
@@ -189,7 +185,7 @@ class InboundEmail(webapp2.RequestHandler):
     # If the email is an alert, switch to the alert handling path.
     if is_alert:
         self.ProcessAlert(cnxn, project, project_addr, from_addr, auth,
-            subject, body, incident_id, labels=labels)
+            subject, body, incident_id, label)
         return None
 
     # This email is a response to an email about a comment.
@@ -201,7 +197,7 @@ class InboundEmail(webapp2.RequestHandler):
 
   def ProcessAlert(
       self, cnxn, project, project_addr, from_addr, auth,
-      subject, body, incident_id, owner_email=None, labels=None):
+      subject, body, incident_id, label=None):
     """Examine an an alert issue email and create an issue based on the email.
 
     Args:
@@ -212,10 +208,11 @@ class InboundEmail(webapp2.RequestHandler):
           to our server.
       auth: AuthData object with user_id and email address of the user who
           will file the alert issue.
-      body: string email body text of the reply email.
+      subject: the subject of the email message
+      body: the body text of the email message
       incident_id: string containing an optional unique incident used to
           de-dupe alert issues.
-      owner_email: string email address of the user the bug will be assigned to.
+      label: the label to be added to the issue.
 
     Returns:
       A list of follow-up work items, e.g., to notify other users of
@@ -236,11 +233,8 @@ class InboundEmail(webapp2.RequestHandler):
     cc_ids = []
     status = 'Available'
 
-    if not labels:
-        labels = ['Infra-Troopers-Alerts']
-
-    labels += ['Restrict-View-Google', 'Pri-2']
-    field_values = []
+    labels = set(['Restrict-View-Google', 'Pri-2'])
+    labels.add(label or 'Infra-Troopers-Alerts')
 
     # TODO(zhangtiff): Remove this special casing once components can be set via
     # the email header.
@@ -260,15 +254,10 @@ class InboundEmail(webapp2.RequestHandler):
     mc.LookupLoggedInUserPerms(project)
     with work_env.WorkEnv(mc, self.services) as we:
       updated_issue = None
-      owner_id = None
-      if owner_email:
-        owner_id = self.services.user.LookupUserID(cnxn, owner_email,
-            autocreate=True)
-        status = 'Assigned'
 
       if incident_id:
         incident_label = 'Incident-Id-' + incident_id
-        labels.append(incident_label)
+        labels.add(incident_label)
 
         label_id = self.services.config.LookupLabelID(
             cnxn, project.project_id, incident_label)
@@ -310,8 +299,8 @@ class InboundEmail(webapp2.RequestHandler):
 
       if not updated_issue:
         updated_issue, _ = we.CreateIssue(
-            project.project_id, subject, status, owner_id,
-            cc_ids, labels, field_values, component_ids, formatted_body)
+            project.project_id, subject, status, None,
+            cc_ids, list(labels), [], component_ids, formatted_body)
 
       # Update issue using commands.
       lines = body.strip().split('\n')

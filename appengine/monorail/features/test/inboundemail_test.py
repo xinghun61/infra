@@ -278,9 +278,9 @@ class InboundEmailTest(unittest.TestCase):
     self.assertEqual([1], actual_issue.component_ids)
     self.assertEqual(None, actual_issue.owner_id)
     self.assertEqual(
-        ['Infra-Troopers-Alerts', 'Restrict-View-Google',
-         'Pri-2', 'Incident-Id-incident-1'],
-        actual_issue.labels)
+        sorted(['Infra-Troopers-Alerts', 'Restrict-View-Google',
+                'Pri-2', 'Incident-Id-incident-1']),
+        sorted(actual_issue.labels))
     self.assertEqual(
         'Filed by user@example.com on behalf of user@google.com\n\nissue body',
         actual_comments[0].content)
