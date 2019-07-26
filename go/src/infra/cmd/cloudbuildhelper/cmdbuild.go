@@ -75,7 +75,7 @@ func (c *cmdBuildRun) exec(ctx context.Context) error {
 	}
 
 	// Instantiate infra services based on what's in the manifest.
-	store, err := storage.New(ctx, infra.Storage, ts)
+	store, err := storage.New(ctx, ts, infra.Storage)
 	if err != nil {
 		return errors.Annotate(err, "failed to initialize Storage").Err()
 	}

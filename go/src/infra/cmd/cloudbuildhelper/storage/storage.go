@@ -45,15 +45,17 @@ type Object struct {
 	Metadata   map[string]string // custom metadata
 }
 
-// String return gs://... string.
+// String return "gs://<bucket>/<name>#<generation>" string.
 func (o *Object) String() string {
-	return fmt.Sprintf("gs://%s/%s", o.Bucket, o.Name)
+	if o.Generation == 0 {
+		return fmt.Sprintf("gs://%s/%s", o.Bucket, o.Name)
+	}
+	return fmt.Sprintf("gs://%s/%s#%d", o.Bucket, o.Name, o.Generation)
 }
 
 // Log logs all fields of Object at info level.
 func (o *Object) Log(ctx context.Context) {
 	logging.Infof(ctx, "Metadata of %s", o)
-	logging.Infof(ctx, "    Generation: %d", o.Generation)
 	logging.Infof(ctx, "    Created:    %s", o.Created)
 	logging.Infof(ctx, "    Owner:      %s", strings.TrimPrefix(o.Owner, "user-"))
 	logging.Infof(ctx, "    MD5:        %s", o.MD5)
@@ -84,7 +86,7 @@ func (o *Object) setAttrs(a *storage.ObjectAttrs) {
 // New returns a Storage that uploads tarballs Google Storage.
 //
 // 'location' should have form "gs://<bucket>[/<path>]".
-func New(ctx context.Context, location string, ts oauth2.TokenSource) (*Storage, error) {
+func New(ctx context.Context, ts oauth2.TokenSource, location string) (*Storage, error) {
 	url, err := url.Parse(location)
 	if err != nil {
 		return nil, errors.Annotate(err, "bad format in %q", location).Err()
