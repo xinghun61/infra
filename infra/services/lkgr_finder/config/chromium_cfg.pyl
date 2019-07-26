@@ -1,37 +1,21 @@
 {
   'project': 'chromium',
   'source_url': 'https://chromium.googlesource.com/chromium/src',
-  'masters': {
-    'chromium.win': {
-      'base_url': 'https://build.chromium.org/p/chromium.win',
+  'buckets': {
+    'chromium/ci': {  # bucket alias: luci.chromium.ci
       'builders': [
+        'Android arm Builder (dbg)',
+        'Android ASAN (dbg)',
+        'Linux Builder',
+        'Linux Builder (dbg)',
+        'Linux Builder (dbg)(32)',
+        'Mac Builder',
+        'Mac Builder (dbg)',
         'Win Builder',
         'Win Builder (dbg)',
         'Win x64 Builder',
         'Win x64 Builder (dbg)',
       ],
-    },  # chromium.win
-    'chromium.mac': {
-      'base_url': 'https://build.chromium.org/p/chromium.mac',
-      'builders': [
-        'Mac Builder',
-        'Mac Builder (dbg)',
-      ],
-    },  # chromium.mac
-    'chromium.linux': {
-      'base_url': 'https://build.chromium.org/p/chromium.linux',
-      'builders': [
-        'Linux Builder',
-        'Linux Builder (dbg)',
-        'Linux Builder (dbg)(32)',
-      ],
-    },  # chromium.linux
-    'chromium.android': {
-      'base_url': 'https://build.chromium.org/p/chromium.android',
-      'builders': [
-        'Android arm Builder (dbg)',
-        'Android ASAN (dbg)',
-      ],
-    },  # chromium.android
+    },
   },
 }
