@@ -144,11 +144,68 @@ class Flake(ndb.Model):
   def Get(cls, luci_project, step_name, test_name):
     return cls._CreateKey(luci_project, step_name, test_name).get()
 
+  # TODO(crbug.com/987718): Remove after Findit v2 migration and buildbot info
+  # is deprecated.
+  @staticmethod
+  def LegacyNormalizeStepName(step_name, master_name, builder_name,
+                              build_number):
+    """Normalizes step name according to the above mentioned definitions.
+
+    The most reliable solution to obtain base test target names is to add a
+    base_test_target field in the GN templates that define the tests and expose
+    them through step_metadata, but unfortunately, it doesn't exist yet.
+
+    The closest thing that exists is isolate_target_name in the step_metadata.
+    Though the isolate_target_name may go away eventually, it will be kept as it
+    is until base_test_target is in place, so it is safe to use
+    isolate_target_name as a temporary workaround.
+
+    Args:
+      step_name: The original step name, and it may contain hardware information
+                 and 'with(out) patch' suffixes.
+      master_name: Master name of the build of the step.
+      builder_name: Builder name of the build of the step.
+      build_number: Build number of the build of the step.
+
+    Returns:
+      Normalized version of the given step name.
+    """
+    isolate_target_name = step_util.LegacyGetIsolateTargetName(
+        master_name=master_name,
+        builder_name=builder_name,
+        build_number=build_number,
+        step_name=step_name)
+    if isolate_target_name:
+      if 'webkit_layout_tests' in isolate_target_name:
+        return 'webkit_layout_tests'
+
+      return isolate_target_name
+
+    # In case isolate_target_name doesn't exist, fall back to
+    # canonical_step_name or step_name.split()[0].
+    logging.error((
+        'Failed to obtain isolate_target_name for step: %s in build: %s/%s/%s. '
+        'Fall back to use canonical_step_name.') % (step_name, master_name,
+                                                    builder_name, build_number))
+    canonical_step_name = step_util.LegacyGetCanonicalStepName(
+        master_name=master_name,
+        builder_name=builder_name,
+        build_number=build_number,
+        step_name=step_name)
+    if canonical_step_name:
+      return canonical_step_name
+
+    logging.error((
+        'Failed to obtain canonical_step_name for step: %s in build: %s/%s/%s. '
+        'Fall back to use step_name.split()[0].') %
+                  (step_name, master_name, builder_name, build_number))
+    return step_name.split()[0]
+
   # TODO(crbug.com/873256): Switch to use base_test_target and refactor this out
   # to services/step.py (with a better name) for reuse by other code once the
   # base_test_target field is in place.
   @staticmethod
-  def NormalizeStepName(step_name, master_name, builder_name, build_number):
+  def NormalizeStepName(build_id, step_name):
     """Normalizes step name according to the above mentioned definitions.
 
     The most reliable solution to obtain base test target names is to add a
@@ -171,10 +228,7 @@ class Flake(ndb.Model):
       Normalized version of the given step name.
     """
     isolate_target_name = step_util.GetIsolateTargetName(
-        master_name=master_name,
-        builder_name=builder_name,
-        build_number=build_number,
-        step_name=step_name)
+        build_id=build_id, step_name=step_name)
     if isolate_target_name:
       if 'webkit_layout_tests' in isolate_target_name:
         return 'webkit_layout_tests'
@@ -183,22 +237,17 @@ class Flake(ndb.Model):
 
     # In case isolate_target_name doesn't exist, fall back to
     # canonical_step_name or step_name.split()[0].
-    logging.error((
-        'Failed to obtain isolate_target_name for step: %s in build: %s/%s/%s. '
-        'Fall back to use canonical_step_name.') % (step_name, master_name,
-                                                    builder_name, build_number))
+    logging.error(
+        ('Failed to obtain isolate_target_name for step: %s in build id: %s. '
+         'Fall back to use canonical_step_name.') % (step_name, build_id))
     canonical_step_name = step_util.GetCanonicalStepName(
-        master_name=master_name,
-        builder_name=builder_name,
-        build_number=build_number,
-        step_name=step_name)
+        build_id=build_id, step_name=step_name)
     if canonical_step_name:
       return canonical_step_name
 
-    logging.error((
-        'Failed to obtain canonical_step_name for step: %s in build: %s/%s/%s. '
-        'Fall back to use step_name.split()[0].') %
-                  (step_name, master_name, builder_name, build_number))
+    logging.error(
+        ('Failed to obtain canonical_step_name for step: %s in build: %s. '
+         'Fall back to use step_name.split()[0].') % (step_name, build_id))
     return step_name.split()[0]
 
   @staticmethod

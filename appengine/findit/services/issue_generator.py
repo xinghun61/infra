@@ -472,7 +472,7 @@ class FlakeAnalysisIssueGenerator(FlakyTestIssueGenerator):
     return _GetAutoAssignOwner(self._analysis)
 
   def GetStepName(self):
-    return Flake.NormalizeStepName(
+    return Flake.LegacyNormalizeStepName(
         step_name=self._analysis.step_name,
         master_name=self._analysis.master_name,
         builder_name=self._analysis.builder_name,

@@ -8,13 +8,13 @@ from model.flake.flake import Flake
 from services import flake_util
 from waterfall.test.wf_testcase import WaterfallTestCase
 
-
 # pylint:disable=unused-argument, unused-variable
 # https://crbug.com/947753
 
+
 class FlakeUtilTest(WaterfallTestCase):
 
-  @mock.patch.object(Flake, 'NormalizeStepName')
+  @mock.patch.object(Flake, 'LegacyNormalizeStepName')
   @mock.patch.object(Flake, 'NormalizeTestName')
   @mock.patch.object(Flake, 'Create')
   def testGetFlakeExisting(self, mocked_create, mocked_test_name,
@@ -41,7 +41,7 @@ class FlakeUtilTest(WaterfallTestCase):
     # fail. https://crbug.com/947753.
     # mocked_create.assert_not_called()
 
-  @mock.patch.object(Flake, 'NormalizeStepName')
+  @mock.patch.object(Flake, 'LegacyNormalizeStepName')
   @mock.patch.object(Flake, 'NormalizeTestName')
   def testGetFlake(self, mocked_test_name, mocked_step_name):
     luci_project = 'chromium'

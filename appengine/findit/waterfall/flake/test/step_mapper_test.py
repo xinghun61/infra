@@ -95,7 +95,7 @@ class StepMapperTest(wf_testcase.WaterfallTestCase):
 
   @mock.patch.object(
       step_util,
-      'GetStepMetadata',
+      'LegacyGetStepMetadata',
       return_value=wf_testcase.SAMPLE_STEP_METADATA)
   @mock.patch.object(buildbot, 'GetRecentCompletedBuilds', return_value=[123])
   @mock.patch.object(
@@ -116,20 +116,20 @@ class StepMapperTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(step_name, self.step_name)
     self.assertEqual(step_metadata, wf_testcase.SAMPLE_STEP_METADATA)
 
-  @mock.patch.object(step_util, 'GetStepMetadata', return_value=None)
+  @mock.patch.object(step_util, 'LegacyGetStepMetadata', return_value=None)
   def testGetMatchingWaterfallBuildStepNoMetadata(self, _):
     _, _, _, _, step_metadata = step_mapper._GetMatchingWaterfallBuildStep(
         self.build_step, self.http_client)
     self.assertIsNone(step_metadata)
 
-  @mock.patch.object(step_util, 'GetStepMetadata')
+  @mock.patch.object(step_util, 'LegacyGetStepMetadata')
   def testGetMatchingWaterfallBuildStepNoWfBuilderName(self, mock_fn):
     mock_fn.return_value = {'waterfall_mastername': self.wf_master_name}
     _, _, _, _, step_metadata = step_mapper._GetMatchingWaterfallBuildStep(
         self.build_step, self.http_client)
     self.assertIsNone(step_metadata)
 
-  @mock.patch.object(step_util, 'GetStepMetadata')
+  @mock.patch.object(step_util, 'LegacyGetStepMetadata')
   def testGetMatchingWaterfallBuildStepNoStep(self, mock_fn):
     mock_fn.return_value = {
         'waterfall_mastername': self.wf_master_name,
@@ -141,7 +141,7 @@ class StepMapperTest(wf_testcase.WaterfallTestCase):
 
   @mock.patch.object(
       step_util,
-      'GetStepMetadata',
+      'LegacyGetStepMetadata',
       return_value=wf_testcase.SAMPLE_STEP_METADATA)
   @mock.patch.object(buildbot, 'GetRecentCompletedBuilds', return_value=None)
   def testGetMatchingWaterfallBuildStepNoBuild(self, *_):
@@ -151,7 +151,7 @@ class StepMapperTest(wf_testcase.WaterfallTestCase):
 
   @mock.patch.object(
       step_util,
-      'GetStepMetadata',
+      'LegacyGetStepMetadata',
       return_value=wf_testcase.SAMPLE_STEP_METADATA)
   @mock.patch.object(buildbot, 'GetRecentCompletedBuilds', return_value=[123])
   @mock.patch.object(swarming, 'ListSwarmingTasksDataByTags', return_value=None)
@@ -160,7 +160,7 @@ class StepMapperTest(wf_testcase.WaterfallTestCase):
         self.build_step, self.http_client)
     self.assertIsNone(master_name)
 
-  @mock.patch.object(step_util, 'GetStepMetadata', return_value={})
+  @mock.patch.object(step_util, 'LegacyGetStepMetadata', return_value={})
   def testFindMatchingWaterfallStepForWfStepNoStepMetadata(self, _):
     step_mapper.FindMatchingWaterfallStep(self.wf_build_step, 'test1')
     self.assertEqual(self.wf_build_step.wf_build_number,
@@ -174,7 +174,7 @@ class StepMapperTest(wf_testcase.WaterfallTestCase):
       return_value=_SAMPLE_OUTPUT)
   @mock.patch.object(
       step_util,
-      'GetStepMetadata',
+      'LegacyGetStepMetadata',
       return_value=wf_testcase.SAMPLE_STEP_METADATA)
   def testFindMatchingWaterfallStepForWfStep(self, *_):
     step_mapper.FindMatchingWaterfallStep(self.wf_build_step, 'test1')
@@ -187,7 +187,7 @@ class StepMapperTest(wf_testcase.WaterfallTestCase):
       return_value=_SAMPLE_OUTPUT)
   @mock.patch.object(
       step_util,
-      'GetStepMetadata',
+      'LegacyGetStepMetadata',
       return_value=wf_testcase.SAMPLE_STEP_METADATA)
   @mock.patch.object(test_results_util, 'GetTestResultObject')
   def testFindMatchingWaterfallStepNotSupportOtherIsolatedScriptTests(
@@ -203,7 +203,7 @@ class StepMapperTest(wf_testcase.WaterfallTestCase):
       return_value=_SAMPLE_OUTPUT)
   @mock.patch.object(
       step_util,
-      'GetStepMetadata',
+      'LegacyGetStepMetadata',
       return_value=wf_testcase.SAMPLE_STEP_METADATA)
   @mock.patch.object(step_util, 'IsStepSupportedByFindit', return_value=True)
   @mock.patch.object(
@@ -225,7 +225,7 @@ class StepMapperTest(wf_testcase.WaterfallTestCase):
       return_value=_SAMPLE_OUTPUT)
   @mock.patch.object(
       step_util,
-      'GetStepMetadata',
+      'LegacyGetStepMetadata',
       return_value=wf_testcase.SAMPLE_STEP_METADATA)
   @mock.patch.object(
       test_results_util, 'GetTestResultObject', return_value=None)

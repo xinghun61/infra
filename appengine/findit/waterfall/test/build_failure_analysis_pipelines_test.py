@@ -190,7 +190,7 @@ class BuildFailureAnalysisPipelinesTest(wf_testcase.WaterfallTestCase):
 
   @mock.patch.object(
       step_util,
-      'GetStepMetadata',
+      'LegacyGetStepMetadata',
       return_value={
           'canonical_step_name': 'a',
           'isolate_target_name': 'a'

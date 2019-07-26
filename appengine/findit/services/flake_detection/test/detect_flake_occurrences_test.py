@@ -295,11 +295,7 @@ class DetectFlakesOccurrencesTest(WaterfallTestCase):
       side_effect=[None, DTOTestLocation(file='../../path/a.cc', line=2)])
   def testGetTestLocation(self, *_):
     occurrence = FlakeOccurrence(
-        build_configuration=BuildConfiguration(
-            legacy_master_name='master',
-            luci_builder='builder',
-            legacy_build_number=123,
-        ),
+        build_id=123,
         step_ui_name='test on Mac',
     )
     self.assertEqual(

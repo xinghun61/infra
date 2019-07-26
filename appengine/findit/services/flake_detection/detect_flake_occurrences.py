@@ -136,17 +136,12 @@ _MAP_STEP_NAME_TO_COMPONENTS = {
 def _CreateFlakeFromRow(row):
   """Creates a Flake entity from a row fetched from BigQuery."""
   luci_project = row['luci_project']
-  luci_builder = row['luci_builder']
-  legacy_master_name = row['legacy_master_name']
-  legacy_build_number = row['legacy_build_number']
+  build_id = row['build_id']
   step_ui_name = row['step_ui_name']
   test_name = row['test_name']
 
   normalized_step_name = Flake.NormalizeStepName(
-      step_name=step_ui_name,
-      master_name=legacy_master_name,
-      builder_name=luci_builder,
-      build_number=legacy_build_number)
+      step_name=step_ui_name, build_id=build_id)
   normalized_test_name = Flake.NormalizeTestName(test_name, step_ui_name)
   test_label_name = Flake.GetTestLabelName(test_name, step_ui_name)
 
@@ -172,9 +167,7 @@ def _GetTestSuiteForOccurrence(row, normalized_test_name, normalized_step_name):
     # telemetry_gpu_integration_test isolate). Suite not related to test
     # names but step names.
     return step_util.GetCanonicalStepName(
-        master_name=row['legacy_master_name'],
-        builder_name=row['luci_builder'],
-        build_number=row['legacy_build_number'],
+        build_id=row['build_id'],
         step_name=step_ui_name) or step_ui_name.split()[0]
 
   return test_name_util.GetTestSuiteName(normalized_test_name, step_ui_name)
@@ -184,16 +177,14 @@ def _CreateFlakeOccurrenceFromRow(row, flake_type_enum):
   """Creates a FlakeOccurrence from a row fetched from BigQuery."""
   luci_project = row['luci_project']
   luci_builder = row['luci_builder']
+  build_id = row['build_id']
   step_ui_name = row['step_ui_name']
   test_name = row['test_name']
   legacy_master_name = row['legacy_master_name']
   legacy_build_number = row['legacy_build_number']
 
   normalized_step_name = Flake.NormalizeStepName(
-      step_name=step_ui_name,
-      master_name=legacy_master_name,
-      builder_name=luci_builder,
-      build_number=legacy_build_number)
+      step_name=step_ui_name, build_id=build_id)
   normalized_test_name = Flake.NormalizeTestName(test_name, step_ui_name)
 
   flake_id = Flake.GetId(
@@ -203,7 +194,6 @@ def _CreateFlakeOccurrenceFromRow(row, flake_type_enum):
   flake_key = ndb.Key(Flake, flake_id)
 
   gerrit_project = row['gerrit_project']
-  build_id = row['build_id']
   luci_bucket = row['luci_bucket']
   time_happened = row['test_start_msec']
   gerrit_cl_id = row['gerrit_cl_id']
@@ -310,11 +300,9 @@ def _NormalizePath(path):
 
 def _GetTestLocation(flake_occurrence):
   """Returns a TestLocation for the given FlakeOccurrence instance."""
-  step_metadata = step_util.GetStepMetadata(
-      flake_occurrence.build_configuration.legacy_master_name,
-      flake_occurrence.build_configuration.luci_builder,
-      flake_occurrence.build_configuration.legacy_build_number,
-      flake_occurrence.step_ui_name)
+  logging.info(flake_occurrence.build_id)
+  step_metadata = step_util.GetStepMetadata(flake_occurrence.build_id,
+                                            flake_occurrence.step_ui_name)
   task_ids = step_metadata.get('swarm_task_ids')
   for task_id in task_ids:
     test_path = swarmed_test_util.GetTestLocation(task_id,
@@ -443,10 +431,7 @@ def _UpdateTestLocationAndTags(flake, occurrences, component_mapping,
       components = []
       for occurrence in occurrences:
         canonical_step_name = step_util.GetCanonicalStepName(
-            master_name=occurrence.build_configuration.legacy_master_name,
-            builder_name=occurrence.build_configuration.luci_builder,
-            build_number=occurrence.build_configuration.legacy_build_number,
-            step_name=occurrence
+            build_id=occurrence.build_id, step_name=occurrence
             .step_ui_name) or occurrence.step_ui_name.split()[0]
         components.extend(
             _MAP_STEP_NAME_TO_COMPONENTS.get(canonical_step_name, []))

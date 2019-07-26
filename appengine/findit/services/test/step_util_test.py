@@ -7,6 +7,8 @@ import json
 import logging
 import mock
 
+from parameterized import parameterized
+
 from buildbucket_proto import common_pb2
 from buildbucket_proto.build_pb2 import Build
 from buildbucket_proto.step_pb2 import Step
@@ -251,6 +253,34 @@ class StepUtilTest(wf_testcase.WaterfallTestCase):
         step_util.IsStepSupportedByFindit(
             GtestTestResults(None), 'browser_tests', 'm'))
 
+  @parameterized.expand([
+      ({
+          'build_return': Build(),
+          'step_log_return': wf_testcase.SAMPLE_STEP_METADATA,
+          'expected_step_metadata': wf_testcase.SAMPLE_STEP_METADATA
+      },),
+      ({
+          'build_return': Build(),
+          'step_log_return': None,
+          'expected_step_metadata': None
+      },),
+      ({
+          'build_return': None,
+          'expected_step_metadata': None
+      },),
+  ])
+  @mock.patch.object(step_util, 'GetStepLogFromBuildObject')
+  @mock.patch.object(buildbucket_client, 'GetV2Build')
+  def testGetStepMetadata(self, cases, mock_build, mock_step_log):
+    mock_build.return_value = cases['build_return']
+    # Function executes GetStepLogFromBuildObject
+    if 'step_log_return' in cases:
+      mock_step_log.return_value = cases['step_log_return']
+
+    step_metadata = step_util.GetStepMetadata(123, 'step')
+
+    self.assertEqual(cases['expected_step_metadata'], step_metadata)
+
   @mock.patch.object(
       logdog_util, '_GetAnnotationsProtoForPath', return_value='step')
   @mock.patch.object(
@@ -261,7 +291,7 @@ class StepUtilTest(wf_testcase.WaterfallTestCase):
       return_value=json.dumps(wf_testcase.SAMPLE_STEP_METADATA))
   @mock.patch.object(
       build_util, 'DownloadBuildData', return_value=MockWaterfallBuild())
-  def testGetStepMetadata(self, *_):
+  def testLegacyGetStepMetadata(self, *_):
     step_metadata = step_util.GetWaterfallBuildStepLog('m', 'b', 123, 's', None,
                                                        'step_metadata')
     self.assertEqual(step_metadata, wf_testcase.SAMPLE_STEP_METADATA)
@@ -278,7 +308,7 @@ class StepUtilTest(wf_testcase.WaterfallTestCase):
       build_util, 'DownloadBuildData', return_value=MockWaterfallBuild())
   @mock.patch.object(
       logdog_util, '_GetAnnotationsProtoForPath', return_value=None)
-  def testGetStepMetadataStepNone(self, *_):
+  def testLegacyGetStepMetadataStepNone(self, *_):
     step_metadata = step_util.GetWaterfallBuildStepLog('m', 'b', 123, 's', None,
                                                        'step_metadata')
     self.assertIsNone(step_metadata)
@@ -288,7 +318,7 @@ class StepUtilTest(wf_testcase.WaterfallTestCase):
   @mock.patch.object(
       logdog_util, '_GetAnnotationsProtoForPath', return_value='step')
   @mock.patch.object(logdog_util, '_GetStreamForStep', return_value=None)
-  def testGetStepMetadataStreamNone(self, *_):
+  def testLegacyGetStepMetadataStreamNone(self, *_):
     step_metadata = step_util.GetWaterfallBuildStepLog('m', 'b', 123, 's', None,
                                                        'step_metadata')
     self.assertIsNone(step_metadata)
@@ -298,7 +328,7 @@ class StepUtilTest(wf_testcase.WaterfallTestCase):
       'GetStepLogForLuciBuild',
       return_value=wf_testcase.SAMPLE_STEP_METADATA)
   @mock.patch.object(build_util, 'DownloadBuildData')
-  def testGetStepMetadataFromLUCIBuild(self, mock_build, _):
+  def testLegacyGetStepMetadataFromLUCIBuild(self, mock_build, _):
     build = WfBuild.Create('m', 'b', 123)
     build.build_id = '8948240770002521488'
     build.put()
@@ -413,56 +443,103 @@ class StepUtilTest(wf_testcase.WaterfallTestCase):
                                            build_number, step_name))
 
   @mock.patch.object(step_util, 'GetWaterfallBuildStepLog')
-  def testGetStepMetadataCached(self, mock_fn):
+  def testLegacyGetStepMetadataCached(self, mock_fn):
     mock_fn.side_effect = ['invalid', {'canonical_step_name': 'step_name'}]
     # Returns the invalid step_metadata but not cache it.
     self.assertEqual(
         'invalid',
-        step_util.GetStepMetadata('m', 'b', 201, 'step_name on a platform'))
+        step_util.LegacyGetStepMetadata('m', 'b', 201,
+                                        'step_name on a platform'))
     self.assertTrue(mock_fn.call_count == 1)
     # Returns the valid step_metadata and cache it.
     self.assertEqual({
         'canonical_step_name': 'step_name'
-    }, step_util.GetStepMetadata('m', 'b', 201, 'step_name on a platform'))
+    }, step_util.LegacyGetStepMetadata('m', 'b', 201,
+                                       'step_name on a platform'))
     self.assertTrue(mock_fn.call_count == 2)
     self.assertEqual({
         'canonical_step_name': 'step_name'
-    }, step_util.GetStepMetadata('m', 'b', 201, 'step_name on a platform'))
+    }, step_util.LegacyGetStepMetadata('m', 'b', 201,
+                                       'step_name on a platform'))
+    self.assertTrue(mock_fn.call_count == 2)
+
+  @mock.patch.object(buildbucket_client, 'GetV2Build', return_value=Build())
+  @mock.patch.object(step_util, 'GetStepLogFromBuildObject')
+  def testGetStepMetadataCached(self, mock_fn, *_):
+    mock_fn.side_effect = [None, {'canonical_step_name': 'step_name'}]
+    # Returns the invalid step_metadata but not cache it.
+    self.assertEqual(None,
+                     step_util.GetStepMetadata(123, 'step_name on a platform'))
+    self.assertTrue(mock_fn.call_count == 1)
+    # Returns the valid step_metadata and cache it.
+    self.assertEqual({
+        'canonical_step_name': 'step_name'
+    }, step_util.GetStepMetadata(123, 'step_name on a platform'))
+    self.assertTrue(mock_fn.call_count == 2)
+    self.assertEqual({
+        'canonical_step_name': 'step_name'
+    }, step_util.GetStepMetadata(123, 'step_name on a platform'))
     self.assertTrue(mock_fn.call_count == 2)
 
   @mock.patch.object(
       step_util,
-      'GetStepMetadata',
+      'LegacyGetStepMetadata',
       return_value={'canonical_step_name': 'step_name'})
-  def testGetCanonicalStep(self, _):
+  def testLegacyGetCanonicalStep(self, _):
     self.assertEqual(
         'step_name',
-        step_util.GetCanonicalStepName('m', 'b', 200,
-                                       'step_name on a platform'))
+        step_util.LegacyGetCanonicalStepName('m', 'b', 200,
+                                             'step_name on a platform'))
+
+  @parameterized.expand([({
+      'canonical_step_name': 'step_name'
+  }, 'step_name'), (None, 'step_name'), ({
+      'a': 'b'
+  }, None)])
+  @mock.patch.object(step_util, 'GetStepMetadata')
+  def testGetCanonicalStepName(self, step_metadata, expected_canonical_step,
+                               mocked_get_step):
+    mocked_get_step.return_value = step_metadata
+    self.assertEqual(
+        expected_canonical_step,
+        step_util.GetCanonicalStepName(123, 'step_name (with patch)'))
 
   @mock.patch.object(
       step_util,
-      'GetStepMetadata',
+      'LegacyGetStepMetadata',
       return_value={'isolate_target_name': 'browser_tests'})
-  def testGetIsolateTargetName(self, _):
+  def testLegacyGetIsolateTargetName(self, _):
     self.assertEqual(
         'browser_tests',
-        step_util.GetIsolateTargetName(
+        step_util.LegacyGetIsolateTargetName(
             'm', 'b', 200, 'viz_browser_tests (with patch) on Android'))
 
-  @mock.patch.object(step_util, 'GetStepMetadata', return_value=None)
-  def testGetIsolateTargetNameStepMetadataIsNone(self, _):
+  @mock.patch.object(step_util, 'LegacyGetStepMetadata', return_value=None)
+  def testLegacyGetIsolateTargetNameStepMetadataIsNone(self, _):
     self.assertEqual(
         None,
-        step_util.GetIsolateTargetName(
+        step_util.LegacyGetIsolateTargetName(
             'm', 'b', 200, 'viz_browser_tests (with patch) on Android'))
 
-  @mock.patch.object(step_util, 'GetStepMetadata', return_value={'a': 'b'})
-  def testGetIsolateTargetNameIsolateTargetNameIsMissing(self, _):
+  @mock.patch.object(
+      step_util, 'LegacyGetStepMetadata', return_value={'a': 'b'})
+  def testLegacyGetIsolateTargetNameIsolateTargetNameIsMissing(self, _):
     self.assertEqual(
         None,
-        step_util.GetIsolateTargetName(
+        step_util.LegacyGetIsolateTargetName(
             'm', 'b', 200, 'viz_browser_tests (with patch) on Android'))
+
+  @parameterized.expand([({
+      'isolate_target_name': 'isolate_target'
+  }, 'isolate_target'), (None, None), ({
+      'a': 'b'
+  }, None)])
+  @mock.patch.object(step_util, 'GetStepMetadata')
+  def testGetIsolateTargetName(self, step_metadata, expected_isolate_target,
+                               mocked_get_stepmeta):
+    mocked_get_stepmeta.return_value = step_metadata
+    self.assertEqual(expected_isolate_target,
+                     step_util.GetIsolateTargetName(123, 'full step name'))
 
   def testGetStepStartAndEndTime(self):
     build_id = '8945610992972640896'

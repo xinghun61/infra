@@ -27,119 +27,130 @@ from services.test_failure import test_failure_analysis
 from waterfall.test import wf_testcase
 
 SAMPLE_HEURISTIC_RESULT = {
-    'failures': [{
-        'step_name':
-            'a',
-        'first_failure':
-            98,
-        'last_pass':
-            None,
-        'supported':
-            True,
-        'suspected_cls': [{
-            'build_number': 99,
-            'repo_name': 'chromium',
-            'revision': 'r99_2',
-            'commit_position': None,
-            'url': None,
-            'score': 2,
-            'hints': {
-                'modified f99_2.cc (and it was in log)': 2,
-            },
-        }],
-    }, {
-        'step_name':
-            'b',
-        'first_failure':
-            98,
-        'last_pass':
-            96,
-        'supported':
-            True,
-        'suspected_cls': [{
-            'build_number': 97,
-            'repo_name': 'chromium',
-            'revision': 'r97_1',
-            'commit_position': None,
-            'url': None,
-            'score': 5,
-            'hints': {
-                'added x/y/f99_1.cc (and it was in log)': 5,
-            },
-        }, {
-            'build_number': 98,
-            'repo_name': 'chromium',
-            'revision': 'r98_1',
-            'commit_position': None,
-            'url': None,
-            'score': 4,
-            'hints': {
-                'modified f98.cc[123, 456] (and it was in log)': 4,
-            },
-        }],
-        'tests': [{
-            'test_name':
-                'Unittest1.Subtest1',
+    'failures': [
+        {
+            'step_name':
+                'a',
             'first_failure':
                 98,
             'last_pass':
-                97,
+                None,
+            'supported':
+                True,
             'suspected_cls': [{
-                'build_number': 97,
+                'build_number': 99,
                 'repo_name': 'chromium',
-                'revision': 'r97_1',
+                'revision': 'r99_2',
                 'commit_position': None,
                 'url': None,
-                'score': 5,
+                'score': 2,
                 'hints': {
-                    'added x/y/f99_1.cc (and it was in log)': 5,
+                    'modified f99_2.cc (and it was in log)': 2,
                 },
-            }]
-        }, {
-            'test_name':
-                'Unittest2.Subtest1',
-            'first_failure':
-                98,
-            'last_pass':
-                97,
-            'suspected_cls': [{
-                'build_number': 98,
-                'repo_name': 'chromium',
-                'revision': 'r98_1',
-                'commit_position': None,
-                'url': None,
-                'score': 4,
-                'hints': {
-                    ('modified f98.cc[123] '
-                     '(and it was in log)'): 4,
-                },
-            }]
-        }, {
-            'test_name':
-                'Unittest3.Subtest2',
+            }],
+        },
+        {
+            'step_name':
+                'b',
             'first_failure':
                 98,
             'last_pass':
                 96,
-            'suspected_cls': [{
-                'build_number': 98,
-                'repo_name': 'chromium',
-                'revision': 'r98_1',
-                'commit_position': None,
-                'url': None,
-                'score': 4,
-                'hints': {
-                    ('modified f98.cc[456] '
-                     '(and it was in log)'): 4,
+            'supported':
+                True,
+            'suspected_cls': [
+                {
+                    'build_number': 97,
+                    'repo_name': 'chromium',
+                    'revision': 'r97_1',
+                    'commit_position': None,
+                    'url': None,
+                    'score': 5,
+                    'hints': {
+                        'added x/y/f99_1.cc (and it was in log)': 5,
+                    },
                 },
-            }]
-        }, {
-            'test_name': 'Unittest3.Subtest3',
-            'first_failure': 98,
-            'last_pass': 96,
-            'suspected_cls': []
-        }]
-    }]
+                {
+                    'build_number': 98,
+                    'repo_name': 'chromium',
+                    'revision': 'r98_1',
+                    'commit_position': None,
+                    'url': None,
+                    'score': 4,
+                    'hints': {
+                        'modified f98.cc[123, 456] (and it was in log)': 4,
+                    },
+                }
+            ],
+            'tests': [
+                {
+                    'test_name':
+                        'Unittest1.Subtest1',
+                    'first_failure':
+                        98,
+                    'last_pass':
+                        97,
+                    'suspected_cls': [{
+                        'build_number': 97,
+                        'repo_name': 'chromium',
+                        'revision': 'r97_1',
+                        'commit_position': None,
+                        'url': None,
+                        'score': 5,
+                        'hints': {
+                            'added x/y/f99_1.cc (and it was in log)': 5,
+                        },
+                    }]
+                },
+                {
+                    'test_name':
+                        'Unittest2.Subtest1',
+                    'first_failure':
+                        98,
+                    'last_pass':
+                        97,
+                    'suspected_cls': [{
+                        'build_number': 98,
+                        'repo_name': 'chromium',
+                        'revision': 'r98_1',
+                        'commit_position': None,
+                        'url': None,
+                        'score': 4,
+                        'hints': {
+                            ('modified f98.cc[123] '
+                             '(and it was in log)'): 4,
+                        },
+                    }]
+                },
+                {
+                    'test_name':
+                        'Unittest3.Subtest2',
+                    'first_failure':
+                        98,
+                    'last_pass':
+                        96,
+                    'suspected_cls': [{
+                        'build_number': 98,
+                        'repo_name': 'chromium',
+                        'revision': 'r98_1',
+                        'commit_position': None,
+                        'url': None,
+                        'score': 4,
+                        'hints': {
+                            ('modified f98.cc[456] '
+                             '(and it was in log)'): 4,
+                        },
+                    }]
+                },
+                {
+                    'test_name': 'Unittest3.Subtest3',
+                    'first_failure': 98,
+                    'last_pass': 96,
+                    'suspected_cls': []
+                }
+            ]
+        }
+    ]
 }
 
 
@@ -327,34 +338,38 @@ class TestFailureAnalysisTest(wf_testcase.WaterfallTestCase):
     self.mock(build_failure_analysis, '_GetChangedLinesForChromiumRepo',
               MockGetChangedLines)
 
-    expected_suspected_cl = [{
-        'repo_name': 'chromium',
-        'revision': 'r99_2',
-        'commit_position': None,
-        'url': None,
-        'failures': {
-            'a': []
+    expected_suspected_cl = [
+        {
+            'repo_name': 'chromium',
+            'revision': 'r99_2',
+            'commit_position': None,
+            'url': None,
+            'failures': {
+                'a': []
+            },
+            'top_score': 2
         },
-        'top_score': 2
-    }, {
-        'repo_name': 'chromium',
-        'revision': 'r97_1',
-        'commit_position': None,
-        'url': None,
-        'failures': {
-            'b': ['Unittest1.Subtest1']
+        {
+            'repo_name': 'chromium',
+            'revision': 'r97_1',
+            'commit_position': None,
+            'url': None,
+            'failures': {
+                'b': ['Unittest1.Subtest1']
+            },
+            'top_score': 5
         },
-        'top_score': 5
-    }, {
-        'repo_name': 'chromium',
-        'revision': 'r98_1',
-        'commit_position': None,
-        'url': None,
-        'failures': {
-            'b': ['Unittest2.Subtest1', 'Unittest3.Subtest2']
+        {
+            'repo_name': 'chromium',
+            'revision': 'r98_1',
+            'commit_position': None,
+            'url': None,
+            'failures': {
+                'b': ['Unittest2.Subtest1', 'Unittest3.Subtest2']
+            },
+            'top_score': 4
         },
-        'top_score': 4
-    }]
+    ]
 
     analysis_result, suspected_cls = (
         test_failure_analysis.AnalyzeTestFailure(
@@ -568,17 +583,20 @@ class TestFailureAnalysisTest(wf_testcase.WaterfallTestCase):
   def testUpdateAnalysisResultAllFlaky(self):
     analysis_result = {
         'failures': [{
-            'tests': [{
-                'last_pass': 123,
-                'first_failure': 123,
-                'suspected_cls': [],
-                'test_name': 'TestSuite1.test1'
-            }, {
-                'last_pass': 123,
-                'first_failure': 123,
-                'suspected_cls': [],
-                'test_name': 'TestSuite1.test2'
-            }],
+            'tests': [
+                {
+                    'last_pass': 123,
+                    'first_failure': 123,
+                    'suspected_cls': [],
+                    'test_name': 'TestSuite1.test1'
+                },
+                {
+                    'last_pass': 123,
+                    'first_failure': 123,
+                    'suspected_cls': [],
+                    'test_name': 'TestSuite1.test2'
+                },
+            ],
             'step_name':
                 'browser_tests on platform'
         }]
@@ -594,19 +612,22 @@ class TestFailureAnalysisTest(wf_testcase.WaterfallTestCase):
 
     expected_result = {
         'failures': [{
-            'tests': [{
-                'last_pass': 123,
-                'first_failure': 123,
-                'suspected_cls': [],
-                'test_name': 'TestSuite1.test1',
-                'flaky': True
-            }, {
-                'last_pass': 123,
-                'first_failure': 123,
-                'suspected_cls': [],
-                'test_name': 'TestSuite1.test2',
-                'flaky': True
-            }],
+            'tests': [
+                {
+                    'last_pass': 123,
+                    'first_failure': 123,
+                    'suspected_cls': [],
+                    'test_name': 'TestSuite1.test1',
+                    'flaky': True
+                },
+                {
+                    'last_pass': 123,
+                    'first_failure': 123,
+                    'suspected_cls': [],
+                    'test_name': 'TestSuite1.test2',
+                    'flaky': True
+                },
+            ],
             'step_name':
                 'browser_tests on platform',
             'flaky':
@@ -934,30 +955,35 @@ class TestFailureAnalysisTest(wf_testcase.WaterfallTestCase):
     analysis.put()
 
     expected_result = {
-        'failures': [{
-            'step_name':
-                'a_test',
-            'flaky':
-                False,
-            'tests': [{
-                'test_name': 'test1',
+        'failures': [
+            {
+                'step_name':
+                    'a_test',
+                'flaky':
+                    False,
+                'tests': [{
+                    'test_name': 'test1',
+                    'flaky': True
+                }, {
+                    'test_name': 'test2'
+                }]
+            },
+            {
+                'step_name': 'b_test',
+                'flaky': True,
+                'tests': [{
+                    'test_name': 'test1',
+                    'flaky': True
+                }]
+            },
+            {
+                'step_name': 'c_test',
                 'flaky': True
-            }, {
-                'test_name': 'test2'
-            }]
-        }, {
-            'step_name': 'b_test',
-            'flaky': True,
-            'tests': [{
-                'test_name': 'test1',
-                'flaky': True
-            }]
-        }, {
-            'step_name': 'c_test',
-            'flaky': True
-        }, {
-            'step_name': 'd_test'
-        }]
+            },
+            {
+                'step_name': 'd_test'
+            },
+        ]
     }
 
     test_failure_analysis.UpdateAnalysisWithFlakesFoundBySwarmingReruns(
@@ -979,46 +1005,56 @@ class TestFailureAnalysisTest(wf_testcase.WaterfallTestCase):
         status='Completed',
         analysis_type='Heuristic')
 
-  @mock.patch.object(step_util, 'GetCanonicalStepName', return_value='step3')
+  @mock.patch.object(
+      step_util, 'LegacyGetCanonicalStepName', return_value='step3')
   def testGetSuspectedCLsWithFailures(self, _):
     heuristic_result = {
-        'failures': [{
-            'step_name': 'step1',
-            'suspected_cls': [],
-        }, {
-            'step_name': 'step2',
-            'suspected_cls': [
-                {
-                    'revision': 'r1',
-                },
-                {
-                    'revision': 'r2',
-                },
-            ],
-        }, {
-            'step_name':
-                'step3',
-            'suspected_cls': [{
-                'revision': 'r3',
-            }],
-            'tests': [{
-                'test_name': 'super_test_1',
+        'failures': [
+            {
+                'step_name': 'step1',
+                'suspected_cls': [],
+            },
+            {
+                'step_name': 'step2',
+                'suspected_cls': [
+                    {
+                        'revision': 'r1',
+                    },
+                    {
+                        'revision': 'r2',
+                    },
+                ],
+            },
+            {
+                'step_name':
+                    'step3',
                 'suspected_cls': [{
-                    'revision': 'abc'
-                }]
-            }, {
-                'test_name': 'super_test_2',
-                'suspected_cls': [{
-                    'revision': 'def'
-                }, {
-                    'revision': 'ghi'
-                }]
-            }]
-        }]
+                    'revision': 'r3',
+                }],
+                'tests': [
+                    {
+                        'test_name': 'super_test_1',
+                        'suspected_cls': [{
+                            'revision': 'abc'
+                        }]
+                    },
+                    {
+                        'test_name':
+                            'super_test_2',
+                        'suspected_cls': [{
+                            'revision': 'def'
+                        }, {
+                            'revision': 'ghi'
+                        }]
+                    },
+                ]
+            }
+        ]
     }
-    expected_suspected_revisions = [['step2', 'r1', None], [
-        'step2', 'r2', None
-    ], ['step3', 'abc', 'super_test_1'], ['step3', 'def', 'super_test_2'],
+    expected_suspected_revisions = [['step2', 'r1', None],
+                                    ['step2', 'r2', None],
+                                    ['step3', 'abc', 'super_test_1'],
+                                    ['step3', 'def', 'super_test_2'],
                                     ['step3', 'ghi', 'super_test_2']]
     self.assertEqual(
         expected_suspected_revisions,

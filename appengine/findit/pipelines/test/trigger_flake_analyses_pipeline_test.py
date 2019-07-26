@@ -24,7 +24,7 @@ class TriggerFlakeAnalysesPipelineTest(wf_testcase.WaterfallTestCase):
       return_value={'throttle_flake_analyses': True})
   @mock.patch.object(
       step_util,
-      'GetStepMetadata',
+      'LegacyGetStepMetadata',
       return_value={
           'canonical_step_name': 'a_tests',
           'isolate_target_name': 'a_tests'
@@ -63,7 +63,7 @@ class TriggerFlakeAnalysesPipelineTest(wf_testcase.WaterfallTestCase):
       return_value={'throttle_flake_analyses': False})
   @mock.patch.object(
       step_util,
-      'GetStepMetadata',
+      'LegacyGetStepMetadata',
       return_value={
           'canonical_step_name': 'a_tests',
           'isolate_target_name': 'a_tests'

@@ -111,7 +111,8 @@ class CITestFailureTest(wf_testcase.WaterfallTestCase):
     }
     self.assertEqual(expected_failed_step, failed_step.ToSerializable())
 
-  @mock.patch.object(step_util, 'GetCanonicalStepName', return_value='abc_test')
+  @mock.patch.object(
+      step_util, 'LegacyGetCanonicalStepName', return_value='abc_test')
   @mock.patch.object(ci_test_failure, 'UpdateSwarmingSteps', return_value=True)
   @mock.patch.object(ci_test_failure, 'swarmed_test_util')
   def testCheckFirstKnownFailureForSwarmingTestsFoundFlaky(

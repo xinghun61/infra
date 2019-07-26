@@ -54,11 +54,11 @@ class AnalyzeRecentFlakinessPipeline(GeneratorPipeline):
     assert analysis, 'Analysis missing unexpectedly!'
 
     step_metadata = (
-        step_util.GetStepMetadata(analysis.master_name, analysis.builder_name,
-                                  analysis.build_number, analysis.step_name) or
-        step_util.GetStepMetadata(
-            analysis.original_master_name, analysis.original_builder_name,
-            analysis.original_build_number, analysis.original_step_name))
+        step_util.LegacyGetStepMetadata(
+            analysis.master_name, analysis.builder_name, analysis.build_number,
+            analysis.step_name) or step_util.LegacyGetStepMetadata(
+                analysis.original_master_name, analysis.original_builder_name,
+                analysis.original_build_number, analysis.original_step_name))
 
     step_metadata = StepMetadata.FromSerializable(step_metadata)
 

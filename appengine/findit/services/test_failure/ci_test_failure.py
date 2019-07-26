@@ -84,8 +84,8 @@ def _StartTestLevelCheckForFirstFailure(master_name, builder_name, build_number,
 
   if not test_results_object or not step_util.IsStepSupportedByFindit(
       test_results_object,
-      step_util.GetCanonicalStepName(master_name, builder_name, build_number,
-                                     step_name), master_name):
+      step_util.LegacyGetCanonicalStepName(
+          master_name, builder_name, build_number, step_name), master_name):
     return False
 
   failed_test_log, reliable_failed_tests = (

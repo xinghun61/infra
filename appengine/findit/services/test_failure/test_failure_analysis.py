@@ -380,8 +380,8 @@ def GetsFirstFailureAtTestLevel(master_name, builder_name, build_number,
                                  test_failure_details.first_failure)
         failure_result_map[failed_step_name][failed_test_name] = task_key
 
-      if (test_failure_details.first_failure ==
-          test_failure_details.current_failure):
+      if (test_failure_details.first_failure == test_failure_details
+          .current_failure):
         # First time failure, add to result_steps.
         result_steps[failed_step_name].append(
             test_failure_details.base_test_name)
@@ -436,8 +436,8 @@ def GetSuspectedCLsWithFailures(master_name, builder_name, build_number,
       for test in failure.tests:
         for suspected_cl in test.suspected_cls or []:
           suspected_cls_with_failures.append([
-              step_util.GetCanonicalStepName(master_name, builder_name,
-                                             build_number, failure.step_name),
+              step_util.LegacyGetCanonicalStepName(
+                  master_name, builder_name, build_number, failure.step_name),
               suspected_cl.revision, test.test_name
           ])
     else:

@@ -26,8 +26,8 @@ from waterfall import waterfall_config
 
 _HTTP_CLIENT = FinditHttpClient()
 
-# Caches canonical name of a step for a week.
-_CANONICAL_NAME_CACHE_EXPIRE_TIME_SECONDS = 7 * 24 * 60 * 60
+# Caches element retrieved from step metadata for a week.
+_METADATA_ELEMENT_CACHE_EXPIRE_TIME_SECONDS = 7 * 24 * 60 * 60
 
 # Caches metadata of a step in a specific build for 2 days.
 _METADATA_CACHE_EXPIRE_TIME_SECONDS = 2 * 24 * 60 * 60
@@ -462,12 +462,14 @@ def GetWaterfallBuildStepLog(master_name,
   return _ParseStepLogIfAppropriate(data, log_name)
 
 
+# TODO(crbug.com/987718): Remove after Findit v2 migration and buildbot info
+# is deprecated.
 @Cached(
     PickledMemCache(),
     namespace='step_metadata',
     expire_time=_METADATA_CACHE_EXPIRE_TIME_SECONDS,
     result_validator=lambda step_metadata: isinstance(step_metadata, dict))
-def GetStepMetadata(master_name, builder_name, build_number, step_name):
+def LegacyGetStepMetadata(master_name, builder_name, build_number, step_name):
   return GetWaterfallBuildStepLog(master_name,
                                   builder_name, build_number, step_name,
                                   FinditHttpClient(), 'step_metadata')
@@ -476,16 +478,57 @@ def GetStepMetadata(master_name, builder_name, build_number, step_name):
 @Cached(
     PickledMemCache(),
     namespace='step_metadata',
-    expire_time=_CANONICAL_NAME_CACHE_EXPIRE_TIME_SECONDS,
+    expire_time=_METADATA_CACHE_EXPIRE_TIME_SECONDS,
+    result_validator=lambda step_metadata: isinstance(step_metadata, dict))
+def GetStepMetadata(build_id, step_name):
+  build = buildbucket_client.GetV2Build(build_id, FieldMask(paths=['steps']))
+  if not build:
+    return None
+  return GetStepLogFromBuildObject(build, step_name, FinditHttpClient(),
+                                   'step_metadata')
+
+
+# TODO(crbug.com/987718): Remove after Findit v2 migration and buildbot info
+# is deprecated.
+@Cached(
+    PickledMemCache(),
+    namespace='step_metadata',
+    expire_time=_METADATA_ELEMENT_CACHE_EXPIRE_TIME_SECONDS,
     key_generator=_CanonicalStepNameKeyGenerator)
-def GetCanonicalStepName(master_name, builder_name, build_number, step_name):
-  step_metadata = GetStepMetadata(master_name, builder_name, build_number,
-                                  step_name)
+def LegacyGetCanonicalStepName(master_name, builder_name, build_number,
+                               step_name):
+  step_metadata = LegacyGetStepMetadata(master_name, builder_name, build_number,
+                                        step_name)
   return step_metadata.get(
-      'canonical_step_name') if step_metadata else step_name
+      'canonical_step_name') if step_metadata else step_name.split()[0]
 
 
-def GetIsolateTargetName(master_name, builder_name, build_number, step_name):
+@Cached(
+    PickledMemCache(),
+    namespace='step_metadata',
+    expire_time=_METADATA_ELEMENT_CACHE_EXPIRE_TIME_SECONDS,
+    key_generator=_CanonicalStepNameKeyGenerator)
+def GetCanonicalStepName(build_id, step_name):
+  """ Returns the canonical_step_name in the step_metadata.
+
+  Args:
+    build_id: Build id of the build.
+    step_name: The original step name to get isolate_target_name for, and the
+               step name may contain hardware information and 'with(out) patch'
+               suffixes.
+
+  Returns:
+    The canonical_step_name if it exists, otherwise, step_name.split()[0].
+  """
+  step_metadata = GetStepMetadata(build_id, step_name)
+  return step_metadata.get(
+      'canonical_step_name') if step_metadata else step_name.split()[0]
+
+
+# TODO(crbug.com/987718): Remove after Findit v2 migration and buildbot info
+# is deprecated.
+def LegacyGetIsolateTargetName(master_name, builder_name, build_number,
+                               step_name):
   """ Returns the isolate_target_name in the step_metadata.
 
   Args:
@@ -499,8 +542,29 @@ def GetIsolateTargetName(master_name, builder_name, build_number, step_name):
   Returns:
     The isolate_target_name if it exists, otherwise, None.
   """
-  step_metadata = GetStepMetadata(master_name, builder_name, build_number,
-                                  step_name)
+  step_metadata = LegacyGetStepMetadata(master_name, builder_name, build_number,
+                                        step_name)
+  return step_metadata.get('isolate_target_name') if step_metadata else None
+
+
+@Cached(
+    PickledMemCache(),
+    namespace='isolate_target',
+    expire_time=_METADATA_ELEMENT_CACHE_EXPIRE_TIME_SECONDS,
+    key_generator=_CanonicalStepNameKeyGenerator)
+def GetIsolateTargetName(build_id, step_name):
+  """ Returns the isolate_target_name in the step_metadata.
+
+  Args:
+    luci_project: Luci project of the build.
+    bucket: Luci bucket of the build.
+    build_number: Build number of the build.
+    step_name: The original step name to get isolate_target_name for.
+
+  Returns:
+    The isolate_target_name if it exists, otherwise, None.
+  """
+  step_metadata = GetStepMetadata(build_id, step_name)
   return step_metadata.get('isolate_target_name') if step_metadata else None
 
 
@@ -509,8 +573,8 @@ def StepIsSupportedForMaster(master_name, builder_name, build_number,
   if step_name == 'compile':
     canonical_step_name = step_name
   else:
-    canonical_step_name = GetCanonicalStepName(master_name, builder_name,
-                                               build_number, step_name)
+    canonical_step_name = LegacyGetCanonicalStepName(master_name, builder_name,
+                                                     build_number, step_name)
   return waterfall_config.StepIsSupportedForMaster(canonical_step_name,
                                                    master_name)
 

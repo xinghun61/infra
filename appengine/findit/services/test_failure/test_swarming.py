@@ -159,8 +159,8 @@ def _RecordSwarmingTaskStateChange(master_name, builder_name, build_number,
   """Records state changes for swarming tasks."""
   step_metadata = {}
   if step_name:
-    step_metadata = step_util.GetStepMetadata(master_name, builder_name,
-                                              build_number, step_name) or {}
+    step_metadata = step_util.LegacyGetStepMetadata(
+        master_name, builder_name, build_number, step_name) or {}
 
   monitoring.OnWaterfallAnalysisStateChange(
       master_name=master_name,
@@ -401,8 +401,8 @@ def GetConsistentFailuresWhenAllTasksComplete(collect_consistent_failure_inputs,
       # For reproducible flakes, keeps a record for them in
       # trigger_flake_analyses_pipeline, depends on whether the analyses are
       # successfully triggered.
-      step_metadata = step_util.GetStepMetadata(master_name, builder_name,
-                                                build_number, step_name)
+      step_metadata = step_util.LegacyGetStepMetadata(master_name, builder_name,
+                                                      build_number, step_name)
       canonical_step_name = step_metadata.get(
           'canonical_step_name') or 'Unknown'
       isolate_target_name = step_metadata.get(

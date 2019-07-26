@@ -166,7 +166,7 @@ class InitializeFlakePipelineTest(wf_testcase.WaterfallTestCase):
       self.assertFalse(need_analysis)
       self.assertIsNotNone(analysis)
 
-  @mock.patch.object(step_util, 'GetStepMetadata', return_value={})
+  @mock.patch.object(step_util, 'LegacyGetStepMetadata', return_value={})
   @mock.patch.object(swarmbucket, 'GetDimensionsForBuilder')
   @mock.patch.object(build_util, 'GetBuildInfo')
   @mock.patch.object(initialize_flake_pipeline, '_NeedANewAnalysis')

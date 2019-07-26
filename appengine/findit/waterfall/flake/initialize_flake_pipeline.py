@@ -165,10 +165,10 @@ def ScheduleAnalysisIfNeeded(
         repr(original_test), analysis.version_number)
 
     step_metadata = (
-        step_util.GetStepMetadata(
+        step_util.LegacyGetStepMetadata(
             normalized_test.master_name, normalized_test.builder_name,
             normalized_test.build_number, normalized_test.step_name) or
-        step_util.GetStepMetadata(
+        step_util.LegacyGetStepMetadata(
             original_test.master_name, original_test.builder_name,
             original_test.build_number, original_test.step_name))
 

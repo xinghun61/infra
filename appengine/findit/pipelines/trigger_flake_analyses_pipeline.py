@@ -68,8 +68,8 @@ class TriggerFlakeAnalysesPipeline(GeneratorPipeline):
 
     for step, step_counts in analysis_counts.iteritems():
       # Collects metrics.
-      step_metadata = step_util.GetStepMetadata(master_name, builder_name,
-                                                build_number, step)
+      step_metadata = step_util.LegacyGetStepMetadata(master_name, builder_name,
+                                                      build_number, step)
       canonical_step_name = step_metadata.get(
           'canonical_step_name') or 'Unknown'
       isolate_target_name = step_metadata.get(

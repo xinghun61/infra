@@ -3,6 +3,8 @@
 # found in the LICENSE file.
 import mock
 
+from parameterized import parameterized
+
 from model.flake.flake import Flake
 from model.flake.flake_issue import FlakeIssue
 from services import step_util
@@ -13,15 +15,61 @@ from waterfall.test import wf_testcase
 # https://crbug.com/947753.
 class FlakeTest(wf_testcase.WaterfallTestCase):
 
+  @parameterized.expand(
+      [({
+          'isolate_return_value': 'isolate_target',
+          'isolate_fn_call_count': 1,
+          'canonical_return_value': None,
+          'canonical_fn_call_count': 0,
+          'expected_step_name': 'isolate_target',
+      },),
+       ({
+           'isolate_return_value': 'isolate_webkit_layout_tests',
+           'isolate_fn_call_count': 1,
+           'canonical_return_value': None,
+           'canonical_fn_call_count': 0,
+           'expected_step_name': 'webkit_layout_tests'
+       },),
+       ({
+           'isolate_return_value': None,
+           'isolate_fn_call_count': 1,
+           'canonical_return_value': 'canonical_name',
+           'canonical_fn_call_count': 1,
+           'expected_step_name': 'canonical_name'
+       },),
+       ({
+           'isolate_return_value': None,
+           'isolate_fn_call_count': 1,
+           'canonical_return_value': None,
+           'canonical_fn_call_count': 1,
+           'expected_step_name': 'step_name'
+       },)])
+  @mock.patch.object(step_util, 'GetCanonicalStepName')
+  @mock.patch.object(step_util, 'GetIsolateTargetName')
+  def testNormalizeStepName(self, cases, mock_isolate, mock_canonical):
+    mock_isolate.return_value = cases['isolate_return_value']
+    mock_canonical.return_value = cases['canonical_return_value']
+
+    step_name = Flake.NormalizeStepName(123, 'step_name (with patch)')
+
+    self.assertEqual(cases['expected_step_name'], step_name)
+    self.assertEqual(cases['isolate_fn_call_count'], mock_isolate.call_count)
+    self.assertEqual(cases['canonical_fn_call_count'],
+                     mock_canonical.call_count)
+
   @mock.patch.object(
-      step_util, 'GetCanonicalStepName', return_value='canonical_step_name')
+      step_util,
+      'LegacyGetCanonicalStepName',
+      return_value='canonical_step_name')
   @mock.patch.object(
-      step_util, 'GetIsolateTargetName', return_value='isolate_target_name')
-  def testNormalizeStepName(self, mocked_get_isolate_target_name,
-                            mocked_get_canonical_step_name):
+      step_util,
+      'LegacyGetIsolateTargetName',
+      return_value='isolate_target_name')
+  def testLegacyNormalizeStepName(self, mocked_get_isolate_target_name,
+                                  mocked_get_canonical_step_name):
     self.assertEqual(
         'isolate_target_name',
-        Flake.NormalizeStepName(
+        Flake.LegacyNormalizeStepName(
             step_name='step_name (with patch) on Android',
             master_name='m',
             builder_name='b',
@@ -37,16 +85,18 @@ class FlakeTest(wf_testcase.WaterfallTestCase):
     # mocked_get_canonical_step_name.assert_not_called()
 
   @mock.patch.object(
-      step_util, 'GetCanonicalStepName', return_value='canonical_step_name')
+      step_util,
+      'LegacyGetCanonicalStepName',
+      return_value='canonical_step_name')
   @mock.patch.object(
       step_util,
-      'GetIsolateTargetName',
+      'LegacyGetIsolateTargetName',
       return_value='webkit_layout_tests_exparchive')
-  def testNormalizeStepNameForWebkitLayoutTests(
+  def testLegacyNormalizeStepNameForWebkitLayoutTests(
       self, mocked_get_isolate_target_name, mocked_get_canonical_step_name):
     self.assertEqual(
         'webkit_layout_tests',
-        Flake.NormalizeStepName(
+        Flake.LegacyNormalizeStepName(
             step_name='site_per_process_webkit_layout_tests (with patch)',
             master_name='m',
             builder_name='b',
@@ -62,13 +112,15 @@ class FlakeTest(wf_testcase.WaterfallTestCase):
     mocked_get_canonical_step_name.assert_not_called()
 
   @mock.patch.object(
-      step_util, 'GetCanonicalStepName', return_value='canonical_step_name')
-  @mock.patch.object(step_util, 'GetIsolateTargetName', return_value=None)
-  def testNormalizeStepNameIsolateTargetNameIsMissing(
+      step_util,
+      'LegacyGetCanonicalStepName',
+      return_value='canonical_step_name')
+  @mock.patch.object(step_util, 'LegacyGetIsolateTargetName', return_value=None)
+  def testLegacyNormalizeStepNameIsolateTargetNameIsMissing(
       self, mocked_get_isolate_target_name, mocked_get_canonical_step_name):
     self.assertEqual(
         'canonical_step_name',
-        Flake.NormalizeStepName(
+        Flake.LegacyNormalizeStepName(
             step_name='step_name (with patch) on Android',
             master_name='m',
             builder_name='b',
@@ -87,13 +139,13 @@ class FlakeTest(wf_testcase.WaterfallTestCase):
     #     build_number=200,
     #     step_name='step_name (with patch) on Android')
 
-  @mock.patch.object(step_util, 'GetCanonicalStepName', return_value=None)
-  @mock.patch.object(step_util, 'GetIsolateTargetName', return_value=None)
-  def testNormalizeStepNameCannonicalStepNameIsMissing(
+  @mock.patch.object(step_util, 'LegacyGetCanonicalStepName', return_value=None)
+  @mock.patch.object(step_util, 'LegacyGetIsolateTargetName', return_value=None)
+  def testLegacyNormalizeStepNameCannonicalStepNameIsMissing(
       self, mocked_get_isolate_target_name, mocked_get_canonical_step_name):
     self.assertEqual(
         'step_name',
-        Flake.NormalizeStepName(
+        Flake.LegacyNormalizeStepName(
             step_name='step_name (with patch) on Android',
             master_name='m',
             builder_name='b',

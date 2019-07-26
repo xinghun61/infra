@@ -36,7 +36,7 @@ from waterfall.test.wf_testcase import WaterfallTestCase
 class AnalyzeRecentFlakinessPipelineTest(WaterfallTestCase):
   app_module = pipeline_handlers._APP
 
-  @mock.patch.object(step_util, 'GetStepMetadata')
+  @mock.patch.object(step_util, 'LegacyGetStepMetadata')
   @mock.patch.object(build_util, 'GetLatestCommitPositionAndRevision')
   def testAnalyzeRecentFlakinessPipeline(self, mocked_commit_position,
                                          mocked_step_metadata):
@@ -122,7 +122,7 @@ class AnalyzeRecentFlakinessPipelineTest(WaterfallTestCase):
     mocked_commit_position.assert_called_with(master_name, builder_name,
                                               step_name)
 
-  @mock.patch.object(step_util, 'GetStepMetadata')
+  @mock.patch.object(step_util, 'LegacyGetStepMetadata')
   @mock.patch.object(build_util, 'GetLatestCommitPositionAndRevision')
   def testAnalyzeRecentFlakinessPipelineAlreadyUpToDate(
       self, mocked_commit_position, mocked_step_metadata):

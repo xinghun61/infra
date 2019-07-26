@@ -22,7 +22,7 @@ def GetFlake(luci_project, original_step_name, original_test_name, master_name,
     builder_name (str): Builder name of the build of the step.
     build_number (int): Build number of the build of the step.
   """
-  normalized_step_name = Flake.NormalizeStepName(
+  normalized_step_name = Flake.LegacyNormalizeStepName(
       original_step_name, master_name, builder_name, build_number)
   normalized_test_name = Flake.NormalizeTestName(original_test_name,
                                                  original_step_name)

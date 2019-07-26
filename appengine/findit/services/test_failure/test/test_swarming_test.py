@@ -576,7 +576,7 @@ class TestSwarmingTest(wf_testcase.WaterfallTestCase):
                      'UpdateAnalysisWithFlakesFoundBySwarmingReruns')
   @mock.patch.object(
       step_util,
-      'GetStepMetadata',
+      'LegacyGetStepMetadata',
       return_value={
           'canonical_step_name': 'step2',
           'isolate_target_name': 'step2'
@@ -662,7 +662,7 @@ class TestSwarmingTest(wf_testcase.WaterfallTestCase):
 
   @mock.patch.object(
       step_util,
-      'GetStepMetadata',
+      'LegacyGetStepMetadata',
       return_value={
           'canonical_step_name': 'step2',
           'isolate_target_name': 'step2'
