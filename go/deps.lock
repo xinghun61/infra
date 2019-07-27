@@ -1,8 +1,8 @@
-hash: 307d07dd68b904dceb529f13b1308b48e35e29092451ecc3107aca79c17bb063
-updated: 2019-07-22T13:30:52.317965981-07:00
+hash: 3f4ad06c1b833b25a2a61febf5d8c4e76bb9aae3e68110d5d84ad44b9556d15c
+updated: 2019-07-26T21:20:12.311824-07:00
 imports:
 - name: cloud.google.com/go
-  version: 71971b35976fc2f904ed2772536790a5458d9996
+  version: 5a21f3e59ff498bc7a9c6c61d000b3b23b7fa991
   repo: https://code.googlesource.com/gocloud.git
   subpackages:
   - bigtable
@@ -26,7 +26,7 @@ imports:
   version: f61b66f89f4a311bef65f13e575bcf1a2ffadda6
   repo: https://chromium.googlesource.com/external/github.com/asaskevich/govalidator.git
 - name: github.com/aws/aws-sdk-go
-  version: f0c3a4896814b364322f4057ac976e4b575b1dec
+  version: 60a7f0014f86142c03773706dd0cac474570e810
   repo: https://chromium.googlesource.com/external/github.com/aws/aws-sdk-go.git
 - name: github.com/beorn7/perks
   version: 4b2b341e8d7715fae06375aa633dbb6e91b3fb46
@@ -118,7 +118,7 @@ imports:
   - gomock
   - mockgen
 - name: github.com/golang/protobuf
-  version: 6c65a5562fc06764971b7c5d05c76c75e84bdbf7
+  version: 4f0f32494deece5b415af9e280b38873dbe6bead
   repo: https://chromium.googlesource.com/external/github.com/golang/protobuf.git
   subpackages:
   - jsonpb
@@ -133,7 +133,7 @@ imports:
   subpackages:
   - query
 - name: github.com/google/pprof
-  version: 54271f7e092ff31b10b7626fee166cbc6304e350
+  version: 34ac40c74b706e20e809986988342a0b2a554a0b
   repo: https://chromium.googlesource.com/external/github.com/google/pprof.git
   subpackages:
   - profile
@@ -164,10 +164,10 @@ imports:
   version: 8a6fb523712970c966eefc6b39ed2c5e74880354
   repo: https://chromium.googlesource.com/external/github.com/hashicorp/errwrap.git
 - name: github.com/hashicorp/go-multierror
-  version: 886a7fbe3eb1c874d46f623bfa70af45f425b3d1
+  version: bdca7bb83f603b80ef756bb953fe1dafa9cd00a2
   repo: https://chromium.googlesource.com/external/github.com/hashicorp/go-multierror.git
 - name: github.com/hashicorp/golang-lru
-  version: 59383c442f7d7b190497e9bb8fc17a48d06cd03f
+  version: 7f827b33c0f158ec5dfbba01bb0b14a4541fd81d
   repo: https://chromium.googlesource.com/external/github.com/hashicorp/golang-lru.git
   subpackages:
   - simplelru
@@ -199,7 +199,7 @@ imports:
   version: 2bc1f35cddc0cc527b4bc3dce8578fc2a6c11384
   repo: https://chromium.googlesource.com/external/github.com/kardianos/osext.git
 - name: github.com/kevinburke/ssh_config
-  version: 81db2a75821ed34e682567d48be488a1c3121088
+  version: 6cfae18c12b8934b1afba3ce8159476fdef666ba
   repo: https://chromium.googlesource.com/external/github.com/kevinburke/ssh_config.git
 - name: github.com/kisielk/errcheck
   version: e14f8d59a22d460d56c5ee92507cd94c78fbf274
@@ -429,7 +429,7 @@ imports:
   subpackages:
   - cmd/gomobile
 - name: golang.org/x/net
-  version: da137c7871d730100384dbcf36e6f8fa493aef5b
+  version: ca1201d0de80cfde86cb01aea620983605dfe99b
   repo: https://go.googlesource.com/net.git
   subpackages:
   - context
@@ -446,7 +446,7 @@ imports:
   subpackages:
   - errgroup
 - name: golang.org/x/sys
-  version: fae7ac547cb717d141c433a2a173315e216b64c4
+  version: fc99dfbffb4e5ed5758a37e31dd861afe285406b
   repo: https://go.googlesource.com/sys.git
   subpackages:
   - unix
@@ -458,7 +458,7 @@ imports:
   version: 9d24e82272b4f38b78bc8cff74fa936d31ccd8ef
   repo: https://go.googlesource.com/time.git
 - name: golang.org/x/tools
-  version: e377ae9d63860e3b8f606b92a1a7c7df5b14ca67
+  version: 1bd56024c6204c5d493f13273473cf5b3e0e8194
   repo: https://go.googlesource.com/tools.git
   subpackages:
   - cmd/callgraph
@@ -471,7 +471,7 @@ imports:
   - cmd/oracle
   - cmd/stringer
 - name: google.golang.org/api
-  version: a4e71d7a535e13fb5ea55e558bfc06a1e5c5560a
+  version: 025bef8d2de479daa7cb44888be36177e7d94a19
   repo: https://code.googlesource.com/google-api-go-client.git
   subpackages:
   - bigquery/v2
@@ -506,7 +506,7 @@ imports:
   - googleapis/...
   - protobuf/...
 - name: google.golang.org/grpc
-  version: a975db9349abe465fb171dd6690805aa1d131faf
+  version: 120728e1f775e40a2a764341939b78d666b08260
   repo: https://chromium.googlesource.com/external/github.com/grpc/grpc-go.git
   subpackages:
   - codes

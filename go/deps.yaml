@@ -10,7 +10,7 @@ import:
   version: master
   repo: https://chromium.googlesource.com/external/github.com/dustin/go-humanize.git
 - package: github.com/golang/protobuf
-  version: master
+  version: fix-race
   repo: https://chromium.googlesource.com/external/github.com/golang/protobuf.git
   subpackages:
   - jsonpb
