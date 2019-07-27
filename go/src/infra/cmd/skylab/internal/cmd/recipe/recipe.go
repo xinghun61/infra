@@ -46,10 +46,11 @@ func Request(a Args) *test_platform.Request {
 		)
 	}
 	for _, testName := range a.TestNames {
-		req.TestPlan.Test = append(
-			req.TestPlan.Test,
-			&test_platform.Request_Test{Name: testName},
-		)
+		ts := &test_platform.Request_Test{}
+		ts.Harness = &test_platform.Request_Test_Autotest_{
+			Autotest: &test_platform.Request_Test_Autotest{Name: testName},
+		}
+		req.TestPlan.Test = append(req.TestPlan.Test, ts)
 	}
 
 	req.Params = &test_platform.Request_Params{}

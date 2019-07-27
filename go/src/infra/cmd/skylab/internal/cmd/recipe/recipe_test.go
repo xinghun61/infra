@@ -63,8 +63,8 @@ func TestRequest(t *testing.T) {
 				{Name: "foo-suite-2"},
 			},
 			Test: []*test_platform.Request_Test{
-				{Name: "foo-test-1"},
-				{Name: "foo-test-2"},
+				{Harness: &test_platform.Request_Test_Autotest_{Autotest: &test_platform.Request_Test_Autotest{Name: "foo-test-1"}}},
+				{Harness: &test_platform.Request_Test_Autotest_{Autotest: &test_platform.Request_Test_Autotest{Name: "foo-test-2"}}},
 			},
 		},
 	}

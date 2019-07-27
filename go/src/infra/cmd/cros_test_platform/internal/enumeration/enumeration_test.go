@@ -29,7 +29,12 @@ func TestGetForTests(t *testing.T) {
 	addTestMetadata(m, "ignored", "selected")
 	for _, c := range cases {
 		t.Run(c.request, func(t *testing.T) {
-			tests := enumeration.GetForTests(m, []*test_platform.Request_Test{{Name: c.request}})
+			tests, err := enumeration.GetForTests(m, []*test_platform.Request_Test{
+				{Harness: &test_platform.Request_Test_Autotest_{Autotest: &test_platform.Request_Test_Autotest{Name: c.request}}}},
+			)
+			if err != nil {
+				t.Errorf("unexpected error %s", err.Error())
+			}
 			got := extractTestNames(tests)
 			if diff := pretty.Compare(c.want, got); diff != "" {
 				t.Errorf("enumerated tests differ, -want +got: %s", diff)

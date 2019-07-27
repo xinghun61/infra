@@ -9,12 +9,16 @@ import (
 	"go.chromium.org/chromiumos/infra/proto/go/test_platform"
 	"go.chromium.org/chromiumos/infra/proto/go/test_platform/steps"
 	"go.chromium.org/luci/common/data/stringset"
+	"go.chromium.org/luci/common/errors"
 )
 
 // GetForTests returns the test metadata for specified tests.
-func GetForTests(metadata *api.AutotestTestMetadata, tests []*test_platform.Request_Test) []*steps.EnumerationResponse_AutotestInvocation {
-	tNames := testNames(tests)
-	return testsByName(metadata.GetTests(), tNames)
+func GetForTests(metadata *api.AutotestTestMetadata, tests []*test_platform.Request_Test) ([]*steps.EnumerationResponse_AutotestInvocation, error) {
+	tNames, err := testNames(tests)
+	if err != nil {
+		return nil, err
+	}
+	return testsByName(metadata.GetTests(), tNames), nil
 }
 
 // GetForSuites returns the test metadata for specified suites.
@@ -34,12 +38,17 @@ func testsByName(tests []*api.AutotestTest, names stringset.Set) []*steps.Enumer
 	return ret
 }
 
-func testNames(ts []*test_platform.Request_Test) stringset.Set {
+func testNames(ts []*test_platform.Request_Test) (stringset.Set, error) {
 	ns := stringset.New(len(ts))
 	for _, t := range ts {
-		ns.Add(t.GetName())
+		switch h := t.GetHarness().(type) {
+		case *test_platform.Request_Test_Autotest_:
+			ns.Add(h.Autotest.Name)
+		default:
+			return nil, errors.Reason("unknown harness %+v", h).Err()
+		}
 	}
-	return ns
+	return ns, nil
 }
 
 func suiteNames(ss []*test_platform.Request_Suite) stringset.Set {

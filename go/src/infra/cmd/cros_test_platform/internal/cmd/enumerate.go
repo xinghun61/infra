@@ -89,14 +89,17 @@ func (c *enumerateRun) innerRun(a subcommands.Application, args []string, env su
 		return err
 	}
 
-	tm, err := computeMetadata(lp, workspace)
-	if err != nil && tm == nil {
+	tm, writableErr := computeMetadata(lp, workspace)
+	if writableErr != nil && tm == nil {
 		// Catastrophic error. There is no reasonable response to write.
+		return writableErr
+	}
+	ts, err := c.enumerate(tm, &request)
+	if err != nil {
 		return err
 	}
-	ts := c.enumerate(tm, &request)
 	resp := steps.EnumerationResponse{AutotestInvocations: ts}
-	return writeResponse(c.outputPath, &resp, err)
+	return writeResponse(c.outputPath, &resp, writableErr)
 }
 
 func (c *enumerateRun) processCLIArgs(args []string) error {
@@ -146,11 +149,17 @@ func (c *enumerateRun) newGSClient(ctx context.Context) (gs.Client, error) {
 	return gs.NewProdClient(ctx, t)
 }
 
-func (c *enumerateRun) enumerate(tm *api.TestMetadataResponse, request *steps.EnumerationRequest) []*steps.EnumerationResponse_AutotestInvocation {
+func (c *enumerateRun) enumerate(tm *api.TestMetadataResponse, request *steps.EnumerationRequest) ([]*steps.EnumerationResponse_AutotestInvocation, error) {
 	var ts []*steps.EnumerationResponse_AutotestInvocation
-	ts = append(ts, enumeration.GetForTests(tm.Autotest, request.TestPlan.Test)...)
+
+	g, err := enumeration.GetForTests(tm.Autotest, request.TestPlan.Test)
+	if err != nil {
+		return nil, err
+	}
+	ts = append(ts, g...)
+
 	ts = append(ts, enumeration.GetForSuites(tm.Autotest, request.TestPlan.Suite)...)
-	return ts
+	return ts, nil
 }
 
 func computeMetadata(localPaths artifacts.LocalPaths, workspace string) (*api.TestMetadataResponse, error) {
