@@ -1,7 +1,9 @@
 // Copyright 2019 The Chromium Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
+import sinon from 'sinon';
 import {assert} from 'chai';
+import {prpcClient} from 'prpc-client-instance.js';
 import {MrListPage} from './mr-list-page.js';
 
 let element;
@@ -10,10 +12,12 @@ describe('mr-list-page', () => {
   beforeEach(() => {
     element = document.createElement('mr-list-page');
     document.body.appendChild(element);
+    sinon.stub(prpcClient, 'call');
   });
 
   afterEach(() => {
     document.body.removeChild(element);
+    prpcClient.call.restore();
   });
 
   it('initializes', () => {
@@ -40,6 +44,96 @@ describe('mr-list-page', () => {
 
     assert.isNull(loading);
     assert.isNotNull(issueList);
+  });
+
+  describe('edit actions', () => {
+    beforeEach(() => {
+      sinon.stub(window, 'alert');
+    });
+
+    afterEach(() => {
+      window.alert.restore();
+    });
+
+    it('bulk edit stops user when no issues selected', () => {
+      sinon.stub(element, 'selectedIssues').get(() => []);
+      element.projectName = 'test';
+
+      element.bulkEdit();
+
+      sinon.assert.calledWith(window.alert,
+        'Please select some issues to edit.');
+    });
+
+    it('bulk edit redirects to bulk edit page', () => {
+      element.page = sinon.stub();
+      sinon.stub(element, 'selectedIssues').get(() => [
+        {localId: 1},
+        {localId: 2},
+      ]);
+      element.projectName = 'test';
+
+      element.bulkEdit();
+
+      sinon.assert.calledWith(element.page,
+        '/p/test/issues/bulkedit?ids=1%2C2');
+    });
+
+    it('flag issue as spam stops user when no issues selected', () => {
+      sinon.stub(element, 'selectedIssues').get(() => []);
+
+      element._flagIssues(true);
+
+      sinon.assert.calledWith(window.alert,
+        'Please select some issues to flag as spam.');
+    });
+
+    it('un-flag issue as spam stops user when no issues selected', () => {
+      sinon.stub(element, 'selectedIssues').get(() => []);
+
+      element._flagIssues(false);
+
+      sinon.assert.calledWith(window.alert,
+        'Please select some issues to un-flag as spam.');
+    });
+
+    it('flagging issues as spam sends pRPC request', async () => {
+      element.page = sinon.stub();
+      sinon.stub(element, 'selectedIssues').get(() => [
+        {localId: 1, projectName: 'test'},
+        {localId: 2, projectName: 'test'},
+      ]);
+
+      await element._flagIssues(true);
+
+      sinon.assert.calledWith(prpcClient.call, 'monorail.Issues',
+        'FlagIssues', {
+          issueRefs: [
+            {localId: 1, projectName: 'test'},
+            {localId: 2, projectName: 'test'},
+          ],
+          flag: true,
+        });
+    });
+
+    it('un-flagging issues as spam sends pRPC request', async () => {
+      element.page = sinon.stub();
+      sinon.stub(element, 'selectedIssues').get(() => [
+        {localId: 1, projectName: 'test'},
+        {localId: 2, projectName: 'test'},
+      ]);
+
+      await element._flagIssues(false);
+
+      sinon.assert.calledWith(prpcClient.call, 'monorail.Issues',
+        'FlagIssues', {
+          issueRefs: [
+            {localId: 1, projectName: 'test'},
+            {localId: 2, projectName: 'test'},
+          ],
+          flag: false,
+        });
+    });
   });
 });
 

@@ -28,3 +28,4 @@ module-latency-insensitive.yaml
 latency-insensitive.prod.yaml
 latency-insensitive.yaml
 templates/webpack-out
+full_results.json

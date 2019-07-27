@@ -38,6 +38,9 @@ export class MrIssueList extends LitElement {
         color: var(--chops-link-color);
         text-align: left;
       }
+      tr {
+        padding: 0 8px;
+      }
       tr[selected] {
         background: var(--chops-selected-bg);
       }
@@ -46,7 +49,7 @@ export class MrIssueList extends LitElement {
         .first-row th {
           position: sticky;
           top: var(--monorail-header-height);
-          z-index: 10;
+          z-index: 5;
         }
       }
     `;
@@ -84,7 +87,7 @@ export class MrIssueList extends LitElement {
         @keydown=${this._runListHotkeys}
         tabindex="0"
       >
-        <td class="ignore-navigation">
+        <td class="first-column ignore-navigation">
           ${draggable ? html`
             <i class="material-icons draggable">drag_indicator</i>
           ` : ''}
@@ -203,8 +206,7 @@ export class MrIssueList extends LitElement {
    * Return an Array of selected issues in the order they appear in the list.
    */
   get selectedIssues() {
-    return this._selectedIssues.map(
-      (isSelected, i) => isSelected ? this.issues[i] : false).filter(Boolean);
+    return this.issues.filter((_, i) => this._selectedIssues[i]);
   }
 
   // Navigate between issues in the list by focusing them. These keys
