@@ -6,7 +6,9 @@ package cmd
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"io"
 	"time"
 
 	"github.com/golang/protobuf/jsonpb"
@@ -23,17 +25,17 @@ import (
 	"infra/cmd/skylab/internal/site"
 )
 
-func buildbucketRun(ctx context.Context, args recipe.Args, env site.Environment, authFlags authcli.Flags) error {
+func buildbucketRun(ctx context.Context, args recipe.Args, env site.Environment, authFlags authcli.Flags, jsonOut bool, w io.Writer) error {
 	req := recipe.Request(args)
 
 	// Do a JSON roundtrip to turn req (a proto) into a structpb.
 	m := jsonpb.Marshaler{}
-	json, err := m.MarshalToString(req)
+	jsonStr, err := m.MarshalToString(req)
 	if err != nil {
 		return err
 	}
 	reqStruct := &structpb.Struct{}
-	if err := jsonpb.UnmarshalString(json, reqStruct); err != nil {
+	if err := jsonpb.UnmarshalString(jsonStr, reqStruct); err != nil {
 		return err
 	}
 
@@ -61,7 +63,16 @@ func buildbucketRun(ctx context.Context, args recipe.Args, env site.Environment,
 		return err
 	}
 
-	fmt.Printf("Created request at %s\n", bbURL(env, build.Id))
+	if jsonOut {
+		ti := &taskInfo{
+			Name: "cros_test_platform",
+			ID:   fmt.Sprintf("%d", build.Id),
+			URL:  fmt.Sprintf(bbURL(env, build.Id)),
+		}
+		return json.NewEncoder(w).Encode(ti)
+	}
+
+	fmt.Fprintf(w, "Created request at %s\n", bbURL(env, build.Id))
 
 	return nil
 }

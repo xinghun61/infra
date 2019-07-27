@@ -143,7 +143,7 @@ func (c *createTestRun) innerRun(a subcommands.Application, args []string, env s
 			TestNames:    []string{taskName},
 			Timeout:      time.Duration(c.timeoutMins) * time.Minute,
 		}
-		return buildbucketRun(ctx, args, e, c.authFlags)
+		return buildbucketRun(ctx, args, e, c.authFlags, false, a.GetOut())
 	}
 
 	keyvals, err := toKeyvalMap(c.keyvals)

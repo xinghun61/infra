@@ -114,7 +114,7 @@ func (c *createSuiteRun) innerRun(a subcommands.Application, args []string, env 
 			Timeout:      time.Duration(c.timeoutMins) * time.Minute,
 		}
 
-		return buildbucketRun(ctx, args, e, c.authFlags)
+		return buildbucketRun(ctx, args, e, c.authFlags, c.json, a.GetOut())
 	}
 
 	dimensions := []string{"pool:ChromeOSSkylab-suite"}
