@@ -123,6 +123,22 @@ type Infra struct {
 	//
 	// Required when using Cloud Build.
 	Storage string `yaml:"storage"`
+
+	// Registry is a Cloud Registry to push images to e.g. "gcr.io/something".
+	//
+	// If empty, images will be built and then just discarded (will not be pushed
+	// anywhere). Useful to verify Dockerfile is working without accumulating
+	// cruft.
+	Registry string `yaml:"registry"`
+
+	// CloudBuild contains configuration of Cloud Build infrastructure.
+	CloudBuild CloudBuildConfig `yaml:"cloudbuild"`
+}
+
+// CloudBuildConfig contains configuration of Cloud Build infrastructure.
+type CloudBuildConfig struct {
+	Project string `yaml:"project"` // name of Cloud Project to use for builds
+	Docker  string `yaml:"docker"`  // version of "docker" tool to use for builds
 }
 
 // BuildStep is one local build operation.

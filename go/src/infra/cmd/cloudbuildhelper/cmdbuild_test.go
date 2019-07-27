@@ -12,53 +12,165 @@ import (
 	"io"
 	"io/ioutil"
 	"testing"
+	"time"
 
+	"go.chromium.org/luci/common/clock"
+	"go.chromium.org/luci/common/clock/testclock"
+
+	"infra/cmd/cloudbuildhelper/cloudbuild"
 	"infra/cmd/cloudbuildhelper/fileset"
 	"infra/cmd/cloudbuildhelper/manifest"
 	"infra/cmd/cloudbuildhelper/storage"
 
 	. "github.com/smartystreets/goconvey/convey"
+	. "go.chromium.org/luci/common/testing/assertions"
+)
+
+const (
+	testTargetName   = "test-name"
+	testBucketName   = "test-bucket"
+	testRegistryName = "fake.example.com/registry"
+
+	testImageName = testRegistryName + "/" + testTargetName
 )
 
 func TestBuild(t *testing.T) {
 	t.Parallel()
 
-	ctx := context.Background()
-	store := newStorageImplMock()
-	fs, digest := prepFileSet()
-
-	Convey("Never seen before tarball", t, func() {
-		err := remoteBuild(ctx, remoteBuildParams{
-			Manifest: &manifest.Manifest{Name: "test-name"},
-			Out:      fs,
-			Store:    store,
+	Convey("With mocks", t, func() {
+		ctx, tc := testclock.UseTime(context.Background(), testclock.TestRecentTimeUTC)
+		tc.SetTimerCallback(func(d time.Duration, t clock.Timer) {
+			if testclock.HasTags(t, "sleep-timer") {
+				tc.Add(d)
+			}
 		})
-		So(err, ShouldBeNil)
+		ctx, _ = clock.WithTimeout(ctx, 20*time.Minute) // don't hang forever
 
-		// Uploaded the file.
-		obj, err := store.Check(ctx, fmt.Sprintf("test-name/%s.tar.gz", digest))
-		So(err, ShouldBeNil)
-		So(obj, ShouldNotBeNil)
-		So(obj.Generation, ShouldEqual, 1)
-	})
+		store := newStorageImplMock()
+		builder := newBuilderImplMock()
+		fs, digest := prepFileSet()
 
-	Convey("Already uploaded tarball", t, func() {
-		store.plant(fmt.Sprintf("test-name/%s.tar.gz", digest), 12345)
+		var (
+			// Path relative to the storage root.
+			testTarballPath = fmt.Sprintf("%s/%s.tar.gz", testTargetName, digest)
+			// Where we drops the tarball, excluding "#<generation>" suffix.
+			testTarballURL = fmt.Sprintf("gs://%s/%s/%s.tar.gz", testBucketName, testTargetName, digest)
+		)
 
-		err := remoteBuild(ctx, remoteBuildParams{
-			Manifest: &manifest.Manifest{Name: "test-name"},
-			Out:      fs,
-			Store:    store,
+		builder.outputDigests = func(img string) string {
+			So(img, ShouldEqual, testImageName+":cbh")
+			return "sha256:totally-legit-hash"
+		}
+
+		Convey("Never seen before tarball", func() {
+			builder.provenance = func(gs string) string {
+				So(gs, ShouldEqual, testTarballURL+"#1") // used first gen
+				return digest                            // got its digest correctly
+			}
+
+			res, err := remoteBuild(ctx, remoteBuildParams{
+				Manifest: &manifest.Manifest{Name: testTargetName},
+				Out:      fs,
+				Registry: testRegistryName,
+				Store:    store,
+				Builder:  builder,
+			})
+			So(err, ShouldBeNil)
+
+			// Uploaded the file.
+			obj, err := store.Check(ctx, testTarballPath)
+			So(err, ShouldBeNil)
+			So(obj.String(), ShouldEqual, testTarballURL+"#1") // uploaded the first gen
+
+			// Used Cloud Build.
+			So(res, ShouldResemble, &remoteBuildResult{
+				Image:  testImageName,
+				Digest: "sha256:totally-legit-hash",
+			})
 		})
-		So(err, ShouldBeNil)
 
-		// Didn't overwrite the existing file.
-		obj, err := store.Check(ctx, fmt.Sprintf("test-name/%s.tar.gz", digest))
-		So(err, ShouldBeNil)
-		So(obj, ShouldNotBeNil)
-		So(obj.Generation, ShouldEqual, 12345)
+		Convey("Already uploaded tarball", func() {
+			// Pretend we already have generation 12345 in the store.
+			store.plant(testTarballPath, 12345)
+
+			builder.provenance = func(gs string) string {
+				So(gs, ShouldEqual, testTarballURL+"#12345") // used this gen
+				return digest                                // got its digest correctly
+			}
+
+			res, err := remoteBuild(ctx, remoteBuildParams{
+				Manifest: &manifest.Manifest{Name: testTargetName},
+				Out:      fs,
+				Registry: testRegistryName,
+				Store:    store,
+				Builder:  builder,
+			})
+			So(err, ShouldBeNil)
+
+			// Didn't overwrite the existing file.
+			obj, err := store.Check(ctx, testTarballPath)
+			So(err, ShouldBeNil)
+			So(obj.String(), ShouldEqual, testTarballURL+"#12345") // still same gen
+
+			// Used Cloud Build.
+			So(res, ShouldResemble, &remoteBuildResult{
+				Image:  testImageName,
+				Digest: "sha256:totally-legit-hash",
+			})
+		})
+
+		Convey("No registry is set => nothing is uploaded", func() {
+			builder.provenance = func(gs string) string {
+				So(gs, ShouldEqual, testTarballURL+"#1") // used first gen
+				return digest                            // got its digest correctly
+			}
+
+			res, err := remoteBuild(ctx, remoteBuildParams{
+				Manifest: &manifest.Manifest{Name: testTargetName},
+				Out:      fs,
+				Store:    store,
+				Builder:  builder,
+			})
+			So(err, ShouldBeNil)
+
+			// Uploaded the file.
+			obj, err := store.Check(ctx, testTarballPath)
+			So(err, ShouldBeNil)
+			So(obj.String(), ShouldEqual, testTarballURL+"#1") // uploaded the first gen
+
+			// Did NOT produce any image.
+			So(res, ShouldResemble, &remoteBuildResult{})
+		})
+
+		Convey("Cloud Build build failure", func() {
+			builder.finalStatus = cloudbuild.StatusFailure
+			_, err := remoteBuild(ctx, remoteBuildParams{
+				Manifest: &manifest.Manifest{Name: testTargetName},
+				Out:      fs,
+				Registry: testRegistryName,
+				Store:    store,
+				Builder:  builder,
+			})
+			So(err, ShouldErrLike, "build failed, see its logs")
+		})
+
+		Convey("Cloud Build API errors", func() {
+			builder.checkCallback = func(b *runningBuild) error {
+				return fmt.Errorf("boom")
+			}
+			_, err := remoteBuild(ctx, remoteBuildParams{
+				Manifest: &manifest.Manifest{Name: testTargetName},
+				Out:      fs,
+				Registry: testRegistryName,
+				Store:    store,
+				Builder:  builder,
+			})
+			So(err, ShouldErrLike, "when waiting for the build to finish: too many errors, the last one: boom")
+		})
 	})
 }
+
+////////////////////////////////////////////////////////////////////////////////
 
 func prepFileSet() (fs *fileset.Set, digest string) {
 	fs = &fileset.Set{}
@@ -74,14 +186,16 @@ func prepFileSet() (fs *fileset.Set, digest string) {
 	return
 }
 
-type objBlob struct {
-	storage.Object
-	Blob []byte
-}
+////////////////////////////////////////////////////////////////////////////////
 
 type storageImplMock struct {
 	gen   int64
 	blobs map[string]objBlob
+}
+
+type objBlob struct {
+	storage.Object
+	Blob []byte
 }
 
 func newStorageImplMock() *storageImplMock {
@@ -92,7 +206,11 @@ func newStorageImplMock() *storageImplMock {
 
 func (s *storageImplMock) plant(name string, gen int64) {
 	s.blobs[name] = objBlob{
-		Object: storage.Object{Name: name, Generation: gen},
+		Object: storage.Object{
+			Bucket:     testBucketName,
+			Name:       name,
+			Generation: gen,
+		},
 	}
 }
 
@@ -117,6 +235,7 @@ func (s *storageImplMock) Upload(ctx context.Context, name, digest string, r io.
 	s.gen++
 
 	obj := storage.Object{
+		Bucket:     testBucketName,
 		Name:       name,
 		Generation: s.gen,
 	}
@@ -126,4 +245,79 @@ func (s *storageImplMock) Upload(ctx context.Context, name, digest string, r io.
 		Blob:   blob,
 	}
 	return &obj, nil
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+type builderImplMock struct {
+	// Can be touched.
+	checkCallback func(b *runningBuild) error
+	finalStatus   cloudbuild.Status
+	provenance    func(gs string) string  // gs://.... => SHA256
+	outputDigests func(img string) string // full image name => "sha256:..."
+
+	// Shouldn't be touched.
+	nextID int64
+	builds map[string]runningBuild
+}
+
+type runningBuild struct {
+	cloudbuild.Build
+	Request cloudbuild.Request
+}
+
+func newBuilderImplMock() *builderImplMock {
+	bld := &builderImplMock{
+		builds:        make(map[string]runningBuild, 0),
+		finalStatus:   cloudbuild.StatusSuccess,
+		provenance:    func(string) string { return "" },
+		outputDigests: func(string) string { return "" },
+	}
+
+	// By default just advance the build through the stages.
+	bld.checkCallback = func(b *runningBuild) error {
+		switch b.Status {
+		case cloudbuild.StatusQueued:
+			b.Status = cloudbuild.StatusWorking
+		case cloudbuild.StatusWorking:
+			b.Status = bld.finalStatus
+			if b.Status == cloudbuild.StatusSuccess {
+				b.InputHashes = map[string]string{
+					b.Request.Source.String(): bld.provenance(b.Request.Source.String()),
+				}
+				b.OutputImage = b.Request.Image
+				if b.Request.Image != "" {
+					b.OutputDigest = bld.outputDigests(b.Request.Image)
+				}
+			}
+		}
+		return nil
+	}
+
+	return bld
+}
+
+func (b *builderImplMock) Trigger(ctx context.Context, r cloudbuild.Request) (*cloudbuild.Build, error) {
+	b.nextID++
+	build := cloudbuild.Build{
+		ID:     fmt.Sprintf("b-%d", b.nextID),
+		Status: cloudbuild.StatusQueued,
+	}
+	b.builds[build.ID] = runningBuild{
+		Build:   build,
+		Request: r,
+	}
+	return &build, nil
+}
+
+func (b *builderImplMock) Check(ctx context.Context, bid string) (*cloudbuild.Build, error) {
+	build, ok := b.builds[bid]
+	if !ok {
+		return nil, fmt.Errorf("no build %q", bid)
+	}
+	if err := b.checkCallback(&build); err != nil {
+		return nil, err
+	}
+	b.builds[bid] = build
+	return &build.Build, nil
 }

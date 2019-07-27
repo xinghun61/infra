@@ -72,7 +72,6 @@ func (c *cmdLocalBuildRun) exec(ctx context.Context) error {
 
 		imageDigest, dockerErr := docker.Build(ctx, r, []string{
 			"--no-cache",
-			"--squash",
 			"--tag", m.Name, // attach a local tag for convenience
 		})
 		r.Close()
