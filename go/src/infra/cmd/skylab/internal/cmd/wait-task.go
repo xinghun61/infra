@@ -71,32 +71,46 @@ type waitTaskResult struct {
 }
 
 func (c *waitTaskRun) Run(a subcommands.Application, args []string, env subcommands.Env) int {
-	if err := c.innerRun(a, args, env); err != nil {
+	if err := c.innerRun(a, env); err != nil {
 		PrintError(a.GetErr(), err)
 		return 1
 	}
 	return 0
 }
 
-func (c *waitTaskRun) innerRun(a subcommands.Application, args []string, env subcommands.Env) error {
-	if c.buildBucket {
-		return c.innerRunBuildbucket(a, env, a.GetOut())
+func (c *waitTaskRun) innerRun(a subcommands.Application, env subcommands.Env) error {
+	var result *waitTaskResult
+	var err error
+	switch c.buildBucket {
+	case true:
+		result, err = c.innerRunBuildbucket(a, env)
+	case false:
+		result, err = c.innerRunSwarming(a, env)
 	}
 
+	if err != nil {
+		return err
+	}
+
+	printJSONResults(a.GetOut(), result)
+	return nil
+}
+
+func (c *waitTaskRun) innerRunSwarming(a subcommands.Application, env subcommands.Env) (*waitTaskResult, error) {
 	taskID := c.Flags.Arg(0)
 	if taskID == "" {
-		return NewUsageError(c.Flags, "missing swarming task ID")
+		return nil, NewUsageError(c.Flags, "missing swarming task ID")
 	}
 
 	siteEnv := c.envFlags.Env()
 	ctx := cli.GetContext(a, c, env)
 	h, err := httpClient(ctx, &c.authFlags)
 	if err != nil {
-		return errors.Annotate(err, "failed to create http client").Err()
+		return nil, errors.Annotate(err, "failed to create http client").Err()
 	}
 	client, err := swarming.New(ctx, h, siteEnv.SwarmingService)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	var taskWaitCtx context.Context
@@ -108,43 +122,40 @@ func (c *waitTaskRun) innerRun(a subcommands.Application, args []string, env sub
 	}
 	defer taskWaitCancel()
 
-	if err = waitTask(taskWaitCtx, taskID, client); err != nil {
+	if err = waitSwarmingTask(taskWaitCtx, taskID, client); err != nil {
 		if err == context.DeadlineExceeded {
-			return errors.New("timed out waiting for task to complete")
+			return nil, errors.New("timed out waiting for task to complete")
 		}
-		return err
+		return nil, err
 	}
 
-	return postWaitTask(ctx, taskID, client, a.GetOut())
+	return extractSwarmingResult(ctx, taskID, client)
 }
 
-func (c *waitTaskRun) innerRunBuildbucket(a subcommands.Application, env subcommands.Env, w io.Writer) error {
+func (c *waitTaskRun) innerRunBuildbucket(a subcommands.Application, env subcommands.Env) (*waitTaskResult, error) {
 	taskIDString := c.Flags.Arg(0)
 	if taskIDString == "" {
-		return NewUsageError(c.Flags, "missing buildbucket task id")
+		return nil, NewUsageError(c.Flags, "missing buildbucket task id")
 	}
 
 	buildID, err := strconv.ParseInt(taskIDString, 10, 64)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	ctx := cli.GetContext(a, c, env)
 	// TODO(akeshet): Respect wait timeout.
 	build, err := bbWaitBuild(ctx, c.envFlags.Env(), c.authFlags, buildID)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	response, err := bbExtractResponse(build)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	waitResult := responseToTaskResult(c.envFlags.Env(), buildID, response)
-
-	printJSONResults(w, waitResult)
-	return nil
+	return responseToTaskResult(c.envFlags.Env(), buildID, response), nil
 }
 
 func responseToTaskResult(e site.Environment, buildID int64, response *steps.ExecuteResponse) *waitTaskResult {
@@ -182,11 +193,11 @@ func responseToTaskResult(e site.Environment, buildID int64, response *steps.Exe
 	}
 }
 
-// waitTask waits until the task with the given ID has completed.
+// waitSwarmingTask waits until the task with the given ID has completed.
 //
 // It returns an error if the given context was cancelled or in case of swarming
 // rpc failures (after transient retry).
-func waitTask(ctx context.Context, taskID string, t *swarming.Client) error {
+func waitSwarmingTask(ctx context.Context, taskID string, t *swarming.Client) error {
 	sleepInterval := time.Duration(15 * time.Second)
 	for {
 		results, err := t.GetResults(ctx, []string{taskID})
@@ -235,18 +246,18 @@ func asTaskResult(s *swarming_api.SwarmingRpcsTaskResult) *taskResult {
 	}
 }
 
-func postWaitTask(ctx context.Context, taskID string, t *swarming.Client, w io.Writer) error {
+func extractSwarmingResult(ctx context.Context, taskID string, t *swarming.Client) (*waitTaskResult, error) {
 	results, err := t.GetResults(ctx, []string{taskID})
 	if err != nil {
-		return err
+		return nil, err
 	}
 	stdouts, err := t.GetTaskOutputs(ctx, []string{taskID})
 	if err != nil {
-		return err
+		return nil, err
 	}
 	childs, err := t.GetResults(ctx, results[0].ChildrenTaskIds)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	childResults := make([]*taskResult, len(childs))
 	for i, c := range childs {
@@ -258,8 +269,7 @@ func postWaitTask(ctx context.Context, taskID string, t *swarming.Client, w io.W
 		Stdout:       stdouts[0].Output,
 		ChildResults: childResults,
 	}
-	printJSONResults(w, result)
-	return nil
+	return result, nil
 }
 
 func printJSONResults(w io.Writer, m *waitTaskResult) {
