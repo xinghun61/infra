@@ -62,7 +62,7 @@ func (f *Fair) Generate(sc *rotang.Configuration, start time.Time, previous []ro
 	membersByShift := HandleShiftMembers(sc, members)
 	entriesByShift := HandleShiftEntries(sc, previous)
 	for i := range sc.Config.Shifts.Shifts {
-		membersByShift[i] = makeFair(membersByShift[i], entriesByShift[i])
+		membersByShift[i] = makeFair(membersByShift[i], entriesByShift[i], start)
 	}
 
 	return MakeShifts(sc, start, membersByShift, shiftsToSchedule), nil
@@ -79,7 +79,7 @@ func (f *Fair) TZConsider() bool {
 }
 
 // makeFair sorts the oncall members according to most recent oncall and number of oncall shifts.
-func makeFair(members []rotang.Member, previous []rotang.ShiftEntry) []rotang.Member {
+func makeFair(members []rotang.Member, previous []rotang.ShiftEntry, start time.Time) []rotang.Member {
 	sort.Sort(ByStart(previous))
 
 	oncalls := make(map[string]*fair)
@@ -89,7 +89,17 @@ func makeFair(members []rotang.Member, previous []rotang.ShiftEntry) []rotang.Me
 			member: m,
 		}
 	}
+
+	// Ignore old shifts.
+	// Remember two full rounds of members.
+	// There are 10 shifts per 14 days.
+	var historyStart = start.Add(-24 * time.Hour * 2 * time.Duration(len(members)) * 10 / 14)
+
 	for weight, e := range previous {
+		if e.EndTime.Before(historyStart) {
+			continue
+		}
+
 		for _, o := range e.OnCall {
 			// If someone in a previous shift is not a member anymore.
 			if _, ok := oncalls[o.Email]; !ok {

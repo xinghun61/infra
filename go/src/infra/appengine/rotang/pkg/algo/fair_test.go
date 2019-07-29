@@ -107,7 +107,7 @@ func TestMakeFair(t *testing.T) {
 	}}
 
 	for _, tst := range tests {
-		res := makeFair(stringToMembers(tst.members, mtvTime), stringToShifts(tst.shifts, "MTV all day"))
+		res := makeFair(stringToMembers(tst.members, mtvTime), stringToShifts(tst.shifts, "MTV all day"), midnight)
 		if got, want := membersToString(res), tst.want; got != want {
 			t.Errorf("%s: makeFair(_, _ ) = %q want: %q", tst.name, got, want)
 		}
@@ -286,5 +286,21 @@ func TestGenerateFair(t *testing.T) {
 		if diff := pretty.Compare(tst.want, shifts); diff != "" {
 			t.Errorf("%s: Generate(_) differs -want +got: %s", tst.name, diff)
 		}
+	}
+}
+
+func TestIgnoreOldShifts(t *testing.T) {
+	// Should give the same pseudo random sequence every time.
+	rand.Seed(7357)
+
+	// The shift used to be just A and B, so they've done lots of shifts.
+	// E is new.
+	// Don't over-schedule E or under-schedule A and B.
+	var members = stringToMembers("ABCDE", mtvTime)
+	const previous = "ABABABABABCDABCDABCD"
+	const want = "EABCD"
+	res := makeFair(members, stringToShifts(previous, "MTV all day"), midnight)
+	if got, want := membersToString(res), want; got != want {
+		t.Errorf("TestIgnoreOldShifts: makeFair(_, _ ) = %q want: %q", got, want)
 	}
 }
