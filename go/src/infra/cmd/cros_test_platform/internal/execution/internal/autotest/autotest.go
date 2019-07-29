@@ -112,6 +112,11 @@ func (r *Runner) proxyRequest() (*swarming_api.SwarmingRpcsNewTaskRequest, error
 		return nil, errors.Annotate(err, "create proxy request").Err()
 	}
 
+	rArgs, err := r.reimageAndRunArgs()
+	if err != nil {
+		return nil, errors.Annotate(err, "create proxy request").Err()
+	}
+
 	afeHost := r.config.GetAfeHost()
 	if afeHost == "" {
 		return nil, errors.Reason("create proxy request: config specified no afe_host").Err()
@@ -126,7 +131,7 @@ func (r *Runner) proxyRequest() (*swarming_api.SwarmingRpcsNewTaskRequest, error
 		Timeout:           timeout,
 		Pool:              pool,
 		AfeHost:           afeHost,
-		ReimageAndRunArgs: r.reimageAndRunArgs(),
+		ReimageAndRunArgs: rArgs,
 	}
 
 	req, err := dynamicsuite.NewRequest(dsArgs)
@@ -241,9 +246,14 @@ func (r Runner) collect(ctx context.Context, client swarming.Client, taskID stri
 	return response, nil
 }
 
-func (r *Runner) reimageAndRunArgs() interface{} {
+func (r *Runner) reimageAndRunArgs() (interface{}, error) {
 	testNames := make([]string, len(r.invocations))
 	for i, v := range r.invocations {
+		if v.TestArgs != "" {
+			return nil, errors.Reason(
+				"test args %s were specified for test %s; test args are not supported in autotest backend",
+				v.TestArgs, v.Test.Name).Err()
+		}
 		testNames[i] = v.Test.Name
 	}
 	return map[string]interface{}{
@@ -252,5 +262,5 @@ func (r *Runner) reimageAndRunArgs() interface{} {
 		// of tests.
 		"test_names": testNames,
 		"name":       suiteName,
-	}
+	}, nil
 }
