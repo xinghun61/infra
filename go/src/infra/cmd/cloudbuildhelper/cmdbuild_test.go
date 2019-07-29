@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"strings"
 	"testing"
 	"time"
 
@@ -20,6 +21,7 @@ import (
 	"infra/cmd/cloudbuildhelper/cloudbuild"
 	"infra/cmd/cloudbuildhelper/fileset"
 	"infra/cmd/cloudbuildhelper/manifest"
+	"infra/cmd/cloudbuildhelper/registry"
 	"infra/cmd/cloudbuildhelper/storage"
 
 	. "github.com/smartystreets/goconvey/convey"
@@ -30,6 +32,8 @@ const (
 	testTargetName   = "test-name"
 	testBucketName   = "test-bucket"
 	testRegistryName = "fake.example.com/registry"
+	testDigest       = "sha256:totally-legit-hash"
+	testTagName      = "canonical-tag"
 
 	testImageName = testRegistryName + "/" + testTargetName
 )
@@ -47,7 +51,8 @@ func TestBuild(t *testing.T) {
 		ctx, _ = clock.WithTimeout(ctx, 20*time.Minute) // don't hang forever
 
 		store := newStorageImplMock()
-		builder := newBuilderImplMock()
+		registry := newRegistryImplMock()
+		builder := newBuilderImplMock(registry)
 		fs, digest := prepFileSet()
 
 		var (
@@ -59,7 +64,7 @@ func TestBuild(t *testing.T) {
 
 		builder.outputDigests = func(img string) string {
 			So(img, ShouldEqual, testImageName+":cbh")
-			return "sha256:totally-legit-hash"
+			return testDigest
 		}
 
 		Convey("Never seen before tarball", func() {
@@ -68,12 +73,14 @@ func TestBuild(t *testing.T) {
 				return digest                            // got its digest correctly
 			}
 
-			res, err := remoteBuild(ctx, remoteBuildParams{
-				Manifest: &manifest.Manifest{Name: testTargetName},
-				Out:      fs,
-				Registry: testRegistryName,
-				Store:    store,
-				Builder:  builder,
+			res, err := runBuild(ctx, buildParams{
+				Manifest:     &manifest.Manifest{Name: testTargetName},
+				Image:        testImageName,
+				CanonicalTag: testTagName,
+				Stage:        stageFileSet(fs),
+				Store:        store,
+				Builder:      builder,
+				Registry:     registry,
 			})
 			So(err, ShouldBeNil)
 
@@ -83,10 +90,16 @@ func TestBuild(t *testing.T) {
 			So(obj.String(), ShouldEqual, testTarballURL+"#1") // uploaded the first gen
 
 			// Used Cloud Build.
-			So(res, ShouldResemble, &remoteBuildResult{
-				Image:  testImageName,
-				Digest: "sha256:totally-legit-hash",
+			So(res, ShouldResemble, &buildResult{
+				Image:        testImageName,
+				Digest:       testDigest,
+				CanonicalTag: testTagName,
 			})
+
+			// Tagged it.
+			img, err := registry.GetImage(ctx, fmt.Sprintf("%s:%s", testImageName, testTagName))
+			So(err, ShouldBeNil)
+			So(img.Digest, ShouldEqual, testDigest)
 		})
 
 		Convey("Already uploaded tarball", func() {
@@ -98,12 +111,14 @@ func TestBuild(t *testing.T) {
 				return digest                                // got its digest correctly
 			}
 
-			res, err := remoteBuild(ctx, remoteBuildParams{
-				Manifest: &manifest.Manifest{Name: testTargetName},
-				Out:      fs,
-				Registry: testRegistryName,
-				Store:    store,
-				Builder:  builder,
+			res, err := runBuild(ctx, buildParams{
+				Manifest:     &manifest.Manifest{Name: testTargetName},
+				Image:        testImageName,
+				CanonicalTag: testTagName,
+				Stage:        stageFileSet(fs),
+				Store:        store,
+				Builder:      builder,
+				Registry:     registry,
 			})
 			So(err, ShouldBeNil)
 
@@ -113,9 +128,34 @@ func TestBuild(t *testing.T) {
 			So(obj.String(), ShouldEqual, testTarballURL+"#12345") // still same gen
 
 			// Used Cloud Build.
-			So(res, ShouldResemble, &remoteBuildResult{
-				Image:  testImageName,
-				Digest: "sha256:totally-legit-hash",
+			So(res, ShouldResemble, &buildResult{
+				Image:        testImageName,
+				Digest:       testDigest,
+				CanonicalTag: testTagName,
+			})
+
+			// Tagged it.
+			img, err := registry.GetImage(ctx, fmt.Sprintf("%s:%s", testImageName, testTagName))
+			So(err, ShouldBeNil)
+			So(img.Digest, ShouldEqual, testDigest)
+		})
+
+		Convey("Already seen canonical tag", func() {
+			registry.put(fmt.Sprintf("%s:%s", testImageName, testTagName), testDigest)
+
+			res, err := runBuild(ctx, buildParams{
+				Manifest:     &manifest.Manifest{Name: testTargetName},
+				Image:        testImageName,
+				CanonicalTag: testTagName,
+				Registry:     registry,
+			})
+			So(err, ShouldBeNil)
+
+			// Reused the existing image.
+			So(res, ShouldResemble, &buildResult{
+				Image:        testImageName,
+				Digest:       testDigest,
+				CanonicalTag: testTagName,
 			})
 		})
 
@@ -125,11 +165,13 @@ func TestBuild(t *testing.T) {
 				return digest                            // got its digest correctly
 			}
 
-			res, err := remoteBuild(ctx, remoteBuildParams{
-				Manifest: &manifest.Manifest{Name: testTargetName},
-				Out:      fs,
-				Store:    store,
-				Builder:  builder,
+			res, err := runBuild(ctx, buildParams{
+				Manifest:     &manifest.Manifest{Name: testTargetName},
+				CanonicalTag: testTagName, // ignored
+				Stage:        stageFileSet(fs),
+				Store:        store,
+				Builder:      builder,
+				Registry:     registry,
 			})
 			So(err, ShouldBeNil)
 
@@ -139,17 +181,18 @@ func TestBuild(t *testing.T) {
 			So(obj.String(), ShouldEqual, testTarballURL+"#1") // uploaded the first gen
 
 			// Did NOT produce any image.
-			So(res, ShouldResemble, &remoteBuildResult{})
+			So(res, ShouldResemble, &buildResult{})
 		})
 
 		Convey("Cloud Build build failure", func() {
 			builder.finalStatus = cloudbuild.StatusFailure
-			_, err := remoteBuild(ctx, remoteBuildParams{
+			_, err := runBuild(ctx, buildParams{
 				Manifest: &manifest.Manifest{Name: testTargetName},
-				Out:      fs,
-				Registry: testRegistryName,
+				Image:    testImageName,
+				Stage:    stageFileSet(fs),
 				Store:    store,
 				Builder:  builder,
+				Registry: registry,
 			})
 			So(err, ShouldErrLike, "build failed, see its logs")
 		})
@@ -158,12 +201,13 @@ func TestBuild(t *testing.T) {
 			builder.checkCallback = func(b *runningBuild) error {
 				return fmt.Errorf("boom")
 			}
-			_, err := remoteBuild(ctx, remoteBuildParams{
+			_, err := runBuild(ctx, buildParams{
 				Manifest: &manifest.Manifest{Name: testTargetName},
-				Out:      fs,
-				Registry: testRegistryName,
+				Image:    testImageName,
+				Stage:    stageFileSet(fs),
 				Store:    store,
 				Builder:  builder,
+				Registry: registry,
 			})
 			So(err, ShouldErrLike, "when waiting for the build to finish: too many errors, the last one: boom")
 		})
@@ -184,6 +228,12 @@ func prepFileSet() (fs *fileset.Set, digest string) {
 	}
 	digest = hex.EncodeToString(h.Sum(nil))
 	return
+}
+
+func stageFileSet(fs *fileset.Set) stageCallback {
+	return func(c context.Context, m *manifest.Manifest, cb func(*fileset.Set) error) error {
+		return cb(fs)
+	}
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -257,8 +307,9 @@ type builderImplMock struct {
 	outputDigests func(img string) string // full image name => "sha256:..."
 
 	// Shouldn't be touched.
-	nextID int64
-	builds map[string]runningBuild
+	registry *registryImplMock
+	nextID   int64
+	builds   map[string]runningBuild
 }
 
 type runningBuild struct {
@@ -266,12 +317,13 @@ type runningBuild struct {
 	Request cloudbuild.Request
 }
 
-func newBuilderImplMock() *builderImplMock {
+func newBuilderImplMock(r *registryImplMock) *builderImplMock {
 	bld := &builderImplMock{
 		builds:        make(map[string]runningBuild, 0),
 		finalStatus:   cloudbuild.StatusSuccess,
 		provenance:    func(string) string { return "" },
 		outputDigests: func(string) string { return "" },
+		registry:      r,
 	}
 
 	// By default just advance the build through the stages.
@@ -319,5 +371,64 @@ func (b *builderImplMock) Check(ctx context.Context, bid string) (*cloudbuild.Bu
 		return nil, err
 	}
 	b.builds[bid] = build
+	if build.Status == cloudbuild.StatusSuccess && build.Request.Image != "" {
+		b.registry.put(build.Request.Image, build.OutputDigest)
+	}
 	return &build.Build, nil
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+type registryImplMock struct {
+	imgs map[string]registry.Image // <image>[:<tag>|@<digest>] => Image
+}
+
+func newRegistryImplMock() *registryImplMock {
+	return &registryImplMock{
+		imgs: make(map[string]registry.Image, 0),
+	}
+}
+
+// put takes "<name>:<tag> => <digest>" image and puts it in the registry.
+func (r *registryImplMock) put(image, digest string) {
+	if !strings.HasPrefix(digest, "sha256:") {
+		panic(digest)
+	}
+
+	var name, tag string
+	switch chunks := strings.Split(image, ":"); {
+	case len(chunks) == 1:
+		name, tag = chunks[0], "latest"
+	case len(chunks) == 2:
+		name, tag = chunks[0], chunks[1]
+	default:
+		panic(image)
+	}
+
+	img := registry.Image{
+		Registry:    "...",
+		Repo:        name,
+		Digest:      digest,
+		RawManifest: []byte(fmt.Sprintf("raw manifest of %q", digest)),
+	}
+
+	r.imgs[fmt.Sprintf("%s@%s", name, digest)] = img
+	r.imgs[fmt.Sprintf("%s:%s", name, tag)] = img
+}
+
+func (r *registryImplMock) GetImage(ctx context.Context, image string) (*registry.Image, error) {
+	img, ok := r.imgs[image]
+	if !ok {
+		return nil, &registry.Error{
+			Errors: []registry.InnerError{
+				{Code: "MANIFEST_UNKNOWN"},
+			},
+		}
+	}
+	return &img, nil
+}
+
+func (r *registryImplMock) TagImage(ctx context.Context, img *registry.Image, tag string) error {
+	r.imgs[fmt.Sprintf("%s:%s", img.Repo, tag)] = *img
+	return nil
 }

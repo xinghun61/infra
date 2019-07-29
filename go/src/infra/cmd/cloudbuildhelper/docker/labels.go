@@ -15,10 +15,11 @@ import (
 // See https://github.com/opencontainers/image-spec/blob/master/annotations.md
 // for org.opencontainers.image.* labels.
 type Labels struct {
-	Created   time.Time // org.opencontainers.image.created=<RFC3339 timestamp>
-	BuildTool string    // org.chromium.build.tool="cloudbuildhelper v1.2.3"
-	BuildMode string    // org.chromium.build.mode="local" (or "cloudbuild")
-	Inputs    string    // org.chromium.build.inputs=<SHA256 of context tarball>
+	Created      time.Time // org.opencontainers.image.created=<RFC3339 timestamp>
+	BuildTool    string    // org.chromium.build.tool="cloudbuildhelper v1.2.3"
+	BuildMode    string    // org.chromium.build.mode="local" (or "cloudbuild")
+	Inputs       string    // org.chromium.build.inputs=<SHA256 of context tarball>
+	CanonicalTag string    // org.chromium.build.canonical=...
 
 	Extra map[string]string // whatever was supplied via -label CLI flag
 }
@@ -41,6 +42,9 @@ func (l *Labels) Sorted() []string {
 	}
 	if l.Inputs != "" {
 		all["org.chromium.build.inputs"] = l.Inputs
+	}
+	if l.CanonicalTag != "" {
+		all["org.chromium.build.canonical"] = l.CanonicalTag
 	}
 
 	str := make([]string, 0, len(all))

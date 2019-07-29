@@ -27,6 +27,7 @@ import (
 	"infra/cmd/cloudbuildhelper/docker"
 	"infra/cmd/cloudbuildhelper/fileset"
 	"infra/cmd/cloudbuildhelper/manifest"
+	"infra/cmd/cloudbuildhelper/registry"
 	"infra/cmd/cloudbuildhelper/storage"
 )
 
@@ -35,7 +36,32 @@ var cmdBuild = &subcommands.Command{
 	ShortDesc: "builds a docker image using Google Cloud Build",
 	LongDesc: `Builds a docker image using Google Cloud Build.
 
-TODO(vadimsh): Write mini doc.
+Either reuses an existing image or builds a new one (see below for details). If
+builds a new one, tags it with -canonical-tag.
+
+The canonical tag should identify the exact version of inputs (e.g. it usually
+includes git revision or other unique version identifier). It is used as
+immutable alias of sources and the resulting image.
+
+The "build" command works in multiple steps:
+  1. Searches for an existing image with the given -canonical-tag. If it exists,
+     assumes the build has already been done and exits.
+  2. Prepares a context directory by evaluating the target manifest YAML,
+     resolving tags in Dockerfile and executing local build steps. The result
+     of this process is a *.tar.gz tarball that will be sent to Docker daemon.
+     See "stage" subcommand for more details.
+  3. Calculates SHA256 of the tarball and uses it to construct a Google Storage
+     path. If the tarball at that path already exists in Google Storage,
+     examines its metadata to find a reference to an image already built from
+     it. If there's such image, returns it (and its canonical tag, whatever it
+     was when the image was built) as output.
+  4. Otherwise triggers "docker build" via Cloud Build and feeds it the uploaded
+     tarball as a context. The result of this process is a new docker image.
+  5. Pushes this image to the registry under -canonical-tag tag. Does not touch
+     "latest" tag.
+  6. Updates metadata of the tarball in Google Storage with the reference to the
+     produced image (its SHA256 digest and its canonical tag), so that future
+     builds can discover and reuse it.
 `,
 
 	CommandRun: func() subcommands.CommandRun {
@@ -50,6 +76,8 @@ type cmdBuildRun struct {
 
 	targetManifest string
 	infra          string
+	canonicalTag   string
+	force          bool
 	labels         stringmapflag.Value
 }
 
@@ -58,6 +86,8 @@ func (c *cmdBuildRun) init() {
 		&c.targetManifest,
 	})
 	c.Flags.StringVar(&c.infra, "infra", "dev", "What section to pick from 'infra' field in the YAML.")
+	c.Flags.StringVar(&c.canonicalTag, "canonical-tag", "", "Tag to push the image to if we built a new image.")
+	c.Flags.BoolVar(&c.force, "force", false, "Rebuild and reupload the image, ignoring existing artifacts.")
 	c.Flags.Var(&c.labels, "label", "Labels to attach to the docker image, in k=v form.")
 }
 
@@ -77,6 +107,13 @@ func (c *cmdBuildRun) exec(ctx context.Context) error {
 		return errors.Reason("in %q: infra[...].cloudbuild.project is required when using remote build", c.targetManifest).Tag(isCLIError).Err()
 	}
 
+	// If not pushing to a registry, just build and then discard the image. This
+	// is accomplished by NOT passing the image name to runBuild.
+	image := ""
+	if infra.Registry != "" {
+		image = path.Join(infra.Registry, m.Name)
+	}
+
 	// Need a token source to talk to Google Storage and Cloud Build.
 	ts, err := c.tokenSource(ctx)
 	if err != nil {
@@ -92,18 +129,23 @@ func (c *cmdBuildRun) exec(ctx context.Context) error {
 	if err != nil {
 		return errors.Annotate(err, "failed to initialize Builder").Err()
 	}
+	registry := &registry.Client{TokenSource: ts} // can talk to any registry
 
-	return stage(ctx, m, func(out *fileset.Set) error {
-		_, err := remoteBuild(ctx, remoteBuildParams{
-			Manifest: m,
-			Out:      out,
-			Registry: infra.Registry,
-			Labels:   c.labels,
-			Store:    store,
-			Builder:  builder,
-		})
-		return err
+	res, err := runBuild(ctx, buildParams{
+		Manifest:     m,
+		Force:        c.force,
+		Image:        image,
+		Labels:       c.labels,
+		CanonicalTag: c.canonicalTag,
+		Stage:        stage,
+		Store:        store,
+		Builder:      builder,
+		Registry:     registry,
 	})
+	if err == nil {
+		reportSuccess(ctx, res)
+	}
+	return err
 }
 
 // storageImpl is implemented by *storage.Storage.
@@ -118,32 +160,123 @@ type builderImpl interface {
 	Check(ctx context.Context, bid string) (*cloudbuild.Build, error)
 }
 
-// remoteBuildParams are passed to remoteBuild.
-type remoteBuildParams struct {
-	// Inputs.
-	Manifest *manifest.Manifest // original manifest
-	Out      *fileset.Set       // result of local build stage
-	Registry string             // registry to upload the image to (if any)
-	Labels   map[string]string  // extra labels to put into the image
-
-	// Infra.
-	Store   storageImpl // where to upload the tarball, mocked in tests
-	Builder builderImpl // where to build images, mocked in tests
+// registryImpl is implemented by *registry.Client.
+type registryImpl interface {
+	GetImage(ctx context.Context, image string) (*registry.Image, error)
+	TagImage(ctx context.Context, img *registry.Image, tag string) error
 }
 
-// remoteBuildResult is returned by remoteBuild.
-type remoteBuildResult struct {
-	Image  string // name of the uploaded image
-	Digest string // docker digest of the uploaded image
+// stageCallback prepares local files and calls 'cb'.
+//
+// Nominally implemented by 'stage' function.
+type stageCallback func(c context.Context, m *manifest.Manifest, cb func(*fileset.Set) error) error
+
+// buildParams are passed to runBuild.
+type buildParams struct {
+	// Inputs.
+	Manifest     *manifest.Manifest // original manifest
+	Force        bool               // true to always build an image, ignoring any caches
+	Image        string             // full image name to upload (or "" to skip uploads)
+	Labels       map[string]string  // extra labels to put into the image
+	CanonicalTag string             // a tag to apply to the image if we really built it
+
+	// Local build (usually 'stage', mocked in tests).
+	Stage stageCallback
+
+	// Infra.
+	Store    storageImpl  // where to upload the tarball, mocked in tests
+	Builder  builderImpl  // where to build images, mocked in tests
+	Registry registryImpl // how to talk to docker registry, mocked in tests
+}
+
+// buildResult is returned by runBuild.
+type buildResult struct {
+	Image        string // name of the uploaded image "<registry>/<name>"
+	Digest       string // docker digest of the uploaded image "sha256:..."
+	CanonicalTag string // "immutable" docker tag the image is known as (may be "")
+}
+
+// runBuild is top-level logic of "build" command.
+func runBuild(ctx context.Context, p buildParams) (*buildResult, error) {
+	// Skip the build completely if there's already an image with the requested
+	// canonical tag.
+	if p.Image != "" && p.CanonicalTag != "" {
+		fullName := fmt.Sprintf("%s:%s", p.Image, p.CanonicalTag)
+		switch img, err := checkImage(ctx, p.Registry, fullName); {
+		case err != nil:
+			return nil, err // already annotated
+		case img != nil:
+			if !p.Force {
+				logging.Infof(ctx, "The canonical tag already exists, skipping the build")
+				return &buildResult{
+					Image:        p.Image,
+					Digest:       img.Digest,
+					CanonicalTag: p.CanonicalTag,
+				}, nil
+			}
+			logging.Warningf(ctx, "Using -force, will overwrite existing canonical tag %s => %s", p.CanonicalTag, img.Digest)
+		case img == nil:
+			logging.Infof(ctx, "No such image, will have to build it")
+		}
+	}
+
+	var res *buildResult
+	err := p.Stage(ctx, p.Manifest, func(out *fileset.Set) error {
+		var err error
+		res, err = remoteBuild(ctx, p, out)
+		return err
+	})
+	if err != nil {
+		return nil, err
+	}
+	return res, nil
+}
+
+// reportSuccess is called to report we've got the image (either built it right
+// now or discovered an existing one).
+func reportSuccess(ctx context.Context, r *buildResult) {
+	// TODO(vadimsh): Add -json-output.
+	if r.Image == "" {
+		logging.Infof(ctx, "Image builds successfully") // not using a registry at all
+		return
+	}
+	logging.Infof(ctx, "The final image:")
+	if r.CanonicalTag == "" {
+		logging.Infof(ctx, "    Name:   %s", r.Image)
+		logging.Infof(ctx, "    Digest: %s", r.Digest)
+		logging.Infof(ctx, "    View:   https://%s@%s", r.Image, r.Digest)
+	} else {
+		logging.Infof(ctx, "    Name:   %s:%s", r.Image, r.CanonicalTag)
+		logging.Infof(ctx, "    Digest: %s", r.Digest)
+		logging.Infof(ctx, "    View:   https://%s:%s", r.Image, r.CanonicalTag)
+	}
+}
+
+// checkImage asks the registry to resolve "<image>:<tag>" reference.
+//
+// Returns:
+//   (img, nil) if there's such image.
+//   (nil, nil) if there's no such image.
+//   (nil, err) on errors communicating with the registry.
+func checkImage(ctx context.Context, r registryImpl, imageRef string) (*registry.Image, error) {
+	logging.Infof(ctx, "Checking whether %s already exists...", imageRef)
+	switch img, err := r.GetImage(ctx, imageRef); {
+	case err == nil:
+		return img, nil
+	case registry.IsManifestUnknown(err):
+		return nil, nil
+	default:
+		return nil, errors.Annotate(err, "when checking existence of %q", imageRef).Err()
+	}
 }
 
 // remoteBuild executes high level remote build logic.
 //
 // It takes locally built fileset, uploads it to the storage (if necessary)
 // and invokes Cloud Build builder (if necessary).
-func remoteBuild(ctx context.Context, p remoteBuildParams) (*remoteBuildResult, error) {
-	logging.Infof(ctx, "Writing tarball with %d files to a temp file to calculate its hash...", p.Out.Len())
-	f, digest, err := writeToTemp(p.Out)
+func remoteBuild(ctx context.Context, p buildParams, out *fileset.Set) (*buildResult, error) {
+	logging.Infof(ctx, "Writing tarball with %d files to a temp file to calculate its hash...", out.Len())
+	f, digest, err := writeToTemp(out)
 	if err != nil {
 		return nil, errors.Annotate(err, "failed to write the tarball with context dir").Err()
 	}
@@ -173,36 +306,42 @@ func remoteBuild(ctx context.Context, p remoteBuildParams) (*remoteBuildResult, 
 	// Dump metadata into the log, just FYI.
 	obj.Log(ctx)
 
-	// TODO(vadimsh): Examine metadata to find references to existing artifacts
-	// built from this tarball.
-
-	// If not using a registry, just build and then discard the image. This is
-	// accomplished by NOT passing an image name to cloudbuild.Builder.
-	imageName := ""
-	if p.Registry != "" {
-		imageName = path.Join(p.Registry, p.Manifest.Name)
+	if !p.Force {
+		// TODO(vadimsh): Examine metadata to find references to existing artifacts
+		// built from this tarball.
 	}
 
 	// Trigger Cloud Build build to "transform" the tarball into a docker image.
-	imageDigest, err := performBuild(ctx, p.Builder, imageName, obj, digest, p.Labels)
+	imageDigest, err := doCloudBuild(ctx, obj, digest, p)
 	if err != nil {
 		return nil, err // annotated already
 	}
-	if imageName == "" {
+	if p.Image == "" {
 		logging.Warningf(ctx, "The registry is not configured, the image wasn't pushed")
-		return &remoteBuildResult{}, nil
+		return &buildResult{}, nil
 	}
 
-	// Success!
-	logging.Infof(ctx, "The produced image:")
-	logging.Infof(ctx, "    Name:   %s", imageName)
-	logging.Infof(ctx, "    Digest: %s", imageDigest)
-	logging.Infof(ctx, "    View:   https://%s@%s", imageName, imageDigest)
+	// Apply the canonical tag to the image. This involves fetching the image
+	// manifest (via its digest) and then uploading it back under a new name.
+	if p.CanonicalTag != "" {
+		logging.Infof(ctx, "Tagging %s => %s", p.CanonicalTag, imageDigest)
+		img, err := p.Registry.GetImage(ctx, fmt.Sprintf("%s@%s", p.Image, imageDigest))
+		if err != nil {
+			return nil, errors.Annotate(err, "when fetching the image manifest").Err()
+		}
+		if p.Registry.TagImage(ctx, img, p.CanonicalTag); err != nil {
+			return nil, errors.Annotate(err, "when tagging the image").Err()
+		}
+	}
 
-	// TODO(vadimsh): Tag the image.
-	// TODO(vadimsh): Add -json-output.
+	// TODO(vadimsh): Modify tarball metadata to associate the built image
+	// (including its SHA256 digest and canonical tag) with the original tarball.
 
-	return &remoteBuildResult{Image: imageName, Digest: imageDigest}, nil
+	return &buildResult{
+		Image:        p.Image,
+		Digest:       imageDigest,
+		CanonicalTag: p.CanonicalTag,
+	}, nil
 }
 
 // writeToTemp saves the fileset.Set as a temporary *.tar.gz file, returning it
@@ -245,15 +384,12 @@ func uploadToStorage(ctx context.Context, s storageImpl, obj, digest string, f *
 	return uploaded, errors.Annotate(err, "failed to upload the tarball").Err()
 }
 
-// performBuild builds and pushes (but not tags) a docker image via Cloud Build.
-//
-// 'image' is a full image name (including the registry) to build and push or
-// an empty string just to build and then discard the image.
+// doCloudBuild builds and pushes (but not tags) a docker image via Cloud Build.
 //
 // 'in' is a tarball with the context directory, 'inDigest' is its SHA256 hash.
 //
 // On success returns "sha256:..." digest of the built and pushed image.
-func performBuild(ctx context.Context, bldr builderImpl, image string, in *storage.Object, inDigest string, labels map[string]string) (string, error) {
+func doCloudBuild(ctx context.Context, in *storage.Object, inDigest string, p buildParams) (string, error) {
 	logging.Infof(ctx, "Triggering new Cloud Build build...")
 
 	// Cloud Build always pushes the tagged image to the registry. The default tag
@@ -261,18 +397,20 @@ func performBuild(ctx context.Context, bldr builderImpl, image string, in *stora
 	// on it. So pick something more cryptic. Note that we don't really care if
 	// this tag is moved concurrently by someone else. We never read it, we
 	// consume only the image digest returned directly by Cloud Build API.
+	image := p.Image
 	if image != "" {
 		image += ":cbh"
 	}
-	build, err := bldr.Trigger(ctx, cloudbuild.Request{
+	build, err := p.Builder.Trigger(ctx, cloudbuild.Request{
 		Source: in,
 		Image:  image,
 		Labels: docker.Labels{
-			Created:   clock.Now(ctx).UTC(),
-			BuildTool: userAgent,
-			BuildMode: "cloudbuild",
-			Inputs:    inDigest,
-			Extra:     labels,
+			Created:      clock.Now(ctx).UTC(),
+			BuildTool:    userAgent,
+			BuildMode:    "cloudbuild",
+			Inputs:       inDigest,
+			CanonicalTag: p.CanonicalTag,
+			Extra:        p.Labels,
 		},
 	})
 	if err != nil {
@@ -283,7 +421,7 @@ func performBuild(ctx context.Context, bldr builderImpl, image string, in *stora
 
 	// Babysit it until it completes.
 	logging.Infof(ctx, "Waiting for the build to finish...")
-	if build, err = waitBuild(ctx, bldr, build); err != nil {
+	if build, err = waitBuild(ctx, p.Builder, build); err != nil {
 		return "", errors.Annotate(err, "when waiting for the build to finish").Err()
 	}
 	if build.Status != cloudbuild.StatusSuccess {

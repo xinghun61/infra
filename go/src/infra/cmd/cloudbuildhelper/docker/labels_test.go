@@ -21,10 +21,11 @@ func TestLabels(t *testing.T) {
 
 	Convey("Non-empty", t, func() {
 		l := Labels{
-			Created:   time.Date(2016, time.February, 3, 4, 5, 6, 7, time.UTC),
-			BuildTool: "xxx",
-			BuildMode: "yyy",
-			Inputs:    "zzz",
+			Created:      time.Date(2016, time.February, 3, 4, 5, 6, 7, time.UTC),
+			BuildTool:    "xxx",
+			BuildMode:    "yyy",
+			Inputs:       "zzz",
+			CanonicalTag: "www",
 			Extra: map[string]string{
 				"k1":                      "v1",
 				"org.chromium.build.tool": "should be overridden",
@@ -32,6 +33,7 @@ func TestLabels(t *testing.T) {
 		}
 		So(l.AsBuildArgs(), ShouldResemble, []string{
 			"--label", "k1=v1",
+			"--label", "org.chromium.build.canonical=www",
 			"--label", "org.chromium.build.inputs=zzz",
 			"--label", "org.chromium.build.mode=yyy",
 			"--label", "org.chromium.build.tool=xxx",
