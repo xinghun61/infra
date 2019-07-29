@@ -211,21 +211,21 @@ func (da *dutAssigner) dutHostnameExists(hostname string) bool {
 }
 
 func (da *dutAssigner) assignDUT(ctx context.Context, a *fleet.AssignDutsToDronesRequest_Item) (*fleet.AssignDutsToDronesResponse_Item, error) {
-	ar, err := da.unpackRequest(a)
+	dutID, err := da.unpackRequest(a)
 	if err != nil {
 		return nil, err
 	}
 	cfg := config.Get(ctx).Inventory
 	d := queenDroneName(cfg.Environment)
 	logging.Debugf(ctx, "Using pseudo-drone %s for DUT %s", d, a.DutId)
-	if _, ok := da.idToDUT[ar.dutID]; !ok {
-		return nil, status.Error(codes.NotFound, fmt.Sprintf("DUT %s does not exist", ar.dutID))
+	if _, ok := da.idToDUT[dutID]; !ok {
+		return nil, status.Error(codes.NotFound, fmt.Sprintf("DUT %s does not exist", dutID))
 	}
-	if server, ok := da.droneForDUT[ar.dutID]; ok {
+	if server, ok := da.droneForDUT[dutID]; ok {
 		return nil, status.Errorf(
 			codes.InvalidArgument,
 			"dut %s is already assigned to drone %s",
-			ar.dutID, server.GetHostname(),
+			dutID, server.GetHostname(),
 		)
 	}
 
@@ -233,36 +233,29 @@ func (da *dutAssigner) assignDUT(ctx context.Context, a *fleet.AssignDutsToDrone
 	if !ok {
 		return nil, status.Error(codes.NotFound, fmt.Sprintf("drone %s does not exist", d))
 	}
-	server.DutUids = append(server.DutUids, ar.dutID)
-	dut := da.idToDUT[ar.dutID]
+	server.DutUids = append(server.DutUids, dutID)
+	dut := da.idToDUT[dutID]
 	dut.RemovalReason = nil
 
 	return &fleet.AssignDutsToDronesResponse_Item{
 		DroneHostname: d,
-		DutId:         ar.dutID,
+		DutId:         dutID,
 	}, nil
 }
 
-// assignRequest is an unpacked fleet.AssignDutsToDronesRequest_Item.
-type assignRequest struct {
-	dutID string
-}
-
-func (da *dutAssigner) unpackRequest(r *fleet.AssignDutsToDronesRequest_Item) (assignRequest, error) {
-	var rr assignRequest
+func (da *dutAssigner) unpackRequest(r *fleet.AssignDutsToDronesRequest_Item) (string, error) {
 	switch {
 	case r.DutHostname != "":
-		var ok bool
-		rr.dutID, ok = da.hostnameToID[r.DutHostname]
+		dutID, ok := da.hostnameToID[r.DutHostname]
 		if !ok {
-			return rr, status.Errorf(codes.NotFound, "unknown DUT hostname %s", r.DutHostname)
+			return "", status.Errorf(codes.NotFound, "unknown DUT hostname %s", r.DutHostname)
 		}
+		return dutID, nil
 	case r.DutId != "":
-		rr.dutID = r.DutId
+		return r.DutId, nil
 	default:
-		return rr, status.Errorf(codes.InvalidArgument, "must supply one of DUT hostname or ID")
+		return "", status.Errorf(codes.InvalidArgument, "must supply one of DUT hostname or ID")
 	}
-	return rr, nil
 }
 
 // commitRemoveDuts commits an in-progress response returned from
