@@ -47,22 +47,31 @@ type waitTaskRun struct {
 	buildBucket bool
 }
 
+// TODO(crbug.com/988611): Use a proto defined format for the wait-task output.
 type taskResult struct {
 	Name  string `json:"name"`
 	State string `json:"state"`
 	// TODO(crbug.com/964573): Deprecate this field.
 	Failure bool `json:"failure"`
 	Success bool `json:"success"`
-	// TODO(akeshet): Deprecate this field; the run ID is not independently
-	// meaningful to callers, it depends on the namespace of the ID (e.g.
-	// swarming? buildbucket? dev? prod?)
-	TaskRunID string `json:"task-run-id"`
+
+	// Note: These fields are a little problematic, because they are not independently
+	// meaningful to the caller; their meaning depends on the namespace (buildbucket vs. swarming)
+	// and, in the case of swarming, environment (dev vs. prod).
+	// Still, they are used by some clients, so preserved for now.
+	// Note the distinction between TaskRunID and TaskRequestID: in buildbucket runs,
+	// these will be equal. In swarming runs, they will differ in the last character
+	// (this is the difference between a swarming run id and request id).
+	TaskRunID     string `json:"task-run-id"`
+	TaskRequestID string `json:"task-request-id"`
+
 	// Note: these URL fields are only populated for -bb runs; eventually,
 	// non-bb runs will be deprecated.
 	TaskRunURL  string `json:"task-run-url"`
 	TaskLogsURL string `json:"task-logs-url"`
 }
 
+// TODO(crbug.com/988611): Use a proto defined format for the wait-task output.
 type waitTaskResult struct {
 	TaskResult   *taskResult   `json:"task-result"`
 	Stdout       string        `json:"stdout"`
@@ -159,12 +168,12 @@ func responseToTaskResult(e site.Environment, buildID int64, response *steps.Exe
 	failure := verdict == test_platform.TaskState_VERDICT_FAILED
 	success := verdict == test_platform.TaskState_VERDICT_PASSED
 	tr := &taskResult{
-		Name:       "Test Platform Invocation",
-		TaskRunURL: u,
-		// TODO(akeshet): Deprecate this field.
-		TaskRunID: fmt.Sprintf("%d", buildID),
-		Failure:   failure,
-		Success:   success,
+		Name:          "Test Platform Invocation",
+		TaskRunURL:    u,
+		TaskRunID:     fmt.Sprintf("%d", buildID),
+		TaskRequestID: fmt.Sprintf("%d", buildID),
+		Failure:       failure,
+		Success:       success,
 	}
 	var childResults []*taskResult
 	for _, child := range response.TaskResults {
@@ -235,9 +244,10 @@ func asTaskResult(s *swarming_api.SwarmingRpcsTaskResult) *taskResult {
 		Name:  s.Name,
 		State: s.State,
 		// TODO(crbug.com/964573): Deprecate this field.
-		Failure:   s.Failure,
-		Success:   !s.Failure && (s.State == "COMPLETED" || s.State == "COMPLETED_SUCCESS"),
-		TaskRunID: s.RunId,
+		Failure:       s.Failure,
+		Success:       !s.Failure && (s.State == "COMPLETED" || s.State == "COMPLETED_SUCCESS"),
+		TaskRunID:     s.RunId,
+		TaskRequestID: s.TaskId,
 	}
 }
 
