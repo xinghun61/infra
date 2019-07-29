@@ -19,6 +19,7 @@ import (
 
 	"go.chromium.org/luci/common/errors"
 
+	"infra/cmd/cloudbuildhelper/docker"
 	"infra/cmd/cloudbuildhelper/manifest"
 	"infra/cmd/cloudbuildhelper/storage"
 )
@@ -43,6 +44,9 @@ type Request struct {
 	// If empty, Builder will still build an image, but will not push it anywhere.
 	// Useful to verify Dockerfile is working without accumulating cruft.
 	Image string
+
+	// Labels is a labels to put into the produced docker image (if any).
+	Labels docker.Labels
 }
 
 // Status is possible status of a Cloud Build.
@@ -101,12 +105,12 @@ func New(ctx context.Context, ts oauth2.TokenSource, cfg manifest.CloudBuildConf
 // ID of the returned build can be used to query its status later in Check(...).
 func (b *Builder) Trigger(ctx context.Context, r Request) (*Build, error) {
 	var pushImages []string
-	dockerArgs := []string{
+	dockerArgs := append([]string{
 		"build",
 		".",
 		"--network", "cloudbuild", // this is what "gcloud build submit" uses, it is documented
 		"--no-cache", // state of the cache on Cloud Build workers is not well defined
-	}
+	}, r.Labels.AsBuildArgs()...)
 
 	// If asked to push the image, tag it locally and ask Cloud Build to push out
 	// this tag to the registry as well.

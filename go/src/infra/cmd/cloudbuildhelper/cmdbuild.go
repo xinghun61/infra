@@ -20,9 +20,11 @@ import (
 
 	"go.chromium.org/luci/common/clock"
 	"go.chromium.org/luci/common/errors"
+	"go.chromium.org/luci/common/flag/stringmapflag"
 	"go.chromium.org/luci/common/logging"
 
 	"infra/cmd/cloudbuildhelper/cloudbuild"
+	"infra/cmd/cloudbuildhelper/docker"
 	"infra/cmd/cloudbuildhelper/fileset"
 	"infra/cmd/cloudbuildhelper/manifest"
 	"infra/cmd/cloudbuildhelper/storage"
@@ -48,6 +50,7 @@ type cmdBuildRun struct {
 
 	targetManifest string
 	infra          string
+	labels         stringmapflag.Value
 }
 
 func (c *cmdBuildRun) init() {
@@ -55,6 +58,7 @@ func (c *cmdBuildRun) init() {
 		&c.targetManifest,
 	})
 	c.Flags.StringVar(&c.infra, "infra", "dev", "What section to pick from 'infra' field in the YAML.")
+	c.Flags.Var(&c.labels, "label", "Labels to attach to the docker image, in k=v form.")
 }
 
 func (c *cmdBuildRun) exec(ctx context.Context) error {
@@ -94,6 +98,7 @@ func (c *cmdBuildRun) exec(ctx context.Context) error {
 			Manifest: m,
 			Out:      out,
 			Registry: infra.Registry,
+			Labels:   c.labels,
 			Store:    store,
 			Builder:  builder,
 		})
@@ -119,6 +124,7 @@ type remoteBuildParams struct {
 	Manifest *manifest.Manifest // original manifest
 	Out      *fileset.Set       // result of local build stage
 	Registry string             // registry to upload the image to (if any)
+	Labels   map[string]string  // extra labels to put into the image
 
 	// Infra.
 	Store   storageImpl // where to upload the tarball, mocked in tests
@@ -178,7 +184,7 @@ func remoteBuild(ctx context.Context, p remoteBuildParams) (*remoteBuildResult, 
 	}
 
 	// Trigger Cloud Build build to "transform" the tarball into a docker image.
-	imageDigest, err := performBuild(ctx, p.Builder, imageName, obj, digest)
+	imageDigest, err := performBuild(ctx, p.Builder, imageName, obj, digest, p.Labels)
 	if err != nil {
 		return nil, err // annotated already
 	}
@@ -247,7 +253,7 @@ func uploadToStorage(ctx context.Context, s storageImpl, obj, digest string, f *
 // 'in' is a tarball with the context directory, 'inDigest' is its SHA256 hash.
 //
 // On success returns "sha256:..." digest of the built and pushed image.
-func performBuild(ctx context.Context, bldr builderImpl, image string, in *storage.Object, inDigest string) (string, error) {
+func performBuild(ctx context.Context, bldr builderImpl, image string, in *storage.Object, inDigest string, labels map[string]string) (string, error) {
 	logging.Infof(ctx, "Triggering new Cloud Build build...")
 
 	// Cloud Build always pushes the tagged image to the registry. The default tag
@@ -261,6 +267,13 @@ func performBuild(ctx context.Context, bldr builderImpl, image string, in *stora
 	build, err := bldr.Trigger(ctx, cloudbuild.Request{
 		Source: in,
 		Image:  image,
+		Labels: docker.Labels{
+			Created:   clock.Now(ctx).UTC(),
+			BuildTool: userAgent,
+			BuildMode: "cloudbuild",
+			Inputs:    inDigest,
+			Extra:     labels,
+		},
 	})
 	if err != nil {
 		return "", errors.Annotate(err, "failed to trigger Cloud Build build").Err()

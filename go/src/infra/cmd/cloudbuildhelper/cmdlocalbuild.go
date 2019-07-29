@@ -12,7 +12,9 @@ import (
 
 	"github.com/maruel/subcommands"
 
+	"go.chromium.org/luci/common/clock"
 	"go.chromium.org/luci/common/errors"
+	"go.chromium.org/luci/common/flag/stringmapflag"
 	"go.chromium.org/luci/common/logging"
 
 	"infra/cmd/cloudbuildhelper/docker"
@@ -41,18 +43,27 @@ type cmdLocalBuildRun struct {
 	commandBase
 
 	targetManifest string
+	labels         stringmapflag.Value
 }
 
 func (c *cmdLocalBuildRun) init() {
 	c.commandBase.init(c.exec, false, []*string{
 		&c.targetManifest,
 	})
+	c.Flags.Var(&c.labels, "label", "Labels to attach to the docker image, in k=v form.")
 }
 
 func (c *cmdLocalBuildRun) exec(ctx context.Context) error {
 	m, err := readManifest(c.targetManifest)
 	if err != nil {
 		return err
+	}
+
+	labels := docker.Labels{
+		Created:   clock.Now(ctx).UTC(),
+		BuildTool: userAgent,
+		BuildMode: "local",
+		Extra:     c.labels,
 	}
 
 	return stage(ctx, m, func(out *fileset.Set) error {
@@ -70,10 +81,10 @@ func (c *cmdLocalBuildRun) exec(ctx context.Context) error {
 			ctxDigest, tarErr = sendAsTarball(out, w)
 		}()
 
-		imageDigest, dockerErr := docker.Build(ctx, r, []string{
+		imageDigest, dockerErr := docker.Build(ctx, r, append([]string{
 			"--no-cache",
 			"--tag", m.Name, // attach a local tag for convenience
-		})
+		}, labels.AsBuildArgs()...))
 		r.Close()
 		<-done
 
