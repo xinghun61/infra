@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"strconv"
 	"time"
 
 	"github.com/golang/protobuf/jsonpb"
@@ -99,12 +100,26 @@ var getBuildFields = []string{
 	"status",
 }
 
-func bbWaitBuild(ctx context.Context, env site.Environment, authFlags authcli.Flags, buildID int64) (*buildbucket_pb.Build, error) {
-	bClient, err := bbClient(ctx, env, authFlags)
+func waitBuildbucketTask(ctx context.Context, ID string, client buildbucket_pb.BuildsClient, env site.Environment) (*waitTaskResult, error) {
+	buildID, err := strconv.ParseInt(ID, 10, 64)
 	if err != nil {
 		return nil, err
 	}
 
+	build, err := bbWaitBuild(ctx, client, buildID)
+	if err != nil {
+		return nil, err
+	}
+
+	response, err := bbExtractResponse(build)
+	if err != nil {
+		return nil, err
+	}
+
+	return responseToTaskResult(env, buildID, response), nil
+}
+
+func bbWaitBuild(ctx context.Context, client buildbucket_pb.BuildsClient, buildID int64) (*buildbucket_pb.Build, error) {
 	fields := &field_mask.FieldMask{Paths: getBuildFields}
 	req := &buildbucket_pb.GetBuildRequest{
 		Id:     buildID,
@@ -112,7 +127,7 @@ func bbWaitBuild(ctx context.Context, env site.Environment, authFlags authcli.Fl
 	}
 
 	for {
-		build, err := bClient.GetBuild(ctx, req)
+		build, err := client.GetBuild(ctx, req)
 		if err != nil {
 			return nil, err
 		}

@@ -10,7 +10,6 @@ import (
 	"fmt"
 	"infra/cmd/skylab/internal/site"
 	"io"
-	"strconv"
 	"time"
 
 	"github.com/maruel/subcommands"
@@ -102,16 +101,8 @@ func (c *waitTaskRun) innerRunSwarming(a subcommands.Application, env subcommand
 		return nil, NewUsageError(c.Flags, "missing swarming task ID")
 	}
 
-	siteEnv := c.envFlags.Env()
 	ctx := cli.GetContext(a, c, env)
-	h, err := httpClient(ctx, &c.authFlags)
-	if err != nil {
-		return nil, errors.Annotate(err, "failed to create http client").Err()
-	}
-	client, err := swarming.New(ctx, h, siteEnv.SwarmingService)
-	if err != nil {
-		return nil, err
-	}
+	client, err := swarmingClient(ctx, c.authFlags, c.envFlags.Env())
 
 	var taskWaitCtx context.Context
 	var taskWaitCancel context.CancelFunc
@@ -132,30 +123,34 @@ func (c *waitTaskRun) innerRunSwarming(a subcommands.Application, env subcommand
 	return extractSwarmingResult(ctx, taskID, client)
 }
 
+// TODO(akeshet): Move to common file.
+func swarmingClient(ctx context.Context, authFlags authcli.Flags, env site.Environment) (*swarming.Client, error) {
+	h, err := httpClient(ctx, &authFlags)
+	if err != nil {
+		return nil, errors.Annotate(err, "failed to create http client").Err()
+	}
+	client, err := swarming.New(ctx, h, env.SwarmingService)
+	if err != nil {
+		return nil, err
+	}
+	return client, nil
+}
+
 func (c *waitTaskRun) innerRunBuildbucket(a subcommands.Application, env subcommands.Env) (*waitTaskResult, error) {
 	taskIDString := c.Flags.Arg(0)
 	if taskIDString == "" {
 		return nil, NewUsageError(c.Flags, "missing buildbucket task id")
 	}
 
-	buildID, err := strconv.ParseInt(taskIDString, 10, 64)
-	if err != nil {
-		return nil, err
-	}
-
 	ctx := cli.GetContext(a, c, env)
 	// TODO(akeshet): Respect wait timeout.
-	build, err := bbWaitBuild(ctx, c.envFlags.Env(), c.authFlags, buildID)
+
+	bClient, err := bbClient(ctx, c.envFlags.Env(), c.authFlags)
 	if err != nil {
 		return nil, err
 	}
 
-	response, err := bbExtractResponse(build)
-	if err != nil {
-		return nil, err
-	}
-
-	return responseToTaskResult(c.envFlags.Env(), buildID, response), nil
+	return waitBuildbucketTask(ctx, taskIDString, bClient, c.envFlags.Env())
 }
 
 func responseToTaskResult(e site.Environment, buildID int64, response *steps.ExecuteResponse) *waitTaskResult {

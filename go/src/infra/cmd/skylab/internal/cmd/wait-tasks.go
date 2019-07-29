@@ -8,6 +8,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"sync"
+	"time"
 
 	"github.com/maruel/subcommands"
 
@@ -22,8 +24,8 @@ import (
 // WaitTasks subcommand: wait for tasks to finish.
 var WaitTasks = &subcommands.Command{
 	UsageLine: "wait-tasks [FLAGS...] TASK_ID...",
-	ShortDesc: "NOT YET IMPLEMENTED. wait for tasks to complete",
-	LongDesc:  `NOT YET IMPLEMENTED. Wait for tasks with the given ids to complete, and summarize their results.`,
+	ShortDesc: "wait for tasks to complete",
+	LongDesc:  `Wait for tasks with the given ids to complete, and summarize their results.`,
 	CommandRun: func() subcommands.CommandRun {
 		c := &waitTasksRun{}
 		c.authFlags.Register(&c.Flags, site.DefaultAuthOptions)
@@ -52,28 +54,46 @@ func (c *waitTasksRun) Run(a subcommands.Application, args []string, env subcomm
 }
 
 func (c *waitTasksRun) innerRun(a subcommands.Application, args []string, env subcommands.Env) error {
-	var err error
-
 	uniqueIDs := stringset.NewFromSlice(args...)
-	var results <-chan waitItem
 
 	ctx := cli.GetContext(a, c, env)
+	var cancel context.CancelFunc
+	switch c.timeoutMins >= 0 {
+	case true:
+		ctx, cancel = context.WithTimeout(ctx, time.Duration(c.timeoutMins)*time.Minute)
+	case false:
+		ctx, cancel = context.WithCancel(ctx)
+	}
+	defer cancel()
 
+	var results <-chan waitItem
+	var err error
 	switch c.buildBucket {
 	case true:
-		results = waitMultiBuildbucket(ctx, uniqueIDs)
+		results, err = waitMultiBuildbucket(ctx, uniqueIDs, c.authFlags, c.envFlags.Env())
 	case false:
-		results = waitMultiSwarming(ctx, uniqueIDs)
+		results, err = waitMultiSwarming(ctx, uniqueIDs, c.authFlags, c.envFlags.Env())
 	}
+	if err != nil {
+		return err
+	}
+
+	// Ensure results channel is eventually fully consumed.
+	defer func() {
+		go func() {
+			for range results {
+			}
+		}()
+	}()
 
 	resultMap, err := consumeToMap(ctx, len(uniqueIDs), results)
 	if err != nil {
 		return err
 	}
 
-	output := make([]waitTaskResult, len(args))
+	output := make([]*waitTaskResult, len(args))
 	for i, ID := range args {
-		output[i] = *resultMap[ID]
+		output[i] = resultMap[ID]
 	}
 
 	outputJSON, err := json.Marshal(output)
@@ -89,6 +109,10 @@ func (c *waitTasksRun) innerRun(a subcommands.Application, args []string, env su
 func consumeToMap(ctx context.Context, items int, results <-chan waitItem) (map[string]*waitTaskResult, error) {
 	resultMap := make(map[string]*waitTaskResult)
 	for {
+		if len(resultMap) == items {
+			return resultMap, nil
+		}
+
 		select {
 		case <-ctx.Done():
 			return nil, ctx.Err()
@@ -100,10 +124,6 @@ func consumeToMap(ctx context.Context, items int, results <-chan waitItem) (map[
 				return nil, r.err
 			}
 			resultMap[r.ID] = r.result
-			if len(resultMap) == items {
-				// All results collected.
-				return resultMap, nil
-			}
 		}
 	}
 }
@@ -114,20 +134,76 @@ type waitItem struct {
 	err    error
 }
 
-func waitMultiSwarming(ctx context.Context, IDs stringset.Set) <-chan waitItem {
+func waitMultiSwarming(ctx context.Context, IDs stringset.Set, authFlags authcli.Flags, env site.Environment) (<-chan waitItem, error) {
+	client, err := swarmingClient(ctx, authFlags, env)
+	if err != nil {
+		return nil, err
+	}
+
 	results := make(chan waitItem)
 	go func() {
 		defer close(results)
-		results <- waitItem{err: errors.New("not yet implemented")}
+
+		// Wait for each task in separate goroutine.
+		wg := sync.WaitGroup{}
+		wg.Add(IDs.Len())
+		for _, ID := range IDs.ToSlice() {
+			go func(ID string) {
+				defer wg.Done()
+
+				err := waitSwarmingTask(ctx, ID, client)
+				if err != nil {
+					select {
+					case results <- waitItem{err: err}:
+					case <-ctx.Done():
+					}
+					return
+				}
+
+				result, err := extractSwarmingResult(ctx, ID, client)
+				item := waitItem{result: result, err: err, ID: ID}
+				select {
+				case results <- item:
+				case <-ctx.Done():
+				}
+				return
+			}(ID)
+		}
+		// Wait for all child routines terminate.
+		wg.Wait()
 	}()
-	return results
+
+	return results, nil
 }
 
-func waitMultiBuildbucket(ctx context.Context, IDs stringset.Set) <-chan waitItem {
+func waitMultiBuildbucket(ctx context.Context, IDs stringset.Set, authFlags authcli.Flags, env site.Environment) (<-chan waitItem, error) {
+	client, err := bbClient(ctx, env, authFlags)
+	if err != nil {
+		return nil, err
+	}
+
 	results := make(chan waitItem)
 	go func() {
 		defer close(results)
-		results <- waitItem{err: errors.New("not yet implemented")}
+
+		// Wait for each task in separate goroutine.
+		wg := sync.WaitGroup{}
+		wg.Add(IDs.Len())
+		for _, ID := range IDs.ToSlice() {
+			go func(ID string) {
+				result, err := waitBuildbucketTask(ctx, ID, client, env)
+				item := waitItem{result: result, err: err, ID: ID}
+				select {
+				case results <- item:
+				case <-ctx.Done():
+				}
+
+				wg.Done()
+			}(ID)
+		}
+		// Wait for all child routines terminate.
+		wg.Wait()
 	}()
-	return results
+
+	return results, nil
 }
