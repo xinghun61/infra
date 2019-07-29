@@ -17,14 +17,17 @@ import (
 
 // Error is returned by Registry API on errors.
 //
-// See https://docs.docker.com/registry/spec/api/#errors
+// See https://docs.docker.com/registry/spec/api/#errors.
 type Error struct {
-	StatusCode int    `json:"-"` // HTTP status code
-	RawError   string `json:"-"` // set if failed to unmarshal the response body
-	Errors     []struct {
-		Code    string `json:"code"`
-		Message string `json:"message"`
-	}
+	StatusCode int          `json:"-"`      // HTTP status code
+	RawError   string       `json:"-"`      // set if failed to unmarshal the response body
+	Errors     []InnerError `json:"errors"` // elementary errors
+}
+
+// InnerError is an elementary suberror inside Error.
+type InnerError struct {
+	Code    string `json:"code"`
+	Message string `json:"message"`
 }
 
 // Error implements 'error' interface.
@@ -42,6 +45,21 @@ func (e *Error) Error() string {
 		}
 	}
 	return b.String()
+}
+
+// IsManifestUnknown return true if the given error is a MANIFEST_UNKNOWN error
+// from the registry (perhaps wrapped).
+func IsManifestUnknown(err error) bool {
+	return errors.Any(err, func(e error) bool {
+		if regE, ok := e.(*Error); ok {
+			for _, errStruct := range regE.Errors {
+				if errStruct.Code == "MANIFEST_UNKNOWN" {
+					return true
+				}
+			}
+		}
+		return false
+	})
 }
 
 // maybeRegistryError extracts an error message from the Docker Registry
