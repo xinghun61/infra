@@ -67,7 +67,8 @@ func TestUpdateMetrics(t *testing.T) {
 			Avail: 1221444,
 			Total: 1899548,
 		},
-		Uptime: 9233.61,
+		Uptime:    9233.61,
+		ProcCount: 233,
 	}
 	Convey("UpdateMetrics Testing", t, func() {
 		updateMetrics(c, statusFile)
@@ -87,5 +88,7 @@ func TestUpdateMetrics(t *testing.T) {
 			1221444)
 		So(uptime.Get(c, statusFile.ContainerHostname), ShouldEqual,
 			9233.61)
+		So(procCount.Get(c, statusFile.ContainerHostname), ShouldEqual,
+			233)
 	})
 }

@@ -33,6 +33,10 @@ var (
 		"DUT status (Online|Offline).",
 		nil,
 		field.String("container_hostname"))
+	procCount = metric.NewInt("dev/cros/proc_count",
+		"Number of running processes.",
+		nil,
+		field.String("container_hostname"))
 	temperature = metric.NewFloat("dev/cros/temperature",
 		"Temperature in °C",
 		nil,
@@ -51,6 +55,7 @@ var (
 		battCharge,
 		crosVersion,
 		dutStatus,
+		procCount,
 		temperature,
 		totalMem,
 		uptime,
@@ -139,5 +144,8 @@ func updateMetrics(c context.Context, deviceFile deviceStatusFile) {
 	}
 	if deviceFile.Uptime != 0.0 {
 		uptime.Set(c, deviceFile.Uptime, deviceFile.ContainerHostname)
+	}
+	if deviceFile.ProcCount != 0 {
+		procCount.Set(c, deviceFile.ProcCount, deviceFile.ContainerHostname)
 	}
 }
