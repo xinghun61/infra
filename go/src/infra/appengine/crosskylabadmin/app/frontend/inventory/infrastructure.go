@@ -216,8 +216,8 @@ func (da *dutAssigner) assignDUT(ctx context.Context, a *fleet.AssignDutsToDrone
 		return nil, err
 	}
 	cfg := config.Get(ctx).Inventory
-	ar.drone = queenDroneName(cfg.Environment)
-	logging.Debugf(ctx, "Using pseudo-drone %s for DUT %s", ar.drone, a.DutId)
+	d := queenDroneName(cfg.Environment)
+	logging.Debugf(ctx, "Using pseudo-drone %s for DUT %s", d, a.DutId)
 	if _, ok := da.idToDUT[ar.dutID]; !ok {
 		return nil, status.Error(codes.NotFound, fmt.Sprintf("DUT %s does not exist", ar.dutID))
 	}
@@ -229,16 +229,16 @@ func (da *dutAssigner) assignDUT(ctx context.Context, a *fleet.AssignDutsToDrone
 		)
 	}
 
-	server, ok := da.hostnameToDrone[ar.drone]
+	server, ok := da.hostnameToDrone[d]
 	if !ok {
-		return nil, status.Error(codes.NotFound, fmt.Sprintf("drone %s does not exist", ar.drone))
+		return nil, status.Error(codes.NotFound, fmt.Sprintf("drone %s does not exist", d))
 	}
 	server.DutUids = append(server.DutUids, ar.dutID)
 	dut := da.idToDUT[ar.dutID]
 	dut.RemovalReason = nil
 
 	return &fleet.AssignDutsToDronesResponse_Item{
-		DroneHostname: ar.drone,
+		DroneHostname: d,
 		DutId:         ar.dutID,
 	}, nil
 }
@@ -246,13 +246,10 @@ func (da *dutAssigner) assignDUT(ctx context.Context, a *fleet.AssignDutsToDrone
 // assignRequest is an unpacked fleet.AssignDutsToDronesRequest_Item.
 type assignRequest struct {
 	dutID string
-	drone string
 }
 
 func (da *dutAssigner) unpackRequest(r *fleet.AssignDutsToDronesRequest_Item) (assignRequest, error) {
-	rr := assignRequest{
-		drone: r.DroneHostname,
-	}
+	rr := assignRequest{}
 	if err := da.unpackRequestDUTID(r, &rr); err != nil {
 		return rr, err
 	}
