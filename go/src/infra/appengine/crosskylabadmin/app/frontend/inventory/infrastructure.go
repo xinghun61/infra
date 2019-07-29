@@ -249,27 +249,20 @@ type assignRequest struct {
 }
 
 func (da *dutAssigner) unpackRequest(r *fleet.AssignDutsToDronesRequest_Item) (assignRequest, error) {
-	rr := assignRequest{}
-	if err := da.unpackRequestDUTID(r, &rr); err != nil {
-		return rr, err
-	}
-	return rr, nil
-}
-
-func (da *dutAssigner) unpackRequestDUTID(r *fleet.AssignDutsToDronesRequest_Item, rr *assignRequest) error {
+	var rr assignRequest
 	switch {
 	case r.DutHostname != "":
 		var ok bool
 		rr.dutID, ok = da.hostnameToID[r.DutHostname]
 		if !ok {
-			return status.Errorf(codes.NotFound, "unknown DUT hostname %s", r.DutHostname)
+			return rr, status.Errorf(codes.NotFound, "unknown DUT hostname %s", r.DutHostname)
 		}
 	case r.DutId != "":
 		rr.dutID = r.DutId
 	default:
-		return status.Errorf(codes.InvalidArgument, "must supply one of DUT hostname or ID")
+		return rr, status.Errorf(codes.InvalidArgument, "must supply one of DUT hostname or ID")
 	}
-	return nil
+	return rr, nil
 }
 
 // commitRemoveDuts commits an in-progress response returned from
