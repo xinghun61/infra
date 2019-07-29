@@ -12,7 +12,7 @@ from common.waterfall import buildbucket_client
 
 from findit_v2.model.luci_build import LuciFailedBuild
 from findit_v2.services import projects
-from findit_v2.services.analysis.compile_failure import compile_api
+from findit_v2.services.analysis.compile_failure import compile_analysis
 from findit_v2.services.context import Context
 from findit_v2.services.detection import api as detection_api
 from findit_v2.services.failure_type import StepTypeEnum
@@ -159,7 +159,7 @@ def OnBuildFailureAnalysisResultRequested(request):
       return []
 
   if build_entity.build_failure_type == StepTypeEnum.COMPILE:
-    return compile_api.OnCompileFailureAnalysisResultRequested(
+    return compile_analysis.OnCompileFailureAnalysisResultRequested(
         request, build_entity)
 
   logging.debug('Findit v2 only supports compile failure analysis.')

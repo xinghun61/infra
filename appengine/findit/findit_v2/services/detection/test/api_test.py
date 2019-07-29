@@ -9,7 +9,7 @@ from buildbucket_proto import common_pb2
 from buildbucket_proto.build_pb2 import Build
 
 from findit_v2.services import constants
-from findit_v2.services.analysis.compile_failure import compile_api
+from findit_v2.services.analysis.compile_failure import compile_analysis
 from findit_v2.services.context import Context
 from findit_v2.services.detection import api
 from findit_v2.services.failure_type import StepTypeEnum
@@ -67,7 +67,7 @@ class APITest(unittest.TestCase):
   @mock.patch(
       'findit_v2.services.projects.GetProjectAPI',
       return_value=DummyProjectAPI())
-  @mock.patch('findit_v2.services.analysis.compile_failure.compile_api.'
+  @mock.patch('findit_v2.services.analysis.compile_failure.compile_analysis.'
               'AnalyzeCompileFailure')
   def testCompileFailure(self, mocked_AnalyzeCompileFailure, _):
     build = Build()
@@ -79,7 +79,7 @@ class APITest(unittest.TestCase):
         self.context, build, [step])
 
   @mock.patch.object(
-      compile_api, 'OnCompileRerunBuildCompletion', return_value=True)
+      compile_analysis, 'OnCompileRerunBuildCompletion', return_value=True)
   def testOnRerunBuildCompletion(self, mock_build_result):
     build = Build(
         id=800000500,

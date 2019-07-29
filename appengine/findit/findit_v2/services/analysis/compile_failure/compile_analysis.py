@@ -17,7 +17,8 @@ from findit_v2.services import projects
 from findit_v2.services.analysis import analysis_util
 from findit_v2.services.analysis.compile_failure import (
     compile_failure_rerun_analysis)
-from findit_v2.services.analysis.compile_failure import pre_compile_analysis
+from findit_v2.services.analysis.compile_failure.compile_analysis_api import (
+    CompileAnalysisAPI)
 from findit_v2.services.failure_type import StepTypeEnum
 
 
@@ -42,6 +43,8 @@ def AnalyzeCompileFailure(context, build, compile_steps):
     logging.debug('Unsupported project %s', luci_project)
     return False
 
+  analysis_api = CompileAnalysisAPI()
+
   # Project config for if failures should be grouped to reduce duplicated
   # analyses.
   should_group_failures = projects.PROJECT_CFG.get(
@@ -51,15 +54,14 @@ def AnalyzeCompileFailure(context, build, compile_steps):
       build, compile_steps)
   # Checks previous builds to look for first time failures for all the failures
   # in current failed build.
-  pre_compile_analysis.UpdateCompileFailuresWithFirstFailureInfo(
-      context, build, detailed_compile_failures)
-  pre_compile_analysis.SaveCompileFailures(context, build,
-                                           detailed_compile_failures)
+  analysis_api.UpdateFailuresWithFirstFailureInfo(context, build,
+                                                  detailed_compile_failures)
+  analysis_api.SaveFailures(context, build, detailed_compile_failures)
 
   # Looks for the failures that started to fail in the current build.
   first_failures_in_current_build = (
-      pre_compile_analysis.GetFirstFailuresInCurrentBuild(
-          context, build, detailed_compile_failures))
+      analysis_api.GetFirstFailuresInCurrentBuild(context, build,
+                                                  detailed_compile_failures))
   if not first_failures_in_current_build.get('failures'):
     logging.info(
         'No new analysis for build %d because all failures have '
@@ -69,7 +71,7 @@ def AnalyzeCompileFailure(context, build, compile_steps):
   # Filters out the first failures with existing failure group.
   if should_group_failures:
     failures_without_existing_group = (
-        pre_compile_analysis.GetFirstFailuresInCurrentBuildWithoutGroup(
+        analysis_api.GetFirstFailuresInCurrentBuildWithoutGroup(
             context, build, first_failures_in_current_build))
   else:
     failures_without_existing_group = first_failures_in_current_build
@@ -81,7 +83,7 @@ def AnalyzeCompileFailure(context, build, compile_steps):
     return False
 
   # Start a new analysis to analyze the first time failures.
-  pre_compile_analysis.SaveCompileAnalysis(
+  analysis_api.SaveFailureAnalysis(
       context, build, failures_without_existing_group, should_group_failures)
   compile_failure_rerun_analysis.RerunBasedAnalysis(context, build.id)
   return True
@@ -123,8 +125,8 @@ def _ProcessAndSaveRerunBuildResult(context, analyzed_build_id, rerun_build):
     detailed_compile_failures = project_api.GetCompileFailures(
         rerun_build, compile_steps) if compile_steps else {}
 
-  rerun_build_entity.SaveRerunBuildResults(rerun_build.status,
-                                           detailed_compile_failures)
+  CompileAnalysisAPI().SaveRerunBuildResults(
+      rerun_build_entity, rerun_build.status, detailed_compile_failures)
   return True
 
 

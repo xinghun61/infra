@@ -17,10 +17,11 @@ from findit_v2.model.compile_failure import CompileRerunBuild
 from findit_v2.model.gitiles_commit import Culprit
 from findit_v2.model.luci_build import LuciFailedBuild
 from findit_v2.model.messages import findit_result
-from findit_v2.services.analysis.compile_failure import compile_api
+from findit_v2.services.analysis.compile_failure import compile_analysis
 from findit_v2.services.analysis.compile_failure import (
     compile_failure_rerun_analysis)
-from findit_v2.services.analysis.compile_failure import pre_compile_analysis
+from findit_v2.services.analysis.compile_failure.compile_analysis_api import (
+    CompileAnalysisAPI)
 from findit_v2.services.chromeos_api import ChromeOSProjectAPI
 from findit_v2.services.context import Context
 from findit_v2.services.failure_type import StepTypeEnum
@@ -28,10 +29,10 @@ from libs import analysis_status
 from waterfall.test import wf_testcase
 
 
-class CompileApiTest(wf_testcase.TestCase):
+class CompileAnalysisTest(wf_testcase.TestCase):
 
   def setUp(self):
-    super(CompileApiTest, self).setUp()
+    super(CompileAnalysisTest, self).setUp()
     self.analyzed_build_id = 8000000000000
     self.context = Context(
         luci_project_name='chromeos',
@@ -60,39 +61,40 @@ class CompileApiTest(wf_testcase.TestCase):
 
   def testAnalyzeCompileFailureBailoutChromium(self):
     context = Context(luci_project_name='chromium')
-    self.assertFalse(compile_api.AnalyzeCompileFailure(context, None, None))
+    self.assertFalse(
+        compile_analysis.AnalyzeCompileFailure(context, None, None))
 
   def testAnalyzeCompileFailureBailoutUnsupportedProject(self):
     context = Context(luci_project_name='unsupported')
-    self.assertFalse(compile_api.AnalyzeCompileFailure(context, None, None))
+    self.assertFalse(
+        compile_analysis.AnalyzeCompileFailure(context, None, None))
 
   @mock.patch.object(
-      pre_compile_analysis,
+      CompileAnalysisAPI,
       'GetFirstFailuresInCurrentBuild',
       return_value={'failures': {}})
-  @mock.patch.object(pre_compile_analysis, 'SaveCompileFailures')
-  @mock.patch.object(pre_compile_analysis,
-                     'UpdateCompileFailuresWithFirstFailureInfo')
+  @mock.patch.object(CompileAnalysisAPI, 'SaveFailures')
+  @mock.patch.object(CompileAnalysisAPI, 'UpdateFailuresWithFirstFailureInfo')
   @mock.patch.object(ChromeOSProjectAPI, 'GetCompileFailures', return_value={})
   def testAnalyzeCompileFailureNoFirstFailure(self, mock_failures,
                                               mock_first_failure, *_):
     build = Build()
     compile_failures = []
     self.assertFalse(
-        compile_api.AnalyzeCompileFailure(self.context, build,
-                                          compile_failures))
+        compile_analysis.AnalyzeCompileFailure(self.context, build,
+                                               compile_failures))
     mock_failures.assert_called_once_with(build, compile_failures)
     mock_first_failure.assert_called_once_with(self.context, build, {})
 
   @mock.patch.object(
-      pre_compile_analysis,
+      CompileAnalysisAPI,
       'GetFirstFailuresInCurrentBuildWithoutGroup',
       return_value={
           'failures': {},
           'last_passed_build': None
       })
   @mock.patch.object(
-      pre_compile_analysis,
+      CompileAnalysisAPI,
       'GetFirstFailuresInCurrentBuild',
       return_value={
           'failures': {
@@ -101,37 +103,45 @@ class CompileApiTest(wf_testcase.TestCase):
               }
           }
       })
-  @mock.patch.object(pre_compile_analysis, 'SaveCompileFailures')
-  @mock.patch.object(pre_compile_analysis,
-                     'UpdateCompileFailuresWithFirstFailureInfo')
+  @mock.patch.object(CompileAnalysisAPI, 'SaveFailures')
+  @mock.patch.object(CompileAnalysisAPI, 'UpdateFailuresWithFirstFailureInfo')
   @mock.patch.object(ChromeOSProjectAPI, 'GetCompileFailures', return_value={})
   def testAnalyzeCompileFailureAllFoundGroups(self, mock_failures,
                                               mock_first_failure, *_):
     build = Build()
     compile_failures = []
     self.assertFalse(
-        compile_api.AnalyzeCompileFailure(self.context, build,
-                                          compile_failures))
+        compile_analysis.AnalyzeCompileFailure(self.context, build,
+                                               compile_failures))
     mock_failures.assert_called_once_with(build, compile_failures)
     mock_first_failure.assert_called_once_with(self.context, build, {})
 
   @mock.patch.object(compile_failure_rerun_analysis, 'RerunBasedAnalysis')
-  @mock.patch.object(pre_compile_analysis, 'SaveCompileAnalysis')
-  @mock.patch.object(pre_compile_analysis, 'SaveCompileFailures')
-  @mock.patch.object(pre_compile_analysis,
-                     'UpdateCompileFailuresWithFirstFailureInfo')
+  @mock.patch.object(CompileAnalysisAPI, 'SaveFailureAnalysis')
+  @mock.patch.object(CompileAnalysisAPI, 'SaveFailures')
+  @mock.patch.object(CompileAnalysisAPI, 'UpdateFailuresWithFirstFailureInfo')
   @mock.patch.object(ChromeOSProjectAPI, 'GetCompileFailures', return_value={})
-  @mock.patch.object(pre_compile_analysis, 'GetFirstFailuresInCurrentBuild')
-  def testAnalyzeCompileFailure(self, mock_first_failure_in_build, *_):
+  @mock.patch.object(CompileAnalysisAPI,
+                     'GetFirstFailuresInCurrentBuildWithoutGroup')
+  @mock.patch.object(CompileAnalysisAPI, 'GetFirstFailuresInCurrentBuild')
+  def testAnalyzeCompileFailure(self, mock_first_failure_in_build,
+                                mock_no_group, *_):
     mock_first_failure_in_build.return_value = {
         'failures': {
             self.compile_step_name: {
-                'output_targets': ['target4', 'target1', 'target2']
+                'atomic_failures': ['target4', 'target1', 'target2']
+            }
+        }
+    }
+    mock_no_group.return_value = {
+        'failures': {
+            self.compile_step_name: {
+                'atomic_failures': ['target4', 'target1', 'target2']
             }
         }
     }
     self.assertTrue(
-        compile_api.AnalyzeCompileFailure(self.context, Build(), []))
+        compile_analysis.AnalyzeCompileFailure(self.context, Build(), []))
 
   @mock.patch.object(ChromeOSProjectAPI, 'GetCompileFailures')
   def testProcessRerunBuildResult(self, mock_compile_failures):
@@ -208,7 +218,7 @@ class CompileApiTest(wf_testcase.TestCase):
         parent_key=self.analysis.key).put()
 
     self.assertTrue(
-        compile_api._ProcessAndSaveRerunBuildResult(
+        compile_analysis._ProcessAndSaveRerunBuildResult(
             self.context, self.analyzed_build_id, build))
     rerun_build = CompileRerunBuild.get_by_id(
         build_id, parent=self.analysis.key)
@@ -231,7 +241,7 @@ class CompileApiTest(wf_testcase.TestCase):
             'value': '87654321'
         }])
     self.assertFalse(
-        compile_api.OnCompileRerunBuildCompletion(self.context, build))
+        compile_analysis.OnCompileRerunBuildCompletion(self.context, build))
 
   def testProcessRerunBuildResultNoAnalyzedBuildIdTag(self):
     build_id = 8000000000123
@@ -244,7 +254,7 @@ class CompileApiTest(wf_testcase.TestCase):
         number=build_number,
         status=common_pb2.FAILURE)
     self.assertFalse(
-        compile_api.OnCompileRerunBuildCompletion(self.context, build))
+        compile_analysis.OnCompileRerunBuildCompletion(self.context, build))
 
   def testProcessRerunBuildResultNoEntity(self):
     build_id = 8000000000123
@@ -261,7 +271,7 @@ class CompileApiTest(wf_testcase.TestCase):
             'value': str(self.analyzed_build_id)
         }])
     self.assertFalse(
-        compile_api.OnCompileRerunBuildCompletion(self.context, build))
+        compile_analysis.OnCompileRerunBuildCompletion(self.context, build))
 
   @mock.patch.object(compile_failure_rerun_analysis, 'RerunBasedAnalysis')
   @mock.patch.object(ChromeOSProjectAPI, 'GetCompileFailures')
@@ -305,7 +315,7 @@ class CompileApiTest(wf_testcase.TestCase):
         parent_key=self.analysis.key).put()
 
     self.assertTrue(
-        compile_api.OnCompileRerunBuildCompletion(self.context, build))
+        compile_analysis.OnCompileRerunBuildCompletion(self.context, build))
     self.assertFalse(mock_compile_failures.called)
     rerun_build = CompileRerunBuild.get_by_id(
         build_id, parent=self.analysis.key)
@@ -367,7 +377,7 @@ class CompileApiTest(wf_testcase.TestCase):
     analysis.status = analysis_status.COMPLETED
     analysis.Save()
 
-    responses = compile_api.OnCompileFailureAnalysisResultRequested(
+    responses = compile_analysis.OnCompileFailureAnalysisResultRequested(
         request, build)
 
     self.assertEqual(1, len(responses))
@@ -422,7 +432,7 @@ class CompileApiTest(wf_testcase.TestCase):
     analysis.status = analysis_status.RUNNING
     analysis.Save()
 
-    responses = compile_api.OnCompileFailureAnalysisResultRequested(
+    responses = compile_analysis.OnCompileFailureAnalysisResultRequested(
         request, build)
 
     self.assertEqual(1, len(responses))

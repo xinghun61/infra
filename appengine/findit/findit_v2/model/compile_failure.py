@@ -188,13 +188,6 @@ class CompileFailureAnalysis(BaseFailureAnalysis, VersionedModel):
 
     return instance
 
-  def Update(self, end_time=None, status=None, error=None):
-    # pylint: disable=attribute-defined-outside-init
-    self.end_time = self.end_time or end_time
-    self.status = status if status is not None else self.status
-    self.error = error if error else self.error
-    self.put()
-
 
 class CompileFailureInRerunBuild(ndb.Model):
   """Atomic compile failure in a rerun build.
@@ -220,48 +213,6 @@ class CompileRerunBuild(LuciBuild):
     """Gets a list of failed compile targets of each compile step that failed
       in the rerun build."""
     return GetFailedTargets(self.failures)
-
-  def SaveRerunBuildResults(self, status, detailed_compile_failures):
-    """Saves the results of this rerun build.
-
-    Args:
-      status (int): status of the build. See common_pb2 for available values.
-      detailed_compile_failures (dict): Compile failures in the rerun build.
-      Format is like:
-      {
-        'step_name': {
-          'failures': {
-            frozenset(['target1', 'target2']): {
-              'first_failed_build': {
-                'id': 8765432109,
-                'number': 123,
-                'commit_id': 654321
-              },
-              'last_passed_build': None,
-              'properties': {
-                # Arbitrary information about the failure if exists.
-              }
-            },
-          'first_failed_build': {
-            'id': 8765432109,
-            'number': 123,
-            'commit_id': 654321
-          },
-          'last_passed_build': None,
-          'properties': {
-            # Arbitrary information about the failure if exists.
-          }
-        },
-      }
-    """
-    self.status = status  # pylint: disable=attribute-defined-outside-init
-    self.failures = []
-    for step_ui_name, step_info in detailed_compile_failures.iteritems():
-      for output_targets in step_info['failures']:
-        failure_entity = CompileFailureInRerunBuild(
-            step_ui_name=step_ui_name, output_targets=output_targets)
-        self.failures.append(failure_entity)
-    self.put()
 
   @classmethod
   def SearchBuildOnCommit(cls, analysis_key, commit):

@@ -131,12 +131,6 @@ class CompileFailureTest(wf_testcase.WaterfallTestCase):
     self.assertEqual('chromium', analysis.luci_project)
     self.assertEqual('chromium/ci', analysis.bucket_id)
 
-  def testUpdateCompileFailureAnalysis(self):
-    analysis = self._CreateCompileFailureAnalysis()
-    analysis.Update(status=analysis_status.COMPLETED)
-    analysis = CompileFailureAnalysis.GetVersion(self.build_id)
-    self.assertEqual(analysis_status.COMPLETED, analysis.status)
-
   def _CreateCompileRerunBuild(self, build_id, commit_position, analysis_key):
     build = CompileRerunBuild.Create(
         luci_project='chromium',
@@ -153,51 +147,6 @@ class CompileFailureTest(wf_testcase.WaterfallTestCase):
         create_time=datetime(2019, 3, 28),
         parent_key=analysis_key)
     build.put()
-
-  def testLuciRerunBuild(self):
-    build_id = 1234567890
-    commit_position = 65432
-    analysis = self._CreateCompileFailureAnalysis()
-    self._CreateCompileRerunBuild(build_id, commit_position, analysis.key)
-
-    rerun_build = CompileRerunBuild.get_by_id(build_id, parent=analysis.key)
-    self.assertIsNotNone(rerun_build)
-
-    detailed_compile_failures = {
-        'compile': {
-            'failures': {
-                frozenset(['target1.o', 'target2.o']): {
-                    'properties': {
-                        'rule': 'CXX'
-                    },
-                    'first_failed_build': {
-                        'id': 8000000000121,
-                        'number': 121,
-                        'commit_id': 'git_sha'
-                    },
-                    'last_passed_build': {
-                        'id': 8000000000120,
-                        'number': 120,
-                        'commit_id': 'git_sha'
-                    },
-                },
-            },
-            'first_failed_build': {
-                'id': 8000000000121,
-                'number': 121,
-                'commit_id': 'git_sha'
-            },
-            'last_passed_build': {
-                'id': 8000000000120,
-                'number': 120,
-                'commit_id': 'git_sha'
-            },
-        },
-    }
-    rerun_build.SaveRerunBuildResults(common_pb2.FAILURE,
-                                      detailed_compile_failures)
-    result = rerun_build.GetFailedTargets()
-    self.assertItemsEqual(['target1.o', 'target2.o'], result['compile'])
 
   def testLuciRerunBuildGetFailedTargets(self):
     build_id = 1234567890

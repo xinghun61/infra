@@ -284,8 +284,9 @@ def RerunBasedAnalysis(context, analyzed_build_id):
     TriggerRerunBuild(context, analyzed_build_id, analysis.key, rerun_builder,
                       rerun_commit, compile_failure.GetFailedTargets(failures))
 
-  analysis.Update(
-      status=analysis_status.COMPLETED
-      if analysis_completed else analysis_status.RUNNING,
-      end_time=time_util.GetUTCNow(),
-      error=analysis_error)
+  analysis.end_time = time_util.GetUTCNow()
+  analysis.status = (
+      analysis_status.COMPLETED
+      if analysis_completed else analysis_status.RUNNING)
+  analysis.error = analysis_error if analysis_error else analysis.error
+  analysis.put()

@@ -12,7 +12,7 @@ from common.constants import DEFAULT_SERVICE_ACCOUNT
 from findit_v2.model.luci_build import LuciFailedBuild
 from findit_v2.model.messages import findit_result
 from findit_v2.services import api
-from findit_v2.services.analysis.compile_failure import compile_api
+from findit_v2.services.analysis.compile_failure import compile_analysis
 from findit_v2.services.context import Context
 from findit_v2.services.failure_type import StepTypeEnum
 from waterfall.test.wf_testcase import WaterfallTestCase
@@ -202,17 +202,19 @@ class APITest(WaterfallTestCase):
             gitiles_ref='ref/heads/master',
             gitiles_id='git_sha'), build)
 
-  @mock.patch.object(compile_api, 'OnCompileFailureAnalysisResultRequested')
+  @mock.patch.object(compile_analysis,
+                     'OnCompileFailureAnalysisResultRequested')
   def testOnBuildFailureAnalysisResultRequestedNoBuildInDataStore(
-      self, mock_compile_api):
+      self, mock_compile_analysis):
     request = findit_result.BuildFailureAnalysisRequest(
         build_id=8000456, failed_steps=['compile'])
     self.assertEqual([], api.OnBuildFailureAnalysisResultRequested(request))
-    self.assertFalse(mock_compile_api.called)
+    self.assertFalse(mock_compile_analysis.called)
 
-  @mock.patch.object(compile_api, 'OnCompileFailureAnalysisResultRequested')
+  @mock.patch.object(compile_analysis,
+                     'OnCompileFailureAnalysisResultRequested')
   def testOnBuildFailureAnalysisResultRequestedNotSupport(
-      self, mock_compile_api):
+      self, mock_compile_analysis):
     build_id = 80004567
     build = LuciFailedBuild.Create(
         luci_project='chromium',
@@ -235,13 +237,13 @@ class APITest(WaterfallTestCase):
     request = findit_result.BuildFailureAnalysisRequest(
         build_id=build_id, failed_steps=['browser_tests'])
     self.assertEqual([], api.OnBuildFailureAnalysisResultRequested(request))
-    self.assertFalse(mock_compile_api.called)
+    self.assertFalse(mock_compile_analysis.called)
 
   @mock.patch.object(
-      compile_api,
+      compile_analysis,
       'OnCompileFailureAnalysisResultRequested',
       return_value=['responses'])
-  def testOnBuildFailureAnalysisResultRequested(self, mock_compile_api):
+  def testOnBuildFailureAnalysisResultRequested(self, mock_compile_analysis):
     luci_project = 'chromium'
     luci_bucket = 'ci'
     luci_builder = 'Linux Builder'
@@ -268,4 +270,4 @@ class APITest(WaterfallTestCase):
         build_id=80004567, failed_steps=['compile'])
     self.assertEqual(['responses'],
                      api.OnBuildFailureAnalysisResultRequested(request))
-    mock_compile_api.assert_called_once_with(request, build)
+    mock_compile_analysis.assert_called_once_with(request, build)

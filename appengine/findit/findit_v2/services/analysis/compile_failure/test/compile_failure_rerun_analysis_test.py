@@ -18,6 +18,8 @@ from findit_v2.model.gitiles_commit import GitilesCommit
 from findit_v2.model.luci_build import LuciFailedBuild
 from findit_v2.services.analysis.compile_failure import (
     compile_failure_rerun_analysis)
+from findit_v2.services.analysis.compile_failure.compile_analysis_api import (
+    CompileAnalysisAPI)
 from findit_v2.services.chromium_api import ChromiumProjectAPI
 from findit_v2.services.context import Context
 from findit_v2.services.failure_type import StepTypeEnum
@@ -83,6 +85,8 @@ class CompileFailureRerunAnalysisTest(wf_testcase.TestCase):
         rerun_builder_id='chromium/findit/findit-variables',
         compile_failure_keys=[self.compile_failure.key])
     self.analysis.Save()
+
+    self.analysis_api = CompileAnalysisAPI()
 
   def _CreateCompileRerunBuild(self, commit_position=6000002):
     rerun_commit = GitilesCommit(
@@ -257,7 +261,8 @@ class CompileFailureRerunAnalysisTest(wf_testcase.TestCase):
     }
 
     rerun_build = self._CreateCompileRerunBuild()
-    rerun_build.SaveRerunBuildResults(20, rerun_build_failures)
+    self.analysis_api.SaveRerunBuildResults(rerun_build, 20,
+                                            rerun_build_failures)
 
     results = (
         compile_failure_rerun_analysis._GetRegressionRangesForCompileFailures(
@@ -307,7 +312,8 @@ class CompileFailureRerunAnalysisTest(wf_testcase.TestCase):
     }
 
     rerun_build = self._CreateCompileRerunBuild(commit_position=6000001)
-    rerun_build.SaveRerunBuildResults(20, rerun_build_failures)
+    self.analysis_api.SaveRerunBuildResults(rerun_build, 20,
+                                            rerun_build_failures)
 
     mock_revisions.return_value = {n: str(n) for n in xrange(6000000, 6000005)}
 
