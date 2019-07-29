@@ -13,13 +13,13 @@ import (
 	"io"
 	"net/url"
 	"path"
-	"sort"
 	"strings"
 	"time"
 
 	"cloud.google.com/go/storage"
 	"github.com/dustin/go-humanize"
 	"golang.org/x/oauth2"
+	"google.golang.org/api/googleapi"
 	"google.golang.org/api/option"
 
 	"go.chromium.org/luci/common/errors"
@@ -36,16 +36,19 @@ type Storage struct {
 // Object is a pointer to a concrete version of a file in Google Storage,
 // along with its custom metadata.
 type Object struct {
-	Bucket     string            // e.g. "bucket-name"
-	Name       string            // e.g. "dir/dir/123456.tar.gz"
-	Generation int64             // e.g. 12312423452345
-	Created    time.Time         // when it was created
-	Owner      string            // FYI who uploaded it
-	MD5        string            // FYI for logs only
-	Metadata   map[string]string // custom metadata
+	Bucket         string    // e.g. "bucket-name"
+	Name           string    // e.g. "dir/dir/123456.tar.gz"
+	Generation     int64     // e.g. 12312423452345
+	Metageneration int64     // e.g. 12312423452345
+	Created        time.Time // when it was created
+	Owner          string    // FYI who uploaded it
+	MD5            string    // FYI for logs only
+	Metadata       *Metadata // custom metadata
+
+	storage *Storage
 }
 
-// String return "gs://<bucket>/<name>#<generation>" string.
+// String returns "gs://<bucket>/<name>#<generation>" string.
 func (o *Object) String() string {
 	if o.Generation == 0 {
 		return fmt.Sprintf("gs://%s/%s", o.Bucket, o.Name)
@@ -53,34 +56,32 @@ func (o *Object) String() string {
 	return fmt.Sprintf("gs://%s/%s#%d", o.Bucket, o.Name, o.Generation)
 }
 
-// Log logs all fields of Object at info level.
+// Log pretty-prints fields of Object at info logging level.
 func (o *Object) Log(ctx context.Context) {
 	logging.Infof(ctx, "Metadata of %s", o)
-	logging.Infof(ctx, "    Created:    %s", o.Created)
-	logging.Infof(ctx, "    Owner:      %s", strings.TrimPrefix(o.Owner, "user-"))
-	logging.Infof(ctx, "    MD5:        %s", o.MD5)
-	if len(o.Metadata) != 0 {
-		logging.Infof(ctx, "    Metadata:")
-		keys := make([]string, 0, len(o.Metadata))
-		for k := range o.Metadata {
-			keys = append(keys, k)
-		}
-		sort.Strings(keys)
-		for _, k := range keys {
-			logging.Infof(ctx, "        %s: %q", k, o.Metadata[k])
-		}
+	logging.Infof(ctx, "    Created:  %s", o.Created)
+	logging.Infof(ctx, "    Owner:    %s", strings.TrimPrefix(o.Owner, "user-"))
+	logging.Infof(ctx, "    MD5:      %s", o.MD5)
+
+	// A table with metadata sorted by key, and then timestamp.
+	if o.Metadata.Empty() {
+		logging.Infof(ctx, "    Metadata: none")
 	} else {
-		logging.Infof(ctx, "    Metadata:   none")
+		logging.Infof(ctx, "    Metadata:")
+		for _, line := range strings.Split(o.Metadata.ToPretty(time.Now(), 80), "\n") {
+			logging.Infof(ctx, "      %s", line)
+		}
 	}
 }
 
 // setAttrs populates Object field from its ObjectAttrs.
 func (o *Object) setAttrs(a *storage.ObjectAttrs) {
 	o.Generation = a.Generation
+	o.Metageneration = a.Metageneration
 	o.Created = a.Created
 	o.Owner = a.Owner
 	o.MD5 = hex.EncodeToString(a.MD5)
-	o.Metadata = a.Metadata
+	o.Metadata = ParseMetadata(a.Metadata)
 }
 
 // New returns a Storage that uploads tarballs Google Storage.
@@ -175,10 +176,64 @@ func (s *Storage) Upload(ctx context.Context, name, digest string, r io.Reader) 
 	return obj, nil
 }
 
+// UpdateMetadata fetches existing metadata, calls 'cb' to mutate it, and pushes
+// it back if it has changed.
+//
+// 'obj' must have come from Check or Upload. Panics otherwise.
+//
+// May call 'cb' multiple times if someone is updating the metadata concurrently
+// with us. If 'cb' returns an error, returns exact same error as is.
+func (s *Storage) UpdateMetadata(ctx context.Context, obj *Object, cb func(m *Metadata) error) error {
+	if obj.storage != s {
+		panic("wrong Object: not produced by this storage")
+	}
+	handle := s.client.Bucket(s.bucket).Object(obj.Name).Generation(obj.Generation)
+
+	for i := 0; i < 5; i++ {
+		var meta *Metadata
+		var metaGen int64
+
+		// On first iteration use whatever is in 'obj', otherwise refetch.
+		if i == 0 {
+			meta = obj.Metadata
+			metaGen = obj.Metageneration
+		} else {
+			logging.Infof(ctx, "Fetching metadata of %s...", obj)
+			attrs, err := handle.Attrs(ctx)
+			if err != nil {
+				return err
+			}
+			meta = ParseMetadata(attrs.Metadata)
+			metaGen = attrs.Metageneration
+		}
+
+		// Let the callback mutate a copy of 'meta'.
+		updated := meta.Clone()
+		if err := cb(updated); err != nil || updated.Equal(meta) {
+			return err
+		}
+
+		// Do compare-and-swap of the metadata.
+		logging.Infof(ctx, "Updating metadata of %s...", obj)
+		_, err := handle.If(storage.Conditions{MetagenerationMatch: metaGen}).Update(ctx, storage.ObjectAttrsToUpdate{
+			Metadata: updated.Assemble(),
+		})
+		if e, ok := err.(*googleapi.Error); ok && e.Code == 412 {
+			logging.Warningf(ctx, "Metageneration match precondition failed: %s", err)
+			continue // someone updated the metadata before us, try again from scratch
+		}
+		return err
+	}
+
+	return errors.Reason("too many collisions, giving up").Err()
+}
+
 // object returns partially filled Object struct.
 func (s *Storage) object(name string) *Object {
 	return &Object{
 		Bucket: s.bucket,
 		Name:   path.Join(s.prefix, name), // full name inside the bucket
+
+		storage: s,
 	}
 }

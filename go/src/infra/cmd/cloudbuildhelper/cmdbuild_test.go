@@ -260,6 +260,7 @@ func (s *storageImplMock) plant(name string, gen int64) {
 			Bucket:     testBucketName,
 			Name:       name,
 			Generation: gen,
+			Metadata:   &storage.Metadata{},
 		},
 	}
 }
@@ -288,6 +289,7 @@ func (s *storageImplMock) Upload(ctx context.Context, name, digest string, r io.
 		Bucket:     testBucketName,
 		Name:       name,
 		Generation: s.gen,
+		Metadata:   &storage.Metadata{},
 	}
 
 	s.blobs[name] = objBlob{
