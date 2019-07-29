@@ -63,6 +63,7 @@ func getApplication() *cli.Application {
 			cmd.InternalPrintBotInfo,
 			cmd.InternalVerifyInventory,
 			cmd.WaitTask,
+			cmd.WaitTasks,
 		},
 	}
 }
