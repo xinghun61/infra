@@ -18,8 +18,8 @@ import (
 
 func TestGetForTests(t *testing.T) {
 	var cases = []struct {
-		request string
-		want    stringset.Set
+		requestName string
+		want        stringset.Set
 	}{
 		{"selected", stringset.NewFromSlice("selected")},
 		{"non_existent", stringset.New(0)},
@@ -28,9 +28,9 @@ func TestGetForTests(t *testing.T) {
 	m := &api.AutotestTestMetadata{}
 	addTestMetadata(m, "ignored", "selected")
 	for _, c := range cases {
-		t.Run(c.request, func(t *testing.T) {
+		t.Run(c.requestName, func(t *testing.T) {
 			tests, err := enumeration.GetForTests(m, []*test_platform.Request_Test{
-				{Harness: &test_platform.Request_Test_Autotest_{Autotest: &test_platform.Request_Test_Autotest{Name: c.request}}}},
+				{Harness: &test_platform.Request_Test_Autotest_{Autotest: &test_platform.Request_Test_Autotest{Name: c.requestName}}}},
 			)
 			if err != nil {
 				t.Errorf("unexpected error %s", err.Error())
@@ -41,6 +41,33 @@ func TestGetForTests(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestGetForTestsWithArgs(t *testing.T) {
+	var cases = []struct {
+		testArgs   string
+		expectArgs string
+	}{
+		{"foo-test-args", "foo-test-args"},
+		{"", ""},
+	}
+	m := &api.AutotestTestMetadata{}
+	addTestMetadata(m, "foo-test")
+	for _, c := range cases {
+		tests, err := enumeration.GetForTests(m, []*test_platform.Request_Test{
+			{Harness: &test_platform.Request_Test_Autotest_{Autotest: &test_platform.Request_Test_Autotest{Name: "foo-test", TestArgs: c.testArgs}}}})
+		if len(tests) != 1 {
+			t.Errorf("expected 1 result, got %d", len(tests))
+			t.FailNow()
+		}
+		if err != nil {
+			t.Errorf("unexpected error %s", err.Error())
+		}
+		if tests[0].TestArgs != c.expectArgs {
+			t.Errorf("expected test args %s, got %s", c.expectArgs, tests[0].TestArgs)
+		}
+	}
+
 }
 
 // addTestMetadata adds tests to m with given names.

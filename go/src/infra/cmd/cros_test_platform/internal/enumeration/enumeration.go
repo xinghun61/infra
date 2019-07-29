@@ -14,11 +14,31 @@ import (
 
 // GetForTests returns the test metadata for specified tests.
 func GetForTests(metadata *api.AutotestTestMetadata, tests []*test_platform.Request_Test) ([]*steps.EnumerationResponse_AutotestInvocation, error) {
-	tNames, err := testNames(tests)
-	if err != nil {
-		return nil, err
+	var invs []*steps.EnumerationResponse_AutotestInvocation
+	autotestTests := metadata.GetTests()
+
+	// TODO(akeshet): This loop is O(autotest test corpus size) * O(num requested tests).
+	// It should be possible to optimize.
+	for _, tr := range tests {
+		switch h := tr.Harness.(type) {
+		case *test_platform.Request_Test_Autotest_:
+			for _, a := range autotestTests {
+				if a.Name == h.Autotest.Name {
+					invs = append(invs, &steps.EnumerationResponse_AutotestInvocation{
+						Test:     a,
+						TestArgs: h.Autotest.TestArgs,
+					})
+					// Autotest test names are unique, so bail out of searching
+					// for other matches.
+					break
+				}
+			}
+		default:
+			return nil, errors.Reason("unknown harness %+v", h).Err()
+		}
 	}
-	return testsByName(metadata.GetTests(), tNames), nil
+
+	return invs, nil
 }
 
 // GetForSuites returns the test metadata for specified suites.
