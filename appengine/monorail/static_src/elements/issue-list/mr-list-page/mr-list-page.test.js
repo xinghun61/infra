@@ -55,8 +55,8 @@ describe('mr-list-page', () => {
       window.alert.restore();
     });
 
-    it('bulk edit stops user when no issues selected', () => {
-      sinon.stub(element, 'selectedIssues').get(() => []);
+    it('bulk edit stops when no issues selected', () => {
+      element.selectedIssues = [];
       element.projectName = 'test';
 
       element.bulkEdit();
@@ -67,10 +67,10 @@ describe('mr-list-page', () => {
 
     it('bulk edit redirects to bulk edit page', () => {
       element.page = sinon.stub();
-      sinon.stub(element, 'selectedIssues').get(() => [
+      element.selectedIssues = [
         {localId: 1},
         {localId: 2},
-      ]);
+      ];
       element.projectName = 'test';
 
       element.bulkEdit();
@@ -79,8 +79,8 @@ describe('mr-list-page', () => {
         '/p/test/issues/bulkedit?ids=1%2C2');
     });
 
-    it('flag issue as spam stops user when no issues selected', () => {
-      sinon.stub(element, 'selectedIssues').get(() => []);
+    it('flag issue as spam stops when no issues selected', () => {
+      element.selectedIssues = [];
 
       element._flagIssues(true);
 
@@ -88,8 +88,8 @@ describe('mr-list-page', () => {
         'Please select some issues to flag as spam.');
     });
 
-    it('un-flag issue as spam stops user when no issues selected', () => {
-      sinon.stub(element, 'selectedIssues').get(() => []);
+    it('un-flag issue as spam stops when no issues selected', () => {
+      element.selectedIssues = [];
 
       element._flagIssues(false);
 
@@ -99,10 +99,10 @@ describe('mr-list-page', () => {
 
     it('flagging issues as spam sends pRPC request', async () => {
       element.page = sinon.stub();
-      sinon.stub(element, 'selectedIssues').get(() => [
+      element.selectedIssues = [
         {localId: 1, projectName: 'test'},
         {localId: 2, projectName: 'test'},
-      ]);
+      ];
 
       await element._flagIssues(true);
 
@@ -118,10 +118,10 @@ describe('mr-list-page', () => {
 
     it('un-flagging issues as spam sends pRPC request', async () => {
       element.page = sinon.stub();
-      sinon.stub(element, 'selectedIssues').get(() => [
+      element.selectedIssues = [
         {localId: 1, projectName: 'test'},
         {localId: 2, projectName: 'test'},
-      ]);
+      ];
 
       await element._flagIssues(false);
 
@@ -133,6 +133,34 @@ describe('mr-list-page', () => {
           ],
           flag: false,
         });
+    });
+
+    it('add to hotlist stops when no issues selected', () => {
+      element.selectedIssues = [];
+      element.projectName = 'test';
+
+      element.addToHotlist();
+
+      sinon.assert.calledWith(window.alert,
+        'Please select some issues to add to hotlists.');
+    });
+
+    it('add to hotlist dialog opens', async () => {
+      element.selectedIssues = [
+        {localId: 1, projectName: 'test'},
+        {localId: 2, projectName: 'test'},
+      ];
+      element.projectName = 'test';
+
+      await element.updateComplete;
+
+      const dialog = element.shadowRoot.querySelector(
+        'mr-update-issue-hotlists');
+      sinon.stub(dialog, 'open');
+
+      element.addToHotlist();
+
+      sinon.assert.calledOnce(dialog.open);
     });
   });
 });

@@ -123,7 +123,8 @@ export class MrUpdateIssueHotlists extends connectStore(LitElement) {
 
   static get properties() {
     return {
-      issueRef: {type: Object},
+      viewedIssueRef: {type: Object},
+      issueRefs: {type: Array},
       issueHotlists: {type: Array},
       userHotlists: {type: Array},
       user: {type: Object},
@@ -132,10 +133,17 @@ export class MrUpdateIssueHotlists extends connectStore(LitElement) {
   }
 
   stateChanged(state) {
-    this.issueRef = issue.issueRef(state);
-    this.issueHotlists = issue.hotlists(state);
+    this.viewedIssueRef = issue.issueRef(state);
     this.user = user.user(state);
     this.userHotlists = user.user(state).hotlists;
+  }
+
+  constructor() {
+    super();
+
+    this.issueRefs = [];
+    this.issueHotlists = [];
+    this.userHotlists = [];
   }
 
   open() {
@@ -156,26 +164,27 @@ export class MrUpdateIssueHotlists extends connectStore(LitElement) {
     this.shadowRoot.querySelector('chops-dialog').close();
   }
 
-  save() {
+  async save() {
     const changes = this.changes;
-    const issueRef = this.issueRef;
+    const issueRefs = this.issueRefs;
+    const viewedRef = this.viewedIssueRef;
 
-    if (!issueRef || !changes) return;
+    if (!issueRefs || !changes) return;
 
     const promises = [];
-    if (changes.added.length) {
+    if (changes.added && changes.added.length) {
       promises.push(prpcClient.call(
         'monorail.Features', 'AddIssuesToHotlists', {
           hotlistRefs: changes.added,
-          issueRefs: [issueRef],
+          issueRefs,
         }
       ));
     }
-    if (changes.removed.length) {
+    if (changes.removed && changes.removed.length) {
       promises.push(prpcClient.call(
         'monorail.Features', 'RemoveIssuesFromHotlists', {
           hotlistRefs: changes.removed,
-          issueRefs: [issueRef],
+          issueRefs,
         }
       ));
     }
@@ -184,18 +193,28 @@ export class MrUpdateIssueHotlists extends connectStore(LitElement) {
         'monorail.Features', 'CreateHotlist', {
           name: changes.created.name,
           summary: changes.created.summary,
-          issueRefs: [issueRef],
+          issueRefs,
         }
       ));
     }
 
-    Promise.all(promises).then((results) => {
-      store.dispatch(issue.fetchHotlists(issueRef));
+    try {
+      await Promise.all(promises);
+
+      // Refresh the viewed issue's hotlists only if there is a viewed issue.
+      if (viewedRef) {
+        const viewedIssueWasUpdated = issueRefs.find((ref) =>
+          ref.projectName === viewedRef.projectName
+          && ref.localId === viewedRef.localId);
+        if (viewedIssueWasUpdated) {
+          store.dispatch(issue.fetchHotlists(viewedRef));
+        }
+      }
       store.dispatch(user.fetchHotlists(this.user.email));
       this.close();
-    }, (error) => {
+    } catch (error) {
       this.error = error.description;
-    });
+    }
   }
 
   _issueInHotlist(hotlist, issueHotlists) {

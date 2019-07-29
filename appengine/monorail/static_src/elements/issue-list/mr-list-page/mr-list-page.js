@@ -10,6 +10,8 @@ import * as issue from 'elements/reducers/issue.js';
 import {prpcClient} from 'prpc-client-instance.js';
 import 'elements/framework/mr-dropdown/mr-dropdown.js';
 import 'elements/framework/mr-issue-list/mr-issue-list.js';
+// eslint-disable-next-line max-len
+import 'elements/issue-detail/dialogs/mr-update-issue-hotlists/mr-update-issue-hotlists.js';
 
 export class MrListPage extends connectStore(LitElement) {
   static get styles() {
@@ -62,10 +64,16 @@ export class MrListPage extends connectStore(LitElement) {
         </div>
       `;
     }
+
+    const selectedRefs = this.selectedIssues.map(
+      ({localId, projectName}) => ({localId, projectName}));
     return html`
       <div class="list-controls">
         <button @click=${this.bulkEdit}>
           Bulk edit
+        </button>
+        <button @click=${this.addToHotlist}>
+          Add to hotlist
         </button>
         <mr-dropdown
           icon="more_vert"
@@ -79,7 +87,11 @@ export class MrListPage extends connectStore(LitElement) {
         .projectName=${this.projectName}
         .queryParams=${this.queryParams}
         selectionEnabled
+        @selectionChange=${this._setSelectedIssues}
       ></mr-issue-list>
+      <mr-update-issue-hotlists
+        .issueRefs=${selectedRefs}
+      ></mr-update-issue-hotlists>
     `;
   }
 
@@ -89,6 +101,7 @@ export class MrListPage extends connectStore(LitElement) {
       queryParams: {type: Object},
       projectName: {type: String},
       fetchingIssueList: {type: Boolean},
+      selectedIssues: {type: Array},
     };
   };
 
@@ -96,6 +109,7 @@ export class MrListPage extends connectStore(LitElement) {
     super();
     this.issues = [];
     this.fetchingIssueList = false;
+    this.selectedIssues = [];
 
     this._boundRefresh = this.refresh.bind(this);
 
@@ -143,16 +157,17 @@ export class MrListPage extends connectStore(LitElement) {
     this.fetchingIssueList = issue.requests(state).fetchIssueList.requesting;
   }
 
-  get selectedIssues() {
-    const issueListRef = this.shadowRoot.querySelector('mr-issue-list');
-    if (!issueListRef) return [];
-
-    return issueListRef.selectedIssues;
-  }
-
   noneSelectedAlert(action) {
     // TODO(zhangtiff): Replace this with a modal for a more modern feel.
     alert(`Please select some issues to ${action}.`);
+  }
+
+  addToHotlist() {
+    const issues = this.selectedIssues;
+    if (!issues || !issues.length) {
+      return this.noneSelectedAlert('add to hotlists');
+    }
+    this.shadowRoot.querySelector('mr-update-issue-hotlists').open();
   }
 
   bulkEdit() {
@@ -187,6 +202,13 @@ export class MrListPage extends connectStore(LitElement) {
     } catch (e) {
       console.error(e);
     }
+  }
+
+  _setSelectedIssues() {
+    const issueListRef = this.shadowRoot.querySelector('mr-issue-list');
+    if (!issueListRef) return [];
+
+    this.selectedIssues = issueListRef.selectedIssues;
   }
 };
 customElements.define('mr-list-page', MrListPage);

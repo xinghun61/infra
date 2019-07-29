@@ -243,7 +243,11 @@ export class MrIssuePage extends connectStore(LitElement) {
           <mr-move-copy-issue id="move-copy-issue"></mr-move-copy-issue>
           <mr-convert-issue id="convert-issue"></mr-convert-issue>
           <mr-related-issues id="reorder-related-issues"></mr-related-issues>
-          <mr-update-issue-hotlists id="update-issue-hotlists"></mr-update-issue-hotlists>
+          <mr-update-issue-hotlists
+            id="update-issue-hotlists"
+            .issueRefs=${[this.issueRef]}
+            .issueHotlists=${this.issueHotlists}
+          ></mr-update-issue-hotlists>
         `: ''}
       `}
     `;
@@ -258,6 +262,7 @@ export class MrIssuePage extends connectStore(LitElement) {
       fetchingIssue: {type: Boolean},
       fetchingProjectConfig: {type: Boolean},
       issue: {type: Object},
+      issueHotlists: {type: Array},
       issueClosed: {
         type: Boolean,
         reflect: true,
@@ -284,6 +289,7 @@ export class MrIssuePage extends connectStore(LitElement) {
 
   stateChanged(state) {
     this.issue = issue.issue(state);
+    this.issueHotlists = issue.hotlists(state);
     this.issueRef = issue.issueRef(state);
     this.fetchIssueError = issue.requests(state).fetch.error;
     this.fetchingIssue = issue.requests(state).fetch.requesting;
@@ -324,10 +330,6 @@ export class MrIssuePage extends connectStore(LitElement) {
           !== this.issueRef.projectName && !this.fetchingProjectConfig) {
         store.dispatch(project.fetch(this.issueRef.projectName));
       }
-    }
-
-    if (changedProperties.has('userDisplayName')) {
-      store.dispatch(user.fetch(this.userDisplayName));
     }
 
     if (changedProperties.has('issueRef') || changedProperties.has('issue')) {

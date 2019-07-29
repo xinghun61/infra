@@ -302,7 +302,7 @@ export class MrIssueList extends LitElement {
     if (this._selectedIssues[i] !== oldSelection) {
       this.requestUpdate('_selectedIssues');
 
-      this.dispatchEvent(new CustomEvent('selection-change'));
+      this.dispatchEvent(new CustomEvent('selectionChange'));
     }
   }
 
