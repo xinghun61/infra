@@ -239,8 +239,7 @@ func (dr *dutRemover) removeDUT(ctx context.Context, r *fleet.RemoveDutsFromDron
 	}
 	srv.DutUids = removeSliceString(srv.DutUids, rr.dutID)
 	delete(dr.droneForDUT, rr.dutID)
-	d := dr.idToDUT[rr.dutID]
-	d.RemovalReason = rr.reason
+	dr.idToDUT[rr.dutID].RemovalReason = rr.reason
 	return &fleet.RemoveDutsFromDronesResponse_Item{
 		DutId:         rr.dutID,
 		DroneHostname: srv.GetHostname(),
