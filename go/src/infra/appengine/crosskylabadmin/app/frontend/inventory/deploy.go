@@ -262,9 +262,9 @@ func addDUTToFleet(ctx context.Context, s *gitstore.InventoryStore, nd *inventor
 			return errors.Annotate(err, "add dut to fleet").Err()
 		}
 
-		da := newDUTAssigner(ctx, s)
+		c := newGlobalInvCache(ctx, s)
 		hostname := d.GetHostname()
-		if _, ok := da.hostnameToID[hostname]; ok {
+		if _, ok := c.hostnameToID[hostname]; ok {
 			return errors.Reason("dut with hostname %s already exists", hostname).Err()
 
 		}
@@ -277,8 +277,8 @@ func addDUTToFleet(ctx context.Context, s *gitstore.InventoryStore, nd *inventor
 
 		id := addDUTToStore(s, d)
 		// TODO(ayatane): Implement this better than just regenerating the cache.
-		da = newDUTAssigner(ctx, s)
-		if _, err := da.assignDUT(ctx, &fleet.AssignDutsToDronesRequest_Item{DutId: id}); err != nil {
+		c = newGlobalInvCache(ctx, s)
+		if _, err := assignDUT(ctx, c, id); err != nil {
 			return errors.Annotate(err, "add dut to fleet").Err()
 		}
 
