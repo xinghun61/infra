@@ -248,7 +248,12 @@ func refreshAnnotationsHandler(ctx *router.Context) {
 
 func getAnnotationsHandler(ctx *router.Context) {
 	ah := newAnnotationHandler(ctx.Context)
-	ah.GetAnnotationsHandler(ctx)
+	activeKeys := map[string]interface{}{}
+	activeAlerts := handler.GetAlerts(ctx, true, false)
+	for _, alrt := range activeAlerts.Alerts {
+		activeKeys[alrt.Key] = nil
+	}
+	ah.GetAnnotationsHandler(ctx, activeKeys)
 }
 
 func postAnnotationsHandler(ctx *router.Context) {

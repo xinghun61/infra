@@ -60,8 +60,19 @@ func makeAnnotationResponse(a *model.Annotation, meta map[string]monorail.Issue)
 	return &AnnotationResponse{*a, bugs}
 }
 
+func filterAnnotations(annotations []*model.Annotation, activeKeys map[string]interface{}) []*model.Annotation {
+	ret := []*model.Annotation{}
+
+	for _, a := range annotations {
+		if _, ok := activeKeys[a.Key]; ok {
+			ret = append(ret, a)
+		}
+	}
+	return ret
+}
+
 // GetAnnotationsHandler retrieves a set of annotations.
-func (ah *AnnotationHandler) GetAnnotationsHandler(ctx *router.Context) {
+func (ah *AnnotationHandler) GetAnnotationsHandler(ctx *router.Context, activeKeys map[string]interface{}) {
 	c, w, p := ctx.Context, ctx.Writer, ctx.Params
 
 	tree := p.ByName("tree")
@@ -74,6 +85,8 @@ func (ah *AnnotationHandler) GetAnnotationsHandler(ctx *router.Context) {
 
 	annotations := []*model.Annotation{}
 	datastore.GetAll(c, q, &annotations)
+
+	annotations = filterAnnotations(annotations, activeKeys)
 
 	meta, err := ah.getAnnotationsMetaData(c)
 

@@ -41,7 +41,7 @@ var (
 )
 
 // GetAlerts handles API requests for alerts.
-func GetAlerts(ctx *router.Context, unresolved bool, resolved bool) {
+func GetAlerts(ctx *router.Context, unresolved bool, resolved bool) *messages.AlertsSummary {
 	c, w, p := ctx.Context, ctx.Writer, ctx.Params
 
 	tree := p.ByName("tree")
@@ -57,7 +57,7 @@ func GetAlerts(ctx *router.Context, unresolved bool, resolved bool) {
 		err := datastore.GetAll(c, q, &alertResults)
 		if err != nil {
 			errStatus(c, w, http.StatusInternalServerError, err.Error())
-			return
+			return nil
 		}
 
 		q = datastore.NewQuery("RevisionSummaryJSON")
@@ -67,7 +67,7 @@ func GetAlerts(ctx *router.Context, unresolved bool, resolved bool) {
 		err = datastore.GetAll(c, q, &revisionSummaryResults)
 		if err != nil {
 			errStatus(c, w, http.StatusInternalServerError, err.Error())
-			return
+			return nil
 		}
 	}
 
@@ -81,7 +81,7 @@ func GetAlerts(ctx *router.Context, unresolved bool, resolved bool) {
 		err := datastore.GetAll(c, q, &resolvedResults)
 		if err != nil {
 			errStatus(c, w, http.StatusInternalServerError, err.Error())
-			return
+			return nil
 		}
 	}
 
@@ -99,7 +99,7 @@ func GetAlerts(ctx *router.Context, unresolved bool, resolved bool) {
 		err := json.Unmarshal(alertJSON.Contents, &alertsSummary.Alerts[i])
 		if err != nil {
 			errStatus(c, w, http.StatusInternalServerError, err.Error())
-			return
+			return nil
 		}
 
 		t := messages.EpochTime(alertJSON.Date.Unix())
@@ -112,7 +112,7 @@ func GetAlerts(ctx *router.Context, unresolved bool, resolved bool) {
 		err := json.Unmarshal(alertJSON.Contents, &alertsSummary.Resolved[i])
 		if err != nil {
 			errStatus(c, w, http.StatusInternalServerError, err.Error())
-			return
+			return nil
 		}
 
 		t := messages.EpochTime(alertJSON.Date.Unix())
@@ -126,11 +126,16 @@ func GetAlerts(ctx *router.Context, unresolved bool, resolved bool) {
 		err := json.Unmarshal(summaryJSON.Contents, &summary)
 		if err != nil {
 			errStatus(c, w, http.StatusInternalServerError, err.Error())
-			return
+			return nil
 		}
 		alertsSummary.RevisionSummaries[summaryJSON.ID] = summary
 	}
+	return alertsSummary
+}
 
+func getAlerts(ctx *router.Context, unresolved bool, resolved bool) {
+	c, w := ctx.Context, ctx.Writer
+	alertsSummary := GetAlerts(ctx, unresolved, resolved)
 	data, err := json.MarshalIndent(alertsSummary, "", "\t")
 	if err != nil {
 		errStatus(c, w, http.StatusInternalServerError, err.Error())
@@ -142,18 +147,18 @@ func GetAlerts(ctx *router.Context, unresolved bool, resolved bool) {
 
 // GetAlertsHandler handles API requests for all alerts and revision summaries.
 func GetAlertsHandler(ctx *router.Context) {
-	GetAlerts(ctx, true, true)
+	getAlerts(ctx, true, true)
 }
 
 // GetUnresolvedAlertsHandler handles API requests for unresolved alerts
 // and revision summaries.
 func GetUnresolvedAlertsHandler(ctx *router.Context) {
-	GetAlerts(ctx, true, false)
+	getAlerts(ctx, true, false)
 }
 
 // GetResolvedAlertsHandler handles API requests for resolved alerts.
 func GetResolvedAlertsHandler(ctx *router.Context) {
-	GetAlerts(ctx, false, true)
+	getAlerts(ctx, false, true)
 }
 
 // PostAlertsHandler handes alert writes sent by an alerts dispatcher instance.

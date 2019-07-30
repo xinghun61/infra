@@ -78,7 +78,7 @@ func TestAnnotations(t *testing.T) {
 					Context: c,
 					Writer:  w,
 					Request: makeGetRequest(),
-				})
+				}, nil)
 
 				r, err := ioutil.ReadAll(w.Body)
 				So(err, ShouldBeNil)
@@ -103,7 +103,7 @@ func TestAnnotations(t *testing.T) {
 					Context: c,
 					Writer:  w,
 					Request: makeGetRequest(),
-				})
+				}, map[string]interface{}{ann.Key: nil})
 
 				r, err := ioutil.ReadAll(w.Body)
 				So(err, ShouldBeNil)
@@ -114,7 +114,24 @@ func TestAnnotations(t *testing.T) {
 				So(rslt, ShouldHaveLength, 1)
 				So(rslt[0], ShouldResemble, ann)
 			})
+
+			Convey("basic annotation, alert no longer active", func() {
+				ah.GetAnnotationsHandler(&router.Context{
+					Context: c,
+					Writer:  w,
+					Request: makeGetRequest(),
+				}, nil)
+
+				r, err := ioutil.ReadAll(w.Body)
+				So(err, ShouldBeNil)
+				body := string(r)
+				So(w.Code, ShouldEqual, 200)
+				rslt := []*model.Annotation{}
+				So(json.NewDecoder(strings.NewReader(body)).Decode(&rslt), ShouldBeNil)
+				So(rslt, ShouldHaveLength, 0)
+			})
 		})
+
 		Convey("POST", func() {
 			Convey("invalid action", func() {
 				ah.PostAnnotationsHandler(&router.Context{
