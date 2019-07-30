@@ -58,13 +58,11 @@ class Email(BaseHandler):
               'build_url',
               'project_name',
               'builderName',
-              'steps',
               'unsatisfied',
               'revisions',
               'blamelist',
               'result',
               'number',
-              'changes',
               'reason',
               'recipients']
 
@@ -72,24 +70,6 @@ class Email(BaseHandler):
       if field not in build_data:
         logging.error('build_data did not contain field %s' % field)
         return False
-
-    step_fields = ['started',
-                   'text',
-                   'name',
-                   'logs',
-                   'urls']
-
-    if not build_data['steps']:
-      logging.error('build_data did not contain any steps')
-      return False
-    for step in build_data['steps']:
-      for field in step_fields:
-        if field not in step:
-          logging.error('build_step did not contain field %s' % field)
-          return False
-        if step[field] is None:
-          logging.error('build_step[%r] is None' % field)
-          return False
 
     return True
 
