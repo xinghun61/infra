@@ -264,8 +264,9 @@ func addDUTToFleet(ctx context.Context, s *gitstore.InventoryStore, nd *inventor
 
 		da := newDUTAssigner(ctx, s)
 		hostname := d.GetHostname()
-		if da.dutHostnameExists(hostname) {
+		if _, ok := da.hostnameToID[hostname]; ok {
 			return errors.Reason("dut with hostname %s already exists", hostname).Err()
+
 		}
 
 		if pickServoPort && !hasServoPortAttribute(d) {

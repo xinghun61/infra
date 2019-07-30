@@ -205,11 +205,6 @@ func newDUTAssigner(ctx context.Context, s *gitstore.InventoryStore) *dutAssigne
 	}
 }
 
-func (da *dutAssigner) dutHostnameExists(hostname string) bool {
-	_, ok := da.hostnameToID[hostname]
-	return ok
-}
-
 func (da *dutAssigner) assignDUT(ctx context.Context, a *fleet.AssignDutsToDronesRequest_Item) (*fleet.AssignDutsToDronesResponse_Item, error) {
 	dutID, err := da.unpackRequest(a)
 	if err != nil {
