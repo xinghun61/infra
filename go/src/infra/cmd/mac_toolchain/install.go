@@ -147,6 +147,21 @@ func isXcode8(xcodeVersion string) bool {
 	return false
 }
 
+func isXcode10v2(xcodeVersion string) bool {
+	versions := []string{
+		"10E125",
+		"10E1001",
+		"10G8",
+		"11M374r",
+	}
+	for _, v := range versions {
+		if strings.HasPrefix(xcodeVersion, v) {
+			return true
+		}
+	}
+	return false
+}
+
 func finalizeInstallLegacy(ctx context.Context, xcodeAppPath, xcodeVersion, packageInstallerOnBots string) error {
 	if !isXcode8(xcodeVersion) {
 		return nil
@@ -182,8 +197,10 @@ func finalizeInstall(ctx context.Context, xcodeAppPath, xcodeVersion, packageIns
 	if isXcode8(xcodeVersion) {
 		return nil
 	}
-	if err := RunWithXcode(ctx, xcodeAppPath, "/usr/bin/xcodebuild", "-checkFirstLaunchStatus"); err == nil {
-		return nil
+	if !isXcode10v2(xcodeVersion) {
+		if err := RunWithXcode(ctx, xcodeAppPath, "/usr/bin/xcodebuild", "-checkFirstLaunchStatus"); err == nil {
+			return nil
+		}
 	}
 	return RunWithXcodeSelect(ctx, xcodeAppPath, func() error {
 		err := RunCommand(ctx, "sudo", "/usr/bin/xcodebuild", "-runFirstLaunch")
