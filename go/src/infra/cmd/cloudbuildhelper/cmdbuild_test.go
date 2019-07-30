@@ -34,6 +34,7 @@ const (
 	testRegistryName = "fake.example.com/registry"
 	testDigest       = "sha256:totally-legit-hash"
 	testTagName      = "canonical-tag"
+	testLogURL       = "https://example.com/cloud-build-log"
 
 	testImageName = testRegistryName + "/" + testTargetName
 )
@@ -95,13 +96,14 @@ func TestBuild(t *testing.T) {
 			So(obj.String(), ShouldEqual, testTarballURL+"#1") // uploaded the first gen
 
 			// Used Cloud Build.
-			So(res, ShouldResemble, &buildResult{
+			So(res, ShouldResemble, buildResult{
 				Image: &imageRef{
 					Image:        testImageName,
 					Digest:       testDigest,
 					CanonicalTag: testTagName,
 					BuildID:      "b1",
 				},
+				ViewBuildURL: testLogURL,
 			})
 
 			// Tagged it with canonical tag.
@@ -141,7 +143,7 @@ func TestBuild(t *testing.T) {
 				So(err, ShouldBeNil)
 
 				// Reused the existing image.
-				So(res, ShouldResemble, &buildResult{
+				So(res, ShouldResemble, buildResult{
 					Image: &imageRef{
 						Image:        testImageName,
 						Digest:       testDigest,
@@ -197,13 +199,14 @@ func TestBuild(t *testing.T) {
 				So(err, ShouldBeNil)
 
 				// Built the new image.
-				So(res, ShouldResemble, &buildResult{
+				So(res, ShouldResemble, buildResult{
 					Image: &imageRef{
 						Image:        testImageName,
 						Digest:       "sha256:new-totally-legit-hash",
 						CanonicalTag: "another-tag",
 						BuildID:      "b2",
 					},
+					ViewBuildURL: testLogURL,
 				})
 
 				// And moved "latest" tag.
@@ -234,7 +237,7 @@ func TestBuild(t *testing.T) {
 			So(err, ShouldBeNil)
 
 			// Reused the existing image.
-			So(res, ShouldResemble, &buildResult{
+			So(res, ShouldResemble, buildResult{
 				Image: &imageRef{
 					Image:        testImageName,
 					Digest:       testDigest,
@@ -269,8 +272,8 @@ func TestBuild(t *testing.T) {
 			So(err, ShouldBeNil)
 			So(obj.String(), ShouldEqual, testTarballURL+"#1") // uploaded the first gen
 
-			// Did NOT produce any image.
-			So(res, ShouldResemble, &buildResult{})
+			// Did NOT produce any image, but have a link to the build.
+			So(res, ShouldResemble, buildResult{ViewBuildURL: testLogURL})
 		})
 
 		Convey("Cloud Build build failure", func() {
@@ -450,6 +453,7 @@ func (b *builderImplMock) Trigger(ctx context.Context, r cloudbuild.Request) (*c
 	build := cloudbuild.Build{
 		ID:     fmt.Sprintf("b-%d", b.nextID),
 		Status: cloudbuild.StatusQueued,
+		LogURL: testLogURL,
 	}
 	b.builds[build.ID] = runningBuild{
 		Build:   build,
