@@ -33,9 +33,33 @@ describe('mr-app', () => {
       params: {project: 'chromium'},
     });
 
+    await element.updateComplete;
     const issuePage = element.shadowRoot.querySelector('mr-issue-page');
     assert.isDefined(issuePage, 'issue page is defined');
     assert.equal(issuePage.issueRef.projectName, 'chromium');
     assert.equal(issuePage.issueRef.localId, 234);
+  });
+
+  it('_loadListPage loads list page', async () => {
+    await element._loadListPage({
+      params: {project: 'chromium'},
+    });
+
+    await element.updateComplete;
+    const listPage = element.shadowRoot.querySelector('mr-list-page');
+    assert.isDefined(listPage, 'list page is defined');
+    assert.equal(listPage.projectName, 'chromium');
+  });
+
+  it('_loadListPage loads grid page', async () => {
+    element.queryParams = {mode: 'grid'};
+    await element._loadListPage({
+      params: {project: 'chromium'},
+    });
+
+    await element.updateComplete;
+    const gridPage = element.shadowRoot.querySelector('mr-grid-page');
+    assert.isDefined(gridPage, 'grid page is defined');
+    assert.equal(gridPage.projectName, 'chromium');
   });
 });

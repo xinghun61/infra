@@ -3,8 +3,12 @@
 // found in the LICENSE file.
 
 import {assert} from 'chai';
+import sinon from 'sinon';
 import * as issue from './issue.js';
 import {fieldTypes} from 'elements/shared/field-types.js';
+import {prpcClient} from 'prpc-client-instance.js';
+
+let prpcCall;
 
 describe('issue', () => {
   it('issue', () => {
@@ -364,6 +368,62 @@ describe('issue', () => {
       {fieldRef: {fieldName: 'nonApplicable', type: fieldTypes.STR_TYPE},
         applicableType: 'None'},
     ]);
+  });
+
+  describe('ListIssues', () => {
+    beforeEach(() => {
+      prpcCall = sinon.stub(prpcClient, 'call');
+    });
+
+    afterEach(() => {
+      prpcCall.restore();
+    });
+
+    it('correct number of calls to ListIssues', async () => {
+      prpcCall.callsFake(() => {
+        return {
+          issues: [{localId: 1}, {localId: 2}, {localId: 3}],
+          totalResults: 6,
+        };
+      });
+
+      const dispatch = sinon.stub();
+      const action = issue.fetchIssueList('', '', {maxItems: 3}, 2);
+      await action(dispatch);
+
+      sinon.assert.calledTwice(prpcCall);
+      sinon.assert.calledWith(dispatch, sinon.match({
+        type: 'FETCH_ISSUE_LIST_SUCCESS',
+        issueList: {
+          issues:
+            [{localId: 1}, {localId: 2}, {localId: 3},
+              {localId: 1}, {localId: 2}, {localId: 3}],
+          progress: 1,
+          totalResults: 6,
+        },
+      }));
+    });
+
+    it('correct order of issues from fetchListIssues', async () => {
+      prpcCall.onFirstCall().returns({issues: [{localId: 1}], totalResults: 6});
+      prpcCall.onSecondCall().returns({
+        issues: [{localId: 2}],
+        totalResults: 6});
+      prpcCall.onThirdCall().returns({issues: [{localId: 3}], totalResults: 6});
+
+      const dispatch = sinon.stub();
+      const action = issue.fetchIssueList('', '', {maxItems: 1}, 3);
+      await action(dispatch);
+
+      sinon.assert.calledWith(dispatch, sinon.match({
+        type: 'FETCH_ISSUE_LIST_SUCCESS',
+        issueList: {
+          issues: [{localId: 1}, {localId: 2}, {localId: 3}],
+          progress: 1,
+          totalResults: 6,
+        },
+      }));
+    });
   });
 });
 

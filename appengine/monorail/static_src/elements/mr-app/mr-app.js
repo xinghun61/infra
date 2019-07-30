@@ -56,7 +56,7 @@ export class MrApp extends connectStore(LitElement) {
         nondismissible
       ></mr-cue>
       <mr-cue cuePrefName="search_for_numbers" centered></mr-cue>
-      <main></main>
+      ${this._renderPage()}
     `;
   }
 
@@ -71,6 +71,7 @@ export class MrApp extends connectStore(LitElement) {
       dirtyForms: {type: Array},
       versionBase: {type: String},
       _currentContext: {type: Object},
+      page: {type: String},
     };
   }
 
@@ -150,22 +151,30 @@ export class MrApp extends connectStore(LitElement) {
     page();
   }
 
-  loadWebComponent(name, props) {
-    const component = document.createElement(name, {is: name});
-
-    for (const key in props) {
-      if (props.hasOwnProperty(key)) {
-        component[key] = props[key];
-      }
-    }
-
-    const main = this.shadowRoot.querySelector('main');
-    if (main) {
-      // Clone the main tag without copying its children.
-      const mainClone = main.cloneNode(false);
-      mainClone.appendChild(component);
-
-      main.parentNode.replaceChild(mainClone, main);
+  _renderPage() {
+    if (this.page === 'detail') {
+      return html`
+        <mr-issue-page
+          .projectName=${this.projectName}
+          .userDisplayName=${this.userDisplayName}
+          .queryParams=${this.queryParams}
+          .loginUrl=${this.loginUrl}
+        ></mr-issue-page>
+      `;
+    } else if (this.page === 'grid') {
+      return html`
+        <mr-grid-page
+          .projectName=${this.projectName}
+          .queryParams=${this.queryParams}
+        ></mr-grid-page>
+      `;
+    } else if (this.page === 'list') {
+      return html`
+        <mr-list-page
+          .projectName=${this.projectName}
+          .queryParams=${this.queryParams}
+        ></mr-list-page>
+      `;
     }
   }
 
@@ -179,14 +188,7 @@ export class MrApp extends connectStore(LitElement) {
     this.projectName = ctx.params.project;
 
     await import(/* webpackChunkName: "mr-issue-page" */ '../issue-detail/mr-issue-page/mr-issue-page.js');
-    // TODO(zhangtiff): Make sure the properties passed in to the loaded
-    // component can still dynamically change.
-    this.loadWebComponent('mr-issue-page', {
-      'projectName': ctx.params.project,
-      'userDisplayName': this.userDisplayName,
-      'queryParams': ctx.params,
-      'loginUrl': this.loginUrl,
-    });
+    this.page = 'detail';
   }
 
   async _loadListPage(ctx, next) {
@@ -196,18 +198,14 @@ export class MrApp extends connectStore(LitElement) {
         && this.queryParams.mode.toLowerCase()) {
       case 'grid':
         await import(/* webpackChunkName: "mr-grid-page" */ '../issue-list/mr-grid-page/mr-grid-page.js');
-        return this.loadWebComponent('mr-grid-page', {
-          'projectName': ctx.params.project,
-          'queryParams': this.queryParams,
-        });
+        this.page = 'grid';
+        break;
       // TODO(zhangtiff): Add case for loading chart SPA page.
       // case 'chart':
       default:
         await import(/* webpackChunkName: "mr-list-page" */ '../issue-list/mr-list-page/mr-list-page.js');
-        return this.loadWebComponent('mr-list-page', {
-          'projectName': ctx.params.project,
-          'queryParams': this.queryParams,
-        });
+        this.page = 'list';
+        break;
     }
   }
 

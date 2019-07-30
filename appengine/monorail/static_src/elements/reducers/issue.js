@@ -27,6 +27,7 @@ const FETCH_HOTLISTS_SUCCESS = 'FETCH_HOTLISTS_SUCCESS';
 const FETCH_HOTLISTS_FAILURE = 'FETCH_HOTLISTS_FAILURE';
 
 const FETCH_ISSUE_LIST_START = 'FETCH_ISSUE_LIST_START';
+const FETCH_ISSUE_LIST_UPDATE = 'FETCH_ISSUE_LIST_UPDATE';
 const FETCH_ISSUE_LIST_SUCCESS = 'FETCH_ISSUE_LIST_SUCCESS';
 const FETCH_ISSUE_LIST_FAILURE = 'FETCH_ISSUE_LIST_FAILURE';
 
@@ -92,7 +93,11 @@ const UPDATE_APPROVAL_FAILURE = 'UPDATE_APPROVAL_FAILURE';
   currentIssue: Object,
 
   hotlists: Array,
-  issueList: Array,
+  issueList: {
+    issues: Array,
+    progress: Number,
+    totalResults: Number,
+  }
   comments: Array,
   commentReferences: Map,
   relatedIssues: Map,
@@ -163,6 +168,7 @@ const hotlistsReducer = createReducer([], {
 
 const issueListReducer = createReducer([], {
   [FETCH_ISSUE_LIST_SUCCESS]: (_state, action) => action.issueList,
+  [FETCH_ISSUE_LIST_UPDATE]: (_state, action) => action.issueList,
 });
 
 const commentsReducer = createReducer([], {
@@ -307,7 +313,9 @@ export const comments = (state) => state.issue.comments;
 export const commentsLoaded = (state) => state.issue.commentsLoaded;
 export const commentReferences = (state) => state.issue.commentReferences;
 export const hotlists = (state) => state.issue.hotlists;
-export const issueList = (state) => state.issue.issueList;
+export const issueList = (state) => state.issue.issueList.issues;
+export const totalIssues = (state) => state.issue.issueList.totalResults;
+export const issueListProgress = (state) => state.issue.issueList.progress;
 export const issueLoaded = (state) => state.issue.issueLoaded;
 export const permissions = (state) => state.issue.permissions;
 export const presubmitResponse = (state) => state.issue.presubmitResponse;
@@ -689,10 +697,20 @@ export const fetchHotlists = (issue) => async (dispatch) => {
   };
 };
 
-export const fetchIssueList = (params, projectName, pagination = {}) =>
-  async (dispatch) => {
+export const fetchIssueList =
+  (params, projectName, pagination = {}, maxCalls = 1) => async (dispatch) => {
+    let issueList = {};
+    const promises = [];
+    const issuesByRequest = [];
+    let issueLimit;
+    let totalIssues;
+    let totalCalls;
+    const itemsPerCall = (pagination.maxItems || 1000);
+
     dispatch({type: FETCH_ISSUE_LIST_START});
 
+    // initial api call made to determine total number of issues matching
+    // the query.
     try {
       const resp = await prpcClient.call(
         'monorail.Issues', 'ListIssues', {
@@ -704,7 +722,50 @@ export const fetchIssueList = (params, projectName, pagination = {}) =>
           sortSpec: params.sort,
         });
 
-      const issueList = (resp.issues || []);
+      issueList = (resp || {});
+      issuesByRequest[0] = issueList.issues;
+      issueLimit = issueList.totalResults;
+
+      // determine correct issues to load and number of calls to be made.
+      if (issueLimit > (itemsPerCall * maxCalls)) {
+        totalIssues = itemsPerCall * maxCalls;
+        totalCalls = maxCalls - 1;
+      } else {
+        totalIssues = issueLimit;
+        totalCalls = Math.ceil(issueLimit / itemsPerCall) - 1;
+      }
+
+      issueList.progress =
+        issueList.issues.length / totalIssues;
+      dispatch({type: FETCH_ISSUE_LIST_UPDATE, issueList});
+
+      // remaining api calls are made.
+      for (let i = 1; i <= totalCalls; i++) {
+        promises[i - 1] = (async () => {
+          const resp = await prpcClient.call(
+            'monorail.Issues', 'ListIssues', {
+              query: params.q,
+              cannedQuery: params.can,
+              projectNames: [projectName],
+              pagination:
+                {start: i * itemsPerCall, maxItems: itemsPerCall},
+              groupBySpec: params.groupby,
+              sortSpec: params.sort,
+            });
+          issuesByRequest[i] = (resp.issues || []);
+          // sort the issues in the correct order.
+          issueList.issues = [];
+          issuesByRequest.forEach((issue) => {
+            issueList.issues = issueList.issues.concat(issue);
+          });
+          issueList.progress =
+            issueList.issues.length / totalIssues;
+          dispatch({type: FETCH_ISSUE_LIST_UPDATE, issueList});
+        })();
+      }
+
+      await Promise.all(promises);
+
       dispatch({type: FETCH_ISSUE_LIST_SUCCESS, issueList});
     } catch (error) {
       dispatch({type: FETCH_ISSUE_LIST_FAILURE, error});
