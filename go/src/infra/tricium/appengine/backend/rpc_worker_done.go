@@ -243,8 +243,6 @@ func workerDone(c context.Context, req *admin.WorkerDoneRequest, isolator common
 			if err := ds.Put(c, entities); err != nil {
 				return errors.Annotate(err, "failed to add CommentFeedback or CommentSelection entries").Err()
 			}
-			// Monitor comment count per category.
-			commentCount.Set(c, int64(len(comments)), functionName, platformName)
 		}
 
 		// Update WorkerRunResult state, isolated or buildbucket output, and
@@ -255,12 +253,6 @@ func workerDone(c context.Context, req *admin.WorkerDoneRequest, isolator common
 		workerResult.NumComments = len(comments)
 		if err := ds.Put(c, workerResult); err != nil {
 			return errors.Annotate(err, "failed to update WorkerRunResult").Err()
-		}
-		// Monitor worker success/failure.
-		if req.State == tricium.State_SUCCESS {
-			workerSuccessCount.Add(c, 1, functionName, platformName)
-		} else {
-			workerFailureCount.Add(c, 1, functionName, platformName, req.State.String())
 		}
 
 		// Update FunctionRunResult state and comment count.
@@ -305,6 +297,18 @@ func workerDone(c context.Context, req *admin.WorkerDoneRequest, isolator common
 		return nil
 	}, nil); err != nil {
 		return err
+	}
+
+	// Monitor comment count per category and worker success/failure. Metric
+	// updates are done after the transaction to prevent double-counting in the
+	// case of transaction retries.
+	if len(comments) > 0 {
+		commentCount.Add(c, int64(len(comments)), functionName, platformName)
+	}
+	if req.State == tricium.State_SUCCESS {
+		workerSuccessCount.Add(c, 1, functionName, platformName)
+	} else {
+		workerFailureCount.Add(c, 1, functionName, platformName, req.State.String())
 	}
 
 	if !tricium.IsDone(functionState) {
