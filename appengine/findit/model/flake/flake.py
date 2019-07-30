@@ -218,11 +218,9 @@ class Flake(ndb.Model):
     isolate_target_name as a temporary workaround.
 
     Args:
+      build_id: Build id of the build of the step.
       step_name: The original step name, and it may contain hardware information
                  and 'with(out) patch' suffixes.
-      master_name: Master name of the build of the step.
-      builder_name: Builder name of the build of the step.
-      build_number: Build number of the build of the step.
 
     Returns:
       Normalized version of the given step name.
@@ -238,16 +236,16 @@ class Flake(ndb.Model):
     # In case isolate_target_name doesn't exist, fall back to
     # canonical_step_name or step_name.split()[0].
     logging.error(
-        ('Failed to obtain isolate_target_name for step: %s in build id: %s. '
-         'Fall back to use canonical_step_name.') % (step_name, build_id))
+        'Failed to obtain isolate_target_name for step: %s in build id: %s. '
+        'Fall back to use canonical_step_name.', step_name, build_id)
     canonical_step_name = step_util.GetCanonicalStepName(
         build_id=build_id, step_name=step_name)
     if canonical_step_name:
       return canonical_step_name
 
     logging.error(
-        ('Failed to obtain canonical_step_name for step: %s in build: %s. '
-         'Fall back to use step_name.split()[0].') % (step_name, build_id))
+        'Failed to obtain canonical_step_name for step: %s in build id: %s. '
+        'Fall back to use step_name.split()[0].', step_name, build_id)
     return step_name.split()[0]
 
   @staticmethod

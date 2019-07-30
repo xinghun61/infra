@@ -440,6 +440,29 @@ def _CanonicalStepNameKeyGenerator(func, args, kwargs, namespace=None):
   return '%s-%s' % (namespace, encoded_params)
 
 
+def _PlatformKeyGenerator(func, args, kwargs, namespace=None):
+  """Generates a key to a cached platform.
+
+  Using the step_name and builder_name as key.
+
+  Args:
+    func (function): An arbitrary function.
+    args (list): Positional arguments passed to ``func``.
+    kwargs (dict): Keyword arguments passed to ``func``.
+    namespace (str): A prefix to the key for the cache.
+
+  Returns:
+    A string to represent a call to the given function with the given arguments.
+  """
+  params = inspect.getcallargs(func, *args, **kwargs)
+  builder_name = params.get('builder_name')
+  assert builder_name, 'No builder name provided when platform.'
+  step_name = params.get('step_name')
+  assert step_name, 'No step name provided when platform.'
+  encoded_params = hashlib.md5('%s|%s' % (builder_name, step_name)).hexdigest()
+  return '%s-%s' % (namespace, encoded_params)
+
+
 def GetWaterfallBuildStepLog(master_name,
                              builder_name,
                              build_number,
@@ -513,7 +536,7 @@ def GetCanonicalStepName(build_id, step_name):
 
   Args:
     build_id: Build id of the build.
-    step_name: The original step name to get isolate_target_name for, and the
+    step_name: The original step name to get canonical_step_name for, and the
                step name may contain hardware information and 'with(out) patch'
                suffixes.
 
@@ -556,16 +579,37 @@ def GetIsolateTargetName(build_id, step_name):
   """ Returns the isolate_target_name in the step_metadata.
 
   Args:
-    luci_project: Luci project of the build.
-    bucket: Luci bucket of the build.
-    build_number: Build number of the build.
-    step_name: The original step name to get isolate_target_name for.
+    build_id: Build id of the build.
+    step_name: The original step name to get isolate_target_name for, and the
+               step name may contain hardware information and 'with(out) patch'
+               suffixes.
 
   Returns:
     The isolate_target_name if it exists, otherwise, None.
   """
   step_metadata = GetStepMetadata(build_id, step_name)
   return step_metadata.get('isolate_target_name') if step_metadata else None
+
+
+@Cached(
+    PickledMemCache(),
+    namespace='platform',
+    expire_time=_METADATA_ELEMENT_CACHE_EXPIRE_TIME_SECONDS,
+    key_generator=_PlatformKeyGenerator)
+def GetPlatform(build_id, builder_name, step_name):
+  # pylint:disable=unused-argument
+  """Returns the platform in the step_metadata.
+
+  Args:
+    build_id: Build id of the build.
+    builder_name: Builder name of the build.
+    step_name: The original step name used to get the step metadata.
+
+  Returns:
+    The platform if it exists, otherwise, None.
+  """
+  step_metadata = GetStepMetadata(build_id, step_name)
+  return step_metadata.get('dimensions').get('os') if step_metadata else None
 
 
 def StepIsSupportedForMaster(master_name, builder_name, build_number,

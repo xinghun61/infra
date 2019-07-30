@@ -541,6 +541,26 @@ class StepUtilTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(expected_isolate_target,
                      step_util.GetIsolateTargetName(123, 'full step name'))
 
+  @parameterized.expand([(wf_testcase.SAMPLE_STEP_METADATA, 'platform'),
+                         (None, None)])
+  @mock.patch.object(step_util, 'GetStepMetadata')
+  def testGetPlatform(self, mock_fn_return, expected_platform, mock_fn):
+    mock_fn.return_value = mock_fn_return
+    self.assertEqual(expected_platform,
+                     step_util.GetPlatform(123, 'builder_name', 'step_name'))
+
+  @mock.patch.object(
+      step_util,
+      'GetStepMetadata',
+      return_value=wf_testcase.SAMPLE_STEP_METADATA)
+  def testGetPlatformCached(self, mock_fn):
+    self.assertEqual('platform',
+                     step_util.GetPlatform(123, 'builder_name', 'step_name'))
+    self.assertEqual(1, mock_fn.call_count)
+    self.assertEqual('platform',
+                     step_util.GetPlatform(123, 'builder_name', 'step_name'))
+    self.assertEqual(1, mock_fn.call_count)
+
   def testGetStepStartAndEndTime(self):
     build_id = '8945610992972640896'
     start_time = datetime.datetime(2019, 3, 6)
