@@ -19,7 +19,6 @@ package inventory
 import (
 	"fmt"
 	"sort"
-	"strings"
 
 	fleet "infra/appengine/crosskylabadmin/api/fleet/v1"
 	"infra/appengine/crosskylabadmin/app/config"
@@ -298,14 +297,11 @@ func (dr *dutRemover) removeDUT(ctx context.Context, r *fleet.RemoveDutsFromDron
 // removeRequest is an unpacked fleet.RemoveDutsFromDronesRequest_Item.
 type removeRequest struct {
 	dutID  string
-	drone  string
 	reason *inventory.RemovalReason
 }
 
 func (dr *dutRemover) unpackRequest(r *fleet.RemoveDutsFromDronesRequest_Item) (removeRequest, error) {
-	rr := removeRequest{
-		drone: r.DroneHostname,
-	}
+	var rr removeRequest
 	if err := dr.unpackRequestDUTID(r, &rr); err != nil {
 		return rr, err
 	}
@@ -343,27 +339,14 @@ func (dr *dutRemover) unpackRequestReason(r *fleet.RemoveDutsFromDronesRequest_I
 	return nil
 }
 
-// findDroneForRequestDUT finds the drone for the DUT in the remove
-// request.  If the request listed the wrong drone, return an error.
+// findDroneForRequestDUT finds the drone for the DUT in the remove request.
 // Note that this function may return a nil server along with a nil
 // error, if the DUT is not found but the request should not consider
 // this an error.
-//
-// DUTs assigned to the drone queen don't check the drone in the
-// removeRequest.
 func (dr *dutRemover) findDroneForRequestDUT(rr removeRequest) (*inventory.Server, error) {
 	srv, ok := dr.droneForDUT[rr.dutID]
 	if !ok {
-		if rr.drone != "" {
-			return nil, status.Errorf(codes.FailedPrecondition, "DUT %s is not assigned to a drone", rr.dutID)
-		}
 		return nil, nil
-	}
-	if strings.HasPrefix(srv.GetHostname(), queenDronePrefix) {
-		return srv, nil
-	}
-	if rr.drone != "" && rr.drone != srv.GetHostname() {
-		return nil, status.Errorf(codes.FailedPrecondition, "DUT %s is not on drone %s", rr.dutID, rr.drone)
 	}
 	return srv, nil
 }
