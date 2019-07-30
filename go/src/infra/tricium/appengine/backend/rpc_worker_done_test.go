@@ -650,8 +650,7 @@ func TestCommentFetchingFunctions(t *testing.T) {
 			So(err, ShouldBeNil)
 		})
 
-		// TODO(crbug.com/988901): Flaky.
-		SkipConvey("Three CommentFeedback keys for both of those runs together", func() {
+		Convey("Three CommentFeedback keys for both of those runs together", func() {
 			keys, err := fetchAllCommentFeedback(ctx, []*ds.Key{
 				ds.MakeKey(ctx, "AnalyzeRequest", 22),
 				ds.MakeKey(ctx, "AnalyzeRequest", 23),
@@ -660,8 +659,7 @@ func TestCommentFetchingFunctions(t *testing.T) {
 			So(err, ShouldBeNil)
 		})
 
-		// TODO(crbug.com/988901): Flaky.
-		SkipConvey("suppressedCategories returns all not useful categories for all patchsets", func() {
+		Convey("suppressedCategories returns all not useful categories for all patchsets", func() {
 			categories := suppressedCategories(ctx, "example.com", "p~master~I2222")
 			So(categories, ShouldResemble, stringset.NewFromSlice("Foo/C1", "Foo/C2", "Foo/C4"))
 		})

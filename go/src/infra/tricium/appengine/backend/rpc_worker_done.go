@@ -603,7 +603,9 @@ func fetchAllCommentFeedback(c context.Context, arKeys []*ds.Key) ([]*ds.Key, er
 	// may help with this.
 	if err := parallel.WorkPool(8, func(taskC chan<- func() error) {
 		for i, arKey := range arKeys {
-			ancestor := arKey // Declare a new variable for the closure below.
+			// Declare new variables for the closure below.
+			i := i
+			ancestor := arKey
 			taskC <- func() error {
 				q := ds.NewQuery("CommentFeedback").Ancestor(ancestor).Gt("NotUsefulReports", 0)
 				err := ds.GetAll(c, q.KeysOnly(true), &cfKeys[i])
