@@ -4,25 +4,22 @@
 
 """This module integrates buildbucket with swarming.
 
-A bucket config may have "swarming" field that specifies how a builder
-is mapped to a recipe. If build is scheduled for a bucket/builder
-with swarming configuration, the integration overrides the default behavior.
+A bucket config in cr-buildbucket.cfg may have "swarming" field that specifies
+how a builder is mapped to a LUCI executable. If build is scheduled for a bucket
+with swarming configuration, the integration overrides the default behavior,
+e.g. there is no peeking/leasing of builds.
 
-Prior adding Build to the datastore, a swarming task is created. The definition
-of the task definition is rendered from a global template. The parameters of the
-template are defined by the bucket config and build parameters.
-
-A build may have "swarming" parameter which is a JSON object with keys:
-  recipe: JSON object
-    revision: revision of the recipe. Will be available in the task template
-              as $revision parameter.
+A push task is recorded transactionally with a build entity. The push task then
+creates a swarming task, based on the build proto and global settings, and
+re-enqueues itself with 1m delay. Future invocations of the push task
+synchronize the build state with the swarming task state (e.g. if a task
+starts, then the build is marked as started too) and keep re-enqueuing itself,
+with 1m delay, and continuously synchronizes states, until the swarming task
+is complete.
 
 When creating a task, a PubSub topic is specified. Swarming will notify on
 task status updates to the topic and buildbucket will sync its state.
 Eventually both swarming task and buildbucket build will complete.
-
-Swarming does not guarantee notification delivery, so there is also a cron job
-that checks task results of all incomplete builds every 10 min.
 """
 
 import base64
@@ -54,6 +51,7 @@ from legacy import api_common
 from proto import common_pb2
 from proto import launcher_pb2
 from proto import project_config_pb2
+from proto import service_config_pb2
 import bbutil
 import buildtags
 import config
@@ -69,8 +67,6 @@ import user
 # Name of a push task queue that synchronizes a buildbucket build and a swarming
 # task; a push task per build.
 SYNC_QUEUE_NAME = 'swarming-build-sync'
-
-_PUBSUB_TOPIC = 'swarming'
 
 # This is the path, relative to the swarming run dir, to the directory that
 # contains the mounted swarming named caches. It will be prepended to paths of
@@ -92,49 +88,6 @@ USER_PACKAGE_DIR = 'cipd_bin_packages'
 
 class Error(Exception):
   """Base class for swarmbucket-specific errors."""
-
-
-class TemplateNotFound(Error):
-  """Raised when a task template is not found."""
-
-
-def _get_task_template(canary):
-  """Gets a tuple (template_revision, template_dict).
-
-  Args:
-    canary (bool): whether canary template should be returned.
-
-  Returns:
-    Tuple (template_revision, template_dict):
-      template_revision (str): revision of the template, e.g. commit hash.
-      template_dict (dict): parsed template, or None if not found.
-        May contain $parameters that must be expanded using format_obj().
-  """
-  text = None
-  revision = None
-  if canary:
-    logging.warning('using canary swarming task template')
-    revision, text = component_config.get_self_config(
-        'swarming_task_template_canary.json', store_last_good=True
-    )
-
-  if not text:
-    revision, text = component_config.get_self_config(
-        'swarming_task_template.json', store_last_good=True
-    )
-
-  template = json.loads(text)
-  template.pop('__comment__', None)
-  return revision, template
-
-
-# Mocked in tests.
-def _should_use_canary_template(percentage):  # pragma: no cover
-  """Returns True if a canary template should be used.
-
-  This function is non-determinstic.
-  """
-  return random.randint(0, 99) < percentage
 
 
 def _buildbucket_property(build):
@@ -179,252 +132,180 @@ def _buildbucket_property_legacy(build):
           'bucket': api_common.format_luci_bucket(build.bucket_id),
           'created_by': build.created_by.to_bytes(),
           'created_ts': created_ts,
-          'id': str(build.key.id()),
+          'id': str(build.proto.id),
           'tags': build.tags,
       },
   }
 
 
-def _create_task_def(build, settings, fake_build):
-  """Creates a swarming task definition for the |build|."""
+def compute_task_def(build, settings, fake_build):
+  """Returns a swarming task definition for the |build|.
+
+
+  Args:
+    build (model.Build): the build to generate the task definition for.
+      build.proto.infra and build.proto.input.properties must be initialized.
+    settings (service_config_pb2.SettingsCfg): global settings.
+    fake_build (bool): False if the build is not going to be actually
+      created in buildbucket. This is used by led that only needs the definition
+      of the task that *would be* used for a new build like this.
+
+  Returns a task_def dict.
+  Corresponds to JSON representation of
+  https://cs.chromium.org/chromium/infra/luci/appengine/swarming/swarming_rpcs.py?q=NewTaskRequest&sq=package:chromium&g=0&l=438
+  """
   assert isinstance(build, model.Build), type(build)
-  assert build.key and build.key.id(), build.key
-  assert build.url, 'build.url should have been initialized'
   assert isinstance(fake_build, bool), type(fake_build)
+  assert build.proto.HasField('infra')
+  assert build.proto.input.HasField('properties')
+  assert isinstance(settings, service_config_pb2.SettingsCfg)
 
-  task_template_rev, task_template = _get_task_template(build.canary)
+  sw = build.proto.infra.swarming
 
-  bp = build.proto
-  sw = bp.infra.swarming
-
-  # TODO(nodir): remove builder_hash parameter.
-  h = hashlib.sha256(build.builder_id).hexdigest()
-  task_template_params = {
-      'builder_hash': h,
-      'build_id': build.key.id(),
-      'build_url': build.url,
-      'builder': bp.builder.builder,
-      'cache_dir': _CACHE_DIR,
-      'hostname': app_identity.get_default_version_hostname(),
-      'project': build.project,
-      'swarming_hostname': build.proto.infra.swarming.hostname,
+  task = {
+      'name': 'bb-%d-%s' % (build.proto.id, build.builder_id),
+      'tags': _compute_tags(build),
+      'priority': str(sw.priority),
+      'task_slices': _compute_task_slices(build, settings),
   }
-  extra_swarming_tags = []
-  if 'recipe' in bp.input.properties.fields:
-    extra_swarming_tags, extra_task_template_params = _setup_recipes(build)
-    task_template_params.update(extra_task_template_params)
-
-  # Render task template.
-  # Format is
-  # https://cs.chromium.org/chromium/infra/luci/appengine/swarming/swarming_rpcs.py?q=NewTaskRequest
-  task_template_params = {
-      k: v or '' for k, v in task_template_params.iteritems()
-  }
-  task = format_obj(task_template, task_template_params)
-
-  # Set 'pool_task_template' to match our build's canary status.
-  # This can be made unconditional after crbug.com/823434 is closed. Right now
-  # we override this with "SKIP" in the templates to allow an atomic transition.
-  task.setdefault(
-      'pool_task_template', 'CANARY_PREFER' if build.canary else 'CANARY_NEVER'
-  )
-
-  task['priority'] = str(build.proto.infra.swarming.priority)
+  if build.proto.number:  # pragma: no branch
+    task['name'] += '-%d' % build.proto.number
 
   if sw.task_service_account:  # pragma: no branch
     # Don't pass it if not defined, for backward compatibility.
     task['service_account'] = sw.task_service_account
 
-  task['tags'] = _calc_tags(
-      build, extra_swarming_tags, task_template_rev, task.get('tags')
-  )
-
-  _setup_swarming_request_task_slices(build, settings, task)
-
   if not fake_build:  # pragma: no branch | covered by swarmbucketapi_test.py
-    _setup_swarming_request_pubsub(task, build)
+    task['pubsub_topic'] = 'projects/%s/topics/swarming' % (
+        app_identity.get_application_id()
+    )
+    task['pubsub_userdata'] = json.dumps(
+        {
+            'build_id': build.proto.id,
+            'created_ts': utils.datetime_to_timestamp(utils.utcnow()),
+            'swarming_hostname': sw.hostname,
+        },
+        sort_keys=True,
+    )
 
   return task
 
 
-def _setup_recipes(build):
-  """Initializes a build request using recipes.
-
-  Returns:
-    extra_swarming_tags, extra_task_template_params
-  """
-  exe = build.proto.exe
-  props = copy.copy(build.proto.input.properties)
-
-  # TODO(nodir): Remove recipe dependencies from buildbucket.
-  assert 'recipe' in props.fields, props
-  recipe = props['recipe']
-
-  # In order to allow some builders to behave like other builders, we allow
-  # builders to explicitly set buildername.
-  # TODO(nodir): delete this "feature".
-  if 'buildername' not in props:  # pragma: no branch
-    props['buildername'] = build.proto.builder.builder
-
-  props.get_or_create_struct('$recipe_engine/runtime').update({
-      'is_luci': True,
-      'is_experimental': build.experimental,
-  })
-
-  if build.proto.number:  # pragma: no branch
-    props['buildnumber'] = build.proto.number
-
-  # Add repository property, for backward compatibility.
-  # TODO(crbug.com/877161): remove it.
-  if len(build.proto.input.gerrit_changes) == 1:  # pragma: no branch
-    cl = build.proto.input.gerrit_changes[0]
-    suffix = '-review.googlesource.com'
-    if cl.host.endswith(suffix) and cl.project:  # pragma: no branch
-      props['repository'] = 'https://%s.googlesource.com/%s' % (
-          cl.host[:-len(suffix)], cl.project
-      )
-
-  props['$recipe_engine/buildbucket'] = _buildbucket_property(build)
-  # TODO(nodir): remove legacy "buildbucket" property.
-  props['buildbucket'] = _buildbucket_property_legacy(build)
-  extra_task_template_params = {
-      'recipe': recipe,
-      'properties_json': api_common.properties_to_json(props),
-      'checkout_dir': _KITCHEN_CHECKOUT,
+def _compute_tags(build):
+  """Computes the Swarming task request tags to use."""
+  logdog = build.proto.infra.logdog
+  tags = {
+      # TODO(iannucci): remove log_location
+      'log_location:logdog://%s/%s/%s/+/annotations' %
+      (logdog.hostname, logdog.project, logdog.prefix),
+      # TODO(iannucci): remove luci_project.
+      'luci_project:%s' % build.proto.builder.project,
+      'buildbucket_bucket:%s' % build.bucket_id,
+      'buildbucket_build_id:%s' % build.key.id(),
+      'buildbucket_hostname:%s' % app_identity.get_default_version_hostname(),
+      'buildbucket_template_canary:%s' % ('1' if build.canary else '0'),
   }
-  extra_swarming_tags = [
-      'recipe_name:%s' % recipe,
-      'recipe_package:%s' % exe.cipd_package,
-  ]
-
-  return extra_swarming_tags, extra_task_template_params
-
-
-def _calc_tags(build, extra_swarming_tags, task_template_rev, tags):
-  """Calculates the Swarming task request tags to use."""
-  tags = set(tags or [])
-  tags.add('buildbucket_bucket:%s' % build.bucket_id)
-  tags.add('buildbucket_build_id:%s' % build.key.id())
-  tags.add(
-      'buildbucket_hostname:%s' % app_identity.get_default_version_hostname()
-  )
-  tags.add('buildbucket_template_canary:%s' % ('1' if build.canary else '0'))
-  tags.add('buildbucket_template_revision:%s' % task_template_rev)
-  tags.update(extra_swarming_tags)
   tags.update(build.tags)
   return sorted(tags)
 
 
-def _setup_swarming_request_task_slices(build, settings, task):
-  """Mutate the task request with named cache, CIPD packages and (soon) expiring
-  dimensions.
-  """
-  # TODO(maruel): Use textproto once https://crbug.com/913953 is done.
-  unexpected = set(task) - {
-      '__comment__',
-      'name',
-      'pool_task_template',
-      'priority',
-      'service_account',
-      'tags',
-      'task_slices',
-  }
-  assert not unexpected, 'Unexpected task keys: %s' % unexpected
+def _compute_task_slices(build, settings):
+  """Compute swarming task slices."""
 
-  assert len(task[u'task_slices']) == 1, task[u'task_slices']
-  base_slice = task[u'task_slices'][0]
-
-  unexpected = set(base_slice) - {
-      'expiration_secs',
-      'properties',
-      'wait_for_capacity',
-  }
-  assert not unexpected, 'Unexpected slice keys: %s' % unexpected
-
-  base_slice[u'expiration_secs'] = str(build.proto.scheduling_timeout.seconds)
-
-  # Now take a look to generate a fallback! This is done by inspecting the
-  # Build named caches for field "wait_for_warm_cache".
-  dims = _setup_swarming_props(build, settings, base_slice[u'properties'])
-
-  if dims:
-    assert len(dims) <= 6
-    # Create a fallback by copying the original task slice, each time adding the
-    # corresponding expiration.
-    task[u'task_slices'] = []
-    base_slice.setdefault(u'wait_for_capacity', False)
-    last_exp = 0
-    for expiration_secs in sorted(dims):
-      t = {
-          u'expiration_secs': str(expiration_secs - last_exp),
-          u'properties': copy.deepcopy(base_slice[u'properties']),
-          u'wait_for_capacity': base_slice[u'wait_for_capacity'],
-      }
-      last_exp = expiration_secs
-      task[u'task_slices'].append(t)
-    # Tweak expiration on the base_slice, which is the last slice.
-    exp = max(int(base_slice[u'expiration_secs']) - last_exp, 60)
-    base_slice[u'expiration_secs'] = str(exp)
-    task[u'task_slices'].append(base_slice)
-
-    assert len(task[u'task_slices']) == len(dims) + 1
-
-    # Now add the actual fallback dimensions. They could be either from optional
-    # named caches or from buildercfg dimensions in the form
-    # "<expiration_secs>:<key>:<value>".
-    extra_dims = []
-    for i, (_expiration_secs, kv) in enumerate(sorted(dims.iteritems(),
-                                                      reverse=True)):
-      # Now mutate each TaskProperties to have the desired dimensions.
-      extra_dims.extend(kv)
-      props = task[u'task_slices'][-2 - i][u'properties']
-      props[u'dimensions'].extend(extra_dims)
-      props[u'dimensions'].sort(key=lambda x: (x[u'key'], x[u'value']))
-
-
-def _setup_swarming_props(build, settings, props):
-  """Fills a TaskProperties.
-
-  Updates props; a python format of TaskProperties.
-
-  Returns:
-    dict {expiration_sec: [{'key': key, 'value': value}]} to support caches.
-    This is different than the format in flatten_swarmingcfg.parse_dimensions().
-  """
-  unexpected = set(props) - {
-      'caches',
-      'cipd_input',
-      'command',
-      'containment',
-      'env_prefixes',
-      'execution_timeout_secs',
-      'extra_args',
-  }
-  assert not unexpected, 'Unexpected property keys: %s' % unexpected
-
-  props.setdefault('env', []).append({
-      'key': 'BUILDBUCKET_EXPERIMENTAL',
-      'value': str(build.experimental).upper(),
-  })
-  props['cipd_input'] = _compute_cipd_input(build, settings)
-  props['execution_timeout_secs'] = str(build.proto.execution_timeout.seconds)
-
-  props['caches'], cache_fallbacks = _setup_named_caches(build)
-
-  # out is dict {expiration_secs: [{'key': key, 'value': value}]}
-  out = collections.defaultdict(list)
-  for expirations_secs, items in cache_fallbacks.iteritems():
-    out[expirations_secs].extend(
-        {u'key': u'caches', u'value': item} for item in items
-    )
-
+  # {expiration_secs: [{'key': key, 'value': value}]}
+  dims = collections.defaultdict(list)
+  for c in build.proto.infra.swarming.caches:
+    assert not c.wait_for_warm_cache.nanos
+    if c.wait_for_warm_cache.seconds:
+      dims[c.wait_for_warm_cache.seconds].append({
+          'key': 'caches', 'value': c.name
+      })
   for d in build.proto.infra.swarming.task_dimensions:
     assert not d.expiration.nanos
-    out[d.expiration.seconds].append({u'key': d.key, u'value': d.value})
+    dims[d.expiration.seconds].append({'key': d.key, 'value': d.value})
 
-  props[u'dimensions'] = out.pop(0, [])
-  props[u'dimensions'].sort(key=lambda x: (x[u'key'], x[u'value']))
-  return out
+  dim_key = lambda x: (x['key'], x['value'])
+  base_dims = dims.pop(0, [])
+  base_dims.sort(key=dim_key)
+
+  base_slice = {
+      'expiration_secs': str(build.proto.scheduling_timeout.seconds),
+      'wait_for_capacity': False,
+      'properties': {
+          'cipd_input':
+              _compute_cipd_input(build, settings),
+          'execution_timeout_secs':
+              str(build.proto.execution_timeout.seconds),
+          'caches': [{
+              'path': posixpath.join(_CACHE_DIR, c.path), 'name': c.name
+          } for c in build.proto.infra.swarming.caches],
+          'dimensions':
+              base_dims,
+          'env_prefixes':
+              _compute_env_prefixes(build),
+          'env': [{
+              'key': 'BUILDBUCKET_EXPERIMENTAL',
+              'value': str(build.experimental).upper(),
+          }],
+          'command':
+              _kitchen_command(build, settings),
+      },
+  }
+
+  if not dims:
+    return [base_slice]
+
+  assert len(dims) <= 6, dims  # Swarming limitation
+  # Create a fallback by copying the original task slice, each time adding the
+  # corresponding expiration.
+  task_slices = []
+  last_exp = 0
+  for expiration_secs in sorted(dims):
+    t = {
+        'expiration_secs': str(expiration_secs - last_exp),
+        'properties': copy.deepcopy(base_slice['properties']),
+    }
+    last_exp = expiration_secs
+    task_slices.append(t)
+
+  # Tweak expiration on the base_slice, which is the last slice.
+  exp = max(int(base_slice['expiration_secs']) - last_exp, 60)
+  base_slice['expiration_secs'] = str(exp)
+  task_slices.append(base_slice)
+
+  assert len(task_slices) == len(dims) + 1
+
+  # Now add the actual fallback dimensions.
+  extra_dims = []
+  for i, (_expiration_secs, kv) in enumerate(sorted(dims.iteritems(),
+                                                    reverse=True)):
+    # Now mutate each TaskProperties to have the desired dimensions.
+    extra_dims.extend(kv)
+    props = task_slices[-2 - i]['properties']
+    props['dimensions'].extend(extra_dims)
+    props['dimensions'].sort(key=dim_key)
+  return task_slices
+
+
+def _compute_env_prefixes(build):
+  """Returns env_prefixes key in swarming properties."""
+  # TODO(nodir, smut): add SwarmingSettings.user_packages[i].subdir to
+  # env_prefixes.
+  env_prefixes = {
+      'PATH': [
+          USER_PACKAGE_DIR,
+          posixpath.join(USER_PACKAGE_DIR, 'bin'),
+      ],
+  }
+  for c in build.proto.infra.swarming.caches:
+    if c.env_var:
+      prefixes = env_prefixes.setdefault(c.env_var, [])
+      prefixes.append(posixpath.join(_CACHE_DIR, c.path))
+
+  return [{
+      'key': key,
+      'value': value,
+  } for key, value in sorted(env_prefixes.iteritems())]
 
 
 def _compute_cipd_input(build, settings):
@@ -442,15 +323,15 @@ def _compute_cipd_input(build, settings):
     }
 
   packages = [
-      convert('.', settings.luci_runner_package),
-      convert('.', settings.kitchen_package),
+      convert('.', settings.swarming.luci_runner_package),
+      convert('.', settings.swarming.kitchen_package),
       {
           'package_name': build.proto.exe.cipd_package,
           'path': _KITCHEN_CHECKOUT,
           'version': build.proto.exe.cipd_version,
       },
   ]
-  for up in settings.user_packages:
+  for up in settings.swarming.user_packages:
     if _builder_matches(build.proto.builder, up.builders):
       path = USER_PACKAGE_DIR
       if up.subdir:
@@ -461,43 +342,80 @@ def _compute_cipd_input(build, settings):
   }
 
 
-def _setup_named_caches(build):
-  """Computes swarming task caches.
+def _kitchen_command(build, settings):
+  logdog = build.proto.infra.logdog
+  annotation_url = (
+      'logdog://%s/%s/%s/+/annotations' %
+      (logdog.hostname, logdog.project, logdog.prefix)
+  )
+  ret = [
+      'kitchen${EXECUTABLE_SUFFIX}',
+      'cook',
+      '-buildbucket-hostname',
+      app_identity.get_default_version_hostname(),
+      '-buildbucket-build-id',
+      build.proto.id,
+      '-call-update-build',
+      '-build-url',
+      _generate_build_url(settings.swarming.milo_hostname, build),
+      '-luci-system-account',
+      'system',
+      '-recipe',
+      build.proto.input.properties['recipe'],
+      '-cache-dir',
+      _CACHE_DIR,
+      '-checkout-dir',
+      _KITCHEN_CHECKOUT,
+      '-temp-dir',
+      'tmp',
+      '-properties',
+      api_common.properties_to_json(_compute_legacy_properties(build)),
+      '-logdog-annotation-url',
+      annotation_url,
+  ]
+  for h in settings.known_public_gerrit_hosts:
+    ret += ['-known-gerrit-host', h]
 
-  Returns:
-    (cache_list, {expiration_secs: list(caches)}
+  ret = map(unicode, ret)  # Ensure strings.
+  return ret
+
+
+def _compute_legacy_properties(build):
+  """Returns a Struct of properties to be sent to the swarming task.
+
+  Mostly provides backward compatibility.
   """
-  caches = []
-  cache_fallbacks = collections.defaultdict(list)
+  # This is a recipe-based builder. We need to mutate the properties
+  # to account for backward compatibility.
+  ret = copy.copy(build.proto.input.properties)
 
-  for c in build.proto.infra.swarming.caches:
-    if c.path.startswith(u'cache/'):  # pragma: no cover
-      # TODO(nodir): remove this code path once clients remove "cache/" from
-      # their configs.
-      cache_path = c.path
-    else:
-      cache_path = posixpath.join(_CACHE_DIR, c.path)
-    caches.append({u'path': cache_path, u'name': c.name})
-    if c.wait_for_warm_cache.seconds:
-      cache_fallbacks[c.wait_for_warm_cache.seconds].append(c.name)
+  ret.update({
+      # TODO(crbug.com/877161): remove legacy "buildername" property.
+      'buildername': build.proto.builder.builder,
+      '$recipe_engine/buildbucket': _buildbucket_property(build),
+      # TODO(crbug.com/877161): remove legacy "buildbucket" property.
+      'buildbucket': _buildbucket_property_legacy(build),
+  })
 
-  caches.sort(key=lambda p: p.get(u'path'))
-  return caches, cache_fallbacks
+  ret.get_or_create_struct('$recipe_engine/runtime').update({
+      'is_luci': True,
+      'is_experimental': build.experimental,
+  })
 
+  if build.proto.number:  # pragma: no branch
+    ret['buildnumber'] = build.proto.number
 
-def _setup_swarming_request_pubsub(task, build):
-  """Mutates Swarming task request to add pubsub topic."""
-  task['pubsub_topic'] = 'projects/%s/topics/%s' % (
-      app_identity.get_application_id(), _PUBSUB_TOPIC
-  )
-  task['pubsub_userdata'] = json.dumps(
-      {
-          'build_id': build.key.id(),
-          'created_ts': utils.datetime_to_timestamp(utils.utcnow()),
-          'swarming_hostname': build.proto.infra.swarming.hostname,
-      },
-      sort_keys=True,
-  )
+  # Add repository property, for backward compatibility.
+  # TODO(crbug.com/877161): remove it.
+  if len(build.proto.input.gerrit_changes) == 1:  # pragma: no branch
+    cl = build.proto.input.gerrit_changes[0]
+    suffix = '-review.googlesource.com'
+    if cl.host.endswith(suffix) and cl.project:  # pragma: no branch
+      ret['repository'] = 'https://%s.googlesource.com/%s' % (
+          cl.host[:-len(suffix)], cl.project
+      )
+
+  return ret
 
 
 def validate_build(build):
@@ -516,23 +434,6 @@ def validate_build(build):
     raise errors.InvalidInputError(
         'swarming supports up to 6 unique expirations'
     )
-
-
-def prepare_task_def(build, settings, fake_build=False):
-  """Prepares a swarming task definition.
-
-  Validates the new build.
-  Mutates build.
-  Creates a swarming task definition.
-
-  The build must have proto.infra initialized.
-
-  Returns a task_def dict.
-  """
-  assert build.proto.HasField('infra')
-  build.url = _generate_build_url(settings.milo_hostname, build)
-  task_def = _create_task_def(build, settings, fake_build)
-  return task_def
 
 
 def create_sync_task(build):  # pragma: no cover
@@ -629,18 +530,18 @@ def _create_swarming_task(build):
 
   task_key = str(uuid.uuid4())
 
-  settings = config.get_settings_async().get_result().swarming
+  settings = config.get_settings_async().get_result()
 
   # Prepare task definition.
-  task_def = prepare_task_def(build, settings)
+  task_def = compute_task_def(build, settings, fake_build=False)
 
   # Insert secret bytes.
   secrets = launcher_pb2.BuildSecrets(
       build_token=tokens.generate_build_token(build_id, task_key),
   )
   secret_bytes_b64 = base64.b64encode(secrets.SerializeToString())
-  for ts in task_def[u'task_slices']:
-    ts[u'properties'][u'secret_bytes'] = secret_bytes_b64
+  for ts in task_def['task_slices']:
+    ts['properties']['secret_bytes'] = secret_bytes_b64
 
   new_task_id = None
   try:
@@ -668,8 +569,8 @@ def _create_swarming_task(build):
 
     # Dump the task definition to the log.
     # Pop secret bytes.
-    for ts in task_def[u'task_slices']:
-      ts[u'properties'].pop(u'secret_bytes')
+    for ts in task_def['task_slices']:
+      ts['properties'].pop('secret_bytes')
     logging.error(
         (
             'Swarming responded with HTTP %d. '
@@ -1121,22 +1022,6 @@ def _call_api_async(
       delegation_token=delegation_token,
   )
   raise ndb.Return(res)
-
-
-def format_obj(obj, params):
-  """Evaluates all strings in a JSON-like object as a template."""
-
-  def transform(obj):
-    if isinstance(obj, list):
-      return map(transform, obj)
-    elif isinstance(obj, dict):
-      return {k: transform(v) for k, v in obj.iteritems()}
-    elif isinstance(obj, basestring):
-      return string.Template(obj).safe_substitute(params)
-    else:
-      return obj
-
-  return transform(obj)
 
 
 def _parse_ts(ts):

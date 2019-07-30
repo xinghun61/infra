@@ -99,6 +99,7 @@ class BaseTest(testing.AppengineTestCase):
                 ),
             ],
         ),
+        known_public_gerrit_hosts=['chromium-review.googlesource.com'],
     )
     self.patch(
         'config.get_settings_async',
@@ -142,36 +143,20 @@ class TaskDefTest(BaseTest):
     self.task_template_canary = self.task_template.copy()
     self.task_template_canary['name'] += '-canary'
 
-    def get_self_config(path, *_args, **_kwargs):
-      if path not in ('swarming_task_template.json',
-                      'swarming_task_template_canary.json'):  # pragma: no cover
-        self.fail()
-
-      if path == 'swarming_task_template.json':
-        template = self.task_template
-      else:
-        template = self.task_template_canary
-      return (
-          'template_rev',
-          json.dumps(template) if template is not None else None,
-      )
-
-    self.patch(
-        'components.config.get_self_config',
-        side_effect=get_self_config,
-        autospec=True,
-    )
-
     self.patch(
         'google.appengine.api.app_identity.get_default_version_hostname',
         return_value='cr-buildbucket.appspot.com'
     )
 
   def _test_build(self, **build_proto_fields):
-    return test_util.build(for_creation=True, **build_proto_fields)
+    build = test_util.build(for_creation=True, **build_proto_fields)
+    # Ensure "recipe" property is set
+    if 'recipe' not in build.proto.input.properties.fields:  # pragma: no branch
+      build.proto.input.properties['recipe'] = 'presubmit'
+    return build
 
-  def prepare_task_def(self, build):
-    return swarming.prepare_task_def(build, self.settings.swarming)
+  def compute_task_def(self, build):
+    return swarming.compute_task_def(build, self.settings, fake_build=False)
 
   def test_shared_cache(self):
     build = self._test_build(
@@ -184,7 +169,7 @@ class TaskDefTest(BaseTest):
         ),
     )
 
-    slices = self.prepare_task_def(build)['task_slices']
+    slices = self.compute_task_def(build)['task_slices']
     self.assertEqual(
         slices[0]['properties']['caches'], [
             {'path': 'cache/builder', 'name': 'shared_builder_cache'},
@@ -222,7 +207,7 @@ class TaskDefTest(BaseTest):
         )
     )
 
-    slices = self.prepare_task_def(build)['task_slices']
+    slices = self.compute_task_def(build)['task_slices']
 
     self.assertEqual(4, len(slices))
     for t in slices:
@@ -277,20 +262,20 @@ class TaskDefTest(BaseTest):
 
   def test_execution_timeout(self):
     build = self._test_build(execution_timeout=dict(seconds=120))
-    slices = self.prepare_task_def(build)['task_slices']
+    slices = self.compute_task_def(build)['task_slices']
 
     self.assertEqual(slices[0]['properties']['execution_timeout_secs'], '120')
 
   def test_scheduling_timeout(self):
     build = self._test_build(scheduling_timeout=dict(seconds=120))
-    slices = self.prepare_task_def(build)['task_slices']
+    slices = self.compute_task_def(build)['task_slices']
 
     self.assertEqual(1, len(slices))
     self.assertEqual(slices[0]['expiration_secs'], '120')
 
   def test_compute_cipd_input_exclusion(self):
     build = self._test_build()
-    cipd_input = swarming._compute_cipd_input(build, self.settings.swarming)
+    cipd_input = swarming._compute_cipd_input(build, self.settings)
     packages = {p['package_name']: p for p in cipd_input['packages']}
     self.assertIn('infra/tools/git', packages)
     self.assertIn('infra/cpython/python', packages)
@@ -298,7 +283,7 @@ class TaskDefTest(BaseTest):
 
   def test_compute_cipd_input_path(self):
     build = self._test_build()
-    cipd_input = swarming._compute_cipd_input(build, self.settings.swarming)
+    cipd_input = swarming._compute_cipd_input(build, self.settings)
     packages = {p['package_name']: p for p in cipd_input['packages']}
     self.assertEqual(
         packages['infra/tools/git']['path'],
@@ -311,7 +296,7 @@ class TaskDefTest(BaseTest):
 
   def test_compute_cipd_input_canary(self):
     build = self._test_build(canary=True)
-    cipd_input = swarming._compute_cipd_input(build, self.settings.swarming)
+    cipd_input = swarming._compute_cipd_input(build, self.settings)
     packages = {p['package_name']: p for p in cipd_input['packages']}
     self.assertEqual(
         packages['infra/tools/luci_runner']['version'],
@@ -329,69 +314,59 @@ class TaskDefTest(BaseTest):
         return_value=auth.Identity('user', 'john@example.com')
     )
 
-    build = self._test_build(
-        id=1,
-        number=1,
-        builder=build_pb2.BuilderID(
-            project='chromium', bucket='try', builder='linux'
-        ),
-        exe=dict(
-            cipd_package='infra/recipe_bundle',
-            cipd_version='refs/heads/master',
-        ),
-        input=dict(
-            properties=bbutil.dict_to_struct({
-                'a': 'b',
-                'recipe': 'recipe',
-            }),
-            gerrit_changes=[
-                dict(
-                    host='chromium-review.googlesource.com',
-                    project='chromium/src',
-                    change=1234,
-                    patchset=5,
-                ),
-            ],
-        ),
-        infra=dict(
-            swarming=dict(
-                task_service_account='robot@example.com',
-                priority=108,
-                task_dimensions=[
-                    dict(key='cores', value='8'),
-                    dict(key='os', value='Ubuntu'),
-                    dict(key='pool', value='Chrome'),
+    now_ts = timestamp_pb2.Timestamp()
+    now_ts.FromDatetime(utils.utcnow())
+    build = model.Build(
+        tags=['t:1'],
+        created_by=auth.Anonymous,
+        proto=build_pb2.Build(
+            id=1,
+            builder=dict(project='chromium', bucket='try', builder='linux-rel'),
+            number=1,
+            status=common_pb2.SCHEDULED,
+            created_by='anonymous:anonymous',
+            create_time=now_ts,
+            update_time=now_ts,
+            input=dict(
+                properties=bbutil.dict_to_struct({
+                    'recipe': 'recipe',
+                    'a': 'b',
+                }),
+                gerrit_changes=[
+                    dict(
+                        host='chromium-review.googlesource.com',
+                        project='chromium/src',
+                        change=1234,
+                        patchset=5,
+                    )
                 ],
+            ),
+            output=dict(),
+            infra=dict(
+                buildbucket=dict(
+                    requested_properties=bbutil.dict_to_struct({'a': 'b'}),
+                ),
+                recipe=dict(),
             ),
         ),
     )
 
-    _, extra_task_template_params = swarming._setup_recipes(build)
-    actual = json.loads(extra_task_template_params['properties_json'])
+    actual = bbutil.struct_to_dict(swarming._compute_legacy_properties(build))
 
     expected = {
         'a': 'b',
         'buildbucket': {
             'hostname': 'cr-buildbucket.appspot.com',
             'build': {
-                'project':
-                    'chromium',
-                'bucket':
-                    'luci.chromium.try',
-                'created_by':
-                    'anonymous:anonymous',
-                'created_ts':
-                    1448841600000000,
-                'id':
-                    '1',
-                'tags': [
-                    'build_address:luci.chromium.try/linux/1',
-                    'builder:linux',
-                    'buildset:1',
-                ],
+                'project': 'chromium',
+                'bucket': 'luci.chromium.try',
+                'created_by': 'anonymous:anonymous',
+                'created_ts': 1448841600000000,
+                'id': '1',
+                'tags': ['t:1'],
             },
         },
-        'buildername': 'linux',
+        'buildername': 'linux-rel',
         'buildnumber': 1,
         'recipe': 'recipe',
         'repository': 'https://chromium.googlesource.com/chromium/src',
@@ -402,14 +377,10 @@ class TaskDefTest(BaseTest):
                 'builder': {
                     'project': 'chromium',
                     'bucket': 'try',
-                    'builder': 'linux',
+                    'builder': 'linux-rel',
                 },
                 'number': 1,
-                'tags': [{'value': '1', 'key': 'buildset'}],
-                'exe': {
-                    'cipdPackage': 'infra/recipe_bundle',
-                    'cipdVersion': 'refs/heads/master',
-                },
+                'tags': [{'key': 't', 'value': '1'}],
                 'input': {
                     'gerritChanges': [{
                         'host': 'chromium-review.googlesource.com',
@@ -418,29 +389,7 @@ class TaskDefTest(BaseTest):
                         'patchset': '5',
                     }],
                 },
-                'infra': {
-                    'buildbucket': {},
-                    'swarming': {
-                        'hostname':
-                            'swarming.example.com',
-                        'taskId':
-                            'deadbeef',
-                        'taskServiceAccount':
-                            'robot@example.com',
-                        'priority':
-                            108,
-                        'taskDimensions': [
-                            {'key': 'cores', 'value': '8'},
-                            {'key': 'os', 'value': 'Ubuntu'},
-                            {'key': 'pool', 'value': 'Chrome'},
-                        ],
-                    },
-                    'logdog': {
-                        'hostname': 'logdog.example.com',
-                        'project': 'chromium',
-                        'prefix': 'bb',
-                    },
-                },
+                'infra': {'buildbucket': {},},
                 'createdBy': 'anonymous:anonymous',
                 'createTime': '2015-11-30T00:00:00Z',
             },
@@ -486,6 +435,11 @@ class TaskDefTest(BaseTest):
             ],
         ),
         infra=dict(
+            logdog=dict(
+                hostname='logs.example.com',
+                project='chromium',
+                prefix='bb',
+            ),
             swarming=dict(
                 task_service_account='robot@example.com',
                 priority=108,
@@ -495,37 +449,74 @@ class TaskDefTest(BaseTest):
                     dict(key='pool', value='Chrome'),
                 ],
                 caches=[
-                    dict(path='a', name='1'),
+                    dict(
+                        path='vpython',
+                        name='vpython',
+                        env_var='VPYTHON_VIRTUALENV_ROOT'
+                    ),
                 ],
             ),
         ),
     )
 
-    actual = self.prepare_task_def(build)
+    actual = self.compute_task_def(build)
 
+    # Properties are tested by test_properties() above.
+    expected_input_properties = test_util.ununicode(
+        api_common.properties_to_json(
+            swarming._compute_legacy_properties(build),
+        )
+    )
     expected_swarming_props_def = {
         'env': [{
             'key': 'BUILDBUCKET_EXPERIMENTAL',
             'value': 'FALSE',
         }],
+        'env_prefixes': [
+            {
+                'key': 'PATH',
+                'value': ['cipd_bin_packages', 'cipd_bin_packages/bin'],
+            },
+            {
+                'key': 'VPYTHON_VIRTUALENV_ROOT',
+                'value': ['cache/vpython'],
+            },
+        ],
         'execution_timeout_secs':
             '3600',
-        'extra_args': [
+        'command': [
+            'kitchen${EXECUTABLE_SUFFIX}',
             'cook',
+            '-buildbucket-hostname',
+            'cr-buildbucket.appspot.com',
+            '-buildbucket-build-id',
+            '1',
+            '-call-update-build',
+            '-build-url',
+            'https://milo.example.com/b/1',
+            '-luci-system-account',
+            'system',
             '-recipe',
             'recipe',
+            '-cache-dir',
+            'cache',
+            '-checkout-dir',
+            'kitchen-checkout',
+            '-temp-dir',
+            'tmp',
             '-properties',
-            # Properties are tested by test_properties() above.
-            swarming._setup_recipes(build)[1]['properties_json'],
-            '-logdog-project',
-            'chromium',
+            expected_input_properties,
+            '-logdog-annotation-url',
+            'logdog://logs.example.com/chromium/bb/+/annotations',
+            '-known-gerrit-host',
+            'chromium-review.googlesource.com',
         ],
         'dimensions': [
             {'key': 'cores', 'value': '8'},
             {'key': 'os', 'value': 'Ubuntu'},
             {'key': 'pool', 'value': 'Chrome'},
         ],
-        'caches': [{'path': 'cache/a', 'name': '1'}],
+        'caches': [{'path': 'cache/vpython', 'name': 'vpython'},],
         'cipd_input': {
             'packages': [
                 {
@@ -558,7 +549,7 @@ class TaskDefTest(BaseTest):
     }
     expected = {
         'name':
-            'bb-1-chromium-linux',
+            'bb-1-chromium/try/linux-1',
         'priority':
             '108',
         'tags': [
@@ -567,19 +558,14 @@ class TaskDefTest(BaseTest):
             'buildbucket_build_id:1',
             'buildbucket_hostname:cr-buildbucket.appspot.com',
             'buildbucket_template_canary:0',
-            'buildbucket_template_revision:template_rev',
             'builder:linux',
             'buildset:1',
             (
-                'log_location:logdog://luci-logdog-dev.appspot.com/chromium/'
-                'buildbucket/cr-buildbucket.appspot.com/1/+/annotations'
+                'log_location:logdog://logs.example.com/chromium/bb/+/'
+                'annotations'
             ),
             'luci_project:chromium',
-            'recipe_name:recipe',
-            'recipe_package:infra/recipe_bundle',
         ],
-        'pool_task_template':
-            'CANARY_NEVER',
         'task_slices': [{
             'expiration_secs': '3600',
             'properties': expected_swarming_props_def,
@@ -599,8 +585,6 @@ class TaskDefTest(BaseTest):
     }
     self.assertEqual(test_util.ununicode(actual), expected)
 
-    self.assertEqual(build.url, 'https://milo.example.com/b/1')
-
     self.assertEqual(
         build.proto.infra.swarming.task_service_account, 'robot@example.com'
     )
@@ -610,19 +594,13 @@ class TaskDefTest(BaseTest):
 
   def test_experimental(self):
     build = self._test_build(input=dict(experimental=True))
-    actual = self.prepare_task_def(build)
+    actual = self.compute_task_def(build)
 
     env = actual['task_slices'][0]['properties']['env']
     self.assertIn({
         'key': 'BUILDBUCKET_EXPERIMENTAL',
         'value': 'TRUE',
     }, env)
-
-  def test_canary_template(self):
-    build = self._test_build(id=1, canary=common_pb2.YES)
-
-    actual = self.prepare_task_def(build)
-    self.assertTrue(actual['name'].endswith('-canary'))
 
   def test_generate_build_url(self):
     build = self._test_build(id=1)
@@ -672,7 +650,7 @@ class SyncBuildTest(BaseTest):
         'properties': {},
     }]}
     self.patch(
-        'swarming.prepare_task_def', autospec=True, return_value=self.task_def
+        'swarming.compute_task_def', autospec=True, return_value=self.task_def
     )
 
     self.build_bundle = test_util.build_bundle(

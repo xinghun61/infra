@@ -110,45 +110,6 @@ class SwarmbucketApiTest(testing.EndpointsTestCase):
     )
     config.put_bucket('v8', 'deadbeef', v8_cfg)
 
-    props_def = {
-        'extra_args': [
-            'cook',
-            '-recipe',
-            '${recipe}',
-            '-properties',
-            '${properties_json}',
-            '-logdog-project',
-            '${project}',
-        ],
-        'cipd_input': {
-            'packages': [
-                {
-                    'package_name': 'infra/test/bar/${os_ver}',
-                    'path': '.',
-                    'version': 'latest',
-                },
-                {
-                    'package_name': 'infra/test/foo/${platform}',
-                    'path': 'third_party',
-                    'version': 'stable',
-                },
-            ],
-        },
-    }
-    self.task_template = {
-        'name': 'bb-${build_id}-${project}-${builder}',
-        'task_slices': [{
-            'properties': props_def,
-            'wait_for_capacity': False,
-        }],
-    }
-
-    self.patch(
-        'swarming._get_task_template',
-        autospec=True,
-        return_value=('rev', self.task_template),
-    )
-
     self.settings = service_config_pb2.SettingsCfg(
         swarming=dict(
             milo_hostname='milo.example.com',
@@ -307,97 +268,15 @@ class SwarmbucketApiTest(testing.EndpointsTestCase):
     actual_task_def = json.loads(resp['task_definition'])
     props_def = {
         'env': [{'key': 'BUILDBUCKET_EXPERIMENTAL', 'value': 'FALSE'}],
-        'extra_args': [
-            'cook',
-            '-recipe',
-            'presubmit',
-            '-properties',
-            api_common.properties_to_json({
-                'recipe': 'presubmit',
-                'buildbucket': {
-                    'hostname': 'cr-buildbucket.appspot.com',
-                    'build': {
-                        'project': 'chromium',
-                        'bucket': 'luci.chromium.try',
-                        'created_by': 'anonymous:anonymous',
-                        'created_ts': 1448841600000000,
-                        'id': '1',
-                        'tags': ['builder:linux'],
-                    },
-                },
-                '$recipe_engine/buildbucket': {
-                    'hostname': 'cr-buildbucket.appspot.com',
-                    'build': {
-                        'id': '1',
-                        'builder': {
-                            'project': 'chromium',
-                            'bucket': 'try',
-                            'builder': 'linux',
-                        },
-                        'number': 1,
-                        'createdBy': 'anonymous:anonymous',
-                        'createTime': '2015-11-30T00:00:00Z',
-                        'schedulingTimeout': '21600s',
-                        'executionTimeout': '10800s',
-                        'exe': {
-                            'cipdPackage': 'infra/recipe_bundle',
-                            'cipdVersion': 'refs/heads/master',
-                        },
-                        'input': {},
-                        'infra': {
-                            'buildbucket': {},
-                            'swarming': {
-                                'hostname':
-                                    'swarming.example.com',
-                                'priority':
-                                    30,
-                                'taskDimensions': [
-                                    {
-                                        'key': 'baz',
-                                        'value': 'baz',
-                                        'expiration': '0s',
-                                    },
-                                    {
-                                        'key': 'builder',
-                                        'value': 'linux',
-                                        'expiration': '0s',
-                                    },
-                                    {
-                                        'key': 'foo',
-                                        'value': 'bar',
-                                        'expiration': '0s',
-                                    },
-                                ],
-                                'caches': [{
-                                    'path': 'builder',
-                                    'name': 'builder_cache_name',
-                                    'waitForWarmCache': '0s',
-                                }],
-                            },
-                            'logdog': {
-                                'hostname':
-                                    'logdog.example.com',
-                                'project':
-                                    'chromium',
-                                'prefix': (
-                                    'buildbucket/cr-buildbucket.appspot.com/1'
-                                ),
-                            },
-                        },
-                    },
-                },
-                '$recipe_engine/runtime': {
-                    'is_experimental': False,
-                    'is_luci': True,
-                },
-                'foo': 'bar',
-                'baz': 1,
-                'buildername': 'linux',
-                'buildnumber': 1,
-            }),
-            '-logdog-project',
-            'chromium',
-        ],
+        'env_prefixes': [{
+            'key': 'PATH',
+            'value': ['cipd_bin_packages', 'cipd_bin_packages/bin']
+        }],
+        # Concrete command line is not a concern of this test.
+        'command':
+            test_util.ununicode(
+                actual_task_def['task_slices'][0]['properties']['command']
+            ),
         'execution_timeout_secs':
             '10800',
         'cipd_input': {
@@ -436,28 +315,28 @@ class SwarmbucketApiTest(testing.EndpointsTestCase):
     }
     expected_task_def = {
         'name':
-            'bb-1-chromium-linux',
+            'bb-1-chromium/try/linux-1',
         'tags': [
             'buildbucket_bucket:chromium/try',
             'buildbucket_build_id:1',
             'buildbucket_hostname:cr-buildbucket.appspot.com',
             'buildbucket_template_canary:0',
-            'buildbucket_template_revision:rev',
             'builder:linux',
-            'recipe_name:presubmit',
-            'recipe_package:infra/recipe_bundle',
+            (
+                'log_location:logdog://logdog.example.com/chromium/buildbucket'
+                '/cr-buildbucket.appspot.com/1/+/annotations'
+            ),
+            'luci_project:chromium',
         ],
         'priority':
             '30',
-        'pool_task_template':
-            'CANARY_NEVER',
         'task_slices': [{
             'expiration_secs': '21600',
             'properties': props_def,
             'wait_for_capacity': False,
         }],
     }
-    self.assertEqual(actual_task_def, expected_task_def)
+    self.assertEqual(test_util.ununicode(actual_task_def), expected_task_def)
     self.assertEqual(resp['swarming_host'], 'swarming.example.com')
 
   def test_get_task_def_bad_request(self):

@@ -214,9 +214,7 @@ class SwarmbucketApi(remote.Service):
       assert build.proto.HasField('infra')
       build.proto.number = 1
       settings = config.get_settings_async().get_result()
-      task_def = swarming.prepare_task_def(
-          build, settings.swarming, fake_build=True
-      )
+      task_def = swarming.compute_task_def(build, settings, fake_build=True)
       task_def_json = json.dumps(task_def)
 
       return GetTaskDefinitionResponseMessage(
