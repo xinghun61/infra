@@ -156,58 +156,6 @@ func newGlobalInvCache(ctx context.Context, s *gitstore.InventoryStore) *globalI
 	return &ic
 }
 
-// invCache wraps an InventoryStore and keeps various lookup caches.
-//
-// TODO(ayatane): Delete or replace usages of this with globalInvCache.
-type invCache struct {
-	store           *gitstore.InventoryStore
-	hostnameToID    map[string]string
-	droneForDUT     map[string]*inventory.Server
-	idToDUT         map[string]*inventory.DeviceUnderTest
-	hostnameToDrone map[string]*inventory.Server
-}
-
-func newInvCache(ctx context.Context, s *gitstore.InventoryStore) *invCache {
-	env := config.Get(ctx).Inventory.Environment
-	ic := invCache{
-		store:           s,
-		hostnameToID:    make(map[string]string),
-		droneForDUT:     make(map[string]*inventory.Server),
-		idToDUT:         make(map[string]*inventory.DeviceUnderTest),
-		hostnameToDrone: make(map[string]*inventory.Server),
-	}
-	for _, d := range s.Lab.GetDuts() {
-		c := d.GetCommon()
-		ic.hostnameToID[c.GetHostname()] = c.GetId()
-		ic.idToDUT[c.GetId()] = d
-	}
-	for _, srv := range s.Infrastructure.GetServers() {
-		if !isDrone(srv) {
-			continue
-		}
-		if srv.GetEnvironment().String() != env {
-			for _, d := range srv.DutUids {
-				ic.purgeDUT(d)
-			}
-			continue
-		}
-		ic.hostnameToDrone[srv.GetHostname()] = srv
-		for _, d := range srv.DutUids {
-			ic.droneForDUT[d] = srv
-		}
-	}
-	return &ic
-}
-
-// purgeDUT purges the existence of the DUT from the inventory cache.
-func (ic *invCache) purgeDUT(dutID string) {
-	if d, ok := ic.idToDUT[dutID]; ok {
-		delete(ic.hostnameToID, d.GetCommon().GetHostname())
-	}
-	delete(ic.droneForDUT, dutID)
-	delete(ic.idToDUT, dutID)
-}
-
 // assignDUT assigns the given DUT to the queen drone in the current environment.
 func assignDUT(ctx context.Context, c *globalInvCache, dutID string) (drone string, _ error) {
 	cfg := config.Get(ctx).Inventory
@@ -265,12 +213,12 @@ func removeDutsFromDrones(ctx context.Context, s *gitstore.InventoryStore, req *
 // dutRemover wraps an InventoryStore and implements removing DUTs
 // from drones.  This struct contains various internal lookup caches.
 type dutRemover struct {
-	*invCache
+	*globalInvCache
 }
 
 func newDUTRemover(ctx context.Context, s *gitstore.InventoryStore) *dutRemover {
 	return &dutRemover{
-		invCache: newInvCache(ctx, s),
+		globalInvCache: newGlobalInvCache(ctx, s),
 	}
 }
 
@@ -282,6 +230,11 @@ func (dr *dutRemover) removeDUT(ctx context.Context, r *fleet.RemoveDutsFromDron
 	}
 	srv, ok := dr.droneForDUT[rr.dutID]
 	if !ok {
+		return nil, nil
+	}
+	cfg := config.Get(ctx).Inventory
+	isQueenDrone := srv.GetHostname() == queenDroneName(cfg.Environment)
+	if !isQueenDrone && srv.GetEnvironment().String() != cfg.Environment {
 		return nil, nil
 	}
 	srv.DutUids = removeSliceString(srv.DutUids, rr.dutID)

@@ -199,9 +199,8 @@ func isDrone(s *inventory.Server) bool {
 }
 
 func updateFreeDUTs(ctx context.Context, s *gitstore.InventoryStore) error {
-	ic := newInvCache(ctx, s)
-	// We will likely never have more than 10% of our fleet free.
-	free := make([]freeduts.DUT, 0, len(ic.idToDUT)/10)
+	ic := newGlobalInvCache(ctx, s)
+	var free []freeduts.DUT
 	for dutID, d := range ic.idToDUT {
 		if _, ok := ic.droneForDUT[dutID]; ok {
 			continue
