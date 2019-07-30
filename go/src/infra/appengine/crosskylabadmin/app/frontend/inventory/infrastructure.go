@@ -215,32 +215,36 @@ func (da *dutAssigner) assignDUT(ctx context.Context, a *fleet.AssignDutsToDrone
 	if err != nil {
 		return nil, err
 	}
-	cfg := config.Get(ctx).Inventory
-	d := queenDroneName(cfg.Environment)
-	logging.Debugf(ctx, "Using pseudo-drone %s for DUT %s", d, a.DutId)
-	if _, ok := da.idToDUT[dutID]; !ok {
-		return nil, status.Error(codes.NotFound, fmt.Sprintf("DUT %s does not exist", dutID))
+	d, err := assignDUT(ctx, da.globalInvCache, dutID)
+	if err != nil {
+		return nil, err
 	}
-	if server, ok := da.droneForDUT[dutID]; ok {
-		return nil, status.Errorf(
-			codes.InvalidArgument,
-			"dut %s is already assigned to drone %s",
-			dutID, server.GetHostname(),
-		)
-	}
-
-	server, ok := da.hostnameToDrone[d]
-	if !ok {
-		return nil, status.Error(codes.NotFound, fmt.Sprintf("drone %s does not exist", d))
-	}
-	server.DutUids = append(server.DutUids, dutID)
-	dut := da.idToDUT[dutID]
-	dut.RemovalReason = nil
-
 	return &fleet.AssignDutsToDronesResponse_Item{
 		DroneHostname: d,
 		DutId:         dutID,
 	}, nil
+}
+
+// assignDUT assigns the given DUT to the queen drone in the current environment.
+func assignDUT(ctx context.Context, c *globalInvCache, dutID string) (drone string, _ error) {
+	cfg := config.Get(ctx).Inventory
+	d := queenDroneName(cfg.Environment)
+	logging.Debugf(ctx, "Using pseudo-drone %s for DUT %s", d, dutID)
+	if _, ok := c.idToDUT[dutID]; !ok {
+		return "", status.Error(codes.NotFound, fmt.Sprintf("DUT %s does not exist", dutID))
+	}
+	if server, ok := c.droneForDUT[dutID]; ok {
+		return "", status.Errorf(codes.InvalidArgument,
+			"dut %s is already assigned to drone %s", dutID, server.GetHostname())
+	}
+	server, ok := c.hostnameToDrone[d]
+	if !ok {
+		panic(fmt.Sprintf("drone %s does not exist", d))
+	}
+	server.DutUids = append(server.DutUids, dutID)
+	c.droneForDUT[dutID] = server
+	c.idToDUT[dutID].RemovalReason = nil
+	return d, nil
 }
 
 func (da *dutAssigner) unpackRequest(r *fleet.AssignDutsToDronesRequest_Item) (string, error) {
