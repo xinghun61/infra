@@ -171,6 +171,13 @@ func prompt(s string) bool {
 	return answer == "y" || answer == "Y"
 }
 
+func withTimeout(ctx context.Context, timeoutMins int) (context.Context, context.CancelFunc) {
+	if timeoutMins >= 0 {
+		return context.WithTimeout(ctx, time.Duration(timeoutMins)*time.Minute)
+	}
+	return context.WithCancel(ctx)
+}
+
 // printTaskInfo displays a list of user-friendly list of tasks (with a given
 // upper limit), with a header of the form "Found X tasks to <showText>:"
 func printTaskInfo(results []*swarming_api.SwarmingRpcsTaskResult, showLimit int, showText string, siteEnv site.Environment) {

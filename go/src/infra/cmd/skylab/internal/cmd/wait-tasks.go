@@ -9,7 +9,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"sync"
-	"time"
 
 	"github.com/maruel/subcommands"
 
@@ -57,13 +56,7 @@ func (c *waitTasksRun) innerRun(a subcommands.Application, args []string, env su
 	uniqueIDs := stringset.NewFromSlice(args...)
 
 	ctx := cli.GetContext(a, c, env)
-	var cancel context.CancelFunc
-	switch c.timeoutMins >= 0 {
-	case true:
-		ctx, cancel = context.WithTimeout(ctx, time.Duration(c.timeoutMins)*time.Minute)
-	case false:
-		ctx, cancel = context.WithCancel(ctx)
-	}
+	ctx, cancel := withTimeout(ctx, c.timeoutMins)
 	defer cancel()
 
 	var results <-chan waitItem
