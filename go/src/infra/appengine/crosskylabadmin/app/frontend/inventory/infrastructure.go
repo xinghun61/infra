@@ -51,14 +51,30 @@ func (is *ServerImpl) AssignDutsToDrones(ctx context.Context, req *fleet.AssignD
 		if err := s.Refresh(ctx); err != nil {
 			return err
 		}
-		da := newDUTAssigner(ctx, s)
+		c := newGlobalInvCache(ctx, s)
 		assigned := make([]*fleet.AssignDutsToDronesResponse_Item, 0, len(req.Assignments))
 		for _, a := range req.Assignments {
-			i, err := da.assignDUT(ctx, a)
+			var dutID string
+			switch {
+			case a.DutHostname != "":
+				var ok bool
+				dutID, ok = c.hostnameToID[a.DutHostname]
+				if !ok {
+					return status.Errorf(codes.NotFound, "unknown DUT hostname %s", a.DutHostname)
+				}
+			case a.DutId != "":
+				dutID = a.DutId
+			default:
+				return status.Errorf(codes.InvalidArgument, "must supply one of DUT hostname or ID")
+			}
+			d, err := assignDUT(ctx, c, dutID)
 			if err != nil {
 				return err
 			}
-			assigned = append(assigned, i)
+			assigned = append(assigned, &fleet.AssignDutsToDronesResponse_Item{
+				DroneHostname: d,
+				DutId:         dutID,
+			})
 		}
 		url, err := s.Commit(ctx, "assign DUTs")
 		if err != nil {
@@ -191,42 +207,6 @@ func (ic *invCache) purgeDUT(dutID string) {
 	}
 	delete(ic.droneForDUT, dutID)
 	delete(ic.idToDUT, dutID)
-}
-
-// dutAssigner wraps an InventoryStore and implements assigning DUTs
-// to drones.  This struct contains various internal lookup caches.
-type dutAssigner struct {
-	*globalInvCache
-}
-
-func newDUTAssigner(ctx context.Context, s *gitstore.InventoryStore) *dutAssigner {
-	return &dutAssigner{
-		globalInvCache: newGlobalInvCache(ctx, s),
-	}
-}
-
-func (da *dutAssigner) assignDUT(ctx context.Context, a *fleet.AssignDutsToDronesRequest_Item) (*fleet.AssignDutsToDronesResponse_Item, error) {
-	var dutID string
-	switch {
-	case a.DutHostname != "":
-		var ok bool
-		dutID, ok = da.hostnameToID[a.DutHostname]
-		if !ok {
-			return nil, status.Errorf(codes.NotFound, "unknown DUT hostname %s", a.DutHostname)
-		}
-	case a.DutId != "":
-		dutID = a.DutId
-	default:
-		return nil, status.Errorf(codes.InvalidArgument, "must supply one of DUT hostname or ID")
-	}
-	d, err := assignDUT(ctx, da.globalInvCache, dutID)
-	if err != nil {
-		return nil, err
-	}
-	return &fleet.AssignDutsToDronesResponse_Item{
-		DroneHostname: d,
-		DutId:         dutID,
-	}, nil
 }
 
 // assignDUT assigns the given DUT to the queen drone in the current environment.
