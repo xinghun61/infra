@@ -94,8 +94,6 @@ def _CreateIssueSearchDocuments(
   """
   documents_by_shard = collections.defaultdict(list)
   for issue in issues:
-    comments = comments_dict.get(issue.issue_id, [])
-    comments = _IndexableComments(comments, users_by_id)
     summary = issue.summary
     # TODO(jrobbins): allow search specifically on explicit vs derived
     # fields.
@@ -125,6 +123,16 @@ def _CreateIssueSearchDocuments(
         ' '.join(component_paths),
         ' '.join(field_values),
         ' '.join(tracker_bizobj.GetLabels(issue)))
+    custom_fields = _BuildCustomFTSFields(issue)
+
+    comments = comments_dict.get(issue.issue_id, [])
+    room_for_comments = (framework_constants.MAX_FTS_FIELD_SIZE -
+                         len(summary) -
+                         len(metadata) -
+                         sum(len(cf.value) for cf in custom_fields))
+    comments = _IndexableComments(
+        comments, users_by_id, remaining_chars=room_for_comments)
+    logging.info('len(comments) is %r', len(comments))
     if comments:
       description = _ExtractCommentText(comments[0], users_by_id)
       description = description[:framework_constants.MAX_FTS_FIELD_SIZE]
@@ -138,7 +146,15 @@ def _CreateIssueSearchDocuments(
           'Issue %s:%r has zero indexable comments',
           issue.project_name, issue.local_id)
 
-    custom_fields = _BuildCustomFTSFields(issue)
+    logging.info('Building document for %s:%d',
+                 issue.project_name, issue.local_id)
+    logging.info('len(summary) = %d', len(summary))
+    logging.info('len(metadata) = %d', len(metadata))
+    logging.info('len(description) = %d', len(description))
+    logging.info('len(comment) = %d', len(all_comments))
+    for cf in custom_fields:
+      logging.info('len(%s) = %d', cf.name, len(cf.value))
+
     doc = search.Document(
         doc_id=str(issue.issue_id),
         fields=[
@@ -166,12 +182,14 @@ def _CreateIssueSearchDocuments(
                len(documents_by_shard), int((time.time() - start_time) * 1000))
 
 
-def _IndexableComments(comments, users_by_id):
+def _IndexableComments(comments, users_by_id, remaining_chars=None):
   """We only index the comments that are not deleted or banned.
 
   Args:
     comments: list of Comment PBs for one issue.
     users_by_id: Dict of (user_id -> UserView) for all users.
+    remaining_chars: number of characters available for comment text
+       without hitting the GAE search index max document size.
 
   Returns:
     A list of comments filtered to not have any deleted comments or
@@ -179,6 +197,8 @@ def _IndexableComments(comments, users_by_id):
     comments, only a certain number of the first and last comments
     are actually indexed.
   """
+  if remaining_chars is None:
+    remaining_chars = framework_constants.MAX_FTS_FIELD_SIZE
   allowed_comments = []
   for comment in comments:
     user_view = users_by_id.get(comment.user_id)
@@ -192,18 +212,20 @@ def _IndexableComments(comments, users_by_id):
   reasonable_size = (framework_constants.INITIAL_COMMENTS_TO_INDEX +
                      framework_constants.FINAL_COMMENTS_TO_INDEX)
   if len(allowed_comments) <= reasonable_size:
-    return allowed_comments
+    candidates = allowed_comments
+  else:
+    candidates = (  # Prioritize the description and recent comments.
+      allowed_comments[0:1] +
+      allowed_comments[-framework_constants.FINAL_COMMENTS_TO_INDEX:] +
+      allowed_comments[1:framework_constants.INITIAL_COMMENTS_TO_INDEX])
 
-  candidates = (  # Prioritize the description and recent comments.
-    allowed_comments[0:1] +
-    allowed_comments[-framework_constants.FINAL_COMMENTS_TO_INDEX:] +
-    allowed_comments[1:framework_constants.INITIAL_COMMENTS_TO_INDEX])
   total_length = 0
   result = []
   for comment in candidates:
     total_length += len(comment.content)
-    if total_length < framework_constants.MAX_FTS_FIELD_SIZE:
-      result.append(comment)
+    if total_length > remaining_chars:
+      break
+    result.append(comment)
 
   return result
 
