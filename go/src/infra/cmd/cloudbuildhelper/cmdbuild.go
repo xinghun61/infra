@@ -21,6 +21,7 @@ import (
 
 	"go.chromium.org/luci/common/clock"
 	"go.chromium.org/luci/common/errors"
+	"go.chromium.org/luci/common/flag/stringlistflag"
 	"go.chromium.org/luci/common/flag/stringmapflag"
 	"go.chromium.org/luci/common/logging"
 
@@ -46,8 +47,8 @@ immutable alias of sources and the resulting image.
 
 The "build" command works in multiple steps:
   1. Searches for an existing image with the given -canonical-tag. If it exists,
-     assumes the build has already been done and exits. This applies to both
-     deterministic and non-deterministic targets.
+     assumes the build has already been done and skips the rest of the steps.
+     This applies to both deterministic and non-deterministic targets.
   2. Prepares a context directory by evaluating the target manifest YAML,
      resolving tags in Dockerfile and executing local build steps. The result
      of this process is a *.tar.gz tarball that will be sent to Docker daemon.
@@ -56,17 +57,20 @@ The "build" command works in multiple steps:
      path. If the tarball at that path already exists in Google Storage and
      the target is marked as deterministic in the manifest YAML, examines
      tarball's metadata to find a reference to an image already built from it.
-     If there's such image, returns it (and its canonical tag, whatever it was
-     when the image was built) as output.
+     If there's such image, uses it (and its canonical tag, whatever it was
+     when the image was built) as the result.
   4. If the target is not marked as deterministic, or there's no existing images
      that can be reused, triggers "docker build" via Cloud Build and feeds it
      the uploaded tarball as the context. The result of this process is a new
      docker image.
-  5. Pushes this image to the registry under -canonical-tag tag. Does not touch
-     "latest" tag.
+  5. Pushes this image to the registry under -canonical-tag tag.
   6. Updates metadata of the tarball in Google Storage with the reference to the
      produced image (its SHA256 digest and its canonical tag), so that future
      builds can discover and reuse it, if necessary.
+
+In the very end, regardless of whether a new image was built or some existing
+one was reused, pushes the image to the registry under given -tag (or tags), if
+any. The is primary used to update "latest" tag.
 `,
 
 	CommandRun: func() subcommands.CommandRun {
@@ -85,6 +89,7 @@ type cmdBuildRun struct {
 	buildID        string
 	force          bool
 	labels         stringmapflag.Value
+	tags           stringlistflag.Flag
 }
 
 func (c *cmdBuildRun) init() {
@@ -96,6 +101,7 @@ func (c *cmdBuildRun) init() {
 	c.Flags.StringVar(&c.buildID, "build-id", "", "Identifier of the CI build that calls this tool (used in various metadata).")
 	c.Flags.BoolVar(&c.force, "force", false, "Rebuild and reupload the image, ignoring existing artifacts.")
 	c.Flags.Var(&c.labels, "label", "Labels to attach to the docker image, in k=v form.")
+	c.Flags.Var(&c.tags, "tag", "Additional tag(s) to unconditionally push the image to (e.g. \"latest\").")
 }
 
 func (c *cmdBuildRun) exec(ctx context.Context) error {
@@ -119,6 +125,14 @@ func (c *cmdBuildRun) exec(ctx context.Context) error {
 	image := ""
 	if infra.Registry != "" {
 		image = path.Join(infra.Registry, m.Name)
+	} else {
+		// If not using a registry, can't push any tags.
+		switch {
+		case c.canonicalTag != "":
+			return errBadFlag("-canonical-tag", "can't be used if a registry is not specified in the manifest")
+		case len(c.tags) != 0:
+			return errBadFlag("-tag", "can't be used if a registry is not specified in the manifest")
+		}
 	}
 
 	// Need a token source to talk to Google Storage and Cloud Build.
@@ -145,6 +159,7 @@ func (c *cmdBuildRun) exec(ctx context.Context) error {
 		Labels:       c.labels,
 		BuildID:      c.buildID,
 		CanonicalTag: c.canonicalTag,
+		Tags:         c.tags,
 		Stage:        stage,
 		Store:        store,
 		Builder:      builder,
@@ -189,6 +204,7 @@ type buildParams struct {
 	Labels       map[string]string  // extra labels to put into the image
 	BuildID      string             // identifier of a CI build that called us
 	CanonicalTag string             // a tag to apply to the image if we really built it
+	Tags         []string           // extra tags to advance
 
 	// Local build (usually 'stage', mocked in tests).
 	Stage stageCallback
@@ -244,19 +260,25 @@ func runBuild(ctx context.Context, p buildParams) (*buildResult, error) {
 	// canonical tag.
 	if p.Image != "" && p.CanonicalTag != "" {
 		fullName := fmt.Sprintf("%s:%s", p.Image, p.CanonicalTag)
-		switch img, err := checkImage(ctx, p.Registry, fullName); {
+		switch img, err := getImage(ctx, p.Registry, fullName); {
 		case err != nil:
 			return nil, err // already annotated
 		case img != nil:
 			if !p.Force {
 				logging.Infof(ctx, "The canonical tag already exists, skipping the build")
-				return &buildResult{
-					Image: &imageRef{
-						Image:        p.Image,
-						Digest:       img.Digest,
-						CanonicalTag: p.CanonicalTag,
-					},
-				}, nil
+				imgRef := &imageRef{
+					Image:        p.Image,
+					Digest:       img.Digest,
+					CanonicalTag: p.CanonicalTag,
+				}
+				// Advance -tag(s) only, do NOT touch -canonical-tag. It is touched only
+				// when we build a new image. Otherwise highly deterministic images will
+				// have a TON of tags (one per every commit, even totally unrelated), we
+				// don't want that.
+				if err := tagImage(ctx, p.Registry, imgRef, p.Tags); err != nil {
+					return nil, errors.Annotate(err, "when tagging the image with -tag(s)").Err()
+				}
+				return &buildResult{Image: imgRef}, nil
 			}
 			logging.Warningf(ctx, "Using -force, will overwrite existing canonical tag %s => %s", p.CanonicalTag, img.Digest)
 		case img == nil:
@@ -273,6 +295,15 @@ func runBuild(ctx context.Context, p buildParams) (*buildResult, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	// res.Image may be nil if we are building the image but not uploading it
+	// anywhere (if "registry" is not set in the manifest).
+	if res.Image != nil {
+		if err := tagImage(ctx, p.Registry, res.Image, p.Tags); err != nil {
+			return nil, errors.Annotate(err, "when tagging the image with -tag(s)").Err()
+		}
+	}
+
 	return res, nil
 }
 
@@ -285,24 +316,6 @@ func reportSuccess(ctx context.Context, r *buildResult) {
 		logging.Infof(ctx, "Image builds successfully") // not using a registry at all
 	} else {
 		img.Log(ctx, "The final image:")
-	}
-}
-
-// checkImage asks the registry to resolve "<image>:<tag>" reference.
-//
-// Returns:
-//   (img, nil) if there's such image.
-//   (nil, nil) if there's no such image.
-//   (nil, err) on errors communicating with the registry.
-func checkImage(ctx context.Context, r registryImpl, imageRef string) (*registry.Image, error) {
-	logging.Infof(ctx, "Checking whether %s already exists...", imageRef)
-	switch img, err := r.GetImage(ctx, imageRef); {
-	case err == nil:
-		return img, nil
-	case registry.IsManifestUnknown(err):
-		return nil, nil
-	default:
-		return nil, errors.Annotate(err, "when checking existence of %q", imageRef).Err()
 	}
 }
 
@@ -397,17 +410,11 @@ func remoteBuild(ctx context.Context, p buildParams, out *fileset.Set) (*buildRe
 	}
 
 	if imgRef.CanonicalTag != "" {
-		// Apply the canonical tag to the image. This involves fetching the image
-		// manifest (via its digest) and then uploading it back under a new name.
-		logging.Infof(ctx, "Tagging %s => %s", imgRef.CanonicalTag, imgRef.Digest)
-		img, err := p.Registry.GetImage(ctx, fmt.Sprintf("%s@%s", imgRef.Image, imgRef.Digest))
-		if err != nil {
-			return nil, errors.Annotate(err, "when fetching the image manifest").Err()
+		// Apply the canonical tag to the image since we built a new image and need
+		// to give it a canonical name.
+		if err := tagImage(ctx, p.Registry, imgRef, []string{imgRef.CanonicalTag}); err != nil {
+			return nil, errors.Annotate(err, "when tagging the image with the canonical tag").Err()
 		}
-		if p.Registry.TagImage(ctx, img, imgRef.CanonicalTag); err != nil {
-			return nil, errors.Annotate(err, "when tagging the image").Err()
-		}
-
 		// Modify tarball's metadata to let the future builds know they can reuse
 		// the image we've just built. We do it only when using canonical tags,
 		// since we want all such "reusable" images to have a readable tag that
@@ -418,6 +425,52 @@ func remoteBuild(ctx context.Context, p buildParams, out *fileset.Set) (*buildRe
 	}
 
 	return &buildResult{Image: imgRef}, nil
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// Dealing with the registry.
+
+// getImage asks the registry to resolve "<image>:<tag>" reference.
+//
+// Returns:
+//   (img, nil) if there's such image.
+//   (nil, nil) if there's no such image.
+//   (nil, err) on errors communicating with the registry.
+func getImage(ctx context.Context, r registryImpl, imageRef string) (*registry.Image, error) {
+	logging.Infof(ctx, "Checking whether %s already exists...", imageRef)
+	switch img, err := r.GetImage(ctx, imageRef); {
+	case err == nil:
+		return img, nil
+	case registry.IsManifestUnknown(err):
+		return nil, nil
+	default:
+		return nil, errors.Annotate(err, "when checking existence of %q", imageRef).Err()
+	}
+}
+
+// tagImage pushes the given image to all given tags (sequentially).
+//
+// This involves fetching the image manifest first (via its digest) and then
+// uploading it back under a new name.
+func tagImage(ctx context.Context, r registryImpl, imgRef *imageRef, tags []string) error {
+	if len(tags) == 0 {
+		return nil
+	}
+
+	logging.Debugf(ctx, "Fetching the image manifest...")
+	img, err := r.GetImage(ctx, fmt.Sprintf("%s@%s", imgRef.Image, imgRef.Digest))
+	if err != nil {
+		return errors.Annotate(err, "when fetching the image manifest").Err()
+	}
+
+	for _, t := range tags {
+		logging.Infof(ctx, "Tagging %s => %s", t, imgRef.Digest)
+		if r.TagImage(ctx, img, t); err != nil {
+			return errors.Annotate(err, "when pushing tag %q", t).Err()
+		}
+	}
+
+	return nil
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -590,7 +643,7 @@ func reuseExistingImage(ctx context.Context, obj *storage.Object, image string, 
 		}
 
 		// Verify such image *actually* exists in the registry.
-		switch img, err := checkImage(ctx, r, fmt.Sprintf("%s:%s", ref.Image, ref.CanonicalTag)); {
+		switch img, err := getImage(ctx, r, fmt.Sprintf("%s:%s", ref.Image, ref.CanonicalTag)); {
 		case err != nil:
 			return nil, time.Time{}, err // already annotated
 		case img == nil:

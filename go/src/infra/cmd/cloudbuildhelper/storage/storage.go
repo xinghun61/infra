@@ -59,7 +59,7 @@ func (o *Object) String() string {
 // Log pretty-prints fields of Object at info logging level.
 func (o *Object) Log(ctx context.Context) {
 	logging.Infof(ctx, "Metadata of %s", o)
-	logging.Infof(ctx, "    Created:  %s", o.Created)
+	logging.Infof(ctx, "    Created:  %s", humanize.Time(o.Created))
 	logging.Infof(ctx, "    Owner:    %s", strings.TrimPrefix(o.Owner, "user-"))
 	logging.Infof(ctx, "    MD5:      %s", o.MD5)
 
@@ -198,7 +198,7 @@ func (s *Storage) UpdateMetadata(ctx context.Context, obj *Object, cb func(m *Me
 			meta = obj.Metadata
 			metaGen = obj.Metageneration
 		} else {
-			logging.Infof(ctx, "Fetching metadata of %s...", obj)
+			logging.Debugf(ctx, "Fetching metadata of %s...", obj)
 			attrs, err := handle.Attrs(ctx)
 			if err != nil {
 				return err
@@ -214,7 +214,7 @@ func (s *Storage) UpdateMetadata(ctx context.Context, obj *Object, cb func(m *Me
 		}
 
 		// Do compare-and-swap of the metadata.
-		logging.Infof(ctx, "Updating metadata of %s...", obj)
+		logging.Debugf(ctx, "Updating metadata of %s...", obj)
 		_, err := handle.If(storage.Conditions{MetagenerationMatch: metaGen}).Update(ctx, storage.ObjectAttrsToUpdate{
 			Metadata: updated.Assemble(),
 		})

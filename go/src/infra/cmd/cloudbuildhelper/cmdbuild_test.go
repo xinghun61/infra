@@ -81,6 +81,7 @@ func TestBuild(t *testing.T) {
 				Image:        testImageName,
 				BuildID:      "b1",
 				CanonicalTag: testTagName,
+				Tags:         []string{"latest"},
 				Stage:        stageFileSet(fs),
 				Store:        store,
 				Builder:      builder,
@@ -103,8 +104,13 @@ func TestBuild(t *testing.T) {
 				},
 			})
 
-			// Tagged it.
+			// Tagged it with canonical tag.
 			img, err := registry.GetImage(ctx, fmt.Sprintf("%s:%s", testImageName, testTagName))
+			So(err, ShouldBeNil)
+			So(img.Digest, ShouldEqual, testDigest)
+
+			// And moved "latest" tag.
+			img, err = registry.GetImage(ctx, testImageName+":latest")
 			So(err, ShouldBeNil)
 			So(img.Digest, ShouldEqual, testDigest)
 
@@ -126,6 +132,7 @@ func TestBuild(t *testing.T) {
 					Image:        testImageName,
 					BuildID:      "b2",
 					CanonicalTag: "another-tag",
+					Tags:         []string{"pushed"},
 					Stage:        stageFileSet(fs),
 					Store:        store,
 					Builder:      builder,
@@ -142,6 +149,11 @@ func TestBuild(t *testing.T) {
 						BuildID:      "b1", // was build there
 					},
 				})
+
+				// And moved "pushed" tag, even through no new image was built.
+				img, err := registry.GetImage(ctx, testImageName+":pushed")
+				So(err, ShouldBeNil)
+				So(img.Digest, ShouldEqual, testDigest)
 
 				// Both builds are associated with the tarball via its metadata now.
 				tarball, err := store.Check(ctx, testTarballPath)
@@ -176,6 +188,7 @@ func TestBuild(t *testing.T) {
 					Image:        testImageName,
 					BuildID:      "b2",
 					CanonicalTag: "another-tag",
+					Tags:         []string{"latest"},
 					Stage:        stageFileSet(fs),
 					Store:        store,
 					Builder:      builder,
@@ -183,7 +196,7 @@ func TestBuild(t *testing.T) {
 				})
 				So(err, ShouldBeNil)
 
-				// Build the new image.
+				// Built the new image.
 				So(res, ShouldResemble, &buildResult{
 					Image: &imageRef{
 						Image:        testImageName,
@@ -192,6 +205,11 @@ func TestBuild(t *testing.T) {
 						BuildID:      "b2",
 					},
 				})
+
+				// And moved "latest" tag.
+				img, err = registry.GetImage(ctx, testImageName+":latest")
+				So(err, ShouldBeNil)
+				So(img.Digest, ShouldEqual, "sha256:new-totally-legit-hash")
 
 				// Both builds are associated with the tarball via its metadata now.
 				tarball, err := store.Check(ctx, testTarballPath)
@@ -210,6 +228,7 @@ func TestBuild(t *testing.T) {
 				Manifest:     &manifest.Manifest{Name: testTargetName},
 				Image:        testImageName,
 				CanonicalTag: testTagName,
+				Tags:         []string{"latest"},
 				Registry:     registry,
 			})
 			So(err, ShouldBeNil)
@@ -222,6 +241,11 @@ func TestBuild(t *testing.T) {
 					CanonicalTag: testTagName,
 				},
 			})
+
+			// And moved "latest" tag.
+			img, err := registry.GetImage(ctx, testImageName+":latest")
+			So(err, ShouldBeNil)
+			So(img.Digest, ShouldEqual, testDigest)
 		})
 
 		Convey("No registry is set => nothing is uploaded", func() {
