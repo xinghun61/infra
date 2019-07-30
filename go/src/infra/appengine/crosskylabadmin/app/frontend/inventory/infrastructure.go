@@ -305,7 +305,9 @@ func (dr *dutRemover) unpackRequest(r *fleet.RemoveDutsFromDronesRequest_Item) (
 	if err := dr.unpackRequestDUTID(r, &rr); err != nil {
 		return rr, err
 	}
-	if err := dr.unpackRequestReason(r, &rr); err != nil {
+	var err error
+	rr.reason, err = unpackRemovalReason(r)
+	if err != nil {
 		return rr, err
 	}
 	return rr, nil
@@ -327,16 +329,16 @@ func (dr *dutRemover) unpackRequestDUTID(r *fleet.RemoveDutsFromDronesRequest_It
 	return nil
 }
 
-func (dr *dutRemover) unpackRequestReason(r *fleet.RemoveDutsFromDronesRequest_Item, rr *removeRequest) error {
+func unpackRemovalReason(r *fleet.RemoveDutsFromDronesRequest_Item) (*inventory.RemovalReason, error) {
 	enc := r.GetRemovalReason()
 	if len(enc) == 0 {
-		return nil
+		return nil, nil
 	}
-	rr.reason = new(inventory.RemovalReason)
-	if err := proto.Unmarshal(enc, rr.reason); err != nil {
-		return status.Errorf(codes.InvalidArgument, "invalid RemovalReason")
+	var rr inventory.RemovalReason
+	if err := proto.Unmarshal(enc, &rr); err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "invalid RemovalReason")
 	}
-	return nil
+	return &rr, nil
 }
 
 // filterSkylabDronesInEnvironment returns drones in the current environment
