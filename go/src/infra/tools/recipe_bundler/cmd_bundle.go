@@ -12,6 +12,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 
 	"github.com/maruel/subcommands"
 	"golang.org/x/net/context"
@@ -396,10 +397,12 @@ func (c *cmdBundle) run(ctx context.Context) error {
 			repoName, spec := repoName, spec
 			ch <- func() error {
 				repoDir, bundleDir, err := c.mkRepoDirs(repoName)
-				repo := gitRepo{repoDir, repoName}
 				if err != nil {
 					return errors.Annotate(err, "making repo dirs").Err()
 				}
+
+				repo := gitRepo{repoDir, repoName}
+				repoMu := sync.Mutex{}
 				ctx := logging.SetField(ctx, "repo", repoName)
 
 				return parallel.FanOutIn(func(chSpec chan<- func() error) {
@@ -408,7 +411,7 @@ func (c *cmdBundle) run(ctx context.Context) error {
 						for _, resolvedSpec := range resolvedSpecs {
 							specref, resolvedSpec := specref, resolvedSpec
 							chSpec <- func() error {
-								logging.Infof(ctx, "got revision/ref: %q -> %q", spec, resolvedSpec)
+								ctx := logging.SetField(ctx, "resolved", resolvedSpec)
 								var pkg packageInfo
 								if pkg, err = c.prepPackage(repoName, specref, resolvedSpec); err != nil {
 									return err
@@ -416,6 +419,10 @@ func (c *cmdBundle) run(ctx context.Context) error {
 								if exists, err := c.resolvePackage(ctx, pkg, spec); exists {
 									return err
 								}
+								// TODO(iannucci): once we have transparent git caching,
+								// consider making a local directory for each resolved ref.
+								repoMu.Lock()
+								defer repoMu.Unlock()
 								return c.createBundle(ctx, pkg, spec, resolvedSpec, repo, bundleDir)
 							}
 						}
