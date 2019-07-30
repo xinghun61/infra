@@ -20,7 +20,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   package='codecoverage',
   syntax='proto3',
   serialized_options=None,
-  serialized_pb=_b('\n\x13\x63ode_coverage.proto\x12\x0c\x63odecoverage\"7\n\tLineRange\x12\r\n\x05\x66irst\x18\x01 \x01(\x05\x12\x0c\n\x04last\x18\x02 \x01(\x05\x12\r\n\x05\x63ount\x18\x03 \x01(\x03\"*\n\x0b\x43olumnRange\x12\r\n\x05\x66irst\x18\x01 \x01(\x05\x12\x0c\n\x04last\x18\x02 \x01(\x05\"G\n\x0c\x43olumnRanges\x12\x0c\n\x04line\x18\x01 \x01(\x05\x12)\n\x06ranges\x18\x02 \x03(\x0b\x32\x19.codecoverage.ColumnRange\"6\n\x06\x42ranch\x12\x0c\n\x04line\x18\x01 \x01(\x05\x12\r\n\x05total\x18\x02 \x01(\x05\x12\x0f\n\x07\x63overed\x18\x03 \x01(\x05\"6\n\x06Metric\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\r\n\x05total\x18\x02 \x01(\x05\x12\x0f\n\x07\x63overed\x18\x03 \x01(\x05\"\xfd\x01\n\x04\x46ile\x12\x0c\n\x04path\x18\x01 \x01(\t\x12\x13\n\x0btotal_lines\x18\x02 \x01(\x05\x12&\n\x05lines\x18\x03 \x03(\x0b\x32\x17.codecoverage.LineRange\x12\x34\n\x10uncovered_blocks\x18\x04 \x03(\x0b\x32\x1a.codecoverage.ColumnRanges\x12&\n\x08\x62ranches\x18\x05 \x03(\x0b\x32\x14.codecoverage.Branch\x12\'\n\tsummaries\x18\x06 \x03(\x0b\x32\x14.codecoverage.Metric\x12\x10\n\x08revision\x18\x07 \x01(\t\x12\x11\n\ttimestamp\x18\x08 \x01(\x03\"V\n\x0f\x43overageSummary\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x0c\n\x04path\x18\x02 \x01(\t\x12\'\n\tsummaries\x18\x03 \x03(\x0b\x32\x14.codecoverage.Metric\"\xa8\x01\n\x14GroupCoverageSummary\x12\x0c\n\x04path\x18\x01 \x01(\t\x12+\n\x04\x64irs\x18\x02 \x03(\x0b\x32\x1d.codecoverage.CoverageSummary\x12,\n\x05\x66iles\x18\x03 \x03(\x0b\x32\x1d.codecoverage.CoverageSummary\x12\'\n\tsummaries\x18\x06 \x03(\x0b\x32\x14.codecoverage.Metric\"Y\n\rGitilesCommit\x12\x0c\n\x04host\x18\x01 \x01(\t\x12\x0f\n\x07project\x18\x02 \x01(\t\x12\x10\n\x08revision\x18\x03 \x01(\t\x12\x17\n\x0f\x63ommit_position\x18\x04 \x01(\x05\"G\n\x0bGerritPatch\x12\x0c\n\x04host\x18\x01 \x01(\t\x12\n\n\x02\x63l\x18\x02 \x01(\x05\x12\r\n\x05patch\x18\x03 \x01(\x05\x12\x0f\n\x07project\x18\x04 \x01(\t\"\\\n\rConfigSetting\x12.\n\x08\x63\x61tegory\x18\x01 \x01(\x0e\x32\x1c.codecoverage.ConfigCategory\x12\x0c\n\x04name\x18\x02 \x01(\t\x12\r\n\x05value\x18\x03 \x01(\t\"\xe6\x02\n\x0e\x43overageReport\x12+\n\x06\x63ommit\x18\x01 \x01(\x0b\x32\x1b.codecoverage.GitilesCommit\x12(\n\x05patch\x18\x02 \x01(\x0b\x32\x19.codecoverage.GerritPatch\x12\x32\n\rbuild_configs\x18\x03 \x03(\x0b\x32\x1b.codecoverage.ConfigSetting\x12!\n\x05\x66iles\x18\x04 \x03(\x0b\x32\x12.codecoverage.File\x12\x13\n\x0b\x66ile_shards\x18\x05 \x03(\t\x12\x30\n\x04\x64irs\x18\x06 \x03(\x0b\x32\".codecoverage.GroupCoverageSummary\x12\x36\n\ncomponents\x18\x07 \x03(\x0b\x32\".codecoverage.GroupCoverageSummary\x12\'\n\tsummaries\x18\x08 \x03(\x0b\x32\x14.codecoverage.Metric*I\n\x0e\x43onfigCategory\x12\t\n\x05\x42UILD\x10\x00\x12\x08\n\x04TEST\x10\x01\x12\x0f\n\x0bTESTHARNESS\x10\x02\x12\x11\n\rCOVERAGE_TOOL\x10\x03\x62\x06proto3')
+  serialized_pb=_b('\n\x13\x63ode_coverage.proto\x12\x0c\x63odecoverage\"7\n\tLineRange\x12\r\n\x05\x66irst\x18\x01 \x01(\x05\x12\x0c\n\x04last\x18\x02 \x01(\x05\x12\r\n\x05\x63ount\x18\x03 \x01(\x03\"*\n\x0b\x43olumnRange\x12\r\n\x05\x66irst\x18\x01 \x01(\x05\x12\x0c\n\x04last\x18\x02 \x01(\x05\"G\n\x0c\x43olumnRanges\x12\x0c\n\x04line\x18\x01 \x01(\x05\x12)\n\x06ranges\x18\x02 \x03(\x0b\x32\x19.codecoverage.ColumnRange\"6\n\x06\x42ranch\x12\x0c\n\x04line\x18\x01 \x01(\x05\x12\r\n\x05total\x18\x02 \x01(\x05\x12\x0f\n\x07\x63overed\x18\x03 \x01(\x05\"6\n\x06Metric\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\r\n\x05total\x18\x02 \x01(\x05\x12\x0f\n\x07\x63overed\x18\x03 \x01(\x05\"\xee\x01\n\x04\x46ile\x12\x0c\n\x04path\x18\x01 \x01(\t\x12&\n\x05lines\x18\x03 \x03(\x0b\x32\x17.codecoverage.LineRange\x12\x34\n\x10uncovered_blocks\x18\x04 \x03(\x0b\x32\x1a.codecoverage.ColumnRanges\x12&\n\x08\x62ranches\x18\x05 \x03(\x0b\x32\x14.codecoverage.Branch\x12\'\n\tsummaries\x18\x06 \x03(\x0b\x32\x14.codecoverage.Metric\x12\x10\n\x08revision\x18\x07 \x01(\t\x12\x11\n\ttimestamp\x18\x08 \x01(\x03J\x04\x08\x02\x10\x03\"V\n\x0f\x43overageSummary\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x0c\n\x04path\x18\x02 \x01(\t\x12\'\n\tsummaries\x18\x03 \x03(\x0b\x32\x14.codecoverage.Metric\"\xa8\x01\n\x14GroupCoverageSummary\x12\x0c\n\x04path\x18\x01 \x01(\t\x12+\n\x04\x64irs\x18\x02 \x03(\x0b\x32\x1d.codecoverage.CoverageSummary\x12,\n\x05\x66iles\x18\x03 \x03(\x0b\x32\x1d.codecoverage.CoverageSummary\x12\'\n\tsummaries\x18\x06 \x03(\x0b\x32\x14.codecoverage.Metric\"Y\n\rGitilesCommit\x12\x0c\n\x04host\x18\x01 \x01(\t\x12\x0f\n\x07project\x18\x02 \x01(\t\x12\x10\n\x08revision\x18\x03 \x01(\t\x12\x17\n\x0f\x63ommit_position\x18\x04 \x01(\x05\"G\n\x0bGerritPatch\x12\x0c\n\x04host\x18\x01 \x01(\t\x12\n\n\x02\x63l\x18\x02 \x01(\x05\x12\r\n\x05patch\x18\x03 \x01(\x05\x12\x0f\n\x07project\x18\x04 \x01(\t\"\\\n\rConfigSetting\x12.\n\x08\x63\x61tegory\x18\x01 \x01(\x0e\x32\x1c.codecoverage.ConfigCategory\x12\x0c\n\x04name\x18\x02 \x01(\t\x12\r\n\x05value\x18\x03 \x01(\t\"\xe6\x02\n\x0e\x43overageReport\x12+\n\x06\x63ommit\x18\x01 \x01(\x0b\x32\x1b.codecoverage.GitilesCommit\x12(\n\x05patch\x18\x02 \x01(\x0b\x32\x19.codecoverage.GerritPatch\x12\x32\n\rbuild_configs\x18\x03 \x03(\x0b\x32\x1b.codecoverage.ConfigSetting\x12!\n\x05\x66iles\x18\x04 \x03(\x0b\x32\x12.codecoverage.File\x12\x13\n\x0b\x66ile_shards\x18\x05 \x03(\t\x12\x30\n\x04\x64irs\x18\x06 \x03(\x0b\x32\".codecoverage.GroupCoverageSummary\x12\x36\n\ncomponents\x18\x07 \x03(\x0b\x32\".codecoverage.GroupCoverageSummary\x12\'\n\tsummaries\x18\x08 \x03(\x0b\x32\x14.codecoverage.Metric*I\n\x0e\x43onfigCategory\x12\t\n\x05\x42UILD\x10\x00\x12\x08\n\x04TEST\x10\x01\x12\x0f\n\x0bTESTHARNESS\x10\x02\x12\x11\n\rCOVERAGE_TOOL\x10\x03\x62\x06proto3')
 )
 
 _CONFIGCATEGORY = _descriptor.EnumDescriptor(
@@ -48,8 +48,8 @@ _CONFIGCATEGORY = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   serialized_options=None,
-  serialized_start=1457,
-  serialized_end=1530,
+  serialized_start=1442,
+  serialized_end=1515,
 )
 _sym_db.RegisterEnumDescriptor(_CONFIGCATEGORY)
 
@@ -287,49 +287,42 @@ _FILE = _descriptor.Descriptor(
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='total_lines', full_name='codecoverage.File.total_lines', index=1,
-      number=2, type=5, cpp_type=1, label=1,
-      has_default_value=False, default_value=0,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='lines', full_name='codecoverage.File.lines', index=2,
+      name='lines', full_name='codecoverage.File.lines', index=1,
       number=3, type=11, cpp_type=10, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='uncovered_blocks', full_name='codecoverage.File.uncovered_blocks', index=3,
+      name='uncovered_blocks', full_name='codecoverage.File.uncovered_blocks', index=2,
       number=4, type=11, cpp_type=10, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='branches', full_name='codecoverage.File.branches', index=4,
+      name='branches', full_name='codecoverage.File.branches', index=3,
       number=5, type=11, cpp_type=10, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='summaries', full_name='codecoverage.File.summaries', index=5,
+      name='summaries', full_name='codecoverage.File.summaries', index=4,
       number=6, type=11, cpp_type=10, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='revision', full_name='codecoverage.File.revision', index=6,
+      name='revision', full_name='codecoverage.File.revision', index=5,
       number=7, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='timestamp', full_name='codecoverage.File.timestamp', index=7,
+      name='timestamp', full_name='codecoverage.File.timestamp', index=6,
       number=8, type=3, cpp_type=2, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
@@ -348,7 +341,7 @@ _FILE = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=324,
-  serialized_end=577,
+  serialized_end=562,
 )
 
 
@@ -392,8 +385,8 @@ _COVERAGESUMMARY = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=579,
-  serialized_end=665,
+  serialized_start=564,
+  serialized_end=650,
 )
 
 
@@ -444,8 +437,8 @@ _GROUPCOVERAGESUMMARY = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=668,
-  serialized_end=836,
+  serialized_start=653,
+  serialized_end=821,
 )
 
 
@@ -496,8 +489,8 @@ _GITILESCOMMIT = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=838,
-  serialized_end=927,
+  serialized_start=823,
+  serialized_end=912,
 )
 
 
@@ -548,8 +541,8 @@ _GERRITPATCH = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=929,
-  serialized_end=1000,
+  serialized_start=914,
+  serialized_end=985,
 )
 
 
@@ -593,8 +586,8 @@ _CONFIGSETTING = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1002,
-  serialized_end=1094,
+  serialized_start=987,
+  serialized_end=1079,
 )
 
 
@@ -673,8 +666,8 @@ _COVERAGEREPORT = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1097,
-  serialized_end=1455,
+  serialized_start=1082,
+  serialized_end=1440,
 )
 
 _COLUMNRANGES.fields_by_name['ranges'].message_type = _COLUMNRANGE
