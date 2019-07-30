@@ -50,7 +50,7 @@ _WRONG_CULPRIT_LINK_TEMPLATE = (
     'https://bugs.chromium.org/p/chromium/issues/entry?'
     'status=Unconfirmed&'
     'labels=Pri-1,Test-Findit-Wrong&'
-    'components=Tools%3ETest%3EFindit%3EFlakiness&'
+    'components=Infra%3ETest%3EFlakiness&'
     'summary=%5BFindit%5D%20Flake%20Analyzer%20-%20Wrong%20culprit%20'
     'r{commit_position}&comment=Link%20to%20Culprit%3A%20{culprit_link}')
 
@@ -96,7 +96,7 @@ of all flake occurrences can be found at:
 _FLAKE_DETECTION_WRONG_RESULTS_BUG_LINK = (
     'https://bugs.chromium.org/p/chromium/issues/entry?'
     'status=Unconfirmed&labels=Pri-1,Test-Findit-Wrong&'
-    'components=Tools%3ETest%3EFindit%3EFlakiness&'
+    'components=Infra%3ETest%3EFlakiness&'
     'summary=%5BFindit%5D%20Flake%20Detection%20-%20Wrong%20result%3A%20'
     '{summary}&comment=Link%20to%20flake%20details%3A%20{flake_link}')
 

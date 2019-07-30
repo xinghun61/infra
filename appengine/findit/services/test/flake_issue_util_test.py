@@ -281,8 +281,8 @@ class FlakeReportUtilTest(WaterfallTestCase):
 
     expected_wrong_result_link = (
         'https://bugs.chromium.org/p/chromium/issues/entry?status=Unconfirmed&'
-        'labels=Pri-1,Test-Findit-Wrong&components=Tools%3ETest%3EFindit%3E'
-        'Flakiness&summary=%5BFindit%5D%20Flake%20Detection%20-%20Wrong%20'
+        'labels=Pri-1,Test-Findit-Wrong&components=Infra%3ETest%3EFlakiness&'
+        'summary=%5BFindit%5D%20Flake%20Detection%20-%20Wrong%20'
         'result%3A%20test&comment=Link%20to%20flake%20details%3A%20'
         'https://analysis.chromium.org'
         '/p/chromium/flake-portal/flakes/occurrences?key={}').format(
@@ -420,8 +420,8 @@ Automatically posted by the findit-for-me app (https://goo.gl/Ne6KtC)."""
 
     expected_wrong_result_link = (
         'https://bugs.chromium.org/p/chromium/issues/entry?status=Unconfirmed&'
-        'labels=Pri-1,Test-Findit-Wrong&components=Tools%3ETest%3EFindit%3E'
-        'Flakiness&summary=%5BFindit%5D%20Flake%20Detection%20-%20Wrong%20'
+        'labels=Pri-1,Test-Findit-Wrong&components=Infra%3ETest%3EFlakiness'
+        '&summary=%5BFindit%5D%20Flake%20Detection%20-%20Wrong%20'
         'result%3A%20test&comment=Link%20to%20flake%20details%3A%20'
         'https://analysis.chromium.org'
         '/p/chromium/flake-portal/flakes/occurrences?key={}').format(
