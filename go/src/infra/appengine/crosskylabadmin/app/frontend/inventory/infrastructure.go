@@ -18,7 +18,6 @@ package inventory
 
 import (
 	"fmt"
-	"sort"
 
 	fleet "infra/appengine/crosskylabadmin/api/fleet/v1"
 	"infra/appengine/crosskylabadmin/app/config"
@@ -293,31 +292,6 @@ func unpackRemovalReason(r *fleet.RemoveDutsFromDronesRequest_Item) (*inventory.
 	return &rr, nil
 }
 
-// filterSkylabDronesInEnvironment returns drones in the current environment
-// from a list of servers
-func filterSkylabDronesInEnvironment(ctx context.Context, servers []*inventory.Server) []*inventory.Server {
-	env := config.Get(ctx).Inventory.Environment
-	ds := make([]*inventory.Server, 0, len(servers))
-	for _, s := range servers {
-		if s.GetEnvironment().String() != env {
-			continue
-		}
-		for _, r := range s.GetRoles() {
-			if r == inventory.Server_ROLE_SKYLAB_DRONE {
-				ds = append(ds, s)
-				break
-			}
-		}
-	}
-	return ds
-}
-
-func sortDronesByAscendingDUTCount(ds []*inventory.Server) {
-	sort.SliceStable(ds, func(i, j int) bool {
-		return len(ds[i].DutUids) < len(ds[j].DutUids)
-	})
-}
-
 func removeSliceString(sl []string, s string) []string {
 	for i, v := range sl {
 		if v != s {
@@ -327,11 +301,4 @@ func removeSliceString(sl []string, s string) []string {
 		return sl[:len(sl)-1]
 	}
 	return sl
-}
-
-func minInt(a, b int) int {
-	if a < b {
-		return a
-	}
-	return b
 }
