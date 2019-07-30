@@ -91,53 +91,45 @@ func TestBuild(t *testing.T) {
 
 			// Used Cloud Build.
 			So(res, ShouldResemble, &buildResult{
-				Image:        testImageName,
-				Digest:       testDigest,
-				CanonicalTag: testTagName,
+				Image: &imageRef{
+					Image:        testImageName,
+					Digest:       testDigest,
+					CanonicalTag: testTagName,
+				},
 			})
 
 			// Tagged it.
 			img, err := registry.GetImage(ctx, fmt.Sprintf("%s:%s", testImageName, testTagName))
 			So(err, ShouldBeNil)
 			So(img.Digest, ShouldEqual, testDigest)
-		})
 
-		Convey("Already uploaded tarball", func() {
-			// Pretend we already have generation 12345 in the store.
-			store.plant(testTarballPath, 12345)
+			// Now we build this exact tarball again using different canonical tag.
+			// We should get back the image we've already built.
+			Convey("Building existing tarball reuses the image", func() {
+				builder.provenance = func(gs string) string {
+					panic("Cloud Build should not be invoked")
+				}
 
-			builder.provenance = func(gs string) string {
-				So(gs, ShouldEqual, testTarballURL+"#12345") // used this gen
-				return digest                                // got its digest correctly
-			}
+				res, err := runBuild(ctx, buildParams{
+					Manifest:     &manifest.Manifest{Name: testTargetName},
+					Image:        testImageName,
+					CanonicalTag: "another-tag",
+					Stage:        stageFileSet(fs),
+					Store:        store,
+					Builder:      builder,
+					Registry:     registry,
+				})
+				So(err, ShouldBeNil)
 
-			res, err := runBuild(ctx, buildParams{
-				Manifest:     &manifest.Manifest{Name: testTargetName},
-				Image:        testImageName,
-				CanonicalTag: testTagName,
-				Stage:        stageFileSet(fs),
-				Store:        store,
-				Builder:      builder,
-				Registry:     registry,
+				// Reused the existing image.
+				So(res, ShouldResemble, &buildResult{
+					Image: &imageRef{
+						Image:        testImageName,
+						Digest:       testDigest,
+						CanonicalTag: testTagName,
+					},
+				})
 			})
-			So(err, ShouldBeNil)
-
-			// Didn't overwrite the existing file.
-			obj, err := store.Check(ctx, testTarballPath)
-			So(err, ShouldBeNil)
-			So(obj.String(), ShouldEqual, testTarballURL+"#12345") // still same gen
-
-			// Used Cloud Build.
-			So(res, ShouldResemble, &buildResult{
-				Image:        testImageName,
-				Digest:       testDigest,
-				CanonicalTag: testTagName,
-			})
-
-			// Tagged it.
-			img, err := registry.GetImage(ctx, fmt.Sprintf("%s:%s", testImageName, testTagName))
-			So(err, ShouldBeNil)
-			So(img.Digest, ShouldEqual, testDigest)
 		})
 
 		Convey("Already seen canonical tag", func() {
@@ -153,9 +145,11 @@ func TestBuild(t *testing.T) {
 
 			// Reused the existing image.
 			So(res, ShouldResemble, &buildResult{
-				Image:        testImageName,
-				Digest:       testDigest,
-				CanonicalTag: testTagName,
+				Image: &imageRef{
+					Image:        testImageName,
+					Digest:       testDigest,
+					CanonicalTag: testTagName,
+				},
 			})
 		})
 
@@ -254,17 +248,6 @@ func newStorageImplMock() *storageImplMock {
 	}
 }
 
-func (s *storageImplMock) plant(name string, gen int64) {
-	s.blobs[name] = objBlob{
-		Object: storage.Object{
-			Bucket:     testBucketName,
-			Name:       name,
-			Generation: gen,
-			Metadata:   &storage.Metadata{},
-		},
-	}
-}
-
 func (s *storageImplMock) Check(ctx context.Context, name string) (*storage.Object, error) {
 	itm, ok := s.blobs[name]
 	if !ok {
@@ -297,6 +280,22 @@ func (s *storageImplMock) Upload(ctx context.Context, name, digest string, r io.
 		Blob:   blob,
 	}
 	return &obj, nil
+}
+
+func (s *storageImplMock) UpdateMetadata(ctx context.Context, obj *storage.Object, cb func(m *storage.Metadata) error) error {
+	itm, ok := s.blobs[obj.Name]
+	if !ok {
+		return fmt.Errorf("can't update metadata of %q: no such object", obj.Name)
+	}
+
+	md := itm.Metadata.Clone()
+	if err := cb(md); err != nil || itm.Metadata.Equal(md) {
+		return err
+	}
+	itm.Metadata = md
+
+	s.blobs[obj.Name] = itm
+	return nil
 }
 
 ////////////////////////////////////////////////////////////////////////////////
