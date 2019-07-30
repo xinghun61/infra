@@ -239,22 +239,13 @@ class ChartService(object):
     for issue in issues:
       right_now = self._currentTime()
 
-      # Look for an existing (latest) IssueSnapshot with this issue_id.
-      previous_snapshots = self.issuesnapshot_tbl.Select(
-          cnxn, cols=ISSUESNAPSHOT_COLS,
-          issue_id=issue.issue_id,
-          limit=1,
-          order_by=[('period_start DESC', [])])
-
-      if len(previous_snapshots) > 0:
-        previous_snapshot_id = previous_snapshots[0][0]
-        logging.info('Found previous IssueSnapshot with id: %s',
-          previous_snapshot_id)
-
-        # Update previous snapshot's end time to right now.
-        delta = { 'period_end': right_now }
-        where = [('IssueSnapshot.id = %s', [previous_snapshot_id])]
-        self.issuesnapshot_tbl.Update(cnxn, delta, commit=commit, where=where)
+      # Update previous snapshot of current issue's end time to right now.
+      self.issuesnapshot_tbl.Update(cnxn,
+          delta={'period_end': right_now},
+          where=[('IssueSnapshot.issue_id = %s', [issue.issue_id]),
+            ('IssueSnapshot.period_end = %s',
+              [settings.maximum_snapshot_period_end])],
+          commit=commit)
 
       config = self.config_service.GetProjectConfig(cnxn, issue.project_id)
       period_end = settings.maximum_snapshot_period_end

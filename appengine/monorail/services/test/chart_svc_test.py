@@ -449,26 +449,18 @@ class ChartServiceTest(unittest.TestCase):
         perms=perms, group_by='label', label_prefix='Foo')
     self.mox.VerifyAll()
 
-  def SetUpStoreIssueSnapshots(self, replace_now=None, found_id=None,
+  def SetUpStoreIssueSnapshots(self, replace_now=None,
                                project_id=789, owner_id=111,
                                component_ids=None, cc_rows=None):
     """Set up all calls to mocks that StoreIssueSnapshots will call."""
     now = self.services.chart._currentTime().AndReturn(replace_now or 12345678)
 
-    if found_id:
-      select_return = [(found_id,)]
-    else:
-      select_return = []
-
-    self.services.chart.issuesnapshot_tbl.Select(self.cnxn,
-        cols=chart_svc.ISSUESNAPSHOT_COLS,
-        issue_id=78901, limit=1,
-        order_by=[('period_start DESC', [])]).AndReturn(select_return)
-
-    if found_id:
-      self.services.chart.issuesnapshot_tbl.Update(self.cnxn,
-          {'period_end': now},
-          where=[('IssueSnapshot.id = %s', [found_id])], commit=False)
+    self.services.chart.issuesnapshot_tbl.Update(self.cnxn,
+        delta={'period_end': now},
+        where=[('IssueSnapshot.issue_id = %s', [78901]),
+          ('IssueSnapshot.period_end = %s',
+            [settings.maximum_snapshot_period_end])],
+        commit=False)
 
     # Shard is 0 because len(shards) = 1 and 1 % 1 = 0.
     shard = 0
@@ -526,7 +518,7 @@ class ChartServiceTest(unittest.TestCase):
 
     # Snapshot #2
     self.SetUpStoreIssueSnapshots(replace_now=now_2,
-      found_id=5678, component_ids=[11], cc_rows=cc_rows)
+      component_ids=[11], cc_rows=cc_rows)
 
     self.mox.ReplayAll()
     self.services.chart.StoreIssueSnapshots(self.cnxn, [issue], commit=False)
@@ -565,7 +557,7 @@ class ChartServiceTest(unittest.TestCase):
     # Snapshot #2
     cc_rows_2 = [(5678, 222), (5678, 444), (5678, 888), (5678, 999)]
     self.SetUpStoreIssueSnapshots(replace_now=now_2,
-      found_id=5678, project_id=123, owner_id=222, component_ids=[13],
+      project_id=123, owner_id=222, component_ids=[13],
       cc_rows=cc_rows_2)
 
     self.mox.ReplayAll()

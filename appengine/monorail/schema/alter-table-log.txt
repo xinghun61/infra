@@ -1686,7 +1686,6 @@ ALTER TABLE DanglingIssueRelation DROP PRIMARY KEY, ADD PRIMARY KEY(issue_id, ds
 
 ALTER IGNORE TABLE SpamReport ADD UNIQUE (user_id, comment_id, issue_id);
 
-
 ================================================================
 2019-07-03: Add CommentImporter table.
 
