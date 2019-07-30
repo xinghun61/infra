@@ -25,6 +25,7 @@ func TestLabels(t *testing.T) {
 			BuildTool:    "xxx",
 			BuildMode:    "yyy",
 			Inputs:       "zzz",
+			BuildID:      "123",
 			CanonicalTag: "www",
 			Extra: map[string]string{
 				"k1":                      "v1",
@@ -34,6 +35,7 @@ func TestLabels(t *testing.T) {
 		So(l.AsBuildArgs(), ShouldResemble, []string{
 			"--label", "k1=v1",
 			"--label", "org.chromium.build.canonical=www",
+			"--label", "org.chromium.build.id=123",
 			"--label", "org.chromium.build.inputs=zzz",
 			"--label", "org.chromium.build.mode=yyy",
 			"--label", "org.chromium.build.tool=xxx",

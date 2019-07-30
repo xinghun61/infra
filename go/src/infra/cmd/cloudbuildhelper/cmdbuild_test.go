@@ -76,6 +76,7 @@ func TestBuild(t *testing.T) {
 			res, err := runBuild(ctx, buildParams{
 				Manifest:     &manifest.Manifest{Name: testTargetName},
 				Image:        testImageName,
+				BuildID:      "b1",
 				CanonicalTag: testTagName,
 				Stage:        stageFileSet(fs),
 				Store:        store,
@@ -95,6 +96,7 @@ func TestBuild(t *testing.T) {
 					Image:        testImageName,
 					Digest:       testDigest,
 					CanonicalTag: testTagName,
+					BuildID:      "b1",
 				},
 			})
 
@@ -110,9 +112,13 @@ func TestBuild(t *testing.T) {
 					panic("Cloud Build should not be invoked")
 				}
 
+				// To avoid clashing on metadata keys that depend on timestamps.
+				tc.Add(time.Minute)
+
 				res, err := runBuild(ctx, buildParams{
 					Manifest:     &manifest.Manifest{Name: testTargetName},
 					Image:        testImageName,
+					BuildID:      "b2",
 					CanonicalTag: "another-tag",
 					Stage:        stageFileSet(fs),
 					Store:        store,
@@ -127,8 +133,17 @@ func TestBuild(t *testing.T) {
 						Image:        testImageName,
 						Digest:       testDigest,
 						CanonicalTag: testTagName,
+						BuildID:      "b1", // was build there
 					},
 				})
+
+				// Both builds are associated with the tarball via its metadata now.
+				tarball, err := store.Check(ctx, testTarballPath)
+				So(err, ShouldBeNil)
+				md := tarball.Metadata.Values(buildRefMetaKey)
+				So(md, ShouldHaveLength, 2)
+				So(md[0].Value, ShouldEqual, `{"build_id":"b2","tag":"another-tag"}`)
+				So(md[1].Value, ShouldEqual, `{"build_id":"b1","tag":"canonical-tag"}`)
 			})
 		})
 

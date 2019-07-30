@@ -19,6 +19,7 @@ type Labels struct {
 	BuildTool    string    // org.chromium.build.tool="cloudbuildhelper v1.2.3"
 	BuildMode    string    // org.chromium.build.mode="local" (or "cloudbuild")
 	Inputs       string    // org.chromium.build.inputs=<SHA256 of context tarball>
+	BuildID      string    // org.chromium.build.id="...
 	CanonicalTag string    // org.chromium.build.canonical=...
 
 	Extra map[string]string // whatever was supplied via -label CLI flag
@@ -42,6 +43,9 @@ func (l *Labels) Sorted() []string {
 	}
 	if l.Inputs != "" {
 		all["org.chromium.build.inputs"] = l.Inputs
+	}
+	if l.BuildID != "" {
+		all["org.chromium.build.id"] = l.BuildID
 	}
 	if l.CanonicalTag != "" {
 		all["org.chromium.build.canonical"] = l.CanonicalTag

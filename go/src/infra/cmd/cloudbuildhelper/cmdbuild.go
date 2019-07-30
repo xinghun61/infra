@@ -78,6 +78,7 @@ type cmdBuildRun struct {
 	targetManifest string
 	infra          string
 	canonicalTag   string
+	buildID        string
 	force          bool
 	labels         stringmapflag.Value
 }
@@ -88,6 +89,7 @@ func (c *cmdBuildRun) init() {
 	})
 	c.Flags.StringVar(&c.infra, "infra", "dev", "What section to pick from 'infra' field in the YAML.")
 	c.Flags.StringVar(&c.canonicalTag, "canonical-tag", "", "Tag to push the image to if we built a new image.")
+	c.Flags.StringVar(&c.buildID, "build-id", "", "Identifier of the CI build that calls this tool (used in various metadata).")
 	c.Flags.BoolVar(&c.force, "force", false, "Rebuild and reupload the image, ignoring existing artifacts.")
 	c.Flags.Var(&c.labels, "label", "Labels to attach to the docker image, in k=v form.")
 }
@@ -137,6 +139,7 @@ func (c *cmdBuildRun) exec(ctx context.Context) error {
 		Force:        c.force,
 		Image:        image,
 		Labels:       c.labels,
+		BuildID:      c.buildID,
 		CanonicalTag: c.canonicalTag,
 		Stage:        stage,
 		Store:        store,
@@ -180,6 +183,7 @@ type buildParams struct {
 	Force        bool               // true to always build an image, ignoring any caches
 	Image        string             // full image name to upload (or "" to skip uploads)
 	Labels       map[string]string  // extra labels to put into the image
+	BuildID      string             // identifier of a CI build that called us
 	CanonicalTag string             // a tag to apply to the image if we really built it
 
 	// Local build (usually 'stage', mocked in tests).
@@ -203,6 +207,17 @@ type imageRef struct {
 	Image        string `json:"image"`  // name of the uploaded image "<registry>/<name>"
 	Digest       string `json:"digest"` // docker digest of the uploaded image "sha256:..."
 	CanonicalTag string `json:"tag"`    // its canonical tag
+
+	BuildID string `json:"build_id,omitempty"` // parent CI build that produced this image (FYI)
+}
+
+// buildRef is stored as metadata of context tarballs in Google Storage.
+//
+// If refers to some CI build that reused the tarball or image built from it.
+// This information is retained for debugging.
+type buildRef struct {
+	BuildID      string `json:"build_id"`      // value of -build-id flag
+	CanonicalTag string `json:"tag,omitempty"` // value of -canonical-tag flag
 }
 
 // Log dumps information about the image to the log.
@@ -320,7 +335,16 @@ func remoteBuild(ctx context.Context, p buildParams, out *fileset.Set) (*buildRe
 		return nil, err // annotated already
 	}
 
-	// Dump metadata into the log, just FYI.
+	// Metadata about *this* build to associate with the tarball in the storage,
+	// even if we reuse an existing tarball or image. This information is retained
+	// to simplify debugging.
+	buildRef := &buildRef{
+		BuildID:      p.BuildID,
+		CanonicalTag: p.CanonicalTag,
+	}
+
+	// Dump metadata into the log, just FYI. In particular this logs all previous
+	// buildRef's that reused this tarball.
 	obj.Log(ctx)
 
 	// Return a reference to an existing image if we already built something
@@ -334,6 +358,10 @@ func remoteBuild(ctx context.Context, p buildParams, out *fileset.Set) (*buildRe
 				logging.Infof(ctx,
 					"Returning an image with canonical tag %q, it was built from this exact tarball %s",
 					imgRef.CanonicalTag, humanize.Time(ts))
+				// Let it be known that we reused the image produced from this tarball.
+				if err := updateMetadata(ctx, obj, p.Store, nil, buildRef); err != nil {
+					return nil, err // annotated already
+				}
 				return &buildResult{Image: imgRef}, nil
 			}
 			logging.Warningf(ctx,
@@ -359,6 +387,7 @@ func remoteBuild(ctx context.Context, p buildParams, out *fileset.Set) (*buildRe
 		Image:        p.Image,
 		Digest:       imageDigest,
 		CanonicalTag: p.CanonicalTag,
+		BuildID:      p.BuildID,
 	}
 
 	if imgRef.CanonicalTag != "" {
@@ -377,7 +406,7 @@ func remoteBuild(ctx context.Context, p buildParams, out *fileset.Set) (*buildRe
 		// the image we've just built. We do it only when using canonical tags,
 		// since we want all such "reusable" images to have a readable tag that
 		// identifies them.
-		if err := updateMetadata(ctx, obj, p.Store, imgRef); err != nil {
+		if err := updateMetadata(ctx, obj, p.Store, imgRef, buildRef); err != nil {
 			return nil, err // already annotated
 		}
 	}
@@ -456,6 +485,7 @@ func doCloudBuild(ctx context.Context, in *storage.Object, inDigest string, p bu
 			BuildTool:    userAgent,
 			BuildMode:    "cloudbuild",
 			Inputs:       inDigest,
+			BuildID:      p.BuildID,
 			CanonicalTag: p.CanonicalTag,
 			Extra:        p.Labels,
 		},
@@ -527,6 +557,7 @@ func waitBuild(ctx context.Context, bldr builderImpl, b *cloudbuild.Build) (*clo
 
 const (
 	imageRefMetaKey = "cbh-image-ref" // metadata key for imageRef{...} JSON blobs
+	buildRefMetaKey = "cbh-build-ref" // metadata key for buildRef{...} JSON blobs
 )
 
 // reuseExistingImage examines metadata of 'obj' to find references to an
@@ -571,21 +602,41 @@ func reuseExistingImage(ctx context.Context, obj *storage.Object, image string, 
 
 // updateMetadata appends to the metadata of the tarball in the storage.
 //
-// Adds serialized 'r' there, to be later discovered by reuseExistingImage.
-func updateMetadata(ctx context.Context, obj *storage.Object, s storageImpl, r *imageRef) error {
+// Adds serialized 'img' and 'b' there (if they are non-nil).
+func updateMetadata(ctx context.Context, obj *storage.Object, s storageImpl, img *imageRef, b *buildRef) error {
 	ts := clock.Now(ctx).UnixNano() / 1000
 
-	blob, err := json.Marshal(r)
-	if err != nil {
-		return errors.Annotate(err, "error when marshalling imageRef %v", r).Err()
+	var imgRefJSON []byte
+	if img != nil {
+		var err error
+		if imgRefJSON, err = json.Marshal(img); err != nil {
+			return errors.Annotate(err, "error when marshalling imageRef %v", img).Err()
+		}
 	}
 
-	err = s.UpdateMetadata(ctx, obj, func(m *storage.Metadata) error {
-		m.Add(storage.Metadatum{
-			Key:       imageRefMetaKey,
-			Timestamp: ts,
-			Value:     string(blob),
-		})
+	var buildRefJSON []byte
+	if b != nil {
+		var err error
+		if buildRefJSON, err = json.Marshal(b); err != nil {
+			return errors.Annotate(err, "error when marshalling buildRef %v", b).Err()
+		}
+	}
+
+	err := s.UpdateMetadata(ctx, obj, func(m *storage.Metadata) error {
+		if imgRefJSON != nil {
+			m.Add(storage.Metadatum{
+				Key:       imageRefMetaKey,
+				Timestamp: ts,
+				Value:     string(imgRefJSON),
+			})
+		}
+		if buildRefJSON != nil {
+			m.Add(storage.Metadatum{
+				Key:       buildRefMetaKey,
+				Timestamp: ts,
+				Value:     string(buildRefJSON),
+			})
+		}
 		m.Trim(50) // to avoid growing metadata size indefinitely
 		return nil
 	})
