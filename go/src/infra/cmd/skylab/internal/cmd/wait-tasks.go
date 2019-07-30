@@ -6,12 +6,12 @@ package cmd
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"sync"
 
 	"github.com/maruel/subcommands"
 
+	"go.chromium.org/chromiumos/infra/proto/go/test_platform/skylab_tool"
 	"go.chromium.org/luci/auth/client/authcli"
 	"go.chromium.org/luci/common/cli"
 	"go.chromium.org/luci/common/data/stringset"
@@ -84,12 +84,12 @@ func (c *waitTasksRun) innerRun(a subcommands.Application, args []string, env su
 		return err
 	}
 
-	output := make([]*waitTaskResult, len(args))
-	for i, ID := range args {
-		output[i] = resultMap[ID]
+	output := &skylab_tool.WaitTasksResult{}
+	for _, ID := range args {
+		output.Results = append(output.Results, resultMap[ID])
 	}
 
-	outputJSON, err := json.Marshal(output)
+	outputJSON, err := jsonPBMarshaller.MarshalToString(output)
 	if err != nil {
 		return err
 	}
@@ -99,8 +99,8 @@ func (c *waitTasksRun) innerRun(a subcommands.Application, args []string, env su
 	return nil
 }
 
-func consumeToMap(ctx context.Context, items int, results <-chan waitItem) (map[string]*waitTaskResult, error) {
-	resultMap := make(map[string]*waitTaskResult)
+func consumeToMap(ctx context.Context, items int, results <-chan waitItem) (map[string]*skylab_tool.WaitTaskResult, error) {
+	resultMap := make(map[string]*skylab_tool.WaitTaskResult)
 	for {
 		if len(resultMap) == items {
 			return resultMap, nil
@@ -122,7 +122,7 @@ func consumeToMap(ctx context.Context, items int, results <-chan waitItem) (map[
 }
 
 type waitItem struct {
-	result *waitTaskResult
+	result *skylab_tool.WaitTaskResult
 	ID     string
 	err    error
 }

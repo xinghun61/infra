@@ -17,7 +17,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/golang/protobuf/jsonpb"
 	"github.com/maruel/subcommands"
+
 	"go.chromium.org/luci/auth"
 	"go.chromium.org/luci/auth/client/authcli"
 	swarming_api "go.chromium.org/luci/common/api/swarming/swarming/v1"
@@ -32,6 +34,10 @@ import (
 const progName = "skylab"
 
 var defaultTaskPriority = 140
+
+var jsonPBMarshaller = &jsonpb.Marshaler{
+	EmitDefaults: true,
+}
 
 type commonFlags struct {
 	debug bool

@@ -14,13 +14,13 @@ import (
 
 	"github.com/golang/protobuf/jsonpb"
 	structpb "github.com/golang/protobuf/ptypes/struct"
-	"google.golang.org/genproto/protobuf/field_mask"
-
+	"go.chromium.org/chromiumos/infra/proto/go/test_platform/skylab_tool"
 	"go.chromium.org/chromiumos/infra/proto/go/test_platform/steps"
 	"go.chromium.org/luci/auth/client/authcli"
 	buildbucket_pb "go.chromium.org/luci/buildbucket/proto"
 	"go.chromium.org/luci/common/errors"
 	"go.chromium.org/luci/grpc/prpc"
+	"google.golang.org/genproto/protobuf/field_mask"
 
 	"infra/cmd/skylab/internal/cmd/recipe"
 	"infra/cmd/skylab/internal/site"
@@ -100,7 +100,7 @@ var getBuildFields = []string{
 	"status",
 }
 
-func waitBuildbucketTask(ctx context.Context, ID string, client buildbucket_pb.BuildsClient, env site.Environment) (*waitTaskResult, error) {
+func waitBuildbucketTask(ctx context.Context, ID string, client buildbucket_pb.BuildsClient, env site.Environment) (*skylab_tool.WaitTaskResult, error) {
 	buildID, err := strconv.ParseInt(ID, 10, 64)
 	if err != nil {
 		return nil, err

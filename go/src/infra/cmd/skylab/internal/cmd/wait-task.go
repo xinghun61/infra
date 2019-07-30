@@ -6,14 +6,15 @@ package cmd
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"infra/cmd/skylab/internal/site"
 	"io"
 	"time"
 
 	"github.com/maruel/subcommands"
+
 	"go.chromium.org/chromiumos/infra/proto/go/test_platform"
+	"go.chromium.org/chromiumos/infra/proto/go/test_platform/skylab_tool"
 	"go.chromium.org/chromiumos/infra/proto/go/test_platform/steps"
 	"go.chromium.org/luci/auth/client/authcli"
 	swarming_api "go.chromium.org/luci/common/api/swarming/swarming/v1"
@@ -47,37 +48,6 @@ type waitTaskRun struct {
 	buildBucket bool
 }
 
-// TODO(crbug.com/988611): Use a proto defined format for the wait-task output.
-type taskResult struct {
-	Name  string `json:"name"`
-	State string `json:"state"`
-	// TODO(crbug.com/964573): Deprecate this field.
-	Failure bool `json:"failure"`
-	Success bool `json:"success"`
-
-	// Note: These fields are a little problematic, because they are not independently
-	// meaningful to the caller; their meaning depends on the namespace (buildbucket vs. swarming)
-	// and, in the case of swarming, environment (dev vs. prod).
-	// Still, they are used by some clients, so preserved for now.
-	// Note the distinction between TaskRunID and TaskRequestID: in buildbucket runs,
-	// these will be equal. In swarming runs, they will differ in the last character
-	// (this is the difference between a swarming run id and request id).
-	TaskRunID     string `json:"task-run-id"`
-	TaskRequestID string `json:"task-request-id"`
-
-	// Note: these URL fields are only populated for -bb runs; eventually,
-	// non-bb runs will be deprecated.
-	TaskRunURL  string `json:"task-run-url"`
-	TaskLogsURL string `json:"task-logs-url"`
-}
-
-// TODO(crbug.com/988611): Use a proto defined format for the wait-task output.
-type waitTaskResult struct {
-	TaskResult   *taskResult   `json:"task-result"`
-	Stdout       string        `json:"stdout"`
-	ChildResults []*taskResult `json:"child-results"`
-}
-
 func (c *waitTaskRun) Run(a subcommands.Application, args []string, env subcommands.Env) int {
 	if err := c.innerRun(a, env); err != nil {
 		PrintError(a.GetErr(), err)
@@ -87,7 +57,7 @@ func (c *waitTaskRun) Run(a subcommands.Application, args []string, env subcomma
 }
 
 func (c *waitTaskRun) innerRun(a subcommands.Application, env subcommands.Env) error {
-	var result *waitTaskResult
+	var result *skylab_tool.WaitTaskResult
 	var err error
 	switch c.buildBucket {
 	case true:
@@ -104,7 +74,7 @@ func (c *waitTaskRun) innerRun(a subcommands.Application, env subcommands.Env) e
 	return nil
 }
 
-func (c *waitTaskRun) innerRunSwarming(a subcommands.Application, env subcommands.Env) (*waitTaskResult, error) {
+func (c *waitTaskRun) innerRunSwarming(a subcommands.Application, env subcommands.Env) (*skylab_tool.WaitTaskResult, error) {
 	taskID := c.Flags.Arg(0)
 	if taskID == "" {
 		return nil, NewUsageError(c.Flags, "missing swarming task ID")
@@ -139,7 +109,7 @@ func swarmingClient(ctx context.Context, authFlags authcli.Flags, env site.Envir
 	return client, nil
 }
 
-func (c *waitTaskRun) innerRunBuildbucket(a subcommands.Application, env subcommands.Env) (*waitTaskResult, error) {
+func (c *waitTaskRun) innerRunBuildbucket(a subcommands.Application, env subcommands.Env) (*skylab_tool.WaitTaskResult, error) {
 	taskIDString := c.Flags.Arg(0)
 	if taskIDString == "" {
 		return nil, NewUsageError(c.Flags, "missing buildbucket task id")
@@ -157,37 +127,37 @@ func (c *waitTaskRun) innerRunBuildbucket(a subcommands.Application, env subcomm
 	return waitBuildbucketTask(ctx, taskIDString, bClient, c.envFlags.Env())
 }
 
-func responseToTaskResult(e site.Environment, buildID int64, response *steps.ExecuteResponse) *waitTaskResult {
+func responseToTaskResult(e site.Environment, buildID int64, response *steps.ExecuteResponse) *skylab_tool.WaitTaskResult {
 	u := bbURL(e, buildID)
 	verdict := response.GetState().GetVerdict()
 	failure := verdict == test_platform.TaskState_VERDICT_FAILED
 	success := verdict == test_platform.TaskState_VERDICT_PASSED
-	tr := &taskResult{
+	tr := &skylab_tool.WaitTaskResult_Task{
 		Name:          "Test Platform Invocation",
-		TaskRunURL:    u,
-		TaskRunID:     fmt.Sprintf("%d", buildID),
-		TaskRequestID: fmt.Sprintf("%d", buildID),
+		TaskRunUrl:    u,
+		TaskRunId:     fmt.Sprintf("%d", buildID),
+		TaskRequestId: fmt.Sprintf("%d", buildID),
 		Failure:       failure,
 		Success:       success,
 	}
-	var childResults []*taskResult
+	var childResults []*skylab_tool.WaitTaskResult_Task
 	for _, child := range response.TaskResults {
 		verdict := child.GetState().GetVerdict()
 		failure := verdict == test_platform.TaskState_VERDICT_FAILED
 		success := verdict == test_platform.TaskState_VERDICT_PASSED
-		childResult := &taskResult{
+		childResult := &skylab_tool.WaitTaskResult_Task{
 			Name:        child.Name,
-			TaskLogsURL: child.LogUrl,
-			TaskRunURL:  child.TaskUrl,
+			TaskLogsUrl: child.LogUrl,
+			TaskRunUrl:  child.TaskUrl,
 			// Note: TaskRunID is deprecated and excluded here.
 			Failure: failure,
 			Success: success,
 		}
 		childResults = append(childResults, childResult)
 	}
-	return &waitTaskResult{
+	return &skylab_tool.WaitTaskResult{
 		ChildResults: childResults,
-		TaskResult:   tr,
+		Result:       tr,
 		// Note: Stdout it not set.
 	}
 }
@@ -234,19 +204,19 @@ func sleepOrCancel(ctx context.Context, duration time.Duration) error {
 	}
 }
 
-func asTaskResult(s *swarming_api.SwarmingRpcsTaskResult) *taskResult {
-	return &taskResult{
+func asTaskResult(s *swarming_api.SwarmingRpcsTaskResult) *skylab_tool.WaitTaskResult_Task {
+	return &skylab_tool.WaitTaskResult_Task{
 		Name:  s.Name,
 		State: s.State,
 		// TODO(crbug.com/964573): Deprecate this field.
 		Failure:       s.Failure,
 		Success:       !s.Failure && (s.State == "COMPLETED" || s.State == "COMPLETED_SUCCESS"),
-		TaskRunID:     s.RunId,
-		TaskRequestID: s.TaskId,
+		TaskRunId:     s.RunId,
+		TaskRequestId: s.TaskId,
 	}
 }
 
-func extractSwarmingResult(ctx context.Context, taskID string, t *swarming.Client) (*waitTaskResult, error) {
+func extractSwarmingResult(ctx context.Context, taskID string, t *swarming.Client) (*skylab_tool.WaitTaskResult, error) {
 	results, err := t.GetResults(ctx, []string{taskID})
 	if err != nil {
 		return nil, err
@@ -259,23 +229,22 @@ func extractSwarmingResult(ctx context.Context, taskID string, t *swarming.Clien
 	if err != nil {
 		return nil, err
 	}
-	childResults := make([]*taskResult, len(childs))
+	childResults := make([]*skylab_tool.WaitTaskResult_Task, len(childs))
 	for i, c := range childs {
 		childResults[i] = asTaskResult(c)
 	}
 	tr := asTaskResult(results[0])
-	result := &waitTaskResult{
-		TaskResult:   tr,
+	result := &skylab_tool.WaitTaskResult{
+		Result:       tr,
 		Stdout:       stdouts[0].Output,
 		ChildResults: childResults,
 	}
 	return result, nil
 }
 
-func printJSONResults(w io.Writer, m *waitTaskResult) {
-	outputJSON, err := json.Marshal(m)
+func printJSONResults(w io.Writer, m *skylab_tool.WaitTaskResult) {
+	err := jsonPBMarshaller.Marshal(w, m)
 	if err != nil {
 		panic(err)
 	}
-	fmt.Fprintf(w, string(outputJSON))
 }
