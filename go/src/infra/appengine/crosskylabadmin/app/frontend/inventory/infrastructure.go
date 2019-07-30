@@ -206,9 +206,18 @@ func newDUTAssigner(ctx context.Context, s *gitstore.InventoryStore) *dutAssigne
 }
 
 func (da *dutAssigner) assignDUT(ctx context.Context, a *fleet.AssignDutsToDronesRequest_Item) (*fleet.AssignDutsToDronesResponse_Item, error) {
-	dutID, err := da.unpackRequest(a)
-	if err != nil {
-		return nil, err
+	var dutID string
+	switch {
+	case a.DutHostname != "":
+		var ok bool
+		dutID, ok = da.hostnameToID[a.DutHostname]
+		if !ok {
+			return nil, status.Errorf(codes.NotFound, "unknown DUT hostname %s", a.DutHostname)
+		}
+	case a.DutId != "":
+		dutID = a.DutId
+	default:
+		return nil, status.Errorf(codes.InvalidArgument, "must supply one of DUT hostname or ID")
 	}
 	d, err := assignDUT(ctx, da.globalInvCache, dutID)
 	if err != nil {
@@ -240,21 +249,6 @@ func assignDUT(ctx context.Context, c *globalInvCache, dutID string) (drone stri
 	c.droneForDUT[dutID] = server
 	c.idToDUT[dutID].RemovalReason = nil
 	return d, nil
-}
-
-func (da *dutAssigner) unpackRequest(r *fleet.AssignDutsToDronesRequest_Item) (string, error) {
-	switch {
-	case r.DutHostname != "":
-		dutID, ok := da.hostnameToID[r.DutHostname]
-		if !ok {
-			return "", status.Errorf(codes.NotFound, "unknown DUT hostname %s", r.DutHostname)
-		}
-		return dutID, nil
-	case r.DutId != "":
-		return r.DutId, nil
-	default:
-		return "", status.Errorf(codes.InvalidArgument, "must supply one of DUT hostname or ID")
-	}
 }
 
 // commitRemoveDuts commits an in-progress response returned from
