@@ -1,8 +1,8 @@
-hash: 3f4ad06c1b833b25a2a61febf5d8c4e76bb9aae3e68110d5d84ad44b9556d15c
-updated: 2019-07-26T21:20:12.311824-07:00
+hash: fee83dcac98554ca2a33ae0f5fcea40892fb76c78c245db98451dd7246715e39
+updated: 2019-07-30T15:40:24.188267691-07:00
 imports:
 - name: cloud.google.com/go
-  version: 5a21f3e59ff498bc7a9c6c61d000b3b23b7fa991
+  version: cba14b2e7412c9e26dc4b6a82b7e9b622b03ae77
   repo: https://code.googlesource.com/gocloud.git
   subpackages:
   - bigtable
@@ -19,14 +19,11 @@ imports:
 - name: github.com/andygrunwald/go-gerrit
   version: 64931d233c2db69be766bbfd7183b2d04424cc09
   repo: https://chromium.googlesource.com/external/github.com/andygrunwald/go-gerrit.git
-- name: github.com/aryann/difflib
-  version: e206f873d14a916d3d26c40ab667bca123f365a3
-  repo: https://chromium.googlesource.com/external/github.com/aryann/difflib.git
 - name: github.com/asaskevich/govalidator
   version: f61b66f89f4a311bef65f13e575bcf1a2ffadda6
   repo: https://chromium.googlesource.com/external/github.com/asaskevich/govalidator.git
 - name: github.com/aws/aws-sdk-go
-  version: 60a7f0014f86142c03773706dd0cac474570e810
+  version: 3280460bf5b10e5eaa897f59ceb96b8dacff7a12
   repo: https://chromium.googlesource.com/external/github.com/aws/aws-sdk-go.git
 - name: github.com/beorn7/perks
   version: 4b2b341e8d7715fae06375aa633dbb6e91b3fb46
@@ -208,7 +205,7 @@ imports:
   version: 80517062f582ea3340cd4baf70e86d539ae7d84d
   repo: https://chromium.googlesource.com/external/github.com/kisielk/gotool.git
 - name: github.com/klauspost/compress
-  version: 23256797d1e4ccac36fad828362cdfef5b3aeb90
+  version: 204adfa33c309b82553a343d58e3000498fc1aa0
   repo: https://chromium.googlesource.com/external/github.com/klauspost/compress.git
   subpackages:
   - zlib
@@ -306,13 +303,13 @@ imports:
   subpackages:
   - difflib
 - name: github.com/prometheus/client_golang
-  version: bb9b00a86ebaaa691ba43af1f9ba9d16156cc545
+  version: 8bb84c10f12ec1dce55d1ee90951e63be10758e6
   repo: https://chromium.googlesource.com/external/github.com/prometheus/client_golang.git
 - name: github.com/prometheus/client_model
   version: fd36f4220a901265f90734c3183c5f0c91daa0b8
   repo: https://chromium.googlesource.com/external/github.com/prometheus/client_model.git
 - name: github.com/prometheus/common
-  version: 33bc620f956eb70fbb8355e87df6a97891657ed5
+  version: 637d7c34db122e2d1a25d061423098663758d2d3
   repo: https://chromium.googlesource.com/external/github.com/prometheus/common.git
 - name: github.com/prometheus/procfs
   version: 8f55e607908ea781ad9d08521730d73e047d9ac4
@@ -332,7 +329,7 @@ imports:
   version: 7bfe4c7ecddb3666a94b053b422cdd8f5aaa3615
   repo: https://chromium.googlesource.com/external/github.com/shurcooL/sanitized_anchor_name.git
 - name: github.com/smartystreets/assertions
-  version: b2515dfb413c5270515e0dc2e18bbbda06ff0bf8
+  version: c017dc6052e1fe6029ed038d83bc1cc131289d28
   repo: https://chromium.googlesource.com/external/github.com/smartystreets/assertions.git
 - name: github.com/smartystreets/goconvey
   version: 9d28bd7c0945047857c9740bd2eb3d62f98d3d35
@@ -415,7 +412,7 @@ imports:
   subpackages:
   - ssh/terminal
 - name: golang.org/x/image
-  version: d6a02ce849c95fa57d9927fab7b6d9071876dfe0
+  version: 1bd0cf57649315a0106c88938931e54f3c0f88e5
   repo: https://chromium.googlesource.com/external/github.com/golang/image.git
   subpackages:
   - bmp
@@ -446,7 +443,7 @@ imports:
   subpackages:
   - errgroup
 - name: golang.org/x/sys
-  version: fc99dfbffb4e5ed5758a37e31dd861afe285406b
+  version: 1393eb0183657fb29200106b17a5042ec6e48dbe
   repo: https://go.googlesource.com/sys.git
   subpackages:
   - unix
@@ -458,7 +455,7 @@ imports:
   version: 9d24e82272b4f38b78bc8cff74fa936d31ccd8ef
   repo: https://go.googlesource.com/time.git
 - name: golang.org/x/tools
-  version: 1bd56024c6204c5d493f13273473cf5b3e0e8194
+  version: ed3277de27998232ef7586f5f0d01384bfa52c37
   repo: https://go.googlesource.com/tools.git
   subpackages:
   - cmd/callgraph
@@ -471,7 +468,7 @@ imports:
   - cmd/oracle
   - cmd/stringer
 - name: google.golang.org/api
-  version: 025bef8d2de479daa7cb44888be36177e7d94a19
+  version: 06fc85c7ff4e467512a7a90976394114836b85da
   repo: https://code.googlesource.com/google-api-go-client.git
   subpackages:
   - bigquery/v2
@@ -506,7 +503,7 @@ imports:
   - googleapis/...
   - protobuf/...
 - name: google.golang.org/grpc
-  version: 120728e1f775e40a2a764341939b78d666b08260
+  version: 92635fa6bffd9db9b2cca8ce8f978bfebabd9c29
   repo: https://chromium.googlesource.com/external/github.com/grpc/grpc-go.git
   subpackages:
   - codes
@@ -521,7 +518,7 @@ imports:
   version: 792d13404204e12d4c292c77184f47ad325fcfdc
   repo: https://chromium.googlesource.com/external/github.com/russross/blackfriday.git
 - name: gopkg.in/src-d/go-billy.v4
-  version: 711f3aa5b30ce9bbc7d708792ca98b913cbbd4a5
+  version: 780403cfc1bc95ff4d07e7b26db40a6186c5326e
   repo: https://chromium.googlesource.com/external/github.com/src-d/go-billy.git
 - name: gopkg.in/src-d/go-git.v4
   version: d3cec13ac0b195bfb897ed038a08b5130ab9969e

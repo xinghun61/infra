@@ -21,7 +21,6 @@ import (
 	"go.chromium.org/gae/impl/dummy"
 	"go.chromium.org/gae/service/datastore"
 	"go.chromium.org/gae/service/info"
-	tq "go.chromium.org/gae/service/taskqueue"
 	"go.chromium.org/gae/service/urlfetch"
 	"go.chromium.org/luci/appengine/gaetesting"
 	bbpb "go.chromium.org/luci/buildbucket/proto"
@@ -304,67 +303,6 @@ func TestStoreAlertsSummary(t *testing.T) {
 			},
 		})
 		So(err, ShouldBeNil)
-	})
-}
-
-func TestEnqueueLogDiffTask(t *testing.T) {
-	Convey("success", t, func() {
-		c := gaetesting.TestingContext()
-		c = gologger.StdConfig.Use(c)
-		c = info.SetFactory(c, func(ic context.Context) info.RawInterface {
-			return mck{giMock{dummy.Info(), "", time.Now(), nil}}
-		})
-		tqt := tq.GetTestable(c)
-		tqt.CreateQueue("logdiff")
-		alerts := []messages.Alert{
-			{
-				Title: "foo",
-				Extension: messages.BuildFailure{
-					RegressionRanges: []*messages.RegressionRange{
-						{Repo: "some repo", URL: "about:blank", Positions: []string{}, Revisions: []string{}},
-					},
-					Builders: []messages.AlertedBuilder{
-						{Name: "chromium.test", URL: "https://uberchromegw.corp.google.com/i/chromium.webkit/builders/WebKit%20Win7%20%28dbg%29", FirstFailure: 15038, LatestFailure: 15038},
-					},
-					StepAtFault: &messages.BuildStep{
-						Step: &messages.Step{
-							Name: "test",
-						},
-					},
-				},
-			},
-		}
-		err := enqueueLogDiffTask(c, alerts)
-		So(err, ShouldBeNil)
-	})
-
-	Convey("fail with non existing queue", t, func() {
-		c := gaetesting.TestingContext()
-		c = info.SetFactory(c, func(ic context.Context) info.RawInterface {
-			return mck{giMock{dummy.Info(), "", time.Now(), nil}}
-		})
-		tqt := tq.GetTestable(c)
-		tqt.CreateQueue("badqueue")
-		alerts := []messages.Alert{
-			{
-				Title: "foo",
-				Extension: messages.BuildFailure{
-					RegressionRanges: []*messages.RegressionRange{
-						{Repo: "some repo", URL: "about:blank", Positions: []string{}, Revisions: []string{}},
-					},
-					Builders: []messages.AlertedBuilder{
-						{Name: "chromium.test", URL: "https://uberchromegw.corp.google.com/i/chromium.webkit/builders/WebKit%20Win7%20%28dbg%29", FirstFailure: 15038, LatestFailure: 15038},
-					},
-					StepAtFault: &messages.BuildStep{
-						Step: &messages.Step{
-							Name: "test",
-						},
-					},
-				},
-			},
-		}
-		err := enqueueLogDiffTask(c, alerts)
-		So(err, ShouldNotBeNil)
 	})
 }
 

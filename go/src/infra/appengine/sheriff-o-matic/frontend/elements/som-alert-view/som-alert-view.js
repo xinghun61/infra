@@ -81,7 +81,7 @@ class SomAlertView extends Polymer.mixinBehaviors(
       },
       _currentAlertView: {
         type: String,
-        computed: '_computeCurrentAlertView(_examinedAlert, logdiffKey)',
+        computed: '_computeCurrentAlertView(_examinedAlert)',
         value: 'alertListPage',
       },
       _examinedAlert: {
@@ -92,7 +92,6 @@ class SomAlertView extends Polymer.mixinBehaviors(
         },
       },
       examinedAlertKey: String,
-      logdiffKey: String,
       _fetchAlertsError: String,
       fetchingAlerts: {
         type: Boolean,
@@ -217,10 +216,7 @@ class SomAlertView extends Polymer.mixinBehaviors(
     return [tree.name];
   }
 
-  _computeCurrentAlertView(examinedAlert, logdiffKey) {
-    if(logdiffKey) {
-      return 'logdiffAlert';
-    }
+  _computeCurrentAlertView(examinedAlert){
     if (examinedAlert && examinedAlert.key) {
       return 'examineAlert';
     }

@@ -284,10 +284,6 @@ class SomExtensionBuildFailure extends Polymer.mixinBehaviors(
   _hasResultHistory(reason) {
     return reason && reason.alert_test_results;
   }
-
-  _makeLogDiffUrl(master, name, buildNum1, buildNum2) {
-    return '/chromium/logdiff/' + master + '/' + name + '/' + buildNum1 + '/' + buildNum2;
-  }
 }
 
 customElements.define(SomExtensionBuildFailure.is, SomExtensionBuildFailure);

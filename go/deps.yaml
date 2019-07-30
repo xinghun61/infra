@@ -303,9 +303,6 @@ import:
 - package: github.com/fedesog/webdriver
   version: master
   repo: https://chromium.googlesource.com/external/github.com/fedesog/webdriver.git
-- package: github.com/aryann/difflib
-  version: master
-  repo: https://chromium.googlesource.com/external/github.com/aryann/difflib.git
 - package: github.com/jmoiron/sqlx
   version: master
   repo: https://chromium.googlesource.com/external/github.com/jmoiron/sqlx.git

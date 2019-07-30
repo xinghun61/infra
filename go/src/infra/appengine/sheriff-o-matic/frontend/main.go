@@ -293,7 +293,6 @@ func init() {
 	r.GET("/api/v1/testexpectations", protected, handler.GetLayoutTestsHandler)
 	r.POST("/api/v1/testexpectation", protected, handler.PostLayoutTestExpectationChangeHandler)
 	r.GET("/logos/:tree", protected, handler.GetTreeLogoHandler)
-	r.GET("/api/v1/logdiff/:master/:builder/:buildNum1/:buildNum2", protected, handler.LogDiffJSONHandler)
 	r.GET("/_/autocomplete/:query", protected, handler.GetUserAutocompleteHandler)
 
 	// Non-public endpoints.

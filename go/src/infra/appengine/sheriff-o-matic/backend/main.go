@@ -148,7 +148,6 @@ func init() {
 	standard.InstallHandlers(r)
 
 	r.GET("/_cron/analyze/:tree", basemw, handler.GetAnalyzeHandler)
-	r.POST("/_ah/queue/logdiff", basemw, handler.LogdiffWorker)
 	r.GET("/_ah/queue/addannotationtrees", basemw, handler.AnnotationTreeWorker)
 
 	http.DefaultServeMux.Handle("/", r)

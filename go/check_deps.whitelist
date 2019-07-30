@@ -37,7 +37,6 @@ github.com/Masterminds/squirrel
 github.com/StackExchange/wmi
 github.com/VividCortex/mysqlerr
 github.com/andygrunwald/go-gerrit
-github.com/aryann/difflib
 github.com/dustin/go-humanize
 github.com/go-sql-driver/mysql
 github.com/google/go-cmp/cmp
