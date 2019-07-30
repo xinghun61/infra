@@ -92,6 +92,24 @@ type Manifest struct {
 	// Ignored if Dockerfile field is not set.
 	ImagePins string `yaml:"imagepins,omitempty"`
 
+	// Deterministic is true if Dockerfile (with all "FROM" lines resolved) can be
+	// understood as a pure function of inputs in ContextDir, i.e. it does not
+	// depend on the state of the world.
+	//
+	// Examples of things that make Dockerfile NOT deterministic:
+	//   * Using "apt-get" or any other remote calls to non-pinned resources.
+	//   * Cloning repositories from "master" ref (or similar).
+	//   * Fetching external resources using curl or wget.
+	//
+	// When building an image marked as deterministic, the builder will calculate
+	// a hash of all inputs (including resolve Dockerfile itself) and check
+	// whether there's already an image built from them. If there is, the build
+	// will be skipped completely and the existing image reused.
+	//
+	// Images marked as non-deterministic are always rebuilt and reuploaded, even
+	// if nothing in ContextDir has changed.
+	Deterministic bool `yaml:"deterministic,omitempty"`
+
 	// Infra is configuration of the build infrastructure to use: Google Storage
 	// bucket, Cloud Build project, etc.
 	//

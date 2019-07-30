@@ -74,7 +74,10 @@ func TestBuild(t *testing.T) {
 			}
 
 			res, err := runBuild(ctx, buildParams{
-				Manifest:     &manifest.Manifest{Name: testTargetName},
+				Manifest: &manifest.Manifest{
+					Name:          testTargetName,
+					Deterministic: true,
+				},
 				Image:        testImageName,
 				BuildID:      "b1",
 				CanonicalTag: testTagName,
@@ -107,7 +110,7 @@ func TestBuild(t *testing.T) {
 
 			// Now we build this exact tarball again using different canonical tag.
 			// We should get back the image we've already built.
-			Convey("Building existing tarball reuses the image", func() {
+			Convey("Building existing tarball deterministically: reuses the image", func() {
 				builder.provenance = func(gs string) string {
 					panic("Cloud Build should not be invoked")
 				}
@@ -116,7 +119,10 @@ func TestBuild(t *testing.T) {
 				tc.Add(time.Minute)
 
 				res, err := runBuild(ctx, buildParams{
-					Manifest:     &manifest.Manifest{Name: testTargetName},
+					Manifest: &manifest.Manifest{
+						Name:          testTargetName,
+						Deterministic: true,
+					},
 					Image:        testImageName,
 					BuildID:      "b2",
 					CanonicalTag: "another-tag",
@@ -134,6 +140,56 @@ func TestBuild(t *testing.T) {
 						Digest:       testDigest,
 						CanonicalTag: testTagName,
 						BuildID:      "b1", // was build there
+					},
+				})
+
+				// Both builds are associated with the tarball via its metadata now.
+				tarball, err := store.Check(ctx, testTarballPath)
+				So(err, ShouldBeNil)
+				md := tarball.Metadata.Values(buildRefMetaKey)
+				So(md, ShouldHaveLength, 2)
+				So(md[0].Value, ShouldEqual, `{"build_id":"b2","tag":"another-tag"}`)
+				So(md[1].Value, ShouldEqual, `{"build_id":"b1","tag":"canonical-tag"}`)
+			})
+
+			// Now we build this exact tarball again using different canonical tag,
+			// but mark the target as non-deterministic. It should ignore the existing
+			// image and build a new one.
+			Convey("Building existing tarball non-deterministically: creates new image", func() {
+				builder.provenance = func(gs string) string {
+					So(gs, ShouldEqual, testTarballURL+"#1") // reused first gen
+					return digest
+				}
+				builder.outputDigests = func(img string) string {
+					So(img, ShouldEqual, testImageName+":cbh")
+					return "sha256:new-totally-legit-hash"
+				}
+
+				// To avoid clashing on metadata keys that depend on timestamps.
+				tc.Add(time.Minute)
+
+				res, err := runBuild(ctx, buildParams{
+					Manifest: &manifest.Manifest{
+						Name:          testTargetName,
+						Deterministic: false,
+					},
+					Image:        testImageName,
+					BuildID:      "b2",
+					CanonicalTag: "another-tag",
+					Stage:        stageFileSet(fs),
+					Store:        store,
+					Builder:      builder,
+					Registry:     registry,
+				})
+				So(err, ShouldBeNil)
+
+				// Build the new image.
+				So(res, ShouldResemble, &buildResult{
+					Image: &imageRef{
+						Image:        testImageName,
+						Digest:       "sha256:new-totally-legit-hash",
+						CanonicalTag: "another-tag",
+						BuildID:      "b2",
 					},
 				})
 

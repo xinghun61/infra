@@ -46,23 +46,27 @@ immutable alias of sources and the resulting image.
 
 The "build" command works in multiple steps:
   1. Searches for an existing image with the given -canonical-tag. If it exists,
-     assumes the build has already been done and exits.
+     assumes the build has already been done and exits. This applies to both
+     deterministic and non-deterministic targets.
   2. Prepares a context directory by evaluating the target manifest YAML,
      resolving tags in Dockerfile and executing local build steps. The result
      of this process is a *.tar.gz tarball that will be sent to Docker daemon.
      See "stage" subcommand for more details.
   3. Calculates SHA256 of the tarball and uses it to construct a Google Storage
-     path. If the tarball at that path already exists in Google Storage,
-     examines its metadata to find a reference to an image already built from
-     it. If there's such image, returns it (and its canonical tag, whatever it
-     was when the image was built) as output.
-  4. Otherwise triggers "docker build" via Cloud Build and feeds it the uploaded
-     tarball as a context. The result of this process is a new docker image.
+     path. If the tarball at that path already exists in Google Storage and
+     the target is marked as deterministic in the manifest YAML, examines
+     tarball's metadata to find a reference to an image already built from it.
+     If there's such image, returns it (and its canonical tag, whatever it was
+     when the image was built) as output.
+  4. If the target is not marked as deterministic, or there's no existing images
+     that can be reused, triggers "docker build" via Cloud Build and feeds it
+     the uploaded tarball as the context. The result of this process is a new
+     docker image.
   5. Pushes this image to the registry under -canonical-tag tag. Does not touch
      "latest" tag.
   6. Updates metadata of the tarball in Google Storage with the reference to the
      produced image (its SHA256 digest and its canonical tag), so that future
-     builds can discover and reuse it.
+     builds can discover and reuse it, if necessary.
 `,
 
 	CommandRun: func() subcommands.CommandRun {
@@ -347,9 +351,11 @@ func remoteBuild(ctx context.Context, p buildParams, out *fileset.Set) (*buildRe
 	// buildRef's that reused this tarball.
 	obj.Log(ctx)
 
-	// Return a reference to an existing image if we already built something
-	// from this tarball.
-	if p.Image != "" && p.CanonicalTag != "" {
+	// If the target is marked as deterministic, it means the image is a pure
+	// function of the tarball and we can reuse an existing image if we already
+	// built something from this tarball.
+	if p.Manifest.Deterministic && p.Image != "" && p.CanonicalTag != "" {
+		logging.Infof(ctx, "The target is marked as deterministic: looking for existing images built from this tarball...")
 		switch imgRef, ts, err := reuseExistingImage(ctx, obj, p.Image, p.Registry); {
 		case err != nil:
 			return nil, err // annotated already
