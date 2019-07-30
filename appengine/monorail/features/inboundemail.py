@@ -89,6 +89,9 @@ class InboundEmail(webapp2.RequestHandler):
 
   def FindAlertIssue(self, cnxn, project_id, incident_label):
     """Find the existing issue with the incident_label."""
+    if not incident_label:
+      return None
+
     label_id = self.services.config.LookupLabelID(
         cnxn, project_id, incident_label)
     if not label_id:
@@ -115,6 +118,53 @@ class InboundEmail(webapp2.RequestHandler):
     if issues:
       return max(issues, key=lambda issue: issue.modified_timestamp)
     return None
+
+  def CreateAlertIssueProperties(self, cnxn, project_id, incident_id, label,
+                                 body):
+    """Create a dict of issue property values for the alert to be created with.
+
+    Args:
+      cnxn: connection to SQL database.
+      project_id: the ID of the Monorail project, in which the alert should
+        be created in.
+      incident_id: string containing an optional unique incident used to
+        de-dupe alert issues.
+      label: the label to be added to the alert issue.
+      body: the body text of the alert notification message.
+
+    Returns:
+      A dict of issue property values to be used for issue creation.
+    """
+    # TODO(crbug/807064) - parse and get property values from email headers.
+    props = {
+        'owner_id': None,
+        'cc_ids': [],
+        'component_ids': [],
+        'field_values': [],
+        'labels': [],
+        'status': 'Available',
+        'incident_label': '',
+    }
+
+    # component IDs
+    #
+    # TODO(crbug/807064): Remove this special casing once components can be set
+    # via the email header
+    config = self.services.config.GetProjectConfig(cnxn, project_id)
+    components = ['Infra>Codesearch'] if 'codesearch' in body else ['Infra']
+    props['component_ids'] = tracker_helpers.LookupComponentIDs(
+        components, config)
+
+    # labels
+    labels = set(['Restrict-View-Google', 'Pri-2'])
+    labels.add(label or 'Infra-Troopers-Alerts')
+    props['labels'] = list(labels)
+    if incident_id:
+      props['incident_label'] = 'Incident-Id-' + incident_id
+      labels.add(props['incident_label'])
+    props['labels'] = list(labels)
+
+    return props
 
   def ProcessMail(self, msg, project_addr):
     """Process an inbound email message."""
@@ -257,38 +307,16 @@ class InboundEmail(webapp2.RequestHandler):
                      from_addr, project_addr)
       return None
 
-    # Create the actual issue from the email data.
-    # TODO(zhangtiff): Set labels, components, etc based on email content.
-    cc_ids = []
-    status = 'Available'
-
-    labels = set(['Restrict-View-Google', 'Pri-2'])
-    labels.add(label or 'Infra-Troopers-Alerts')
-
-    # TODO(zhangtiff): Remove this special casing once components can be set via
-    # the email header.
-    if 'codesearch' in body:
-      components = ['Infra>Codesearch']
-    else:
-      components = ['Infra']
-
     formatted_body = 'Filed by %s on behalf of %s\n\n%s' % (
         auth.email, from_addr, body)
-
-    # Lookup components.
-    config = self.services.config.GetProjectConfig(cnxn, project.project_id)
-    component_ids = tracker_helpers.LookupComponentIDs(components, config)
 
     mc = monorailcontext.MonorailContext(self.services, auth=auth, cnxn=cnxn)
     mc.LookupLoggedInUserPerms(project)
     with work_env.WorkEnv(mc, self.services) as we:
-      alert_issue = None
-
-      if incident_id:
-        incident_label = 'Incident-Id-' + incident_id
-        labels.add(incident_label)
-        alert_issue = self.FindAlertIssue(
-            cnxn, project.project_id, incident_label)
+      alert_props = self.CreateAlertIssueProperties(
+          cnxn, project.project_id, incident_id, label, body)
+      alert_issue = self.FindAlertIssue(
+          cnxn, project.project_id, alert_props['incident_label'])
 
       if alert_issue:
         # Add a reply to the existing issue for this incident.
@@ -297,8 +325,11 @@ class InboundEmail(webapp2.RequestHandler):
       else:
         # Create a new issue for this incident.
         alert_issue, _ = we.CreateIssue(
-            project.project_id, subject, status, None,
-            cc_ids, list(labels), [], component_ids, formatted_body)
+            project.project_id, subject,
+            alert_props['status'], alert_props['owner_id'],
+            alert_props['cc_ids'], alert_props['labels'],
+            alert_props['field_values'], alert_props['component_ids'],
+            formatted_body)
 
       # Update issue using commands.
       lines = body.strip().split('\n')
