@@ -25,7 +25,7 @@ import (
 
 // CreateTest subcommand: create a test task.
 var CreateTest = &subcommands.Command{
-	UsageLine: `create-test [FLAGS...] TEST_NAME [DIMENSION_KEY:VALUE...]`,
+	UsageLine: `create-test [FLAGS...] TEST_NAME [TEST_NAME...]`,
 	ShortDesc: "create a test task",
 	LongDesc: `Create a test task.
 
@@ -63,6 +63,7 @@ will be executed in a low priority. If the tasks runs in a quotascheduler contro
 (e.g. cheets-version:git_pi-arc/cheets_x86_64).  May be specified
 multiple times.  Optional.`)
 		c.Flags.StringVar(&c.parentTaskID, "parent-task-run-id", "", "For internal use only. Task run ID of the parent (suite) task to this test. Note that this must be a run ID (i.e. not ending in 0).")
+		c.Flags.Var(flag.StringSlice(&c.dimensions), "dim", "Additional scheduling dimension to apply to tests, as a KEY:VALUE string; may be specified multiple times.")
 		c.Flags.BoolVar(&c.buildBucket, "bb", false, "(Expert use only, not a stable API) use buildbucket recipe backend.")
 		return c
 	},
@@ -86,6 +87,7 @@ type createTestRun struct {
 	provisionLabels []string
 	parentTaskID    string
 	buildBucket     bool
+	dimensions      []string
 }
 
 // validateArgs ensures that the command line arguments are
@@ -125,26 +127,67 @@ func (c *createTestRun) innerRun(a subcommands.Application, args []string, env s
 		return err
 	}
 
+	if c.buildBucket {
+		return c.innerRunBB(a, args, env)
+	}
+	return c.innerRunSwarming(a, args, env)
+}
+
+func (c *createTestRun) innerRunBB(a subcommands.Application, args []string, env subcommands.Env) error {
+	if err := c.validateForBB(); err != nil {
+		return err
+	}
+
 	ctx := cli.GetContext(a, c, env)
 	e := c.envFlags.Env()
 
-	taskName := c.Flags.Arg(0)
-
-	if c.buildBucket {
-		if err := c.validateForBB(); err != nil {
-			return err
-		}
-		args := recipe.Args{
-			Board:        c.board,
-			Image:        c.image,
-			Model:        c.model,
-			Pool:         c.pool,
-			QuotaAccount: c.qsAccount,
-			TestNames:    []string{taskName},
-			Timeout:      time.Duration(c.timeoutMins) * time.Minute,
-		}
-		return buildbucketRun(ctx, args, e, c.authFlags, false, a.GetOut())
+	recipeArg := recipe.Args{
+		Board:        c.board,
+		Image:        c.image,
+		Model:        c.model,
+		Pool:         c.pool,
+		QuotaAccount: c.qsAccount,
+		TestNames:    args,
+		Timeout:      time.Duration(c.timeoutMins) * time.Minute,
 	}
+	return buildbucketRun(ctx, recipeArg, e, c.authFlags, false, a.GetOut())
+}
+
+func (c *createTestRun) validateForBB() error {
+	// TODO(akeshet): support for all of these arguments, or deprecate them.
+	if len(c.keyvals) > 0 {
+		return errors.Reason("keyvals not yet supported in -bb mode").Err()
+	}
+	if c.testArgs != "" {
+		return errors.Reason("test args not yet supported in -bb mode").Err()
+	}
+	if len(c.tags) > 0 {
+		return errors.Reason("tags not yet supported in -bb mode").Err()
+	}
+	if c.parentTaskID != "" {
+		return errors.Reason("parent task id not yet supported in -bb mode").Err()
+	}
+	if c.priority != defaultTaskPriority {
+		return errors.Reason("nondefault priority not yet supported in -bb mode").Err()
+	}
+	if len(c.provisionLabels) != 0 {
+		return errors.Reason("freeform provisionable labels not yet supported in -bb mode").Err()
+	}
+	if len(c.dimensions) > 0 {
+		return errors.Reason("custom dimensions are not yet supported in -bb mode").Err()
+	}
+	return nil
+}
+
+func (c *createTestRun) innerRunSwarming(a subcommands.Application, args []string, env subcommands.Env) error {
+	ctx := cli.GetContext(a, c, env)
+	e := c.envFlags.Env()
+
+	if c.Flags.NArg() > 1 {
+		return errors.Reason("multiple tests in a single command only supported in -bb mode").Err()
+	}
+
+	taskName := c.Flags.Arg(0)
 
 	keyvals, err := toKeyvalMap(c.keyvals)
 	if err != nil {
@@ -199,32 +242,6 @@ func (c *createTestRun) innerRun(a subcommands.Application, args []string, env s
 	return nil
 }
 
-func (c *createTestRun) validateForBB() error {
-	// TODO(akeshet): support for all of these arguments, or deprecate them.
-	if len(c.keyvals) > 0 {
-		return errors.Reason("keyvals not yet supported in -bb mode").Err()
-	}
-	if c.testArgs != "" {
-		return errors.Reason("test args not yet supported in -bb mode").Err()
-	}
-	if len(c.tags) > 0 {
-		return errors.Reason("tags not yet supported in -bb mode").Err()
-	}
-	if c.parentTaskID != "" {
-		return errors.Reason("parent task id not yet supported in -bb mode").Err()
-	}
-	if c.priority != defaultTaskPriority {
-		return errors.Reason("nondefault priority not yet supported in -bb mode").Err()
-	}
-	if len(c.provisionLabels) != 0 {
-		return errors.Reason("freeform provisionable labels not yet supported in -bb mode").Err()
-	}
-	if c.Flags.NArg() > 1 {
-		return errors.Reason("custom dimensions are not yet supported in -bb mode").Err()
-	}
-	return nil
-}
-
 func (c *createTestRun) getLabels() inventory.SchedulableLabels {
 	labels := inventory.SchedulableLabels{}
 
@@ -246,8 +263,7 @@ func (c *createTestRun) getLabels() inventory.SchedulableLabels {
 }
 
 func (c *createTestRun) getDimensions() []string {
-	userDimensions := c.Flags.Args()[1:]
-	return userDimensions
+	return c.dimensions
 }
 
 func (c *createTestRun) getProvisionableDimensions() []string {
