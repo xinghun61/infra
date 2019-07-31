@@ -141,6 +141,11 @@ func (c *createTestRun) innerRunBB(a subcommands.Application, args []string, env
 	ctx := cli.GetContext(a, c, env)
 	e := c.envFlags.Env()
 
+	keyvalMap, err := toKeyvalMap(c.keyvals)
+	if err != nil {
+		return err
+	}
+
 	recipeArg := recipe.Args{
 		Board:        c.board,
 		Image:        c.image,
@@ -149,15 +154,13 @@ func (c *createTestRun) innerRunBB(a subcommands.Application, args []string, env
 		QuotaAccount: c.qsAccount,
 		TestNames:    args,
 		Timeout:      time.Duration(c.timeoutMins) * time.Minute,
+		Keyvals:      keyvalMap,
 	}
 	return buildbucketRun(ctx, recipeArg, e, c.authFlags, false, a.GetOut())
 }
 
 func (c *createTestRun) validateForBB() error {
 	// TODO(akeshet): support for all of these arguments, or deprecate them.
-	if len(c.keyvals) > 0 {
-		return errors.Reason("keyvals not yet supported in -bb mode").Err()
-	}
 	if c.testArgs != "" {
 		return errors.Reason("test args not yet supported in -bb mode").Err()
 	}

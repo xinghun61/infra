@@ -260,7 +260,8 @@ func (r *Runner) reimageAndRunArgs() (interface{}, error) {
 		// test_names is in argument to reimage_and_run which, if provided, short
 		// cuts the normal test enumeration code and replaces it with this list
 		// of tests.
-		"test_names": testNames,
-		"name":       suiteName,
+		"test_names":  testNames,
+		"name":        suiteName,
+		"job_keyvals": r.requestParams.GetDecorations().GetAutotestKeyvals(),
 	}, nil
 }

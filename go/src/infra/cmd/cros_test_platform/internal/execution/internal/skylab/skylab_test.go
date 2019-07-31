@@ -191,6 +191,9 @@ func basicParams() *test_platform.Request_Params {
 		Time: &test_platform.Request_Params_Time{
 			MaximumDuration: &duration.Duration{Seconds: 60},
 		},
+		Decorations: &test_platform.Request_Params_Decorations{
+			AutotestKeyvals: map[string]string{"k1": "v1"},
+		},
 	}
 }
 
@@ -436,6 +439,8 @@ func TestRequestArguments(t *testing.T) {
 				So(flatCommand, ShouldContainSubstring, "-test-args foo-arg1 foo-arg2")
 				So(slice.Properties.Command, ShouldContain, "-test-args")
 				So(slice.Properties.Command, ShouldContain, "foo-arg1 foo-arg2")
+
+				So(flatCommand, ShouldContainSubstring, `-keyvals {"k1":"v1"}`)
 
 				provisionArg := "-provision-labels cros-version:foo-build,fwro-version:foo-ro-firmware,fwrw-version:foo-rw-firmware"
 

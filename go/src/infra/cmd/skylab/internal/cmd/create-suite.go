@@ -104,6 +104,12 @@ func (c *createSuiteRun) innerRun(a subcommands.Application, args []string, env 
 		if err := c.validateForBB(); err != nil {
 			return err
 		}
+
+		keyvalMap, err := toKeyvalMap(c.keyvals)
+		if err != nil {
+			return err
+		}
+
 		args := recipe.Args{
 			Board:        c.board,
 			Image:        c.image,
@@ -112,6 +118,7 @@ func (c *createSuiteRun) innerRun(a subcommands.Application, args []string, env 
 			QuotaAccount: c.qsAccount,
 			SuiteNames:   []string{suiteName},
 			Timeout:      time.Duration(c.timeoutMins) * time.Minute,
+			Keyvals:      keyvalMap,
 		}
 
 		return buildbucketRun(ctx, args, e, c.authFlags, c.json, a.GetOut())
@@ -193,9 +200,6 @@ func (c *createSuiteRun) validateArgs() error {
 
 func (c *createSuiteRun) validateForBB() error {
 	// TODO(akeshet): support for all of these arguments, or deprecate them.
-	if len(c.keyvals) > 0 {
-		return errors.Reason("keyvals not yet supported in -bb mode").Err()
-	}
 	if len(c.tags) > 0 {
 		return errors.Reason("tags not yet supported in -bb mode").Err()
 	}

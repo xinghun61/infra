@@ -32,6 +32,7 @@ type Args struct {
 	Pool         string
 	QuotaAccount string
 	Timeout      time.Duration
+	Keyvals      map[string]string
 }
 
 // Request constructs a cros_test_platform request from the given arguments.
@@ -70,6 +71,10 @@ func Request(a Args) *test_platform.Request {
 		{
 			Dep: &test_platform.Request_Params_SoftwareDependency_ChromeosBuild{ChromeosBuild: a.Image},
 		},
+	}
+
+	params.Decorations = &test_platform.Request_Params_Decorations{
+		AutotestKeyvals: a.Keyvals,
 	}
 
 	u := &url.URL{

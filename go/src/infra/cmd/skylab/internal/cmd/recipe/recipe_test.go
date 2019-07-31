@@ -25,6 +25,7 @@ func TestRequest(t *testing.T) {
 		SuiteNames: []string{"foo-suite-1", "foo-suite-2"},
 		TestNames:  []string{"foo-test-1", "foo-test-2"},
 		Timeout:    30 * time.Minute,
+		Keyvals:    map[string]string{"k1": "v1"},
 	}
 	got := Request(a)
 	want := &test_platform.Request{
@@ -55,6 +56,9 @@ func TestRequest(t *testing.T) {
 					Nanos:   0,
 					Seconds: 1800,
 				},
+			},
+			Decorations: &test_platform.Request_Params_Decorations{
+				AutotestKeyvals: map[string]string{"k1": "v1"},
 			},
 		},
 		TestPlan: &test_platform.Request_TestPlan{

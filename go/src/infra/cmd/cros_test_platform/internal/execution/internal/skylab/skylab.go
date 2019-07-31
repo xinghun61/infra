@@ -71,6 +71,7 @@ func (t *testRun) RequestArgs(params *test_platform.Request_Params, workerConfig
 		ClientTest:      isClient,
 		OutputToIsolate: true,
 		TestArgs:        t.invocation.TestArgs,
+		Keyvals:         params.GetDecorations().GetAutotestKeyvals(),
 	}
 	cmd.Config(wrap(workerConfig))
 

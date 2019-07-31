@@ -83,6 +83,9 @@ func basicParams() *test_platform.Request_Params {
 		Time: &test_platform.Request_Params_Time{
 			MaximumDuration: &duration.Duration{Seconds: 60 * 60},
 		},
+		Decorations: &test_platform.Request_Params_Decorations{
+			AutotestKeyvals: map[string]string{"k1": "v1"},
+		},
 	}
 }
 
@@ -122,7 +125,8 @@ func TestLaunch(t *testing.T) {
 					"--pool", "cq",
 					"-w", "foo-afe-host",
 					"--timeout_mins", "60",
-					"--suite_args_json", `{"args_dict_json":"{\"name\":\"cros_test_platform\",\"test_names\":[\"test1\",\"test2\"]}"}`,
+					"--suite_args_json",
+					`{"args_dict_json":"{\"job_keyvals\":{\"k1\":\"v1\"},\"name\":\"cros_test_platform\",\"test_names\":[\"test1\",\"test2\"]}"}`,
 				}
 				So(cmd, ShouldResemble, expected)
 			})
