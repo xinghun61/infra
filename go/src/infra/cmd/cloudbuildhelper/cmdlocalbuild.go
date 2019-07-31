@@ -92,7 +92,7 @@ func (c *cmdLocalBuildRun) exec(ctx context.Context) error {
 		case dockerErr != nil:
 			return errors.Annotate(dockerErr, "failed to build the image").Err()
 		case tarErr != nil:
-			return errors.Annotate(tarErr, "unexpected error when building the image").Err()
+			return errors.Annotate(tarErr, "building the image").Err()
 		}
 
 		// TODO(vadimsh): Add -json-output support.

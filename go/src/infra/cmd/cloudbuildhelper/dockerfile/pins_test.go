@@ -54,10 +54,18 @@ func TestPins(t *testing.T) {
 		// Missing image.
 		_, err = r.ResolveTag("zzz", "1.2.3")
 		So(err, ShouldErrLike, "no such pinned <image>:<tag> combination in pins YAML")
+		So(IsMissingPinErr(err), ShouldResemble, &Pin{
+			Image: "docker.io/library/zzz",
+			Tag:   "1.2.3",
+		})
 
 		// Missing tag.
 		_, err = r.ResolveTag("yyy", "blah")
 		So(err, ShouldErrLike, "no such pinned <image>:<tag> combination in pins YAML")
+		So(IsMissingPinErr(err), ShouldResemble, &Pin{
+			Image: "docker.io/library/yyy",
+			Tag:   "blah",
+		})
 	})
 
 	Convey("Duplicate pins YAML", t, func() {

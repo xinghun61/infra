@@ -301,7 +301,7 @@ func TestBuild(t *testing.T) {
 				Builder:  builder,
 				Registry: registry,
 			})
-			So(err, ShouldErrLike, "when waiting for the build to finish: too many errors, the last one: boom")
+			So(err, ShouldErrLike, "waiting for the build to finish: too many errors, the last one: boom")
 		})
 	})
 }

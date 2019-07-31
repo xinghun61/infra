@@ -46,6 +46,10 @@ func getApplication() *cli.Application {
 			cmdStage,
 			cmdLocalBuild,
 			cmdBuild,
+
+			subcommands.Section(""),
+			cmdPinsAdd,
+			cmdPinsUpdate,
 		},
 	}
 }

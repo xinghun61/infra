@@ -32,7 +32,8 @@ type Pin struct {
 	Freeze  string `yaml:"freeze,omitempty"`  // if set, don't update in pins-update
 }
 
-func (p *Pin) key() string {
+// ImageRef returns "<image>:<tag>" string.
+func (p *Pin) ImageRef() string {
 	return p.Image + ":" + p.Tag
 }
 
@@ -48,11 +49,11 @@ func ReadPins(r io.Reader) (*Pins, error) {
 	}
 	seen := stringset.New(len(out.Pins))
 	for idx, p := range out.Pins {
-		if p, err = normalizePin(p); err != nil {
+		if p, err = NormalizePin(p, true); err != nil {
 			return nil, errors.Annotate(err, "pin #%d", idx+1).Err()
 		}
-		if !seen.Add(p.key()) {
-			return nil, errors.Reason("pin #%d: duplicate entry for %q", idx+1, p.key()).Err()
+		if !seen.Add(p.ImageRef()) {
+			return nil, errors.Reason("pin #%d: duplicate entry for %q", idx+1, p.ImageRef()).Err()
 		}
 		out.Pins[idx] = p
 	}
@@ -100,14 +101,14 @@ func WritePins(w io.Writer, p *Pins) error {
 
 // Add adds or updates a pin (which should already be resolved).
 func (p *Pins) Add(pin Pin) error {
-	pin, err := normalizePin(pin)
+	pin, err := NormalizePin(pin, true)
 	if err != nil {
 		return err
 	}
 
-	key := pin.key()
+	key := pin.ImageRef()
 	for i := range p.Pins {
-		if p.Pins[i].key() == key {
+		if p.Pins[i].ImageRef() == key {
 			p.Pins[i] = pin
 			return nil
 		}
@@ -132,16 +133,16 @@ func (p *Pins) Visit(cb func(p *Pin) error) error {
 			i := i
 			tasks <- func() error {
 				pin := p.Pins[i]
-				key := pin.key()
+				key := pin.ImageRef()
 				if err := cb(&pin); err != nil {
-					return errors.Annotate(err, "when visiting %q", key).Err()
+					return errors.Annotate(err, "visiting %q", key).Err()
 				}
-				pin, err := normalizePin(pin)
+				pin, err := NormalizePin(pin, true)
 				if err != nil {
-					return errors.Annotate(err, "when visiting %q", key).Err()
+					return errors.Annotate(err, "visiting %q", key).Err()
 				}
-				if pin.key() != key {
-					panic(fmt.Sprintf("the callback changed the pin key from %q to %q", key, pin.key()))
+				if pin.ImageRef() != key {
+					panic(fmt.Sprintf("the callback changed the pin key from %q to %q", key, pin.ImageRef()))
 				}
 				p.Pins[i] = pin
 				return nil
@@ -150,13 +151,31 @@ func (p *Pins) Visit(cb func(p *Pin) error) error {
 	})
 }
 
-func normalizePin(p Pin) (Pin, error) {
+// PinFromString takes <image>[:<tag>] reference and converts it to Pin struct.
+func PinFromString(image string) (Pin, error) {
+	var pin Pin
+	switch chunks := strings.Split(image, ":"); {
+	case len(chunks) == 1:
+		pin.Image, pin.Tag = chunks[0], "latest"
+	case len(chunks) == 2:
+		pin.Image, pin.Tag = chunks[0], chunks[1]
+	default:
+		return pin, errors.Reason("bad image reference %q, should have form <image>[:<tag>]", image).Err()
+	}
+	return NormalizePin(pin, false)
+}
+
+// NormalizePin returns a copy of 'p' with defaults populated.
+//
+// Expands abbreviated image names into full references,
+func NormalizePin(p Pin, requireDigest bool) (Pin, error) {
 	switch {
 	case p.Image == "":
 		return p, errors.Reason("'image' field is required").Err()
-	case p.Digest == "":
+	case requireDigest && p.Digest == "":
 		return p, errors.Reason("'digest' field is required").Err()
 	}
+
 	// See https://github.com/docker/distribution/blob/master/reference/normalize.go
 	// for defaults.
 	switch strings.Count(p.Image, "/") {
@@ -176,10 +195,12 @@ func normalizePin(p Pin) (Pin, error) {
 func (p *Pins) Resolver() Resolver {
 	m := make(pinsResolver, len(p.Pins))
 	for _, pin := range p.Pins {
-		m[pin.key()] = pin.Digest
+		m[pin.ImageRef()] = pin.Digest
 	}
 	return m
 }
+
+var missingPinTag = errors.NewTagKey("dockerfile.MissingPin")
 
 type pinsResolver map[string]string
 
@@ -188,20 +209,29 @@ func (p pinsResolver) ResolveTag(image, tag string) (digest string, err error) {
 		return "", errors.Reason("not using pins YAML, the Dockerfile must use @<digest> refs").Err()
 	}
 
-	pin, err := normalizePin(Pin{
-		Image:  image,
-		Tag:    tag,
-		Digest: "to-be-resolved", // to pass validation, we don't use this field
-	})
+	pin, err := NormalizePin(Pin{Image: image, Tag: tag}, false)
 	if err != nil {
 		return "", errors.Annotate(err, "bad image:tag combination").Err()
 	}
 
-	d, ok := p[pin.key()]
+	d, ok := p[pin.ImageRef()]
 	if !ok {
 		// Note: the outer error wrapper usually has enough context already, adding
 		// 'image' and 'tag' values here causes duplication.
-		return "", errors.Reason("no such pinned <image>:<tag> combination in pins YAML").Err()
+		return "", errors.Reason("no such pinned <image>:<tag> combination in pins YAML").Tag(errors.TagValue{
+			Key:   missingPinTag,
+			Value: &pin,
+		}).Err()
 	}
 	return d, nil
+}
+
+// IsMissingPinErr returns true if 'err' is an error produced by ResolveTag.
+//
+// It may be wrapped. Returns a pin that ResolveTag was unable to resolve.
+func IsMissingPinErr(err error) *Pin {
+	if pin, ok := errors.TagValueIn(missingPinTag, err); ok {
+		return pin.(*Pin)
+	}
+	return nil
 }

@@ -111,7 +111,7 @@ func resolveFromLine(terms []string, r Resolver) error {
 
 	digest, err := r.ResolveTag(img, tag)
 	if err != nil {
-		return errors.Annotate(err, "when resolving %q", img+":"+tag).Err()
+		return errors.Annotate(err, "resolving %q", img+":"+tag).Err()
 	}
 
 	terms[1] = fmt.Sprintf("%s@%s", img, digest)

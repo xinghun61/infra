@@ -74,7 +74,7 @@ FROM ubuntu@sha256:456
 				put("Dockerfile", `FROM ubuntu`),
 				"",
 			)
-			So(err, ShouldErrLike, `line 1: when resolving "ubuntu:latest": not using pins YAML, the Dockerfile must use @<digest> refs`)
+			So(err, ShouldErrLike, `line 1: resolving "ubuntu:latest": not using pins YAML, the Dockerfile must use @<digest> refs`)
 		})
 
 		Convey("Unknown tag", func() {
@@ -82,7 +82,7 @@ FROM ubuntu@sha256:456
 				put("Dockerfile", `FROM ubuntu`),
 				put("pins.yaml", `{"pins": [{"image": "zzz", "digest": "zzz"}]}`),
 			)
-			So(err, ShouldErrLike, `line 1: when resolving "ubuntu:latest": no such pinned <image>:<tag> combination in pins YAML`)
+			So(err, ShouldErrLike, `line 1: resolving "ubuntu:latest": no such pinned <image>:<tag> combination in pins YAML`)
 		})
 	})
 }

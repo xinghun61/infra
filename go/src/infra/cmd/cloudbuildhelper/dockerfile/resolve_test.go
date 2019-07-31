@@ -63,7 +63,7 @@ FROM img2@lat`)
 
 	Convey("Errors", t, func() {
 		So(callErr(`from`), ShouldErrLike, `line 1: expecting 'FROM <image>', got only FROM`)
-		So(callErr(`from # blah`), ShouldErrLike, `line 1: when resolving "#:latest": no such tag`)
+		So(callErr(`from # blah`), ShouldErrLike, `line 1: resolving "#:latest": no such tag`)
 		So(callErr(`FROM base:${CODE_VERSION}`), ShouldErrLike, `line 1: bad FROM reference "base:${CODE_VERSION}", ARGs in FROM are not supported by cloudbuildhelper`)
 	})
 }

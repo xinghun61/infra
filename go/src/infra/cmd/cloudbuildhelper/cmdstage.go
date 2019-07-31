@@ -79,7 +79,7 @@ func (c *cmdStageRun) exec(ctx context.Context) error {
 func readManifest(path string) (*manifest.Manifest, error) {
 	r, err := os.Open(path)
 	if err != nil {
-		return nil, errors.Annotate(err, "when opening manifest file").Tag(isCLIError).Err()
+		return nil, errors.Annotate(err, "opening manifest file").Tag(isCLIError).Err()
 	}
 	defer r.Close()
 	m, err := manifest.Read(r, filepath.Dir(path))
@@ -97,8 +97,16 @@ func stage(ctx context.Context, m *manifest.Manifest, cb func(*fileset.Set) erro
 	if m.Dockerfile != "" {
 		var err error
 		dockerFileBody, err = dockerfile.LoadAndResolve(m.Dockerfile, m.ImagePins)
+		if pin := dockerfile.IsMissingPinErr(err); pin != nil {
+			logging.Errorf(ctx, "------------------------------------------------------------------------")
+			logging.Errorf(ctx, "Dockerfile refers to %q which is not pinned in %q", pin.ImageRef(), m.ImagePins)
+			logging.Errorf(ctx, "Add a pin there first by running:")
+			logging.Errorf(ctx, "  $ cloudbuildhelper pins-add %q %q", m.ImagePins, pin.ImageRef())
+			logging.Errorf(ctx, "------------------------------------------------------------------------")
+			return isCLIError.Apply(err)
+		}
 		if err != nil {
-			return errors.Annotate(err, "when resolving Dockerfile").Err()
+			return errors.Annotate(err, "resolving Dockerfile").Err()
 		}
 	}
 

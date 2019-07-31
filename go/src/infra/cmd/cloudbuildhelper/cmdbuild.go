@@ -288,7 +288,7 @@ func runBuild(ctx context.Context, p buildParams) (res buildResult, err error) {
 				// have a TON of tags (one per every commit, even totally unrelated), we
 				// don't want that.
 				if err := tagImage(ctx, p.Registry, res.Image, p.Tags); err != nil {
-					return res, errors.Annotate(err, "when tagging the image with -tag(s)").Err()
+					return res, errors.Annotate(err, "tagging the image with -tag(s)").Err()
 				}
 				return res, nil
 			}
@@ -308,7 +308,7 @@ func runBuild(ctx context.Context, p buildParams) (res buildResult, err error) {
 	// anywhere (if "registry" is not set in the manifest).
 	if err == nil && res.Image != nil {
 		if err := tagImage(ctx, p.Registry, res.Image, p.Tags); err != nil {
-			return res, errors.Annotate(err, "when tagging the image with -tag(s)").Err()
+			return res, errors.Annotate(err, "tagging the image with -tag(s)").Err()
 		}
 	}
 
@@ -451,7 +451,7 @@ func remoteBuild(ctx context.Context, p buildParams, out *fileset.Set) (res buil
 		// Apply the canonical tag to the image since we built a new image and need
 		// to give it a canonical name.
 		if err := tagImage(ctx, p.Registry, res.Image, []string{p.CanonicalTag}); err != nil {
-			return res, errors.Annotate(err, "when tagging the image with the canonical tag").Err()
+			return res, errors.Annotate(err, "tagging the image with the canonical tag").Err()
 		}
 		// Modify tarball's metadata to let the future builds know they can reuse
 		// the image we've just built. We do it only when using canonical tags,
@@ -482,7 +482,7 @@ func getImage(ctx context.Context, r registryImpl, imageRef string) (*registry.I
 	case registry.IsManifestUnknown(err):
 		return nil, nil
 	default:
-		return nil, errors.Annotate(err, "when checking existence of %q", imageRef).Err()
+		return nil, errors.Annotate(err, "checking existence of %q", imageRef).Err()
 	}
 }
 
@@ -498,13 +498,13 @@ func tagImage(ctx context.Context, r registryImpl, imgRef *imageRef, tags []stri
 	logging.Debugf(ctx, "Fetching the image manifest...")
 	img, err := r.GetImage(ctx, fmt.Sprintf("%s@%s", imgRef.Image, imgRef.Digest))
 	if err != nil {
-		return errors.Annotate(err, "when fetching the image manifest").Err()
+		return errors.Annotate(err, "fetching the image manifest").Err()
 	}
 
 	for _, t := range tags {
 		logging.Infof(ctx, "Tagging %s => %s", t, imgRef.Digest)
 		if r.TagImage(ctx, img, t); err != nil {
-			return errors.Annotate(err, "when pushing tag %q", t).Err()
+			return errors.Annotate(err, "pushing tag %q", t).Err()
 		}
 	}
 
@@ -599,7 +599,7 @@ func doCloudBuild(ctx context.Context, in *storage.Object, inDigest string, p bu
 	// Babysit it until it completes.
 	logging.Infof(ctx, "Waiting for the build to finish...")
 	if build, err = waitBuild(ctx, p.Builder, build); err != nil {
-		return "", build, errors.Annotate(err, "when waiting for the build to finish").Err()
+		return "", build, errors.Annotate(err, "waiting for the build to finish").Err()
 	}
 	if build.Status != cloudbuild.StatusSuccess {
 		return "", build, errors.Reason("build failed, see its logs at %s", build.LogURL).Err()
@@ -710,7 +710,7 @@ func updateMetadata(ctx context.Context, obj *storage.Object, s storageImpl, img
 	if img != nil {
 		var err error
 		if imgRefJSON, err = json.Marshal(img); err != nil {
-			return errors.Annotate(err, "error when marshalling imageRef %v", img).Err()
+			return errors.Annotate(err, "marshalling imageRef %v", img).Err()
 		}
 	}
 
@@ -718,7 +718,7 @@ func updateMetadata(ctx context.Context, obj *storage.Object, s storageImpl, img
 	if b != nil {
 		var err error
 		if buildRefJSON, err = json.Marshal(b); err != nil {
-			return errors.Annotate(err, "error when marshalling buildRef %v", b).Err()
+			return errors.Annotate(err, "marshalling buildRef %v", b).Err()
 		}
 	}
 
