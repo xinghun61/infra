@@ -1892,6 +1892,28 @@ wheel: <
 
 * *universal*
 
+## **netifaces**
+
+### 0.10.9
+
+```protobuf
+wheel: <
+  name: "infra/python/wheels/netifaces/${vpython_platform}"
+  version: "version:0.10.9"
+>
+```
+
+
+* *linux-arm64*
+* *linux-armv6*
+* *linux-mips*
+* *linux-mips64*
+* *linux-mipsel*
+* *manylinux-x64*
+* *manylinux-x64-ucs2*
+* *manylinux-x86*
+* *manylinux-x86-ucs2*
+
 ## **nose**
 
 ### 1.3.7

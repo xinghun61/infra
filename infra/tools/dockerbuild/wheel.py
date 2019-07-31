@@ -209,6 +209,18 @@ SPECS.update({s.spec.tag: s for s in assert_sorted('SourceOrPrebuilt',
         'windows-x64',
       ],
   ),
+  SourceOrPrebuilt(
+      'netifaces', '0.10.9',
+      packaged=[
+        'manylinux-x86',
+        'manylinux-x64',
+      ],
+      skip_plat=[
+        'mac-x64',
+        'windows-x86',
+        'windows-x64',
+      ],
+  ),
   SourceOrPrebuilt('numpy', '1.11.3',
       abi_map={
         'windows-x86': 'none',
