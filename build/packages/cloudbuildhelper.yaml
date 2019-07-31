@@ -1,0 +1,11 @@
+package: infra/tools/cloudbuildhelper
+description: Helper for building docker images via Cloud Build
+platforms:
+  - linux-amd64
+  - mac-amd64
+go_packages:
+  - infra/cmd/cloudbuildhelper
+root: ../../go/bin
+data:
+  - file: cloudbuildhelper${exe_suffix}
+  - version_file: .versions/cloudbuildhelper${exe_suffix}.cipd_version
