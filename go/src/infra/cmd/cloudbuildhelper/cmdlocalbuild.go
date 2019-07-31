@@ -19,6 +19,7 @@ import (
 
 	"infra/cmd/cloudbuildhelper/docker"
 	"infra/cmd/cloudbuildhelper/fileset"
+	"infra/cmd/cloudbuildhelper/manifest"
 )
 
 var cmdLocalBuild = &subcommands.Command{
@@ -54,9 +55,9 @@ func (c *cmdLocalBuildRun) init() {
 }
 
 func (c *cmdLocalBuildRun) exec(ctx context.Context) error {
-	m, err := readManifest(c.targetManifest)
+	m, err := manifest.Load(c.targetManifest)
 	if err != nil {
-		return err
+		return errors.Annotate(err, "when loading manifest").Tag(isCLIError).Err()
 	}
 
 	labels := docker.Labels{

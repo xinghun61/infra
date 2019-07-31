@@ -10,6 +10,7 @@ import (
 	"io"
 	"io/ioutil"
 	"net/url"
+	"os"
 	"path"
 	"path/filepath"
 	"strings"
@@ -29,6 +30,17 @@ type Manifest struct {
 	// When building Docker images it is an image name (without registry or any
 	// tags).
 	Name string `yaml:"name"`
+
+	// Extends is a unix-style path (relative to this YAML file) to a manifest
+	// used as a base.
+	//
+	// Optional.
+	//
+	// Such base manifests usually contain definitions shared by many files, such
+	// as "imagepins" and "infra".
+	//
+	// Dicts are merged (recursively), lists are joined (base entries first).
+	Extends string `yaml:"extends,omitempty"`
 
 	// Dockerfile is a unix-style path to the image's Dockerfile, relative to this
 	// YAML file.
@@ -108,7 +120,7 @@ type Manifest struct {
 	//
 	// Images marked as non-deterministic are always rebuilt and reuploaded, even
 	// if nothing in ContextDir has changed.
-	Deterministic bool `yaml:"deterministic,omitempty"`
+	Deterministic *bool `yaml:"deterministic,omitempty"`
 
 	// Infra is configuration of the build infrastructure to use: Google Storage
 	// bucket, Cloud Build project, etc.
@@ -153,10 +165,23 @@ type Infra struct {
 	CloudBuild CloudBuildConfig `yaml:"cloudbuild"`
 }
 
+// rebaseOnTop implements "extends" logic.
+func (i *Infra) rebaseOnTop(b Infra) {
+	setIfEmpty(&i.Storage, b.Storage)
+	setIfEmpty(&i.Registry, b.Registry)
+	i.CloudBuild.rebaseOnTop(b.CloudBuild)
+}
+
 // CloudBuildConfig contains configuration of Cloud Build infrastructure.
 type CloudBuildConfig struct {
 	Project string `yaml:"project"` // name of Cloud Project to use for builds
 	Docker  string `yaml:"docker"`  // version of "docker" tool to use for builds
+}
+
+// rebaseOnTop implements "extends" logic.
+func (c *CloudBuildConfig) rebaseOnTop(b CloudBuildConfig) {
+	setIfEmpty(&c.Project, b.Project)
+	setIfEmpty(&c.Docker, b.Docker)
 }
 
 // BuildStep is one local build operation.
@@ -241,10 +266,12 @@ func (s *GoBuildStep) initStep(bs *BuildStep, cwd string) {
 	}
 }
 
-// Read reads and initializes the manifest by filling in all defaults.
+// Parse reads and initializes the manifest by filling in all defaults.
 //
 // If cwd is not empty, rebases all relative paths in it on top of it.
-func Read(r io.Reader, cwd string) (*Manifest, error) {
+//
+// Does not traverse "extends" links.
+func Parse(r io.Reader, cwd string) (*Manifest, error) {
 	body, err := ioutil.ReadAll(r)
 	if err != nil {
 		return nil, errors.Annotate(err, "failed to read the manifest body").Err()
@@ -259,16 +286,49 @@ func Read(r io.Reader, cwd string) (*Manifest, error) {
 	return &out, nil
 }
 
+// Load loads the manifest from the given path, traversing all "extends" links.
+func Load(path string) (*Manifest, error) {
+	return loadRecursive(path, 0)
+}
+
+// loadRecursive implements Load by tracking how deep we go as a simple
+// protection against recursive "extends" links.
+func loadRecursive(path string, fileCount int) (*Manifest, error) {
+	r, err := os.Open(path)
+	if err != nil {
+		return nil, errors.Annotate(err, "when opening manifest file").Err()
+	}
+	defer r.Close()
+
+	m, err := Parse(r, filepath.Dir(path))
+	switch {
+	case err != nil:
+		return nil, errors.Annotate(err, "when parsing %q", path).Err()
+	case m.Extends == "":
+		return m, nil
+	case fileCount > 10:
+		return nil, errors.Reason("too much nesting").Err()
+	}
+
+	base, err := loadRecursive(m.Extends, fileCount+1)
+	if err != nil {
+		return nil, errors.Annotate(err, "when loading %q", path).Err()
+	}
+	m.rebaseOnTop(base)
+	return m, nil
+}
+
 // Initialize fills in the defaults.
 //
 // If cwd is not empty, rebases all relative paths in it on top of it.
 //
 // Must be called if Manifest{} was allocated in the code (e.g. in unit tests)
-// rather than was read via Read(...).
+// rather than was read via Parse(...).
 func (m *Manifest) Initialize(cwd string) error {
 	if err := validateName(m.Name); err != nil {
 		return errors.Annotate(err, `bad "name" field`).Err()
 	}
+	normPath(&m.Extends, cwd)
 	normPath(&m.Dockerfile, cwd)
 	normPath(&m.ContextDir, cwd)
 	normPath(&m.ImagePins, cwd)
@@ -286,6 +346,45 @@ func (m *Manifest) Initialize(cwd string) error {
 		}
 	}
 	return nil
+}
+
+// rebaseOnTop implements "extends" logic.
+func (m *Manifest) rebaseOnTop(b *Manifest) {
+	m.Extends = "" // resolved now
+
+	setIfEmpty(&m.Dockerfile, b.Dockerfile)
+	setIfEmpty(&m.ContextDir, b.ContextDir)
+	setIfEmpty(&m.ImagePins, b.ImagePins)
+	if m.Deterministic == nil && b.Deterministic != nil {
+		cpy := *b.Deterministic
+		m.Deterministic = &cpy
+	}
+
+	// Rebase all entries already present in 'm' on top of entries in 'b'.
+	for k, v := range m.Infra {
+		if base, ok := b.Infra[k]; ok {
+			v.rebaseOnTop(base)
+			m.Infra[k] = v
+		}
+	}
+	// Copy all entries in 'b' that are not in 'm'.
+	for k, v := range b.Infra {
+		if _, ok := m.Infra[k]; !ok {
+			if m.Infra == nil {
+				m.Infra = make(map[string]Infra, 1)
+			}
+			m.Infra[k] = v
+		}
+	}
+
+	// Steps are just joined (base ones first).
+	m.Build = append(b.Build, m.Build...)
+}
+
+func setIfEmpty(a *string, b string) {
+	if *a == "" {
+		*a = b
+	}
 }
 
 // validateName validates "name" field in the manifest.

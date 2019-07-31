@@ -39,6 +39,8 @@ const (
 	testImageName = testRegistryName + "/" + testTargetName
 )
 
+var _true = true // for *bool
+
 func TestBuild(t *testing.T) {
 	t.Parallel()
 
@@ -77,7 +79,7 @@ func TestBuild(t *testing.T) {
 			res, err := runBuild(ctx, buildParams{
 				Manifest: &manifest.Manifest{
 					Name:          testTargetName,
-					Deterministic: true,
+					Deterministic: &_true,
 				},
 				Image:        testImageName,
 				BuildID:      "b1",
@@ -129,7 +131,7 @@ func TestBuild(t *testing.T) {
 				res, err := runBuild(ctx, buildParams{
 					Manifest: &manifest.Manifest{
 						Name:          testTargetName,
-						Deterministic: true,
+						Deterministic: &_true,
 					},
 					Image:        testImageName,
 					BuildID:      "b2",
@@ -185,7 +187,7 @@ func TestBuild(t *testing.T) {
 				res, err := runBuild(ctx, buildParams{
 					Manifest: &manifest.Manifest{
 						Name:          testTargetName,
-						Deterministic: false,
+						Deterministic: nil,
 					},
 					Image:        testImageName,
 					BuildID:      "b2",

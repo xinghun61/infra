@@ -107,9 +107,9 @@ func (c *cmdBuildRun) init() {
 }
 
 func (c *cmdBuildRun) exec(ctx context.Context) error {
-	m, err := readManifest(c.targetManifest)
+	m, err := manifest.Load(c.targetManifest)
 	if err != nil {
-		return err
+		return errors.Annotate(err, "when loading manifest").Tag(isCLIError).Err()
 	}
 
 	infra, ok := m.Infra[c.infra]
@@ -404,7 +404,8 @@ func remoteBuild(ctx context.Context, p buildParams, out *fileset.Set) (res buil
 	// If the target is marked as deterministic, it means the image is a pure
 	// function of the tarball and we can reuse an existing image if we already
 	// built something from this tarball.
-	if p.Manifest.Deterministic && p.Image != "" && p.CanonicalTag != "" {
+	determ := p.Manifest.Deterministic != nil && *p.Manifest.Deterministic
+	if determ && p.Image != "" && p.CanonicalTag != "" {
 		logging.Infof(ctx, "The target is marked as deterministic: looking for existing images built from this tarball...")
 		switch imgRef, ts, err := reuseExistingImage(ctx, obj, p.Image, p.Registry); {
 		case err != nil:

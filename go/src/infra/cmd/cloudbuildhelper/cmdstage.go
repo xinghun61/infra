@@ -6,8 +6,6 @@ package main
 
 import (
 	"context"
-	"os"
-	"path/filepath"
 
 	"github.com/maruel/subcommands"
 
@@ -57,9 +55,9 @@ func (c *cmdStageRun) exec(ctx context.Context) error {
 	if c.outputTarball == "" {
 		return errBadFlag("-output-tarball", "this flag is required")
 	}
-	m, err := readManifest(c.targetManifest)
+	m, err := manifest.Load(c.targetManifest)
 	if err != nil {
-		return err
+		return errors.Annotate(err, "when loading manifest").Tag(isCLIError).Err()
 	}
 
 	return stage(ctx, m, func(out *fileset.Set) error {
@@ -71,22 +69,6 @@ func (c *cmdStageRun) exec(ctx context.Context) error {
 		logging.Infof(ctx, "Resulting tarball SHA256 is %q", hash)
 		return nil
 	})
-}
-
-// readManifest reads the input manifest, makes sure it parses correctly.
-//
-// Returns annotate errors suitable for displaying in CLI.
-func readManifest(path string) (*manifest.Manifest, error) {
-	r, err := os.Open(path)
-	if err != nil {
-		return nil, errors.Annotate(err, "opening manifest file").Tag(isCLIError).Err()
-	}
-	defer r.Close()
-	m, err := manifest.Read(r, filepath.Dir(path))
-	if err != nil {
-		return nil, errors.Annotate(err, "bad manifest file %q", path).Tag(isCLIError).Err()
-	}
-	return m, nil
 }
 
 // stage executes logic of 'stage' subcommand, calling the callback in the
