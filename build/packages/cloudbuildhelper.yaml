@@ -1,4 +1,4 @@
-package: infra/tools/cloudbuildhelper
+package: infra/tools/cloudbuildhelper/${platform}
 description: Helper for building docker images via Cloud Build
 platforms:
   - linux-amd64
