@@ -7,6 +7,7 @@ package main
 import (
 	"io/ioutil"
 	"os"
+	"os/exec"
 	"runtime"
 	"sync"
 	"time"
@@ -26,12 +27,23 @@ import (
 
 func editIsolated(authOpts auth.Options) *subcommands.Command {
 	return &subcommands.Command{
-		UsageLine: "edit-isolated",
+		UsageLine: "edit-isolated [transform_program args...]",
 		ShortDesc: "Allows arbitrary local edits to the isolated input.",
 		LongDesc: `Downloads the task isolated (if any) into a temporary folder,
-and then waits for your edits. When you're done editing the files in the folder,
-hit <enter> and the folder contents will be isolated and deleted, and the new
-isolated will be attached to the task.`,
+and then waits for your edits.
+
+If you don't specify "transform_program", this will prompt with the location of
+the temporary folder, and will wait for you to hit <enter>. You may manually
+edit the contents of the folder however you like, and on <enter> the contents
+will be isolated and deleted, and the new isolated will be attached to the task.
+
+If "transform_program" and any arguments are specified, it will be run like:
+
+   cd /path/to/isolated/dir && transform_program args...
+
+And there will be no interactive prompt. All stdout/stderr from
+transform_program will be redirected to stderr.
+`,
 
 		CommandRun: func() subcommands.CommandRun {
 			ret := &cmdEditIsolated{}
@@ -48,32 +60,30 @@ isolated will be attached to the task.`,
 type cmdEditIsolated struct {
 	subcommands.CommandRunBase
 
+	transformProgram []string
+
 	logCfg    logging.Config
 	authFlags authcli.Flags
 }
 
 func (c *cmdEditIsolated) validateFlags(ctx context.Context, args []string) (authOpts auth.Options, err error) {
-	if len(args) > 0 {
-		err = errors.Reason("unexpected positional arguments: %q", args).Err()
-		return
-	}
-
+	c.transformProgram = args
 	return c.authFlags.Options()
 }
 
 func (c *cmdEditIsolated) Run(a subcommands.Application, args []string, env subcommands.Env) int {
 	ctx := c.logCfg.Set(cli.GetContext(a, c, env))
 
-	if runtime.GOOS == "windows" {
-		logging.Errorf(ctx, "led edit-isolated is not currently implemented for windows.")
-		logging.Errorf(ctx, "If you see this, please comment on crbug.com/912757.")
-		return 1
-	}
-
 	authOpts, err := c.validateFlags(ctx, args)
 	if err != nil {
 		logging.Errorf(ctx, "bad arguments: %s\n\n", err)
 		c.GetFlags().Usage()
+		return 1
+	}
+
+	if runtime.GOOS == "windows" && len(c.transformProgram) == 0 {
+		logging.Errorf(ctx, "led edit-isolated interactive mode is not currently implemented for windows.")
+		logging.Errorf(ctx, "If you see this, please comment on crbug.com/912757.")
 		return 1
 	}
 
@@ -135,11 +145,22 @@ func (c *cmdEditIsolated) Run(a subcommands.Application, args []string, env subc
 				return err
 			}
 		}
-		logging.Infof(ctx, "")
-		logging.Infof(ctx, "Edit files as you wish in:")
-		logging.Infof(ctx, "\t%s", tdir)
-		if err = prompt(ctx); err != nil {
-			return err
+		if len(c.transformProgram) == 0 {
+			logging.Infof(ctx, "")
+			logging.Infof(ctx, "Edit files as you wish in:")
+			logging.Infof(ctx, "\t%s", tdir)
+			if err = prompt(ctx); err != nil {
+				return err
+			}
+		} else {
+			logging.Infof(ctx, "Invoking transform_program: %q", c.transformProgram)
+			cmd := exec.CommandContext(ctx, c.transformProgram[0], c.transformProgram[1:]...)
+			cmd.Stdout = os.Stderr
+			cmd.Stderr = os.Stderr
+			cmd.Dir = tdir
+			if err := cmd.Run(); err != nil {
+				return errors.Annotate(err, "running transform_program").Err()
+			}
 		}
 
 		logging.Infof(ctx, "uploading new isolated")
