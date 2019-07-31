@@ -79,14 +79,25 @@ func (c *waitTasksRun) innerRun(a subcommands.Application, args []string, env su
 		}()
 	}()
 
-	resultMap, err := consumeToMap(ctx, len(uniqueIDs), results)
-	if err != nil {
-		return err
-	}
+	// Consume results. If an error occurs, save it for later logging, but
+	// still use the partial results.
+	resultMap, consumeErr := consumeToMap(ctx, len(uniqueIDs), results)
 
-	output := &skylab_tool.WaitTasksResult{}
+	output := &skylab_tool.WaitTasksResult{Incomplete: consumeErr != nil}
 	for _, ID := range args {
-		output.Results = append(output.Results, resultMap[ID])
+		r, ok := resultMap[ID]
+		if !ok {
+			// Results for the given ID never appeared; instead use a "missing"
+			// placeholder.
+			// TODO(akeshet): Come up with a clearer representation of missing
+			// results.
+			r = &skylab_tool.WaitTaskResult{
+				Result: &skylab_tool.WaitTaskResult_Task{
+					TaskRequestId: ID,
+				},
+			}
+		}
+		output.Results = append(output.Results, r)
 	}
 
 	outputJSON, err := jsonPBMarshaller.MarshalToString(output)
@@ -96,9 +107,15 @@ func (c *waitTasksRun) innerRun(a subcommands.Application, args []string, env su
 
 	fmt.Fprintf(a.GetOut(), string(outputJSON))
 
-	return nil
+	return consumeErr
 }
 
+// consumeToMap consumes per-task results from results channel, into an ID-to-results
+// map. It returns when either |items| unique IDs are collected, context expires,
+// or an error occurs.
+//
+// If an error occurs, it returns the partial results that were collected
+// prior to the error.
 func consumeToMap(ctx context.Context, items int, results <-chan waitItem) (map[string]*skylab_tool.WaitTaskResult, error) {
 	resultMap := make(map[string]*skylab_tool.WaitTaskResult)
 	for {
@@ -108,13 +125,13 @@ func consumeToMap(ctx context.Context, items int, results <-chan waitItem) (map[
 
 		select {
 		case <-ctx.Done():
-			return nil, ctx.Err()
+			return resultMap, ctx.Err()
 		case r, ok := <-results:
 			if !ok {
-				return nil, errors.New("results channel closed unexpectedly")
+				return resultMap, errors.New("results channel closed unexpectedly")
 			}
 			if r.err != nil {
-				return nil, r.err
+				return resultMap, r.err
 			}
 			resultMap[r.ID] = r.result
 		}
