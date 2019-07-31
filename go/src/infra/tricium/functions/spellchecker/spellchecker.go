@@ -51,20 +51,23 @@ var (
 	// ignoredWords are words that might be in the dictionary but shouldn't be
 	// flagged.
 	ignoredWords = []string{
-		"als",        // abbr. for ambient light sensor
-		"backed",     // as in "backed by"
-		"cas",        // abbr. for Content Addressed Storage
-		"copyable",   // Valid usage, and used in C++, e.g. is_trivially_copyable
-		"crasher",    // something that causes a crash
-		"crate",      // Rust keyword
-		"ect",        // abbr. for effective connection type
-		"gae",        // abbr. for Google App Engine
-		"ith",        // ordinal form of variable i, like nth
-		"lightening", // present participle of "to lighten"
-		"mut",        // Rust keyword
-		"seeked",     // JS event
-		"tast",       // Name of a ChromeOS test
-		"wontfix",    // Monorail bug status
+		"als",         // abbr. for ambient light sensor
+		"backed",      // as in "backed by"
+		"cas",         // abbr. for Content Addressed Storage
+		"copyable",    // Valid usage, and used in C++, e.g. is_trivially_copyable
+		"crasher",     // something that causes a crash
+		"crate",       // Rust keyword
+		"ect",         // abbr. for effective connection type
+		"gae",         // abbr. for Google App Engine
+		"ith",         // ordinal form of variable i, like nth
+		"lightening",  // present participle of "to lighten"
+		"mut",         // Rust keyword
+		"seeked",      // JS event
+		"tast",        // Name of a ChromeOS test
+		"wontfix",     // Monorail bug status
+		"files'",      // possessive of files
+		"process'",    // possessive of process
+		"subprocess'", // possessive of subprocess
 	}
 	textFileExts = []string{".txt", ".md"}
 
