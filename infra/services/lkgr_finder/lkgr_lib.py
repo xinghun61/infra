@@ -9,7 +9,6 @@
 
 import Queue
 import ast
-import base64
 import collections
 import datetime
 import httplib2
@@ -146,112 +145,6 @@ MILO_JSON_ENDPOINT = (
 
 
 OAUTH_SCOPES = ['https://www.googleapis.com/auth/userinfo.email']
-
-
-def _FetchBuilderJsonFromMilo(master, builder, limit=100,
-                             service_account_file=None): # pragma: no cover
-  LOGGER.debug('Fetching buildbot json for %s/%s from milo', master, builder)
-  body = {
-      'master': master,
-      'builder': builder,
-      'limit': limit
-  }
-  headers = {
-    'Accept': 'application/json',
-    'Content-Type': 'application/json',
-  }
-  http = httplib2.Http(timeout=300)
-  creds = None
-  if service_account_file:
-    creds = infra_libs.get_signed_jwt_assertion_credentials(
-        service_account_file, scope=OAUTH_SCOPES)
-  elif luci_auth.available():
-    creds = luci_auth.LUCICredentials(scopes=OAUTH_SCOPES)
-
-  if creds:
-    creds.authorize(http)
-
-  resp, content = http.request(
-      MILO_JSON_ENDPOINT, method='POST', headers=headers, body=json.dumps(body))
-  if resp.status != 200:
-    raise httplib2.HttpLib2Error('Invalid response status: %s\n%s' % (
-        resp.status, content))
-  # Strip off jsonp header.
-  data = json.loads(content[4:])
-  builds = [
-      json.loads(base64.b64decode(build['data'])) for build in data['builds']]
-  return {build['number']: build for build in builds}
-
-
-def _FetchBuildbotJson(master, builder, service_account_file=None):
-  limits = [100, 50, 25, 10]
-  sleep = 1
-  try:
-    for i in xrange(len(limits)):  # pragma: no branch
-      try:
-        return _FetchBuilderJsonFromMilo(
-            master, builder, limit=limits[i],
-            service_account_file=service_account_file)
-      except httplib2.HttpLib2Error:
-        if i == len(limits) - 1:
-          raise
-        LOGGER.warning(
-            'HTTP Error when fetching past %d builds of %s. Will try '
-            'fetching %d builds after a %d second sleep.',
-            limits[i], builder, limits[i+1], sleep)
-        time.sleep(sleep)
-        sleep *= 2
-  except httplib2.HttpLib2Error as e:
-    LOGGER.error(
-        'RequestException while fetching %s/%s:\n%s',
-        master, builder, repr(e))
-    return None
-
-
-def FetchBuildbotBuildsForBuilder(
-    master, builder, service_account_file=None):
-  builder_data = _FetchBuildbotJson(
-      master, builder, service_account_file=service_account_file)
-
-  if builder_data is None:
-    return None
-
-  builds = []
-  for build_number, build_data in builder_data.iteritems():
-    build_properties = {
-      prop[0]: prop[1]
-      for prop in build_data.get('properties') or []
-    }
-    # Revision fallthrough:
-    revision = (
-        # * If there is a got_src_revision, we probably want to use that,
-        #   because otherwise it wouldn't be specified.
-        build_properties.get('got_src_revision')
-        # * If we're in Git and there's a got_revision_git, might as well
-        #   use that since it is guaranteed to be the right type.
-        or build_properties.get('got_revision_git')
-        # * Finally, just use the default got_revision.
-        or build_properties.get('got_revision')
-        or None)
-    status = EvaluateBuildData(build_data)
-    if revision is None:
-      if status is STATUS.FAILURE or status is STATUS.RUNNING:
-        # The build failed too early or is still in early stage even before
-        # chromium revision was tagged. If we allow 'revision' fallback it
-        # will end up being non-chromium revision for non chromium projects.
-        continue
-    if not revision:
-      revision = build_data.get(
-          'sourceStamp', {}).get('revision', None)
-    if not revision:
-      continue
-    if len(str(revision)) < 40:
-      # Ignore stource stamps that don't contain a proper git hash. This
-      # can happen if very old build numbers get into the build data.
-      continue
-    builds.append(Build(build_number, status, revision))
-
-  return builds
 
 
 _BUILDBUCKET_SEARCH_ENDPOINT_V2 = (
@@ -470,30 +363,6 @@ def DumpBuilds(builds, filename):
 ##################################################
 # Data Processing
 ##################################################
-def IsResultFailure(result_data):  # pragma: no cover
-  """Returns true if result_data indicates a failure."""
-  while isinstance(result_data, list):
-    result_data = result_data[0]
-  if not result_data:
-    return False
-  # 0 means SUCCESS and 1 means WARNINGS.
-  return result_data not in (0, 1, '0', '1')
-
-
-def EvaluateBuildData(build_data):
-  """Determine the status of a build."""
-  status = STATUS.SUCCESS
-
-  if build_data.get('currentStep') is not None:
-    status = STATUS.RUNNING
-    for step in build_data['steps']:
-      if step['isFinished'] is True and IsResultFailure(step.get('results')):
-        return STATUS.FAILURE
-  elif IsResultFailure(build_data.get('results')):
-    status = STATUS.FAILURE
-
-  return status
-
 
 def CollateRevisionHistory(builds, repo):
   """Sorts builds and revisions in repository order.

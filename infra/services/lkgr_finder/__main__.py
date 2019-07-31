@@ -145,7 +145,8 @@ def ParseArgs(argv):
                            'specified) value. Skips checking for validity '
                            'against the current LKGR.')
   parser.add_argument('--service-account',
-                      help='Service account to use when doing RPCs to milo.')
+                      help='Service account to use when doing RPCs to '
+                           'buildbucket.')
 
   args = parser.parse_args(argv)
   return args, config_arg_names
@@ -205,14 +206,6 @@ def main(argv):
 
     if builds is None:
       builds = {}
-      buildbot_builders = config.get('masters', [])
-      if buildbot_builders:
-        buildbot_builds, failures = lkgr_lib.FetchBuildbotBuilds(
-            buildbot_builders, args.max_threads, args.service_account)
-        if failures > 0:
-          return 1
-        builds.update(buildbot_builds)
-
       buildbucket_builders = config.get('buckets', [])
       if buildbucket_builders:
         buildbucket_builds, failures = lkgr_lib.FetchBuildbucketBuilds(
