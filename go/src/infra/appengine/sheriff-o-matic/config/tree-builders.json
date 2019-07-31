@@ -189,7 +189,6 @@
             "ios-simulator-full-configs",
             "ios-device-xcode-clang",
             "ios-simulator-xcode-clang",
-            "ios-uirefresh-simulator",
             "ios-webview",
             "ios-slimnav",
             "WebKit Mac10.13 (retina)",
