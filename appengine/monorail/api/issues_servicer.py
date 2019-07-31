@@ -297,6 +297,21 @@ class IssuesServicer(monorail_servicer.MonorailServicer):
     return response
 
   @monorail_servicer.PRPCMethod
+  def ListStarredIssues(self, mc, _request):
+    """Return a list of issue ids that the signed-in user has starred."""
+    with work_env.WorkEnv(mc, self.services) as we:
+      starred_issues = we.ListStarredIssueIDs()
+      starred_issues_dict = we.GetIssueRefs(starred_issues)
+
+    with mc.profiler.Phase('converting to response objects'):
+      converted_starred_issue_refs = converters.ConvertIssueRefs(
+        starred_issues, starred_issues_dict)
+      response = issues_pb2.ListStarredIssuesResponse(
+        starred_issue_refs=converted_starred_issue_refs)
+
+    return response
+
+  @monorail_servicer.PRPCMethod
   def ListComments(self, mc, request):
     """Return comments on the specified issue in a response proto."""
     project, issue, config = self._GetProjectIssueAndConfig(

@@ -630,6 +630,33 @@ class IssuesServicerTest(unittest.TestCase):
     response = self.CallWrapped(self.issues_svcr.IsIssueStarred, mc, request)
     self.assertTrue(response.is_starred)
 
+  def testListStarredIssues_Anon(self):
+    """Users can't see their starred issues until they sign in."""
+    mc = monorailcontext.MonorailContext(self.services, cnxn=self.cnxn)
+    mc.LookupLoggedInUserPerms(self.project)
+
+    response = self.CallWrapped(self.issues_svcr.ListStarredIssues, mc, {})
+    # Assert that response has an empty list
+    self.assertEqual(0, len(response.starred_issue_refs))
+
+  def testListStarredIssues_Normal(self):
+    """User can access which issues they've starred."""
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='approver3@example.com')
+    mc.LookupLoggedInUserPerms(self.project)
+
+    # First, star some issues
+    self.services.issue_star.SetStar(
+        self.cnxn, self.services, 'fake config', self.issue_1.issue_id,
+        333, True)
+    self.services.issue_star.SetStar(
+        self.cnxn, self.services, 'fake config', self.issue_2.issue_id,
+        333, True)
+
+    # Now test that user can retrieve their star in a list
+    response = self.CallWrapped(self.issues_svcr.ListStarredIssues, mc, {})
+    self.assertEqual(2, len(response.starred_issue_refs))
+
   def testListComments_Normal(self):
     """We can get comments on an issue."""
     comment = tracker_pb2.IssueComment(

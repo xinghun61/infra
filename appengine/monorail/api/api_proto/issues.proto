@@ -22,6 +22,7 @@ service Issues {
   rpc UpdateIssue (UpdateIssueRequest) returns (IssueResponse) {}
   rpc StarIssue (StarIssueRequest) returns (StarIssueResponse) {}
   rpc IsIssueStarred (IsIssueStarredRequest) returns (IsIssueStarredResponse) {}
+  rpc ListStarredIssues (ListStarredIssuesRequest) returns (ListStarredIssuesResponse) {}
   // There is no CreateComment method because comments are created by updates,
   // which may have just comment content and no delta.
   // There is no GetComment method, clients should use ListComments.
@@ -144,6 +145,17 @@ message IsIssueStarredRequest {
 // Next available tag: 2
 message IsIssueStarredResponse {
   bool is_starred = 1;
+}
+
+
+// Next available tag: 1
+message ListStarredIssuesRequest {
+}
+
+
+// Next available tag: 2
+message ListStarredIssuesResponse {
+  repeated IssueRef starred_issue_refs = 1;
 }
 
 
