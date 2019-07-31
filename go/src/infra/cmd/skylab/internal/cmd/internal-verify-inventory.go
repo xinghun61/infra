@@ -18,7 +18,7 @@ import (
 // InternalVerifyInventory subcommand: Verify inventory.
 var InternalVerifyInventory = &subcommands.Command{
 	UsageLine: "internal-verify-inventory [-inv-type TYPE]... DATA_DIR",
-	ShortDesc: "Verify skylab inventory.",
+	ShortDesc: "verify skylab inventory.",
 	LongDesc: `Verify skylab inventory.
 
 For internal use only.`,

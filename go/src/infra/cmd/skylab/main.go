@@ -42,6 +42,7 @@ func getApplication() *cli.Application {
 			cmd.ListRemovedDuts,
 			subcommands.Section("Inventory Operations"),
 			cmd.AddDut,
+			cmd.QuickAddDuts,
 			cmd.AssignDuts,
 			cmd.RemoveDuts,
 			cmd.UpdateDut,

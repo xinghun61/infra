@@ -27,7 +27,7 @@ import (
 // AddDut subcommand: add a new DUT to inventory and prepare it for tasks.
 var AddDut = &subcommands.Command{
 	UsageLine: "add-dut [FLAGS...]",
-	ShortDesc: "Add a new DUT",
+	ShortDesc: "add a new DUT",
 	LongDesc: `Add and a new DUT to the inventory and prepare it for tasks.
 
 The default flags prepare the DUT by installing a stable firmware and OS image
