@@ -290,6 +290,7 @@
       "/path/to/tmp/json",
       "--gsutil-py-path",
       "RECIPE_REPO[depot_tools]/gsutil.py",
+      "--bigquery-upload",
       "--bigquery-service-account-json",
       "/creds/service_accounts/service-account-goma-bigquery.json",
       "--json-status",
