@@ -19,7 +19,6 @@ _TEST_FAILURE_OUTPUT_NAME = 'test_failure'
 class ChromeOSProjectAPI(ProjectAPI):
 
   def _GetFailureOutput(self, build, output_name):
-    """Gets failure output from the build's output property."""
     # Converts the Struct to standard dict, to use .get, .iteritems etc.
     build_failure_output = json_format.MessageToDict(
         build.output.properties).get(output_name)
@@ -36,10 +35,6 @@ class ChromeOSProjectAPI(ProjectAPI):
     - if they have test failures, they will produce an
       output property called 'test_failure', which includes the
       failed step name. So that step will be classified as the test step.
-
-    Args:
-      build (buildbucket build.proto): ALL info about the build.
-      step (buildbucket step.proto): ALL info about the build step.
     """
 
     def classify_compile_step(compile_failure_output):
@@ -101,38 +96,6 @@ class ChromeOSProjectAPI(ProjectAPI):
 
     For ChromeOS builds, the failures are stored in the build's output
     property 'compile_failure'.
-
-    Args:
-      build (buildbucket build.proto): ALL info about the build.
-      compile_steps (list of buildbucket step.proto): The failed compile steps.
-
-    Returns:
-      (dict): Information about detailed compile failures.
-      {
-        'step_name': {
-          'failures': {
-            frozenset(['target1', 'target2']): {
-              'first_failed_build': {
-                'id': 8765432109,
-                'number': 123,
-                'commit_id': 654321
-              },
-              'last_passed_build': None,
-              'properties': {
-                # Arbitrary information about the failure if exists.
-              }
-            },
-          'first_failed_build': {
-            'id': 8765432109,
-            'number': 123,
-            'commit_id': 654321
-          },
-          'last_passed_build': None,
-          'properties': {
-            # Arbitrary information about the failure if exists.
-          }
-        },
-      }
     """
     # pylint: disable=unused-argument
     build_info = {
@@ -182,30 +145,7 @@ class ChromeOSProjectAPI(ProjectAPI):
     """Returns the detailed test failures from a failed build.
 
     For ChromeOS builds, the failures are stored in the build's output
-    property 'build_test_failure_output'.
-
-    Args:
-      build (buildbucket build.proto): ALL info about the build.
-      test_steps (list of buildbucket step.proto): The failed test steps.
-
-    Returns:
-      (dict): Information about detailed test failures.
-      {
-        'step_name1': {
-          'failures': {},
-          'first_failed_build': {
-            'id': 8765432109,
-            'number': 123,
-            'commit_id': 654321
-          },
-          'last_passed_build': None,
-          'properties': {
-            'failure_type': 'xx_test_failures',
-            'test_spec': 'test_spec'
-          }
-        },
-        ...
-      }
+    property 'test_failure'. And there's only step level failure info.
     """
     # pylint: disable=unused-argument
     build_info = {
@@ -291,40 +231,6 @@ class ChromeOSProjectAPI(ProjectAPI):
         first.
     2. If build C failed to compile target 1 and target 2 and build D failed to
       compile target 1 only, these 2 builds will not be grouped.
-
-    Args:
-      context (findit_v2.services.context.Context): Scope of the analysis.
-      build (buildbucket build.proto): ALL info about the build.
-      first_failures_in_current_build (dict): A dict for failures that happened
-      the first time in current build.
-      {
-        'failures': {
-          'install packages': {
-            'atomic_failures': [
-              frozenset(['target4']),
-              frozenset(['target1', 'target2'])],
-            'last_passed_build': {
-              'id': 8765432109,
-              'number': 122,
-              'commit_id': 'git_sha1'
-            },
-          },
-        },
-        'last_passed_build': {
-          'id': 8765432109,
-          'number': 122,
-          'commit_id': 'git_sha1'
-        }
-      }
-
-    Returns:
-      failures_with_existing_group (dict): A dict of failures from
-        first_failures_in_current_build that found a matching group.
-        {
-          'install packages': {
-            frozenset(['target4']):  8765432000,
-          ]
-        }
     """
     groups = CompileFailureGroup.query(
         CompileFailureGroup.luci_project == build.builder.project).filter(
@@ -369,14 +275,6 @@ class ChromeOSProjectAPI(ProjectAPI):
     return failures_with_existing_group
 
   def GetRerunBuilderId(self, build):
-    """Gets builder id to run the rerun builds.
-
-    Args:
-      build (buildbucket build.proto): ALL info about the build.
-
-    Returns:
-      (str): Builder id in the format luci_project/luci_bucket/luci_builder
-    """
     rerun_builder = json_format.MessageToDict(
         build.output.properties).get('BISECT_BUILDER')
 
@@ -389,13 +287,6 @@ class ChromeOSProjectAPI(ProjectAPI):
         builder=rerun_builder)
 
   def GetCompileRerunBuildInputProperties(self, failed_targets):
-    """Gets input properties of a rerun build for compile failures.
-
-    Args:
-      failed_targets (dict): Targets Findit wants to rerun in the build.
-
-    Returns:
-      (dict): input properties of the rerun build."""
     targets = set()
     for step_targets in failed_targets.itervalues():
       targets.update(step_targets)

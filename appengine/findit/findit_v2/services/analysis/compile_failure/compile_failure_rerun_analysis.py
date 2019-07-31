@@ -95,7 +95,6 @@ def _GetRegressionRangesForCompileFailures(analysis):
   # Updates regression range for each failed targets.
   analysis_util.UpdateFailureRegressionRanges(rerun_builds_info,
                                               failures_with_range)
-
   # Groups failed targets with the same regression range, and returns these
   # groups along with their regression range.
   return analysis_util.GroupFailuresByRegerssionRange(failures_with_range)

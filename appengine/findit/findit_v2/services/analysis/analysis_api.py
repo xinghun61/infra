@@ -31,8 +31,8 @@ class AnalysisAPI(object):
     """Type of the steps that are being analyzed."""
     raise NotImplementedError
 
-  def GetMergedFailureKey(self, failure_entities, referred_build_id,
-                          step_ui_name, atomic_failure):
+  def _GetMergedFailureKey(self, failure_entities, referred_build_id,
+                           step_ui_name, atomic_failure):
     """Gets the key to the entity that a failure should merge into.
 
     Args:
@@ -47,7 +47,7 @@ class AnalysisAPI(object):
     """
     raise NotImplementedError
 
-  def GetFailuresInBuild(self, project_api, build, failed_steps):
+  def _GetFailuresInBuild(self, project_api, build, failed_steps):
     """Gets detailed failure information from a build.
 
     Args:
@@ -85,11 +85,12 @@ class AnalysisAPI(object):
     """
     raise NotImplementedError
 
-  def GetFailuresWithMatchingFailureGroups(self, context, build,
-                                           first_failures_in_current_build):
+  def _GetFailuresWithMatchingFailureGroups(self, project_api, context, build,
+                                            first_failures_in_current_build):
     """Gets reusable failure groups for given failure(s).
 
     Args:
+      project_api (ProjectAPI): API for project specific logic.
       context (findit_v2.services.context.Context): Scope of the analysis.
       build (buildbucket build.proto): ALL info about the build.
       first_failures_in_current_build (dict): A dict for failures that happened
@@ -121,59 +122,23 @@ class AnalysisAPI(object):
     """
     raise NotImplementedError
 
-  def CreateFailure(self, failed_build_key, step_ui_name, first_failed_build_id,
-                    last_passed_build_id, merged_failure_key, atomic_failure,
-                    properties):
+  def _CreateFailure(self, failed_build_key, step_ui_name,
+                     first_failed_build_id, last_passed_build_id,
+                     merged_failure_key, atomic_failure, properties):
     raise NotImplementedError
 
-  def GetFailureEntitiesForABuild(self, build):
+  def _GetFailureEntitiesForABuild(self, build):
     raise NotImplementedError
 
-  def CreateAndSaveFailureGroup(
-      self, context, build, failure_keys, last_passed_gitiles_id,
-      last_passed_commit_position, first_failed_commit_position):
+  def _CreateFailureGroup(self, context, build, failure_keys,
+                          last_passed_gitiles_id, last_passed_commit_position,
+                          first_failed_commit_position):
     raise NotImplementedError
 
-  def CreateAndSaveFailureAnalysis(
+  def _CreateFailureAnalysis(
       self, luci_project, context, build, last_passed_gitiles_id,
       last_passed_commit_position, first_failed_commit_position,
       rerun_builder_id, failure_keys):
-    raise NotImplementedError
-
-  def SaveRerunBuildResults(self, rerun_build_entity, status,
-                            detailed_failures):
-    """Saves the results of the rerun build.
-
-    Args:
-      status (int): status of the build. See common_pb2 for available values.
-      detailed_failures (dict): Failures in the rerun build.
-      Format is like:
-      {
-        'step_name': {
-          'failures': {
-            failure_identifier: {
-              'first_failed_build': {
-                'id': 8765432109,
-                'number': 123,
-                'commit_id': 654321
-              },
-              'last_passed_build': None,
-              'properties': {
-                # Arbitrary information about the failure if exists.
-              }
-            },
-          'first_failed_build': {
-            'id': 8765432109,
-            'number': 123,
-            'commit_id': 654321
-          },
-          'last_passed_build': None,
-          'properties': {
-            # Arbitrary information about the failure if exists.
-          }
-        },
-      }
-    """
     raise NotImplementedError
 
   def SaveFailures(self, context, build, detailed_failures):
@@ -219,10 +184,10 @@ class AnalysisAPI(object):
 
       for atomic_failure, failure in failures.iteritems():
         first_failed_build_id = failure.get('first_failed_build', {}).get('id')
-        merged_failure_key = self.GetMergedFailureKey(
+        merged_failure_key = self._GetMergedFailureKey(
             first_failures, first_failed_build_id, step_ui_name, atomic_failure)
 
-        new_entity = self.CreateFailure(
+        new_entity = self._CreateFailure(
             failed_build_key=failed_build_key,
             step_ui_name=step_ui_name,
             first_failed_build_id=first_failed_build_id,
@@ -271,7 +236,7 @@ class AnalysisAPI(object):
         if step.status == common_pb2.FAILURE
     ]
 
-    prev_failures = self.GetFailuresInBuild(
+    prev_failures = self._GetFailuresInBuild(
         project_api, detailed_prev_build,
         prev_failed_steps) if prev_failed_steps else {}
     return prev_steps, prev_failures
@@ -582,7 +547,6 @@ class AnalysisAPI(object):
         }
         _UpdateToEarlierBuild(failures_without_existing_group,
                               step_failure['last_passed_build'])
-
     return failures_without_existing_group
 
   def _UpdateFailureEntitiesWithGroupInfo(self, build,
@@ -599,7 +563,7 @@ class AnalysisAPI(object):
             ]
           }
     """
-    failure_entities = self.GetFailureEntitiesForABuild(build)
+    failure_entities = self._GetFailureEntitiesForABuild(build)
     entities_to_save = []
     group_failures = {}
     for failure_entity in failure_entities:
@@ -607,7 +571,7 @@ class AnalysisAPI(object):
           failure_entity.step_ui_name,
           {}).get(failure_entity.GetFailureIdentifier())
       if failure_group_build_id:
-        merged_failure_key = self.GetMergedFailureKey(
+        merged_failure_key = self._GetMergedFailureKey(
             group_failures, failure_group_build_id, failure_entity.step_ui_name,
             failure_entity.GetFailureIdentifier())
         failure_entity.failure_group_build_id = failure_group_build_id
@@ -617,7 +581,7 @@ class AnalysisAPI(object):
     ndb.put_multi(entities_to_save)
 
   def GetFirstFailuresInCurrentBuildWithoutGroup(
-      self, context, build, first_failures_in_current_build):
+      self, project_api, context, build, first_failures_in_current_build):
     """Gets first failures without existing failure groups.
 
     Args:
@@ -651,8 +615,8 @@ class AnalysisAPI(object):
     """
 
     failures_with_existing_group = (
-        self.GetFailuresWithMatchingFailureGroups(
-            context, build, first_failures_in_current_build))
+        self._GetFailuresWithMatchingFailureGroups(
+            project_api, context, build, first_failures_in_current_build))
 
     if not failures_with_existing_group:
       # All failures need a new group.
@@ -691,7 +655,7 @@ class AnalysisAPI(object):
         }
       }
     """
-    failure_entities = self.GetFailureEntitiesForABuild(build)
+    failure_entities = self._GetFailureEntitiesForABuild(build)
     first_failures = {
         s: failure['atomic_failures'] for s, failure in
         failures_without_existing_group['failures'].iteritems()
@@ -702,12 +666,14 @@ class AnalysisAPI(object):
         if f.GetFailureIdentifier() in first_failures.get(f.step_ui_name, [])
     ]
 
-  def SaveFailureAnalysis(self, context, build, failures_without_existing_group,
+  def SaveFailureAnalysis(self, project_api, context, build,
+                          failures_without_existing_group,
                           should_group_failures):
     """Creates and saves failure entity for the build being analyzed if there
       are first failures in the build.
 
     Args:
+      project_api (ProjectAPI): API for project specific logic.
       context (findit_v2.services.context.Context): Scope of the analysis.
       build (buildbucket build.proto): ALL info about the build.
       failures_without_existing_group (dict): A dict for failures that happened
@@ -734,10 +700,6 @@ class AnalysisAPI(object):
       should_group_failures (bool): Project config for if failures should be
         grouped to reduce duplicated analyses.
     """
-    luci_project = context.luci_project_name
-    project_api = projects.GetProjectAPI(luci_project)
-    assert project_api, 'Unsupported project {}'.format(luci_project)
-
     rerun_builder_id = project_api.GetRerunBuilderId(build)
 
     # Gets keys to the failures that failed the first time in the build.
@@ -754,11 +716,14 @@ class AnalysisAPI(object):
         context.gitiles_id, repo_url, ref=context.gitiles_ref)
 
     if should_group_failures:
-      self.CreateAndSaveFailureGroup(
+      group = self._CreateFailureGroup(
           context, build, failure_keys, last_passed_gitiles_id,
           last_passed_commit_position, first_failed_commit_position)
+      group.put()
 
-    return self.CreateAndSaveFailureAnalysis(
-        luci_project, context, build, last_passed_gitiles_id,
+    analysis = self._CreateFailureAnalysis(
+        context.luci_project_name, context, build, last_passed_gitiles_id,
         last_passed_commit_position, first_failed_commit_position,
         rerun_builder_id, failure_keys)
+    analysis.Save()
+    return analysis

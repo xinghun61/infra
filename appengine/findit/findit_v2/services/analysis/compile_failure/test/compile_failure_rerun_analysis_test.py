@@ -13,13 +13,12 @@ from google.appengine.ext import ndb
 from common.waterfall import buildbucket_client
 from findit_v2.model.compile_failure import CompileFailure
 from findit_v2.model.compile_failure import CompileFailureAnalysis
+from findit_v2.model.compile_failure import CompileFailureInRerunBuild
 from findit_v2.model.compile_failure import CompileRerunBuild
 from findit_v2.model.gitiles_commit import GitilesCommit
 from findit_v2.model.luci_build import LuciFailedBuild
 from findit_v2.services.analysis.compile_failure import (
     compile_failure_rerun_analysis)
-from findit_v2.services.analysis.compile_failure.compile_analysis_api import (
-    CompileAnalysisAPI)
 from findit_v2.services.chromium_api import ChromiumProjectAPI
 from findit_v2.services.context import Context
 from findit_v2.services.failure_type import StepTypeEnum
@@ -85,8 +84,6 @@ class CompileFailureRerunAnalysisTest(wf_testcase.TestCase):
         rerun_builder_id='chromium/findit/findit-variables',
         compile_failure_keys=[self.compile_failure.key])
     self.analysis.Save()
-
-    self.analysis_api = CompileAnalysisAPI()
 
   def _CreateCompileRerunBuild(self, commit_position=6000002):
     rerun_commit = GitilesCommit(
@@ -248,21 +245,12 @@ class CompileFailureRerunAnalysisTest(wf_testcase.TestCase):
     self.assertEqual(6000005, result[0]['first_failed_commit'].commit_position)
 
   def testGetRegressionRangesForCompileFailures(self):
-    rerun_build_failures = {
-        'compile': {
-            'failures': {
-                frozenset(['a.o']): {
-                    'properties': {
-                        'rule': 'CXX'
-                    }
-                }
-            }
-        }
-    }
-
     rerun_build = self._CreateCompileRerunBuild()
-    self.analysis_api.SaveRerunBuildResults(rerun_build, 20,
-                                            rerun_build_failures)
+    rerun_build.status = 20
+    failure_entity = CompileFailureInRerunBuild(
+        step_ui_name='compile', output_targets=['a.o'])
+    rerun_build.failures = [failure_entity]
+    rerun_build.put()
 
     results = (
         compile_failure_rerun_analysis._GetRegressionRangesForCompileFailures(
@@ -299,21 +287,12 @@ class CompileFailureRerunAnalysisTest(wf_testcase.TestCase):
   @mock.patch.object(git, 'MapCommitPositionsToGitHashes')
   def testRerunBasedAnalysisEndWithCulprit(self, mock_revisions,
                                            mock_trigger_build):
-    rerun_build_failures = {
-        'compile': {
-            'failures': {
-                frozenset(['a.o']): {
-                    'properties': {
-                        'rule': 'CXX'
-                    }
-                }
-            }
-        }
-    }
-
     rerun_build = self._CreateCompileRerunBuild(commit_position=6000001)
-    self.analysis_api.SaveRerunBuildResults(rerun_build, 20,
-                                            rerun_build_failures)
+    rerun_build.status = 20
+    failure_entity = CompileFailureInRerunBuild(
+        step_ui_name='compile', output_targets=['a.o'])
+    rerun_build.failures = [failure_entity]
+    rerun_build.put()
 
     mock_revisions.return_value = {n: str(n) for n in xrange(6000000, 6000005)}
 

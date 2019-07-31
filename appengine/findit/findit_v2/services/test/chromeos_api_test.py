@@ -499,3 +499,32 @@ class ChromeOSProjectAPITest(wf_testcase.TestCase):
 
     self.assertEqual(expected_failures,
                      ChromeOSProjectAPI().GetTestFailures(build, [step]))
+
+  def testGetFailuresWithMatchingTestFailureGroupsNoExistingGroup(self):
+    build_id = 8000000000122
+    build = Build(builder=self.builder, number=122, id=build_id)
+    build.input.gitiles_commit.host = 'gitiles.host.com'
+    build.input.gitiles_commit.project = 'project/name'
+    build.input.gitiles_commit.ref = 'ref/heads/master'
+    build.input.gitiles_commit.id = 'git_sha'
+
+    last_passed_build_info = {
+        'id': 8000000000121,
+        'number': 121,
+        'commit_id': 'git_sha_121'
+    }
+
+    first_failures_in_current_build = {
+        'failures': {
+            'step': {
+                'atomic_failures': [],
+                'last_passed_build': last_passed_build_info,
+            },
+        },
+        'last_passed_build': last_passed_build_info
+    }
+
+    self.assertEqual(
+        {},
+        ChromeOSProjectAPI().GetFailuresWithMatchingTestFailureGroups(
+            self.context, build, first_failures_in_current_build))

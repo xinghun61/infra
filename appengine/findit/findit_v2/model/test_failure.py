@@ -112,8 +112,7 @@ class TestFailureGroup(BaseFailureGroup):
   @property
   def test_failures(self):
     """Gets test failures that are included in the group."""
-    failed_test_objects = ndb.get_multi(self.test_failure_keys)
-    return GetTestFailures(failed_test_objects)
+    return GetTestFailures(ndb.get_multi(self.test_failure_keys))
 
   # Arguments number differs from overridden method - pylint: disable=W0221
   @classmethod
@@ -122,8 +121,8 @@ class TestFailureGroup(BaseFailureGroup):
              last_passed_commit_position, first_failed_gitiles_id,
              first_failed_commit_position, test_failure_keys):
     assert test_failure_keys, (
-        'no test failures when creating TestFailureGroup for {}'.format(
-            build_id))
+        'no failed tests when creating TestFailureGroup for {}'.format(build_id)
+    )
 
     instance = super(TestFailureGroup, cls).Create(
         luci_project, luci_bucket, build_id, gitiles_host, gitiles_project,

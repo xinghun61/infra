@@ -9,6 +9,7 @@ from buildbucket_proto import common_pb2
 
 from findit_v2.model.compile_failure import CompileFailure
 from findit_v2.model.compile_failure import CompileFailureAnalysis
+from findit_v2.model.compile_failure import CompileFailureInRerunBuild
 from findit_v2.model.compile_failure import CompileRerunBuild
 from findit_v2.model.messages.findit_result import (
     BuildFailureAnalysisResponse)
@@ -72,7 +73,7 @@ def AnalyzeCompileFailure(context, build, compile_steps):
   if should_group_failures:
     failures_without_existing_group = (
         analysis_api.GetFirstFailuresInCurrentBuildWithoutGroup(
-            context, build, first_failures_in_current_build))
+            project_api, context, build, first_failures_in_current_build))
   else:
     failures_without_existing_group = first_failures_in_current_build
 
@@ -83,10 +84,54 @@ def AnalyzeCompileFailure(context, build, compile_steps):
     return False
 
   # Start a new analysis to analyze the first time failures.
-  analysis_api.SaveFailureAnalysis(
-      context, build, failures_without_existing_group, should_group_failures)
+  analysis_api.SaveFailureAnalysis(project_api, context, build,
+                                   failures_without_existing_group,
+                                   should_group_failures)
   compile_failure_rerun_analysis.RerunBasedAnalysis(context, build.id)
   return True
+
+
+def _SaveRerunBuildResults(rerun_build_entity, status,
+                           detailed_compile_failures):
+  """Saves the results of the rerun build.
+
+  Args:
+    status (int): status of the build. See common_pb2 for available values.
+    detailed_failures (dict): Failures in the rerun build.
+    Format is like:
+    {
+      'step_name': {
+        'failures': {
+          failure_identifier: {
+            'first_failed_build': {
+              'id': 8765432109,
+              'number': 123,
+              'commit_id': 654321
+            },
+            'last_passed_build': None,
+            'properties': {
+              # Arbitrary information about the failure if exists.
+            }
+          },
+        'first_failed_build': {
+          'id': 8765432109,
+          'number': 123,
+          'commit_id': 654321
+        },
+        'last_passed_build': None,
+        'properties': {
+          # Arbitrary information about the failure if exists.
+        }
+      },
+    }
+  """
+  rerun_build_entity.status = status
+  rerun_build_entity.failures = []
+  for step_ui_name, step_info in detailed_compile_failures.iteritems():
+    for output_targets in step_info['failures']:
+      failure_entity = CompileFailureInRerunBuild(
+          step_ui_name=step_ui_name, output_targets=output_targets)
+      rerun_build_entity.failures.append(failure_entity)
 
 
 def _ProcessAndSaveRerunBuildResult(context, analyzed_build_id, rerun_build):
@@ -125,8 +170,9 @@ def _ProcessAndSaveRerunBuildResult(context, analyzed_build_id, rerun_build):
     detailed_compile_failures = project_api.GetCompileFailures(
         rerun_build, compile_steps) if compile_steps else {}
 
-  CompileAnalysisAPI().SaveRerunBuildResults(
-      rerun_build_entity, rerun_build.status, detailed_compile_failures)
+  _SaveRerunBuildResults(rerun_build_entity, rerun_build.status,
+                         detailed_compile_failures)
+  rerun_build_entity.put()
   return True
 
 

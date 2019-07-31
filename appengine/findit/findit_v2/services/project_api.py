@@ -166,3 +166,42 @@ class ProjectAPI(object):  # pragma: no cover.
     # a no-op.
     # pylint: disable=unused-argument
     return {}
+
+  def GetFailuresWithMatchingTestFailureGroups(self, context, build,
+                                               first_failures_in_current_build):
+    """Gets reusable failure groups for given test failure(s).
+
+    This method is a placeholder for projects that might need this feature,
+    though it's actually a no-op for currently supported projects:
+    + For chromium, failure grouping is not required at the moment;
+    + For chromeos, All tests are run on the same builder, this grouping is not
+      needed at all.
+
+    Args:
+      context (findit_v2.services.context.Context): Scope of the analysis.
+      build (buildbucket build.proto): ALL info about the build.
+      first_failures_in_current_build (dict): A dict for failures that happened
+        the first time in current build.
+        {
+          'failures': {
+            'step': {
+              'atomic_failures': ['test1', 'test2', ...],
+              'last_passed_build': {
+                'id': 8765432109,
+                'number': 122,
+                'commit_id': 'git_sha1'
+              },
+            },
+          },
+          'last_passed_build': {
+            # In this build all the failures that happened in the build being
+            # analyzed passed.
+            'id': 8765432108,
+            'number': 121,
+            'commit_id': 'git_sha0'
+          }
+        }
+      }
+    """
+    # pylint: disable=unused-argument
+    return {}

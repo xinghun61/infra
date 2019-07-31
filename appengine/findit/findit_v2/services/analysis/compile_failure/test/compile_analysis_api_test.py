@@ -78,20 +78,21 @@ class CompileAnalysisAPITest(wf_testcase.TestCase):
 
     self.analysis_api = CompileAnalysisAPI()
 
-    self.compile_failure = self.analysis_api.CreateFailure(
+    self.compile_failure = self.analysis_api._CreateFailure(
         self.build_entity.key, 'compile', self.build_id, 8000000000122, None,
         None, None)
     self.compile_failure.put()
 
   @mock.patch.object(git, 'GetCommitPositionFromRevision', return_value=67890)
   def testEntitiesCreation(self, _):
-    self.analysis_api.CreateAndSaveFailureGroup(
+    group = self.analysis_api._CreateFailureGroup(
         self.context, self.build, [self.compile_failure.key], '122', 122, 123)
+    group.put()
     groups = CompileFailureGroup.query().fetch()
     self.assertEqual(1, len(groups))
     self.assertEqual(self.build_id, groups[0].key.id())
 
-    analysis = self.analysis_api.CreateAndSaveFailureAnalysis(
+    analysis = self.analysis_api._CreateFailureAnalysis(
         'chromium', self.context, self.build, 'git_sha_122', 122, 123,
         'preject/bucket/builder', [self.compile_failure.key])
     self.assertIsNotNone(analysis)
@@ -100,26 +101,27 @@ class CompileAnalysisAPITest(wf_testcase.TestCase):
   def testAPIStepType(self):
     self.assertEqual(StepTypeEnum.COMPILE, self.analysis_api.step_type)
 
-  def testGetFailureEntitiesForABuild(self):
-    failure_entities = self.analysis_api.GetFailureEntitiesForABuild(self.build)
+  def test_GetFailureEntitiesForABuild(self):
+    failure_entities = self.analysis_api._GetFailureEntitiesForABuild(
+        self.build)
     self.assertEqual(1, len(failure_entities))
     self.assertEqual(self.compile_failure, failure_entities[0])
 
   @mock.patch.object(git, 'GetCommitPositionFromRevision', return_value=67890)
   def testGetMergedFailureKey(self, _):
     with self.assertRaises(AssertionError):
-      self.analysis_api.GetMergedFailureKey([self.compile_failure], None,
-                                            'compile', None)
+      self.analysis_api._GetMergedFailureKey([self.compile_failure], None,
+                                             'compile', None)
 
   @mock.patch.object(ChromiumProjectAPI, 'GetCompileFailures')
-  def testGetFailuresInBuild(self, mock_compile_failure):
-    self.analysis_api.GetFailuresInBuild(ChromiumProjectAPI(), self.build,
-                                         ['compile'])
+  def test_GetFailuresInBuild(self, mock_compile_failure):
+    self.analysis_api._GetFailuresInBuild(ChromiumProjectAPI(), self.build,
+                                          ['compile'])
     self.assertTrue(mock_compile_failure.called)
 
   @mock.patch.object(ChromiumProjectAPI,
                      'GetFailuresWithMatchingCompileFailureGroups')
-  def testGetFailuresWithMatchingFailureGroups(self, mock_failures_in_group):
-    self.analysis_api.GetFailuresWithMatchingFailureGroups(
-        self.context, self.build, {})
+  def test_GetFailuresWithMatchingFailureGroups(self, mock_failures_in_group):
+    self.analysis_api._GetFailuresWithMatchingFailureGroups(
+        ChromiumProjectAPI(), self.context, self.build, {})
     self.assertTrue(mock_failures_in_group.called)
