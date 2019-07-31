@@ -396,14 +396,16 @@ class ChromeOSProjectAPI(ProjectAPI):
 
     Returns:
       (dict): input properties of the rerun build."""
-    targets = []
+    targets = set()
     for step_targets in failed_targets.itervalues():
-      targets.extend(step_targets)
+      targets.update(step_targets)
     if not targets:
       return None
 
     return {
         '$chromeos/cros_bisect': {
-            'targets': list(set(targets))
+            'compile': {
+                'targets': list(targets),
+            },
         },
     }

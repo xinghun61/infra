@@ -290,7 +290,9 @@ class ChromeOSProjectAPITest(wf_testcase.TestCase):
 
     expected_prop = {
         '$chromeos/cros_bisect': {
-            'targets': [output_target1]
+            'compile': {
+                'targets': [output_target1],
+            },
         },
     }
 
