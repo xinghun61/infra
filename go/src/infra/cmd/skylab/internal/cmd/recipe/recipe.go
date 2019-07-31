@@ -29,10 +29,11 @@ type Args struct {
 	// pool label value (e.g. "DUT_POOL_CQ"), or an autotest-style short name
 	// (e.g. "cq"). If it doesn't match a managed pool in any of these forms,
 	// then it will be mapped to an unmanaged pool.
-	Pool         string
-	QuotaAccount string
-	Timeout      time.Duration
-	Keyvals      map[string]string
+	Pool                       string
+	QuotaAccount               string
+	Timeout                    time.Duration
+	Keyvals                    map[string]string
+	FreeformSwarmingDimensions []string
 }
 
 // Request constructs a cros_test_platform request from the given arguments.
@@ -75,6 +76,10 @@ func Request(a Args) *test_platform.Request {
 
 	params.Decorations = &test_platform.Request_Params_Decorations{
 		AutotestKeyvals: a.Keyvals,
+	}
+
+	params.FreeformAttributes = &test_platform.Request_Params_FreeformAttributes{
+		SwarmingDimensions: a.FreeformSwarmingDimensions,
 	}
 
 	u := &url.URL{

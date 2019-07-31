@@ -18,14 +18,15 @@ import (
 
 func TestRequest(t *testing.T) {
 	a := Args{
-		Board:      "foo-board",
-		Image:      "foo-image",
-		Model:      "foo-model",
-		Pool:       "foo-pool",
-		SuiteNames: []string{"foo-suite-1", "foo-suite-2"},
-		TestNames:  []string{"foo-test-1", "foo-test-2"},
-		Timeout:    30 * time.Minute,
-		Keyvals:    map[string]string{"k1": "v1"},
+		Board:                      "foo-board",
+		Image:                      "foo-image",
+		Model:                      "foo-model",
+		Pool:                       "foo-pool",
+		SuiteNames:                 []string{"foo-suite-1", "foo-suite-2"},
+		TestNames:                  []string{"foo-test-1", "foo-test-2"},
+		Timeout:                    30 * time.Minute,
+		Keyvals:                    map[string]string{"k1": "v1"},
+		FreeformSwarmingDimensions: []string{"freeform-key:freeform-value"},
 	}
 	got := Request(a)
 	want := &test_platform.Request{
@@ -37,6 +38,9 @@ func TestRequest(t *testing.T) {
 				BuildTarget: &chromiumos.BuildTarget{
 					Name: "foo-board",
 				},
+			},
+			FreeformAttributes: &test_platform.Request_Params_FreeformAttributes{
+				SwarmingDimensions: []string{"freeform-key:freeform-value"},
 			},
 			SoftwareDependencies: []*test_platform.Request_Params_SoftwareDependency{
 				{

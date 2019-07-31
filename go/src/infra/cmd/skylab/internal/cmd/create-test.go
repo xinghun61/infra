@@ -147,14 +147,15 @@ func (c *createTestRun) innerRunBB(a subcommands.Application, args []string, env
 	}
 
 	recipeArg := recipe.Args{
-		Board:        c.board,
-		Image:        c.image,
-		Model:        c.model,
-		Pool:         c.pool,
-		QuotaAccount: c.qsAccount,
-		TestNames:    args,
-		Timeout:      time.Duration(c.timeoutMins) * time.Minute,
-		Keyvals:      keyvalMap,
+		Board:                      c.board,
+		Image:                      c.image,
+		Model:                      c.model,
+		Pool:                       c.pool,
+		QuotaAccount:               c.qsAccount,
+		TestNames:                  args,
+		Timeout:                    time.Duration(c.timeoutMins) * time.Minute,
+		Keyvals:                    keyvalMap,
+		FreeformSwarmingDimensions: c.dimensions,
 	}
 	return buildbucketRun(ctx, recipeArg, e, c.authFlags, false, a.GetOut())
 }
@@ -175,9 +176,6 @@ func (c *createTestRun) validateForBB() error {
 	}
 	if len(c.provisionLabels) != 0 {
 		return errors.Reason("freeform provisionable labels not yet supported in -bb mode").Err()
-	}
-	if len(c.dimensions) > 0 {
-		return errors.Reason("custom dimensions are not yet supported in -bb mode").Err()
 	}
 	return nil
 }

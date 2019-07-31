@@ -172,6 +172,9 @@ func basicParams() *test_platform.Request_Params {
 		HardwareAttributes: &test_platform.Request_Params_HardwareAttributes{
 			Model: "foo-model",
 		},
+		FreeformAttributes: &test_platform.Request_Params_FreeformAttributes{
+			SwarmingDimensions: []string{"freeform-key:freeform-value"},
+		},
 		SoftwareDependencies: []*test_platform.Request_Params_SoftwareDependency{
 			{
 				Dep: &test_platform.Request_Params_SoftwareDependency_ChromeosBuild{ChromeosBuild: "foo-build"},
@@ -458,6 +461,7 @@ func TestRequestArguments(t *testing.T) {
 				So(flatDimensions, ShouldContain, "label-model:foo-model")
 				So(flatDimensions, ShouldContain, "label-board:foo-board")
 				So(flatDimensions, ShouldContain, "label-pool:DUT_POOL_CQ")
+				So(flatDimensions, ShouldContain, "freeform-key:freeform-value")
 			}
 		})
 	})

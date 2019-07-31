@@ -83,6 +83,7 @@ func (t *testRun) RequestArgs(params *test_platform.Request_Params, workerConfig
 	args := request.Args{
 		Cmd:               *cmd,
 		SchedulableLabels: *labels,
+		Dimensions:        params.GetFreeformAttributes().GetSwarmingDimensions(),
 		// TODO(akeshet): Determine parent task ID correctly.
 		ParentTaskID: "",
 		// TODO(akeshet): Determine priority correctly.

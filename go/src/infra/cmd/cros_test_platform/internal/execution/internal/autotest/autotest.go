@@ -122,6 +122,10 @@ func (r *Runner) proxyRequest() (*swarming_api.SwarmingRpcsNewTaskRequest, error
 		return nil, errors.Reason("create proxy request: config specified no afe_host").Err()
 	}
 
+	if f := r.requestParams.GetFreeformAttributes().GetSwarmingDimensions(); len(f) != 0 {
+		return nil, errors.Reason("swarming dimensions are not supported in autotest execution, but were specified as %s", f).Err()
+	}
+
 	dsArgs := dynamicsuite.Args{
 		Board:             r.requestParams.SoftwareAttributes.BuildTarget.Name,
 		Build:             builds.ChromeOS,
