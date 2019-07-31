@@ -156,15 +156,13 @@ func (c *createTestRun) innerRunBB(a subcommands.Application, args []string, env
 		Timeout:                    time.Duration(c.timeoutMins) * time.Minute,
 		Keyvals:                    keyvalMap,
 		FreeformSwarmingDimensions: c.dimensions,
+		AutotestTestArgs:           c.testArgs,
 	}
 	return buildbucketRun(ctx, recipeArg, e, c.authFlags, false, a.GetOut())
 }
 
 func (c *createTestRun) validateForBB() error {
 	// TODO(akeshet): support for all of these arguments, or deprecate them.
-	if c.testArgs != "" {
-		return errors.Reason("test args not yet supported in -bb mode").Err()
-	}
 	if len(c.tags) > 0 {
 		return errors.Reason("tags not yet supported in -bb mode").Err()
 	}

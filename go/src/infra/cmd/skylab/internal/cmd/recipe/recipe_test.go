@@ -28,7 +28,7 @@ func TestRequest(t *testing.T) {
 		Keyvals:                    map[string]string{"k1": "v1"},
 		FreeformSwarmingDimensions: []string{"freeform-key:freeform-value"},
 	}
-	got := Request(a)
+	got, err := Request(a)
 	want := &test_platform.Request{
 		Params: &test_platform.Request_Params{
 			HardwareAttributes: &test_platform.Request_Params_HardwareAttributes{
@@ -75,6 +75,40 @@ func TestRequest(t *testing.T) {
 				{Harness: &test_platform.Request_Test_Autotest_{Autotest: &test_platform.Request_Test_Autotest{Name: "foo-test-2"}}},
 			},
 		},
+	}
+	if err != nil {
+		t.Errorf("Unexpected error")
+	}
+	if diff := pretty.Compare(got, want); diff != "" {
+		t.Errorf("Unexpected diff (-got +want): %s", diff)
+	}
+}
+
+func TestRequestWithAutotestArgs(t *testing.T) {
+	a := Args{
+		TestNames:        []string{"foo-test-1", "foo-test-2"},
+		AutotestTestArgs: "foo test args",
+	}
+	got, err := Request(a)
+	want := &test_platform.Request{
+		TestPlan: &test_platform.Request_TestPlan{
+			Test: []*test_platform.Request_Test{
+				{Harness: &test_platform.Request_Test_Autotest_{Autotest: &test_platform.Request_Test_Autotest{
+					Name:     "foo-test-1",
+					TestArgs: "foo test args",
+				}}},
+				{Harness: &test_platform.Request_Test_Autotest_{Autotest: &test_platform.Request_Test_Autotest{
+					Name:     "foo-test-2",
+					TestArgs: "foo test args",
+				}}},
+			},
+		},
+	}
+	// Null out irrelevant fields.
+	got.Params = nil
+
+	if err != nil {
+		t.Errorf("Unexpected error")
 	}
 	if diff := pretty.Compare(got, want); diff != "" {
 		t.Errorf("Unexpected diff (-got +want): %s", diff)

@@ -15,6 +15,7 @@ import (
 
 	"go.chromium.org/chromiumos/infra/proto/go/chromiumos"
 	"go.chromium.org/chromiumos/infra/proto/go/test_platform"
+	"go.chromium.org/luci/common/errors"
 )
 
 // Args defines the arguments used to construct a cros_test_platform request.
@@ -34,14 +35,18 @@ type Args struct {
 	Timeout                    time.Duration
 	Keyvals                    map[string]string
 	FreeformSwarmingDimensions []string
+	AutotestTestArgs           string
 }
 
 // Request constructs a cros_test_platform request from the given arguments.
-func Request(a Args) *test_platform.Request {
+func Request(a Args) (*test_platform.Request, error) {
 	req := &test_platform.Request{}
 
 	req.TestPlan = &test_platform.Request_TestPlan{}
 	for _, suiteName := range a.SuiteNames {
+		if a.AutotestTestArgs != "" {
+			return nil, errors.Reason("cannot specify both autotest test args and suite").Err()
+		}
 		req.TestPlan.Suite = append(
 			req.TestPlan.Suite,
 			&test_platform.Request_Suite{Name: suiteName},
@@ -50,7 +55,10 @@ func Request(a Args) *test_platform.Request {
 	for _, testName := range a.TestNames {
 		ts := &test_platform.Request_Test{}
 		ts.Harness = &test_platform.Request_Test_Autotest_{
-			Autotest: &test_platform.Request_Test_Autotest{Name: testName},
+			Autotest: &test_platform.Request_Test_Autotest{
+				Name:     testName,
+				TestArgs: a.AutotestTestArgs,
+			},
 		}
 		req.TestPlan.Test = append(req.TestPlan.Test, ts)
 	}
@@ -99,7 +107,7 @@ func Request(a Args) *test_platform.Request {
 	// TODO(akeshet): Determine retry parameters.
 	params.Retry = nil
 
-	return req
+	return req, nil
 }
 
 func toScheduling(pool string, quotaAccount string) *test_platform.Request_Params_Scheduling {

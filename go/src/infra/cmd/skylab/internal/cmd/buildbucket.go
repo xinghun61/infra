@@ -27,7 +27,10 @@ import (
 )
 
 func buildbucketRun(ctx context.Context, args recipe.Args, env site.Environment, authFlags authcli.Flags, jsonOut bool, w io.Writer) error {
-	req := recipe.Request(args)
+	req, err := recipe.Request(args)
+	if err != nil {
+		return err
+	}
 
 	// Do a JSON roundtrip to turn req (a proto) into a structpb.
 	m := jsonpb.Marshaler{}
