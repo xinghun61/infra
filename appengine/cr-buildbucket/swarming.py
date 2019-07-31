@@ -242,7 +242,7 @@ def _compute_task_slices(build, settings):
           'dimensions':
               base_dims,
           'env_prefixes':
-              _compute_env_prefixes(build),
+              _compute_env_prefixes(build, settings),
           'env': [{
               'key': 'BUILDBUCKET_EXPERIMENTAL',
               'value': str(build.experimental).upper(),
@@ -287,16 +287,21 @@ def _compute_task_slices(build, settings):
   return task_slices
 
 
-def _compute_env_prefixes(build):
+def _compute_env_prefixes(build, settings):
   """Returns env_prefixes key in swarming properties."""
-  # TODO(nodir, smut): add SwarmingSettings.user_packages[i].subdir to
-  # env_prefixes.
   env_prefixes = {
       'PATH': [
           USER_PACKAGE_DIR,
           posixpath.join(USER_PACKAGE_DIR, 'bin'),
       ],
   }
+  extra_paths = set()
+  for up in settings.swarming.user_packages:
+    if up.subdir:
+      path = posixpath.join(USER_PACKAGE_DIR, up.subdir)
+      extra_paths.add(path)
+      extra_paths.add(posixpath.join(path, 'bin'))
+  env_prefixes['PATH'].extend(sorted(extra_paths))
   for c in build.proto.infra.swarming.caches:
     if c.env_var:
       prefixes = env_prefixes.setdefault(c.env_var, [])

@@ -474,8 +474,14 @@ class TaskDefTest(BaseTest):
         }],
         'env_prefixes': [
             {
-                'key': 'PATH',
-                'value': ['cipd_bin_packages', 'cipd_bin_packages/bin'],
+                'key':
+                    'PATH',
+                'value': [
+                    'cipd_bin_packages',
+                    'cipd_bin_packages/bin',
+                    'cipd_bin_packages/python',
+                    'cipd_bin_packages/python/bin',
+                ],
             },
             {
                 'key': 'VPYTHON_VIRTUALENV_ROOT',
