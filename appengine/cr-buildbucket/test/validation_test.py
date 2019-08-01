@@ -12,8 +12,8 @@ from google.protobuf import struct_pb2
 from google.protobuf import text_format
 from parameterized import parameterized
 
-from proto import common_pb2
 from proto import build_pb2
+from proto import common_pb2
 from proto import notification_pb2
 from proto import rpc_pb2
 from proto import step_pb2
@@ -872,17 +872,17 @@ class ValidateStepsTests(BaseTestCase):
             name='foo',
             status=common_pb2.SCHEDULED,
             logs=[
-                step_pb2.Step.Log(
+                common_pb2.Log(
                     name='tree',
                     url='logdog://0',
                     view_url='logdog.example.com/0'
                 ),
-                step_pb2.Step.Log(
+                common_pb2.Log(
                     name='branch',
                     url='logdog://1',
                     view_url='logdog.example.com/1'
                 ),
-                step_pb2.Step.Log(
+                common_pb2.Log(
                     name='tree',
                     url='logdog://2',
                     view_url='logdog.example.com/2'

@@ -369,7 +369,7 @@ class StepUtilTest(wf_testcase.WaterfallTestCase):
   def testGetStepLogForLuciBuildNoViewUrl(self, mock_get_build, mock_get_log,
                                           _):
     build_id = '8945610992972640896'
-    mock_log = Step.Log()
+    mock_log = common_pb2.Log()
     mock_log.name = 'step_metadata'
     mock_log.view_url = 'view_url'
     mock_step = Step()
@@ -389,7 +389,7 @@ class StepUtilTest(wf_testcase.WaterfallTestCase):
   @mock.patch.object(buildbucket_client, 'GetV2Build')
   def testGetStepLogForLuciBuild(self, mock_get_build, mock_get_log, _):
     build_id = '8945610992972640896'
-    mock_log = Step.Log()
+    mock_log = common_pb2.Log()
     mock_log.name = 'step_metadata'
     mock_log.view_url = 'view_url'
     mock_step = Step()
@@ -406,7 +406,7 @@ class StepUtilTest(wf_testcase.WaterfallTestCase):
 
   def testGetStepLogViewUrlNoMatchingLog(self):
     build_id = 8945610992972640896
-    mock_log = Step.Log()
+    mock_log = common_pb2.Log()
     mock_log.name = 'another_log'
     mock_log.view_url = 'view_url'
     mock_step1 = Step()

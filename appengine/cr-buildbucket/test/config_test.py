@@ -506,7 +506,7 @@ class ConfigTest(testing.AppengineTestCase):
       orig_flatten_builder(builder, defaults, mixin)
 
     self.patch(
-        'swarming.flatten_swarmingcfg.flatten_builder',
+        'flatten_swarmingcfg.flatten_builder',
         autospec=True,
         side_effect=flatten_builder
     )

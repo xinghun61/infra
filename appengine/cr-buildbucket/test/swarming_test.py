@@ -73,6 +73,9 @@ class BaseTest(testing.AppengineTestCase):
                 package_name='infra/tools/luci_runner',
                 version='luci-runner-version',
                 version_canary='luci-runner-version-canary',
+                builders=service_config_pb2.BuilderPredicate(
+                    regex=['chromium/try/linux'],
+                ),
             ),
             kitchen_package=dict(
                 package_name='infra/tools/kitchen',
@@ -461,11 +464,14 @@ class TaskDefTest(BaseTest):
 
     actual = self.compute_task_def(build)
 
-    # Properties are tested by test_properties() above.
-    expected_input_properties = test_util.ununicode(
-        api_common.properties_to_json(
-            swarming._compute_legacy_properties(build),
-        )
+    expected_args = launcher_pb2.RunnerArgs(
+        buildbucket_host='cr-buildbucket.appspot.com',
+        logdog_host='logs.example.com',
+        executable_dir=swarming._KITCHEN_CHECKOUT,
+        cache_dir=swarming._CACHE_DIR,
+        known_public_gerrit_hosts=['chromium-review.googlesource.com'],
+        luci_system_account='system',
+        build=build.proto,
     )
     expected_swarming_props_def = {
         'env': [{
@@ -491,31 +497,9 @@ class TaskDefTest(BaseTest):
         'execution_timeout_secs':
             '3600',
         'command': [
-            'kitchen${EXECUTABLE_SUFFIX}',
-            'cook',
-            '-buildbucket-hostname',
-            'cr-buildbucket.appspot.com',
-            '-buildbucket-build-id',
-            '1',
-            '-call-update-build',
-            '-build-url',
-            'https://milo.example.com/b/1',
-            '-luci-system-account',
-            'system',
-            '-recipe',
-            'recipe',
-            '-cache-dir',
-            'cache',
-            '-checkout-dir',
-            'kitchen-checkout',
-            '-temp-dir',
-            'tmp',
-            '-properties',
-            expected_input_properties,
-            '-logdog-annotation-url',
-            'logdog://logs.example.com/chromium/bb/+/annotations',
-            '-known-gerrit-host',
-            'chromium-review.googlesource.com',
+            'luci_runner${EXECUTABLE_SUFFIX}',
+            '-args-b64gz',
+            swarming._cli_encode_proto(expected_args),
         ],
         'dimensions': [
             {'key': 'cores', 'value': '8'},
@@ -595,8 +579,49 @@ class TaskDefTest(BaseTest):
         build.proto.infra.swarming.task_service_account, 'robot@example.com'
     )
 
+    # Now check that the blob on the cli is actually reasonable.
+    cli_blob = actual['task_slices'][0]['properties']['command'][2]
+    # No newlines, no padding
+    self.assertNotIn('\n', cli_blob)
+    self.assertNotIn('=', cli_blob)
+    # Restore padding, so python can decode it.
+    #   l % 4 == 0 -> no padding       (ex "aGkh")
+    #   l % 4 == 1 -> =                (ex "aGk=")
+    #   l % 4 == 2 -> ==               (ex "aA==")
+    #   l % 4 == 3 -> <invalid state>  (cannot happen in well-formed base64)
+    padding = '=' * (4 - (len(cli_blob) % 4))
+    self.assertLessEqual(len(padding), 2)  # should be '', '=', or '=='
+
+    args = launcher_pb2.RunnerArgs()
+    args.ParseFromString((cli_blob + padding).decode('base64').decode('zlib'))
+    self.assertEqual(args, expected_args)
+
     self.assertNotIn('buildbucket', build.proto.input.properties)
     self.assertNotIn('$recipe_engine/buildbucket', build.proto.input.properties)
+
+  def test_legacy_kitchen(self):
+    build = self._test_build(
+        builder=build_pb2.BuilderID(
+            project='chromium', bucket='try', builder='linux_kitchen'
+        ),
+    )
+    actual = self.compute_task_def(build)
+
+    self.assertEqual([
+        "kitchen${EXECUTABLE_SUFFIX}", 'cook', '-buildbucket-hostname',
+        'cr-buildbucket.appspot.com', '-buildbucket-build-id',
+        '9027773186396127232', '-call-update-build', '-build-url',
+        'https://milo.example.com/b/9027773186396127232',
+        '-luci-system-account', 'system', '-recipe', 'presubmit', '-cache-dir',
+        'cache', '-checkout-dir', 'kitchen-checkout', '-temp-dir', 'tmp',
+        '-properties',
+        api_common.properties_to_json(
+            swarming._compute_legacy_properties(build)
+        ), '-logdog-annotation-url',
+        'logdog://logdog.example.com/chromium/bb/+/annotations',
+        '-known-gerrit-host', 'chromium-review.googlesource.com'
+    ], test_util.ununicode(actual['task_slices'][0]['properties']['command']))
+
 
   def test_experimental(self):
     build = self._test_build(input=dict(experimental=True))
