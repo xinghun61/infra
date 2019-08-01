@@ -36,7 +36,7 @@ from model.code_coverage import PostsubmitReport
 from model.code_coverage import FileCoverageData
 from model.code_coverage import PresubmitCoverageData
 from model.code_coverage import SummaryCoverageData
-from services.code_coverage import GetMetricsBasedOnCoverageTool
+from services import code_coverage as code_coverage_util
 from waterfall import waterfall_config
 
 # List of Gerrit projects that the Code Coverage service supports.
@@ -218,50 +218,6 @@ def _GetValidatedData(gs_path):  # pragma: no cover.
   logging.info('Finished validating coverage data.')
 
   return data
-
-
-def _DecompressLines(line_ranges):  # pragma: no cover.
-  """Decompress the lines data to a flat format.
-
-  For example:
-  [
-    {
-      "count": 1,
-      "first": 165, // inclusive
-      "last": 166 // inclusive
-    }
-  ]
-
-  After decompressing, it becomes:
-  [
-    {
-      "line": 165,
-      "count": 1
-    },
-    {
-      "line": 166,
-      "count": 1
-    }
-  ]
-
-  Args:
-    line_ranges: A list of dict, with format
-                 [{"first": int, "last": int, "count": int}, ...], and note that
-                 the [first, last] are both inclusive.
-
-  Returns:
-    A list of dict, with format
-    [{"line": int, "count": int}].
-  """
-  decompressed_lines = []
-  for line_range in line_ranges:
-    for line_num in range(line_range['first'], line_range['last'] + 1):
-      decompressed_lines.append({
-          'line': line_num,
-          'count': line_range['count']
-      })
-
-  return decompressed_lines
 
 
 def _RetrieveManifest(repo_url, revision, os_platform):  # pragma: no cover.
@@ -1052,7 +1008,7 @@ class ServeCodeCoverageData(BaseHandler):
 
       formatted_data['files'].append({
           'path': path,
-          'lines': _DecompressLines(file_data['lines']),
+          'lines': code_coverage_util.DecompressLineRanges(file_data['lines']),
       })
 
     return {
@@ -1309,7 +1265,7 @@ class ServeCodeCoverageData(BaseHandler):
             'path_root':
                 path_root,
             'metrics':
-                GetMetricsBasedOnCoverageTool(
+                code_coverage_util.GetMetricsBasedOnCoverageTool(
                     _POSTSUBMIT_PLATFORM_INFO_MAP[platform]['coverage_tool']),
             'data':
                 data,

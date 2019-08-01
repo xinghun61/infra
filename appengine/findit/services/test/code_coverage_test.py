@@ -113,3 +113,81 @@ class CodeCoverageTest(WaterfallTestCase):
     result = code_coverage.GetEquivalentPatchsets(
         'chromium-review.googlesource.com', 'chromium/src', 12345, 8)
     self.assertListEqual([7], result)
+
+  def testCompressLines(self):
+    lines = [
+        {
+            'line': 102,
+            'count': 4,
+        },
+        {
+            'line': 103,
+            'count': 4,
+        },
+        {
+            'line': 107,
+            'count': 4,
+        },
+        {
+            'line': 108,
+            'count': 4,
+        },
+    ]
+    line_ranges = code_coverage.CompressLines(lines)
+    expected_line_ranges = [
+        {
+            'first': 102,
+            'last': 103,
+            'count': 4,
+        },
+        {
+            'first': 107,
+            'last': 108,
+            'count': 4,
+        },
+    ]
+
+    self.assertListEqual(expected_line_ranges, line_ranges)
+
+  def testCompressEmptyLines(self):
+    lines = []
+    line_ranges = code_coverage.CompressLines(lines)
+    expected_line_ranges = []
+
+    self.assertListEqual(expected_line_ranges, line_ranges)
+
+  def testDecompressLineRanges(self):
+    line_ranges = [
+        {
+            'first': 102,
+            'last': 103,
+            'count': 4,
+        },
+        {
+            'first': 107,
+            'last': 108,
+            'count': 4,
+        },
+    ]
+
+    expected_lines = [
+        {
+            'line': 102,
+            'count': 4,
+        },
+        {
+            'line': 103,
+            'count': 4,
+        },
+        {
+            'line': 107,
+            'count': 4,
+        },
+        {
+            'line': 108,
+            'count': 4,
+        },
+    ]
+    lines = code_coverage.DecompressLineRanges(line_ranges)
+
+    self.assertListEqual(expected_lines, lines)

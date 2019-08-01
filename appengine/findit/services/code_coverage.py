@@ -141,3 +141,78 @@ def GetEquivalentPatchsets(host, project, change, patchset):
       break
 
   return patchsets
+
+
+def DecompressLineRanges(line_ranges):
+  """Decompress the lines ranges data to a flat format.
+
+  For example:
+  [
+    {
+      "count": 1,
+      "first": 165, // inclusive
+      "last": 166 // inclusive
+    }
+  ]
+
+  After decompressing, it becomes:
+  [
+    {
+      "line": 165,
+      "count": 1
+    },
+    {
+      "line": 166,
+      "count": 1
+    }
+  ]
+
+  Args:
+    line_ranges: A list of dict, with format
+                 [{"first": int, "last": int, "count": int}, ...], and note that
+                 the [first, last] are both inclusive.
+
+  Returns:
+    A list of dict, with format: [{"line": int, "count": int}].
+  """
+  decompressed_lines = []
+  for line_range in line_ranges:
+    for line_num in range(line_range['first'], line_range['last'] + 1):
+      decompressed_lines.append({
+          'line': line_num,
+          'count': line_range['count'],
+      })
+
+  return decompressed_lines
+
+
+def CompressLines(lines):
+  """Compress the lines data to ranges.
+
+  This is a reverse-operation of DecompressLines.
+
+  Args:
+    lines: A list of dict, with format: [{"line": int, "count": int}].
+
+  Returns:
+    A list of dict, with format: {"first": int, "last": int, "count": int}, and
+    note that the [first, last] are both inclusive.
+  """
+  range_start_index = 0
+  line_ranges = []
+  for i in xrange(1, len(lines) + 1):
+    is_continous_line = (
+        i < len(lines) and lines[i]['line'] == lines[i - 1]['line'] + 1)
+    has_same_count = (
+        i < len(lines) and lines[i]['count'] == lines[i - 1]['count'])
+    if is_continous_line and has_same_count:
+      continue
+
+    line_ranges.append({
+        'first': lines[range_start_index]['line'],
+        'last': lines[i - 1]['line'],
+        'count': lines[range_start_index]['count'],
+    })
+    range_start_index = i
+
+  return line_ranges
