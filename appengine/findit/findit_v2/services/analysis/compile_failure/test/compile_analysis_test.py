@@ -170,7 +170,7 @@ class CompileAnalysisTest(wf_testcase.TestCase):
         'category': 'chromeos-base',
         'packageName': 'target2'
     })
-    build.output.properties['compile_failure'] = {
+    build.output.properties['compile_failures'] = {
         'failures': [{
             'output_targets': [output_target],
             'rule': 'emerge'

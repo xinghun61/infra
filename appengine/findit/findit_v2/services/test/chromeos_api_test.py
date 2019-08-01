@@ -71,7 +71,7 @@ class ChromeOSProjectAPITest(wf_testcase.TestCase):
     build = self._CreateBuildbucketBuild(build_id, build_number)
 
     if output_targets:
-      build.output.properties['compile_failure'] = {
+      build.output.properties['compile_failures'] = {
           'failures': [{
               'output_targets': output_targets,
               'rule': 'emerge',
@@ -87,13 +87,13 @@ class ChromeOSProjectAPITest(wf_testcase.TestCase):
     build = self._CreateBuildbucketBuild(build_id, build_number)
 
     if step_name == 'no spec':
-      build.output.properties['test_failure'] = {
+      build.output.properties['test_failures'] = {
           'xx_test_failures': [{
               'failed_step': step_name,
           },],
       }
     else:
-      build.output.properties['test_failure'] = {
+      build.output.properties['test_failures'] = {
           'xx_test_failures': [{
               'failed_step': step_name,
               'test_spec': 'test_spec'

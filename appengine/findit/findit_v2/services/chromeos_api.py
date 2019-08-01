@@ -12,8 +12,8 @@ from findit_v2.model.compile_failure import CompileFailureGroup
 from findit_v2.services.failure_type import StepTypeEnum
 from findit_v2.services.project_api import ProjectAPI
 
-_COMPILE_FAILURE_OUTPUT_NAME = 'compile_failure'
-_TEST_FAILURE_OUTPUT_NAME = 'test_failure'
+_COMPILE_FAILURE_OUTPUT_NAME = 'compile_failures'
+_TEST_FAILURE_OUTPUT_NAME = 'test_failures'
 
 
 class ChromeOSProjectAPI(ProjectAPI):
@@ -80,6 +80,7 @@ class ChromeOSProjectAPI(ProjectAPI):
 
     compile_failure_output = self._GetFailureOutput(
         build, _COMPILE_FAILURE_OUTPUT_NAME)
+
     if compile_failure_output:
       return classify_compile_step(compile_failure_output)
 
