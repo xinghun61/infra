@@ -270,7 +270,8 @@ func (r *TaskSet) fetchResults(ctx context.Context, a *attempt, client swarming.
 	case swarming.CompletedTaskStates[state]:
 		r, err := getAutotestResult(ctx, result, gf)
 		if err != nil {
-			return errors.Annotate(err, "fetch results").Err()
+			logging.Debugf(ctx, "failed to fetch autotest results for task %s due to error '%s', treating its results as incomplete (failure)", a.taskID, err.Error())
+			r = &skylab_test_runner.Result_Autotest{Incomplete: true}
 		}
 		a.autotestResult = r
 	// Task no longer running, but didn't run to completion.
