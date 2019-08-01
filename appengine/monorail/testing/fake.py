@@ -411,7 +411,7 @@ class UserGroupService(object):
     return visible_member_ids_dict, visible_owner_ids_dict
 
   def ValidateFriendProjects(self, cnxn, services, friend_projects):
-    project_names = filter(None, re.split('; |, | |;|,', friend_projects))
+    project_names = list(filter(None, re.split('; |, | |;|,', friend_projects)))
     id_dict = services.project.LookupProjectIDs(cnxn, project_names)
     missed_projects = []
     result = []
@@ -694,9 +694,9 @@ class UserService(object):
 
   def GetAllUserEmailsBatch(self, cnxn, limit=1000, offset=0):
     sorted_user_ids = sorted(self.users_by_id.keys())
-    sorted_user_ids = filter(
-        lambda user_id: user_id != framework_constants.DELETED_USER_ID,
-        sorted_user_ids)
+    sorted_user_ids = [
+        user_id for user_id in sorted_user_ids
+        if user_id != framework_constants.DELETED_USER_ID]
     emails = []
     for i in range(offset, offset + limit):
       try:
@@ -2085,7 +2085,7 @@ class TemplateService(object):
     return self.templates_by_id.get(template_id)
 
   def ExpungeUsersInTemplates(self, cnxn, user_ids, limit=None):
-    for _, template in self.templates_by_id.iteritems():
+    for _, template in self.templates_by_id.items():
       template.admin_ids = [user_id for user_id in template.admin_ids
                             if user_id not in user_ids]
       if template.owner_id in user_ids:

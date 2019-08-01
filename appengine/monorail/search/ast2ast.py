@@ -262,7 +262,7 @@ def _MakePrefixRegex(cond):
 
 def _MakeKeyValueRegex(cond):
   """Return a regex to match the first token and remaining text separately."""
-  keys, values = list(zip(*map(lambda x: x.split('-', 1), cond.str_values)))
+  keys, values = list(zip(*[x.split('-', 1) for x in cond.str_values]))
   if len(set(keys)) != 1:
     raise MalformedQuery(
         "KeyValue query with multiple different keys: %r" % cond.str_values)

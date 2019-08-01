@@ -20,6 +20,8 @@ import logging
 import re
 import sys
 
+from six import text_type
+
 from apiclient.discovery import build
 from apiclient.errors import Error as ApiClientError
 from oauth2client.client import GoogleCredentials
@@ -85,7 +87,7 @@ def GenerateFeaturesRaw(content, num_features, top_words=None):
   """
   # If we've been passed real unicode strings, convert them to just bytestrings.
   for idx, value in enumerate(content):
-    if isinstance(value, unicode):
+    if isinstance(value, text_type):
       content[idx] = value.encode('utf-8')
 
   if top_words:

@@ -64,7 +64,7 @@ class ChartServiceTest(unittest.TestCase):
        ' AND Forbidden_label.label_id IN (%s,%s)', [91, 81]),
       ('Issue2Cc AS I2cc'
        ' ON Issue.id = I2cc.issue_id'
-       ' AND I2cc.cc_id IN (%s,%s)', [10L, 20L]),
+       ' AND I2cc.cc_id IN (%s,%s)', [10, 20]),
     ]
     self.defaultWheres = [
       ('IssueSnapshot.period_start <= %s', [1514764800]),
@@ -76,7 +76,7 @@ class ChartServiceTest(unittest.TestCase):
        ' OR Issue.owner_id IN (%s,%s)'
        ' OR I2cc.cc_id IS NOT NULL'
        ' OR Forbidden_label.label_id IS NULL)',
-       [10L, 20L, 10L, 20L]
+       [10, 20, 10, 20]
       ),
     ]
 
@@ -250,7 +250,7 @@ class ChartServiceTest(unittest.TestCase):
 
     self.mox.ReplayAll()
     self.services.chart.QueryIssueSnapshots(self.cnxn, self.services,
-        unixtime=1514764800, effective_ids=[10L, 20L], project=project,
+        unixtime=1514764800, effective_ids=[10, 20], project=project,
         perms=perms, group_by='open')
     self.mox.VerifyAll()
 
@@ -259,7 +259,7 @@ class ChartServiceTest(unittest.TestCase):
     project = fake.Project(project_id=789)
     perms = permissions.PermissionSet(['BarPerm'])
     search_helpers.GetPersonalAtRiskLabelIDs(self.cnxn, None,
-        self.config_service, [10L, 20L], project,
+        self.config_service, [10, 20], project,
         perms).AndReturn([91, 81])
 
     cols = [
@@ -284,7 +284,7 @@ class ChartServiceTest(unittest.TestCase):
 
     self.mox.ReplayAll()
     self.services.chart.QueryIssueSnapshots(self.cnxn, self.services,
-        unixtime=1514764800, effective_ids=[10L, 20L], project=project,
+        unixtime=1514764800, effective_ids=[10, 20], project=project,
         perms=perms, group_by='status')
     self.mox.VerifyAll()
 
@@ -293,7 +293,7 @@ class ChartServiceTest(unittest.TestCase):
     project = fake.Project(project_id=789)
     perms = permissions.PermissionSet(['BarPerm'])
     search_helpers.GetPersonalAtRiskLabelIDs(self.cnxn, None,
-        self.config_service, [10L, 20L], project,
+        self.config_service, [10, 20], project,
         perms).AndReturn([91, 81])
     cols = [
       'IssueSnapshot.owner_id',
@@ -314,7 +314,7 @@ class ChartServiceTest(unittest.TestCase):
 
     self.mox.ReplayAll()
     self.services.chart.QueryIssueSnapshots(self.cnxn, self.services,
-        unixtime=1514764800, effective_ids=[10L, 20L], project=project,
+        unixtime=1514764800, effective_ids=[10, 20], project=project,
         perms=perms, group_by='owner')
     self.mox.VerifyAll()
 
@@ -323,7 +323,7 @@ class ChartServiceTest(unittest.TestCase):
     project = fake.Project(project_id=789)
     perms = permissions.PermissionSet(['BarPerm'])
     search_helpers.GetPersonalAtRiskLabelIDs(self.cnxn, None,
-        self.config_service, [10L, 20L], project,
+        self.config_service, [10, 20], project,
         perms).AndReturn([91, 81])
 
     cols = [

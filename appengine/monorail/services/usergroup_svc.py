@@ -532,7 +532,7 @@ class UserGroupService(object):
     Returns:
       A list of project ids if no errors, or an error message.
     """
-    project_names = filter(None, re.split('; |, | |;|,', friend_projects))
+    project_names = list(filter(None, re.split('; |, | |;|,', friend_projects)))
     id_dict = services.project.LookupProjectIDs(cnxn, project_names)
     missed_projects = []
     result = []

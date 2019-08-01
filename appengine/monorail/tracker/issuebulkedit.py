@@ -339,7 +339,7 @@ class IssueBulkEdit(servlet.Servlet):
       if not mr.errors.AnyErrors():
         # Sort the issues: we want them in this order so that the
         # corresponding old_owner_id are found in the same order.
-        editable_issues.sort(lambda i1, i2: cmp(i1.local_id, i2.local_id))
+        editable_issues.sort(key=lambda issue: issue.local_id)
 
         iids_to_invalidate = set()
         rules = self.services.features.GetFilterRules(
