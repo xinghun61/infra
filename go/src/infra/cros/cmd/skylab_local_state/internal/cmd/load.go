@@ -6,8 +6,11 @@ package cmd
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
 
 	"github.com/maruel/subcommands"
+	"go.chromium.org/luci/common/errors"
 
 	"go.chromium.org/chromiumos/infra/proto/go/test_platform/skylab_local_state"
 )
@@ -70,6 +73,10 @@ func (c *loadRun) innerRun(a subcommands.Application, args []string, env subcomm
 		return err
 	}
 
+	// TODO(zamorzaev): get host info from inventory service
+	hostInfo := skylab_local_state.AutotestHostInfo{}
+	writeHostInfo(request.ResultsDir, "dummy_name", hostInfo)
+
 	response := skylab_local_state.LoadResponse{}
 	if err := writeJSONPb(c.outputPath, &response); err != nil {
 		return err
@@ -94,6 +101,19 @@ func validateRequest(request *skylab_local_state.LoadRequest) error {
 	if request.DutId == "" {
 		return fmt.Errorf("no DUT ID provided")
 	}
+
+	return nil
+}
+
+func writeHostInfo(resultsDir string, dutName string, hostInfo skylab_local_state.AutotestHostInfo) error {
+	hostInfoDir := filepath.Join(resultsDir, hostInfoSubDir)
+	if err := os.MkdirAll(hostInfoDir, 0755); err != nil {
+		return errors.Annotate(err, "write host info").Err()
+	}
+
+	hostInfoFilePath := filepath.Join(hostInfoDir, dutName+hostInfoFileSuffix)
+
+	writeJSONPb(hostInfoFilePath, &hostInfo)
 
 	return nil
 }

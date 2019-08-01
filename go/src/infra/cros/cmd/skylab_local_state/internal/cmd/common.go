@@ -12,6 +12,11 @@ import (
 	"go.chromium.org/luci/common/errors"
 )
 
+const (
+	hostInfoSubDir     = "host_info_store"
+	hostInfoFileSuffix = ".store"
+)
+
 // readJSONPb reads a JSON string from inFile and unpacks it as a proto.
 // Unexpected fields are ignored.
 func readJSONPb(inFile string, payload proto.Message) error {
