@@ -56,99 +56,8 @@ export class MrApp extends connectStore(LitElement) {
         nondismissible
       ></mr-cue>
       <mr-cue cuePrefName="search_for_numbers" centered></mr-cue>
-      ${this._renderPage()}
+      <main>${this._renderPage()}</main>
     `;
-  }
-
-  static get properties() {
-    return {
-      issueEntryUrl: {type: String},
-      loginUrl: {type: String},
-      logoutUrl: {type: String},
-      projectName: {type: String},
-      userDisplayName: {type: String},
-      queryParams: {type: Object},
-      dirtyForms: {type: Array},
-      versionBase: {type: String},
-      _currentContext: {type: Object},
-      page: {type: String},
-    };
-  }
-
-  constructor() {
-    super();
-    this.queryParams = {};
-    this.dirtyForms = [];
-    this._currentContext = [];
-  }
-
-  stateChanged(state) {
-    this.dirtyForms = ui.dirtyForms(state);
-  }
-
-  updated(changedProperties) {
-    if (changedProperties.has('userDisplayName')) {
-      store.dispatch(user.fetch(this.userDisplayName));
-    }
-  }
-
-  connectedCallback() {
-    super.connectedCallback();
-
-    // TODO(zhangtiff): Figure out some way to save Redux state between
-    //   page loads.
-
-    // page doesn't handle users reloading the page or closing a tab.
-    window.onbeforeunload = this._confirmDiscardMessage.bind(this);
-
-    // Start a cron task to periodically request the status from the server.
-    getServerStatusCron.start();
-
-    page('*', (ctx, next) => {
-      // Navigate to the requested element if a hash is present.
-      if (ctx.hash) {
-        store.dispatch(ui.setFocusId(ctx.hash));
-      }
-
-      // We're not really navigating anywhere, so don't do anything.
-      if (ctx.path === this._currentContext.path) {
-        Object.assign(ctx, this._currentContext);
-        // Set ctx.handled to false, so we don't push the state to browser's
-        // history.
-        ctx.handled = false;
-        return;
-      }
-
-      // Check if there were forms with unsaved data before loading the next
-      // page.
-      const discardMessage = this._confirmDiscardMessage();
-      if (!discardMessage || confirm(discardMessage)) {
-        // Clear the forms to be checked, since we're navigating away.
-        store.dispatch(ui.clearDirtyForms());
-      } else {
-        Object.assign(ctx, this._currentContext);
-        // Set ctx.handled to false, so we don't push the state to browser's
-        // history.
-        ctx.handled = false;
-        // We don't call next to avoid loading whatever page was supposed to
-        // load next.
-        return;
-      }
-
-      // Run query string parsing on all routes.
-      // Based on: https://visionmedia.github.io/page.js/#plugins
-      ctx.query = qs.parse(ctx.querystring);
-      this.queryParams = ctx.query;
-      this._currentContext = ctx;
-
-      // Increment the count of navigations in the Redux store.
-      store.dispatch(ui.incrementNavigationCount());
-
-      next();
-    });
-    page('/p/:project/issues/list_new', this._loadListPage.bind(this));
-    page('/p/:project/issues/detail', this._loadIssuePage.bind(this));
-    page();
   }
 
   _renderPage() {
@@ -176,6 +85,145 @@ export class MrApp extends connectStore(LitElement) {
         ></mr-list-page>
       `;
     }
+  }
+
+  static get properties() {
+    return {
+      /**
+       * Backend-generated URL for the page the user is redirected to
+       * for filing issues. This functionality is a bit complicated by the
+       * issue wizard which redirects non-project members to an
+       * authentiation flow for a separate App Engine app for the chromium
+       * project.
+       */
+      issueEntryUrl: {type: String},
+      /**
+       * Backend-generated URL for the page the user is directed to for login.
+       */
+      loginUrl: {type: String},
+      /**
+       * Backend-generated URL for the page the user is directed to for logout.
+       */
+      logoutUrl: {type: String},
+      /**
+       * If the user is within a project page, this will be a string with
+       * the name of the project the user is currently viewing.
+       */
+      projectName: {type: String},
+      /**
+       * The display name of the currently logged in user.
+       */
+      userDisplayName: {type: String},
+      /**
+       * The search parameters in the user's current URL.
+       */
+      queryParams: {type: Object},
+      /**
+       * A list of forms to check for "dirty" values when the user navigates
+       * across pages.
+       */
+      dirtyForms: {type: Array},
+      /**
+       * App Engine ID for the current version being viewed.
+       */
+      versionBase: {type: String},
+      /**
+       * A string identifier for the page that the user is viewing.
+       */
+      page: {type: String},
+      /**
+       * The page.js context for the viewed page is saved for reference
+       * in future navigations.
+       */
+      _currentContext: {type: Object},
+    };
+  }
+
+  constructor() {
+    super();
+    this.queryParams = {};
+    this.dirtyForms = [];
+    this._currentContext = {};
+  }
+
+  stateChanged(state) {
+    this.dirtyForms = ui.dirtyForms(state);
+  }
+
+  updated(changedProperties) {
+    if (changedProperties.has('userDisplayName')) {
+      store.dispatch(user.fetch(this.userDisplayName));
+    }
+  }
+
+  connectedCallback() {
+    super.connectedCallback();
+
+    // TODO(zhangtiff): Figure out some way to save Redux state between
+    // page loads.
+
+    // page doesn't handle users reloading the page or closing a tab.
+    window.onbeforeunload = this._confirmDiscardMessage.bind(this);
+
+    // Start a cron task to periodically request the status from the server.
+    getServerStatusCron.start();
+
+    page('*', this._universalRouteHandler.bind(this));
+    page('/p/:project/issues/list_new', this._loadListPage.bind(this));
+    page('/p/:project/issues/detail', this._loadIssuePage.bind(this));
+    page();
+  }
+
+  // Functionality that runs on every single route change.
+  _universalRouteHandler(ctx, next) {
+    // Scroll to the requested element if a hash is present.
+    if (ctx.hash) {
+      store.dispatch(ui.setFocusId(ctx.hash));
+    }
+
+    // We're not really navigating anywhere, so don't do anything.
+    if (this._currentContext && this._currentContext.path &&
+        ctx.path === this._currentContext.path) {
+      Object.assign(ctx, this._currentContext);
+      // Set ctx.handled to false, so we don't push the state to browser's
+      // history.
+      ctx.handled = false;
+      return;
+    }
+
+    // Check if there were forms with unsaved data before loading the next
+    // page.
+    const discardMessage = this._confirmDiscardMessage();
+    if (!discardMessage || confirm(discardMessage)) {
+      // Clear the forms to be checked, since we're navigating away.
+      store.dispatch(ui.clearDirtyForms());
+    } else {
+      Object.assign(ctx, this._currentContext);
+      // Set ctx.handled to false, so we don't push the state to browser's
+      // history.
+      ctx.handled = false;
+      // We don't call next to avoid loading whatever page was supposed to
+      // load next.
+      return;
+    }
+
+    // Run query string parsing on all routes.
+    // Based on: https://visionmedia.github.io/page.js/#plugins
+    const params = qs.parse(ctx.querystring);
+
+    // Make sure queryPrams are not case sensitive.
+    const lowerCaseParams = {};
+    Object.keys(params).forEach((key) => {
+      lowerCaseParams[key.toLowerCase()] = params[key];
+    });
+    ctx.query = lowerCaseParams;
+    this.queryParams = ctx.query;
+    this._currentContext = ctx;
+
+    // Increment the count of navigations in the Redux store.
+    store.dispatch(ui.incrementNavigationCount());
+
+    next();
   }
 
   async _loadIssuePage(ctx, next) {
