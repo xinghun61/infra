@@ -29,6 +29,7 @@
   </style>
   <script src="/bower_components/webcomponentsjs/webcomponents-lite.js"></script>
   <link rel="import" href="/ui/elements/cats-app.html">
+  <link rel="import" href="/ui/elements/coverage/coverage-documentation.html">
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
   <script src="/ui/js/coverage.js"></script>
   <script>
@@ -41,7 +42,8 @@
 
 <body>
   <cats-app id="app" components="Infra>Test>CodeCoverage" page-header="Code Coverage: summary by revisions (Chrome Browser for {{platform_ui_name}})">
-    <div>
+    <coverage-documentation></coverage-documentation>
+    <br>
     <div class="intro-text">
     <p>These reports give test code coverage for Chromium.</p>
     <p>Currently showing the code coverage of C/C++ code on the master branch.</p>

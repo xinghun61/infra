@@ -58,6 +58,7 @@
   </style>
   <script src="/bower_components/webcomponentsjs/webcomponents-lite.js"></script>
   <link rel="import" href="/ui/elements/cats-app.html">
+  <link rel="import" href="/ui/elements/coverage/coverage-documentation.html">
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
   <script src="/ui/js/coverage.js"></script>
   <script>
@@ -101,6 +102,8 @@
 
 <body>
   <cats-app id="app" components="Infra>Test>CodeCoverage" page-header="Code Coverage: summary by {{data_type}} (Chrome Browser for {{platform_ui_name}})">
+    <coverage-documentation></coverage-documentation>
+    <br>
     <div>
       <div style="font-size:18px">
         <form id="platform_select_form" method="get">
