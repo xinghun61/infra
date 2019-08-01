@@ -595,7 +595,7 @@ func doCloudBuild(ctx context.Context, in *storage.Object, inDigest string, p bu
 		return "", nil, errors.Annotate(err, "failed to trigger Cloud Build build").Err()
 	}
 	logging.Infof(ctx, "Triggered build %s", build.ID)
-	logging.Infof(ctx, "Logs are available at %s", build.LogURL)
+	logging.Infof(ctx, "Logs are available at %s (may require special permissions to view)", build.LogURL)
 
 	// Babysit it until it completes.
 	logging.Infof(ctx, "Waiting for the build to finish...")

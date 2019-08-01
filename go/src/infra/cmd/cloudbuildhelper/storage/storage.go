@@ -60,7 +60,9 @@ func (o *Object) String() string {
 func (o *Object) Log(ctx context.Context) {
 	logging.Infof(ctx, "Metadata of %s", o)
 	logging.Infof(ctx, "    Created:  %s", humanize.Time(o.Created))
-	logging.Infof(ctx, "    Owner:    %s", strings.TrimPrefix(o.Owner, "user-"))
+	if o.Owner != "" {
+		logging.Infof(ctx, "    Owner:    %s", strings.TrimPrefix(o.Owner, "user-"))
+	}
 	logging.Infof(ctx, "    MD5:      %s", o.MD5)
 
 	// A table with metadata sorted by key, and then timestamp.
