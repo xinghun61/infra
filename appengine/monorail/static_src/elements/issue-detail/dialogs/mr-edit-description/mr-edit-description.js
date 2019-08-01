@@ -6,7 +6,7 @@ import {LitElement, html, css} from 'lit-element';
 
 import 'elements/framework/mr-upload/mr-upload.js';
 import 'elements/framework/mr-error/mr-error.js';
-import {fieldTypes} from 'elements/shared/field-types.js';
+import {fieldTypes} from 'elements/shared/issue-fields.js';
 import {store, connectStore} from 'elements/reducers/base.js';
 import * as issue from 'elements/reducers/issue.js';
 import 'elements/chops/chops-checkbox/chops-checkbox.js';

@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import {extractTypeForIssue} from '../../reducers/type.js';
+import {extractTypeForIssue} from 'elements/shared/issue-fields.js';
 import {issueRefToString} from '../../shared/converters.js';
 
 const gridHeadings = new Map();

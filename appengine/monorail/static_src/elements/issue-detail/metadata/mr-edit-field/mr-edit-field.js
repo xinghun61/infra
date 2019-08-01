@@ -5,7 +5,7 @@
 import {LitElement, html, css} from 'lit-element';
 
 import deepEqual from 'deep-equal';
-import {fieldTypes} from 'elements/shared/field-types.js';
+import {fieldTypes} from 'elements/shared/issue-fields.js';
 import {arrayDifference, equalsIgnoreCase} from 'elements/shared/helpers.js';
 
 import {SHARED_STYLES} from 'elements/shared/shared-styles';

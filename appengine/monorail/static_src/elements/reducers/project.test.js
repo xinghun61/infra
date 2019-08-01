@@ -4,7 +4,7 @@
 
 import {assert} from 'chai';
 import * as project from './project.js';
-import {fieldTypes} from 'elements/shared/field-types.js';
+import {fieldTypes} from 'elements/shared/issue-fields.js';
 
 describe('project', () => {
   it('fieldDefs', () => {

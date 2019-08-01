@@ -4,7 +4,6 @@
 
 import {assert} from 'chai';
 import {MrMultiInput} from './mr-multi-input.js';
-import {fieldTypes} from 'elements/shared/field-types.js';
 
 let element;
 

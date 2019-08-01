@@ -5,7 +5,7 @@
 import {combineReducers} from 'redux';
 import {createSelector} from 'reselect';
 import {createReducer, createRequestReducer} from './redux-helpers.js';
-import {fieldTypes} from 'elements/shared/field-types.js';
+import {fieldTypes} from 'elements/shared/issue-fields.js';
 import {hasPrefix, removePrefix} from 'elements/shared/helpers.js';
 import {fieldNameToLabelPrefix} from 'elements/shared/converters.js';
 import {prpcClient} from 'prpc-client-instance.js';

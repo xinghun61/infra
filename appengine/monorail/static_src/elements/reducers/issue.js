@@ -5,7 +5,7 @@
 import {combineReducers} from 'redux';
 import {createSelector} from 'reselect';
 import {autolink} from 'autolink.js';
-import {fieldTypes} from 'elements/shared/field-types.js';
+import {fieldTypes, extractTypeForIssue} from 'elements/shared/issue-fields.js';
 import {removePrefix} from 'elements/shared/helpers.js';
 import {issueRefToString} from 'elements/shared/converters.js';
 import {createReducer, createRequestReducer} from './redux-helpers.js';
@@ -13,7 +13,6 @@ import * as project from './project.js';
 import {fieldValueMapKey} from
   '../issue-detail/metadata/shared/metadata-helpers.js';
 import {prpcClient} from 'prpc-client-instance.js';
-import {extractTypeForIssue} from './type.js';
 
 // Actions
 const SET_ISSUE_REF = 'SET_ISSUE_REF';

@@ -5,7 +5,7 @@
 import {LitElement, html} from 'lit-element';
 
 import 'elements/framework/links/mr-user-link/mr-user-link.js';
-import {fieldTypes} from 'elements/shared/field-types.js';
+import {fieldTypes} from 'elements/shared/issue-fields.js';
 import {displayNameToUserRef} from 'elements/shared/converters.js';
 
 /**

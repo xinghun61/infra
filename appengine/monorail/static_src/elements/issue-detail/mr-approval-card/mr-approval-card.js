@@ -11,7 +11,7 @@ import * as issue from 'elements/reducers/issue.js';
 import * as project from 'elements/reducers/project.js';
 import * as user from 'elements/reducers/user.js';
 import * as ui from 'elements/reducers/ui.js';
-import {fieldTypes} from 'elements/shared/field-types.js';
+import {fieldTypes} from 'elements/shared/issue-fields.js';
 import 'elements/framework/mr-comment-content/mr-description.js';
 import '../mr-comment-list/mr-comment-list.js';
 import 'elements/issue-detail/metadata/mr-edit-metadata/mr-edit-metadata.js';

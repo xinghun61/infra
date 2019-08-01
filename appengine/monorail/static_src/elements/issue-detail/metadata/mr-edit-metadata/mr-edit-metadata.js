@@ -16,7 +16,7 @@ import 'elements/framework/mr-warning/mr-warning.js';
 import 'elements/help/mr-cue/mr-cue.js';
 import {store, connectStore} from 'elements/reducers/base.js';
 import {UserInputError} from 'elements/shared/errors.js';
-import {fieldTypes} from 'elements/shared/field-types.js';
+import {fieldTypes} from 'elements/shared/issue-fields.js';
 import {displayNameToUserRef, labelStringToRef, componentStringToRef,
   componentRefsToStrings, issueStringToRef, issueStringToBlockingRef,
   issueRefToString, issueRefsToStrings, filteredUserDisplayNames,
