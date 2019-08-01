@@ -1,0 +1,40 @@
+name: base
+
+# Mapping with pinned `(image, tag) => digest` resolutions.
+#
+# To add a new pin:
+#   $ cloudbuildhelper pins-add pins.yaml "<image>:<tag>""
+#
+# To update all pins:
+#   $ cloudbuildhelper pins-update pins.yaml
+imagepins: pins.yaml
+
+infra:
+  # Set of infra services used when building images from workstations, on CI
+  # waterfall (but not production release builders) and on trybots.
+  #
+  # Images built using this set of services are OK for local use and for dev
+  # clusters, but MUST NOT be deployed to clusters that have access to real
+  # user data.
+  #
+  # Workstations, non-proudction CI builders and trybots are considered NOT
+  # pristine enough to use for release builds.
+  dev:
+    storage: gs://chops-public-images-dev
+    registry: gcr.io/chops-public-images-dev
+    cloudbuild:
+      project: chops-public-images-dev
+      docker: 18.09.6  # see https://gcr.io/cloud-builders/docker
+
+  # Set of infra services used when building release images on production
+  # release builders. Nominally only release builders have access to these
+  # services.
+  #
+  # Images built using this set of services can be used anywhere, including
+  # in production clusters.
+  prod:
+    storage: gs://chops-public-images-prod
+    registry: gcr.io/chops-public-images-prod
+    cloudbuild:
+      project: chops-public-images-prod
+      docker: 18.09.6  # see https://gcr.io/cloud-builders/docker

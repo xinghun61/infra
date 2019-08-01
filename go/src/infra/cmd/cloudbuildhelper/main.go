@@ -38,18 +38,18 @@ func getApplication() *cli.Application {
 			versioncli.CmdVersion(userAgent),
 
 			subcommands.Section(""),
-			authcli.SubcommandLogin(authOptions(), "login", false),
-			authcli.SubcommandLogout(authOptions(), "logout", false),
-			authcli.SubcommandInfo(authOptions(), "whoami", false),
-
-			subcommands.Section(""),
-			cmdStage,
-			cmdLocalBuild,
 			cmdBuild,
+			cmdLocalBuild,
+			cmdStage,
 
 			subcommands.Section(""),
 			cmdPinsAdd,
 			cmdPinsUpdate,
+
+			subcommands.Section(""),
+			authcli.SubcommandLogin(authOptions(), "login", false),
+			authcli.SubcommandLogout(authOptions(), "logout", false),
+			authcli.SubcommandInfo(authOptions(), "whoami", false),
 		},
 	}
 }

@@ -1,0 +1,8 @@
+name: qscheduler-swarming
+extends: ../base.yaml
+
+dockerfile: ../../../go/src/infra/appengine/qscheduler-swarming/cmd/qscheduler-swarming/Dockerfile
+deterministic: true
+
+build:
+  - go_binary: infra/appengine/qscheduler-swarming/cmd/qscheduler-swarming
