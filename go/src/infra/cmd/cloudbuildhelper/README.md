@@ -331,7 +331,7 @@ infra:
     # If empty, images will be built and then just discarded (will not be pushed
     # anywhere). Useful to verify Dockerfile is working without accumulating
     # cruft.
-    registry: gcr://some-dev-project
+    registry: gcr.io/some-dev-project
 
     # Configuration of Cloud Build infrastructure.
     cloudbuild:
