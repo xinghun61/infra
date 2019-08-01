@@ -33,7 +33,7 @@ func TestManifest(t *testing.T) {
 
 	Convey("Bad name", t, func() {
 		_, err := Parse(strings.NewReader(`name: cheat:tag`), "some/dir")
-		So(err, ShouldErrLike, `bad "name" field: "cheat:tag" contains forbidden symbols (any of "/\\:@")`)
+		So(err, ShouldErrLike, `bad "name" field: "cheat:tag" contains forbidden symbols (any of "\\:@")`)
 	})
 
 	Convey("Not yaml", t, func() {

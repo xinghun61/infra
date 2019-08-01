@@ -389,7 +389,7 @@ func setIfEmpty(a *string, b string) {
 
 // validateName validates "name" field in the manifest.
 func validateName(t string) error {
-	const forbidden = "/\\:@"
+	const forbidden = "\\:@"
 	switch {
 	case t == "":
 		return errors.Reason("can't be empty, it's required").Err()
