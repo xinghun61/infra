@@ -2,11 +2,11 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import {extractTypeForIssue} from 'elements/shared/issue-fields.js';
-import {issueRefToString} from '../../shared/converters.js';
+import {extractTypeForIssue, EMPTY_FIELD_VALUE} from
+  'elements/shared/issue-fields.js';
+import {issueRefToString} from 'elements/shared/converters.js';
 
 const gridHeadings = new Map();
-export const EMPTY_HEADER_VALUE = '----';
 const DEFAULT_HEADER_VALUE = 'All';
 
 // TODO(juliacordero): write functions to extract from custom fields
@@ -98,7 +98,7 @@ function extractBlockedHeadings(issue) {
 function extractBlockedOnHeadings(issue) {
   const keysAdded = [];
   if (!issue.blockedOnIssueRefs) {
-    keysAdded.push(EMPTY_HEADER_VALUE);
+    keysAdded.push(EMPTY_FIELD_VALUE);
   } else {
     for (const blocked of issue.blockedOnIssueRefs) {
       const issueKey = issueRefToString(blocked, '');
@@ -111,7 +111,7 @@ function extractBlockedOnHeadings(issue) {
 function extractBlockingHeadings(issue) {
   const keysAdded = [];
   if (!issue.blockingIssueRefs) {
-    keysAdded.push(EMPTY_HEADER_VALUE);
+    keysAdded.push(EMPTY_FIELD_VALUE);
   } else {
     for (const blocking of issue.blockingIssueRefs) {
       const issueKey = issueRefToString(blocking, '');
@@ -124,7 +124,7 @@ function extractBlockingHeadings(issue) {
 function extractComponentHeadings(issue) {
   const keysAdded = [];
   if (!issue.componentRefs) {
-    keysAdded.push(EMPTY_HEADER_VALUE);
+    keysAdded.push(EMPTY_FIELD_VALUE);
   } else {
     for (const component of issue.componentRefs) {
       keysAdded.push(component.path);
@@ -152,7 +152,7 @@ function extractTypeHeadings(issue) {
   if (type) {
     return [type];
   } else {
-    return [EMPTY_HEADER_VALUE];
+    return [EMPTY_FIELD_VALUE];
   }
 }
 
@@ -179,9 +179,9 @@ function issueRefStringSort(headings) {
 
 // TODO(juliacordero): handle sorting ad hoc values
 function axisHeadingsSort(axisHeadingsSet, attribute) {
-  // Track whether EMPTY_HEADER_VALUE is present, and ensure that
+  // Track whether EMPTY_FIELD_VALUE is present, and ensure that
   // it is sorted to the first position even for custom fields
-  const noHeaderValueIsFound = axisHeadingsSet.delete(EMPTY_HEADER_VALUE);
+  const noHeaderValueIsFound = axisHeadingsSet.delete(EMPTY_FIELD_VALUE);
   let axisHeadingsList = [...axisHeadingsSet];
   let sorter;
   if (axisHeadingsSet.has(attribute)) {
@@ -193,7 +193,7 @@ function axisHeadingsSort(axisHeadingsSet, attribute) {
     axisHeadingsList.sort();
   }
   if (noHeaderValueIsFound) {
-    axisHeadingsList.push(EMPTY_HEADER_VALUE);
+    axisHeadingsList.push(EMPTY_FIELD_VALUE);
   }
   return axisHeadingsList;
 }

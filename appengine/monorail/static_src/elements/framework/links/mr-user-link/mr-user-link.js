@@ -6,9 +6,10 @@ import {LitElement, html, css} from 'lit-element';
 
 import {connectStore} from 'elements/reducers/base.js';
 import * as issue from 'elements/reducers/issue.js';
+import {EMPTY_FIELD_VALUE} from 'elements/shared/issue-fields.js';
 
 
-const NULL_DISPLAY_NAME_VALUES = ['----', 'a_deleted_user'];
+const NULL_DISPLAY_NAME_VALUES = [EMPTY_FIELD_VALUE, 'a_deleted_user'];
 
 /**
  * `<mr-user-link>`

@@ -3,7 +3,8 @@
 // found in the LICENSE file.
 
 import {LitElement, html, css} from 'lit-element';
-import {extractGridData, EMPTY_HEADER_VALUE} from './extract-grid-data.js';
+import {extractGridData} from './extract-grid-data.js';
+import {EMPTY_FIELD_VALUE} from 'elements/shared/issue-fields.js';
 import {issueRefToUrl} from '../../shared/converters.js';
 import './mr-grid-tile.js';
 import qs from 'qs';
@@ -92,7 +93,7 @@ export class MrGrid extends LitElement {
 
   addHeadingsToSearch(params, heading, attr) {
     if (attr && attr !== 'None') {
-      if (heading === EMPTY_HEADER_VALUE) {
+      if (heading === EMPTY_FIELD_VALUE) {
         params += ' -has:' + attr;
       // The following two cases are to handle grouping issues by Blocked
       } else if (heading === 'No') {

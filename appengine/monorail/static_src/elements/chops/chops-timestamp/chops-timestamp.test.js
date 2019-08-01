@@ -24,10 +24,6 @@ describe('chops-timestamp', () => {
       now: new Date(0),
       shouldAdvanceTime: false,
     });
-
-    // Explicitly set timezone because we can't depend on
-    // the timezone of the local testing environment to be the same.
-    element.timezone = 'UTC';
   });
 
   afterEach(() => {

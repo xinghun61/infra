@@ -5,7 +5,7 @@
 import {LitElement, html} from 'lit-element';
 
 import 'elements/framework/links/mr-user-link/mr-user-link.js';
-import {fieldTypes} from 'elements/shared/issue-fields.js';
+import {fieldTypes, EMPTY_FIELD_VALUE} from 'elements/shared/issue-fields.js';
 import {displayNameToUserRef} from 'elements/shared/converters.js';
 
 /**
@@ -18,7 +18,7 @@ import {displayNameToUserRef} from 'elements/shared/converters.js';
 export class MrFieldValues extends LitElement {
   render() {
     if (!this.values || !this.values.length) {
-      return html`----`;
+      return html`${EMPTY_FIELD_VALUE}`;
     }
     switch (this.type) {
       case fieldTypes.URL_TYPE:

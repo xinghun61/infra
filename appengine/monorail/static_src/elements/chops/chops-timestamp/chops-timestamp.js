@@ -28,7 +28,9 @@ export class ChopsTimestamp extends LitElement {
       timestamp: {type: String},
       /** When true, a shorter version of the date will be displayed. */
       short: {type: Boolean},
-      /** The Date object, which is stored in UTC, to be converted to a string. */
+      /**
+       * The Date object, which is stored in UTC, to be converted to a string.
+      */
       _date: {type: Object},
     };
   }

@@ -190,7 +190,11 @@ export class MrEditMetadata extends connectStore(LitElement) {
 
           <span></span>
           <div class="edit-actions">
-            <chops-button @click=${this.save} class="emphasized" ?disabled=${this.disabled}>
+            <chops-button
+              @click=${this.save}
+              class="emphasized"
+              ?disabled=${this.disabled}
+            >
               Save changes
             </chops-button>
             <chops-button

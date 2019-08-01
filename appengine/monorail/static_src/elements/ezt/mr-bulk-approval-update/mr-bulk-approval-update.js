@@ -6,6 +6,7 @@ import {LitElement, html, css} from 'lit-element';
 import 'elements/issue-detail/metadata/mr-edit-field/mr-edit-field.js';
 import 'elements/framework/mr-error/mr-error.js';
 import {prpcClient} from 'prpc-client-instance.js';
+import {EMPTY_FIELD_VALUE} from 'elements/shared/issue-fields.js';
 import {TEXT_TO_STATUS_ENUM} from 'elements/shared/approval-consts.js';
 
 
@@ -85,7 +86,7 @@ export class MrBulkApprovalUpdate extends LitElement {
             <tr><th><label for="statusInput">Status:</label></th>
               <td>
                 <select id="statusInput">
-                  <option>---</option>
+                  <option>${EMPTY_FIELD_VALUE}</option>
                   ${this.statusOptions.map((status) => html`
                     <option value=${status}>${status}</option>
                   `)}
@@ -94,11 +95,28 @@ export class MrBulkApprovalUpdate extends LitElement {
             </tr>
             <tr>
               <th><label for="commentText">Comment:</label></th>
-              <td colspan="4"><textarea cols="30" rows="3" id="commentText" placeholder="Add an approval comment"></textarea></td>
+              <td colspan="4">
+                <textarea
+                  cols="30"
+                  rows="3"
+                  id="commentText"
+                  placeholder="Add an approval comment"
+                ></textarea>
+              </td>
             </tr>
             <tr>
-              <td><button class="js-save" @click=${this.save}>Update Approvals only</button></td>
-              <td><span class="note">Note: Some approvals may not be updated if you lack approver perms.</span></td>
+              <td>
+                <button
+                  class="js-save"
+                  @click=${this.save}
+                >Update Approvals only</button>
+              </td>
+              <td>
+                <span class="note">
+                 Note: Some approvals may not be updated if you lack
+                 approver perms.
+                </span>
+              </td>
             </tr>
           </tbody></table>
         </form>
@@ -181,7 +199,7 @@ export class MrBulkApprovalUpdate extends LitElement {
     }
     const delta = {};
     const statusInput = root.querySelector('#statusInput');
-    if (statusInput.value != '---') {
+    if (statusInput.value !== EMPTY_FIELD_VALUE) {
       delta.status = TEXT_TO_STATUS_ENUM[statusInput.value];
     }
     const approversInput = root.querySelector('#approversInput');

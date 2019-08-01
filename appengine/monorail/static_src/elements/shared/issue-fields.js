@@ -12,6 +12,8 @@ export const fieldTypes = Object.freeze({
   URL_TYPE: 'URL_TYPE',
 });
 
+export const EMPTY_FIELD_VALUE = '----';
+
 export function extractTypeForIssue(fieldValues, labelRefs) {
   if (fieldValues) {
     // If there is a custom field for "Type", use that for type.

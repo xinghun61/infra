@@ -5,7 +5,7 @@
 import {LitElement, html, css} from 'lit-element';
 
 import deepEqual from 'deep-equal';
-import {fieldTypes} from 'elements/shared/issue-fields.js';
+import {fieldTypes, EMPTY_FIELD_VALUE} from 'elements/shared/issue-fields.js';
 import {arrayDifference, equalsIgnoreCase} from 'elements/shared/helpers.js';
 
 import {SHARED_STYLES} from 'elements/shared/shared-styles';
@@ -78,7 +78,7 @@ export class MrEditField extends LitElement {
             aria-label=${this.name}
             @change=${this._changeHandler}
           >
-            <option value="">----</option>
+            <option value="">${EMPTY_FIELD_VALUE}</option>
             ${this.options.map((option) => html`
               <option
                 value=${option.optionName}
