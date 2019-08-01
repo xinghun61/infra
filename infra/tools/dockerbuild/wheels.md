@@ -1864,6 +1864,18 @@ wheel: <
 
 * *universal*
 
+### 4.2.0
+
+```protobuf
+wheel: <
+  name: "infra/python/wheels/mozlog-py2_py3"
+  version: "version:4.2.0"
+>
+```
+
+
+* *universal*
+
 ## **mozprocess**
 
 ### 0.26
