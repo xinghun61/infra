@@ -11,13 +11,16 @@ import (
 
 	"github.com/maruel/subcommands"
 
+	"go.chromium.org/luci/auth"
+	"go.chromium.org/luci/auth/client/authcli"
 	"go.chromium.org/luci/common/cli"
 	"go.chromium.org/luci/common/logging/gologger"
+	"go.chromium.org/luci/hardcoded/chromeinfra"
 
 	"infra/cros/cmd/skylab_local_state/internal/cmd"
 )
 
-func getApplication() *cli.Application {
+func getApplication(authOpts auth.Options) *cli.Application {
 	return &cli.Application{
 		Name:  "skylab_local_state",
 		Title: "A tool for interacting with the local state files.",
@@ -27,12 +30,19 @@ func getApplication() *cli.Application {
 		Commands: []*subcommands.Command{
 			subcommands.CmdHelp,
 
-			cmd.Load,
-			cmd.Save,
+			subcommands.Section("Authentication"),
+			authcli.SubcommandLogin(authOpts, "login", false),
+			authcli.SubcommandLogout(authOpts, "logout", false),
+			authcli.SubcommandInfo(authOpts, "whoami", false),
+
+			subcommands.Section("Operations"),
+			cmd.Load(authOpts),
+			cmd.Save(),
 		},
 	}
 }
 
 func main() {
-	os.Exit(subcommands.Run(getApplication(), nil))
+	authOpts := chromeinfra.DefaultAuthOptions()
+	os.Exit(subcommands.Run(getApplication(authOpts), nil))
 }

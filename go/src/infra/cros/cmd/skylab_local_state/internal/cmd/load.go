@@ -10,28 +10,38 @@ import (
 	"path/filepath"
 
 	"github.com/maruel/subcommands"
+	"go.chromium.org/luci/auth"
+	"go.chromium.org/luci/auth/client/authcli"
 	"go.chromium.org/luci/common/errors"
 
 	"go.chromium.org/chromiumos/infra/proto/go/test_platform/skylab_local_state"
 )
 
 // Load subcommand: Gather DUT labels and attributes into a host info file.
-var Load = &subcommands.Command{
-	UsageLine: "load -input_json /path/to/input.json -output_json /path/to/output.json",
-	ShortDesc: "Gather DUT labels and attributes into a host info file.",
-	LongDesc: `Gather DUT labels and attributes into a host info file.
+func Load(authOpts auth.Options) *subcommands.Command {
+	return &subcommands.Command{
+		UsageLine: "load -input_json /path/to/input.json -output_json /path/to/output.json",
+		ShortDesc: "Gather DUT labels and attributes into a host info file.",
+		LongDesc: `Gather DUT labels and attributes into a host info file.
 
-Placeholder only, not yet implemented.`,
-	CommandRun: func() subcommands.CommandRun {
-		c := &loadRun{}
-		c.Flags.StringVar(&c.inputPath, "input_json", "", "Path to JSON LoadRequest to read.")
-		c.Flags.StringVar(&c.outputPath, "output_json", "", "Path to JSON LoadResponse to write.")
-		return c
-	},
+	Placeholder only, not yet implemented.`,
+		CommandRun: func() subcommands.CommandRun {
+			c := &loadRun{}
+
+			c.authFlags.Register(&c.Flags, authOpts)
+
+			c.Flags.StringVar(&c.inputPath, "input_json", "", "Path to JSON LoadRequest to read.")
+			c.Flags.StringVar(&c.outputPath, "output_json", "", "Path to JSON LoadResponse to write.")
+			return c
+		},
+	}
 }
 
 type loadRun struct {
 	subcommands.CommandRunBase
+
+	authFlags authcli.Flags
+
 	inputPath  string
 	outputPath string
 }

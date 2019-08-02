@@ -11,16 +11,18 @@ import (
 )
 
 // Save subcommand: Update the bot state json file.
-var Save = &subcommands.Command{
-	UsageLine: "save",
-	ShortDesc: "Update the bot state json file.",
-	LongDesc: `Update the bot state json file.
+func Save() *subcommands.Command {
+	return &subcommands.Command{
+		UsageLine: "save",
+		ShortDesc: "Update the bot state json file.",
+		LongDesc: `Update the bot state json file.
 
-Placeholder only, not yet implemented.`,
-	CommandRun: func() subcommands.CommandRun {
-		c := &saveRun{}
-		return c
-	},
+	Placeholder only, not yet implemented.`,
+		CommandRun: func() subcommands.CommandRun {
+			c := &saveRun{}
+			return c
+		},
+	}
 }
 
 type saveRun struct {
