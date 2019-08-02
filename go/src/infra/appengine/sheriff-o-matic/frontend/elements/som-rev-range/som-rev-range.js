@@ -68,12 +68,9 @@ class SomRevRange extends Polymer.Element {
   }
 
   _shouldUseRangeRevisions(range) {
-    // Note: If range.host is not empty, it means range data was
-    // filled using builds' inputs. Build inputs have unreliable
-    // commit positions but reliable revisions, so revisions
-    // should be used instead of positions.
     return (range.host && range.host.length > 0 &&
-            range.revisions && range.revisions.length > 0);
+            range.revisions && range.revisions.length > 0 &&
+            !range.positions);
   }
 
   _regressionRange(range) {

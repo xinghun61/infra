@@ -24,7 +24,7 @@ cron:
   schedule: every 1 hours
 
 - description: Update Android alerts
-  url: /_cron/analyze/android
+  url: /_cron/analyze/android?use=bigquery
   schedule: every 5 minutes
   target: analyzer
   retry_parameters:
@@ -48,7 +48,7 @@ cron:
     max_doublings: 5
 
 - description: Update ChromeOS Alerts
-  url: /_cron/analyze/chromeos?use=buildbucket
+  url: /_cron/analyze/chromeos?use=bigquery
   schedule: every 5 minutes
   target: analyzer
   retry_parameters:

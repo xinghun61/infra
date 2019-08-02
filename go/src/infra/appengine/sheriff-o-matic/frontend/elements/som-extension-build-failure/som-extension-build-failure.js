@@ -242,9 +242,7 @@ class SomExtensionBuildFailure extends Polymer.mixinBehaviors(
   }
 
   _showRegressionRange(range) {
-    return range &&
-        ((range.positions && range.positions.length > 0 && range.repo != 'v8') ||
-        (range.error));
+    return !!range;
   }
 
   _sortTests(a, b) {

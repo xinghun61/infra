@@ -11,6 +11,8 @@ import (
 	"time"
 )
 
+// TODO: customize the WHERE clause for chromium.  I suspect
+// just using the project field isn't quite right.
 const failuresQuery = `
 SELECT
   Project,
@@ -20,36 +22,77 @@ SELECT
   StepName,
   BuildRangeBegin,
   BuildRangeEnd,
-  CPRangeBegin,
-  CPRangeEnd,
-  StartTime,
-  GitProject,
-  GitRef,
-  GitHost
+  CPRangeOutputBegin,
+  CPRangeOutputEnd,
+  CPRangeInputBegin,
+  CPRangeInputEnd,
+  StartTime
 FROM
 	` + "`%s.events.sheriffable_failures`" + `
 WHERE
 	project = %q
+  AND bucket NOT IN ("try",
+    "cq",
+    "staging",
+    "general")
+  AND (mastername IS NULL
+		OR mastername NOT LIKE "%%.fyi")
+	AND builder not like "%%bisect%%"
+LIMIT
+	1000
+`
+
+const androidFailuresQuery = `
+SELECT
+  Project,
+  Bucket,
+  Builder,
+  MasterName,
+  StepName,
+  BuildRangeBegin,
+  BuildRangeEnd,
+  CPRangeOutputBegin,
+  CPRangeOutputEnd,
+  CPRangeInputBegin,
+  CPRangeInputEnd,
+	StartTime
+FROM
+	` + "`%s.events.sheriffable_failures`" + `
+WHERE
+MasterName IN ("internal.client.clank",
+    "internal.client.clank_tot",
+    "chromium.android")
+  OR (MasterName = "chromium"
+    AND builder="Android")
+  OR (MasterName = "chromium.webkit"
+    AND builder IN ("Android Builder",
+      "Webkit Android (Nexus4)"))
 LIMIT
 	1000
 `
 
 type failureRow struct {
-	StepName        string
-	MasterName      string
-	Builder         string
-	Bucket          string
-	Project         string
-	BuildRangeBegin int64
-	BuildRangeEnd   int64
-	CPRangeBegin    int
-	CPRangeEnd      int
-	StartTime       time.Time
-	GitProject      string
-	GitRef          string
-	GitHost         string
-	GitHashBegin    string
-	GitHashEnd      string
+	StepName           string
+	MasterName         bigquery.NullString
+	Builder            string
+	Bucket             string
+	Project            string
+	BuildRangeBegin    bigquery.NullInt64
+	BuildRangeEnd      bigquery.NullInt64
+	CPRangeInputBegin  *GitCommit
+	CPRangeInputEnd    *GitCommit
+	CPRangeOutputBegin *GitCommit
+	CPRangeOutputEnd   *GitCommit
+	StartTime          bigquery.NullTimestamp
+}
+
+// GitCommit represents a struct column for BQ query results.
+type GitCommit struct {
+	Project  bigquery.NullString
+	Ref      bigquery.NullString
+	Host     bigquery.NullString
+	ID       bigquery.NullString
+	Position bigquery.NullInt64
 }
 
 // This type is a catch-all for every kind of failure. In a better,
@@ -101,6 +144,9 @@ func GetBigQueryAlerts(ctx context.Context, tree string) ([]messages.BuildFailur
 		return nil, err
 	}
 	queryStr := fmt.Sprintf(failuresQuery, appID, tree)
+	if tree == "android" {
+		queryStr = fmt.Sprintf(androidFailuresQuery, appID)
+	}
 	logging.Infof(ctx, "query: %q", queryStr)
 	q := client.Query(queryStr)
 	it, err := q.Read(ctx)
@@ -118,26 +164,43 @@ func GetBigQueryAlerts(ctx context.Context, tree string) ([]messages.BuildFailur
 		if err != nil {
 			return nil, err
 		}
+		gitBegin := r.CPRangeOutputBegin
+		if gitBegin == nil {
+			gitBegin = r.CPRangeInputBegin
+		}
+		gitEnd := r.CPRangeOutputEnd
+		if gitEnd == nil {
+			gitEnd = r.CPRangeInputEnd
+		}
+		var latestPassingRev, firstFailingRev *messages.RevisionSummary
+		if gitBegin != nil {
+			latestPassingRev = &messages.RevisionSummary{
+				Position: int(gitBegin.Position.Int64),
+				Branch:   gitBegin.Ref.StringVal,
+				Host:     gitBegin.Host.StringVal,
+				Repo:     gitBegin.Project.StringVal,
+				GitHash:  gitBegin.ID.StringVal,
+			}
+		}
+		if gitEnd != nil {
+			firstFailingRev = &messages.RevisionSummary{
+				Position: int(gitEnd.Position.Int64),
+				Branch:   gitEnd.Ref.StringVal,
+				Host:     gitEnd.Host.StringVal,
+				Repo:     gitEnd.Project.StringVal,
+				GitHash:  gitEnd.ID.StringVal,
+			}
+		}
 		ab := messages.AlertedBuilder{
-			Project:       r.Project,
-			Bucket:        r.Bucket,
-			Name:          r.Builder,
-			Master:        r.MasterName,
-			FirstFailure:  r.BuildRangeBegin,
-			LatestFailure: r.BuildRangeEnd,
-			URL:           fmt.Sprintf("https://ci.chromium.org/p/%s/builders/%s/%s", r.Project, r.Bucket, r.Builder),
-			LatestPassingRev: &messages.RevisionSummary{
-				Position: r.CPRangeBegin,
-				Branch:   r.GitRef,
-				Host:     r.GitHost,
-				Repo:     r.GitProject,
-			},
-			FirstFailingRev: &messages.RevisionSummary{
-				Position: r.CPRangeEnd,
-				Branch:   r.GitRef,
-				Host:     r.GitHost,
-				Repo:     r.GitProject,
-			},
+			Project:          r.Project,
+			Bucket:           r.Bucket,
+			Name:             r.Builder,
+			Master:           r.MasterName.StringVal,
+			FirstFailure:     r.BuildRangeBegin.Int64,
+			LatestFailure:    r.BuildRangeEnd.Int64,
+			URL:              fmt.Sprintf("https://ci.chromium.org/p/%s/builders/%s/%s", r.Project, r.Bucket, r.Builder),
+			LatestPassingRev: latestPassingRev,
+			FirstFailingRev:  firstFailingRev,
 		}
 		forStep, ok := alertedBuildersByStep[r.StepName]
 		if !ok {
@@ -155,10 +218,10 @@ func GetBigQueryAlerts(ctx context.Context, tree string) ([]messages.BuildFailur
 		// narrowest range of commit posistions implicated.
 		var earliestRev, latestRev *messages.RevisionSummary
 		for _, alertedBuilder := range alertedBuilders {
-			if earliestRev == nil || alertedBuilder.LatestPassingRev != nil && alertedBuilder.LatestPassingRev.Position > earliestRev.Position {
+			if earliestRev == nil || alertedBuilder.LatestPassingRev != nil && alertedBuilder.LatestPassingRev.Position > 0 && alertedBuilder.LatestPassingRev.Position > earliestRev.Position {
 				earliestRev = alertedBuilder.LatestPassingRev
 			}
-			if latestRev == nil || alertedBuilder.FirstFailingRev != nil && alertedBuilder.FirstFailingRev.Position < latestRev.Position {
+			if latestRev == nil || alertedBuilder.FirstFailingRev != nil && alertedBuilder.FirstFailingRev.Position > 0 && alertedBuilder.FirstFailingRev.Position < latestRev.Position {
 				latestRev = alertedBuilder.FirstFailingRev
 			}
 		}
@@ -169,15 +232,20 @@ func GetBigQueryAlerts(ctx context.Context, tree string) ([]messages.BuildFailur
 		// whatever is in the recipes.
 		regressionRanges := []*messages.RegressionRange{}
 		if latestRev != nil && earliestRev != nil {
-			regressionRanges = append(regressionRanges, &messages.RegressionRange{
+			regRange := &messages.RegressionRange{
 				Repo: earliestRev.Repo,
-				Positions: []string{
+				Host: earliestRev.Host,
+			}
+			if earliestRev.GitHash != "" && latestRev.GitHash != "" {
+				regRange.Revisions = []string{earliestRev.GitHash, latestRev.GitHash}
+			}
+			if earliestRev.Position != 0 && latestRev.Position != 0 {
+				regRange.Positions = []string{
 					fmt.Sprintf("%s@{#%d}", earliestRev.Branch, earliestRev.Position),
 					fmt.Sprintf("%s@{#%d}", latestRev.Branch, latestRev.Position),
-				},
-				Revisions: []string{earliestRev.GitHash, latestRev.GitHash},
-				Host:      earliestRev.Host,
-			})
+				}
+			}
+			regressionRanges = append(regressionRanges, regRange)
 		}
 
 		reason := &bqFailure{
