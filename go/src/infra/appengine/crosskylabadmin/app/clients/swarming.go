@@ -43,7 +43,7 @@ const (
 	// calls made within the context of a single RPC call to this app.
 	//
 	// There is no per-instance limit (yet).
-	MaxConcurrentSwarmingCalls = 10
+	MaxConcurrentSwarmingCalls = 20
 
 	// DutIDDimensionKey identifies the swarming dimension containing the ID for
 	// the DUT corresponding to a bot.
