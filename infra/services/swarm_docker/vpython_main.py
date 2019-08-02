@@ -60,10 +60,6 @@ VENV support if things work well.
 #   name: "infra/python/wheels/urllib3-py2_py3"
 #   version: "version:1.22"
 # >
-# wheel: <
-#  name: "infra/python/wheels/crontab-py2_py3"
-#  version: "version:0.22.0"
-# >
 # [VPYTHON:END]
 
 import os

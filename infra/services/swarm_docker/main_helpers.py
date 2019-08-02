@@ -7,16 +7,16 @@ from __future__ import print_function
 import argparse
 import contextlib
 import datetime
+import hashlib
 import json
 import logging
 import logging.handlers
 import os
+import socket
 import subprocess
 import sys
 import threading
 import time
-
-import crontab
 
 from infra.libs.service_utils import daemon
 from infra.services.swarm_docker import containers
@@ -56,7 +56,17 @@ def get_cipd_version():  # pragma: no cover
     return None
 
 
-def get_host_uptime():  # pragma: no cover
+def fuzz_max_uptime(max_uptime):
+  """Returns max_uptime fuzzed by up to 20% of the original value."""
+  fqdn = socket.getfqdn()
+  # Don't use the built-in hash function since that's not deterministic across
+  # different processes.
+  fqdn_hash = hashlib.md5(fqdn).hexdigest()
+  fuzz_amount = int(fqdn_hash, 16) % int(max_uptime * 0.2)
+  return max_uptime + fuzz_amount
+
+
+def get_host_uptime():
   """Returns host uptime in minutes."""
   with open('/proc/uptime') as f:
     uptime = float(f.readline().split()[0])
@@ -145,24 +155,13 @@ def reboot_gracefully(args, running_containers):
     True if reboot sequence has been started. Callers should not spawn new
     containers. Actual reboot may not be triggered due to running tasks.
   """
-  mins_since_reboot = get_host_uptime()
-  mins_since_scheduled_reboot = 0
-  if args.reboot_schedule:
-    # Find next scheduled reboot time coming after machine was rebooted last.
-    now = datetime.datetime.utcnow()
-    last_reboot = now - datetime.timedelta(minutes=mins_since_reboot)
-    next_reboot = last_reboot + datetime.timedelta(
-        seconds=args.reboot_schedule.next(now=last_reboot, default_utc=True))
-    if next_reboot < now and mins_since_reboot > _MIN_HOST_UPTIME:
-      mins_since_scheduled_reboot = (now - next_reboot).total_seconds() / 60.0
-      logging.debug(
-          'Host has been scheduled to reboot for %.2f minutes' %
-          mins_since_scheduled_reboot)
-  elif mins_since_reboot > args.max_host_uptime:
-    mins_since_scheduled_reboot = mins_since_reboot - args.max_host_uptime
-    logging.debug('Host uptime over max uptime (%d > %d)',
-                  mins_since_reboot, args.max_host_uptime)
-  if not mins_since_scheduled_reboot:
+  uptime = get_host_uptime()
+  fuzzed_max_host_uptime = fuzz_max_uptime(args.max_host_uptime)
+  mins_since_scheduled_reboot = uptime - fuzzed_max_host_uptime
+  if mins_since_scheduled_reboot > 0:
+    logging.debug('Host uptime over fuzzed max uptime (%d > %d).',
+                  uptime, fuzzed_max_host_uptime)
+  else:
     return False
 
   if running_containers:
@@ -207,7 +206,7 @@ def launch_containers(
         [cd.shutdown_file for cd in draining_container_descriptors])
 
   running_containers = docker_client.get_running_containers()
-  if (not draining_host and not rebooting_host
+  if (not draining_host and not rebooting_host and args.max_host_uptime
       and reboot_gracefully(args, running_containers)):
     return
 
@@ -300,9 +299,9 @@ def launch_containers(
 def add_launch_arguments(parser):  # pragma: no cover
   def max_uptime(value):
     value = int(value)
-    if value < _MIN_HOST_UPTIME:
+    if value < _MIN_HOST_UPTIME and value != 0:
       raise argparse.ArgumentTypeError(
-          '--max-host-time must be > %d' % _MIN_HOST_UPTIME)
+          '--max-host-time must be > %d or zero' % _MIN_HOST_UPTIME)
     return value
 
   parser.add_argument(
@@ -331,15 +330,10 @@ def add_launch_arguments(parser):  # pragma: no cover
               'service-account-container_registry_puller.json',
       help='Path to service account json file used to access the gcloud '
            'container registry.')
-
-  reboot_group = parser.add_mutually_exclusive_group()
-  reboot_group.add_argument(
+  parser.add_argument(
       '--max-host-uptime', type=max_uptime, default=60 * 24,
-      help='Max uptime of the host, in minutes.')
-  reboot_group.add_argument(
-      '--reboot-schedule', type=crontab.CronTab,
-      help='Cron-like schedule for host reboots (in UTC timezone). Format: '
-           'https://github.com/josiahcarlson/parse-crontab.')
+      help='Max uptime of the host, in minutes. A value of zero indicates the '
+           'host will never be rebooted automatically.')
 
 
 def configure_logging(log_filename, log_prefix, verbose):  # pragma: no cover
