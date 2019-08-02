@@ -3,6 +3,7 @@
 ## Table of Contents
 
 **[Recipe Modules](#Recipe-Modules)**
+  * [cloudbuildhelper](#recipe_modules-cloudbuildhelper) &mdash; API for calling 'cloudbuildhelper' tool.
   * [cloudkms](#recipe_modules-cloudkms)
   * [conda](#recipe_modules-conda) &mdash; Functions to work with Miniconda python environment.
   * [infra_checkout](#recipe_modules-infra_checkout)
@@ -20,6 +21,7 @@
   * [build_conda_cipd_pkg](#recipes-build_conda_cipd_pkg) &mdash; Recipe to build CIPD package with sealed Conda environment.
   * [build_from_tarball](#recipes-build_from_tarball)
   * [build_gsutil_cipd_pkg](#recipes-build_gsutil_cipd_pkg)
+  * [cloudbuildhelper:examples/full](#recipes-cloudbuildhelper_examples_full)
   * [cloudkms:examples/usage](#recipes-cloudkms_examples_usage)
   * [cros_flash](#recipes-cros_flash) &mdash; This recipe is used to flash a CrOS DUT on a Chromium bot.
   * [cros_flash_scheduler](#recipes-cros_flash_scheduler) &mdash; This recipe is used to keep Chrome's pools of CrOS DUTs up to date.
@@ -73,6 +75,40 @@
   * [wpt_import](#recipes-wpt_import) &mdash; Imports changes from web-platform-tests into Chromium.
 ## Recipe Modules
 
+### *recipe_modules* / [cloudbuildhelper](/recipes/recipe_modules/cloudbuildhelper)
+
+[DEPS](/recipes/recipe_modules/cloudbuildhelper/__init__.py#5): [depot\_tools/cipd][depot_tools/recipe_modules/cipd], [recipe\_engine/json][recipe_engine/recipe_modules/json], [recipe\_engine/path][recipe_engine/recipe_modules/path], [recipe\_engine/step][recipe_engine/recipe_modules/step]
+
+API for calling 'cloudbuildhelper' tool.
+
+See https://chromium.googlesource.com/infra/infra/+/master/build/images/.
+
+#### **class [CloudBuildHelperApi](/recipes/recipe_modules/cloudbuildhelper/api.py#15)([RecipeApi][recipe_engine/wkt/RecipeApi]):**
+
+API for calling 'cloudbuildhelper' tool.
+
+&mdash; **def [build](/recipes/recipe_modules/cloudbuildhelper/api.py#57)(self, manifest, canonical_tag=None, build_id=None, infra=None, labels=None, tags=None, step_test_image=None):**
+
+Calls `cloudbuildhelper build <manifest>` interpreting the result.
+
+Args:
+  * manifest (Path) - path to YAML file with definition of what to build.
+  * canonical_tag (str) - tag to push the image to if we built a new image.
+  * build_id (str) - identifier of the CI build to put into metadata.
+  * infra (str) - what section to pick from 'infra' field in the YAML.
+  * labels ({str: str}) - labels to attach to the docker image.
+  * tags ([str]) - tags to unconditionally push the image to.
+  * step_test_image (Image) - image to produce in training mode.
+
+Returns:
+  Image instance or NotUploadImage if the YAML doesn't specify a registry.
+
+Raises:
+  StepFailure on failures.
+
+&emsp; **@command.setter**<br>&mdash; **def [command](/recipes/recipe_modules/cloudbuildhelper/api.py#52)(self, val):**
+
+Can be used to tell the module to use an existing binary.
 ### *recipe_modules* / [cloudkms](/recipes/recipe_modules/cloudkms)
 
 [DEPS](/recipes/recipe_modules/cloudkms/__init__.py#5): [depot\_tools/cipd][depot_tools/recipe_modules/cipd], [recipe\_engine/path][recipe_engine/recipe_modules/path], [recipe\_engine/step][recipe_engine/recipe_modules/step]
@@ -713,6 +749,11 @@ To build a new package for all platforms:
 [DEPS](/recipes/recipes/build_gsutil_cipd_pkg.py#5): [build/zip][build/recipe_modules/zip], [depot\_tools/cipd][depot_tools/recipe_modules/cipd], [depot\_tools/gsutil][depot_tools/recipe_modules/gsutil], [recipe\_engine/file][recipe_engine/recipe_modules/file], [recipe\_engine/path][recipe_engine/recipe_modules/path], [recipe\_engine/platform][recipe_engine/recipe_modules/platform], [recipe\_engine/properties][recipe_engine/recipe_modules/properties], [recipe\_engine/python][recipe_engine/recipe_modules/python], [recipe\_engine/raw\_io][recipe_engine/recipe_modules/raw_io], [recipe\_engine/step][recipe_engine/recipe_modules/step]
 
 &mdash; **def [RunSteps](/recipes/recipes/build_gsutil_cipd_pkg.py#52)(api):**
+### *recipes* / [cloudbuildhelper:examples/full](/recipes/recipe_modules/cloudbuildhelper/examples/full.py)
+
+[DEPS](/recipes/recipe_modules/cloudbuildhelper/examples/full.py#5): [cloudbuildhelper](#recipe_modules-cloudbuildhelper), [recipe\_engine/json][recipe_engine/recipe_modules/json]
+
+&mdash; **def [RunSteps](/recipes/recipe_modules/cloudbuildhelper/examples/full.py#11)(api):**
 ### *recipes* / [cloudkms:examples/usage](/recipes/recipe_modules/cloudkms/examples/usage.py)
 
 [DEPS](/recipes/recipe_modules/cloudkms/examples/usage.py#5): [cloudkms](#recipe_modules-cloudkms), [recipe\_engine/path][recipe_engine/recipe_modules/path]

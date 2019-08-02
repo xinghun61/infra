@@ -1,0 +1,135 @@
+[
+  {
+    "cmd": [
+      "cipd",
+      "ensure",
+      "-root",
+      "[START_DIR]/cbh",
+      "-ensure-file",
+      "infra/tools/cloudbuildhelper/${platform} latest",
+      "-json-output",
+      "/path/to/tmp/json"
+    ],
+    "name": "ensure_installed",
+    "~followup_annotations": [
+      "@@@STEP_LOG_LINE@json.output@{@@@",
+      "@@@STEP_LOG_LINE@json.output@  \"result\": [@@@",
+      "@@@STEP_LOG_LINE@json.output@    {@@@",
+      "@@@STEP_LOG_LINE@json.output@      \"instance_id\": \"resolved-instance_id-of-latest----------\", @@@",
+      "@@@STEP_LOG_LINE@json.output@      \"package\": \"infra/tools/cloudbuildhelper/${platform}\"@@@",
+      "@@@STEP_LOG_LINE@json.output@    }@@@",
+      "@@@STEP_LOG_LINE@json.output@  ]@@@",
+      "@@@STEP_LOG_LINE@json.output@}@@@",
+      "@@@STEP_LOG_END@json.output@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "[START_DIR]/cbh/cloudbuildhelper",
+      "build",
+      "some/dir/target.yaml",
+      "-canonical-tag",
+      "123_456",
+      "-build-id",
+      "bid",
+      "-infra",
+      "dev",
+      "-label",
+      "l1=v1",
+      "-label",
+      "l2=v2",
+      "-tag",
+      "another",
+      "-tag",
+      "latest",
+      "-json-output",
+      "/path/to/tmp/json"
+    ],
+    "name": "cloudbuildhelper build target",
+    "~followup_annotations": [
+      "@@@STEP_TEXT@Image: example.com/fake-registry/target:123_456<br/>Digest: sha256:34a04005bcaf206e...@@@",
+      "@@@STEP_LOG_LINE@json.output@{@@@",
+      "@@@STEP_LOG_LINE@json.output@  \"image\": {@@@",
+      "@@@STEP_LOG_LINE@json.output@    \"digest\": \"sha256:34a04005bcaf206e...\", @@@",
+      "@@@STEP_LOG_LINE@json.output@    \"image\": \"example.com/fake-registry/target\", @@@",
+      "@@@STEP_LOG_LINE@json.output@    \"tag\": \"123_456\"@@@",
+      "@@@STEP_LOG_LINE@json.output@  }, @@@",
+      "@@@STEP_LOG_LINE@json.output@  \"view_build_url\": \"https://example.com/build/target\", @@@",
+      "@@@STEP_LOG_LINE@json.output@  \"view_image_url\": \"https://example.com/image/target\"@@@",
+      "@@@STEP_LOG_LINE@json.output@}@@@",
+      "@@@STEP_LOG_END@json.output@@@",
+      "@@@STEP_LINK@image@https://example.com/image/target@@@",
+      "@@@STEP_LINK@build@https://example.com/build/target@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "[START_DIR]/cbh/cloudbuildhelper",
+      "build",
+      "another.yaml",
+      "-json-output",
+      "/path/to/tmp/json"
+    ],
+    "name": "cloudbuildhelper build another",
+    "~followup_annotations": [
+      "@@@STEP_TEXT@Image: xxx@yyy<br/>Digest: yyy@@@",
+      "@@@STEP_LOG_LINE@json.output@{@@@",
+      "@@@STEP_LOG_LINE@json.output@  \"image\": {@@@",
+      "@@@STEP_LOG_LINE@json.output@    \"digest\": \"yyy\", @@@",
+      "@@@STEP_LOG_LINE@json.output@    \"image\": \"xxx\", @@@",
+      "@@@STEP_LOG_LINE@json.output@    \"tag\": null@@@",
+      "@@@STEP_LOG_LINE@json.output@  }, @@@",
+      "@@@STEP_LOG_LINE@json.output@  \"view_build_url\": \"https://example.com/build/another\", @@@",
+      "@@@STEP_LOG_LINE@json.output@  \"view_image_url\": \"https://example.com/image/another\"@@@",
+      "@@@STEP_LOG_LINE@json.output@}@@@",
+      "@@@STEP_LOG_END@json.output@@@",
+      "@@@STEP_LINK@image@https://example.com/image/another@@@",
+      "@@@STEP_LINK@build@https://example.com/build/another@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "custom_cloudbuildhelper",
+      "build",
+      "third.yaml",
+      "-json-output",
+      "/path/to/tmp/json"
+    ],
+    "name": "cloudbuildhelper build third",
+    "~followup_annotations": [
+      "@@@STEP_TEXT@Image builds successfully@@@",
+      "@@@STEP_LOG_LINE@json.output@{@@@",
+      "@@@STEP_LOG_LINE@json.output@  \"view_build_url\": \"https://example.com/build/third\"@@@",
+      "@@@STEP_LOG_LINE@json.output@}@@@",
+      "@@@STEP_LOG_END@json.output@@@",
+      "@@@STEP_LINK@build@https://example.com/build/third@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "custom_cloudbuildhelper",
+      "build",
+      "fail_maybe.yaml",
+      "-json-output",
+      "/path/to/tmp/json"
+    ],
+    "name": "cloudbuildhelper build fail_maybe",
+    "~followup_annotations": [
+      "@@@STEP_TEXT@ERROR: Boom@@@",
+      "@@@STEP_LOG_LINE@json.output@{@@@",
+      "@@@STEP_LOG_LINE@json.output@  \"error\": \"Boom\", @@@",
+      "@@@STEP_LOG_LINE@json.output@  \"view_build_url\": \"https://example.com/build/target\"@@@",
+      "@@@STEP_LOG_LINE@json.output@}@@@",
+      "@@@STEP_LOG_END@json.output@@@",
+      "@@@STEP_LINK@build@https://example.com/build/target@@@",
+      "@@@STEP_FAILURE@@@"
+    ]
+  },
+  {
+    "failure": {
+      "failure": {},
+      "humanReason": "Step('cloudbuildhelper build fail_maybe') (retcode: 1)"
+    },
+    "name": "$result"
+  }
+]
