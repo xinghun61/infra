@@ -19,10 +19,8 @@ See the [Browse](BROWSE.md) doc for some explanation of how the code is laid out
 RotaNG has the following environments
 - **Staging**
   The Staging environment is configured the same as the production environment with the following differences.
-	- Lives at [rota-ng-staging.googleplex.com](https://rota-ng-staging.googleplex.com)
+	- Lives at [rota-ng-staging.appspot.com](https://rota-ng-staging.appspot.com)
   - Emails are sent to the google group [g/rotang-staging](https://groups.google.com/a/google.com/forum/#!forum/rotang-staging).
-	- Runs in googleplex.com, this gives that only googlers can access the staging env.
-	  This will change in the future to move into appspot.com.
 	- The service account is `rota-ng-staging.google.com@appspot.gserviceaccount.com`
     This gives that the staging environment can not change rotation calendars in prod if not specifically allowed.
 	- The staging environment does have the `chromiumcalendar@gmail.com` token.
@@ -44,10 +42,6 @@ RotaNG has the following environments
 			return h.prodENV == "local"
 		}
 		```
-- **New Staging**
-	Another new staging environment was created, this lives in the `appspot.com` domain, making it more similar to the prod instance.
-	- Lives at [rota-ng-staging.appspot.com](https://rota-ng-staging.appspot.com)
-	- Will replace the `googleplex` environment.
 - **Production**
   The prod environment lives at [rota-ng.appspot.com](https://rota-ng.appspot.com)
 	- The endpoint for all js/json rotation oncall requests.

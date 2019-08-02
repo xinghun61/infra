@@ -22,9 +22,6 @@ devserver-remote: buildjs protogen
 	dev_appserver.py --host 0.0.0.0 --enable_host_checking no cmd/app/app_local.yaml
 
 deploy-staging: buildjs protogen
-	gcloud app deploy cmd/app/app_staging.yaml --project google.com:rota-ng-staging
-
-deploy-new-staging: buildjs protogen
 	gcloud app deploy cmd/app/app_staging.yaml --project rota-ng-staging
 
 deploy-prod: buildjs protogen
