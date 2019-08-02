@@ -16,8 +16,6 @@ package frontend
 
 import (
 	"fmt"
-	"math/rand"
-	"sort"
 	"sync"
 
 	"github.com/golang/protobuf/ptypes/duration"
@@ -43,9 +41,6 @@ type TrackerServerImpl struct {
 	//
 	// If SwarmingFactory is nil, clients.NewSwarmingClient is used.
 	SwarmingFactory SwarmingFactory
-	// Modulus is the denominator of the fraction of bots that are updated
-	// by RefreshBots.
-	Modulus int
 }
 
 func (tsi *TrackerServerImpl) newSwarmingClient(c context.Context, host string) (clients.SwarmingClient, error) {
@@ -100,7 +95,6 @@ func (tsi *TrackerServerImpl) RefreshBots(ctx context.Context, req *fleet.Refres
 
 	logging.Infof(ctx, "Getting bots from Swarming")
 	bots, err := getBotsFromSwarming(ctx, sc, cfg.Swarming.BotPool, req.Selectors)
-	bots = tsi.sortAndPickModulusClass(bots)
 	if err != nil {
 		return nil, errors.Annotate(err, "failed to get bots from Swarming").Err()
 	}
@@ -126,31 +120,6 @@ func (tsi *TrackerServerImpl) RefreshBots(ctx context.Context, req *fleet.Refres
 	return &fleet.RefreshBotsResponse{
 		DutIds: updated,
 	}, nil
-}
-
-// TODO(crbug/990161): remove this!
-// pick a random equivalence class modulo tsi.Modulus and return only
-// bot-infos whose index is in that class.
-// (e.g. odd numbers, numbers congruent to 4 mod 7)
-func (tsi *TrackerServerImpl) sortAndPickModulusClass(infos []*swarming.SwarmingRpcsBotInfo) []*swarming.SwarmingRpcsBotInfo {
-	modulus := tsi.Modulus
-	if modulus == 0 {
-		modulus = 2
-	}
-	chosenClass := rand.Int() % modulus
-	sorted := make([]*swarming.SwarmingRpcsBotInfo, len(infos))
-	copy(sorted, infos)
-	sorter := func(i int, j int) bool {
-		return sorted[i].BotId < sorted[j].BotId
-	}
-	sort.Slice(sorted, sorter)
-	var out []*swarming.SwarmingRpcsBotInfo
-	for i, info := range sorted {
-		if i%modulus == chosenClass {
-			out = append(out, info)
-		}
-	}
-	return out
 }
 
 // SummarizeBots implements the fleet.Tracker.SummarizeBots() method.
