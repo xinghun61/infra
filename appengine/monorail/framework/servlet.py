@@ -452,6 +452,7 @@ class Servlet(webapp2.RequestHandler):
     """Do user lookups and gather page-specific ezt data."""
     with mr.profiler.Phase('common request data'):
       self._DoCommonRequestProcessing(self.request, mr)
+      self._MaybeRedirectToBrandedDomain(self.request, mr.project_name)
       page_data = self.GatherBaseData(mr, nonce)
 
     with mr.profiler.Phase('page processing'):
@@ -512,6 +513,28 @@ class Servlet(webapp2.RequestHandler):
     url = framework_helpers.FormatAbsoluteURL(
         mr, urls.PROJECT_MOVED,
         include_project=False, copy_params=False, project=mr.project_name)
+    self.redirect(url, abort=True)
+
+  def _MaybeRedirectToBrandedDomain(self, request, project_name):
+    """If we are live and the project should be branded, check request host."""
+    if request.params.get('redir'):
+      return  # Avoid any chance of a redirect loop.
+    if not project_name:
+      return
+    host = request.host
+    if '.appspot.com' in host or ':' in host:
+      return
+    desired_host = settings.branded_domains.get(
+        project_name, settings.branded_domains.get('*'))
+    if not desired_host or host == desired_host:
+        return
+
+    url = 'https://%s%s' % (desired_host, request.path_qs)
+    if '?' in url:
+      url += '&redir=1'
+    else:
+      url += '?redir=1'
+    logging.info('branding redirect to url %r', url)
     self.redirect(url, abort=True)
 
   def CheckPerm(self, mr, perm, art=None, granted_perms=None):

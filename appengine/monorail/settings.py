@@ -266,6 +266,20 @@ priviledged_user_domains = [
   'google.com', 'chromium.org', 'webrtc.org',
   ]
 
+# Branded domains:  Any UI GET to a project listed below on prod or staging
+# should have the specified host, otherwise it will be redirected such that
+# the specified host is used.
+branded_domains_prod = {
+  'fuchsia': 'bugs.fuchsia.dev',
+  '*': 'bugs.chromium.org',
+  }
+branded_domains_staging = {
+  'fuchsia': 'bugs-staging.fuchsia.dev',
+  '*': 'bugs-staging.chromium.org',
+  }
+branded_domains = {}  # empty for dev
+
+
 # Names of projects on code.google.com which we allow cross-linking to.
 recognized_codesite_projects = [
   'chromium-os',
@@ -287,6 +301,7 @@ else:
     banner_message = 'This staging site does not send emails.'
     # The Google Cloud SQL databases to use.
     db_cloud_project = app_id
+    branded_domains = branded_domains_staging
 
   elif app_id == 'monorail-dev':
     site_name = 'Monorail Dev'
@@ -294,12 +309,12 @@ else:
     # The Google Cloud SQL databases to use.
     db_cloud_project = app_id
 
-
   elif app_id == 'monorail-prod':
     send_all_email_to = None  # Deliver it to the intended users.
     # The Google Cloud SQL databases to use.
     db_cloud_project = app_id
     analytics_id = 'UA-55762617-14'
+    branded_domains = branded_domains_prod
 
 if local_mode:
   site_name = 'Monorail Local'

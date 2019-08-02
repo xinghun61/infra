@@ -237,6 +237,87 @@ class ServletTest(unittest.TestCase):
         path='/p/proj/adminAdvanced.do', project=project)
     self.page_class._CheckForMovedProject(mr, request)
 
+  @mock.patch('settings.branded_domains',
+              {'proj': 'branded.example.com', '*': 'bugs.chromium.org'})
+  def testMaybeRedirectToBrandedDomain_RedirBrandedProject(self):
+    """We redirect for a branded project if the user typed a different host."""
+    project = fake.Project(project_name='proj')
+    request, _mr = testing_helpers.GetRequestObjects(
+        path='/p/proj/path', project=project)
+    with self.assertRaises(webapp2.HTTPException) as cm:
+      self.page_class._MaybeRedirectToBrandedDomain(request, 'proj')
+    self.assertEqual(302, cm.exception.code)  # forms redirect on success
+    self.assertEqual('https://branded.example.com/p/proj/path?redir=1',
+                     cm.exception.location)
+
+    request, _mr = testing_helpers.GetRequestObjects(
+      path='/p/proj/path?query', project=project)
+    with self.assertRaises(webapp2.HTTPException) as cm:
+      self.page_class._MaybeRedirectToBrandedDomain(request, 'proj')
+    self.assertEqual(302, cm.exception.code)  # forms redirect on success
+    self.assertEqual('https://branded.example.com/p/proj/path?query&redir=1',
+                     cm.exception.location)
+
+  @mock.patch('settings.branded_domains',
+              {'proj': 'branded.example.com', '*': 'bugs.chromium.org'})
+  def testMaybeRedirectToBrandedDomain_AvoidRedirLoops(self):
+    """Don't redirect for a branded project if already redirected."""
+    project = fake.Project(project_name='proj')
+    request, _mr = testing_helpers.GetRequestObjects(
+        path='/p/proj/path?redir=1', project=project)
+    # No redirect happens.
+    self.page_class._MaybeRedirectToBrandedDomain(request, 'proj')
+
+  @mock.patch('settings.branded_domains',
+              {'proj': 'branded.example.com', '*': 'bugs.chromium.org'})
+  def testMaybeRedirectToBrandedDomain_NonProjectPage(self):
+    """Don't redirect for a branded project if not in any project."""
+    request, _mr = testing_helpers.GetRequestObjects(
+        path='/u/user@example.com')
+    # No redirect happens.
+    self.page_class._MaybeRedirectToBrandedDomain(request, None)
+
+  @mock.patch('settings.branded_domains',
+              {'proj': 'branded.example.com', '*': 'bugs.chromium.org'})
+  def testMaybeRedirectToBrandedDomain_AlreadyOnBrandedHost(self):
+    """Don't redirect for a branded project if already on branded domain."""
+    project = fake.Project(project_name='proj')
+    request, _mr = testing_helpers.GetRequestObjects(
+        path='/p/proj/path', project=project)
+    request.host = 'branded.example.com'
+    # No redirect happens.
+    self.page_class._MaybeRedirectToBrandedDomain(request, 'proj')
+
+  @mock.patch('settings.branded_domains',
+              {'proj': 'branded.example.com', '*': 'bugs.chromium.org'})
+  def testMaybeRedirectToBrandedDomain_Localhost(self):
+    """Don't redirect for a branded project on localhost."""
+    project = fake.Project(project_name='proj')
+    request, _mr = testing_helpers.GetRequestObjects(
+        path='/p/proj/path', project=project)
+    request.host = 'localhost:8080'
+    # No redirect happens.
+    self.page_class._MaybeRedirectToBrandedDomain(request, 'proj')
+
+    request.host = '0.0.0.0:8080'
+    # No redirect happens.
+    self.page_class._MaybeRedirectToBrandedDomain(request, 'proj')
+
+  @mock.patch('settings.branded_domains',
+              {'proj': 'branded.example.com', '*': 'bugs.chromium.org'})
+  def testMaybeRedirectToBrandedDomain_NotBranded(self):
+    """Don't redirect for a non-branded project."""
+    project = fake.Project(project_name='other')
+    request, _mr = testing_helpers.GetRequestObjects(
+        path='/p/other/path?query', project=project)
+    request.host = 'branded.example.com'  # But other project is unbranded.
+
+    with self.assertRaises(webapp2.HTTPException) as cm:
+      self.page_class._MaybeRedirectToBrandedDomain(request, 'other')
+    self.assertEqual(302, cm.exception.code)  # forms redirect on success
+    self.assertEqual('https://bugs.chromium.org/p/other/path?query&redir=1',
+                     cm.exception.location)
+
   def testGatherHelpData_Normal(self):
     project = fake.Project(project_name='proj')
     _request, mr = testing_helpers.GetRequestObjects(
