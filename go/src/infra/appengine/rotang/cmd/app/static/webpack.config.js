@@ -8,6 +8,7 @@ module.exports = {
     './src/constants.js', './src/rotashiftcurrent.js',
     './src/rotashifthistory.js', './src/rotashiftgenerate.js'],
   devtool: 'inline-source-map',
+  mode: 'production',
   module: {
     rules: [
       {
