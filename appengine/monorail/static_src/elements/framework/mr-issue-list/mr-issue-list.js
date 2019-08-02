@@ -7,6 +7,8 @@ import page from 'page';
 import 'elements/framework/links/mr-issue-link/mr-issue-link.js';
 import {issueRefToUrl} from 'elements/shared/converters.js';
 import {isTextInput} from 'elements/shared/dom-helpers';
+import {stringValuesForIssueField,
+  EMPTY_FIELD_VALUE} from 'elements/shared/issue-fields.js';
 
 
 export class MrIssueList extends LitElement {
@@ -105,7 +107,7 @@ export class MrIssueList extends LitElement {
 
         ${this.columns.map((column) => html`
           <td class="col-${column.toLowerCase()}">
-            ${this._renderCell(column, issue)}
+            ${this._renderCell(column, issue) || EMPTY_FIELD_VALUE}
           </td>
         `)}
       </tr>
@@ -113,8 +115,9 @@ export class MrIssueList extends LitElement {
   }
 
   _renderCell(column, issue) {
-    switch (column) {
-      case 'Issue':
+    // Fields that need to render more than strings happen first.
+    switch (column.toLowerCase()) {
+      case 'id':
         return html`
            <mr-issue-link
             .projectName=${this.projectName}
@@ -123,11 +126,11 @@ export class MrIssueList extends LitElement {
             short
           ></mr-issue-link>
         `;
-      case 'Summary':
+      case 'summary':
         return issue.summary;
-      default:
-        return '';
     }
+    const values = stringValuesForIssueField(issue, column, this.projectName);
+    return values.join(', ');
   }
 
   static get properties() {
@@ -176,7 +179,7 @@ export class MrIssueList extends LitElement {
     this.selectionEnabled = false;
     this.role = 'table';
 
-    this.columns = ['Issue', 'Summary'];
+    this.columns = ['ID', 'Summary'];
 
     this._boundRunNavigationHotKeys = this._runNavigationHotKeys.bind(this);
   };

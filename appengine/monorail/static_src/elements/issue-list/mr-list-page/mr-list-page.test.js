@@ -46,6 +46,15 @@ describe('mr-list-page', () => {
     assert.isNotNull(issueList);
   });
 
+  it('parses colspec parameter correctly', async () => {
+    element.queryParams = {colspec: 'ID+Summary+AllLabels+Priority'};
+
+    await element.updateComplete;
+
+    assert.deepEqual(element.columns,
+      ['ID', 'Summary', 'AllLabels', 'Priority']);
+  });
+
   describe('edit actions', () => {
     beforeEach(() => {
       sinon.stub(window, 'alert');

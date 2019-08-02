@@ -3,14 +3,11 @@
 // found in the LICENSE file.
 
 import {LitElement, html, css} from 'lit-element';
-import './mr-grid-dropdown';
-import './mr-choice-buttons';
 import page from 'page';
 import qs from 'qs';
-
-const DEFAULT_ISSUE_PROPERTIES =
-  ['None', 'Attachments', 'Blocked', 'BlockedOn',
-    'Blocking', 'Component', 'Reporter', 'Stars', 'Status', 'Type'];
+import './mr-grid-dropdown';
+import './mr-choice-buttons';
+import {getAvailableGridFields} from './extract-grid-data.js';
 
 export class MrGridControls extends LitElement {
   render() {
@@ -61,7 +58,7 @@ export class MrGridControls extends LitElement {
 
   constructor() {
     super();
-    this.issueProperties = DEFAULT_ISSUE_PROPERTIES;
+    this.issueProperties = getAvailableGridFields();
     this.cells = [
       {text: 'Tile', value: 'tiles'},
       {text: 'IDs', value: 'ids'},
@@ -83,17 +80,14 @@ export class MrGridControls extends LitElement {
       cellType: {type: String},
       viewSelector: {type: Array},
       queryParams: {type: Object},
-      customIssueProperties: {type: Array},
+      customFieldDefs: {type: Array},
       issueCount: {type: Number},
     };
   };
 
   update(changedProperties) {
-    if (changedProperties.has('customIssueProperties')) {
-      const customFields = this.customIssueProperties.map((property) =>
-        property.fieldRef.fieldName);
-      // TODO(zosha): sort custom properties alphabetically.
-      this.issueProperties = DEFAULT_ISSUE_PROPERTIES.concat(customFields);
+    if (changedProperties.has('customFieldDefs')) {
+      this.issueProperties = getAvailableGridFields(this.customFieldDefs);
     }
     if (changedProperties.has('cells') && this.queryParams.cells) {
       this.cellType = this.queryParams.cells;
@@ -142,7 +136,7 @@ export class MrGridControls extends LitElement {
     this.queryParams.y = e.target.selection;
     const params = Object.assign({}, this.queryParams);
     if (this.queryParams.y === 'None') {
-      params = Object.assign({}, this.queryParams, {'y': ''});
+      params.y = '';
     }
     this._changeUrlParams(params);
   }
@@ -151,7 +145,7 @@ export class MrGridControls extends LitElement {
     this.queryParams.x = e.target.selection;
     const params = Object.assign({}, this.queryParams);
     if (this.queryParams.x === 'None') {
-      params = Object.assign({}, this.queryParams, {'x': ''});
+      params.x = '';
     }
     this._changeUrlParams(params);
   }

@@ -46,8 +46,26 @@ export function labelStringToRef(label) {
   return {label};
 }
 
+export function labelRefToString(labelRef) {
+  if (!labelRef) return;
+  return labelRef.label;
+}
+
+export function labelRefsToStrings(labelRefs) {
+  if (!labelRefs) return [];
+  return labelRefs.map(labelRefToString);
+}
+
 export function fieldNameToLabelPrefix(fieldName) {
   return `${fieldName.toLowerCase()}-`;
+}
+
+export function statusRefToString(statusRef) {
+  return statusRef.status;
+}
+
+export function statusRefsToStrings(statusRefs) {
+  return statusRefs.map(statusRefToString);
 }
 
 export function componentStringToRef(path) {

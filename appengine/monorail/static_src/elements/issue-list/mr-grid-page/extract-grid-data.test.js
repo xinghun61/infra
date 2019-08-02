@@ -8,7 +8,7 @@ import {extractGridData} from './extract-grid-data.js';
 describe('extract headings from x and y attributes', () => {
   // TODO(juliacordero): Uncomment once attachmentCount functionality
   // is re-enabled
-  /* it('Extract headings from Attachments attribute', () => {
+  /* it('extract headings from Attachments attribute', () => {
     const issues = [
       {'attachmentCount': '1'}, {'attachmentCount': '0'},
       {'attachmentCount': '1'},
@@ -17,7 +17,7 @@ describe('extract headings from x and y attributes', () => {
     assert.deepEqual(data, ['0', '1']);
   }); */
 
-  it('Extract headings from Blocked attribute', () => {
+  it('extract headings from Blocked attribute', () => {
     const issues = [
       {'blockedOnIssueRefs': ['testIssue']},
       {'otherIssueProperty': 'issueProperty'},
@@ -25,15 +25,15 @@ describe('extract headings from x and y attributes', () => {
     const data = extractGridData(issues, 'Blocked', '');
 
     const expectedData = new Map();
-    expectedData.set('Yes-All', [{'blockedOnIssueRefs': ['testIssue']}]);
-    expectedData.set('No-All', [{'otherIssueProperty': 'issueProperty'}]);
+    expectedData.set('Yes + All', [{'blockedOnIssueRefs': ['testIssue']}]);
+    expectedData.set('No + All', [{'otherIssueProperty': 'issueProperty'}]);
 
     assert.deepEqual(data.xHeadings, ['No', 'Yes']);
     assert.deepEqual(data.yHeadings, ['All']);
     assert.deepEqual(data.sortedIssues, expectedData);
   });
 
-  it('Extract headings from BlockedOn attribute', () => {
+  it('extract headings from BlockedOn attribute', () => {
     const issues = [
       {'otherIssueProperty': 'issueProperty'},
       {'blockedOnIssueRefs': [
@@ -48,15 +48,15 @@ describe('extract headings from x and y attributes', () => {
     const data = extractGridData(issues, 'BlockedOn', '');
 
     const expectedData = new Map();
-    expectedData.set('test-projectB:3-All', [{'blockedOnIssueRefs':
+    expectedData.set('test-projectB:3 + All', [{'blockedOnIssueRefs':
       [{'localId': '3', 'projectName': 'test-projectB'}]}]);
-    expectedData.set('test-projectA:3-All', [{'blockedOnIssueRefs':
+    expectedData.set('test-projectA:3 + All', [{'blockedOnIssueRefs':
       [{'localId': '3', 'projectName': 'test-projectA'}]},
     {'blockedOnIssueRefs':
       [{'localId': '3', 'projectName': 'test-projectA'}]}]);
-    expectedData.set('test-projectA:1-All', [{'blockedOnIssueRefs':
+    expectedData.set('test-projectA:1 + All', [{'blockedOnIssueRefs':
       [{'localId': '1', 'projectName': 'test-projectA'}]}]);
-    expectedData.set('-----All', [{'otherIssueProperty': 'issueProperty'}]);
+    expectedData.set('---- + All', [{'otherIssueProperty': 'issueProperty'}]);
 
     assert.deepEqual(data.xHeadings, ['test-projectA:1',
       'test-projectA:3', 'test-projectB:3', '----']);
@@ -64,7 +64,7 @@ describe('extract headings from x and y attributes', () => {
     assert.deepEqual(data.sortedIssues, expectedData);
   });
 
-  it('Extract headings from Blocking attribute', () => {
+  it('extract headings from Blocking attribute', () => {
     const issues = [
       {'otherIssueProperty': 'issueProperty'},
       {'blockingIssueRefs': [
@@ -79,15 +79,15 @@ describe('extract headings from x and y attributes', () => {
     const data = extractGridData(issues, 'Blocking', '');
 
     const expectedData = new Map();
-    expectedData.set('test-projectA:1-All', [{'blockedOnIssueRefs':
+    expectedData.set('test-projectA:1 + All', [{'blockedOnIssueRefs':
       [{'localId': '1', 'projectName': 'test-projectA'}]},
     {'blockedOnIssueRefs':
       [{'localId': '1', 'projectName': 'test-projectA'}]}]);
-    expectedData.set('test-projectA:3-All', [{'blockedOnIssueRefs':
+    expectedData.set('test-projectA:3 + All', [{'blockedOnIssueRefs':
       [{'localId': '3', 'projectName': 'test-projectA'}]}]);
-    expectedData.set('test-projectB:3-All', [{'blockedOnIssueRefs':
+    expectedData.set('test-projectB:3 + All', [{'blockedOnIssueRefs':
       [{'localId': '3', 'projectName': 'test-projectB'}]}]);
-    expectedData.set('-----All', [{'otherIssueProperty': 'issueProperty'}]);
+    expectedData.set('---- + All', [{'otherIssueProperty': 'issueProperty'}]);
 
     assert.deepEqual(data.xHeadings, ['test-projectA:1',
       'test-projectA:3', 'test-projectB:3', '----']);
@@ -95,7 +95,7 @@ describe('extract headings from x and y attributes', () => {
     assert.deepEqual(data.sortedIssues, expectedData);
   });
 
-  it('Extract headings from Component attribute', () => {
+  it('extract headings from Component attribute', () => {
     const issues = [
       {'otherIssueProperty': 'issueProperty'},
       {'componentRefs': [{'path': 'UI'}]},
@@ -105,17 +105,17 @@ describe('extract headings from x and y attributes', () => {
     const data = extractGridData(issues, 'Component', '');
 
     const expectedData = new Map();
-    expectedData.set('UI-All', [{'componentRefs': [{'path': 'UI'}]},
+    expectedData.set('UI + All', [{'componentRefs': [{'path': 'UI'}]},
       {'componentRefs': [{'path': 'UI'}]}]);
-    expectedData.set('API-All', [{'componentRefs': [{'path': 'API'}]}]);
-    expectedData.set('-----All', [{'otherIssueProperty': 'issueProperty'}]);
+    expectedData.set('API + All', [{'componentRefs': [{'path': 'API'}]}]);
+    expectedData.set('---- + All', [{'otherIssueProperty': 'issueProperty'}]);
 
     assert.deepEqual(data.xHeadings, ['API', 'UI', '----']);
     assert.deepEqual(data.yHeadings, ['All']);
     assert.deepEqual(data.sortedIssues, expectedData);
   });
 
-  it('Extract headings from Reporter attribute', () => {
+  it('extract headings from Reporter attribute', () => {
     const issues = [
       {'reporterRef': {'displayName': 'testA@google.com'}},
       {'reporterRef': {'displayName': 'testB@google.com'}},
@@ -123,9 +123,9 @@ describe('extract headings from x and y attributes', () => {
     const data = extractGridData(issues, '', 'Reporter');
 
     const expectedData = new Map();
-    expectedData.set('All-testA@google.com',
+    expectedData.set('All + testA@google.com',
       [{'reporterRef': {'displayName': 'testA@google.com'}}]);
-    expectedData.set('All-testB@google.com',
+    expectedData.set('All + testB@google.com',
       [{'reporterRef': {'displayName': 'testB@google.com'}}]);
 
     assert.deepEqual(data.xHeadings, ['All']);
@@ -133,15 +133,15 @@ describe('extract headings from x and y attributes', () => {
     assert.deepEqual(data.sortedIssues, expectedData);
   });
 
-  it('Extract headings from Stars attribute', () => {
+  it('extract headings from Stars attribute', () => {
     const issues = [
       {'starCount': '1'}, {'starCount': '6'}, {'starCount': '1'},
     ];
     const data = extractGridData(issues, '', 'Stars');
 
     const expectedData = new Map();
-    expectedData.set('All-1', [{'starCount': '1'}, {'starCount': '1'}]);
-    expectedData.set('All-6', [{'starCount': '6'}]);
+    expectedData.set('All + 1', [{'starCount': '1'}, {'starCount': '1'}]);
+    expectedData.set('All + 6', [{'starCount': '6'}]);
 
     assert.deepEqual(data.xHeadings, ['All']);
     assert.deepEqual(data.yHeadings, ['1', '6']);
@@ -149,7 +149,7 @@ describe('extract headings from x and y attributes', () => {
   });
 
   // TODO(juliacordero): sort these like the current grid view (?)
-  it('Extract headings from Status attribute', () => {
+  it('extract headings from Status attribute', () => {
     const issues = [
       {'statusRef': {'status': 'New'}},
       {'statusRef': {'status': 'Accepted'}},
@@ -158,8 +158,8 @@ describe('extract headings from x and y attributes', () => {
     const data = extractGridData(issues, '', 'Status');
 
     const expectedData = new Map();
-    expectedData.set('All-Accepted', [{'statusRef': {'status': 'Accepted'}}]);
-    expectedData.set('All-New', [{'statusRef': {'status': 'New'}},
+    expectedData.set('All + Accepted', [{'statusRef': {'status': 'Accepted'}}]);
+    expectedData.set('All + New', [{'statusRef': {'status': 'New'}},
       {'statusRef': {'status': 'New'}}]);
 
     assert.deepEqual(data.xHeadings, ['All']);
@@ -167,7 +167,7 @@ describe('extract headings from x and y attributes', () => {
     assert.deepEqual(data.sortedIssues, expectedData);
   });
 
-  it('Extract headings from the Type attribute', () => {
+  it('extract headings from the Type attribute', () => {
     const issues = [
       {'labelRefs': [{'label': 'Pri-2'}, {'label': 'Milestone-2000Q1'}]},
       {'labelRefs': [{'label': 'Type-Defect'}]},
@@ -177,11 +177,11 @@ describe('extract headings from x and y attributes', () => {
     const data = extractGridData(issues, '', 'Type');
 
     const expectedData = new Map();
-    expectedData.set('All-Defect', [{'labelRefs': [{'label': 'Type-Defect'}]},
+    expectedData.set('All + Defect', [{'labelRefs': [{'label': 'Type-Defect'}]},
       {'labelRefs': [{'label': 'Type-Defect'}]}]);
-    expectedData.set('All-Enhancement', [{'labelRefs':
+    expectedData.set('All + Enhancement', [{'labelRefs':
       [{'label': 'Type-Enhancement'}]}]);
-    expectedData.set('All-----', [{'labelRefs':
+    expectedData.set('All + ----', [{'labelRefs':
       [{'label': 'Pri-2'}, {'label': 'Milestone-2000Q1'}]}]);
 
     assert.deepEqual(data.xHeadings, ['All']);

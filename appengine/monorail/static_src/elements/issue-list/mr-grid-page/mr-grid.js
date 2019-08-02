@@ -3,7 +3,7 @@
 // found in the LICENSE file.
 
 import {LitElement, html, css} from 'lit-element';
-import {extractGridData} from './extract-grid-data.js';
+import {extractGridData, makeGridCellKey} from './extract-grid-data.js';
 import {EMPTY_FIELD_VALUE} from 'elements/shared/issue-fields.js';
 import {issueRefToUrl} from '../../shared/converters.js';
 import './mr-grid-tile.js';
@@ -22,10 +22,11 @@ export class MrGrid extends LitElement {
           <tr>
             <th>${yHeading}</th>
             ${this.xHeadings.map((xHeading) => html`
-              ${this.groupedIssues.has(xHeading + '-' + yHeading) ? html`
+              ${this.groupedIssues.has(makeGridCellKey(xHeading, yHeading)) ? html`
                 <td>
                   ${this.renderCellMode(this.cellMode, xHeading, yHeading)}
-                </td>`: html`
+                </td>
+              `: html`
                 <td></td>
               `}
             `)}
@@ -37,7 +38,7 @@ export class MrGrid extends LitElement {
 
   renderCellMode(cellMode, xHeading, yHeading) {
     cellMode = cellMode.toLowerCase();
-    const cellHeading = xHeading + '-' + yHeading;
+    const cellHeading = makeGridCellKey(xHeading, yHeading);
     if (cellMode === 'ids') {
       return html`
         ${this.groupedIssues.get(cellHeading).map((issue) => html`

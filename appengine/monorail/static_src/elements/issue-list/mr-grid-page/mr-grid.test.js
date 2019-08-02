@@ -4,7 +4,7 @@
 import {assert} from 'chai';
 import {MrGrid} from './mr-grid.js';
 import {MrIssueLink} from
-  '../../framework/links/mr-issue-link/mr-issue-link.js';
+  'elements/framework/links/mr-issue-link/mr-issue-link.js';
 
 let element;
 
@@ -17,7 +17,7 @@ describe('mr-grid', () => {
     element.xHeadings = ['All'];
     element.yHeadings = ['All'];
     element.groupedIssues.set(
-      'All-All', [{'localId': 1, 'projectName': 'monorail'}]
+      'All + All', [{'localId': 1, 'projectName': 'monorail'}]
     );
     document.body.appendChild(element);
   });
@@ -53,14 +53,14 @@ describe('mr-grid', () => {
   it('computes href for multiple items in counts mode', async () => {
     element.cellMode = 'Counts';
 
-    const issues = element.groupedIssues.get('All-All');
+    const issues = element.groupedIssues.get('All + All');
     issues.push({'localId': 2, 'projectName': 'monorail'});
-    element.groupedIssues.set('All-All', issues);
+    element.groupedIssues.set('All + All', issues);
 
     await element.updateComplete;
 
     const href = element.shadowRoot.querySelector('.counts').href;
-    const startIndex = href.indexOf('/li');
+    const startIndex = href.indexOf('/list');
     const trimmedHref = href.substring(startIndex);
     assert.equal(trimmedHref, '/list?x=&y=&mode=');
   });
@@ -74,12 +74,12 @@ describe('mr-grid', () => {
       'labelRefs': [{'label': 'Type-Defect'}]});
     issues.push({'localId': 3, 'projectName': 'monorail',
       'labelRefs': [{'label': 'Type-Defect'}]});
-    element.groupedIssues.set('Defect-All', issues);
+    element.groupedIssues.set('Defect + All', issues);
 
     await element.updateComplete;
 
     const href = element.shadowRoot.querySelectorAll('.counts')[1].href;
-    const startIndex = href.indexOf('/li');
+    const startIndex = href.indexOf('/list');
     const trimmedHref = href.substring(startIndex);
     assert.equal(trimmedHref, '/list?x=Type&y=&q=Type%3ADefect&mode=');
   });
@@ -93,12 +93,12 @@ describe('mr-grid', () => {
       'labelRefs': [{'label': 'Type-Defect'}]});
     issues.push({'localId': 3, 'projectName': 'monorail',
       'labelRefs': [{'label': 'Type-Defect'}]});
-    element.groupedIssues.set('All-Defect', issues);
+    element.groupedIssues.set('All + Defect', issues);
 
     await element.updateComplete;
 
     const href = element.shadowRoot.querySelectorAll('.counts')[1].href;
-    const startIndex = href.indexOf('/li');
+    const startIndex = href.indexOf('/list');
     const trimmedHref = href.substring(startIndex);
     assert.equal(trimmedHref, '/list?x=&y=Type&q=Type%3ADefect&mode=');
   });
@@ -114,12 +114,12 @@ describe('mr-grid', () => {
       'labelRefs': [{'label': 'Type-Defect'}], 'starCount': '2'});
     issues.push({'localId': 3, 'projectName': 'monorail',
       'labelRefs': [{'label': 'Type-Defect'}], 'starCount': '2'});
-    element.groupedIssues.set('2-Defect', issues);
+    element.groupedIssues.set('2 + Defect', issues);
 
     await element.updateComplete;
 
     const href = element.shadowRoot.querySelectorAll('.counts')[1].href;
-    const startIndex = href.indexOf('/li');
+    const startIndex = href.indexOf('/list');
     const trimmedHref = href.substring(startIndex);
     assert.equal(trimmedHref,
       '/list?x=Stars&y=Type&q=Type%3ADefect%20Stars%3D2&mode=');

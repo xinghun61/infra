@@ -26,11 +26,19 @@ import {SHARED_STYLES} from 'elements/shared/shared-styles.js';
  */
 export class MrApp extends connectStore(LitElement) {
   static get styles() {
-    return [SHARED_STYLES, css`
-      main {
-        border-top: var(--chops-normal-border);
-      }
-    `];
+    return [
+      SHARED_STYLES,
+      css`
+        :host {
+          display: block;
+          padding-top: var(--monorail-header-height);
+          margin-top: -1px; /* Prevent a double border from showing up. */
+        }
+        main {
+          border-top: var(--chops-normal-border);
+        }
+      `,
+    ];
   }
 
   render() {

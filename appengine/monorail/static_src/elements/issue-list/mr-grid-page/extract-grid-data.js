@@ -2,161 +2,59 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import {extractTypeForIssue, EMPTY_FIELD_VALUE} from
-  'elements/shared/issue-fields.js';
-import {issueRefToString} from 'elements/shared/converters.js';
+import {EMPTY_FIELD_VALUE,
+  stringValuesForIssueField} from 'elements/shared/issue-fields.js';
+import {getTypeForFieldName, fieldTypes} from '../../shared/issue-fields';
 
-const gridHeadings = new Map();
+
 const DEFAULT_HEADER_VALUE = 'All';
 
-// TODO(juliacordero): write functions to extract from custom fields
-
-// TODO(juliacordero): Uncomment once attachmentCount functionality
-// is re-enabled
-/* Headings.set(
+// A list of the valid default field names available in an issue grid.
+// High cardinality fields must be excluded, so the grid only includes a subset
+// of AVAILABLE FIELDS.
+export const DEFAULT_GRID_FIELD_NAMES = [
+  'Project',
   'Attachments',
-  {
-    extractor: extractAttachmentsHeadings,
-    sorter: countSort,
-  }
-); */
-gridHeadings.set(
   'Blocked',
-  {
-    extractor: extractBlockedHeadings,
-    sorter: null,
-  }
-);
-gridHeadings.set(
   'BlockedOn',
-  {
-    extractor: extractBlockedOnHeadings,
-    sorter: issueRefStringSort,
-  }
-);
-gridHeadings.set(
   'Blocking',
-  {
-    extractor: extractBlockingHeadings,
-    sorter: issueRefStringSort,
-  }
-);
-gridHeadings.set(
   'Component',
-  {
-    extractor: extractComponentHeadings,
-    sorter: null,
-  }
-);
-gridHeadings.set(
+  'MergedInto',
   'Reporter',
-  {
-    extractor: extractReporterHeadings,
-    sorter: null,
-  }
-);
-gridHeadings.set(
   'Stars',
-  {
-    extractor: extractStarsHeadings,
-    sorter: countSort,
-  }
-);
-gridHeadings.set(
   'Status',
-  {
-    extractor: extractStatusHeadings,
-    sorter: null,
-  }
-);
-gridHeadings.set(
   'Type',
-  {
-    extractor: extractTypeHeadings,
-    sorter: null,
-  }
-);
+  'Owner',
+];
 
-// Extract headings functions
-// TODO(juliacordero): Uncomment once attachmentCount functionality
-// is re-enabled (bug# 5857)
-/* function extractAttachmentsHeadings(issue, keysSet) { // countSort
-  keysSet.add(issue.attachmentCount);
-  return keysSet;
-} */
+const SORTABLE_FIELD_TYPES = new Set([
+  fieldTypes.DATE_TYPE,
+  fieldTypes.ENUM_TYPE,
+  fieldTypes.USER_TYPE,
+]);
 
-function extractBlockedHeadings(issue) {
-  const keysAdded = [];
-  if (issue.blockedOnIssueRefs) {
-    keysAdded.push('Yes');
-  } else if (!issue.blockedOnIssueRefs) {
-    keysAdded.push('No');
-  }
-  return keysAdded;
-}
-
-function extractBlockedOnHeadings(issue) {
-  const keysAdded = [];
-  if (!issue.blockedOnIssueRefs) {
-    keysAdded.push(EMPTY_FIELD_VALUE);
-  } else {
-    for (const blocked of issue.blockedOnIssueRefs) {
-      const issueKey = issueRefToString(blocked, '');
-      keysAdded.push(issueKey);
+// TODO(zhangtiff): add label options to this.
+export const getGridFieldSet = (fieldDefs = []) => {
+  const set = new Set(DEFAULT_GRID_FIELD_NAMES);
+  fieldDefs.forEach((fd) => {
+    if (SORTABLE_FIELD_TYPES.has(fd.fieldRef.type)) {
+      set.add(fd.fieldRef.fieldName);
     }
-  }
-  return keysAdded;
-}
+  });
+  return set;
+};
 
-function extractBlockingHeadings(issue) {
-  const keysAdded = [];
-  if (!issue.blockingIssueRefs) {
-    keysAdded.push(EMPTY_FIELD_VALUE);
-  } else {
-    for (const blocking of issue.blockingIssueRefs) {
-      const issueKey = issueRefToString(blocking, '');
-      keysAdded.push(issueKey);
-    }
-  }
-  return keysAdded;
-}
+export const getAvailableGridFields = (fieldDefs = []) => {
+  const list = [...getGridFieldSet(fieldDefs)];
+  list.sort();
 
-function extractComponentHeadings(issue) {
-  const keysAdded = [];
-  if (!issue.componentRefs) {
-    keysAdded.push(EMPTY_FIELD_VALUE);
-  } else {
-    for (const component of issue.componentRefs) {
-      keysAdded.push(component.path);
-    }
-  }
-  return keysAdded;
-}
-
-function extractReporterHeadings(issue) {
-  return [issue.reporterRef.displayName];
-}
-
-function extractStarsHeadings(issue) {
-  return [issue.starCount];
-}
-
-function extractStatusHeadings(issue) {
-  return [issue.statusRef.status];
-}
-
-function extractTypeHeadings(issue) {
-  const labelRefs = issue.labelRefs;
-  const fieldValues = issue.fieldValues;
-  const type = extractTypeForIssue(fieldValues, labelRefs);
-  if (type) {
-    return [type];
-  } else {
-    return [EMPTY_FIELD_VALUE];
-  }
-}
+  list.unshift('None');
+  return list;
+};
 
 // Sort headings functions
+// TODO(zhangtiff): Find some way to restructure this code to allow
+// sorting functions to sort with raw types instead of stringified values.
 function countSort(headings) {
   headings.sort(function(headerA, headerB) {
     return parseInt(headerA) - parseInt(headerB);
@@ -178,72 +76,98 @@ function issueRefStringSort(headings) {
 }
 
 // TODO(juliacordero): handle sorting ad hoc values
-function axisHeadingsSort(axisHeadingsSet, attribute) {
+function sortHeadings(headingsSet, attribute) {
   // Track whether EMPTY_FIELD_VALUE is present, and ensure that
   // it is sorted to the first position even for custom fields
-  const noHeaderValueIsFound = axisHeadingsSet.delete(EMPTY_FIELD_VALUE);
-  let axisHeadingsList = [...axisHeadingsSet];
+  const noHeaderValueIsFound = headingsSet.delete(EMPTY_FIELD_VALUE);
+  let headingsList = [...headingsSet];
   let sorter;
-  if (axisHeadingsSet.has(attribute)) {
-    sorter = gridHeadings.get(attribute).sorter;
+
+  if (headingsSet.has(attribute)) {
+    type = getTypeForFieldName(attribute);
+    if (type === fieldTypes.ISSUE_TYPE) {
+      sorter = issueRefStringSort;
+    } else if (type === fieldTypes.INT_TYPE) {
+      sorter = countSort;
+    }
   }
+
   if (sorter) {
-    axisHeadingsList = sorter(axisHeadingsList);
+    headingsList = sorter(headingsList);
   } else {
-    axisHeadingsList.sort();
+    headingsList.sort();
   }
+
   if (noHeaderValueIsFound) {
-    axisHeadingsList.push(EMPTY_FIELD_VALUE);
+    headingsList.push(EMPTY_FIELD_VALUE);
   }
-  return axisHeadingsList;
+  return headingsList;
+}
+
+function addValuesToHeadings(headingsSet, valuesAdded) {
+  if (!valuesAdded.length) {
+    headingsSet.add(EMPTY_FIELD_VALUE);
+  }
+  for (const value of valuesAdded) {
+    headingsSet.add(value);
+  }
+}
+
+export function makeGridCellKey(x, y) {
+  // Note: Some possible x and y values contain ':', '-', and other
+  // non-word characters making delimiter options limited.
+  return x + ' + ' + y;
 }
 
 // Outer function that runs each custom extractor function
-export function extractGridData(issues, xAttribute, yAttribute) {
+export function extractGridData(issues, xField, yField) {
   const gridData = {
     xHeadings: [],
     yHeadings: [],
     sortedIssues: new Map(),
   };
-  const xAxisHeadingsSet = new Set();
-  const yAxisHeadingsSet = new Set();
 
-  let xExtractor;
-  let yExtractor;
+  // TODO(zhangtiff): Make a case insenstitive version of the grid fields.
+  const gridFields = new Set();
+  getGridFieldSet().forEach((field) => {
+    gridFields.add(field.toLowerCase());
+  });
+
+  const xHeadingsSet = new Set();
+  const yHeadingsSet = new Set();
+
+  const hasX = gridFields.has(xField.toLowerCase());
+  const hasY = gridFields.has(yField.toLowerCase());
+
   let xKeysAdded = [];
   let yKeysAdded = [];
-  if (gridHeadings.has(xAttribute)) {
-    xExtractor = gridHeadings.get(xAttribute).extractor;
-  } else {
-    xAxisHeadingsSet.add(DEFAULT_HEADER_VALUE);
+
+  if (!hasX) {
+    xHeadingsSet.add(DEFAULT_HEADER_VALUE);
     xKeysAdded.push(DEFAULT_HEADER_VALUE);
   }
-  if (gridHeadings.has(yAttribute)) {
-    yExtractor = gridHeadings.get(yAttribute).extractor;
-  } else {
-    yAxisHeadingsSet.add(DEFAULT_HEADER_VALUE);
+
+  if (!hasY) {
+    yHeadingsSet.add(DEFAULT_HEADER_VALUE);
     yKeysAdded.push(DEFAULT_HEADER_VALUE);
   }
 
   for (const issue of issues) {
-    if (xExtractor) {
-      xKeysAdded = xExtractor(issue);
-      for (const key of xKeysAdded) {
-        xAxisHeadingsSet.add(key);
-      }
-    }
-    if (yExtractor) {
-      yKeysAdded = yExtractor(issue);
-      for (const key of yKeysAdded) {
-        yAxisHeadingsSet.add(key);
-      }
+    if (hasX) {
+      xKeysAdded = stringValuesForIssueField(issue, xField);
+      addValuesToHeadings(xHeadingsSet, xKeysAdded);
     }
 
-    // Find every combo of 'xKey-yKey' that the issue belongs to
+    if (hasY) {
+      yKeysAdded = stringValuesForIssueField(issue, yField);
+      addValuesToHeadings(yHeadingsSet, yKeysAdded);
+    }
+
+    // Find every combo of 'xKey yKey' that the issue belongs to
     // and sort it into that cell
     for (const xKey of xKeysAdded) {
       for (const yKey of yKeysAdded) {
-        const cellKey = xKey + '-' + yKey;
+        const cellKey = makeGridCellKey(xKey, yKey);
         if (gridData.sortedIssues.has(cellKey)) {
           const cellValue = gridData.sortedIssues.get(cellKey);
           cellValue.push(issue);
@@ -255,8 +179,8 @@ export function extractGridData(issues, xAttribute, yAttribute) {
     }
   }
 
-  gridData.xHeadings = axisHeadingsSort(xAxisHeadingsSet, xAttribute);
-  gridData.yHeadings = axisHeadingsSort(yAxisHeadingsSet, yAttribute);
+  gridData.xHeadings = sortHeadings(xHeadingsSet, xField);
+  gridData.yHeadings = sortHeadings(yHeadingsSet, yField);
 
   return gridData;
 }

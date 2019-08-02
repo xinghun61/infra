@@ -3,9 +3,12 @@
 // found in the LICENSE file.
 
 import {assert} from 'chai';
-import {displayNameToUserRef, labelStringToRef, componentStringToRef,
-  issueStringToRef, issueStringToBlockingRef, issueRefToString, issueRefToUrl,
-  fieldNameToLabelPrefix, commentListToDescriptionList, valueToFieldValue,
+import {displayNameToUserRef, labelStringToRef, labelRefToString,
+  labelRefsToStrings, statusRefToString, statusRefsToStrings,
+  componentStringToRef, componentRefToString, componentRefsToStrings,
+  issueStringToRef, issueStringToBlockingRef, issueRefToString,
+  issueRefToUrl, fieldNameToLabelPrefix, commentListToDescriptionList,
+  valueToFieldValue,
 } from './converters.js';
 
 describe('displayNameToUserRef', () => {
@@ -25,6 +28,19 @@ describe('labelStringToRef', () => {
   });
 });
 
+describe('labelRefToString', () => {
+  it('converts labelRef', () => {
+    assert.deepEqual(labelRefToString({label: 'foo'}), 'foo');
+  });
+});
+
+describe('labelRefsToStrings', () => {
+  it('converts labelRefs', () => {
+    assert.deepEqual(labelRefsToStrings([{label: 'foo'}, {label: 'test'}]),
+      ['foo', 'test']);
+  });
+});
+
 describe('fieldNameToLabelPrefix', () => {
   it('converts fieldName', () => {
     assert.deepEqual(fieldNameToLabelPrefix('test'), 'test-');
@@ -33,9 +49,36 @@ describe('fieldNameToLabelPrefix', () => {
   });
 });
 
+describe('statusRefToString', () => {
+  it('converts statusRef', () => {
+    assert.deepEqual(statusRefToString({status: 'foo'}), 'foo');
+  });
+});
+
+describe('statusRefsToStrings', () => {
+  it('converts statusRefs', () => {
+    assert.deepEqual(statusRefsToStrings(
+      [{status: 'hello'}, {status: 'world'}]), ['hello', 'world']);
+  });
+});
+
 describe('componentStringToRef', () => {
   it('converts component', () => {
     assert.deepEqual(componentStringToRef('foo'), {path: 'foo'});
+  });
+});
+
+describe('componentRefToString', () => {
+  it('converts componentRef', () => {
+    assert.deepEqual(componentRefToString({path: 'Hello>World'}),
+      'Hello>World');
+  });
+});
+
+describe('componentRefsToStrings', () => {
+  it('converts componentRefs', () => {
+    assert.deepEqual(componentRefsToStrings(
+      [{path: 'Hello>World'}, {path: 'Test'}]), ['Hello>World', 'Test']);
   });
 });
 

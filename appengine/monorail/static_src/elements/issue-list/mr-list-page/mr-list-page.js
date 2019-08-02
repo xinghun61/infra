@@ -13,6 +13,10 @@ import 'elements/framework/mr-issue-list/mr-issue-list.js';
 // eslint-disable-next-line max-len
 import 'elements/issue-detail/dialogs/mr-update-issue-hotlists/mr-update-issue-hotlists.js';
 
+const COLSPEC_DELIMITER_REGEX = /\W+/;
+const SITEWIDE_DEFAULT_COLUMNS = ['ID', 'Type', 'Status',
+  'Priority', 'Milestone', 'Owner', 'Summary'];
+
 export class MrListPage extends connectStore(LitElement) {
   static get styles() {
     return css`
@@ -86,6 +90,7 @@ export class MrListPage extends connectStore(LitElement) {
         .issues=${this.issues}
         .projectName=${this.projectName}
         .queryParams=${this.queryParams}
+        .columns=${this.columns}
         selectionEnabled
         @selectionChange=${this._setSelectedIssues}
       ></mr-issue-list>
@@ -102,6 +107,7 @@ export class MrListPage extends connectStore(LitElement) {
       projectName: {type: String},
       fetchingIssueList: {type: Boolean},
       selectedIssues: {type: Array},
+      columns: {type: Array},
     };
   };
 
@@ -138,6 +144,19 @@ export class MrListPage extends connectStore(LitElement) {
     super.disconnectedCallback();
 
     window.removeEventListener('refreshList', this._boundRefresh);
+  }
+
+  update(changedProperties) {
+    if (changedProperties.has('queryParams')) {
+      if (this.queryParams && this.queryParams.colspec) {
+        this.columns = this.queryParams.colspec.split(COLSPEC_DELIMITER_REGEX);
+      } else {
+        // TODO(zhangtiff): Change to project default columns.
+        this.columns = SITEWIDE_DEFAULT_COLUMNS;
+      }
+    }
+
+    super.update(changedProperties);
   }
 
   updated(changedProperties) {

@@ -44,6 +44,24 @@ describe('mr-issue-list', () => {
     assert.equal(summaries[1].textContent.trim(), 'I have a summary');
   });
 
+  it('AllLabels column renders', async () => {
+    element.issues = [
+      {labelRefs: [{label: 'test'}, {label: 'hello-world'}]},
+      {labelRefs: [{label: 'one-label'}]},
+    ];
+
+    element.columns = ['AllLabels'];
+
+    await element.updateComplete;
+
+    const labels = element.shadowRoot.querySelectorAll('.col-alllabels');
+
+    assert.equal(labels.length, 2);
+
+    assert.equal(labels[0].textContent.trim(), 'test, hello-world');
+    assert.equal(labels[1].textContent.trim(), 'one-label');
+  });
+
   it('selected disabled when selectionEnabled is false', async () => {
     element.selectionEnabled = false;
     element.issues = [

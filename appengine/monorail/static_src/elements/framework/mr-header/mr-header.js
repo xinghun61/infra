@@ -40,10 +40,9 @@ export class MrHeader extends LitElement {
           background-color: var(--chops-primary-header-bg);
           border-bottom: var(--chops-normal-border);
           top: 0;
-          position: sticky;
+          position: fixed;
           padding: 0 4px;
           font-size: var(--chops-large-font-size);
-          margin-bottom: -1px;
         }
         @media (max-width: 840px) {
           :host {
