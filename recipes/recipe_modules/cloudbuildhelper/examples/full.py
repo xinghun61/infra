@@ -33,6 +33,9 @@ def RunSteps(api):
   img = api.cloudbuildhelper.build('another.yaml', step_test_image=custom)
   assert img == custom, img
 
+  # Using non-canonical tag.
+  api.cloudbuildhelper.build('a.yaml', tags=['something'])
+
   # Use custom binary from this point onward, for test coverage.
   api.cloudbuildhelper.command = 'custom_cloudbuildhelper'
 

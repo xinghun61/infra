@@ -39,9 +39,9 @@
       "-label",
       "l2=v2",
       "-tag",
-      "another",
-      "-tag",
       "latest",
+      "-tag",
+      "another",
       "-json-output",
       "/path/to/tmp/json"
     ],
@@ -85,6 +85,33 @@
       "@@@STEP_LOG_END@json.output@@@",
       "@@@STEP_LINK@image@https://example.com/image/another@@@",
       "@@@STEP_LINK@build@https://example.com/build/another@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "[START_DIR]/cbh/cloudbuildhelper",
+      "build",
+      "a.yaml",
+      "-tag",
+      "something",
+      "-json-output",
+      "/path/to/tmp/json"
+    ],
+    "name": "cloudbuildhelper build a",
+    "~followup_annotations": [
+      "@@@STEP_TEXT@Image: example.com/fake-registry/a:something<br/>Digest: sha256:ca978112ca1bbdca...@@@",
+      "@@@STEP_LOG_LINE@json.output@{@@@",
+      "@@@STEP_LOG_LINE@json.output@  \"image\": {@@@",
+      "@@@STEP_LOG_LINE@json.output@    \"digest\": \"sha256:ca978112ca1bbdca...\", @@@",
+      "@@@STEP_LOG_LINE@json.output@    \"image\": \"example.com/fake-registry/a\", @@@",
+      "@@@STEP_LOG_LINE@json.output@    \"tag\": null@@@",
+      "@@@STEP_LOG_LINE@json.output@  }, @@@",
+      "@@@STEP_LOG_LINE@json.output@  \"view_build_url\": \"https://example.com/build/a\", @@@",
+      "@@@STEP_LOG_LINE@json.output@  \"view_image_url\": \"https://example.com/image/a\"@@@",
+      "@@@STEP_LOG_LINE@json.output@}@@@",
+      "@@@STEP_LOG_END@json.output@@@",
+      "@@@STEP_LINK@image@https://example.com/image/a@@@",
+      "@@@STEP_LINK@build@https://example.com/build/a@@@"
     ]
   },
   {

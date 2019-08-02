@@ -90,7 +90,7 @@ class CloudBuildHelperApi(recipe_api.RecipeApi):
       cmd += ['-infra', infra]
     for k in sorted(labels or {}):
       cmd += ['-label', '%s=%s' % (k, labels[k])]
-    for t in sorted(tags or []):
+    for t in (tags or []):
       cmd += ['-tag', t]
     cmd += ['-json-output', self.m.json.output()]
 
@@ -127,10 +127,10 @@ class CloudBuildHelperApi(recipe_api.RecipeApi):
           tag=img.get('tag'),
       )
     finally:
-      self._make_step_pretty(self.m.step.active_result)
+      self._make_step_pretty(self.m.step.active_result, tags)
 
   @staticmethod
-  def _make_step_pretty(r):
+  def _make_step_pretty(r, tags):
     js = r.json.output
     if not js or not isinstance(js, dict):  # pragma: no cover
       return
@@ -144,8 +144,9 @@ class CloudBuildHelperApi(recipe_api.RecipeApi):
       r.presentation.step_text += 'ERROR: %s' % js['error']
     elif js.get('image'):
       img = js['image']
-      if img.get('tag'):
-        ref = '%s:%s' % (img['image'], img['tag'])
+      tag = img.get('tag') or (tags[0] if tags else None)
+      if tag:
+        ref = '%s:%s' % (img['image'], tag)
       else:
         ref = '%s@%s' % (img['image'], img['digest'])
       r.presentation.step_text += '\n'.join([
