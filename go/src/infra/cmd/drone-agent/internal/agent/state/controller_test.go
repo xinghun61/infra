@@ -138,7 +138,7 @@ func TestController(t *testing.T) {
 		b.Stop()
 		select {
 		case <-started:
-		case <-time.After(time.Millisecond):
+		case <-time.After(time.Second):
 			t.Fatalf("bot not restarted after stopping")
 		}
 	})
