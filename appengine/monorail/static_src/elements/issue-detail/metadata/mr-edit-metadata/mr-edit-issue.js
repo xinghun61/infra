@@ -153,11 +153,15 @@ export class MrEditIssue extends connectStore(LitElement) {
   }
 
   reset() {
-    this.shadowRoot.querySelector('mr-edit-metadata').reset();
+    const form = this.shadowRoot.querySelector('mr-edit-metadata');
+    if (!form) return;
+    form.reset();
   }
 
   async save() {
     const form = this.shadowRoot.querySelector('mr-edit-metadata');
+    if (!form) return;
+
     const delta = form.delta;
     if (!_checkRemovedRestrictions(delta.labelRefsRemove)) {
       return;

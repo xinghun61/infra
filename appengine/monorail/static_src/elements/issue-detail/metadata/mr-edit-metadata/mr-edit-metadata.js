@@ -192,7 +192,7 @@ export class MrEditMetadata extends connectStore(LitElement) {
           <div class="edit-actions">
             <chops-button
               @click=${this.save}
-              class="emphasized"
+              class="save-changes emphasized"
               ?disabled=${this.disabled}
             >
               Save changes
@@ -581,7 +581,6 @@ export class MrEditMetadata extends connectStore(LitElement) {
       issueRef: {type: Object},
       hasApproverPrivileges: {type: Boolean},
       showNicheFields: {type: Boolean},
-      disabled: {type: Boolean},
       disableAttachments: {type: Boolean},
       error: {type: String},
       sendEmail: {type: Boolean},
@@ -592,6 +591,7 @@ export class MrEditMetadata extends connectStore(LitElement) {
       optionsPerEnumField: {type: String},
       fieldGroups: {type: Object},
       saving: {type: Boolean},
+      isDirty: {type: Boolean},
       _debouncedProcessChanges: {type: Object},
     };
   }
@@ -603,19 +603,30 @@ export class MrEditMetadata extends connectStore(LitElement) {
     this.sendEmail = true;
     this.mergedInto = {};
     this.issueRef = {};
-    this.disabled = true;
     this.fieldGroups = HARDCODED_FIELD_GROUPS;
+
+    this.presubmitDebounceTimeOut = DEBOUNCED_PRESUBMIT_TIME_OUT;
+    this.saving = false;
+    this.isDirty = false;
   }
 
-  update(changedProperties) {
-    if (changedProperties.has('saving') && this.saving) {
-      this.disabled = true;
-    }
-    if (changedProperties.has('error') && this.error) {
-      this.disabled = false;
-    }
+  firstUpdated() {
+    this.hasRendered = true;
+  }
 
-    super.update(changedProperties);
+  get disabled() {
+    return !this.isDirty || this.saving;
+  }
+
+  // Set isDirty to a property instead of only using a getter to cause
+  // lit-element to re-render when dirty state change.
+  _updateIsDirty() {
+    if (!this.hasRendered) return;
+
+    const commentContent = this.getCommentContent();
+    const attachmentsElement = this.shadowRoot.querySelector('mr-upload');
+    this.isDirty = !isEmptyObject(this.delta) || Boolean(commentContent) ||
+      attachmentsElement.hasAttachments;
   }
 
   get _nicheFieldCount() {
@@ -702,9 +713,11 @@ export class MrEditMetadata extends connectStore(LitElement) {
     store.dispatch(ui.reportDirtyForm(this.formName, false));
   }
 
-  async reset() {
-    await this.updateComplete;
-    this.shadowRoot.querySelector('#editForm').reset();
+  reset() {
+    const form = this.shadowRoot.querySelector('#editForm');
+    if (!form) return;
+
+    form.reset();
     const statusInput = this.shadowRoot.querySelector('#statusInput');
     if (statusInput) {
       statusInput.reset();
@@ -741,7 +754,7 @@ export class MrEditMetadata extends connectStore(LitElement) {
   }
 
   discard() {
-    const isDirty = this.getCommentContent() || !isEmptyObject(this.delta);
+    const isDirty = this.isDirty;
     if (!isDirty || confirm('Discard your changes?')) {
       this.dispatchEvent(new CustomEvent('discard'));
     }
@@ -877,28 +890,27 @@ export class MrEditMetadata extends connectStore(LitElement) {
   }
 
   _processChanges() {
+    this._updateIsDirty();
+
     if (!this._debouncedProcessChanges) {
-      this._debouncedProcessChanges = debounce(() => {
-        // Don't run this functionality if the element has disconnected.
-        if (!this.isConnected) return;
-
-        const delta = this.delta;
-        const commentContent = this.getCommentContent();
-        const attachmentsElement = this.shadowRoot.querySelector('mr-upload');
-        const isDirty = !isEmptyObject(delta) || Boolean(commentContent) ||
-          attachmentsElement.hasAttachments;
-
-        this.disabled = !isDirty;
-        store.dispatch(ui.reportDirtyForm(this.formName, isDirty));
-        this.dispatchEvent(new CustomEvent('change', {
-          detail: {
-            delta,
-            commentContent,
-          },
-        }));
-      }, DEBOUNCED_PRESUBMIT_TIME_OUT);
+      this._debouncedProcessChanges = debounce(() => this._runProcessChanges(),
+        this.presubmitDebounceTimeOut);
     }
     this._debouncedProcessChanges();
+  }
+
+  // Non-debounced version of _processChanges
+  _runProcessChanges() {
+    // Don't run this functionality if the element has disconnected.
+    if (!this.isConnected) return;
+
+    store.dispatch(ui.reportDirtyForm(this.formName, this.isDirty));
+    this.dispatchEvent(new CustomEvent('change', {
+      detail: {
+        delta: this.delta,
+        commentContent: this.getCommentContent(),
+      },
+    }));
   }
 
   _addPredictedComponent(e) {

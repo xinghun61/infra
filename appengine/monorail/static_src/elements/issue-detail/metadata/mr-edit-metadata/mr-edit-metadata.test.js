@@ -3,6 +3,7 @@
 // found in the LICENSE file.
 
 import {assert} from 'chai';
+import sinon from 'sinon';
 import {MrEditMetadata} from './mr-edit-metadata.js';
 import {ISSUE_EDIT_PERMISSION, ISSUE_EDIT_SUMMARY_PERMISSION,
   ISSUE_EDIT_STATUS_PERMISSION, ISSUE_EDIT_OWNER_PERMISSION,
@@ -10,14 +11,8 @@ import {ISSUE_EDIT_PERMISSION, ISSUE_EDIT_SUMMARY_PERMISSION,
 } from 'elements/shared/permissions.js';
 import {store} from 'elements/reducers/base.js';
 
-
 let element;
-
-function getElementEventPromise(name) {
-  return new Promise((resolve) => {
-    element.addEventListener(name, resolve);
-  });
-}
+let clock;
 
 describe('mr-edit-metadata', () => {
   beforeEach(() => {
@@ -27,11 +22,14 @@ describe('mr-edit-metadata', () => {
     element.issuePermissions = [ISSUE_EDIT_PERMISSION];
 
     sinon.stub(store, 'dispatch');
+    clock = sinon.useFakeTimers();
   });
 
   afterEach(() => {
     document.body.removeChild(element);
     store.dispatch.restore();
+
+    clock.restore();
   });
 
   it('initializes', () => {
@@ -39,18 +37,15 @@ describe('mr-edit-metadata', () => {
   });
 
   it('saves on form submit', async () => {
-    const saveEvent = getElementEventPromise('save');
+    const saveStub = sinon.stub();
+    element.addEventListener('save', saveStub);
 
     await element.updateComplete;
 
     element.shadowRoot.querySelector('#editForm').dispatchEvent(
-      new CustomEvent('submit', {bubbles: true, cancellable: true}));
+      new Event('submit', {bubbles: true, cancellable: true}));
 
-    // saveEvent is resolved when element has dispatched the 'save' event,
-    // which is dispatched only when element.save() is called.
-    // This is a roundabout way of testing that submitting a form calls
-    // element.save(). Otherwise this test will hang.
-    await saveEvent;
+    sinon.assert.calledOnce(saveStub);
   });
 
   it('disconnecting element reports form is not dirty', () => {
@@ -73,93 +68,127 @@ describe('mr-edit-metadata', () => {
     document.body.appendChild(element);
   });
 
-  it('empty delta disables saving', async () => {
-    // Check that saving button is initially disabled.
+  it('_runProcessChanges fires change event', async () => {
     await element.updateComplete;
-    assert(element.disabled);
 
-    // User makes some changes.
-    let changeEvent = getElementEventPromise('change');
-    const comment = element.shadowRoot.querySelector('#commentText');
-    comment.value = 'Value';
-    comment.dispatchEvent(new CustomEvent('keyup'));
+    const changeStub = sinon.stub();
+    element.addEventListener('change', changeStub);
 
-    // Check that saving button is not disabled.
-    await changeEvent;
-    await element.updateComplete;
-    assert.isFalse(element.disabled);
+    element._runProcessChanges();
 
-    // User undoes the changes.
-    changeEvent = getElementEventPromise('change');
-    comment.value = '';
-    comment.dispatchEvent(new CustomEvent('keyup'));
-
-    // Check that saving button is disabled again.
-    await changeEvent;
-    await element.updateComplete;
-    assert(element.disabled);
+    sinon.assert.calledOnce(changeStub);
   });
 
-  it('saving disables save button', async () => {
-    // Check that saving button is initially disabled.
+  it('save button disabled when disabled is true', async () => {
+    // Check that save button is initially disabled.
     await element.updateComplete;
-    assert(element.disabled);
+
+    // Wait for chops-chip-input to finish its update cycle.
+    await element.updateComplete;
+
+    const button = element.shadowRoot.querySelector('.save-changes');
+
+    assert.isTrue(element.disabled);
+    assert.isTrue(button.disabled);
+
+    element.isDirty = true;
+
+    await element.updateComplete;
+
+    assert.isFalse(element.disabled);
+    assert.isFalse(button.disabled);
+  });
+
+  it('editing form sets isDirty to true or false', async () => {
+    await element.updateComplete;
+
+    assert.isFalse(element.isDirty);
 
     // User makes some changes.
-    const changeEvent = getElementEventPromise('change');
     const comment = element.shadowRoot.querySelector('#commentText');
     comment.value = 'Value';
-    comment.dispatchEvent(new CustomEvent('keyup'));
+    comment.dispatchEvent(new Event('keyup'));
 
-    // Check that saving button is not disabled.
-    await changeEvent;
+    // Wait for debouncer.
+    clock.tick(element.presubmitDebounceTimeOut + 1);
+
+    assert.isTrue(element.isDirty);
+
+    // User undoes the changes.
+    comment.value = '';
+    comment.dispatchEvent(new Event('keyup'));
+
+    // Wait for debouncer.
+    clock.tick(element.presubmitDebounceTimeOut + 1);
+
+    assert.isFalse(element.isDirty);
+  });
+
+  it('editing form runs _runProcessChanges debounced', async () => {
+    sinon.stub(element, '_runProcessChanges');
+
     await element.updateComplete;
+
+    // User makes some changes.
+    const comment = element.shadowRoot.querySelector('#commentText');
+    comment.value = 'Value';
+    comment.dispatchEvent(new Event('keyup'));
+
+    clock.tick(5);
+
+    // User makes more changes before debouncer timeout is done.
+    comment.value = 'more changes';
+    comment.dispatchEvent(new Event('keyup'));
+
+    clock.tick(10);
+
+    sinon.assert.notCalled(element._runProcessChanges);
+
+    // Wait for debouncer.
+    clock.tick(element.presubmitDebounceTimeOut + 1);
+
+    sinon.assert.calledOnce(element._runProcessChanges);
+  });
+
+  it('reseting form disables save button', async () => {
+    // Check that save button is initially disabled.
+    assert.isTrue(element.disabled);
+
+    // User makes some changes.
+    element.isDirty = true;
+
+    // Check that save button is not disabled.
     assert.isFalse(element.disabled);
 
-    // User submits the change.
-    element.saving = true;
-
-    // Check that saving button is disabled.
+    // Reset form.
     await element.updateComplete;
-    assert(element.disabled);
+    element.reset();
 
-    // Request succeeds.
-    element.saving = false;
-
-    // Check that saving button is still disabled.
-    await element.updateComplete;
-    assert(element.disabled);
+    // Check that save button is still disabled.
+    assert.isTrue(element.disabled);
   });
 
   it('save button is enabled if request fails', async () => {
-    // Check that saving button is initially disabled.
-    await element.updateComplete;
-    assert(element.disabled);
+    // Check that save button is initially disabled.
+    assert.isTrue(element.disabled);
 
     // User makes some changes.
-    const changeEvent = getElementEventPromise('change');
-    const comment = element.shadowRoot.querySelector('#commentText');
-    comment.value = 'Value';
-    comment.dispatchEvent(new CustomEvent('keyup'));
+    element.isDirty = true;
 
-    // Check that saving button is not disabled.
-    await changeEvent;
-    await element.updateComplete;
+    // Check that save button is not disabled.
     assert.isFalse(element.disabled);
 
     // User submits the change.
     element.saving = true;
 
-    // Check that saving button is disabled.
-    await element.updateComplete;
-    assert(element.disabled);
+    // Check that save button is disabled.
+    assert.isTrue(element.disabled);
 
     // Request fails.
     element.saving = false;
     element.error = 'error';
 
-    // Check that saving button is re-enabled.
-    await element.updateComplete;
+    // Check that save button is re-enabled.
     assert.isFalse(element.disabled);
   });
 

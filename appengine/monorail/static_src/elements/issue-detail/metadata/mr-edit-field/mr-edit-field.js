@@ -100,7 +100,6 @@ export class MrEditField extends LitElement {
             .autocomplete=${this._domAutocomplete}
             .placeholder="Add ${this.name}"
             @change=${this._changeHandler}
-            @blur=${this._changeHandler}
           ></chops-chip-input>
         `;
       case MULTI_INPUT:
@@ -112,7 +111,6 @@ export class MrEditField extends LitElement {
             .addEntryText="Add ${this.name}"
             .type=${this._html5InputType}
             @change=${this._changeHandler}
-            @blur=${this._changeHandler}
           ></mr-multi-input>
         `;
       case BASIC_INPUT:
@@ -125,7 +123,7 @@ export class MrEditField extends LitElement {
             autocomplete=${this._domAutocomplete}
             placeholder=${this.placeholder}
             @keyup=${this._changeHandler}
-            @blur=${this._changeHandler}
+            @change=${this._changeHandler}
             @focus=${this._runLegacyAcFocus}
             aria-label=${this.name}
           />
@@ -305,7 +303,7 @@ export class MrEditField extends LitElement {
       this.values = value.length ? [value] : [];
     }
 
-    this.dispatchEvent(new CustomEvent('change'));
+    this.dispatchEvent(new Event('change'));
   }
 
   _getSingleValue(arr) {

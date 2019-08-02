@@ -185,7 +185,7 @@ export class ChopsChipInput extends LitElement {
 
   updated(changedProperties) {
     if (changedProperties.has('values')) {
-      this.dispatchEvent(new CustomEvent('change'));
+      this.dispatchEvent(new Event('change'));
     }
   }
 
