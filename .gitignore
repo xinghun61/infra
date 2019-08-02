@@ -27,3 +27,4 @@ reasons.sqlite
 .3pp_wd
 # build/build.py script produces *.cipd binaries, they must not be committed.
 *.cipd
+.vscode
