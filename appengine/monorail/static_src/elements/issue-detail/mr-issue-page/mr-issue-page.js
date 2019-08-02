@@ -296,7 +296,7 @@ export class MrIssuePage extends connectStore(LitElement) {
     this.fetchingProjectConfig = project.fetchingConfig(state);
     this.issueClosed = !issue.isOpen(state);
     this.issuePermissions = issue.permissions(state);
-    this.prefs = user.user(state).prefs;
+    this.prefs = user.prefs(state);
   }
 
   update(changedProperties) {

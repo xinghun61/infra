@@ -7,7 +7,6 @@ import {LitElement, html} from 'lit-element';
 import {store, connectStore} from 'elements/reducers/base.js';
 import * as user from 'elements/reducers/user.js';
 import 'elements/chops/chops-toggle/chops-toggle.js';
-import {prpcClient} from 'prpc-client-instance.js';
 
 /**
  * `<mr-code-font-toggle>`
@@ -21,7 +20,8 @@ export class MrCodeFontToggle extends connectStore(LitElement) {
     return html`
       <chops-toggle
         ?checked=${this._codeFont}
-        @checked-change=${this._checkedChangeHandler}
+        ?disabled=${this._prefsInFlight}
+        @checked-change=${this._toggleFont}
         title="Code font"
        >Code</chops-toggle>
     `;
@@ -32,11 +32,14 @@ export class MrCodeFontToggle extends connectStore(LitElement) {
       prefs: {type: Object},
       userDisplayName: {type: String},
       initialValue: {type: Boolean},
+      _prefsInFlight: {type: Boolean},
     };
   }
 
   stateChanged(state) {
-    this.prefs = user.user(state).prefs;
+    this.prefs = user.prefs(state);
+    this._prefsInFlight = user.requests(state).fetchPrefs.requesting
+      || user.requests(state).setPrefs.requesting;
   }
 
   constructor() {
@@ -51,29 +54,12 @@ export class MrCodeFontToggle extends connectStore(LitElement) {
     return prefs.get('code_font') === 'true';
   }
 
-  fetchPrefs() {
-    store.dispatch(user.fetchPrefs());
-  }
-
-  _checkedChangeHandler(e) {
+  _toggleFont(e) {
     const checked = e.detail.checked;
     this.dispatchEvent(new CustomEvent('font-toggle', {detail: {checked}}));
-    if (this.userDisplayName) {
-      const message = {
-        prefs: [{name: 'code_font', value: '' + checked}],
-      };
-      const setPrefsCall = prpcClient.call(
-        'monorail.Users', 'SetUserPrefs', message);
-      setPrefsCall.then((resp) => {
-        this.fetchPrefs();
-      }).catch((reason) => {
-        console.error('SetUserPrefs failed: ' + reason);
-      });
-    } else {
-      const newPrefs = new Map(this.prefs);
-      newPrefs.set('code_font', '' + checked);
-      store.dispatch(user.setPrefs(newPrefs));
-    }
+
+    const newPrefs = [{name: 'code_font', value: '' + checked}];
+    store.dispatch(user.setPrefs(newPrefs, !!this.userDisplayName));
   }
 }
 customElements.define('mr-code-font-toggle', MrCodeFontToggle);

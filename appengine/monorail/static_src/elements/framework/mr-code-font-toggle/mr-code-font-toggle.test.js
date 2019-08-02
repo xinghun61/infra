@@ -25,8 +25,25 @@ describe('mr-code-font-toggle', () => {
     assert.instanceOf(element, MrCodeFontToggle);
   });
 
-  it('toggle font', async () => {
+  it('toggling font does not save when user is not logged in', async () => {
+    element.userDisplayName = undefined;
+    element.prefs = new Map([]);
+
+    await element.updateComplete;
+
+    const chopsToggle = element.shadowRoot.querySelector('chops-toggle');
+
+    chopsToggle.click(); // Toggle it on.
+    await element.updateComplete;
+
+    sinon.assert.notCalled(prpcClient.call);
+
+    assert.deepEqual(element.prefs, new Map([['code_font', 'true']]));
+  });
+
+  it('toggling font to true saves result', async () => {
     element.userDisplayName = 'test@example.com';
+    element.prefs = new Map([['code_font', 'false']]);
 
     await element.updateComplete;
 
@@ -41,7 +58,17 @@ describe('mr-code-font-toggle', () => {
       'SetUserPrefs',
       {prefs: [{name: 'code_font', value: 'true'}]});
 
+    assert.deepEqual(element.prefs, new Map([['code_font', 'true']]));
+  });
+
+  it('toggling font to false saves result', async () => {
+    element.userDisplayName = 'test@example.com';
     element.prefs = new Map([['code_font', 'true']]);
+
+    await element.updateComplete;
+
+    const chopsToggle = element.shadowRoot.querySelector('chops-toggle');
+
     chopsToggle.click(); // Toggle it off.
     await element.updateComplete;
 
@@ -50,5 +77,7 @@ describe('mr-code-font-toggle', () => {
       'monorail.Users',
       'SetUserPrefs',
       {prefs: [{name: 'code_font', value: 'false'}]});
+
+    assert.deepEqual(element.prefs, new Map([['code_font', 'false']]));
   });
 });

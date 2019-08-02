@@ -3,6 +3,7 @@
 // found in the LICENSE file.
 
 import {combineReducers} from 'redux';
+import {createSelector} from 'reselect';
 import {createReducer, createRequestReducer} from './redux-helpers.js';
 import {prpcClient} from 'prpc-client-instance.js';
 
@@ -23,13 +24,17 @@ const FETCH_PREFS_START = 'user/FETCH_PREFS_START';
 const FETCH_PREFS_SUCCESS = 'user/FETCH_PREFS_SUCCESS';
 const FETCH_PREFS_FAILURE = 'user/FETCH_PREFS_FAILURE';
 
+export const SET_PREFS_START = 'user/SET_PREFS_START';
+export const SET_PREFS_SUCCESS = 'user/SET_PREFS_SUCCESS';
+export const SET_PREFS_FAILURE = 'user/SET_PREFS_FAILURE';
+
 /* State Shape
 {
   currentUser: {
     ...user: Object,
     groups: Array,
     hotlists: Array,
-    prefs: Map,
+    prefs: Object,
   },
   requests: {
     fetch: Object,
@@ -44,21 +49,16 @@ const USER_DEFAULT = {
   groups: [],
   hotlists: [],
   projects: {},
-  // TODO(zhangtiff): Replace this Map in the Redux state with a plain object.
-  //   Maps are not recommended in Redux state.
-  //   See: https://github.com/reduxjs/redux/issues/1499
-  prefs: new Map(),
+  prefs: {},
   prefsLoaded: false,
 };
 
-const currentUserReducer = createReducer(USER_DEFAULT, {
+export const currentUserReducer = createReducer(USER_DEFAULT, {
   [FETCH_SUCCESS]: (_user, action) => {
     return {
+      ...USER_DEFAULT,
       ...action.user,
       groups: action.groups,
-      projects: {},
-      hotlists: [],
-      prefs: new Map(),
     };
   },
   [FETCH_PROJECTS_SUCCESS]: (user, action) => {
@@ -72,6 +72,17 @@ const currentUserReducer = createReducer(USER_DEFAULT, {
       ...user,
       prefs: action.prefs,
       prefsLoaded: true,
+    };
+  },
+  [SET_PREFS_SUCCESS]: (user, action) => {
+    const newPrefs = action.newPrefs;
+    const prefs = Object.assign({}, user.prefs);
+    newPrefs.forEach(({name, value}) => {
+      prefs[name] = value;
+    });
+    return {
+      ...user,
+      prefs,
     };
   },
 });
@@ -89,6 +100,9 @@ const requestsReducer = combineReducers({
   // Request for getting a user's prefs.
   fetchPrefs: createRequestReducer(
     FETCH_PREFS_START, FETCH_PREFS_SUCCESS, FETCH_PREFS_FAILURE),
+  // Request for setting a user's prefs.
+  setPrefs: createRequestReducer(
+    SET_PREFS_START, SET_PREFS_SUCCESS, SET_PREFS_FAILURE),
 });
 
 export const reducer = combineReducers({
@@ -97,7 +111,17 @@ export const reducer = combineReducers({
 });
 
 // Selectors
+export const requests = (state) => state.user.requests;
 export const user = (state) => state.user.currentUser;
+export const prefs = createSelector(user, (user) => {
+  const prefsMap = new Map();
+  if (user) {
+    Object.keys(user.prefs).forEach((key) => {
+      prefsMap.set(key, user.prefs[key]);
+    });
+  }
+  return prefsMap;
+});
 
 // Action Creators
 export const fetch = (displayName) => async (dispatch) => {
@@ -166,17 +190,42 @@ export const fetchPrefs = () => async (dispatch) => {
   try {
     const resp = await prpcClient.call(
       'monorail.Users', 'GetUserPrefs', {});
-
-    const prefs = new Map((resp.prefs || []).map((pref) => {
-      return [pref.name, pref.value];
-    }));
+    const prefs = {};
+    (resp.prefs || []).forEach(({name, value}) => {
+      prefs[name] = value;
+    });
     dispatch({type: FETCH_PREFS_SUCCESS, prefs});
   } catch (error) {
     dispatch({type: FETCH_PREFS_FAILURE, error});
   };
 };
 
-export const setPrefs = (newPrefs) => ({
-  type: FETCH_PREFS_SUCCESS,
-  prefs: newPrefs,
-});
+/**
+ * Action creator for setting a user's preferences.
+ *
+ * @param {Object} newPrefs
+ * @param {boolean} saveChanges
+ *
+ * @return {undefined}
+ */
+export const setPrefs = (newPrefs, saveChanges = true) => async (dispatch) => {
+  if (!saveChanges) {
+    dispatch({type: SET_PREFS_SUCCESS, newPrefs});
+    return;
+  }
+
+  dispatch({type: SET_PREFS_START});
+
+  try {
+    const message = {prefs: newPrefs};
+    await prpcClient.call(
+      'monorail.Users', 'SetUserPrefs', message);
+    dispatch({type: SET_PREFS_SUCCESS, newPrefs});
+
+    // Re-fetch the user's prefs after saving to prevent prefs from
+    // getting out of sync.
+    dispatch(fetchPrefs());
+  } catch (error) {
+    dispatch({type: SET_PREFS_ERROR, error});
+  }
+};

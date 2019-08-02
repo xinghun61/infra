@@ -169,7 +169,7 @@ export class MrCue extends connectStore(LitElement) {
     this.issue = issue.issue(state);
     this.referencedUsers = issue.referencedUsers(state);
     this.user = user.user(state);
-    this.prefs = user.user(state).prefs;
+    this.prefs = user.prefs(state);
     this.signedIn = this.user && this.user.userId;
     this.prefsLoaded = user.user(state).prefsLoaded;
 
@@ -192,24 +192,8 @@ export class MrCue extends connectStore(LitElement) {
   }
 
   dismiss() {
-    this.setDismissedCue(this.cuePrefName);
-  }
-
-  setDismissedCue(pref) {
-    const newPrefs = [{name: pref, value: 'true'}];
-    if (this.signedIn) {
-      // TODO(jrobbins): Move some of this into user.js.
-      const message = {prefs: newPrefs};
-      const setPrefsCall = prpcClient.call(
-        'monorail.Users', 'SetUserPrefs', message);
-      setPrefsCall.then((resp) => {
-        store.dispatch(user.fetchPrefs());
-      }).catch((reason) => {
-        console.error('SetUserPrefs failed: ' + reason);
-      });
-    } else {
-      store.dispatch(user.setPrefs(new Map([[pref, 'true']])));
-    }
+    const newPrefs = [{name: this.cuePrefName, value: 'true'}];
+    store.dispatch(user.setPrefs(newPrefs, this.signedIn));
   }
 }
 

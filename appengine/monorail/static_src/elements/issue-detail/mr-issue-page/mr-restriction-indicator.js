@@ -108,7 +108,7 @@ export class MrRestrictionIndicator extends connectStore(LitElement) {
 
   stateChanged(state) {
     this.restrictions = issue.restrictions(state);
-    this.prefs = user.user(state).prefs;
+    this.prefs = user.prefs(state);
   }
 
   update(changedProperties) {

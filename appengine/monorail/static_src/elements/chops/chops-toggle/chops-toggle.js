@@ -53,14 +53,22 @@ export class ChopsToggle extends LitElement {
         background: var(--chops-toggle-checked-bg);
         color: var(--chops-toggle-checked-color);
       }
+      input[type="checkbox"]:disabled + label {
+        opacity: 0.8;
+        cursor: default;
+        pointer-events: none;
+      }
     `;
   }
 
   render() {
     return html`
-      <!-- Note: Avoiding 2-way data binding to futureproof this code
-        for LitElement. -->
-      <input id="checkbox" type="checkbox" ?checked=${this.checked} @change=${this._checkedChangeHandler}>
+      <input id="checkbox"
+        type="checkbox"
+        ?checked=${this.checked}
+        ?disabled=${this.disabled}
+        @change=${this._checkedChangeHandler}
+      >
       <label for="checkbox">
         <slot></slot>
       </label>
@@ -79,6 +87,10 @@ export class ChopsToggle extends LitElement {
        * ways of managing checked state if needed.
        **/
       checked: {type: Boolean},
+      /**
+       * Whether the element currently allows checking or not.
+       */
+      disabled: {type: Boolean},
     };
   }
 

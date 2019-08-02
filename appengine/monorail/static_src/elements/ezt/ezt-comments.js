@@ -75,7 +75,7 @@ export class EztComments extends connectStore(LitElement) {
   }
 
   stateChanged(state) {
-    this.prefs = user.user(state).prefs;
+    this.prefs = user.prefs(state);
 
     const updatedComments = issue.comments(state);
     if (updatedComments && updatedComments.length) {
@@ -98,7 +98,7 @@ export class EztComments extends connectStore(LitElement) {
 
   update(changedProperties) {
     if (changedProperties.has('prefs')) {
-      this.codeFont = this.prefs.get('code_font') === 'true';
+      this.codeFont = this.prefs['code_font'] === 'true';
     }
     super.update(changedProperties);
   }

@@ -121,7 +121,7 @@ export class MrClickThroughs extends connectStore(LitElement) {
   }
 
   stateChanged(state) {
-    this.prefs = user.user(state).prefs;
+    this.prefs = user.prefs(state);
     this.prefsLoaded = user.user(state).prefsLoaded;
   }
 
@@ -134,7 +134,7 @@ export class MrClickThroughs extends connectStore(LitElement) {
   }
 
   dismissPrivacyDialog() {
-    this.setDismissedCue('privacy_click_through');
+    this.dismissCue('privacy_click_through');
   }
 
   get _showCorpModeDialog() {
@@ -149,24 +149,12 @@ export class MrClickThroughs extends connectStore(LitElement) {
   }
 
   dismissCorpModeDialog() {
-    this.setDismissedCue('corp_mode_click_through');
+    this.dismissCue('corp_mode_click_through');
   }
 
-  setDismissedCue(pref) {
+  dismissCue(pref) {
     const newPrefs = [{name: pref, value: 'true'}];
-    if (this.userDisplayName) {
-      // TODO(jrobbins): Move some of this into user.js.
-      const message = {prefs: newPrefs};
-      const setPrefsCall = prpcClient.call(
-        'monorail.Users', 'SetUserPrefs', message);
-      setPrefsCall.then((resp) => {
-        store.dispatch(user.fetchPrefs());
-      }).catch((reason) => {
-        console.error('SetUserPrefs failed: ' + reason);
-      });
-    } else {
-      store.dispatch(user.setPrefs(newPrefs));
-    }
+    store.dispatch(user.setPrefs(newPrefs, !!this.userDisplayName));
   }
 }
 
