@@ -10,6 +10,7 @@
 - Fetches code dependencies via deps.py.
 """
 
+import argparse
 import collections
 import contextlib
 import json
@@ -20,7 +21,6 @@ import stat
 import subprocess
 import sys
 import tempfile
-import urllib
 
 
 LOGGER = logging.getLogger(__name__)
@@ -28,6 +28,9 @@ LOGGER = logging.getLogger(__name__)
 
 # /path/to/infra
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+# Directory with .gclient file.
+GCLIENT_ROOT = os.path.dirname(ROOT)
 
 # The current overarching Infra version. If this changes, everything will be
 # updated regardless of its version.
@@ -123,6 +126,13 @@ LAYOUT = Layout(
 )
 
 
+# Describes a modification of os.environ, see get_go_environ_diff(...).
+EnvironDiff = collections.namedtuple('EnvironDiff', [
+    'env',          # {k:v} with vars to set or delete (if v == None)
+    'env_prefixes', # {k: [path]} with entries to prepend
+])
+
+
 class Failure(Exception):
   """Bootstrap failed."""
 
@@ -150,7 +160,6 @@ def remove_directory(path):
   p = os.path.join(*path)
   if not os.path.exists(p):
     return
-  LOGGER.debug('Removing %s', p)
   # Crutch to remove read-only file (.git/* in particular) on Windows.
   def onerror(func, path, _exc_info):
     if not os.access(path, os.W_OK):
@@ -180,18 +189,6 @@ def install_toolset(toolset_root, version):
     raise Failure('CIPD call failed, exit code %d' % cmd.returncode)
   LOGGER.info('Validating...')
   check_hello_world(toolset_root)
-
-
-def download_file(url, path):
-  """Fetches |url| to |path|."""
-  last_progress = [0]
-  def report(a, b, c):
-    progress = int(a * b * 100.0 / c)
-    if progress != last_progress[0]:
-      print >> sys.stderr, 'Downloading... %d%%' % progress
-      last_progress[0] = progress
-  # TODO(vadimsh): Use something less crippled, something that validates SSL.
-  urllib.urlretrieve(url, path, reporthook=report)
 
 
 @contextlib.contextmanager
@@ -401,67 +398,92 @@ def update_vendor_packages(workspace, toolset_root, force=False):
     return os.path.isfile(update_out_path)
 
 
-def get_go_environ(layout):
-  """Returns a copy of os.environ with mutated GO* environment variables.
+def get_go_environ_diff(layout):
+  """Returns what modifications must be applied to the environ to enable Go.
+
+  Pure function of 'layout', doesn't depend on current os.environ or state on
+  disk.
 
   Args:
     layout: The Layout to derive the environment from.
-  """
-  env = os.environ.copy()
-  env['GOROOT'] = os.path.join(layout.toolset_root, 'go')
-  if layout.workspace:
-    env['GOBIN'] = os.path.join(layout.workspace, 'bin')
-  else:
-    env.pop('GOBIN', None)
 
+  Returns:
+    EnvironDiff.
+  """
+  # Paths to search Go code for. Order is important.
   vendor_paths = layout.vendor_paths or ()
   all_go_paths = []
   all_go_paths.extend(os.path.join(p, '.vendor') for p in vendor_paths)
   if layout.go_paths:
     all_go_paths.extend(layout.go_paths)
-  if layout.workspace:
-    all_go_paths.append(layout.workspace)
-  env['GOPATH'] = os.pathsep.join(all_go_paths)
+  all_go_paths.append(layout.workspace)
 
-  # New PATH entries. Order is important. None's are filtered below.
+  # New PATH entries. Order is important.
   paths_to_add = [
-    os.path.join(env['GOROOT'], 'bin'),
-    os.path.join(ROOT, 'cipd'),
-    os.path.join(ROOT, 'cipd', 'bin'),
-    os.path.join(ROOT, 'luci', 'appengine', 'components', 'tools'),
+      os.path.join(layout.toolset_root, 'go', 'bin'),
+      os.path.join(ROOT, 'cipd'),
+      os.path.join(ROOT, 'cipd', 'bin'),
+      os.path.join(ROOT, 'luci', 'appengine', 'components', 'tools'),
   ]
   paths_to_add.extend(os.path.join(p, '.vendor', 'bin') for p in vendor_paths)
-  paths_to_add.append(env.get('GOBIN'))
+  paths_to_add.append(os.path.join(layout.workspace, 'bin'))
+
+  return EnvironDiff(
+      env={
+          'GOROOT': os.path.join(layout.toolset_root, 'go'),
+          'GOBIN': os.path.join(layout.workspace, 'bin'),
+          'GOPATH': os.pathsep.join(all_go_paths),
+
+          # Don't use default cache in '~'.
+          'GOCACHE': os.path.join(layout.workspace, '.cache'),
+
+          # Infra Go workspace is not ready for modules yet, attempting to use
+          # them will cause pain.
+          'GOPROXY': 'off',
+          'GO111MODULE': 'off',
+      },
+      env_prefixes={'PATH': paths_to_add},
+  )
+
+
+def get_go_environ(layout):
+  """Returns a copy of os.environ with mutated GO* environment variables.
+
+  This function primarily targets environ on workstations. It assumes
+  the developer may be constantly switching between infra and infra_internal
+  go environments and it has some protection against related edge cases.
+
+  Args:
+    layout: The Layout to derive the environment from.
+  """
+  diff = get_go_environ_diff(layout)
+
+  env = os.environ.copy()
+  for k, v in diff.env.items():
+    if v is not None:
+      env[k] = v
+    else:
+      env.pop(k, None)
+
+  path = env['PATH'].split(os.pathsep)
+  paths_to_add = diff.env_prefixes['PATH']
 
   # Remove preexisting bin/ paths (including .vendor/bin) pointing to infra
   # or infra_internal Go workspaces. It's important when switching from
   # infra_internal to infra environments: infra_internal bin paths should
   # be removed.
-  path = env['PATH'].split(os.pathsep)
   def should_keep(p):
-    # Keep the entry where it is if we are going to add it anyway.
     if p in paths_to_add:
-      return True
+      return False  # we'll move this entry to the front below
     # TODO(vadimsh): This code knows about gclient checkout layout.
-    gclient_root = os.path.dirname(ROOT)
     for d in ['infra', 'infra_internal']:
-      if p.startswith(os.path.join(gclient_root, d, 'go')):
+      if p.startswith(os.path.join(GCLIENT_ROOT, d, 'go')):
         return False
     return True
   path = filter(should_keep, path)
 
-  # Make sure not to add duplicates entries to PATH over and over again when
-  # get_go_environ is invoked multiple times.
-  paths_to_add = [p for p in paths_to_add if p and p not in path]
+  # Prepend paths_to_add to PATH.
   env['PATH'] = os.pathsep.join(paths_to_add + path)
-
-  # Don't use default cache in '~'.
-  env['GOCACHE'] = os.path.join(layout.workspace, '.cache')
-
-  # Infra Go workspace is not ready for modules yet, attempting to use them
-  # will cause pain.
-  env['GOPROXY'] = 'off'
-  env['GO111MODULE'] = 'off'
 
   # Add a tag to the prompt
   infra_prompt_tag = env.get('INFRA_PROMPT_TAG')
@@ -480,7 +502,7 @@ def get_go_exe(toolset_root):
   return os.path.join(toolset_root, 'go', 'bin', 'go' + EXE_SFX)
 
 
-def bootstrap(layout, logging_level):
+def bootstrap(layout, logging_level, args=None):
   """Installs all dependencies in default locations.
 
   Supposed to be called at the beginning of some script (it modifies logger).
@@ -488,9 +510,25 @@ def bootstrap(layout, logging_level):
   Args:
     layout: instance of Layout describing what to install and where.
     logging_level: logging level of bootstrap process.
+    args: positional arguments of bootstrap.py (if any).
+
+  Raises:
+    Failure if bootstrap fails.
   """
   logging.basicConfig()
   LOGGER.setLevel(logging_level)
+
+  # One optional positional argument is a path to write JSON with env diff to.
+  # This is used by recipes which use it in `with api.context(env=...): ...`.
+  json_output = None
+  if args is not None:
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        'json_output',
+        nargs='?',
+        metavar='PATH',
+        help='Where to write JSON with necessary environ adjustments')
+    json_output = parser.parse_args(args=args).json_output
 
   # We need to build and run some Go binaries during bootstrap (e.g. glide), so
   # make sure cross-compilation mode is disabled during bootstrap. Restore it
@@ -521,6 +559,21 @@ def bootstrap(layout, logging_level):
       if v is not None:
         os.environ[k] = v
 
+  output = get_go_environ_diff(layout)._asdict()
+  output['go_version'] = TOOLSET_VERSION
+
+  json_blob = json.dumps(
+      output,
+      sort_keys=True,
+      indent=2,
+      separators=(',', ': '))
+
+  if json_output == '-':
+    print json_blob
+  elif json_output:
+    with open(json_output, 'w') as f:
+      f.write(json_blob)
+
 
 def prepare_go_environ():
   """Returns dict with environment variables to set to use Go toolset.
@@ -549,10 +602,10 @@ def find_executable(name, workspaces):
   return name
 
 
-def main():
-  bootstrap(LAYOUT, logging.DEBUG)
+def main(args):
+  bootstrap(LAYOUT, logging.DEBUG, args)
   return 0
 
 
 if __name__ == '__main__':
-  sys.exit(main())
+  sys.exit(main(sys.argv[1:]))
