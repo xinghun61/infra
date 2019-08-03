@@ -2,6 +2,8 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import contextlib
+
 from recipe_engine import recipe_api
 
 class InfraCheckoutApi(recipe_api.RecipeApi):
@@ -56,6 +58,11 @@ class InfraCheckoutApi(recipe_api.RecipeApi):
           patch_root=patch_root, **kwargs)
 
     class Checkout(object):
+      def __init__(self, m):
+        self.m = m
+        self._go_env = None
+        self._go_env_prefixes = None
+
       @property
       def path(self):
         return path
@@ -101,12 +108,48 @@ class InfraCheckoutApi(recipe_api.RecipeApi):
         with self.m.context(cwd=path):
           self.m.gclient.runhooks()
 
-      @staticmethod
-      def ensure_go_env(infra_step=True):
-        with self.m.context(cwd=path):
-          Checkout.go_env_step('go', 'version', name='init infra go env',
-                               infra_step=infra_step)
+      @contextlib.contextmanager
+      def go_env(self):
+        self.ensure_go_env()
+        with self.m.context(
+            cwd=self.path,
+            env=self._go_env,
+            env_prefixes=self._go_env_prefixes):
+          yield
 
+      def ensure_go_env(self):
+        if self._go_env is not None:
+          return  # already did this
+
+        with self.m.context(cwd=self.path):
+          where = 'infra_internal' if internal else 'infra'
+          step = self.m.python(
+              'init infra go env',
+              path.join(where, 'go', 'bootstrap.py'),
+              [self.m.json.output()],
+              venv=True,
+              infra_step=True,
+              step_test_data=lambda: self.m.json.test_api.output({
+                  'go_version': '1.66.6',
+                  'env': {
+                      'GOROOT': str(path.join('golang', 'go')),
+                      'GOPATH': str(path.join(where, 'go')),
+                  },
+                  'env_prefixes': {
+                      'PATH': [
+                          str(path.join('golang', 'go')),
+                          str(path.join(where, 'go', 'bin')),
+                      ],
+                  },
+              }))
+
+        out = step.json.output
+        step.presentation.step_text += 'Using go %s' % (out.get('go_version'),)
+
+        self._go_env = out['env']
+        self._go_env_prefixes = out['env_prefixes']
+
+      # TODO(vadimsh): Get rid of this in favor of using `with go_env()`.
       @staticmethod
       def go_env_step(*args, **kwargs):
         # name lazily defaults to first two args, like "go test".
@@ -116,6 +159,7 @@ class InfraCheckoutApi(recipe_api.RecipeApi):
           return self.m.python(name, path.join(where, 'go', 'env.py'),
                                args, venv=True, **kwargs)
 
+      # TODO(vadimsh): Get rid of this in favor of using `with go_env()`.
       @staticmethod
       def run_presubmit_in_go_env():
         assert patch_root
@@ -142,4 +186,4 @@ class InfraCheckoutApi(recipe_api.RecipeApi):
         with self.m.context(env={'PRESUBMIT_BUILDER': '1'}):
           Checkout.go_env_step(*presubmit_cmd, name='presubmit')
 
-    return Checkout()
+    return Checkout(self.m)

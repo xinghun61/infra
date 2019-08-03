@@ -102,13 +102,29 @@
     "cmd": [
       "vpython",
       "-u",
-      "[CACHE]/infra_gclient_with_go/infra/go/env.py",
-      "go",
-      "version"
+      "[CACHE]/infra_gclient_with_go/infra/go/bootstrap.py",
+      "/path/to/tmp/json"
     ],
     "cwd": "[CACHE]/infra_gclient_with_go",
     "infra_step": true,
-    "name": "init infra go env"
+    "name": "init infra go env",
+    "~followup_annotations": [
+      "@@@STEP_TEXT@Using go 1.66.6@@@",
+      "@@@STEP_LOG_LINE@json.output@{@@@",
+      "@@@STEP_LOG_LINE@json.output@  \"env\": {@@@",
+      "@@@STEP_LOG_LINE@json.output@    \"GOPATH\": \"[CACHE]/infra_gclient_with_go/infra/go\", @@@",
+      "@@@STEP_LOG_LINE@json.output@    \"GOROOT\": \"[CACHE]/infra_gclient_with_go/golang/go\"@@@",
+      "@@@STEP_LOG_LINE@json.output@  }, @@@",
+      "@@@STEP_LOG_LINE@json.output@  \"env_prefixes\": {@@@",
+      "@@@STEP_LOG_LINE@json.output@    \"PATH\": [@@@",
+      "@@@STEP_LOG_LINE@json.output@      \"[CACHE]/infra_gclient_with_go/golang/go\", @@@",
+      "@@@STEP_LOG_LINE@json.output@      \"[CACHE]/infra_gclient_with_go/infra/go/bin\"@@@",
+      "@@@STEP_LOG_LINE@json.output@    ]@@@",
+      "@@@STEP_LOG_LINE@json.output@  }, @@@",
+      "@@@STEP_LOG_LINE@json.output@  \"go_version\": \"1.66.6\"@@@",
+      "@@@STEP_LOG_LINE@json.output@}@@@",
+      "@@@STEP_LOG_END@json.output@@@"
+    ]
   },
   {
     "cmd": [

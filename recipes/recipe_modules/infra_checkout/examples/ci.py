@@ -9,6 +9,7 @@ DEPS = [
     'recipe_engine/platform',
     'recipe_engine/python',
     'recipe_engine/runtime',
+    'recipe_engine/step',
 ]
 
 
@@ -20,7 +21,8 @@ def RunSteps(api):
   _ = co.bot_update_step  # coverage...
   if not api.platform.is_win:
     co.go_env_step('echo', '$GOPATH', name='echo')
-  co.go_env_step('go', 'test', 'infra/...')
+  with co.go_env():
+    api.step('go test', ['go', 'test', 'infra/...'])
   with api.context(cwd=co.patch_root_path):
     api.python('python tests', 'test.py', ['test', 'infra'])
   with api.context(cwd=co.path):
