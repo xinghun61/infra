@@ -3,12 +3,15 @@
 # found in the LICENSE file.
 """Utility functions for code coverage."""
 
+import base64
+import difflib
 import json
 import urllib2
 
 from common.findit_http_client import FinditHttpClient
 from gae_libs.caches import PickledMemCache
 from libs.cache_decorator import Cached
+from services.code_coverage import diff_util
 
 # Mapping from metric names to detailed explanations, and one use case is to use
 # as the tooltips.
@@ -95,23 +98,7 @@ def GetEquivalentPatchsets(host, project, change, patchset):
   assert isinstance(change, int), 'Change is expected to be an integer'
   assert isinstance(patchset, int), 'Patchset is expected to be an integer'
 
-  project_quoted = urllib2.quote(project, safe='')
-
-  # Uses the Get Change API to get and parse the details of this change.
-  # https://gerrit-review.googlesource.com/Documentation/rest-api-changes.html#get-change.
-  template_to_get_change = (
-      'https://%s/changes/%s~%d?o=ALL_REVISIONS&o=SKIP_MERGEABLE')
-  url = template_to_get_change % (host, project_quoted, change)
-  status_code, content, _ = FinditHttpClient().Get(url)
-  if status_code != 200:
-    raise RuntimeError(
-        'Failed to get change details with status code: %d' % status_code)
-
-  # Remove XSSI magic prefix
-  if content.startswith(')]}\''):
-    content = content[4:]
-  change_details = json.loads(content)
-
+  change_details = _FetchChangeDetails(host, project, change)
   revisions = change_details['revisions'].values()
   revisions.sort(key=lambda r: r['_number'], reverse=True)
   patchsets = []
@@ -141,6 +128,50 @@ def GetEquivalentPatchsets(host, project, change, patchset):
       break
 
   return patchsets
+
+
+def _FetchChangeDetails(host, project, change):
+  """Fetches change detail for a given change.
+
+  Args:
+    host (str): The url of the host.
+    project (str): The project name.
+    change (int): The change number.
+
+  Returns:
+    A dict whose format conforms to the ChangeInfo object:
+    https://gerrit-review.googlesource.com/Documentation/rest-api-changes.html#change-info
+  """
+  # Uses the Get Change API to get and parse the details of this change.
+  # https://gerrit-review.googlesource.com/Documentation/rest-api-changes.html#get-change.
+  template_to_get_change = (
+      'https://%s/changes/%s?o=ALL_REVISIONS&o=SKIP_MERGEABLE')
+  url = template_to_get_change % (host, _GetChangeId(project, change))
+  status_code, response, _ = FinditHttpClient().Get(url)
+  if status_code != 200:
+    raise RuntimeError(
+        'Failed to get change details with status code: %d' % status_code)
+
+  # Remove XSSI magic prefix
+  if response.startswith(')]}\''):
+    response = response[4:]
+
+  return json.loads(response)
+
+
+def _GetChangeId(project, change):
+  """Gets the change id for a given change.
+
+  Args:
+    project (str): The project name.
+    change (int): The change number.
+
+  Returns:
+    A string representing a change id according to:
+    https://gerrit-review.googlesource.com/Documentation/rest-api-changes.html#change-id
+  """
+  project_quoted = urllib2.quote(project, safe='')
+  return '%s~%d' % (project_quoted, change)
 
 
 def DecompressLineRanges(line_ranges):
@@ -216,3 +247,130 @@ def CompressLines(lines):
     range_start_index = i
 
   return line_ranges
+
+
+def RebasePresubmitCoverageDataBetweenPatchsets(
+    host, project, change, patchset_src, patchset_dest, coverage_data_src):
+  """Gets line-number rebased coverage data for a patchset based on another one.
+
+  This function assumes that the two patchsets are a sequence of trivial-rebase
+  or commit-message-edit away, for more details, please see
+  |GetEquivalentPatchsets|.
+
+  The code coverage data format is defined at:
+  https://chromium.googlesource.com/infra/infra/+/refs/heads/master/appengine/findit/model/proto/code_coverage.proto
+
+  Args:
+    host (str): The url of the host.
+    project (str): The project name.
+    change (int): The change number.
+    patchset_src (int): The patchset number to rebase coverage data from.
+    patchset_dest (int): The patchset number to rebase coverage data for.
+    coverage_data_src (list): A list of File coverage data of |patchset_src|.
+
+  Returns:
+    A list of File coverage data of |patchset_dest|.
+  """
+  change_details = _FetchChangeDetails(host, project, change)
+  files_to_rebase = [line_data['path'][2:] for line_data in coverage_data_src]
+
+  # TODO(crbug.com/910289): Parallelize the requests to get file content.
+  files_content_src = _FetchFilesContentFromGerrit(
+      host, project, change, patchset_src, files_to_rebase, change_details)
+  files_content_dest = _FetchFilesContentFromGerrit(
+      host, project, change, patchset_dest, files_to_rebase, change_details)
+
+  assert len(files_content_src) == len(files_content_dest)
+
+  coverage_data_dest = []
+  for line_data_src, content_src, content_dest in zip(
+      coverage_data_src, files_content_src, files_content_dest):
+    diff_lines = list(
+        difflib.unified_diff(content_src.splitlines(),
+                             content_dest.splitlines()))
+    mapping = diff_util.generate_line_number_mapping(diff_lines,
+                                                     content_src.splitlines(),
+                                                     content_dest.splitlines())
+
+    lines_src = DecompressLineRanges(line_data_src['lines'])
+    lines_dest = []
+    for line in lines_src:
+      if line['line'] not in mapping:
+        continue
+
+      lines_dest.append({
+          'line': mapping[line['line']][0],
+          'count': line['count']
+      })
+
+    blocks_src = line_data_src.get('uncovered_blocks', [])
+    blocks_dest = []
+    for block in blocks_src:
+      if block['line'] not in mapping:
+        continue
+
+      blocks_dest.append({
+          'line': mapping[block['line']][0],
+          'ranges': block['ranges'],
+      })
+
+    line_data_dest = {
+        'path': line_data_src['path'],
+        'lines': CompressLines(lines_dest),
+    }
+    if blocks_dest:
+      line_data_dest['uncovered_blocks'] = blocks_dest
+
+    coverage_data_dest.append(line_data_dest)
+
+  # TODO(crbug.com/910289): Filter the coverage data by list of files that are
+  # actually changed by the patchset.
+  return coverage_data_dest
+
+
+def _FetchFilesContentFromGerrit(host, project, change, patchset, file_paths,
+                                 change_details):
+  """Fetches file content for a list of files from Gerrit.
+
+  Args:
+    host (str): The url of the host.
+    project (str): The project name.
+    change (int): The change number.
+    patchset (int): The patchset number.
+    file_paths (list): A list of file paths that are relative to the checkout.
+    change_details (dict): The format conforms to the ChangeInfo object:
+                           https://gerrit-review.googlesource.com/Documentation/rest-api-changes.html#change-info
+
+  Returns:
+    A list of String where each one corresponds to the content of each file.
+  """
+  patchset_revision = None
+  for revision, value in change_details['revisions'].iteritems():
+    if patchset == value['_number']:
+      patchset_revision = revision
+      break
+
+  if not patchset_revision:
+    raise RuntimeError(
+        'Patchset %d is not found in the returned change details: %s' %
+        (patchset, json.dumps(change_details)))
+
+  result = []
+  # TODO(crbug.com/910289): Parallelize the requests to get file content.
+  for file_path in file_paths:
+    # Uses the Get Content API to get the file content from Gerrit.
+    # https://gerrit-review.googlesource.com/Documentation/rest-api-changes.html#get-content
+    quoted_file_path = urllib2.quote(file_path, safe='')
+    url = ('https://%s/changes/%s/revisions/%s/files/%s/content' %
+           (host, _GetChangeId(project, change), patchset_revision,
+            quoted_file_path))
+
+    status_code, response, _ = FinditHttpClient().Get(url)
+    if status_code != 200:
+      raise RuntimeError(
+          'Failed to get change details with status code: %d' % status_code)
+
+    content = base64.b64decode(response)
+    result.append(content)
+
+  return result

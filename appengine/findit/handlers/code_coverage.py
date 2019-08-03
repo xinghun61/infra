@@ -36,7 +36,7 @@ from model.code_coverage import PostsubmitReport
 from model.code_coverage import FileCoverageData
 from model.code_coverage import PresubmitCoverageData
 from model.code_coverage import SummaryCoverageData
-from services import code_coverage as code_coverage_util
+from services.code_coverage import code_coverage_util
 from waterfall import waterfall_config
 
 # List of Gerrit projects that the Code Coverage service supports.
