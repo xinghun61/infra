@@ -79,6 +79,20 @@ type launchedTaskInfo struct {
 	} `json:"swarming"`
 }
 
+// setOutputResultPath tells the task to write its result to a JSON file in the ISOLATED_OUTDIR.
+// This is an interface for getting structured output from a task launched by led.
+func setOutputResultPath(s *Systemland) error {
+	ka := s.KitchenArgs
+	if ka == nil {
+		// TODO(iannucci): Support LUCI runner.
+		// Intentionally not fatal. led supports jobs which don't use kitchen or LUCI runner,
+		// and we don't want to block that usage.
+		return nil
+	}
+	ka.OutputResultJSONPath = "${ISOLATED_OUTDIR}/build.proto.json"
+	return nil
+}
+
 func (c *cmdLaunch) Run(a subcommands.Application, args []string, env subcommands.Env) int {
 	ctx := c.logCfg.Set(cli.GetContext(a, c, env))
 	authOpts, err := c.validateFlags(ctx, args)
@@ -90,6 +104,13 @@ func (c *cmdLaunch) Run(a subcommands.Application, args []string, env subcommand
 
 	jd, err := decodeJobDefinition(ctx)
 	if err != nil {
+		errors.Log(ctx, err)
+		return 1
+	}
+
+	ejd := jd.Edit()
+	ejd.tweakSystemland(setOutputResultPath)
+	if err = ejd.Finalize(); err != nil {
 		errors.Log(ctx, err)
 		return 1
 	}
