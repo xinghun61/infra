@@ -110,32 +110,26 @@ func (ejd *EditJobDefinition) RecipeSource(isolated, cipdPkg, cipdVer string) {
 	})
 }
 
-// EditIsolated replaces the recipe source (if the current JobDefinition uses
-// KitchenArgs) or just the TaskSlice isolated input.
+// EditIsolated replaces the non-recipe isolate in the TaskSlice.
 func (ejd *EditJobDefinition) EditIsolated(isolated string, cmd []string, cwd string) {
 	if isolated == "" {
 		return
 	}
 	ejd.tweak(func(jd *JobDefinition) error {
 		for _, slc := range jd.Slices {
-			if slc.S.KitchenArgs != nil {
-				slc.U.RecipeIsolatedHash = isolated
-				slc.U.RecipeCIPDSource = nil
-			} else {
-				ir := slc.S.TaskSlice.Properties.InputsRef
-				if ir == nil {
-					ir = &swarming.SwarmingRpcsFilesRef{}
-					slc.S.TaskSlice.Properties.InputsRef = ir
-				}
-				ir.Isolated = isolated
-				if len(cmd) > 0 {
-					p := slc.S.TaskSlice.Properties
-					p.Command = cmd
-					p.RelativeCwd = cwd
-					if len(p.ExtraArgs) > 0 {
-						p.Command = append(p.Command, p.ExtraArgs...)
-						p.ExtraArgs = nil
-					}
+			ir := slc.S.TaskSlice.Properties.InputsRef
+			if ir == nil {
+				ir = &swarming.SwarmingRpcsFilesRef{}
+				slc.S.TaskSlice.Properties.InputsRef = ir
+			}
+			ir.Isolated = isolated
+			if len(cmd) > 0 {
+				p := slc.S.TaskSlice.Properties
+				p.Command = cmd
+				p.RelativeCwd = cwd
+				if len(p.ExtraArgs) > 0 {
+					p.Command = append(p.Command, p.ExtraArgs...)
+					p.ExtraArgs = nil
 				}
 			}
 		}
