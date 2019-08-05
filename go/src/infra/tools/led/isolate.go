@@ -20,7 +20,7 @@ import (
 	"go.chromium.org/luci/common/retry"
 )
 
-func combineIsolates(ctx context.Context, arc *archiver.Archiver, h crypto.Hash, isoHashes ...isolated.HexDigest) (isolated.HexDigest, error) {
+func combineIsolateds(ctx context.Context, arc *archiver.Archiver, h crypto.Hash, isoHashes ...isolated.HexDigest) (isolated.HexDigest, error) {
 	if len(isoHashes) == 1 {
 		return isoHashes[0], nil
 	}

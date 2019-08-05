@@ -12,11 +12,9 @@ import (
 
 	"golang.org/x/net/context"
 
-	"go.chromium.org/luci/client/archiver"
 	swarming "go.chromium.org/luci/common/api/swarming/swarming/v1"
 	"go.chromium.org/luci/common/data/rand/cryptorand"
 	"go.chromium.org/luci/common/errors"
-	"go.chromium.org/luci/common/isolatedclient"
 	logdog_types "go.chromium.org/luci/logdog/common/types"
 
 	"infra/tools/kitchen/cookflags"
@@ -164,14 +162,11 @@ func (tl *ToplevelFields) apply(st *swarming.SwarmingRpcsNewTaskRequest) {
 	st.User = tl.User
 }
 
-func (js *JobSlice) gen(ctx context.Context, uid string, logPrefix logdog_types.StreamName, arc *archiver.Archiver) (ret *swarming.SwarmingRpcsTaskSlice, extraTags []string, err error) {
+func (js *JobSlice) gen(ctx context.Context, uid string, logPrefix logdog_types.StreamName) (ret *swarming.SwarmingRpcsTaskSlice, extraTags []string) {
 	ret = &(*js.S.TaskSlice)
-	var userTags, systemTags []string
-	args, systemTags, err := js.S.apply(ctx, uid, logPrefix, ret)
-	if err == nil {
-		userTags, err = js.U.apply(ctx, arc, args, ret)
-	}
-	if err == nil && args != nil {
+	args, systemTags := js.S.apply(ctx, uid, logPrefix, ret)
+	userTags := js.U.apply(ctx, args, ret)
+	if args != nil {
 		ret.Properties.Command = append([]string{"kitchen${EXECUTABLE_SUFFIX}", "cook"},
 			args.Dump()...)
 		extraTags = append(systemTags, userTags...)
@@ -181,9 +176,7 @@ func (js *JobSlice) gen(ctx context.Context, uid string, logPrefix logdog_types.
 
 // GetSwarmingNewTask builds a usable SwarmingRpcsNewTaskRequest from the
 // JobDefinition, incorporating all of the extra bits of the JobDefinition.
-func (jd *JobDefinition) GetSwarmingNewTask(ctx context.Context, uid string, isoClient *isolatedclient.Client) (*swarming.SwarmingRpcsNewTaskRequest, error) {
-	arc := mkArchiver(ctx, isoClient)
-
+func (jd *JobDefinition) GetSwarmingNewTask(ctx context.Context, uid string) (*swarming.SwarmingRpcsNewTaskRequest, error) {
 	st := &swarming.SwarmingRpcsNewTaskRequest{}
 	jd.TopLevel.apply(st)
 	prefix, err := generateLogdogStream(ctx, uid)
@@ -191,10 +184,7 @@ func (jd *JobDefinition) GetSwarmingNewTask(ctx context.Context, uid string, iso
 		return nil, errors.Annotate(err, "generating logdog prefix").Err()
 	}
 	for i, s := range jd.Slices {
-		slc, extraTags, err := s.gen(ctx, uid, prefix, arc)
-		if err != nil {
-			return nil, errors.Annotate(err, "generating TaskSlice %d", i).Err()
-		}
+		slc, extraTags := s.gen(ctx, uid, prefix)
 		// HACK(iannucci): Technically the swarming task could define task slice
 		// fallbacks which had e.g. different logdog URLs or different recipe
 		// versions. In practice, with buildbucket/kitchen, we don't do this, so the

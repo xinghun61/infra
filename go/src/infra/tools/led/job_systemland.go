@@ -13,7 +13,7 @@ import (
 	logdog_types "go.chromium.org/luci/logdog/common/types"
 )
 
-func (s *Systemland) apply(ctx context.Context, uid string, logPrefix logdog_types.StreamName, ts *swarming.SwarmingRpcsTaskSlice) (args *cookflags.CookFlags, extraTags []string, err error) {
+func (s *Systemland) apply(ctx context.Context, uid string, logPrefix logdog_types.StreamName, ts *swarming.SwarmingRpcsTaskSlice) (args *cookflags.CookFlags, extraTags []string) {
 	ts.Properties.Env = exfiltrateMap(s.Env)
 
 	if s.KitchenArgs != nil {

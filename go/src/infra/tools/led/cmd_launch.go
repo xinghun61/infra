@@ -108,13 +108,6 @@ func (c *cmdLaunch) Run(a subcommands.Application, args []string, env subcommand
 		return 1
 	}
 
-	ejd := jd.Edit()
-	ejd.tweakSystemland(setOutputResultPath)
-	if err = ejd.Finalize(); err != nil {
-		errors.Log(ctx, err)
-		return 1
-	}
-
 	authClient, swarm, err := newSwarmClient(ctx, authOpts, jd.SwarmingHostname)
 	if err != nil {
 		errors.Log(ctx, err)
@@ -147,10 +140,18 @@ func (c *cmdLaunch) Run(a subcommands.Application, args []string, env subcommand
 		return 1
 	}
 
+	ejd := jd.Edit()
+	ejd.tweakSystemland(setOutputResultPath)
+	ejd.ConsolidateIsolateSources(ctx, isoClient)
+	if err := ejd.Finalize(); err != nil {
+		errors.Log(ctx, err)
+		return 1
+	}
+
 	jd.TopLevel.Tags = append(jd.TopLevel.Tags, "user:"+uid)
 
 	logging.Infof(ctx, "building swarming task")
-	st, err := jd.GetSwarmingNewTask(ctx, uid, isoClient)
+	st, err := jd.GetSwarmingNewTask(ctx, uid)
 	if err != nil {
 		errors.Log(ctx, err)
 		return 1

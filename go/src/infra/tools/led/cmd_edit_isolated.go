@@ -116,14 +116,23 @@ func (c *cmdEditIsolated) Run(a subcommands.Application, args []string, env subc
 			return err
 		}
 
-		currentIsolated := jd.Slices[0].U.RecipeIsolatedHash
-		if currentIsolated == "" {
-			if ir := jd.Slices[0].S.TaskSlice.Properties.InputsRef; ir != nil {
-				currentIsolated = ir.Isolated
-			}
+		ejd := jd.Edit()
+		ejd.ConsolidateIsolateSources(ctx, isoClient)
+		if err := ejd.Finalize(); err != nil {
+			return err
 		}
-		var cmd []string
-		var cwd string
+
+		// At this point only one of RecipeIsolatedHash or InputsRef will be set,
+		// and any cmd/cwd in InputsRef have been extracted from the isolated. If
+		// there's some existing isolated, download it so the user can edit it.
+		var currentIsolated string
+		var storeInRecipeIsolated bool
+		if rih := jd.Slices[0].U.RecipeIsolatedHash; rih != "" {
+			currentIsolated = rih
+			storeInRecipeIsolated = true
+		} else if ir := jd.Slices[0].S.TaskSlice.Properties.InputsRef; ir != nil {
+			currentIsolated = ir.Isolated
+		}
 		if currentIsolated != "" {
 			var statMu sync.Mutex
 			var previousStats *downloader.FileStats
@@ -139,12 +148,8 @@ func (c *cmdEditIsolated) Run(a subcommands.Application, args []string, env subc
 			if err = dl.Wait(); err != nil {
 				return err
 			}
-
-			cmd, cwd, err = dl.CmdAndCwd()
-			if err != nil {
-				return err
-			}
 		}
+
 		if len(c.transformProgram) == 0 {
 			logging.Infof(ctx, "")
 			logging.Infof(ctx, "Edit files as you wish in:")
@@ -154,11 +159,11 @@ func (c *cmdEditIsolated) Run(a subcommands.Application, args []string, env subc
 			}
 		} else {
 			logging.Infof(ctx, "Invoking transform_program: %q", c.transformProgram)
-			cmd := exec.CommandContext(ctx, c.transformProgram[0], c.transformProgram[1:]...)
-			cmd.Stdout = os.Stderr
-			cmd.Stderr = os.Stderr
-			cmd.Dir = tdir
-			if err := cmd.Run(); err != nil {
+			tProg := exec.CommandContext(ctx, c.transformProgram[0], c.transformProgram[1:]...)
+			tProg.Stdout = os.Stderr
+			tProg.Stderr = os.Stderr
+			tProg.Dir = tdir
+			if err := tProg.Run(); err != nil {
 				return errors.Annotate(err, "running transform_program").Err()
 			}
 		}
@@ -171,8 +176,12 @@ func (c *cmdEditIsolated) Run(a subcommands.Application, args []string, env subc
 		}
 		logging.Infof(ctx, "isolated upload: done")
 
-		ejd := jd.Edit()
-		ejd.EditIsolated(string(hash), cmd, cwd)
+		ejd = jd.Edit()
+		if storeInRecipeIsolated {
+			ejd.RecipeSource(string(hash), "", "")
+		} else {
+			ejd.EditIsolated(string(hash))
+		}
 		return ejd.Finalize()
 	})
 	if err != nil {

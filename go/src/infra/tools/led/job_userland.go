@@ -8,40 +8,22 @@ import (
 	"context"
 	"infra/tools/kitchen/cookflags"
 
-	"go.chromium.org/luci/client/archiver"
 	swarming "go.chromium.org/luci/common/api/swarming/swarming/v1"
-	"go.chromium.org/luci/common/errors"
-	"go.chromium.org/luci/common/isolated"
 )
 
 const recipeCheckoutDir = "recipe-checkout-dir"
 
-func (u *Userland) apply(ctx context.Context, arc *archiver.Archiver, args *cookflags.CookFlags, ts *swarming.SwarmingRpcsTaskSlice) (extraTags []string, err error) {
+func (u *Userland) apply(ctx context.Context, args *cookflags.CookFlags, ts *swarming.SwarmingRpcsTaskSlice) (extraTags []string) {
 	props := ts.Properties
 	props.Dimensions = exfiltrateMap(u.Dimensions)
 
 	if args != nil {
 		if u.RecipeIsolatedHash != "" {
 			args.CheckoutDir = recipeCheckoutDir
-
-			isoHash := u.RecipeIsolatedHash
 			if props.InputsRef == nil {
 				props.InputsRef = &swarming.SwarmingRpcsFilesRef{}
 			}
-			if props.InputsRef.Isolated != "" {
-				toCombine := isolated.HexDigests{
-					isolated.HexDigest(isoHash),
-					isolated.HexDigest(props.InputsRef.Isolated),
-				}
-				// TODO(maruel): Confirm the namespace here is compatible with arc's.
-				h := isolated.GetHash(props.InputsRef.Namespace)
-				newHash, err := combineIsolates(ctx, arc, h, toCombine...)
-				if err != nil {
-					return nil, errors.Annotate(err, "combining isolateds").Err()
-				}
-				isoHash = string(newHash)
-			}
-			props.InputsRef.Isolated = isoHash
+			props.InputsRef.Isolated = u.RecipeIsolatedHash
 			// TODO(iannucci): add recipe_repository swarming tag
 			// `led isolate` should be able to capture this and embed in the
 			// JobDefinition.
@@ -69,5 +51,5 @@ func (u *Userland) apply(ctx context.Context, arc *archiver.Archiver, args *cook
 		}
 	}
 
-	return extraTags, nil
+	return extraTags
 }

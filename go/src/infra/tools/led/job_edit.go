@@ -5,11 +5,15 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"strings"
 
 	swarming "go.chromium.org/luci/common/api/swarming/swarming/v1"
 	"go.chromium.org/luci/common/errors"
+	"go.chromium.org/luci/common/isolated"
+	"go.chromium.org/luci/common/isolatedclient"
+	"golang.org/x/net/context"
 
 	"infra/tools/kitchen/cookflags"
 )
@@ -111,7 +115,7 @@ func (ejd *EditJobDefinition) RecipeSource(isolated, cipdPkg, cipdVer string) {
 }
 
 // EditIsolated replaces the non-recipe isolate in the TaskSlice.
-func (ejd *EditJobDefinition) EditIsolated(isolated string, cmd []string, cwd string) {
+func (ejd *EditJobDefinition) EditIsolated(isolated string) {
 	if isolated == "" {
 		return
 	}
@@ -123,15 +127,100 @@ func (ejd *EditJobDefinition) EditIsolated(isolated string, cmd []string, cwd st
 				slc.S.TaskSlice.Properties.InputsRef = ir
 			}
 			ir.Isolated = isolated
+		}
+		return nil
+	})
+}
+
+func extractCmdCwdFromIsolated(ctx context.Context, isoClient *isolatedclient.Client, rootIso isolated.HexDigest) (cmd []string, cwd string, err error) {
+	seenIsolateds := map[isolated.HexDigest]struct{}{}
+	queue := isolated.HexDigests{rootIso}
+
+	// borrowed from go.chromium.org/luci/client/downloader.
+	//
+	// It's rather silly that there's no library functionality to do this.
+	for len(queue) > 0 {
+		iso := queue[0]
+		if _, ok := seenIsolateds[iso]; ok {
+			err = errors.Reason("loop detected when resolving isolate %q", rootIso).Err()
+		}
+		seenIsolateds[iso] = struct{}{}
+
+		buf := bytes.Buffer{}
+		if err = isoClient.Fetch(ctx, rootIso, &buf); err != nil {
+			err = errors.Annotate(err, "fetching isolated %q", iso).Err()
+			return
+		}
+		isoFile := isolated.Isolated{}
+		if err = json.Unmarshal(buf.Bytes(), &isoFile); err != nil {
+			err = errors.Annotate(err, "parsing isolated %q", iso).Err()
+			return
+		}
+
+		if len(isoFile.Command) > 0 {
+			cmd = isoFile.Command
+			cwd = isoFile.RelativeCwd
+			break
+		}
+
+		queue = append(isoFile.Includes, queue[1:]...)
+	}
+
+	return
+}
+
+// ConsolidateIsolateSources will
+//
+//   * Extract Cmd/Cwd from the InputsRef.Isolated (if set)
+//   * Combine the InputsRef.Isolated with the RecipeIsolatedHash (if set) and
+//     store the combined isolated in Userland.RecipeIsolatedHash.
+func (ejd *EditJobDefinition) ConsolidateIsolateSources(ctx context.Context, isoClient *isolatedclient.Client) {
+	arc := mkArchiver(ctx, isoClient)
+
+	ejd.tweak(func(jd *JobDefinition) error {
+		for _, slc := range jd.Slices {
+			ts := slc.S.TaskSlice
+			if ts == nil || ts.Properties == nil || ts.Properties.InputsRef == nil {
+				continue
+			}
+
+			// extract the cmd/cwd from the isolated, if they're set.
+			//
+			// This is an old feature of swarming/isolated where the isolated file can
+			// contain directives for the swarming task.
+			cmd, cwd, err := extractCmdCwdFromIsolated(
+				ctx, isoClient, isolated.HexDigest(ts.Properties.InputsRef.Isolated))
+			if err != nil {
+				return err
+			}
 			if len(cmd) > 0 {
-				p := slc.S.TaskSlice.Properties
-				p.Command = cmd
-				p.RelativeCwd = cwd
-				if len(p.ExtraArgs) > 0 {
-					p.Command = append(p.Command, p.ExtraArgs...)
-					p.ExtraArgs = nil
+				ts.Properties.Command = cmd
+				ts.Properties.RelativeCwd = cwd
+				// ExtraArgs is allowed to be set only if the Command is coming from the
+				// isolated. However, now that we're explicitly setting the Command, we
+				// must move ExtraArgs into Command.
+				if len(ts.Properties.ExtraArgs) > 0 {
+					ts.Properties.Command = append(ts.Properties.Command, ts.Properties.ExtraArgs...)
+					ts.Properties.ExtraArgs = nil
 				}
 			}
+
+			if slc.U.RecipeIsolatedHash == "" {
+				continue
+			}
+
+			// TODO(maruel): Confirm the namespace here is compatible with arc's.
+			h := isolated.GetHash(ts.Properties.InputsRef.Namespace)
+			newHash, err := combineIsolateds(ctx, arc, h,
+				isolated.HexDigest(slc.U.RecipeIsolatedHash),
+				isolated.HexDigest(ts.Properties.InputsRef.Isolated),
+			)
+			if err != nil {
+				return errors.Annotate(err, "combining isolateds").Err()
+			}
+
+			slc.S.TaskSlice.Properties.InputsRef = nil
+			slc.U.RecipeIsolatedHash = string(newHash)
 		}
 		return nil
 	})
