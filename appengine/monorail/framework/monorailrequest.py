@@ -87,7 +87,7 @@ class MonorailApiRequest(MonorailRequestBase):
     self.params = {
       'can': 1,
       'start': 0,
-      'num': 100,
+      'num': tracker_constants.DEFAULT_RESULTS_PER_PAGE,
       'q': '',
       'sort': '',
       'groupby': '',
@@ -298,7 +298,8 @@ class MonorailRequest(MonorailRequestBase):
   def _ParseQueryParameters(self):
     """Parse and convert all the query string params used in any servlet."""
     self.start = self.GetPositiveIntParam('start', default_value=0)
-    self.num = self.GetPositiveIntParam('num', default_value=100)
+    self.num = self.GetPositiveIntParam(
+        'num', default_value=tracker_constants.DEFAULT_RESULTS_PER_PAGE)
     # Prevent DoS attacks that try to make us serve really huge result pages.
     self.num = min(self.num, settings.max_artifact_search_results_per_page)
 
