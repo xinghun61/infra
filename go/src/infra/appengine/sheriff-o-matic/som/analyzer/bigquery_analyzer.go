@@ -4,10 +4,13 @@ import (
 	"cloud.google.com/go/bigquery"
 	"fmt"
 	"go.chromium.org/gae/service/info"
+	"go.chromium.org/luci/common/data/stringset"
 	"go.chromium.org/luci/common/logging"
 	"golang.org/x/net/context"
 	"google.golang.org/api/iterator"
 	"infra/monitoring/messages"
+	"sort"
+	"strings"
 	"time"
 )
 
@@ -164,6 +167,11 @@ func GetBigQueryAlerts(ctx context.Context, tree string) ([]messages.BuildFailur
 		if err != nil {
 			return nil, err
 		}
+		// TODO: figure out how to better handle build steps that
+		// have never passed, ever.
+		if r.BuildRangeBegin.Int64 == 0 {
+			continue
+		}
 		gitBegin := r.CPRangeOutputBegin
 		if gitBegin == nil {
 			gitBegin = r.CPRangeInputBegin
@@ -269,5 +277,80 @@ func GetBigQueryAlerts(ctx context.Context, tree string) ([]messages.BuildFailur
 		ret = append(ret, bf)
 	}
 
+	ret = filterHierarchicalSteps(ret)
 	return ret, nil
+}
+
+func builderKey(b messages.AlertedBuilder) string {
+	return fmt.Sprintf("%s/%s/%s", b.Project, b.Bucket, b.Name)
+}
+
+func filterHierarchicalSteps(failures []messages.BuildFailure) []messages.BuildFailure {
+	ret := []messages.BuildFailure{}
+	// First group failures by builder.
+	failuresByBuilder := map[string][]messages.BuildFailure{}
+	builders := map[string]messages.AlertedBuilder{}
+	for _, f := range failures {
+		for _, b := range f.Builders {
+			key := builderKey(b)
+			builders[key] = b
+			if _, ok := failuresByBuilder[key]; !ok {
+				failuresByBuilder[key] = []messages.BuildFailure{}
+			}
+			failuresByBuilder[key] = append(failuresByBuilder[key], f)
+		}
+	}
+
+	filteredFailuresByBuilder := map[string]stringset.Set{}
+
+	// For each builder, sort failing steps.
+	for key, failures := range failuresByBuilder {
+		sort.Sort(byStepName(failures))
+		filteredFailures := stringset.New(0)
+		// For each step in builder steps, if it's a prefix of the one after it,
+		// ignore that step.
+		for i, step := range failures {
+			if i <= len(failures)-2 {
+				nextStep := failures[i+1]
+				if strings.HasPrefix(nextStep.StepAtFault.Step.Name, step.StepAtFault.Step.Name+"|") {
+					// Skip this step since it has at least one child.
+					continue
+				}
+			}
+			filteredFailures.Add(step.StepAtFault.Step.Name)
+		}
+		filteredFailuresByBuilder[key] = filteredFailures
+	}
+
+	// Now filter out BuildFailures whose StepAtFault has been filtered out for
+	// that builder.
+	for _, failure := range failures {
+		filteredBuilders := []messages.AlertedBuilder{}
+		for _, b := range failure.Builders {
+			key := builderKey(b)
+			filtered := filteredFailuresByBuilder[key]
+			if filtered.Has(failure.StepAtFault.Step.Name) {
+				filteredBuilders = append(filteredBuilders, b)
+			}
+		}
+		if len(filteredBuilders) > 0 {
+			failure.Builders = filteredBuilders
+			ret = append(ret, failure)
+		}
+	}
+
+	return ret
+}
+
+// TODO(seanmccullough): rename if we aren't sorting by step name, which may
+// not be the most robust sorting method. Check if Step.Number is always
+// populated, though that may not translate well because multiple builders are
+// grouped by failing step and the same "step" may occur at different
+// indexes in different builders.
+type byStepName []messages.BuildFailure
+
+func (a byStepName) Len() int      { return len(a) }
+func (a byStepName) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
+func (a byStepName) Less(i, j int) bool {
+	return a[i].StepAtFault.Step.Name < a[j].StepAtFault.Step.Name
 }
