@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-package dashboard
+package main
 
 import (
 	"html/template"
@@ -21,6 +21,7 @@ import (
 	"go.chromium.org/luci/server/router"
 	"go.chromium.org/luci/server/templates"
 	"golang.org/x/net/context"
+	"google.golang.org/appengine"
 
 	dashpb "infra/appengine/dashboard/api/dashboard"
 )
@@ -61,7 +62,7 @@ func pageBase() router.MiddlewareChain {
 	)
 }
 
-func init() {
+func main() {
 	r := router.New()
 	standard.InstallHandlers(r)
 	r.GET("/", pageBase(), dashboard)
@@ -78,6 +79,7 @@ func init() {
 	})
 	discovery.Enable(api)
 	api.InstallHandlers(r, standard.Base())
+	appengine.Main()
 }
 
 func dashboard(ctx *router.Context) {

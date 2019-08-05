@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-package dashboard
+package main
 
 import (
 	dashpb "infra/appengine/dashboard/api/dashboard"
