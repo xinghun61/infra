@@ -19,7 +19,7 @@ export class MrGridPage extends connectStore(LitElement) {
       <div id="grid-area">
         <mr-grid-controls
           .queryParams=${this.queryParams}
-          .customFieldDefs=${this.fields}
+          .customIssueProperties=${this.fields}
           .issueCount=${this.issues.length}>
         </mr-grid-controls>
         <progress
