@@ -153,6 +153,7 @@ func isXcode10v2(xcodeVersion string) bool {
 		"10E1001",
 		"10G8",
 		"11M374r",
+		"11M382q",
 	}
 	for _, v := range versions {
 		if strings.HasPrefix(xcodeVersion, v) {
