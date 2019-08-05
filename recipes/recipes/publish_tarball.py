@@ -263,8 +263,14 @@ def publish_tarball(api):
       api.path['checkout'].join('tools', 'clang', 'scripts', update_script)
       ] + update_args)
 
+  android_profile_path = api.path['checkout'].join(
+      'chrome', 'android', 'profiles')
   api.python('fetch android AFDO profile', api.path['checkout'].join(
-      'chrome', 'android', 'profiles', 'update_afdo_profile.py'), [])
+      'tools', 'download_cros_provided_profile.py'), [
+          '--newest_state', android_profile_path.join('newest.txt'),
+          '--local_state', android_profile_path.join('local.txt'),
+          '--output_name', android_profile_path.join('afdo.prof'),
+          '--gs_url_base=chromeos-prebuilt/afdo-job/llvm'])
 
   node_modules_sha_path = api.path['checkout'].join(
       'third_party', 'node', 'node_modules.tar.gz.sha1')
