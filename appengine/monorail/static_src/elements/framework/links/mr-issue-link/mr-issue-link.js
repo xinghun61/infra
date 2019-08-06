@@ -52,6 +52,12 @@ export class MrIssueLink extends LitElement {
     this.short = false;
   }
 
+  click() {
+    const link = this.shadowRoot.querySelector('a');
+    if (!link) return;
+    link.click();
+  }
+
   get isClosed() {
     if (!this.issue || !this.issue.statusRef) return false;
 

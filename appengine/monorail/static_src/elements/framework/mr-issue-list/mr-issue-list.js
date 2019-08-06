@@ -88,6 +88,7 @@ export class MrIssueList extends connectStore(LitElement) {
         @dragover=${this._dragover}
         @drop=${this._dragdrop}
         @click=${this._clickIssueRow}
+        @auxclick=${this._clickIssueRow}
         @keydown=${this._runListHotkeys}
         tabindex="0"
       >
@@ -197,6 +198,8 @@ export class MrIssueList extends connectStore(LitElement) {
 
     this._fieldDefMap = new Map();
     this._labelPrefixSet = new Set();
+    // Expose page.js for stubbing.
+    this._page = page;
   };
 
   stateChanged(state) {
@@ -331,8 +334,8 @@ export class MrIssueList extends connectStore(LitElement) {
 
   _clickIssueRow(e) {
     const containsIgnoredElement = e.path && e.path.find(
-      (node) => node.classList
-        && node.classList.contains('ignore-navigation'));
+      (node) => (node.tagName || '').toUpperCase() === 'A' || (node.classList
+        && node.classList.contains('ignore-navigation')));
     if (containsIgnoredElement) return;
 
     const row = e.currentTarget;
@@ -340,7 +343,8 @@ export class MrIssueList extends connectStore(LitElement) {
     const i = Number.parseInt(row.dataset.index);
 
     if (i >= 0 && i < this.issues.length) {
-      this._navigateToIssue(this.issues[i]);
+      this._navigateToIssue(this.issues[i], e.metaKey ||
+          e.ctrlKey || e.button === 1);
     }
   }
 
@@ -354,9 +358,11 @@ export class MrIssueList extends connectStore(LitElement) {
     const link = `${url}${query}`;
 
     if (newTab) {
+      // Whether the link opens in a new tab or window is based on the
+      // user's browser preferences.
       window.open(link, '_blank', 'noopener');
     } else {
-      page(link);
+      this._page(link);
     }
   }
 };

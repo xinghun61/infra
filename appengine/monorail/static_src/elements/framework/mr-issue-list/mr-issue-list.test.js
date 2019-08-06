@@ -17,10 +17,13 @@ describe('mr-issue-list', () => {
   beforeEach(() => {
     element = document.createElement('mr-issue-list');
     document.body.appendChild(element);
+    sinon.stub(element, '_page');
+    sinon.stub(window, 'open');
   });
 
   afterEach(() => {
     document.body.removeChild(element);
+    window.open.restore();
   });
 
   it('initializes', () => {
@@ -42,6 +45,104 @@ describe('mr-issue-list', () => {
 
     assert.equal(summaries[0].textContent.trim(), 'test issue');
     assert.equal(summaries[1].textContent.trim(), 'I have a summary');
+  });
+
+  it('clicking issue link does not trigger _navigateToIssue', async () => {
+    sinon.stub(element, '_navigateToIssue');
+
+    // Prevent the page from actually navigating on the link click.
+    const clickIntercepter = sinon.spy((e) => {
+      e.preventDefault();
+    });
+    window.addEventListener('click', clickIntercepter);
+
+    element.issues = [
+      {summary: 'test issue'},
+      {summary: 'I have a summary'},
+    ];
+    element.columns = ['ID'];
+
+    await element.updateComplete;
+
+    const idLink = element.shadowRoot.querySelector('.col-id > mr-issue-link');
+
+    idLink.click();
+
+    sinon.assert.calledOnce(clickIntercepter);
+    sinon.assert.notCalled(element._navigateToIssue);
+
+    window.removeEventListener('click', clickIntercepter);
+  });
+
+  it('clicking issue row opens issue', async () => {
+    element.issues = [{
+      summary: 'click me',
+      localId: 22,
+      projectName: 'chromium',
+    }];
+    element.columns = ['Summary'];
+
+    await element.updateComplete;
+
+    const rowChild = element.shadowRoot.querySelector('.col-summary');
+    rowChild.click();
+
+    sinon.assert.calledWith(element._page, '/p/chromium/issues/detail?id=22');
+    sinon.assert.notCalled(window.open);
+  });
+
+  it('ctrl+click on row on opens issue in new tab', async () => {
+    element.issues = [{
+      summary: 'click me',
+      localId: 24,
+      projectName: 'chromium',
+    }];
+    element.columns = ['Summary'];
+
+    await element.updateComplete;
+
+    const rowChild = element.shadowRoot.querySelector('.col-summary');
+    rowChild.dispatchEvent(new MouseEvent('click',
+      {ctrlKey: true, bubbles: true}));
+
+    sinon.assert.calledWith(window.open,
+      '/p/chromium/issues/detail?id=24', '_blank', 'noopener');
+  });
+
+  it('meta+click on row on opens issue in new tab', async () => {
+    element.issues = [{
+      summary: 'click me',
+      localId: 24,
+      projectName: 'chromium',
+    }];
+    element.columns = ['Summary'];
+
+    await element.updateComplete;
+
+    const rowChild = element.shadowRoot.querySelector('.col-summary');
+    rowChild.dispatchEvent(new MouseEvent('click',
+      {metaKey: true, bubbles: true}));
+
+    sinon.assert.calledWith(window.open,
+      '/p/chromium/issues/detail?id=24', '_blank', 'noopener');
+  });
+
+  it('mouse wheel click on row on opens issue in new tab', async () => {
+    element.issues = [{
+      summary: 'click me',
+      localId: 24,
+      projectName: 'chromium',
+    }];
+    element.columns = ['Summary'];
+
+    await element.updateComplete;
+
+    const rowChild = element.shadowRoot.querySelector('.col-summary');
+    rowChild.dispatchEvent(new MouseEvent('auxclick',
+      {button: 1, bubbles: true}));
+
+    sinon.assert.calledWith(window.open,
+      '/p/chromium/issues/detail?id=24', '_blank', 'noopener');
   });
 
   it('AllLabels column renders', async () => {
