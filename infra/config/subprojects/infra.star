@@ -80,7 +80,7 @@ try_builder(
     recipe = 'images_builder',
     cq = False,
     properties = {
-        'mode': 'MODE_CI',
+        'mode': 'MODE_CL',
         'project': 'PROJECT_INFRA',
         'infra': 'dev',
         'manifests': ['infra/build/images/deterministic'],
