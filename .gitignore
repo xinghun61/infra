@@ -4,7 +4,7 @@
 ENV
 .wheelcache
 bootstrap/virtualenv-ext
-luci
+/luci
 appengine/swarming
 appengine/milo/vulcanized_main.html
 appengine/experimental/milo-linear/vulcanized_main.html
