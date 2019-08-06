@@ -9,10 +9,9 @@ import (
 )
 
 const (
-	pacificTZ = "US/Pacific"
-	estTZ     = "EST"
-	apacTZ    = "Australia/Sydney"
-	euTZ      = "UTC"
+	amerTZ = "US/Pacific"
+	emeaTZ = "UTC"
+	apacTZ = "Australia/Sydney"
 )
 
 type memberTZ struct {
@@ -22,17 +21,13 @@ type memberTZ struct {
 
 func TestGenerateTZFair(t *testing.T) {
 
-	pacificLocation, err := time.LoadLocation(pacificTZ)
+	amerLocation, err := time.LoadLocation(amerTZ)
 	if err != nil {
-		t.Fatalf("time.LoadLocation(%q) failed: %v", pacificTZ, err)
+		t.Fatalf("time.LoadLocation(%q) failed: %v", amerTZ, err)
 	}
-	euLocation, err := time.LoadLocation(euTZ)
+	emeaLocation, err := time.LoadLocation(emeaTZ)
 	if err != nil {
-		t.Fatalf("time.LoadLocation(%q) failed: %v", euTZ, err)
-	}
-	estLocation, err := time.LoadLocation(estTZ)
-	if err != nil {
-		t.Fatalf("time.LoadLocation(%q) failed: %v", estTZ, err)
+		t.Fatalf("time.LoadLocation(%q) failed: %v", emeaTZ, err)
 	}
 	apacLocation, err := time.LoadLocation(apacTZ)
 	if err != nil {
@@ -211,14 +206,11 @@ func TestGenerateTZFair(t *testing.T) {
 				members: "ABC",
 				TZ:      apacLocation,
 			}, {
-				members: "DEF",
-				TZ:      estLocation,
-			}, {
 				members: "GHI",
-				TZ:      pacificLocation,
+				TZ:      amerLocation,
 			}, {
 				members: "JKL",
-				TZ:      euLocation,
+				TZ:      emeaLocation,
 			},
 			},
 			previous: "ABCDEFGHIJKL",
@@ -227,13 +219,10 @@ func TestGenerateTZFair(t *testing.T) {
 					Name: "Test Shift",
 					OnCall: []rotang.ShiftMember{
 						{
-							Email:     "A@A.com",
-							ShiftName: "Test Shift",
-						}, {
-							Email:     "D@D.com",
-							ShiftName: "Test Shift",
-						}, {
 							Email:     "G@G.com",
+							ShiftName: "Test Shift",
+						}, {
+							Email:     "A@A.com",
 							ShiftName: "Test Shift",
 						}, {
 							Email:     "J@J.com",
@@ -246,13 +235,10 @@ func TestGenerateTZFair(t *testing.T) {
 					Name: "Test Shift",
 					OnCall: []rotang.ShiftMember{
 						{
-							Email:     "B@B.com",
-							ShiftName: "Test Shift",
-						}, {
-							Email:     "E@E.com",
-							ShiftName: "Test Shift",
-						}, {
 							Email:     "H@H.com",
+							ShiftName: "Test Shift",
+						}, {
+							Email:     "B@B.com",
 							ShiftName: "Test Shift",
 						}, {
 							Email:     "K@K.com",
@@ -265,13 +251,10 @@ func TestGenerateTZFair(t *testing.T) {
 					Name: "Test Shift",
 					OnCall: []rotang.ShiftMember{
 						{
-							Email:     "C@C.com",
-							ShiftName: "Test Shift",
-						}, {
-							Email:     "F@F.com",
-							ShiftName: "Test Shift",
-						}, {
 							Email:     "I@I.com",
+							ShiftName: "Test Shift",
+						}, {
+							Email:     "C@C.com",
 							ShiftName: "Test Shift",
 						}, {
 							Email:     "L@L.com",
@@ -284,13 +267,10 @@ func TestGenerateTZFair(t *testing.T) {
 					Name: "Test Shift",
 					OnCall: []rotang.ShiftMember{
 						{
-							Email:     "A@A.com",
-							ShiftName: "Test Shift",
-						}, {
-							Email:     "D@D.com",
-							ShiftName: "Test Shift",
-						}, {
 							Email:     "G@G.com",
+							ShiftName: "Test Shift",
+						}, {
+							Email:     "A@A.com",
 							ShiftName: "Test Shift",
 						}, {
 							Email:     "J@J.com",
@@ -303,13 +283,10 @@ func TestGenerateTZFair(t *testing.T) {
 					Name: "Test Shift",
 					OnCall: []rotang.ShiftMember{
 						{
-							Email:     "B@B.com",
-							ShiftName: "Test Shift",
-						}, {
-							Email:     "E@E.com",
-							ShiftName: "Test Shift",
-						}, {
 							Email:     "H@H.com",
+							ShiftName: "Test Shift",
+						}, {
+							Email:     "B@B.com",
 							ShiftName: "Test Shift",
 						}, {
 							Email:     "K@K.com",
@@ -322,13 +299,10 @@ func TestGenerateTZFair(t *testing.T) {
 					Name: "Test Shift",
 					OnCall: []rotang.ShiftMember{
 						{
-							Email:     "C@C.com",
-							ShiftName: "Test Shift",
-						}, {
-							Email:     "F@F.com",
-							ShiftName: "Test Shift",
-						}, {
 							Email:     "I@I.com",
+							ShiftName: "Test Shift",
+						}, {
+							Email:     "C@C.com",
 							ShiftName: "Test Shift",
 						}, {
 							Email:     "L@L.com",
@@ -341,13 +315,10 @@ func TestGenerateTZFair(t *testing.T) {
 					Name: "Test Shift",
 					OnCall: []rotang.ShiftMember{
 						{
-							Email:     "A@A.com",
-							ShiftName: "Test Shift",
-						}, {
-							Email:     "D@D.com",
-							ShiftName: "Test Shift",
-						}, {
 							Email:     "G@G.com",
+							ShiftName: "Test Shift",
+						}, {
+							Email:     "A@A.com",
 							ShiftName: "Test Shift",
 						}, {
 							Email:     "J@J.com",
@@ -360,13 +331,10 @@ func TestGenerateTZFair(t *testing.T) {
 					Name: "Test Shift",
 					OnCall: []rotang.ShiftMember{
 						{
-							Email:     "B@B.com",
-							ShiftName: "Test Shift",
-						}, {
-							Email:     "E@E.com",
-							ShiftName: "Test Shift",
-						}, {
 							Email:     "H@H.com",
+							ShiftName: "Test Shift",
+						}, {
+							Email:     "B@B.com",
 							ShiftName: "Test Shift",
 						}, {
 							Email:     "K@K.com",
@@ -379,13 +347,10 @@ func TestGenerateTZFair(t *testing.T) {
 					Name: "Test Shift",
 					OnCall: []rotang.ShiftMember{
 						{
-							Email:     "C@C.com",
-							ShiftName: "Test Shift",
-						}, {
-							Email:     "F@F.com",
-							ShiftName: "Test Shift",
-						}, {
 							Email:     "I@I.com",
+							ShiftName: "Test Shift",
+						}, {
+							Email:     "C@C.com",
 							ShiftName: "Test Shift",
 						}, {
 							Email:     "L@L.com",

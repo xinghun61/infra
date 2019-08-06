@@ -229,3 +229,35 @@ func Random(m []rotang.Member) {
 		m[i], m[swapDest] = m[swapDest], m[i]
 	}
 }
+
+func tzOffsetHrs(loc time.Location) float32 {
+	_, offsetSecs := time.Now().In(&loc).Zone()
+	offsetHrs := float32(offsetSecs) / float32(60*60)
+	if offsetHrs < 0 {
+		offsetHrs += 24
+	}
+	return offsetHrs
+}
+
+const (
+	// EmeaRegion identifies Europe, the Middle East, and Africa.
+	EmeaRegion = "EMEA"
+
+	// ApacRegion identifies Asia and the Pacific.
+	ApacRegion = "APAC"
+
+	// AmerRegion identifies the Americas.
+	AmerRegion = "AMER"
+)
+
+// TimezoneGroup returns the name of the business region for the given timezone.
+func TimezoneGroup(loc time.Location) string {
+	offsetHrs := tzOffsetHrs(loc)
+	if offsetHrs < 8 {
+		return EmeaRegion
+	} else if offsetHrs < 16 {
+		return ApacRegion
+	} else {
+		return AmerRegion
+	}
+}

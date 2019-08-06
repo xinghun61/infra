@@ -19,17 +19,19 @@ func NewTZRecent() *TZRecent {
 
 // Generate generates rotations fairly per time-zone.
 func (t *TZRecent) Generate(sc *rotang.Configuration, start time.Time, previous []rotang.ShiftEntry, members []rotang.Member, shiftsToSchedule int) ([]rotang.ShiftEntry, error) {
-	// Turns []rotang.Member into [][]rotang.Member with a slice of members per TZ.
+	// Turns []rotang.Member into [][]rotang.Member with a slice of members per TZ
+	// group.
 	// The reason for not using a map here is to have the order of TZs consistent.
 	sort.Slice(members, func(i, j int) bool {
-		return members[i].TZ.String() < members[j].TZ.String()
+		return TimezoneGroup(members[i].TZ) < TimezoneGroup(members[j].TZ)
 	})
 	var tzMembers [][]rotang.Member
 	lastSeen := ""
 	for _, m := range members {
-		if lastSeen != m.TZ.String() {
+		tzGroup := TimezoneGroup(m.TZ)
+		if lastSeen != tzGroup {
 			tzMembers = append(tzMembers, []rotang.Member{m})
-			lastSeen = m.TZ.String()
+			lastSeen = tzGroup
 			continue
 		}
 		tzMembers[len(tzMembers)-1] = append(tzMembers[len(tzMembers)-1], m)
