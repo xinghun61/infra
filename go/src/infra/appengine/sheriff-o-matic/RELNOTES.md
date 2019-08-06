@@ -1,3 +1,47 @@
+# Release Notes sheriff-o-matic 2019-08-06
+
+- 16 commits, 6 bugs affected since 563a161 ()
+- 5 Authors:
+  - seanmccullough@chromium.org
+  - justincohen@google.com
+  - maruel@chromium.org
+  - agable@chromium.org
+  - andrewlamb@chromium.org
+
+## Changes in this release
+
+- [[som] fix queue.yaml file so we can deploy](https://chromium-review.googlesource.com/c/infra/infra/+/1737536) (seanmccullough@chromium.org)
+- [[som] Filter nested steps from bigquery analyzer results.](https://chromium-review.googlesource.com/c/infra/infra/+/1735057) (seanmccullough@chromium.org)
+- [[som] updates to bigquery analyzer](https://chromium-review.googlesource.com/c/infra/infra/+/1710909) (seanmccullough@chromium.org)
+- [[ios] Remove ios-uirefresh-simulator bot.](https://chromium-review.googlesource.com/c/infra/infra/+/1729435) (justincohen@google.com)
+- [[som] Cleanup: remove logdiff feature](https://chromium-review.googlesource.com/c/infra/infra/+/1727452) (seanmccullough@chromium.org)
+- [[som] Filter annotations by active alerts.](https://chromium-review.googlesource.com/c/infra/infra/+/1726718) (seanmccullough@chromium.org)
+- [[som] Render snooze times >24h correctly.](https://chromium-review.googlesource.com/c/infra/infra/+/1710139) (seanmccullough@chromium.org)
+- [Reland "[som] fetch cros postsubmit config from buildbucket config directly"](https://chromium-review.googlesource.com/c/infra/infra/+/1684272) (seanmccullough@chromium.org)
+- [[som] Generate alerts from buildbucket's bigquery tables.](https://chromium-review.googlesource.com/c/infra/infra/+/1693584) (seanmccullough@chromium.org)
+- [sheriff-o-matic: Fix retry, fix many shadowed symbols](https://chromium-review.googlesource.com/c/infra/infra/+/1691065) (maruel@chromium.org)
+- [unit tests: Reduce symbol shadowing](https://chromium-review.googlesource.com/c/infra/infra/+/1691061) (maruel@chromium.org)
+- [Fix many misspellings](https://chromium-review.googlesource.com/c/infra/infra/+/1690398) (maruel@chromium.org)
+- [[som] Remove expando for revision ranges.](https://chromium-review.googlesource.com/c/infra/infra/+/1670438) (seanmccullough@chromium.org)
+- [Revert "[som] fetch cros postsubmit config from buildbucket config directly"](https://chromium-review.googlesource.com/c/infra/infra/+/1674304) (agable@chromium.org)
+- [[som] fetch cros postsubmit config from buildbucket config directly](https://chromium-review.googlesource.com/c/infra/infra/+/1671054) (seanmccullough@chromium.org)
+- [Update SoM config for ChromeOS builders.](https://chromium-review.googlesource.com/c/infra/infra/+/1670845) (andrewlamb@chromium.org)
+
+
+## Bugs updated, by author
+- agable@chromium.org:
+  -  [https://crbug.com/977580](https://crbug.com/977580)
+
+- maruel@chromium.org:
+  -  [https://crbug.com/981892](https://crbug.com/981892)
+
+- seanmccullough@chromium.org:
+  -  [https://crbug.com/957613](https://crbug.com/957613)
+  -  [https://crbug.com/977580](https://crbug.com/977580)
+  -  [https://crbug.com/984017](https://crbug.com/984017)
+  -  [https://crbug.com/984018](https://crbug.com/984018)
+  -  [https://crbug.com/984373](https://crbug.com/984373)
+
 # Release Notes sheriff-o-matic 2019-06-17
 
 - 1 commits, 0 bugs affected since ae9b595 (2019-06-14T18:28:59Z)
