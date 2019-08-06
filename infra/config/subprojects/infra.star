@@ -29,18 +29,27 @@ def ci_builder(name, os, cpu=None):
   )
 
 
-def try_builder(name, os, recipe=None, experiment_percentage=None):
+def try_builder(
+      name,
+      os,
+      recipe=None,
+      experiment_percentage=None,
+      properties=None,
+      cq=True
+  ):
   infra.builder(
       name = name,
       bucket = 'try',
       executable = infra.recipe(recipe or 'infra_repo_trybot'),
       os = os,
+      properties = properties,
   )
-  luci.cq_tryjob_verifier(
-      builder = name,
-      cq_group = 'infra cq',
-      experiment_percentage=experiment_percentage,
-  )
+  if cq:
+    luci.cq_tryjob_verifier(
+        builder = name,
+        cq_group = 'infra cq',
+        experiment_percentage=experiment_percentage,
+    )
 
 
 # CI Linux.
@@ -63,6 +72,20 @@ try_builder(name = 'infra-try-trusty-64', os = 'Ubuntu-14.04')
 try_builder(name = 'infra-try-mac', os = 'Mac-10.13')
 try_builder(name = 'infra-try-win', os = 'Windows')
 try_builder(name = 'infra-try-frontend', os = 'Ubuntu-16.04', recipe = 'infra_frontend_tester')
+
+# On demand (non-CQ) trybot for building docker images out of infra.git CLs.
+try_builder(
+    name = 'infra-try-images',
+    os = 'Ubuntu-16.04',
+    recipe = 'images_builder',
+    cq = False,
+    properties = {
+        'mode': 'MODE_CI',
+        'project': 'PROJECT_INFRA',
+        'infra': 'dev',
+        'manifests': ['infra/build/images/deterministic'],
+    },
+)
 
 # Presubmit trybot.
 build.presubmit(name = 'infra-try-presubmit', cq_group = 'infra cq', repo_name = 'infra')
