@@ -180,7 +180,8 @@ func (ejd *EditJobDefinition) ConsolidateIsolateSources(ctx context.Context, iso
 	ejd.tweak(func(jd *JobDefinition) error {
 		for _, slc := range jd.Slices {
 			ts := slc.S.TaskSlice
-			if ts == nil || ts.Properties == nil || ts.Properties.InputsRef == nil {
+			if ts == nil || ts.Properties == nil || ts.Properties.InputsRef == nil ||
+				ts.Properties.InputsRef.Isolated == "" {
 				continue
 			}
 
