@@ -33,6 +33,9 @@ import (
 	"infra/cmd/cloudbuildhelper/storage"
 )
 
+// See cmdBuild help string below.
+const inputsHashCanonicalTag = ":inputs-hash"
+
 var cmdBuild = &subcommands.Command{
 	UsageLine: "build <target-manifest-path> [...]",
 	ShortDesc: "builds a docker image using Google Cloud Build",
@@ -44,6 +47,11 @@ builds a new one, tags it with -canonical-tag.
 The canonical tag should identify the exact version of inputs (e.g. it usually
 includes git revision or other unique version identifier). It is used as
 immutable alias of sources and the resulting image.
+
+If -canonical-tag is set to a literal constant ":inputs-hash", it is calculated
+from SHA256 of the tarball with the context directory. This is useful to skip
+rebuilding the image if inputs do not change, without imposing any specific
+schema of canonical tags.
 
 The "build" command works in multiple steps:
   1. Searches for an existing image with the given -canonical-tag. If it exists,
@@ -120,6 +128,18 @@ func (c *cmdBuildRun) exec(ctx context.Context) error {
 		return errors.Reason("in %q: infra[...].storage is required when using remote build", c.targetManifest).Tag(isCLIError).Err()
 	case infra.CloudBuild.Project == "":
 		return errors.Reason("in %q: infra[...].cloudbuild.project is required when using remote build", c.targetManifest).Tag(isCLIError).Err()
+	}
+
+	// Tags use allowed alphabet.
+	if c.canonicalTag != "" && c.canonicalTag != inputsHashCanonicalTag {
+		if err := registry.ValidateTag(c.canonicalTag); err != nil {
+			return errBadFlag("-canonical-tag", err.Error())
+		}
+	}
+	for _, t := range c.tags {
+		if err := registry.ValidateTag(t); err != nil {
+			return errBadFlag("-tag", err.Error())
+		}
 	}
 
 	// If not pushing to a registry, just build and then discard the image. This
@@ -270,7 +290,7 @@ func (r *imageRef) ViewURL() string {
 func runBuild(ctx context.Context, p buildParams) (res buildResult, err error) {
 	// Skip the build completely if there's already an image with the requested
 	// canonical tag.
-	if p.Image != "" && p.CanonicalTag != "" {
+	if p.Image != "" && p.CanonicalTag != "" && p.CanonicalTag != inputsHashCanonicalTag {
 		fullName := fmt.Sprintf("%s:%s", p.Image, p.CanonicalTag)
 		switch img, err := getImage(ctx, p.Registry, fullName); {
 		case err != nil:
@@ -372,6 +392,12 @@ func remoteBuild(ctx context.Context, p buildParams, out *fileset.Set) (res buil
 	}
 	logging.Infof(ctx, "Tarball digest: %s", digest)
 	logging.Infof(ctx, "Tarball length: %s", humanize.Bytes(uint64(size)))
+
+	// Now that we know the inputs, we can resolve "-canonical-tag :inputs-hash".
+	if p.CanonicalTag == inputsHashCanonicalTag {
+		p.CanonicalTag = "cbh-inputs-" + digest[:24]
+		logging.Infof(ctx, "Canonical tag:  %s", p.CanonicalTag)
+	}
 
 	// Cleanup no matter what. Note that we don't care about IO flush errors in
 	// f.Close() as long as uploadToStorage sent everything successfully (as

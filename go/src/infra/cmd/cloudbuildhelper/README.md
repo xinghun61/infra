@@ -76,7 +76,12 @@ The canonical tag should identify the exact version of inputs (e.g. it usually
 includes git revision or other unique version identifier). It is used as
 immutable alias of sources and the resulting image.
 
-The "build" command works in multiple steps:
+If `-canonical-tag` is set to a literal constant `:inputs-hash`, it is
+calculated from SHA256 of the tarball with the context directory. This is useful
+to skip rebuilding the image if inputs do not change, without imposing any
+specific schema of canonical tags.
+
+The `build` command works in multiple steps:
   1. Searches for an existing image with the given `-canonical-tag`. If it
      exists, assumes the build has already been done and skips the rest of the
      steps. This applies to both deterministic and non-deterministic targets.

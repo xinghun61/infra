@@ -22,7 +22,7 @@ import (
 	"go.chromium.org/luci/hardcoded/chromeinfra"
 )
 
-const userAgent = "cloudbuildhelper v1.0.1"
+const userAgent = "cloudbuildhelper v1.0.2"
 
 func getApplication() *cli.Application {
 	return &cli.Application{

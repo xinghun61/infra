@@ -253,6 +253,52 @@ func TestBuild(t *testing.T) {
 			So(img.Digest, ShouldEqual, testDigest)
 		})
 
+		Convey("Using :inputs-hash as canonical tag", func() {
+			expectedTag := "cbh-inputs-" + digest[:24]
+
+			builder.provenance = func(gs string) string {
+				So(gs, ShouldEqual, testTarballURL+"#1") // used first gen
+				return digest                            // got its digest correctly
+			}
+
+			res, err := runBuild(ctx, buildParams{
+				Manifest: &manifest.Manifest{
+					Name:          testTargetName,
+					Deterministic: &_true,
+				},
+				Image:        testImageName,
+				BuildID:      "b1",
+				CanonicalTag: inputsHashCanonicalTag,
+				Tags:         []string{"latest"},
+				Stage:        stageFileSet(fs),
+				Store:        store,
+				Builder:      builder,
+				Registry:     registry,
+			})
+			So(err, ShouldBeNil)
+
+			// Uploaded the file.
+			obj, err := store.Check(ctx, testTarballPath)
+			So(err, ShouldBeNil)
+			So(obj.String(), ShouldEqual, testTarballURL+"#1") // uploaded the first gen
+
+			// Used Cloud Build.
+			So(res, ShouldResemble, buildResult{
+				Image: &imageRef{
+					Image:        testImageName,
+					Digest:       testDigest,
+					CanonicalTag: expectedTag,
+					BuildID:      "b1",
+				},
+				ViewBuildURL: testLogURL,
+			})
+
+			// Tagged it with canonical tag.
+			img, err := registry.GetImage(ctx, fmt.Sprintf("%s:%s", testImageName, expectedTag))
+			So(err, ShouldBeNil)
+			So(img.Digest, ShouldEqual, testDigest)
+		})
+
 		Convey("No registry is set => nothing is uploaded", func() {
 			builder.provenance = func(gs string) string {
 				So(gs, ShouldEqual, testTarballURL+"#1") // used first gen
