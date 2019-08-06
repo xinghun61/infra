@@ -51,89 +51,89 @@ const Components = new Map();
 // Additionally, allow for the user to reference this on a specific project.
 // Note: the order of the components is important for proper autolinking.
 Components.set(
-  '00-commentbug',
-  {
-    lookup: null,
-    extractRefs: null,
-    refRegs: [PROJECT_COMMENT_BUG_RE],
-    replacer: ReplaceCommentBugRef,
-  }
+    '00-commentbug',
+    {
+      lookup: null,
+      extractRefs: null,
+      refRegs: [PROJECT_COMMENT_BUG_RE],
+      replacer: ReplaceCommentBugRef,
+    }
 );
 Components.set(
-  '01-tracker-crbug',
-  {
-    lookup: LookupReferencedIssues,
-    extractRefs: ExtractCrbugProjectAndIssueIds,
-    refRegs: [CRBUG_LINK_RE],
-    replacer: ReplaceCrbugIssueRef,
+    '01-tracker-crbug',
+    {
+      lookup: LookupReferencedIssues,
+      extractRefs: ExtractCrbugProjectAndIssueIds,
+      refRegs: [CRBUG_LINK_RE],
+      replacer: ReplaceCrbugIssueRef,
 
-  }
+    }
 );
 Components.set(
-  '02-full-urls',
-  {
-    lookup: null,
-    extractRefs: (match, _currentProjectName) => {
-      return [match[0]];
-    },
-    refRegs: [IS_LINK_RE],
-    replacer: ReplaceLinkRef,
-  }
+    '02-full-urls',
+    {
+      lookup: null,
+      extractRefs: (match, _currentProjectName) => {
+        return [match[0]];
+      },
+      refRegs: [IS_LINK_RE],
+      replacer: ReplaceLinkRef,
+    }
 );
 Components.set(
-  '03-user-emails',
-  {
-    lookup: LookupReferencedUsers,
-    extractRefs: (match, _currentProjectName) => {
-      return [match[0]];
-    },
-    refRegs: [IMPLIED_EMAIL_RE],
-    replacer: ReplaceUserRef,
-  }
+    '03-user-emails',
+    {
+      lookup: LookupReferencedUsers,
+      extractRefs: (match, _currentProjectName) => {
+        return [match[0]];
+      },
+      refRegs: [IMPLIED_EMAIL_RE],
+      replacer: ReplaceUserRef,
+    }
 );
 Components.set(
-  '04-tracker-regular',
-  {
-    lookup: LookupReferencedIssues,
-    extractRefs: ExtractTrackerProjectAndIssueIds,
-    refRegs: [ISSUE_TRACKER_RE],
-    replacer: ReplaceTrackerIssueRef,
-  }
+    '04-tracker-regular',
+    {
+      lookup: LookupReferencedIssues,
+      extractRefs: ExtractTrackerProjectAndIssueIds,
+      refRegs: [ISSUE_TRACKER_RE],
+      replacer: ReplaceTrackerIssueRef,
+    }
 );
 Components.set(
-  '05-linkify-shorthand',
-  {
-    lookup: null,
-    extractRefs: (match, _currentProjectName) => {
-      return [match[0]];
-    },
-    refRegs: [
-      SHORT_LINK_RE,
-      NUMERIC_SHORT_LINK_RE,
-      IMPLIED_LINK_RE,
-    ],
-    replacer: ReplaceLinkRef,
-  }
+    '05-linkify-shorthand',
+    {
+      lookup: null,
+      extractRefs: (match, _currentProjectName) => {
+        return [match[0]];
+      },
+      refRegs: [
+        SHORT_LINK_RE,
+        NUMERIC_SHORT_LINK_RE,
+        IMPLIED_LINK_RE,
+      ],
+      replacer: ReplaceLinkRef,
+    }
 );
 Components.set(
-  '06-versioncontrol',
-  {
-    lookup: null,
-    extractRefs: (match, _currentProjectName) => {
-      return [match[0]];
-    },
-    refRegs: [GIT_HASH_RE, SVN_REF_RE],
-    replacer: ReplaceRevisionRef,
-  }
+    '06-versioncontrol',
+    {
+      lookup: null,
+      extractRefs: (match, _currentProjectName) => {
+        return [match[0]];
+      },
+      refRegs: [GIT_HASH_RE, SVN_REF_RE],
+      replacer: ReplaceRevisionRef,
+    }
 );
 
 // Lookup referenced artifacts functions.
 function LookupReferencedIssues(issueRefs, componentName) {
   return new Promise((resolve, reject) => {
     issueRefs = issueRefs.filter(
-      ({projectName, localId}) => projectName && parseInt(localId));
+        ({projectName, localId}) => projectName && parseInt(localId));
     const listReferencedIssues = prpcClient.call(
-      'monorail.Issues', 'ListReferencedIssues', {issueRefs});
+        'monorail.Issues', 'ListReferencedIssues', {issueRefs});
     return listReferencedIssues.then((response) => {
       resolve({'componentName': componentName, 'existingRefs': response});
     });
@@ -146,7 +146,7 @@ function LookupReferencedUsers(emails, componentName) {
       return {displayName};
     });
     const listReferencedUsers = prpcClient.call(
-      'monorail.Users', 'ListReferencedUsers', {userRefs});
+        'monorail.Users', 'ListReferencedUsers', {userRefs});
     return listReferencedUsers.then((response) => {
       resolve({'componentName': componentName, 'existingRefs': response});
     });
@@ -164,7 +164,7 @@ function ExtractCrbugProjectAndIssueIds(match, _currentProjectName) {
 function ExtractTrackerProjectAndIssueIds(match, currentProjectName) {
   const issueRefRE = PROJECT_LOCALID_RE;
   let refMatch;
-  let refs = [];
+  const refs = [];
   while ((refMatch = issueRefRE.exec(match[0])) !== null) {
     if (refMatch[PROJECT_LOCALID_RE_PROJECT_GROUP]) {
       currentProjectName = refMatch[PROJECT_LOCALID_RE_PROJECT_GROUP];
@@ -179,7 +179,7 @@ function ExtractTrackerProjectAndIssueIds(match, currentProjectName) {
 
 // Replace plain text references with links functions.
 function ReplaceIssueRef(stringMatch, projectName, localId, components,
-  commentId) {
+    commentId) {
   if (components.openRefs && components.openRefs.length) {
     const openRef = components.openRefs.find((ref) => {
       return ref.localId && ref.projectName && (ref.localId == localId) &&
@@ -187,7 +187,7 @@ function ReplaceIssueRef(stringMatch, projectName, localId, components,
     });
     if (openRef) {
       return createIssueRefRun(
-        projectName, localId, openRef.summary, false, stringMatch, commentId);
+          projectName, localId, openRef.summary, false, stringMatch, commentId);
     }
   }
   if (components.closedRefs && components.closedRefs.length) {
@@ -197,7 +197,8 @@ function ReplaceIssueRef(stringMatch, projectName, localId, components,
     });
     if (closedRef) {
       return createIssueRefRun(
-        projectName, localId, closedRef.summary, true, stringMatch, commentId);
+          projectName, localId, closedRef.summary, true, stringMatch,
+          commentId);
     }
   }
   return {content: stringMatch};
@@ -214,14 +215,14 @@ function ReplaceCrbugIssueRef(match, components, _currentProjectName) {
     commentId = match[CRBUG_LINK_RE_COMMENT_GROUP];
   }
   return [ReplaceIssueRef(match[0], projectName, localId, components,
-    commentId)];
+      commentId)];
 }
 
 function ReplaceTrackerIssueRef(match, components, currentProjectName) {
   components = components || {};
   const issueRefRE = PROJECT_LOCALID_RE;
   const commentId = '';
-  let textRuns = [];
+  const textRuns = [];
   let refMatch;
   let pos = 0;
   while ((refMatch = issueRefRE.exec(match[0])) !== null) {
@@ -233,8 +234,8 @@ function ReplaceTrackerIssueRef(match, components, currentProjectName) {
       currentProjectName = refMatch[PROJECT_LOCALID_RE_PROJECT_GROUP];
     }
     textRuns.push(ReplaceIssueRef(
-      refMatch[0], currentProjectName,
-      refMatch[PROJECT_LOCALID_RE_ID_GROUP], components, commentId));
+        refMatch[0], currentProjectName,
+        refMatch[PROJECT_LOCALID_RE_ID_GROUP], components, commentId));
     pos = refMatch.index + refMatch[0].length;
   }
   if (match[0].slice(pos) !== '') {
@@ -290,7 +291,7 @@ function ReplaceLinkRef(match, _componets, _currentProjectName) {
     }
   });
   let href = content;
-  let lowerHref = href.toLowerCase();
+  const lowerHref = href.toLowerCase();
   if (!lowerHref.startsWith('http') && !lowerHref.startsWith('ftp') &&
       !lowerHref.startsWith('mailto')) {
     // Prepend google-internal short links with http to
@@ -320,7 +321,7 @@ function ReplaceRevisionRef(
 
 // Create custom textrun functions.
 function createIssueRefRun(projectName, localId, summary, isClosed, content,
-  commentId) {
+    commentId) {
   return {
     tag: 'a',
     css: isClosed ? 'strike-through' : '',
@@ -332,10 +333,10 @@ function createIssueRefRun(projectName, localId, summary, isClosed, content,
 
 function getReferencedArtifacts(comments, currentProjectName) {
   return new Promise((resolve, reject) => {
-    let fetchPromises = [];
+    const fetchPromises = [];
     Components.forEach(({lookup, extractRefs, refRegs, replacer}, componentName) => {
       if (lookup !== null) {
-        let refs = [];
+        const refs = [];
         refRegs.forEach((re) => {
           let match;
           comments.forEach((comment) => {
@@ -357,7 +358,7 @@ function markupAutolinks(
     plainString, componentRefs, currentProjectName, revisionUrlFormat) {
   plainString = plainString || '';
   const chunks = plainString.trim().split(NEW_LINE_OR_BOLD_REGEX);
-  let textRuns = [];
+  const textRuns = [];
   chunks.filter(Boolean).forEach((chunk) => {
     if (chunk.match(NEW_LINE_REGEX)) {
       textRuns.push({tag: 'br'});
@@ -365,8 +366,8 @@ function markupAutolinks(
       textRuns.push({content: chunk.slice(3, -4), tag: 'b'});
     } else {
       textRuns.push(
-        ...autolinkChunk(
-          chunk, componentRefs, currentProjectName, revisionUrlFormat));
+          ...autolinkChunk(
+              chunk, componentRefs, currentProjectName, revisionUrlFormat));
     }
   });
   return textRuns;
@@ -378,8 +379,8 @@ function autolinkChunk(
   Components.forEach(({refRegs, replacer}, componentName) => {
     refRegs.forEach((re) => {
       textRuns = applyLinks(
-        textRuns, replacer, re, componentRefs.get(componentName),
-        currentProjectName, revisionUrlFormat);
+          textRuns, replacer, re, componentRefs.get(componentName),
+          currentProjectName, revisionUrlFormat);
     });
   });
   return textRuns;
@@ -388,7 +389,7 @@ function autolinkChunk(
 function applyLinks(
     textRuns, replacer, re, existingRefs, currentProjectName,
     revisionUrlFormat) {
-  let resultRuns = [];
+  const resultRuns = [];
   textRuns.forEach((textRun) => {
     if (textRun.tag) {
       resultRuns.push(textRun);
@@ -402,8 +403,8 @@ function applyLinks(
           resultRuns.push({content: content.slice(pos, match.index)});
         }
         resultRuns.push(
-          ...replacer(
-            match, existingRefs, currentProjectName, revisionUrlFormat));
+            ...replacer(
+                match, existingRefs, currentProjectName, revisionUrlFormat));
         pos = match.index + match[0].length;
       }
       if (content.slice(pos) !== '') {
