@@ -5,16 +5,23 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
 
+	"github.com/golang/protobuf/proto"
 	"github.com/maruel/subcommands"
 	"go.chromium.org/luci/auth"
 	"go.chromium.org/luci/auth/client/authcli"
+	"go.chromium.org/luci/common/cli"
 	"go.chromium.org/luci/common/errors"
+	"go.chromium.org/luci/grpc/prpc"
 
 	"go.chromium.org/chromiumos/infra/proto/go/test_platform/skylab_local_state"
+	fleet "infra/appengine/crosskylabadmin/api/fleet/v1"
+	"infra/libs/skylab/inventory"
+	"infra/libs/skylab/inventory/autotest/labels"
 )
 
 // Load subcommand: Gather DUT labels and attributes into a host info file.
@@ -83,11 +90,34 @@ func (c *loadRun) innerRun(a subcommands.Application, args []string, env subcomm
 		return err
 	}
 
-	// TODO(zamorzaev): get host info from inventory service
-	hostInfo := skylab_local_state.AutotestHostInfo{}
-	writeHostInfo(request.ResultsDir, "dummy_name", hostInfo)
+	ctx := cli.GetContext(a, c, env)
 
-	response := skylab_local_state.LoadResponse{}
+	client, err := newInventoryClient(ctx, request.Config.AdminService, &c.authFlags)
+	if err != nil {
+		return err
+	}
+
+	dut, err := getDutInfo(ctx, client, request.DutId)
+	if err != nil {
+		return err
+	}
+
+	dutName := dut.GetCommon().GetHostname()
+	if dutName == "" {
+		return fmt.Errorf("Empty host name")
+	}
+
+	hostInfo := hostInfoFromDutInfo(dut)
+
+	// TODO(zamorzaev): read provisionable labels and attributes from bot state file.
+	if err := writeHostInfo(request.ResultsDir, dutName, hostInfo); err != nil {
+		return err
+	}
+
+	response := skylab_local_state.LoadResponse{
+		DutName: dutName,
+	}
+
 	if err := writeJSONPb(c.outputPath, &response); err != nil {
 		return err
 	}
@@ -115,15 +145,71 @@ func validateRequest(request *skylab_local_state.LoadRequest) error {
 	return nil
 }
 
-func writeHostInfo(resultsDir string, dutName string, hostInfo skylab_local_state.AutotestHostInfo) error {
+// newInventoryClient creates an admin service client.
+func newInventoryClient(ctx context.Context, adminService string, authFlags *authcli.Flags) (fleet.InventoryClient, error) {
+	authOpts, err := authFlags.Options()
+	if err != nil {
+		return nil, errors.Annotate(err, "create new inventory client").Err()
+	}
+
+	a := auth.NewAuthenticator(ctx, auth.SilentLogin, authOpts)
+
+	httpClient, err := a.Client()
+	if err != nil {
+		return nil, errors.Annotate(err, "create new inventory client").Err()
+	}
+
+	pc := prpc.Client{
+		C:    httpClient,
+		Host: adminService,
+	}
+
+	return fleet.NewInventoryPRPCClient(&pc), nil
+}
+
+// getDutInfo fetches the DUT inventory entry from the admin service.
+func getDutInfo(ctx context.Context, client fleet.InventoryClient, dutID string) (*inventory.DeviceUnderTest, error) {
+	resp, err := client.GetDutInfo(ctx, &fleet.GetDutInfoRequest{Id: dutID})
+	if err != nil {
+		return nil, errors.Annotate(err, "get DUT info").Err()
+	}
+	var dut inventory.DeviceUnderTest
+	if err := proto.Unmarshal(resp.Spec, &dut); err != nil {
+		return nil, errors.Annotate(err, "get DUT info").Err()
+	}
+	return &dut, nil
+}
+
+const currentSerializerVersion = 1
+
+// hostInfoFromDutInfo extracts attributes and labels from an inventory
+// entry and assembles them into a host info file proto.
+func hostInfoFromDutInfo(dut *inventory.DeviceUnderTest) *skylab_local_state.AutotestHostInfo {
+	hostInfo := skylab_local_state.AutotestHostInfo{
+		Attributes:        map[string]string{},
+		Labels:            labels.Convert(dut.Common.GetLabels()),
+		SerializerVersion: currentSerializerVersion,
+	}
+
+	for _, attribute := range dut.Common.GetAttributes() {
+		hostInfo.Attributes[attribute.GetKey()] = attribute.GetValue()
+	}
+	return &hostInfo
+}
+
+// writeHostInfo writes a JSON-encoded AutotestHostInfo proto to the
+// DUT host info file inside the results directory.
+func writeHostInfo(resultsDir string, dutName string, hostInfo *skylab_local_state.AutotestHostInfo) error {
 	hostInfoDir := filepath.Join(resultsDir, hostInfoSubDir)
-	if err := os.MkdirAll(hostInfoDir, 0755); err != nil {
+	if err := os.MkdirAll(hostInfoDir, 0777); err != nil {
 		return errors.Annotate(err, "write host info").Err()
 	}
 
 	hostInfoFilePath := filepath.Join(hostInfoDir, dutName+hostInfoFileSuffix)
 
-	writeJSONPb(hostInfoFilePath, &hostInfo)
+	if err := writeJSONPb(hostInfoFilePath, hostInfo); err != nil {
+		return errors.Annotate(err, "write host info").Err()
+	}
 
 	return nil
 }
