@@ -171,7 +171,7 @@
     },
     "name": "cloudbuildhelper build target",
     "~followup_annotations": [
-      "@@@STEP_TEXT@ERROR: Boom@@@",
+      "@@@STEP_TEXT@<br/>ERROR: Boom@@@",
       "@@@STEP_LOG_LINE@json.output@{@@@",
       "@@@STEP_LOG_LINE@json.output@  \"error\": \"Boom\", @@@",
       "@@@STEP_LOG_LINE@json.output@  \"view_build_url\": \"https://example.com/build/target\"@@@",

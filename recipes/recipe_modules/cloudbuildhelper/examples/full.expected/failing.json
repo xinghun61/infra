@@ -47,7 +47,7 @@
     ],
     "name": "cloudbuildhelper build target",
     "~followup_annotations": [
-      "@@@STEP_TEXT@Image: example.com/fake-registry/target:123_456<br/>Digest: sha256:34a04005bcaf206e...@@@",
+      "@@@STEP_TEXT@<br/>Image: example.com/fake-registry/target:123_456<br/>Digest: sha256:34a04005bcaf206e...@@@",
       "@@@STEP_LOG_LINE@json.output@{@@@",
       "@@@STEP_LOG_LINE@json.output@  \"image\": {@@@",
       "@@@STEP_LOG_LINE@json.output@    \"digest\": \"sha256:34a04005bcaf206e...\", @@@",
@@ -72,7 +72,7 @@
     ],
     "name": "cloudbuildhelper build another",
     "~followup_annotations": [
-      "@@@STEP_TEXT@Image: xxx@yyy<br/>Digest: yyy@@@",
+      "@@@STEP_TEXT@<br/>Image: xxx@yyy<br/>Digest: yyy@@@",
       "@@@STEP_LOG_LINE@json.output@{@@@",
       "@@@STEP_LOG_LINE@json.output@  \"image\": {@@@",
       "@@@STEP_LOG_LINE@json.output@    \"digest\": \"yyy\", @@@",
@@ -99,7 +99,7 @@
     ],
     "name": "cloudbuildhelper build a",
     "~followup_annotations": [
-      "@@@STEP_TEXT@Image: example.com/fake-registry/a:something<br/>Digest: sha256:ca978112ca1bbdca...@@@",
+      "@@@STEP_TEXT@<br/>Image: example.com/fake-registry/a:something<br/>Digest: sha256:ca978112ca1bbdca...@@@",
       "@@@STEP_LOG_LINE@json.output@{@@@",
       "@@@STEP_LOG_LINE@json.output@  \"image\": {@@@",
       "@@@STEP_LOG_LINE@json.output@    \"digest\": \"sha256:ca978112ca1bbdca...\", @@@",
@@ -124,7 +124,7 @@
     ],
     "name": "cloudbuildhelper build third",
     "~followup_annotations": [
-      "@@@STEP_TEXT@Image builds successfully@@@",
+      "@@@STEP_TEXT@<br/>Image builds successfully@@@",
       "@@@STEP_LOG_LINE@json.output@{@@@",
       "@@@STEP_LOG_LINE@json.output@  \"view_build_url\": \"https://example.com/build/third\"@@@",
       "@@@STEP_LOG_LINE@json.output@}@@@",
@@ -142,7 +142,7 @@
     ],
     "name": "cloudbuildhelper build fail_maybe",
     "~followup_annotations": [
-      "@@@STEP_TEXT@ERROR: Boom@@@",
+      "@@@STEP_TEXT@<br/>ERROR: Boom@@@",
       "@@@STEP_LOG_LINE@json.output@{@@@",
       "@@@STEP_LOG_LINE@json.output@  \"error\": \"Boom\", @@@",
       "@@@STEP_LOG_LINE@json.output@  \"view_build_url\": \"https://example.com/build/target\"@@@",

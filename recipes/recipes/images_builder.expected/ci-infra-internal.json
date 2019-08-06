@@ -171,7 +171,7 @@
     },
     "name": "cloudbuildhelper build target",
     "~followup_annotations": [
-      "@@@STEP_TEXT@Image: example.com/fake-registry/target:ci-2012.05.14-190894-0a18b32<br/>Digest: sha256:34a04005bcaf206e...@@@",
+      "@@@STEP_TEXT@<br/>Image: example.com/fake-registry/target:ci-2012.05.14-190894-0a18b32<br/>Digest: sha256:34a04005bcaf206e...@@@",
       "@@@STEP_LOG_LINE@json.output@{@@@",
       "@@@STEP_LOG_LINE@json.output@  \"image\": {@@@",
       "@@@STEP_LOG_LINE@json.output@    \"digest\": \"sha256:34a04005bcaf206e...\", @@@",

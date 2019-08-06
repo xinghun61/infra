@@ -191,7 +191,7 @@ def _checkout_cl(api, project):
       canonical_tag=None,
       labels={
           'org.chromium.build.cl.repo': repo_url,
-          'org.chromium.build.cl.ref': rev_info['commit']['ref'],
+          'org.chromium.build.cl.ref': rev_info['ref'],
       },
       tags=[
           # An "immutable" tag that identifies how the image was built.
@@ -248,9 +248,9 @@ def GenTests(api):
                         '_number': patch_set,
                         'commit': {
                             'message': 'Commit message',
-                            'ref': 'refs/changes/../../..',
                             'author': {'email': 'author@example.com'},
                         },
+                        'ref': 'refs/changes/../../..',
                     },
                 },
             }]),

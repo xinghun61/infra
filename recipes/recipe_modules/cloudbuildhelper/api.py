@@ -141,7 +141,7 @@ class CloudBuildHelperApi(recipe_api.RecipeApi):
       r.presentation.links['build'] = js['view_build_url']
 
     if js.get('error'):
-      r.presentation.step_text += 'ERROR: %s' % js['error']
+      r.presentation.step_text += '\nERROR: %s' % js['error']
     elif js.get('image'):
       img = js['image']
       tag = img.get('tag') or (tags[0] if tags else None)
@@ -150,8 +150,9 @@ class CloudBuildHelperApi(recipe_api.RecipeApi):
       else:
         ref = '%s@%s' % (img['image'], img['digest'])
       r.presentation.step_text += '\n'.join([
+          '',
           'Image: %s' % ref,
           'Digest: %s' % img['digest'],
       ])
     else:
-      r.presentation.step_text += 'Image builds successfully'
+      r.presentation.step_text += '\nImage builds successfully'
