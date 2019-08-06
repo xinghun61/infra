@@ -34,6 +34,7 @@
   * [gsubmodd](#recipes-gsubmodd) &mdash; Runs git submodule daemon (gsubmodd) against a given source repo.
   * [gsubtreed](#recipes-gsubtreed) &mdash; Runs git subtree daemon (gsubtreed) against Chromium src repo.
   * [gsutil_hello_world](#recipes-gsutil_hello_world) &mdash; Pushes a trivial CL to Gerrit to verify git authentication works on LUCI.
+  * [images_builder](#recipes-images_builder)
   * [infra_checkout:examples/ci](#recipes-infra_checkout_examples_ci)
   * [infra_checkout:examples/try](#recipes-infra_checkout_examples_try)
   * [infra_cipd:examples/usage](#recipes-infra_cipd_examples_usage)
@@ -897,6 +898,11 @@ code.
 Pushes a trivial CL to Gerrit to verify git authentication works on LUCI.
 
 &mdash; **def [RunSteps](/recipes/recipes/gsutil_hello_world.py#21)(api):**
+### *recipes* / [images\_builder](/recipes/recipes/images_builder.py)
+
+[DEPS](/recipes/recipes/images_builder.py#10): [depot\_tools/gerrit][depot_tools/recipe_modules/gerrit], [cloudbuildhelper](#recipe_modules-cloudbuildhelper), [infra\_checkout](#recipe_modules-infra_checkout), [recipe\_engine/buildbucket][recipe_engine/recipe_modules/buildbucket], [recipe\_engine/commit\_position][recipe_engine/recipe_modules/commit_position], [recipe\_engine/file][recipe_engine/recipe_modules/file], [recipe\_engine/json][recipe_engine/recipe_modules/json], [recipe\_engine/path][recipe_engine/recipe_modules/path], [recipe\_engine/properties][recipe_engine/recipe_modules/properties], [recipe\_engine/step][recipe_engine/recipe_modules/step], [recipe\_engine/time][recipe_engine/recipe_modules/time]
+
+&mdash; **def [RunSteps](/recipes/recipes/images_builder.py#38)(api, properties):**
 ### *recipes* / [infra\_checkout:examples/ci](/recipes/recipe_modules/infra_checkout/examples/ci.py)
 
 [DEPS](/recipes/recipe_modules/infra_checkout/examples/ci.py#5): [infra\_checkout](#recipe_modules-infra_checkout), [recipe\_engine/buildbucket][recipe_engine/recipe_modules/buildbucket], [recipe\_engine/context][recipe_engine/recipe_modules/context], [recipe\_engine/platform][recipe_engine/recipe_modules/platform], [recipe\_engine/python][recipe_engine/recipe_modules/python], [recipe\_engine/runtime][recipe_engine/recipe_modules/runtime], [recipe\_engine/step][recipe_engine/recipe_modules/step]
@@ -1266,6 +1272,7 @@ Runs a step which adds a link to the current CL if there is one.
 [depot_tools/recipe_modules/cipd]: https://chromium.googlesource.com/chromium/tools/depot_tools.git/+/36756e4590417a41f3a9054527219294f02fead1/recipes/README.recipes.md#recipe_modules-cipd
 [depot_tools/recipe_modules/depot_tools]: https://chromium.googlesource.com/chromium/tools/depot_tools.git/+/36756e4590417a41f3a9054527219294f02fead1/recipes/README.recipes.md#recipe_modules-depot_tools
 [depot_tools/recipe_modules/gclient]: https://chromium.googlesource.com/chromium/tools/depot_tools.git/+/36756e4590417a41f3a9054527219294f02fead1/recipes/README.recipes.md#recipe_modules-gclient
+[depot_tools/recipe_modules/gerrit]: https://chromium.googlesource.com/chromium/tools/depot_tools.git/+/36756e4590417a41f3a9054527219294f02fead1/recipes/README.recipes.md#recipe_modules-gerrit
 [depot_tools/recipe_modules/git]: https://chromium.googlesource.com/chromium/tools/depot_tools.git/+/36756e4590417a41f3a9054527219294f02fead1/recipes/README.recipes.md#recipe_modules-git
 [depot_tools/recipe_modules/git_cl]: https://chromium.googlesource.com/chromium/tools/depot_tools.git/+/36756e4590417a41f3a9054527219294f02fead1/recipes/README.recipes.md#recipe_modules-git_cl
 [depot_tools/recipe_modules/gitiles]: https://chromium.googlesource.com/chromium/tools/depot_tools.git/+/36756e4590417a41f3a9054527219294f02fead1/recipes/README.recipes.md#recipe_modules-gitiles
@@ -1279,6 +1286,7 @@ Runs a step which adds a link to the current CL if there is one.
 [recipe_engine/recipe_modules/assertions]: https://chromium.googlesource.com/infra/luci/recipes-py.git/+/d4f1140c8ec95a5fd04ada8bb8a87aa2e9b6e98e/README.recipes.md#recipe_modules-assertions
 [recipe_engine/recipe_modules/buildbucket]: https://chromium.googlesource.com/infra/luci/recipes-py.git/+/d4f1140c8ec95a5fd04ada8bb8a87aa2e9b6e98e/README.recipes.md#recipe_modules-buildbucket
 [recipe_engine/recipe_modules/cipd]: https://chromium.googlesource.com/infra/luci/recipes-py.git/+/d4f1140c8ec95a5fd04ada8bb8a87aa2e9b6e98e/README.recipes.md#recipe_modules-cipd
+[recipe_engine/recipe_modules/commit_position]: https://chromium.googlesource.com/infra/luci/recipes-py.git/+/d4f1140c8ec95a5fd04ada8bb8a87aa2e9b6e98e/README.recipes.md#recipe_modules-commit_position
 [recipe_engine/recipe_modules/context]: https://chromium.googlesource.com/infra/luci/recipes-py.git/+/d4f1140c8ec95a5fd04ada8bb8a87aa2e9b6e98e/README.recipes.md#recipe_modules-context
 [recipe_engine/recipe_modules/file]: https://chromium.googlesource.com/infra/luci/recipes-py.git/+/d4f1140c8ec95a5fd04ada8bb8a87aa2e9b6e98e/README.recipes.md#recipe_modules-file
 [recipe_engine/recipe_modules/json]: https://chromium.googlesource.com/infra/luci/recipes-py.git/+/d4f1140c8ec95a5fd04ada8bb8a87aa2e9b6e98e/README.recipes.md#recipe_modules-json

@@ -1,0 +1,8 @@
+[
+  {
+    "failure": {
+      "humanReason": "Bad input properties: \"mode\" is required"
+    },
+    "name": "$result"
+  }
+]

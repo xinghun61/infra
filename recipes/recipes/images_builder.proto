@@ -1,0 +1,50 @@
+// Copyright 2019 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+syntax = "proto3";
+
+package recipes.infra.images_builder;
+
+// Input properties recognized by 'infra/images_builder' recipe.
+message Inputs {
+  // Mode describes how the recipe should interpret inputs and what tagging
+  // schema it should be using.
+  enum Mode {
+    MODE_UNDEFINED = 0;
+
+    MODE_CI = 1;  // build images from checked in code at a revision
+    MODE_TS = 2;  // build images from checked in code on a schedule (TODO)
+    MODE_CL = 3;  // build images from code in a Gerrit CL
+  }
+
+  // Project describes what gclient solution to checkout and where to apply
+  // a patch to (when running in MODE_CL).
+  enum Project {
+    PROJECT_UNDEFINED = 0;
+
+    PROJECT_INFRA = 1;           // checkout infra solution
+    PROJECT_INFRA_INTERNAL = 2;  // checkout infra_internal solution
+    PROJECT_LUCI_GO = 3;         // checkout infra solution, apply CL to luci-go
+  }
+
+  // Mode of operation. Required.
+  Mode mode = 1;
+
+  // Project with the source code. Required.
+  Project project = 2;
+
+  // What instance of image building infrastructure to use, e.g. dev or prod.
+  //
+  // Will be passed as '-infra' flag to 'cloudbuildhelper'. The service account
+  // running the build should be in the corresponding ACLs.
+  //
+  // Required.
+  string infra = 3;
+
+  // A path(s) within the gclient solution to a directory with *.yaml files to
+  // discover and build, e.g. 'infra/build/images/deterministic.
+  //
+  // Required.
+  repeated string manifests = 4;
+}
