@@ -33,6 +33,41 @@ describe('project', () => {
     ]));
   });
 
+  it('labelPrefixOptions', () => {
+    assert.deepEqual(project.labelPrefixOptions({project: {}}), new Map());
+    assert.deepEqual(project.labelPrefixOptions({project: {config: {}}}), new Map());
+    assert.deepEqual(project.labelPrefixOptions({
+      project: {config: {
+        labelDefs: [
+          {label: 'One'},
+          {label: 'tWo'},
+          {label: 'tWo-options'},
+          {label: 'hello-world', docstring: 'hmmm'},
+          {label: 'hello-me', docstring: 'hmmm'},
+        ],
+      }},
+    }), new Map([
+      ['two', ['tWo', 'tWo-options']],
+      ['hello', ['hello-world', 'hello-me']],
+    ]));
+  });
+
+  it('labelPrefixFields', () => {
+    assert.deepEqual(project.labelPrefixFields({project: {}}), []);
+    assert.deepEqual(project.labelPrefixFields({project: {config: {}}}), []);
+    assert.deepEqual(project.labelPrefixFields({
+      project: {config: {
+        labelDefs: [
+          {label: 'One'},
+          {label: 'tWo'},
+          {label: 'tWo-options'},
+          {label: 'hello-world', docstring: 'hmmm'},
+          {label: 'hello-me', docstring: 'hmmm'},
+        ],
+      }},
+    }), ['tWo', 'hello']);
+  });
+
   it('enumFieldDefs', () => {
     assert.deepEqual(project.enumFieldDefs({project: {}}), []);
     assert.deepEqual(project.enumFieldDefs({project: {config: {}}}), []);

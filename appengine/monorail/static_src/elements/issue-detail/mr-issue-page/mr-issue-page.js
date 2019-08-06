@@ -323,13 +323,6 @@ export class MrIssuePage extends connectStore(LitElement) {
       if (this.issueRef.projectName !== changedProperties.projectName) {
         window.TKR_fetchOptions(this.issueRef.projectName);
       }
-
-      const oldRef = changedProperties.get('issueRef');
-      const oldProjectName = oldRef && oldRef.projectName;
-      if (this.issueRef.projectName && oldProjectName
-          !== this.issueRef.projectName && !this.fetchingProjectConfig) {
-        store.dispatch(project.fetch(this.issueRef.projectName));
-      }
     }
 
     if (changedProperties.has('issueRef') || changedProperties.has('issue')) {

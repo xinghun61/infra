@@ -7,7 +7,8 @@ import {createSelector} from 'reselect';
 import {createReducer, createRequestReducer} from './redux-helpers.js';
 import {fieldTypes} from 'elements/shared/issue-fields.js';
 import {hasPrefix, removePrefix} from 'elements/shared/helpers.js';
-import {fieldNameToLabelPrefix} from 'elements/shared/converters.js';
+import {fieldNameToLabelPrefix,
+  labelNameToLabelPrefix} from 'elements/shared/converters.js';
 import {prpcClient} from 'prpc-client-instance.js';
 
 // Actions
@@ -35,11 +36,10 @@ const FETCH_FIELDS_LIST_FAILURE = 'project/FECTH_FIELDS_LIST_FAILURE';
   config: Object,
   presentationConfig: Object,
   templates: Array,
-  fieldsList: Array,
   requests: {
     fetchConfig: Object,
     fetchTemplates: Object,
-    fetchFieldsList: Object,
+    fetchFields: Object,
   },
 }
 */
@@ -48,6 +48,12 @@ const FETCH_FIELDS_LIST_FAILURE = 'project/FECTH_FIELDS_LIST_FAILURE';
 const configReducer = createReducer({}, {
   [FETCH_CONFIG_SUCCESS]: (_state, action) => {
     return action.config;
+  },
+  [FETCH_FIELDS_LIST_SUCCESS]: (state, action) => {
+    return {
+      ...state,
+      fieldDefs: action.fieldDefs,
+    };
   },
 });
 
@@ -63,16 +69,12 @@ const templatesReducer = createReducer([], {
   },
 });
 
-const fieldsListReducer = createReducer([], {
-  [FETCH_FIELDS_LIST_SUCCESS]: (_state, action) => action.fieldsList,
-});
-
 const requestsReducer = combineReducers({
   fetchConfig: createRequestReducer(
     FETCH_CONFIG_START, FETCH_CONFIG_SUCCESS, FETCH_CONFIG_FAILURE),
   fetchTemplates: createRequestReducer(
     FETCH_TEMPLATES_START, FETCH_TEMPLATES_SUCCESS, FETCH_TEMPLATES_FAILURE),
-  fetchFieldsList: createRequestReducer(
+  fetchFields: createRequestReducer(
     FETCH_FIELDS_LIST_START,
     FETCH_FIELDS_LIST_SUCCESS,
     FETCH_FIELDS_LIST_FAILURE),
@@ -83,12 +85,10 @@ export const reducer = combineReducers({
   presentationConfig: presentationConfigReducer,
   templates: templatesReducer,
   requests: requestsReducer,
-  fieldsList: fieldsListReducer,
 });
 
 // Selectors
 export const project = (state) => state.project;
-export const fieldsList = (state) => state.project.fieldsList;
 export const config = createSelector(project, (project) => project.config);
 export const presentationConfig = (state) => state.project.presentationConfig;
 
@@ -109,6 +109,16 @@ export const fieldDefs = createSelector(
   config, (config) => ((config && config.fieldDefs) || [])
 );
 
+export const fieldDefMap = createSelector(
+  fieldDefs, (fieldDefs) => {
+    const map = new Map();
+    fieldDefs.forEach((fd) => {
+      map.set(fd.fieldRef.fieldName.toLowerCase(), fd);
+    });
+    return map;
+  }
+);
+
 export const labelDefs = createSelector(
   config, (config) => ((config && config.labelDefs) || [])
 );
@@ -124,6 +134,49 @@ export const labelDefMap = createSelector(
   }
 );
 
+// Find the options that exist for a given label prefix.
+export const labelPrefixOptions = createSelector(
+  labelDefs, (labelDefs) => {
+    const prefixMap = new Map();
+    labelDefs.forEach((ld) => {
+      const prefix = labelNameToLabelPrefix(ld.label).toLowerCase();
+
+      if (prefixMap.has(prefix)) {
+        prefixMap.get(prefix).push(ld.label);
+      } else {
+        prefixMap.set(prefix, [ld.label]);
+      }
+    });
+
+    return prefixMap;
+  }
+);
+
+// Some labels are implicitly used as custom fields in the grid and list view.
+// Make this an Array to keep casing in tact.
+export const labelPrefixFields = createSelector(
+  labelPrefixOptions, (map) => {
+    const prefixes = [];
+
+    map.forEach((options) => {
+      // Ignore label prefixes with only one value.
+      if (options.length > 1) {
+        // Pick the first label defined to set the casing for the prefix value.
+        // This shouldn't be too important of a decision because most labels
+        // with shared prefixes should use the same casing across labels.
+        prefixes.push(labelNameToLabelPrefix(options[0]));
+      }
+    });
+
+    return prefixes;
+  }
+);
+
+// Wrap label prefixes in a Set for fast lookup.
+export const labelPrefixSet = createSelector(
+  labelPrefixFields, (fields) => new Set(fields.map(
+    (field) => field.toLowerCase())),
+);
 
 export const enumFieldDefs = createSelector(
   fieldDefs,
@@ -190,6 +243,9 @@ export const fetchingConfig = (state) => {
 // Action Creators
 export const fetch = (projectName) => async (dispatch) => {
   dispatch(fetchConfig(projectName));
+  // TODO(zhangtiff): Split up GetConfig into multiple calls to
+  // GetLabelOptions, ListComponents, etc.
+  // dispatch(fetchFields(projectName));
   dispatch(fetchPresentationConfig(projectName));
   dispatch(fetchTemplates(projectName));
 };
@@ -199,9 +255,6 @@ const fetchConfig = (projectName) => async (dispatch) => {
 
   const getConfig = prpcClient.call(
     'monorail.Projects', 'GetConfig', {projectName});
-
-  // TODO(zhangtiff): Remove this once we properly stub out prpc calls.
-  if (!getConfig) return;
 
   try {
     const resp = await getConfig;
@@ -240,7 +293,7 @@ const fetchTemplates = (projectName) => async (dispatch) => {
   }
 };
 
-export const fetchFieldsList = (projectName) => async (dispatch) => {
+export const fetchFields = (projectName) => async (dispatch) => {
   dispatch({type: FETCH_FIELDS_LIST_START});
 
   try {
@@ -250,8 +303,8 @@ export const fetchFieldsList = (projectName) => async (dispatch) => {
         includeUserChoices: true,
       }
     );
-    const fieldsList = (resp.fieldDefs || []);
-    dispatch({type: FETCH_FIELDS_LIST_SUCCESS, fieldsList});
+    const fieldDefs = (resp.fieldDefs || []);
+    dispatch({type: FETCH_FIELDS_LIST_SUCCESS, fieldDefs});
   } catch (error) {
     dispatch({type: FETCH_FIELDS_LIST_FAILURE});
   }

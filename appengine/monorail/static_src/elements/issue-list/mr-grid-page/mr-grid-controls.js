@@ -3,9 +3,10 @@
 // found in the LICENSE file.
 
 import {LitElement, html, css} from 'lit-element';
-import {connectStore} from 'elements/reducers/base.js';
 import page from 'page';
 import qs from 'qs';
+import {connectStore} from 'elements/reducers/base.js';
+import * as project from 'elements/reducers/project.js';
 import './mr-grid-dropdown';
 import './mr-choice-buttons';
 import * as issue from 'elements/reducers/issue.js';
@@ -75,6 +76,9 @@ export class MrGridControls extends connectStore(LitElement) {
     ];
     this.queryParams = {y: 'None', x: 'None'};
     this.cellType = 'tiles';
+
+    this._fieldDefs = [];
+    this._labelPrefixFields = [];
     this.totalIssues = 0;
   };
 
@@ -85,15 +89,24 @@ export class MrGridControls extends connectStore(LitElement) {
       cellType: {type: String},
       viewSelector: {type: Array},
       queryParams: {type: Object},
-      customFieldDefs: {type: Array},
       issueCount: {type: Number},
       totalIssues: {type: Number},
+      _fieldDefs: {type: Array},
+      _labelPrefixFields: {type: Object},
     };
   };
 
+  stateChanged(state) {
+    this.totalIssues = (issue.totalIssues(state) || 0);
+    this._fieldDefs = project.fieldDefs(state) || [];
+    this._labelPrefixFields = project.labelPrefixFields(state) || [];
+  }
+
   update(changedProperties) {
-    if (changedProperties.has('customFieldDefs')) {
-      this.issueProperties = getAvailableGridFields(this.customFieldDefs);
+    if (changedProperties.has('fieldDefs')
+        || changedProperties.has('labelPrefixFields')) {
+      this.issueProperties = getAvailableGridFields(
+        this.fieldDefs, this.labelPrefixFields);
     }
     if (changedProperties.has('cells') && this.queryParams.cells) {
       this.cellType = this.queryParams.cells;
@@ -101,9 +114,6 @@ export class MrGridControls extends connectStore(LitElement) {
     super.update(changedProperties);
   }
 
-  stateChanged(state) {
-    this.totalIssues = (issue.totalIssues(state) || 0);
-  }
   static get styles() {
     return css`
       :host {

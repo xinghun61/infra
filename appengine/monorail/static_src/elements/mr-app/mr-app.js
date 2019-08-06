@@ -9,6 +9,7 @@ import qs from 'qs';
 import {getServerStatusCron} from 'elements/shared/cron.js';
 import 'elements/framework/mr-site-banner/mr-site-banner.js';
 import {store, connectStore} from 'elements/reducers/base.js';
+import * as project from 'elements/reducers/project.js';
 import * as issue from 'elements/reducers/issue.js';
 import * as user from 'elements/reducers/user.js';
 import * as ui from 'elements/reducers/ui.js';
@@ -161,6 +162,10 @@ export class MrApp extends connectStore(LitElement) {
   updated(changedProperties) {
     if (changedProperties.has('userDisplayName')) {
       store.dispatch(user.fetch(this.userDisplayName));
+    }
+
+    if (changedProperties.has('projectName')) {
+      store.dispatch(project.fetch(this.projectName));
     }
   }
 

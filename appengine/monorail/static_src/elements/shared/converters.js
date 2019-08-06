@@ -60,6 +60,11 @@ export function fieldNameToLabelPrefix(fieldName) {
   return `${fieldName.toLowerCase()}-`;
 }
 
+export function labelNameToLabelPrefix(label) {
+  if (!label) return;
+  return label.split('-')[0];
+}
+
 export function statusRefToString(statusRef) {
   return statusRef.status;
 }

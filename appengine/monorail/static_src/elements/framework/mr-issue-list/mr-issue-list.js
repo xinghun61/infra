@@ -4,6 +4,8 @@
 
 import {LitElement, html, css} from 'lit-element';
 import page from 'page';
+import {connectStore} from 'elements/reducers/base.js';
+import * as project from 'elements/reducers/project.js';
 import 'elements/framework/links/mr-issue-link/mr-issue-link.js';
 import {issueRefToUrl} from 'elements/shared/converters.js';
 import {isTextInput} from 'elements/shared/dom-helpers';
@@ -11,7 +13,7 @@ import {stringValuesForIssueField,
   EMPTY_FIELD_VALUE} from 'elements/shared/issue-fields.js';
 
 
-export class MrIssueList extends LitElement {
+export class MrIssueList extends connectStore(LitElement) {
   static get styles() {
     return css`
       :host {
@@ -129,7 +131,8 @@ export class MrIssueList extends LitElement {
       case 'summary':
         return issue.summary;
     }
-    const values = stringValuesForIssueField(issue, column, this.projectName);
+    const values = stringValuesForIssueField(issue, column, this.projectName,
+      this._fieldDefMap, this._labelPrefixSet);
     return values.join(', ');
   }
 
@@ -169,6 +172,15 @@ export class MrIssueList extends LitElement {
        * depending on whether the issue at that index is selected.
        */
       _selectedIssues: {type: Object},
+      /**
+       * Map of fieldDefs in currently viewed project, used for computing
+       * displayed values.
+       */
+      _fieldDefMap: {type: Object},
+      /**
+       * Set of label prefixes.
+       */
+      _labelPrefixSet: {type: Object},
     };
   };
 
@@ -182,7 +194,15 @@ export class MrIssueList extends LitElement {
     this.columns = ['ID', 'Summary'];
 
     this._boundRunNavigationHotKeys = this._runNavigationHotKeys.bind(this);
+
+    this._fieldDefMap = new Map();
+    this._labelPrefixSet = new Set();
   };
+
+  stateChanged(state) {
+    this._fieldDefMap = project.fieldDefMap(state);
+    this._labelPrefixSet = project.labelPrefixSet(state);
+  }
 
   firstUpdated() {
     // Only attach an event listener once the DOM has rendered.
