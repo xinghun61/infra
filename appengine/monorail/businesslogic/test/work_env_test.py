@@ -265,6 +265,38 @@ class WorkEnvTest(unittest.TestCase):
 
     self.assertEqual([3, 789], actual)
 
+  @mock.patch('settings.branded_domains',
+              {'proj3': 'branded.com', '*': 'bugs.chromium.org'})
+  def testListProjects_BrandedDomain_NotLive(self):
+    """Branded domains don't affect localhost and demo servers."""
+    # Project 789 is created in setUp()
+    self.services.project.TestAddProject(
+        'proj2', project_id=2, access=project_pb2.ProjectAccess.MEMBERS_ONLY)
+    self.services.project.TestAddProject('proj3', project_id=3)
+
+    with self.work_env as we:
+      actual = we.ListProjects(domain='localhost:8080')
+      self.assertEqual([3, 789], actual)
+
+      actual = we.ListProjects(domain='app-id.appspot.com')
+      self.assertEqual([3, 789], actual)
+
+  @mock.patch('settings.branded_domains',
+              {'proj3': 'branded.com', '*': 'bugs.chromium.org'})
+  def testListProjects_BrandedDomain_LiveSite(self):
+    """Project list only contains projects on the current branded domain."""
+    # Project 789 is created in setUp()
+    self.services.project.TestAddProject(
+        'proj2', project_id=2, access=project_pb2.ProjectAccess.MEMBERS_ONLY)
+    self.services.project.TestAddProject('proj3', project_id=3)
+
+    with self.work_env as we:
+      actual = we.ListProjects(domain='branded.com')
+      self.assertEqual([3], actual)
+
+      actual = we.ListProjects(domain='bugs.chromium.org')
+      self.assertEqual([789], actual)
+
   def testGetProject_Normal(self):
     """We can get an existing project by project_id."""
     with self.work_env as we:

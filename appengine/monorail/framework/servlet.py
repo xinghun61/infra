@@ -521,15 +521,12 @@ class Servlet(webapp2.RequestHandler):
       return  # Avoid any chance of a redirect loop.
     if not project_name:
       return
-    host = request.host
-    if '.appspot.com' in host or ':' in host:
+    needed_domain = framework_helpers.GetNeededDomain(
+        project_name, request.host)
+    if not needed_domain:
       return
-    desired_host = settings.branded_domains.get(
-        project_name, settings.branded_domains.get('*'))
-    if not desired_host or host == desired_host:
-        return
 
-    url = 'https://%s%s' % (desired_host, request.path_qs)
+    url = 'https://%s%s' % (needed_domain, request.path_qs)
     if '?' in url:
       url += '&redir=1'
     else:

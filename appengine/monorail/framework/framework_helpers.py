@@ -262,6 +262,19 @@ def FormatMovedProjectURL(mr, moved_to):
   return '/p/%s%s' % (project_name, rest_of_url)
 
 
+def GetNeededDomain(project_name, current_domain):
+  """Return the branded domain for the project iff not on current_domain."""
+  if (not current_domain or
+      '.appspot.com' in current_domain or
+      ':' in current_domain):
+    return None
+  desired_domain = settings.branded_domains.get(
+      project_name, settings.branded_domains.get('*'))
+  if desired_domain == current_domain:
+    return None
+  return desired_domain
+
+
 def FormatURL(recognized_params, servlet_path, **kwargs):
   """Return a project relative URL to a servlet with old and new params."""
   # Standard params not overridden in **kwargs come first, followed by kwargs.

@@ -236,7 +236,7 @@ class WorkEnv(object):
           project_id)
     return project_id
 
-  def ListProjects(self, use_cache=True):
+  def ListProjects(self, domain=None, use_cache=True):
     """Return a list of project IDs that the current user may view."""
     # Note: No permission checks because anyone can list projects, but
     # the results are filtered by permission to view each project.
@@ -244,7 +244,7 @@ class WorkEnv(object):
     with self.mc.profiler.Phase('list projects for %r' % self.mc.auth.user_id):
       project_ids = self.services.project.GetVisibleLiveProjects(
           self.mc.cnxn, self.mc.auth.user_pb, self.mc.auth.effective_ids,
-          use_cache=use_cache)
+          domain=domain, use_cache=use_cache)
 
     project_ids = sorted(project_ids)
     return project_ids

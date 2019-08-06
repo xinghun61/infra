@@ -946,13 +946,18 @@ class ProjectService(object):
     return [project_dict[pid] for pid in project_id_list
             if pid in project_dict]
 
-  def GetVisibleLiveProjects(self, _cnxn, logged_in_user, effective_ids,
-                             use_cache=True):
+  def GetVisibleLiveProjects(
+      self, _cnxn, logged_in_user, effective_ids, domain=None, use_cache=True):
     project_ids = list(self.projects_by_id.keys())
-    visible_project_ids = [
-        pid for pid in project_ids
-        if permissions.UserCanViewProject(
-            logged_in_user, effective_ids, self.projects_by_id[pid])]
+    visible_project_ids = []
+    for pid in project_ids:
+      can_view = permissions.UserCanViewProject(
+          logged_in_user, effective_ids, self.projects_by_id[pid])
+      different_domain = framework_helpers.GetNeededDomain(
+          self.projects_by_id[pid].project_name, domain)
+      if can_view and not different_domain:
+        visible_project_ids.append(pid)
+
     return visible_project_ids
 
   def GetProjects(self, _cnxn, project_ids, use_cache=True):

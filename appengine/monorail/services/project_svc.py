@@ -23,6 +23,7 @@ import settings
 from framework import exceptions
 from framework import framework_bizobj
 from framework import framework_constants
+from framework import framework_helpers
 from framework import permissions
 from framework import sql
 from services import caches
@@ -269,29 +270,34 @@ class ProjectService(object):
 
     return projects_dict
 
-  def GetVisibleLiveProjects(self, cnxn, logged_in_user, effective_ids,
-                             use_cache=True):
+  def GetVisibleLiveProjects(
+      self, cnxn, logged_in_user, effective_ids, domain=None, use_cache=True):
     """Return all user visible live project ids.
 
     Args:
       cnxn: connection to SQL database.
       logged_in_user: protocol buffer of the logged in user. Can be None.
       effective_ids: set of user IDs for this user. Can be None.
+      domain: optional string with HTTP request hostname.
       use_cache: pass False to force database query to find Project protocol
                  buffers.
 
     Returns:
       A list of project ids of user visible live projects sorted by the names
-      of the projects.
+      of the projects.  If host was provided, only projects with that host
+      as their branded domain will be returned.
     """
     project_rows = self.project_tbl.Select(
         cnxn, cols=['project_id'], state=project_pb2.ProjectState.LIVE)
     project_ids = [row[0] for row in project_rows]
     projects_dict = self.GetProjects(cnxn, project_ids, use_cache=use_cache)
-
-    visible_projects = [project for project in projects_dict.values()
-                        if permissions.UserCanViewProject(
-                            logged_in_user, effective_ids, project)]
+    projects_on_host = {
+      project_id: project for project_id, project in projects_dict.items()
+      if not framework_helpers.GetNeededDomain(project.project_name, domain)}
+    visible_projects = []
+    for project in projects_on_host.values():
+      if permissions.UserCanViewProject(logged_in_user, effective_ids, project):
+        visible_projects.append(project)
     visible_projects.sort(key=lambda p: p.project_name)
 
     return [project.project_id for project in visible_projects]

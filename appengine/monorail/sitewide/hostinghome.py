@@ -23,12 +23,7 @@ from sitewide import sitewide_helpers
 
 
 class HostingHome(servlet.Servlet):
-  """HostingHome shows the Monorail site homepage and link to create a project.
-
-  This needs to be a full Servlet rather than just a static page
-  because we need to check permissions before offering the link to create
-  a project.
-  """
+  """HostingHome shows the project list and link to create a project."""
 
   _PAGE_TEMPLATE = 'sitewide/hosting-home-page.ezt'
 
@@ -64,7 +59,7 @@ class HostingHome(servlet.Servlet):
           {proj.project_id: 'Contributor' for proj in contrib_of})
 
     # Finish the project search pipeline.
-    pipeline.SearchForIDs()
+    pipeline.SearchForIDs(domain=mr.request.host)
     pipeline.GetProjectsAndPaginate(mr.cnxn, urls.HOSTING_HOME)
     project_ids = [p.project_id for p in pipeline.visible_results]
     star_count_dict = self.services.project_star.CountItemsStars(

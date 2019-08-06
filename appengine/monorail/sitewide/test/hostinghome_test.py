@@ -28,7 +28,7 @@ class MockProjectSearchPipeline(object):
     self.visible_results = services.mock_visible_results
     self.pagination = None
 
-  def SearchForIDs(self):
+  def SearchForIDs(self, domain=None):
     pass
 
   def GetProjectsAndPaginate(self, cnxn, list_page_url):

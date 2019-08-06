@@ -32,10 +32,10 @@ class ProjectSearchPipeline(object):
     self.allowed_project_ids = None
     self.visible_results = None
 
-  def SearchForIDs(self):
+  def SearchForIDs(self, domain=None):
     """Get project IDs the user has permission to view."""
     with work_env.WorkEnv(self.mr, self.services) as we:
-      self.allowed_project_ids = we.ListProjects()
+      self.allowed_project_ids = we.ListProjects(domain=domain)
       logging.info('allowed_project_ids is %r', self.allowed_project_ids)
 
   def GetProjectsAndPaginate(self, cnxn, list_page_url):
