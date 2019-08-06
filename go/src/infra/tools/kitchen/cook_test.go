@@ -17,12 +17,12 @@ import (
 
 	"go.chromium.org/luci/auth/integration/authtest"
 	"go.chromium.org/luci/auth/integration/localauth"
+	buildbucketpb "go.chromium.org/luci/buildbucket/proto"
 	log "go.chromium.org/luci/common/logging"
 	"go.chromium.org/luci/common/logging/gologger"
 	"go.chromium.org/luci/common/system/environ"
 	"go.chromium.org/luci/lucictx"
 
-	"infra/tools/kitchen/build"
 	"infra/tools/kitchen/third_party/recipe_engine"
 
 	. "github.com/smartystreets/goconvey/convey"
@@ -114,7 +114,7 @@ func TestCook(t *testing.T) {
 			So(os.Chdir(tdir), ShouldBeNil)
 			defer os.Chdir(cwd)
 
-			run := func(mockRecipeResult *recipe_engine.Result, recipeExitCode int) *build.BuildRunResult {
+			run := func(mockRecipeResult *recipe_engine.Result, recipeExitCode int) (*buildbucketpb.Build, int) {
 				// Mock recipes.py result
 				mockedRecipeResultPath := filepath.Join(tdir, "expected_result.json")
 				m := jsonpb.Marshaler{}
@@ -154,7 +154,7 @@ func TestCook(t *testing.T) {
 				// Cook.
 				err = cook.Flags.Parse(args)
 				So(err, ShouldBeNil)
-				result := cook.run(c, nil, env)
+				result, outputExitCode := cook.run(c, nil, env)
 
 				// Log results
 				t.Logf("cook result:\n%s\n", proto.MarshalTextString(result))
@@ -204,13 +204,7 @@ func TestCook(t *testing.T) {
 					Properties: expectedInputProperties,
 				})
 
-				return result
-			}
-
-			cleanResult := func(r *build.BuildRunResult) *build.BuildRunResult {
-				// Set by "ensureAndRunRecipe", but we start testing at "run".
-				r.Recipe = nil
-				return r
+				return result, outputExitCode
 			}
 
 			env.Set("SWARMING_TASK_ID", "task")
@@ -222,13 +216,9 @@ func TestCook(t *testing.T) {
 						JsonResult: `{"foo": "bar"}`,
 					},
 				}
-				result := run(recipeResult, 0)
-				result.Annotations = nil
-				So(cleanResult(result), ShouldResemble, &build.BuildRunResult{
-					RecipeExitCode: &build.OptionalInt32{Value: 0},
-					RecipeResult:   recipeResult,
-					AnnotationUrl:  "logdog://logdog.example.com/chromium/prefix/+/annotations",
-				})
+				result, exitCode := run(recipeResult, 0)
+				So(exitCode, ShouldEqual, 0)
+				So(result.Status, ShouldEqual, buildbucketpb.Status_SUCCESS)
 			})
 			Convey("recipe step failed", func() {
 				recipeResult := &recipe_engine.Result{
@@ -243,13 +233,10 @@ func TestCook(t *testing.T) {
 						},
 					},
 				}
-				result := run(recipeResult, 1)
-				result.Annotations = nil
-				So(cleanResult(result), ShouldResemble, &build.BuildRunResult{
-					RecipeExitCode: &build.OptionalInt32{Value: 1},
-					RecipeResult:   recipeResult,
-					AnnotationUrl:  "logdog://logdog.example.com/chromium/prefix/+/annotations",
-				})
+				result, exitCode := run(recipeResult, 1)
+				So(exitCode, ShouldEqual, 1)
+				So(result.Status, ShouldEqual, buildbucketpb.Status_FAILURE)
+				So(result.SummaryMarkdown, ShouldEqual, recipeResult.GetFailure().HumanReason)
 			})
 		})
 	})
@@ -264,6 +251,9 @@ func setupRecipeRepo(c context.Context, env environ.Env, targetDir string) error
 
 func copyDir(dest, src string) error {
 	return filepath.Walk(src, func(srcPath string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
 		if filepath.Base(srcPath) == ".recipe_deps" {
 			return filepath.SkipDir
 		}

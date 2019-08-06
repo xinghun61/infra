@@ -304,7 +304,7 @@ func TestReadBuildSecrets(t *testing.T) {
 		Convey("empty", func() {
 			secrets, err := readBuildSecrets(ctx)
 			So(err, ShouldBeNil)
-			So(secrets, ShouldBeNil)
+			So(secrets, ShouldResemble, &buildbucketpb.BuildSecrets{})
 		})
 
 		Convey("build token", func() {

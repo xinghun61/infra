@@ -325,11 +325,9 @@ func (c *cookRun) Run(a subcommands.Application, args []string, env subcommands.
 	// The first thing we do is write a result file in case we crash or get killed.
 	// Note that this code is not reachable if subcommands package could not
 	// parse flags.
-	result := &build.BuildRunResult{
-		InfraFailure: &build.InfraFailure{
-			Type: build.InfraFailure_BOOTSTRAPPER_ERROR,
-			Text: "kitchen crashed or got killed",
-		},
+	result := &buildbucketpb.Build{
+		Status:          buildbucketpb.Status_INFRA_FAILURE,
+		SummaryMarkdown: "kitchen crashed or got killed",
 	}
 	if err := c.flushResult(result); err != nil {
 		fmt.Fprintln(os.Stderr, err)
@@ -338,7 +336,7 @@ func (c *cookRun) Run(a subcommands.Application, args []string, env subcommands.
 	ctx := cli.GetContext(a, c, env)
 	sysEnv := environ.System()
 
-	result = c.run(ctx, args, sysEnv)
+	result, recipeExitCode := c.run(ctx, args, sysEnv)
 	fmt.Println(strings.Repeat("-", 35), "RESULTS", strings.Repeat("-", 36))
 	proto.MarshalText(os.Stdout, result)
 	fmt.Println(strings.Repeat("-", 80))
@@ -348,20 +346,22 @@ func (c *cookRun) Run(a subcommands.Application, args []string, env subcommands.
 		return 1
 	}
 
-	if result.InfraFailure != nil {
+	if result.Status == buildbucketpb.Status_INFRA_FAILURE {
 		fmt.Fprintln(os.Stderr, "run failed because of an infra failure")
 		return 1
 	}
-	if result.RecipeExitCode == nil {
-		panic("impossible: InfraFailure is nil, but there is no recipe exit code")
-	}
-	return int(result.RecipeExitCode.Value)
+	return recipeExitCode
 }
 
-// run runs the cook subcommmand and returns cook result.
-func (c *cookRun) run(ctx context.Context, args []string, env environ.Env) *build.BuildRunResult {
-	fail := func(err error) *build.BuildRunResult {
-		return &build.BuildRunResult{InfraFailure: infraFailure(err)}
+// run runs the cook subcommmand and returns Build result and recipe exit code.
+// If the returned Build.Status == INFRA_FAILURE, then the recipe may not have run
+// and the exit code is bogus.
+func (c *cookRun) run(ctx context.Context, args []string, env environ.Env) (*buildbucketpb.Build, int) {
+	fail := func(err error) (*buildbucketpb.Build, int) {
+		return &buildbucketpb.Build{
+			Status:          buildbucketpb.Status_INFRA_FAILURE,
+			SummaryMarkdown: err.Error(),
+		}, 1
 	}
 
 	// Process input.
@@ -428,73 +428,79 @@ func (c *cookRun) run(ctx context.Context, args []string, env environ.Env) *buil
 	defer c.recipeAuth.Close(ctx)
 	defer c.systemAuth.Close(ctx)
 
-	// If we are asked to call UpdateBuild, prepare a buildUpdater.
 	// Must happen after c.systemAuth is initialized.
-	if c.CallUpdateBuild {
-		var err error
-		c.bu, err = c.newBuildUpdater()
-		if err != nil {
-			return fail(errors.Annotate(err, "failed to create a build updater").Err())
-		}
+	// We create a build updater even if c.CallUpdateBuild is false because we use it to
+	// construct the req.Build, which is needed by flushResult. Extracting the logic to construct
+	// req.Build from the BuildUpdater would require large changes, and we plan to replace for
+	// this code entirely with LUCI runner.
+	c.bu, err = c.newBuildUpdater()
+	if err != nil {
+		return fail(errors.Annotate(err, "failed to create a build updater").Err())
 	}
 
 	// Run the recipe.
 	result := c.runRecipe(ctx, env)
 
-	// Make a final UpdateBuild call.
-	if c.bu != nil {
+	req, err := c.bu.ParseAnnotations(ctx, result.Annotations)
+	if err != nil {
+		return fail(errors.Annotate(err, "failed to parse final annotations").Err())
+	}
+
+	// Mark incomplete steps as canceled.
+	endTime, err := ptypes.TimestampProto(clock.Now(ctx))
+	if err != nil {
+		return fail(err)
+	}
+	for _, s := range req.Build.Steps {
+		if !protoutil.IsEnded(s.Status) {
+			s.Status = buildbucketpb.Status_CANCELED
+			if s.SummaryMarkdown != "" {
+				s.SummaryMarkdown += "\n"
+			}
+			s.SummaryMarkdown += "step was canceled because it did not end before build ended"
+			s.EndTime = endTime
+		}
+	}
+
+	// If the build failed, update the build status.
+	// If it succeeded, do not set it just yet, since there are more ways
+	// the swarming task can fail.
+	switch {
+	case result.InfraFailure != nil:
+		req.Build.Status = buildbucketpb.Status_INFRA_FAILURE
+		req.Build.SummaryMarkdown = result.InfraFailure.Text
+		req.UpdateMask.Paths = append(req.UpdateMask.Paths, "build.status", "build.summary_markdown")
+
+	case result.RecipeResult.GetFailure() != nil:
+		// Note: if this recipe failure is an infra failure,
+		// result.InfraFailure above is non-nil.
+		req.Build.Status = buildbucketpb.Status_FAILURE
+		req.Build.SummaryMarkdown = result.RecipeResult.GetFailure().HumanReason
+		req.UpdateMask.Paths = append(req.UpdateMask.Paths, "build.status", "build.summary_markdown")
+	}
+
+	if c.CallUpdateBuild {
 		// The final UpdateBuild call is critical.
 		// If it fails, it is fatal to the build.
-
-		req, err := c.bu.ParseAnnotations(ctx, result.Annotations)
-		if err != nil {
-			return fail(errors.Annotate(err, "failed to parse final annotations").Err())
-		}
-
-		// Mark incomplete steps as canceled.
-		endTime, err := ptypes.TimestampProto(clock.Now(ctx))
-		if err != nil {
-			return fail(err)
-		}
-		for _, s := range req.Build.Steps {
-			if !protoutil.IsEnded(s.Status) {
-				s.Status = buildbucketpb.Status_CANCELED
-				if s.SummaryMarkdown != "" {
-					s.SummaryMarkdown += "\n"
-				}
-				s.SummaryMarkdown += "step was canceled because it did not end before build ended"
-				s.EndTime = endTime
-			}
-		}
-
-		// If the build failed, update the build status.
-		// If it succeeded, do not set it just yet, since there are more ways
-		// the swarming task can fail.
-		switch {
-		case result.InfraFailure != nil:
-			req.Build.Status = buildbucketpb.Status_INFRA_FAILURE
-			req.Build.SummaryMarkdown = result.InfraFailure.Text
-			req.UpdateMask.Paths = append(req.UpdateMask.Paths, "build.status", "build.summary_markdown")
-
-		case result.RecipeResult.GetFailure() != nil:
-			// Note: if this recipe failure is an infra failure,
-			// result.InfraFailure above is non-nil.
-			req.Build.Status = buildbucketpb.Status_FAILURE
-			req.Build.SummaryMarkdown = result.RecipeResult.GetFailure().HumanReason
-			req.UpdateMask.Paths = append(req.UpdateMask.Paths, "build.status", "build.summary_markdown")
-		}
-
 		if err := c.bu.UpdateBuild(ctx, req); err != nil {
 			return fail(errors.Annotate(err, "failed to send final build state to buildbucket").Err())
 		}
 	}
 
-	return result
+	recipeExitCode := 1
+	if result.RecipeExitCode != nil {
+		recipeExitCode = int(result.RecipeExitCode.Value)
+	}
+	// After the call to UpdateBuild we can safely set the Build successful.
+	if recipeExitCode == 0 {
+		req.Build.Status = buildbucketpb.Status_SUCCESS
+	}
+	return req.Build, recipeExitCode
 }
 
 // flushResult writes the result to c.OutputResultJSOPath file
 // if the path is specified.
-func (c *cookRun) flushResult(result *build.BuildRunResult) (err error) {
+func (c *cookRun) flushResult(result *buildbucketpb.Build) (err error) {
 	if c.OutputResultJSONPath == "" {
 		return nil
 	}
@@ -863,7 +869,7 @@ func (c *cookRun) watchSubprocessOutput(ctx context.Context, annStreamName types
 	}
 
 	var stopBU func() error
-	if c.bu != nil {
+	if c.CallUpdateBuild {
 		annoteeOpts.AnnotationUpdated = c.bu.AnnotationUpdated
 
 		errC := make(chan error)

@@ -331,14 +331,13 @@ func (b *buildUpdater) AnnotationUpdated(annBytes []byte) {
 
 // readBuildSecrets populates c.buildSecrets from swarming secret bytes, if any.
 func readBuildSecrets(ctx context.Context) (*buildbucketpb.BuildSecrets, error) {
+	secrets := &buildbucketpb.BuildSecrets{}
 	swarming := lucictx.GetSwarming(ctx)
-	if swarming == nil {
-		return nil, nil
+	if swarming != nil {
+		if err := proto.Unmarshal(swarming.SecretBytes, secrets); err != nil {
+			return nil, err
+		}
 	}
 
-	secrets := &buildbucketpb.BuildSecrets{}
-	if err := proto.Unmarshal(swarming.SecretBytes, secrets); err != nil {
-		return nil, err
-	}
 	return secrets, nil
 }
