@@ -403,7 +403,7 @@ describe('issue', () => {
     ]);
   });
 
-  describe('ListIssues', () => {
+  describe('action creators', () => {
     beforeEach(() => {
       prpcCall = sinon.stub(prpcClient, 'call');
     });
@@ -412,7 +412,34 @@ describe('issue', () => {
       prpcCall.restore();
     });
 
-    it('correct number of calls to ListIssues', async () => {
+    it('predictComponent sends prediction request', async () => {
+      prpcCall.callsFake(() => {
+        return {componentRef: {path: 'UI>Test'}};
+      });
+
+      const dispatch = sinon.stub();
+
+      const action = issue.predictComponent('chromium',
+        'test comments\nsummary');
+
+      await action(dispatch);
+
+      sinon.assert.calledOnce(prpcCall);
+
+      sinon.assert.calledWith(prpcCall, 'monorail.Features',
+        'PredictComponent', {
+          projectName: 'chromium',
+          text: 'test comments\nsummary',
+        });
+
+      sinon.assert.calledWith(dispatch, {type: 'PREDICT_COMPONENT_START'});
+      sinon.assert.calledWith(dispatch, {
+        type: 'PREDICT_COMPONENT_SUCCESS',
+        component: 'UI>Test',
+      });
+    });
+
+    it('fetchIssueList makes several calls to ListIssues', async () => {
       prpcCall.callsFake(() => {
         return {
           issues: [{localId: 1}, {localId: 2}, {localId: 3}],
@@ -437,7 +464,7 @@ describe('issue', () => {
       }));
     });
 
-    it('correct order of issues from fetchListIssues', async () => {
+    it('fetchIssueList orders issues correctly', async () => {
       prpcCall.onFirstCall().returns({issues: [{localId: 1}], totalResults: 6});
       prpcCall.onSecondCall().returns({
         issues: [{localId: 2}],

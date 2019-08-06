@@ -77,10 +77,10 @@ export class MrEditIssue extends connectStore(LitElement) {
 
   static get properties() {
     return {
+      /**
+       * All comments, including descriptions.
+       */
       comments: {
-        type: Array,
-      },
-      descriptionList: {
         type: Array,
       },
       issue: {
@@ -101,9 +101,6 @@ export class MrEditIssue extends connectStore(LitElement) {
       focusId: {
         type: String,
       },
-      _commentsText: {
-        type: String,
-      },
       _issueUpdated: {
         type: Boolean,
       },
@@ -119,6 +116,7 @@ export class MrEditIssue extends connectStore(LitElement) {
   stateChanged(state) {
     this.issue = issue.issue(state);
     this.issueRef = issue.issueRef(state);
+    this.comments = issue.comments(state);
     this.projectConfig = project.project(state).config;
     this.updatingIssue = issue.requests(state).update.requesting;
     this.updateError = issue.requests(state).update.error;
@@ -141,14 +139,6 @@ export class MrEditIssue extends connectStore(LitElement) {
         this._issueUpdated = true;
         this.reset();
       }
-    }
-
-    if (changedProperties.has('comments') ||
-        changedProperties.has('descriptionList')) {
-      this._commentsText = (this.descriptionList || []).map(
-        (description) => description.content).join('\n').trim();
-      this._commentsText += '\n' + (this.comments || []).map(
-        (comment) => comment.content).join('\n').trim();
     }
   }
 
@@ -197,6 +187,11 @@ export class MrEditIssue extends connectStore(LitElement) {
     editForm.focus();
   }
 
+  get _commentsText() {
+    return (this.comments || []).map(
+      (comment) => comment.content).join('\n').trim();
+  }
+
   get _labelNames() {
     if (!this.issue || !this.issue.labelRefs) return [];
     const labels = this.issue.labelRefs;
@@ -237,11 +232,7 @@ export class MrEditIssue extends connectStore(LitElement) {
       text += '\n' + commentContent.trim();
     }
 
-    const message = {
-      text,
-      projectName: 'chromium',
-    };
-    store.dispatch(issue.predictComponent(message));
+    store.dispatch(issue.predictComponent(this.issueRef.projectName, text));
   }
 
   _onChange(evt) {

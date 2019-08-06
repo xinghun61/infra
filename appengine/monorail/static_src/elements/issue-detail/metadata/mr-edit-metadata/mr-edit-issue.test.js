@@ -146,7 +146,7 @@ describe('mr-edit-issue', () => {
 
   it('predicts components for chromium', async () => {
     element.issueRef = {projectName: 'chromium'};
-    element._commentsText = 'comments text';
+    element.comments = [{content: 'comments text'}];
     element.issue = {summary: 'summary'};
 
     await element.updateComplete;

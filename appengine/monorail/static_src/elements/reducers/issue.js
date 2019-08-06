@@ -870,15 +870,19 @@ export const presubmit = (message) => async (dispatch) => {
   }
 };
 
-export const predictComponent = (message) => async (dispatch) => {
+export const predictComponent = (projectName, text) => async (dispatch) => {
   dispatch({type: PREDICT_COMPONENT_START});
+
+  const message = {
+    projectName,
+    text,
+  };
 
   try {
     const response = await prpcClient.call(
       'monorail.Features', 'PredictComponent', message);
     const component = response.componentRef && response.componentRef.path ?
-      response.componentRef.path :
-      '';
+      response.componentRef.path : '';
     dispatch({type: PREDICT_COMPONENT_SUCCESS, component});
   } catch (error) {
     dispatch({type: PREDICT_COMPONENT_FAILURE, error: error});
