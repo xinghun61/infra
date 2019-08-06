@@ -120,7 +120,7 @@ export function makeGridCellKey(x, y) {
 }
 
 // Outer function that runs each custom extractor function
-export function extractGridData(issues, xField, yField) {
+export function extractGridData(issues, xField = '', yField = '') {
   const gridData = {
     xHeadings: [],
     yHeadings: [],
