@@ -209,7 +209,7 @@ class CompileRerunBuild(LuciBuild):
   failures = ndb.LocalStructuredProperty(
       CompileFailureInRerunBuild, repeated=True)
 
-  def GetFailedTargets(self):
+  def GetFailuresInBuild(self):
     """Gets a list of failed compile targets of each compile step that failed
       in the rerun build."""
     return GetFailedTargets(self.failures)

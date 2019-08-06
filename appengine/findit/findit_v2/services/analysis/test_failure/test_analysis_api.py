@@ -104,3 +104,28 @@ class TestAnalysisAPI(AnalysisAPI):
         rerun_builder_id=rerun_builder_id,
         test_failure_keys=test_failure_keys)
     return analysis
+
+  def _GetFailuresInAnalysis(self, analysis):
+    return ndb.get_multi(analysis.compile_failure_keys)
+
+  def _FetchRerunBuildsOfAnalysis(self, analysis):
+    return []
+
+  def _GetFailureAnalysis(self, analyzed_build_id):
+    return None
+
+  def _GetFailuresToRerun(self, failure_entities):
+    return {}
+
+  def _GetExistingRerunBuild(self, analysis_key, rerun_commit):
+    return []
+
+  def _CreateRerunBuild(self, rerun_builder, new_build, rerun_commit,
+                        analysis_key):
+    return None
+
+  def _GetRerunBuildTags(self, analyzed_build_id):
+    return []
+
+  def _GetRerunBuildInputProperties(self, project_api, rerun_failures):
+    return {}

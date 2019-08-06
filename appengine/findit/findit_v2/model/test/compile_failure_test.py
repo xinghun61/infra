@@ -4,7 +4,6 @@
 
 from datetime import datetime
 
-from buildbucket_proto import common_pb2
 from google.appengine.ext import ndb
 
 from findit_v2.model.compile_failure import CompileFailure
@@ -15,7 +14,6 @@ from findit_v2.model.compile_failure import CompileRerunBuild
 from findit_v2.model.gitiles_commit import GitilesCommit
 from findit_v2.model.luci_build import LuciFailedBuild
 from findit_v2.services.failure_type import StepTypeEnum
-from libs import analysis_status
 from waterfall.test import wf_testcase
 
 
@@ -162,7 +160,7 @@ class CompileFailureTest(wf_testcase.WaterfallTestCase):
           output_targets=target.output_targets)
       rerun_build.failures.append(result)
 
-    result = rerun_build.GetFailedTargets()
+    result = rerun_build.GetFailuresInBuild()
     self.assertItemsEqual(['target1.o', 'target2.o'], result['compile'])
 
   def testLuciRerunBuildSearch(self):

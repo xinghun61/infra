@@ -11,12 +11,16 @@ from buildbucket_proto.build_pb2 import Build
 from buildbucket_proto.build_pb2 import BuilderID
 from buildbucket_proto.rpc_pb2 import SearchBuildsResponse
 from buildbucket_proto.step_pb2 import Step
+from google.appengine.ext import ndb
 
 from common.waterfall import buildbucket_client
 from findit_v2.model import luci_build
 from findit_v2.model.compile_failure import CompileFailure
 from findit_v2.model.compile_failure import CompileFailureAnalysis
 from findit_v2.model.compile_failure import CompileFailureGroup
+from findit_v2.model.compile_failure import CompileFailureInRerunBuild
+from findit_v2.model.compile_failure import CompileRerunBuild
+from findit_v2.model.gitiles_commit import Culprit as CulpritNdb
 from findit_v2.model.gitiles_commit import GitilesCommit
 from findit_v2.model.luci_build import LuciFailedBuild
 from findit_v2.services.analysis.compile_failure.compile_analysis_api import (
@@ -24,6 +28,7 @@ from findit_v2.services.analysis.compile_failure.compile_analysis_api import (
 from findit_v2.services.chromium_api import ChromiumProjectAPI
 from findit_v2.services.context import Context
 from findit_v2.services.failure_type import StepTypeEnum
+from libs import analysis_status
 from services import git
 from waterfall.test import wf_testcase
 
@@ -104,24 +109,50 @@ class AnalysisAPITest(wf_testcase.TestCase):
         build_failure_type=StepTypeEnum.COMPILE)
     self.build_entity.put()
 
-    self.compile_failure_1 = CompileFailure.Create(self.build_entity.key,
-                                                   'compile', ['a.o'], 'CC')
+    self.compile_failure_1 = CompileFailure.Create(
+        failed_build_key=self.build_entity.key,
+        step_ui_name='compile',
+        output_targets=['a.o'],
+        first_failed_build_id=self.build_id,
+        failure_group_build_id=None)
     self.compile_failure_1.put()
-    self.compile_failure_2 = CompileFailure.Create(self.build_entity.key,
-                                                   'compile', ['b.o'], 'CC')
+    self.compile_failure_2 = CompileFailure.Create(
+        failed_build_key=self.build_entity.key,
+        step_ui_name='compile',
+        output_targets=['b.o'],
+        first_failed_build_id=self.build_id,
+        failure_group_build_id=None)
     self.compile_failure_2.put()
 
     self.commits = []
     for i in xrange(0, 11):
-      self.commits.append(self._CreateGitilesCommit('r%d' % i, 100 + i))
+      self.commits.append(self._CreateGitilesCommit('r%d' % i, 6000000 + i))
+
+    self.analysis = CompileFailureAnalysis.Create(
+        luci_project=self.context.luci_project_name,
+        luci_bucket=self.builder.bucket,
+        luci_builder=self.builder.builder,
+        build_id=self.build_id,
+        gitiles_host=self.context.gitiles_host,
+        gitiles_project=self.context.gitiles_project,
+        gitiles_ref=self.context.gitiles_ref,
+        last_passed_gitiles_id='left_sha',
+        last_passed_commit_position=6000000,
+        first_failed_gitiles_id=self.context.gitiles_id,
+        first_failed_commit_position=6000005,
+        rerun_builder_id='chromium/findit/findit-variables',
+        compile_failure_keys=[
+            self.compile_failure_1.key, self.compile_failure_2.key
+        ])
+    self.analysis.Save()
 
     self.analysis_api = CompileAnalysisAPI()
 
   def _CreateGitilesCommit(self, gitiles_id, commit_position):
     return GitilesCommit(
-        gitiles_host=self.gitiles_host,
-        gitiles_project=self.gitiles_project,
-        gitiles_ref=self.gitiles_ref,
+        gitiles_host=self.context.gitiles_host,
+        gitiles_project=self.context.gitiles_project,
+        gitiles_ref=self.context.gitiles_ref,
         gitiles_id=gitiles_id,
         commit_position=commit_position)
 
@@ -1033,3 +1064,350 @@ class AnalysisAPITest(wf_testcase.TestCase):
         self.analysis_api.GetFirstFailuresInCurrentBuildWithoutGroup(
             ChromiumProjectAPI(), self.context, self.build,
             first_failures_in_current_build))
+
+  def testBisectGitilesCommitGetCulpritCommit(self):
+    gitiles_host = 'gitiles.host.com'
+    gitiles_project = 'project/name'
+    gitiles_ref = 'ref/heads/master'
+
+    context = Context(
+        luci_project_name='chromium',
+        gitiles_project=gitiles_project,
+        gitiles_host=gitiles_host,
+        gitiles_ref=gitiles_ref,
+        gitiles_id=self.commits[10].gitiles_id)
+
+    revisions = {n: str(n) for n in xrange(100, 110)}
+
+    bisect_commit, culprit_commit = self.analysis_api._BisectGitilesCommit(
+        context, self.commits[9], self.commits[10], revisions)
+
+    self.assertIsNone(bisect_commit)
+    self.assertEqual(6000010, culprit_commit.commit_position)
+
+  def testBisectGitilesCommitFailedToGetGitilesId(self):
+    gitiles_host = 'gitiles.host.com'
+    gitiles_project = 'project/name'
+    gitiles_ref = 'ref/heads/master'
+
+    context = Context(
+        luci_project_name='chromium',
+        gitiles_project=gitiles_project,
+        gitiles_host=gitiles_host,
+        gitiles_ref=gitiles_ref,
+        gitiles_id=self.commits[10].gitiles_id)
+
+    bisect_commit, culprit_commit = self.analysis_api._BisectGitilesCommit(
+        context, self.commits[0], self.commits[10], {})
+
+    self.assertIsNone(bisect_commit)
+    self.assertIsNone(culprit_commit)
+
+  def testUpdateFailureRegressionRanges(self):
+    rerun_builds_info = [(self.commits[5], {}),
+                         (self.commits[7], {
+                             'compile': ['a.o']
+                         }), (self.commits[6], {
+                             'compile': ['a.o']
+                         }), (self.commits[8], {
+                             'compile': ['b.o']
+                         })]
+    failures_with_range = [{
+        'failure': self.compile_failure_1,
+        'last_passed_commit': self.commits[0],
+        'first_failed_commit': self.commits[10],
+    },
+                           {
+                               'failure': self.compile_failure_2,
+                               'last_passed_commit': self.commits[0],
+                               'first_failed_commit': self.commits[10],
+                           }]
+
+    expected_results = [{
+        'failure': self.compile_failure_1,
+        'last_passed_commit': self.commits[5],
+        'first_failed_commit': self.commits[6],
+    },
+                        {
+                            'failure': self.compile_failure_2,
+                            'last_passed_commit': self.commits[7],
+                            'first_failed_commit': self.commits[8],
+                        }]
+
+    self.analysis_api._UpdateFailureRegressionRanges(rerun_builds_info,
+                                                     failures_with_range)
+
+    for real_failure in failures_with_range:
+      for expected_result in expected_results:
+        if real_failure['failure'].output_targets == expected_result[
+            'failure'].output_targets:
+          self.assertEqual(expected_result['last_passed_commit'].gitiles_id,
+                           real_failure['last_passed_commit'].gitiles_id)
+          self.assertEqual(expected_result['first_failed_commit'].gitiles_id,
+                           real_failure['first_failed_commit'].gitiles_id)
+
+  def testGroupFailuresByRegressionRange(self):
+    compile_failure_3 = CompileFailure.Create(self.build_entity.key, 'compile',
+                                              ['c.o'], 'CC')
+    compile_failure_3.put()
+
+    failures_with_range = [{
+        'failure': self.compile_failure_1,
+        'last_passed_commit': self.commits[5],
+        'first_failed_commit': self.commits[6],
+    },
+                           {
+                               'failure': self.compile_failure_2,
+                               'last_passed_commit': self.commits[7],
+                               'first_failed_commit': self.commits[8],
+                           },
+                           {
+                               'failure': compile_failure_3,
+                               'last_passed_commit': self.commits[5],
+                               'first_failed_commit': self.commits[6],
+                           }]
+
+    expected_result = [
+        {
+            'failures': [self.compile_failure_1, compile_failure_3],
+            'last_passed_commit': self.commits[5],
+            'first_failed_commit': self.commits[6],
+        },
+        {
+            'failures': [self.compile_failure_2],
+            'last_passed_commit': self.commits[7],
+            'first_failed_commit': self.commits[8],
+        },
+    ]
+
+    result = self.analysis_api._GroupFailuresByRegressionRange(
+        failures_with_range)
+    self.assertItemsEqual(expected_result, result)
+
+  def testGetCulpritsForFailures(self):
+    culprit = CulpritNdb.Create(self.gitiles_host, self.gitiles_project,
+                                self.gitiles_ref, 'git_hash_123', 123)
+    culprit.put()
+
+    failure1 = CompileFailure.Create(self.build_entity.key, 'compile', ['a.o'],
+                                     'CC')
+    failure1.culprit_commit_key = culprit.key
+    failure1.put()
+
+    failure2 = CompileFailure.Create(self.build_entity.key, 'compile', ['b.o'],
+                                     'CC')
+    failure2.culprit_commit_key = culprit.key
+    failure2.put()
+
+    culprits = self.analysis_api.GetCulpritsForFailures([failure1, failure2])
+    self.assertEqual(1, len(culprits))
+    self.assertEqual('git_hash_123', culprits[0].commit.id)
+
+  def _CreateCompileRerunBuild(self, commit_index=2):
+    rerun_commit = self.commits[commit_index]
+
+    rerun_builder = BuilderID(
+        project='chromium', bucket='findit', builder='findit-variables')
+
+    rerun_build = CompileRerunBuild.Create(
+        luci_project=rerun_builder.project,
+        luci_bucket=rerun_builder.bucket,
+        luci_builder=rerun_builder.builder,
+        build_id=8000000000789,
+        legacy_build_number=60789,
+        gitiles_host=rerun_commit.gitiles_host,
+        gitiles_project=rerun_commit.gitiles_project,
+        gitiles_ref=rerun_commit.gitiles_ref,
+        gitiles_id=rerun_commit.gitiles_id,
+        commit_position=rerun_commit.commit_position,
+        status=1,
+        create_time=datetime(2019, 3, 28),
+        parent_key=self.analysis.key)
+    rerun_build.put()
+    return rerun_build
+
+  @mock.patch.object(
+      ChromiumProjectAPI,
+      'GetCompileRerunBuildInputProperties',
+      return_value={'recipe': 'compile'})
+  @mock.patch.object(buildbucket_client, 'TriggerV2Build')
+  def testTriggerRerunBuild(self, mock_trigger_build, _):
+    new_build_id = 800000024324
+    new_build = Build(id=new_build_id, number=300)
+    new_build.status = common_pb2.SCHEDULED
+    new_build.create_time.FromDatetime(datetime(2019, 4, 20))
+    rerun_builder = BuilderID(
+        project='chromium', bucket='findit', builder='findit-variables')
+    rerun_commit = self.commits[2]
+    output_targets = {'compile': ['a.o']}
+
+    mock_trigger_build.return_value = new_build
+
+    self.analysis_api.TriggerRerunBuild(self.context, self.build_id,
+                                        self.analysis.key, rerun_builder,
+                                        rerun_commit, output_targets)
+
+    rerun_build = CompileRerunBuild.get_by_id(
+        new_build_id, parent=self.analysis.key)
+    self.assertIsNotNone(rerun_build)
+    mock_trigger_build.assert_called_once_with(
+        rerun_builder,
+        common_pb2.GitilesCommit(
+            project=rerun_commit.gitiles_project,
+            host=rerun_commit.gitiles_host,
+            ref=rerun_commit.gitiles_ref,
+            id=rerun_commit.gitiles_id), {'recipe': 'compile'},
+        tags=[{
+            'value': 'compile-failure-culprit-finding',
+            'key': 'purpose'
+        }, {
+            'value': str(self.build_id),
+            'key': 'analyzed_build_id'
+        }])
+
+  @mock.patch.object(
+      ChromiumProjectAPI,
+      'GetCompileRerunBuildInputProperties',
+      return_value={'recipe': 'compile'})
+  @mock.patch.object(buildbucket_client, 'TriggerV2Build')
+  def testTriggerRerunBuildFoundRunningBuild(self, mock_trigger_build, _):
+    """This test is for the case where there's already an existing rerun build,
+      so no new rerun-build should be scheduled."""
+    rerun_builder = BuilderID(
+        project='chromium', bucket='findit', builder='findit-variables')
+    output_targets = {'compile': ['a.o']}
+
+    self._CreateCompileRerunBuild(commit_index=2)
+
+    self.analysis_api.TriggerRerunBuild(self.context, self.build_id,
+                                        self.analysis.key, rerun_builder,
+                                        self.commits[2], output_targets)
+
+    self.assertFalse(mock_trigger_build.called)
+
+  @mock.patch.object(
+      ChromiumProjectAPI,
+      'GetCompileRerunBuildInputProperties',
+      return_value=None)
+  @mock.patch.object(buildbucket_client, 'TriggerV2Build')
+  def testTriggerRerunBuildFailedToGetProperty(self, mock_trigger_build, _):
+    """This test is for the case where there's already an existing rerun build,
+      so no new rerun-build should be scheduled."""
+    rerun_commit = self.commits[2]
+
+    rerun_builder = BuilderID(
+        project='chromium', bucket='findit', builder='findit-variables')
+    output_targets = {'compile': ['a.o']}
+
+    self.analysis_api.TriggerRerunBuild(self.context, self.build_id,
+                                        self.analysis.key, rerun_builder,
+                                        rerun_commit, output_targets)
+
+    self.assertFalse(mock_trigger_build.called)
+
+  @mock.patch.object(
+      ChromiumProjectAPI,
+      'GetCompileRerunBuildInputProperties',
+      return_value={'recipe': 'compile'})
+  @mock.patch.object(buildbucket_client, 'TriggerV2Build', return_value=None)
+  def testTriggerRerunBuildFailedToTriggerBuild(self, mock_trigger_build, _):
+    """This test is for the case where there's already an existing rerun build,
+      so no new rerun-build should be scheduled."""
+    rerun_commit = self.commits[2]
+
+    rerun_builder = BuilderID(
+        project='chromium', bucket='findit', builder='findit-variables')
+    output_targets = {'compile': ['a.o']}
+
+    self.analysis_api.TriggerRerunBuild(self.context, self.build_id,
+                                        self.analysis.key, rerun_builder,
+                                        rerun_commit, output_targets)
+
+    self.assertTrue(mock_trigger_build.called)
+    rerun_builds = CompileRerunBuild.query(ancestor=self.analysis.key).fetch()
+    self.assertEqual([], rerun_builds)
+
+  def testGetRegressionRangesForFailuresNoRerunBuilds(self):
+    result = self.analysis_api._GetRegressionRangesForFailures(self.analysis)
+
+    expected_result = [{
+        'failures': [self.compile_failure_1, self.compile_failure_2],
+        'last_passed_commit': self.analysis.last_passed_commit,
+        'first_failed_commit': self.analysis.first_failed_commit
+    }]
+    self.assertEqual(expected_result, result)
+
+  def testGetRegressionRangesForFailures(self):
+    rerun_build = self._CreateCompileRerunBuild(commit_index=2)
+    rerun_build.status = 20
+    failure_entity = CompileFailureInRerunBuild(
+        step_ui_name='compile', output_targets=['a.o'])
+    rerun_build.failures = [failure_entity]
+    rerun_build.put()
+
+    results = self.analysis_api._GetRegressionRangesForFailures(self.analysis)
+    expected_results = [{
+        'failures': [self.compile_failure_2],
+        'first_failed_commit': self.analysis.first_failed_commit,
+        'last_passed_commit': self.commits[2]
+    },
+                        {
+                            'failures': [self.compile_failure_1],
+                            'first_failed_commit':
+                                self.commits[2],
+                            'last_passed_commit':
+                                self.analysis.last_passed_commit
+                        }]
+    self.assertEqual(expected_results, results)
+
+  @mock.patch.object(
+      CompileAnalysisAPI,
+      '_GetRerunBuildInputProperties',
+      return_value={'recipe': 'compile'})
+  @mock.patch.object(buildbucket_client, 'TriggerV2Build')
+  @mock.patch.object(git, 'MapCommitPositionsToGitHashes')
+  def testRerunBasedAnalysisContinueWithNextRerunBuild(self, mock_revisions,
+                                                       mock_trigger_build, _):
+    mock_revisions.return_value = {n: str(n) for n in xrange(6000000, 6000005)}
+    mock_rerun_build = Build(id=8000055000123, number=78990)
+    mock_rerun_build.create_time.FromDatetime(datetime(2019, 4, 30))
+    mock_trigger_build.return_value = mock_rerun_build
+
+    self.analysis_api.RerunBasedAnalysis(self.context, self.build_id)
+    self.assertTrue(mock_trigger_build.called)
+
+    analysis = CompileFailureAnalysis.GetVersion(self.build_id)
+    self.assertEqual(analysis_status.RUNNING, analysis.status)
+
+    rerun_builds = CompileRerunBuild.query(ancestor=self.analysis.key).fetch()
+    self.assertEqual(1, len(rerun_builds))
+    self.assertEqual(6000002, rerun_builds[0].gitiles_commit.commit_position)
+
+  @mock.patch.object(CompileAnalysisAPI, 'TriggerRerunBuild')
+  @mock.patch.object(git, 'MapCommitPositionsToGitHashes')
+  def testRerunBasedAnalysisEndWithCulprit(self, mock_revisions,
+                                           mock_trigger_build):
+    rerun_build = self._CreateCompileRerunBuild(commit_index=1)
+    rerun_build.status = 20
+    failure_entity_a = CompileFailureInRerunBuild(
+        step_ui_name='compile', output_targets=['a.o'])
+    failure_entity_b = CompileFailureInRerunBuild(
+        step_ui_name='compile', output_targets=['b.o'])
+    rerun_build.failures = [failure_entity_a, failure_entity_b]
+    rerun_build.put()
+
+    mock_revisions.return_value = {n: str(n) for n in xrange(6000000, 6000005)}
+
+    self.analysis_api.RerunBasedAnalysis(self.context, self.build_id)
+    self.assertFalse(mock_trigger_build.called)
+
+    analysis = CompileFailureAnalysis.GetVersion(self.build_id)
+    self.assertEqual(analysis_status.COMPLETED, analysis.status)
+
+    compile_failures = ndb.get_multi(analysis.compile_failure_keys)
+    culprit_key = compile_failures[0].culprit_commit_key
+    self.assertIsNotNone(culprit_key)
+    culprit = culprit_key.get()
+    self.assertEqual(6000001, culprit.commit_position)
+    self.assertEqual([cf.key.urlsafe() for cf in compile_failures],
+                     culprit.failure_urlsafe_keys)

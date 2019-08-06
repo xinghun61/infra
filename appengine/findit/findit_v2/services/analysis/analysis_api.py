@@ -3,14 +3,24 @@
 # found in the LICENSE file.
 """Defines the APIs that each type of failure analysis must implement. """
 
+from collections import defaultdict
+import logging
+
 from buildbucket_proto import common_pb2
 from google.appengine.ext import ndb
 from google.protobuf.field_mask_pb2 import FieldMask
 
 from common.waterfall import buildbucket_client
 from findit_v2.model import luci_build
+from findit_v2.model.gitiles_commit import GitilesCommit
+from findit_v2.model.gitiles_commit import Culprit
+from findit_v2.model.messages.findit_result import Culprit as CulpritPb
+from findit_v2.model.messages.findit_result import (GitilesCommit as
+                                                    GitilesCommitPb)
 from findit_v2.services import projects
 from findit_v2.services import constants
+from libs import analysis_status
+from libs import time_util
 from services import git
 
 
@@ -125,20 +135,81 @@ class AnalysisAPI(object):
   def _CreateFailure(self, failed_build_key, step_ui_name,
                      first_failed_build_id, last_passed_build_id,
                      merged_failure_key, atomic_failure, properties):
+    """Creates and returns an AtomicFailure entity."""
     raise NotImplementedError
 
   def _GetFailureEntitiesForABuild(self, build):
+    """Returns all AtomicFailure entities of the build."""
     raise NotImplementedError
 
   def _CreateFailureGroup(self, context, build, failure_keys,
                           last_passed_gitiles_id, last_passed_commit_position,
                           first_failed_commit_position):
+    """Creates and returns a failure group for the failures."""
     raise NotImplementedError
 
   def _CreateFailureAnalysis(
       self, luci_project, context, build, last_passed_gitiles_id,
       last_passed_commit_position, first_failed_commit_position,
       rerun_builder_id, failure_keys):
+    """Creates and returns an analysis entities for the  analyzed failures."""
+    raise NotImplementedError
+
+  def _CreateRerunBuild(self, rerun_builder, new_build, rerun_commit,
+                        analysis_key):
+    """Creates and returns a rerun build entity."""
+    raise NotImplementedError
+
+  def _GetFailuresInAnalysis(self, analysis):
+    """Gets AtomicFailure entities that are being analyzed in an analysis."""
+    raise NotImplementedError
+
+  def _FetchRerunBuildsOfAnalysis(self, analysis):
+    """Gets all existing rerun builds for an analysis."""
+    raise NotImplementedError
+
+  def _GetFailureAnalysis(self, analyzed_build_id):
+    raise NotImplementedError
+
+  def _FailureHappenedInRerunBuild(self, failure_entity,
+                                   failures_in_rerun_build):
+    """Checks if the same failure has also happened in a rerun build."""
+    if failure_entity.GetFailureIdentifier():
+      return failure_entity.GetFailureIdentifier().issubset(
+          set(failures_in_rerun_build))
+
+    # Both analyzed build and rerun build have no target level failure info, so
+    # the same failed step will be used to decide that the same failure happens
+    # again.
+    return not bool(failures_in_rerun_build)
+
+  def _GetFailuresToRerun(self, failure_entities):
+    """Gets atomic failures in a dict format.
+
+    Returns:
+      {
+        'compile': ['target1.o', ...], # for compile failures
+        'step': ['test1', ...], # for test failures
+        ...
+      }
+    """
+    raise NotImplementedError
+
+  def _GetExistingRerunBuild(self, analysis_key, rerun_commit):
+    """Gets existing rerun build for an analysis on the commit."""
+    raise NotImplementedError
+
+  def _GetRerunBuildTags(self, analyzed_build_id):
+    """Gets tags for rerun builds.
+
+    Currently there are 2 tags:
+    - purpose: indicates the rerun build is triggered by Findit for an analysis,
+    - analyzed_build_id: links back the rerun build to the analysis.
+    """
+    raise NotImplementedError
+
+  def _GetRerunBuildInputProperties(self, project_api, rerun_failures):
+    """Gets project specific input properties to rerun failures."""
     raise NotImplementedError
 
   def SaveFailures(self, context, build, detailed_failures):
@@ -551,7 +622,7 @@ class AnalysisAPI(object):
 
   def _UpdateFailureEntitiesWithGroupInfo(self, build,
                                           failures_with_existing_group):
-    """Update failure_group_build_id for failures that found matching group.
+    """Updates failure_group_build_id for failures that found matching group.
 
     Args:
       build (buildbucket build.proto): ALL info about the build.
@@ -727,3 +798,433 @@ class AnalysisAPI(object):
         rerun_builder_id, failure_keys)
     analysis.Save()
     return analysis
+
+  def _BisectGitilesCommit(self, context, left_bound_commit, right_bound_commit,
+                           commit_position_to_git_hash_map):
+    """ Gets the culprit commit, otherwise next commit to check using bisection.
+
+    Args:
+      context (findit_v2.services.context.Context): Scope of the analysis.
+        left_bound_commit (GitilesCommit): left bound of the regression range,
+        not inclusive. It should be the last passed commit found so far.
+      right_bound_commit (GitilesCommit): right bound of the regression range,
+        inclusive. It should be the first failed commit found so far.
+      commit_position_to_git_hash_map (dict): A map of commit_positions to
+        git_hashes.
+
+    Return:
+      (GitilesCommit, GitilesCommit): Commit to bisect next, or the culprit
+        commit. If the next commit is identified, there will be no culprit
+        commit and vice versa.
+    """
+    assert left_bound_commit and right_bound_commit, (
+        'Requiring two bounds to determine a bisecting commit')
+
+    left_commit_position = left_bound_commit.commit_position
+    right_commit_position = right_bound_commit.commit_position
+    assert left_commit_position <= right_commit_position, (
+        'left bound commit is after right.')
+
+    if right_commit_position == left_commit_position + 1:
+      # Cannot further divide the regression range, culprit is the
+      # right_bound_commit.
+      return None, right_bound_commit
+
+    bisect_commit_position = left_commit_position + (
+        right_commit_position - left_commit_position) / 2
+
+    bisect_commit_gitiles_id = (commit_position_to_git_hash_map or
+                                {}).get(bisect_commit_position)
+
+    if not bisect_commit_gitiles_id:
+      logging.error('Failed to get git_hash for change %s/%s/%s/%d',
+                    context.gitiles_host, context.gitiles_project,
+                    context.gitiles_ref, bisect_commit_position)
+      return None, None
+
+    return GitilesCommit(
+        gitiles_host=context.gitiles_host,
+        gitiles_project=context.gitiles_project,
+        gitiles_ref=context.gitiles_ref,
+        gitiles_id=bisect_commit_gitiles_id,
+        commit_position=bisect_commit_position), None
+
+  def _UpdateFailureRegressionRanges(self, rerun_builds_info, failure_ranges):
+    """Updates regression ranges for each failure based on rerun build results.
+
+    Args:
+      rerun_builds_info (list of (GitilesCommit, dict)): Gitiles commit each
+        rerun build runs on and failures in them ({} if no failures).
+        Format is like:
+        [
+          (GitilesCommit,
+          {
+            'compile': [a.o', 'b.o'],  # If the rerun build is for compile.
+            'browser_tests': ['t1, 't2'],  # If the rerun build is for test.
+            ...
+          })
+        ]
+      failure_ranges (list): A dict for regression ranges of each
+        failure. All failures have the same range, which is
+        (analysis.last_passed_commit, analysis.first_failed_commit].
+        Format is like:
+        [
+          {
+            'failure': AtomicFailure,
+            'last_passed_commit': GitilesCommit,
+            'first_failed_commit': GitilesCommit
+          },
+          {
+            'failure': AtomicFailure,
+            'last_passed_commit': GitilesCommit,
+            'first_failed_commit': GitilesCommit
+          },
+        ]
+      After processing, each failure will have their own updated regression
+      range.
+    """
+    for commit, failures_in_rerun_build in rerun_builds_info:
+      for failure_range in failure_ranges:
+        failure = failure_range['failure']
+        if (commit.commit_position <
+            failure_range['last_passed_commit'].commit_position or
+            commit.commit_position >
+            failure_range['first_failed_commit'].commit_position):
+          # Commit is outside of this failure's regression range, so the rerun
+          # build must be irrelevant to this failure.
+          continue
+
+        if (not failures_in_rerun_build.get(failure.step_ui_name) or
+            not self._FailureHappenedInRerunBuild(
+                failure, failures_in_rerun_build[failure.step_ui_name])):
+          # Target/test passes in the rerun build, updates its last_pass.
+          failure_range['last_passed_commit'] = max(
+              failure_range['last_passed_commit'],
+              commit,
+              key=lambda c: c.commit_position)
+        else:
+          # Target/test fails in the rerun build, updates its first_failure.
+          failure_range['first_failed_commit'] = min(
+              failure_range['first_failed_commit'],
+              commit,
+              key=lambda c: c.commit_position)
+
+  def _GroupFailuresByRegressionRange(self, failure_ranges):
+    """Gets groups of failures with the same regression range.
+
+    Args:
+      failure_ranges (list): A list for regression ranges of each
+        failure. It has been updated by UpdateFailureRegressionRanges so each
+        failure has their own updated regression range.
+        Format is like:
+        [
+          {
+            'failure': AtomicFailure,
+            'last_passed_commit': GitilesCommit,
+            'first_failed_commit': GitilesCommit
+          },
+          {
+            'failure': AtomicFailure,
+            'last_passed_commit': GitilesCommit,
+            'first_failed_commit': GitilesCommit
+          },
+        ]
+
+    Returns:
+      (list of dict): Failures with the same regression range and the range.
+      [
+        {
+          'failures': [AtomicFailure, ...],
+          'last_passed_commit': GitilesCommit,
+          'first_failed_commit': GitilesCommit
+        },
+        ...
+      ]
+    """
+
+    def range_info():
+      # Returns a template for range_to_failures values.
+      return {
+          'failures': [],
+          'last_passed_commit': None,
+          'first_failed_commit': None,
+      }
+
+    # Groups failures with the same range. After processing it should look like:
+    # {
+    #   (600123, 600134): {
+    #     'failures': [AtomicFailure, ...],
+    #     'last_passed_commit': GitilesCommit for 600123
+    #     'first_failed_commit': GitilesCommit for 600134
+    #   },
+    #   ...
+    # }
+    range_to_failures = defaultdict(range_info)
+    for failure_range in failure_ranges:
+      failure = failure_range['failure']
+      last_passed_commit = failure_range['last_passed_commit']
+      first_failed_commit = failure_range['first_failed_commit']
+      commit_position_range = (last_passed_commit.commit_position,
+                               first_failed_commit.commit_position)
+      range_to_failures[commit_position_range]['failures'].append(failure)
+      range_to_failures[commit_position_range][
+          'last_passed_commit'] = last_passed_commit
+      range_to_failures[commit_position_range][
+          'first_failed_commit'] = first_failed_commit
+
+    return range_to_failures.values()
+
+  def _GetRegressionRangesForFailures(self, analysis):
+    """Gets updated regression ranges and failures having that range.
+
+      Uses completed rerun builds in this analysis to narrow down regression
+      ranges for each failures.
+
+      For example, if initially the regression range is (r0, r10] and atomic
+      failures failure1 and failure2 are to be analyzed.
+      1. When there's no rerun build, all failures have the same range (r0, r10]
+      2. 1st rerun build on r5, all passed. Then all failures have a smaller
+        range (r5, r10]
+      3. 2nd rerun build on r7, failure1 failed, failure2 passed. So now the
+        regression range for failure1 is (r5, r7], and for failure2 is
+        (r7, r10].
+      4. 3rd rerun build on r6, and it only checks on failure1. and both of
+       them failed. The regression range is updated to (r5, r6].
+      6. 4th rerun build on r8 and it only checks on failure2, and it failed. So
+       the regression range is updated to (r7, r8].
+
+      Returns:
+      (list of dict): Failures with the same regression range and the range.
+      [
+        {
+          'failures': [AtomicFailure entity for failure1],
+          'last_passed_commit': GitilesCommit(gitiles_id=r5),
+          'first_failed_commit': GitilesCommit(gitiles_id=r6)
+        },
+        {
+          'failures': [AtomicFailure entity for failure2],
+          'last_passed_commit': GitilesCommit(gitiles_id=r7),
+          'first_failed_commit': GitilesCommit(gitiles_id=r8)
+        },
+      ]
+      """
+    failure_entities = self._GetFailuresInAnalysis(analysis)
+    rerun_builds = self._FetchRerunBuildsOfAnalysis(analysis)
+    if not rerun_builds:
+      return [{
+          'failures': failure_entities,
+          'last_passed_commit': analysis.last_passed_commit,
+          'first_failed_commit': analysis.first_failed_commit,
+      }]
+
+    # Gets rerun builds results.
+    # Specifically, if a rerun build failed, gets its failures.
+    # Otherwise just keep an empty list indicating a successful build.
+    rerun_builds_info = [
+        (rerun_build.gitiles_commit, rerun_build.GetFailuresInBuild())
+        for rerun_build in rerun_builds
+        if rerun_build.status in [common_pb2.FAILURE, common_pb2.SUCCESS]
+    ]
+
+    # A list for regression ranges of each failure.
+    # Initially all failures have the same (and the widest) range. By checking
+    # rerun build results, each failure's regression range could be narrower and
+    # different from others.
+    failure_ranges = []
+    for failure in failure_entities:
+      if failure.culprit_commit_key:
+        # Skips the failures if it already found the culprit.
+        continue
+      failure_ranges.append({
+          'failure': failure,
+          'last_passed_commit': analysis.last_passed_commit,
+          'first_failed_commit': analysis.first_failed_commit,
+      })
+
+    # Updates regression range for each failed targets.
+    self._UpdateFailureRegressionRanges(rerun_builds_info, failure_ranges)
+
+    # Groups failed targets with the same regression range, and returns these
+    # groups along with their regression range.
+    return self._GroupFailuresByRegressionRange(failure_ranges)
+
+  # pylint: disable=E1120
+  @ndb.transactional(xg=True)
+  def TriggerRerunBuild(self, context, analyzed_build_id, analysis_key,
+                        rerun_builder, rerun_commit, atomic_failures):
+    """Triggers a rerun build if there's no existing one.
+
+    Creates and saves a rerun build entity if a new build is triggered.
+
+    Checking for existing build and saving new build are in one transaction to
+    make sure no duplicated rerun builds can be triggered.
+
+    Args:
+      context (findit_v2.services.context.Context): Scope of the analysis.
+      analyzed_build_id (int): Build id of the build that's being analyzed.
+      analysis_key (Key to CompileFailureAnalysis): Key to the running analysis.
+      rerun_builder (BuilderId): Builder to rerun the build.
+      rerun_commit (GitilesCommit): Gitiles commit the build runs on.
+      atomic_failures (dict): A dict of failures to rerun.
+      {
+        'compile': ['target1.o', ...], # for compile failures
+        'step': ['test1', ...], # for test failures
+        ...
+      }
+    """
+    # Check if there's a running build on that commit already.
+    existing_builds = self._GetExistingRerunBuild(analysis_key, rerun_commit)
+    if existing_builds:
+      # TODO(crbug/957760): Re-trigger the build if the existing one(s) ends
+      # with unexpected failures.
+      logging.debug('Found existing rerun build for analysis %s on commit %d.',
+                    analysis_key.urlsafe(), rerun_commit.commit_position)
+      return
+
+    rerun_tags = self._GetRerunBuildTags(analyzed_build_id)
+
+    luci_project = context.luci_project_name
+    project_api = projects.GetProjectAPI(luci_project)
+    assert project_api, 'Unsupported project {}'.format(luci_project)
+    input_properties = self._GetRerunBuildInputProperties(
+        project_api, atomic_failures)
+    if not input_properties:
+      logging.error(
+          'Failed to get input properties to trigger rerun build'
+          'for build %d.', analyzed_build_id)
+      return
+
+    gitiles_commit_pb = common_pb2.GitilesCommit(
+        project=rerun_commit.gitiles_project,
+        host=rerun_commit.gitiles_host,
+        ref=rerun_commit.gitiles_ref,
+        id=rerun_commit.gitiles_id)
+    new_build = buildbucket_client.TriggerV2Build(
+        rerun_builder, gitiles_commit_pb, input_properties, tags=rerun_tags)
+
+    if not new_build:
+      logging.error(
+          'Failed to trigger rerun build for %s in build %d,'
+          'on commit %s', atomic_failures, analyzed_build_id,
+          rerun_commit.gitiles_id)
+      return
+    self._CreateRerunBuild(rerun_builder, new_build, rerun_commit,
+                           analysis_key).put()
+
+  def _SaveCulpritInFailures(self, failure_entities, culprit_commit):
+    """Saves the culprit to failure entities.
+
+    Args:
+      failure_entities (list of CompileFailure or TestFailure): Failure entities
+        that are caused by the culprit_commit.
+      culprit_commit (GitilesCommit): The commit that caused compile failure(s).
+    """
+    culprit_entity = Culprit.GetOrCreate(
+        gitiles_host=culprit_commit.gitiles_host,
+        gitiles_project=culprit_commit.gitiles_project,
+        gitiles_ref=culprit_commit.gitiles_ref,
+        gitiles_id=culprit_commit.gitiles_id,
+        commit_position=culprit_commit.commit_position,
+        failure_urlsafe_keys=[cf.key.urlsafe() for cf in failure_entities])
+
+    for failure in failure_entities:
+      failure.culprit_commit_key = culprit_entity.key
+    ndb.put_multi(failure_entities)
+
+  def RerunBasedAnalysis(self, context, analyzed_build_id):
+    """
+    Checks rerun build results and looks for either the culprit or the next
+    commit to test. Then wraps up the analysis with culprit or continues the
+    analysis by triggering the next rerun build.
+
+      Args:
+        context (findit_v2.services.context.Context): Scope of the analysis.
+        analyzed_build_id (int): Build id of the build that's being analyzed.
+    """
+    analysis = self._GetFailureAnalysis(analyzed_build_id)
+    rerun_builder = luci_build.ParseBuilderId(analysis.rerun_builder_id)
+
+    # Gets a map from commit_position to gitiles_ids (git_hash/ revision) for
+    # the commits between lass_passed_commit and first_failed_commit, bounds are
+    # included.
+    commit_position_to_git_hash_map = git.MapCommitPositionsToGitHashes(
+        analysis.first_failed_commit.gitiles_id,
+        analysis.first_failed_commit.commit_position,
+        analysis.last_passed_commit.commit_position,
+        repo_url=git.GetRepoUrlFromContext(context),
+        ref=context.gitiles_ref)
+    analysis_completed = True
+    analysis_error = None
+
+    # Gets updated regression range for the targets based on rerun build
+    # results. The format is like:
+    # [
+    #   {
+    #     'failures': {'compile': ['target1', 'target2']},
+    #     'last_passed_commit': left_bound_commit,
+    #     'first_failed_commit': right_bound_commit},
+    #   {
+    #     'failures': {'compile': ['target3']},
+    #     'last_passed_commit': other_left_bound_commit,
+    #     'first_failed_commit': other_right_bound_commit},
+    # ]
+    # It's possible that failures have different regression range so that
+    # multiple rerun builds got triggered for different failures on different
+    # commit. Though this case should be rare.
+    updated_ranges = self._GetRegressionRangesForFailures(analysis)
+    for failure_ranges in updated_ranges:
+      last_passed_commit = failure_ranges['last_passed_commit']
+      first_failed_commit = failure_ranges['first_failed_commit']
+      failures = failure_ranges['failures']
+
+      rerun_commit, culprit_commit = self._BisectGitilesCommit(
+          context, last_passed_commit, first_failed_commit,
+          commit_position_to_git_hash_map)
+      if culprit_commit:
+        # Analysis for these failures has run to the end.
+        self._SaveCulpritInFailures(failures, culprit_commit)
+        continue
+
+      # No culprit found for these failures, analysis continues.
+      analysis_completed = False
+      if not rerun_commit:
+        # TODO (crbug.com/957760): Properly recover failed analysis.
+        analysis_error = (
+            'Failed to find the next commit to run from the range {}..{}'
+            .format(last_passed_commit.commit_position,
+                    first_failed_commit.commit_position))
+        continue
+
+      # Triggers a rerun build unless there's an existing one.
+      # It's possible if the existing one is still running so that Findit
+      # doesn't know that build's result.
+      self.TriggerRerunBuild(context, analyzed_build_id, analysis.key,
+                             rerun_builder, rerun_commit,
+                             self._GetFailuresToRerun(failures))
+
+    analysis.end_time = time_util.GetUTCNow()
+    analysis.status = (
+        analysis_status.COMPLETED
+        if analysis_completed else analysis_status.RUNNING)
+    analysis.error = analysis_error if analysis_error else analysis.error
+    analysis.put()
+
+  def GetCulpritsForFailures(self, failures):
+    """Gets culprits for the requested failures."""
+    culprit_keys = set([
+        failure.culprit_commit_key
+        for failure in failures
+        if failure and failure.culprit_commit_key
+    ])
+    culprits = []
+    for culprit_key in culprit_keys:
+      culprit_entity = culprit_key.get()
+      culprit_message = CulpritPb(
+          commit=GitilesCommitPb(
+              host=culprit_entity.gitiles_host,
+              project=culprit_entity.gitiles_project,
+              ref=culprit_entity.gitiles_ref,
+              id=culprit_entity.gitiles_id,
+              commit_position=culprit_entity.commit_position))
+      culprits.append(culprit_message)
+    return culprits

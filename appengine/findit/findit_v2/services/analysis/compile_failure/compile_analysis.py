@@ -15,9 +15,6 @@ from findit_v2.model.messages.findit_result import (
     BuildFailureAnalysisResponse)
 from findit_v2.services import build_util
 from findit_v2.services import projects
-from findit_v2.services.analysis import analysis_util
-from findit_v2.services.analysis.compile_failure import (
-    compile_failure_rerun_analysis)
 from findit_v2.services.analysis.compile_failure.compile_analysis_api import (
     CompileAnalysisAPI)
 from findit_v2.services.failure_type import StepTypeEnum
@@ -87,7 +84,7 @@ def AnalyzeCompileFailure(context, build, compile_steps):
   analysis_api.SaveFailureAnalysis(project_api, context, build,
                                    failures_without_existing_group,
                                    should_group_failures)
-  compile_failure_rerun_analysis.RerunBasedAnalysis(context, build.id)
+  analysis_api.RerunBasedAnalysis(context, build.id)
   return True
 
 
@@ -200,7 +197,7 @@ def OnCompileRerunBuildCompletion(context, rerun_build):
   if not build_saved:
     return False
 
-  compile_failure_rerun_analysis.RerunBasedAnalysis(context, analyzed_build_id)
+  CompileAnalysisAPI().RerunBasedAnalysis(context, analyzed_build_id)
   return True
 
 
@@ -265,7 +262,7 @@ def OnCompileFailureAnalysisResultRequested(request, requested_build):
       # have stored culprits info.
       merged_failures.append(failure.GetMergedFailure())
 
-    culprits = analysis_util.GetCulpritsForFailures(merged_failures)
+    culprits = CompileAnalysisAPI().GetCulpritsForFailures(merged_failures)
     response = BuildFailureAnalysisResponse(
         build_id=request.build_id,
         build_alternative_id=request.build_alternative_id,

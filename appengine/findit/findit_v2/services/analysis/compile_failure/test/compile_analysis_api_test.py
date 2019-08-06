@@ -10,6 +10,7 @@ from buildbucket_proto.build_pb2 import Build
 from buildbucket_proto.build_pb2 import BuilderID
 
 from findit_v2.model.compile_failure import CompileFailureGroup
+from findit_v2.model.gitiles_commit import GitilesCommit
 from findit_v2.model.luci_build import LuciFailedBuild
 from findit_v2.services.analysis.compile_failure.compile_analysis_api import (
     CompileAnalysisAPI)
@@ -80,7 +81,7 @@ class CompileAnalysisAPITest(wf_testcase.TestCase):
 
     self.compile_failure = self.analysis_api._CreateFailure(
         self.build_entity.key, 'compile', self.build_id, 8000000000122, None,
-        None, None)
+        frozenset(['a.o']), None)
     self.compile_failure.put()
 
   @mock.patch.object(git, 'GetCommitPositionFromRevision', return_value=67890)
@@ -95,8 +96,31 @@ class CompileAnalysisAPITest(wf_testcase.TestCase):
     analysis = self.analysis_api._CreateFailureAnalysis(
         'chromium', self.context, self.build, 'git_sha_122', 122, 123,
         'preject/bucket/builder', [self.compile_failure.key])
+    analysis.Save()
+    analysis = self.analysis_api._GetFailureAnalysis(self.build_id)
     self.assertIsNotNone(analysis)
     self.assertEqual(self.build_id, analysis.build_id)
+    self.assertEqual([self.compile_failure],
+                     self.analysis_api._GetFailuresInAnalysis(analysis))
+
+    rerun_commit = GitilesCommit(
+        gitiles_host=self.context.gitiles_host,
+        gitiles_project=self.context.gitiles_project,
+        gitiles_ref=self.context.gitiles_ref,
+        gitiles_id=self.context.gitiles_id,
+        commit_position=123)
+    rerun_build_id = 8000000000050
+    self.analysis_api._CreateRerunBuild(self.rerun_builder,
+                                        Build(id=rerun_build_id), rerun_commit,
+                                        analysis.key).put()
+    all_rerun_builds = self.analysis_api._FetchRerunBuildsOfAnalysis(analysis)
+    self.assertEqual(1, len(all_rerun_builds))
+    self.assertEqual(rerun_build_id, all_rerun_builds[0].build_id)
+
+    existing_rerun_builds = self.analysis_api._GetExistingRerunBuild(
+        analysis.key, rerun_commit)
+    self.assertEqual(1, len(existing_rerun_builds))
+    self.assertEqual(rerun_build_id, existing_rerun_builds[0].build_id)
 
   def testAPIStepType(self):
     self.assertEqual(StepTypeEnum.COMPILE, self.analysis_api.step_type)
@@ -125,3 +149,25 @@ class CompileAnalysisAPITest(wf_testcase.TestCase):
     self.analysis_api._GetFailuresWithMatchingFailureGroups(
         ChromiumProjectAPI(), self.context, self.build, {})
     self.assertTrue(mock_failures_in_group.called)
+
+  def testGetAtomicFailures(self):
+    self.assertEqual({
+        'compile': ['a.o']
+    }, self.analysis_api._GetFailuresToRerun([self.compile_failure]))
+
+  def testGetRerunBuildTags(self):
+    expected_tags = [{
+        'key': 'purpose',
+        'value': 'compile-failure-culprit-finding'
+    }, {
+        'key': 'analyzed_build_id',
+        'value': str(self.build_id)
+    }]
+    self.assertEqual(expected_tags,
+                     self.analysis_api._GetRerunBuildTags(self.build_id))
+
+  @mock.patch.object(ChromiumProjectAPI, 'GetCompileRerunBuildInputProperties')
+  def testGetRerunBuildInputProperties(self, mock_input_properties):
+    self.analysis_api._GetRerunBuildInputProperties(ChromiumProjectAPI(),
+                                                    {'compile': ['a.o']})
+    self.assertTrue(mock_input_properties.called)

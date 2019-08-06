@@ -18,8 +18,6 @@ from findit_v2.model.gitiles_commit import Culprit
 from findit_v2.model.luci_build import LuciFailedBuild
 from findit_v2.model.messages import findit_result
 from findit_v2.services.analysis.compile_failure import compile_analysis
-from findit_v2.services.analysis.compile_failure import (
-    compile_failure_rerun_analysis)
 from findit_v2.services.analysis.compile_failure.compile_analysis_api import (
     CompileAnalysisAPI)
 from findit_v2.services.chromeos_api import ChromeOSProjectAPI
@@ -116,7 +114,7 @@ class CompileAnalysisTest(wf_testcase.TestCase):
     mock_failures.assert_called_once_with(build, compile_failures)
     mock_first_failure.assert_called_once_with(self.context, build, {})
 
-  @mock.patch.object(compile_failure_rerun_analysis, 'RerunBasedAnalysis')
+  @mock.patch.object(CompileAnalysisAPI, 'RerunBasedAnalysis')
   @mock.patch.object(CompileAnalysisAPI, 'SaveFailureAnalysis')
   @mock.patch.object(CompileAnalysisAPI, 'SaveFailures')
   @mock.patch.object(CompileAnalysisAPI, 'UpdateFailuresWithFirstFailureInfo')
@@ -224,7 +222,7 @@ class CompileAnalysisTest(wf_testcase.TestCase):
         build_id, parent=self.analysis.key)
     self.assertItemsEqual(
         ['target1.o', 'target2.o'],
-        rerun_build.GetFailedTargets()[self.compile_step_name])
+        rerun_build.GetFailuresInBuild()[self.compile_step_name])
 
   def testProcessAndSaveRerunBuildResultAnalysisMissing(self):
     build_id = 8000000000123
@@ -273,7 +271,7 @@ class CompileAnalysisTest(wf_testcase.TestCase):
     self.assertFalse(
         compile_analysis.OnCompileRerunBuildCompletion(self.context, build))
 
-  @mock.patch.object(compile_failure_rerun_analysis, 'RerunBasedAnalysis')
+  @mock.patch.object(CompileAnalysisAPI, 'RerunBasedAnalysis')
   @mock.patch.object(ChromeOSProjectAPI, 'GetCompileFailures')
   def testProcessRerunBuildResultBuildPassed(self, mock_compile_failures,
                                              mock_analysis):
@@ -319,7 +317,7 @@ class CompileAnalysisTest(wf_testcase.TestCase):
     self.assertFalse(mock_compile_failures.called)
     rerun_build = CompileRerunBuild.get_by_id(
         build_id, parent=self.analysis.key)
-    self.assertEqual({}, rerun_build.GetFailedTargets())
+    self.assertEqual({}, rerun_build.GetFailuresInBuild())
 
     self.assertTrue(mock_analysis.called)
 
