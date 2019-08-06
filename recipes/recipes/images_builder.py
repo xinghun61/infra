@@ -226,7 +226,9 @@ def _discover_manifests(api, root, dirs):
   """
   paths = []
   for d in dirs:
-    found = api.file.listdir('list %s' % d, root.join(d), ['target.yaml'])
+    found = api.file.listdir(
+        'list %s' % d, root.join(d),
+        test_data=['target.yaml'])
     paths.extend(found)
   return found
 
