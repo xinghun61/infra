@@ -486,8 +486,7 @@ class CulpritActionTest(wf_testcase.WaterfallTestCase):
         'Cannot get a sample failed step for culprit %s/%s.', repo_name,
         revision)
 
-  @mock.patch.object(
-      codereview_util, 'GetCodeReviewForReview', return_value=None)
+  @mock.patch.object(codereview_util, 'IsCodeReviewGerrit', return_value=False)
   @mock.patch.object(git, 'GetCodeReviewInfoForACommit')
   def testGetCodeReviewDataForACulprit(self, mock_change_info, _):
     repo_name = 'chromium'

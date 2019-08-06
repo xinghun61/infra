@@ -8,9 +8,9 @@ import textwrap
 
 from google.appengine.ext import ndb
 
-from infra_api_clients.codereview import codereview_util
-
 from common.waterfall import failure_type
+from infra_api_clients.codereview import codereview_util
+from infra_api_clients.codereview.gerrit import Gerrit
 from libs import analysis_status
 from libs import floating_point_util
 from libs import time_util
@@ -266,8 +266,10 @@ def NotifyCulprit(culprit, bug_id):
   review_change_id = culprit_info.get('review_change_id')
 
   code_review_settings = waterfall_config.GetCodeReviewSettings()
-  codereview = codereview_util.GetCodeReviewForReview(review_server_host,
-                                                      code_review_settings)
+  codereview = Gerrit(
+      review_server_host
+  ) if review_server_host and codereview_util.IsCodeReviewGerrit(
+      review_server_host, code_review_settings) else None
   sent = False
 
   if codereview and review_change_id:

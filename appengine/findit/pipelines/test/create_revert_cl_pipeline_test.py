@@ -8,22 +8,20 @@ import textwrap
 
 from common import rotations
 from common.waterfall import failure_type
-from infra_api_clients.codereview import codereview_util
 from infra_api_clients.codereview.cl_info import ClInfo
 from infra_api_clients.codereview.cl_info import Commit
-from infra_api_clients.codereview.rietveld import Rietveld
+from infra_api_clients.codereview.gerrit import Gerrit
 from libs import analysis_status as status
 from libs import time_util
 from model.wf_suspected_cl import WfSuspectedCL
 from pipelines.create_revert_cl_pipeline import CreateRevertCLPipeline
 from services import constants
 from services import culprit_action
+from services import gerrit
 from services import git
 from services.parameters import CreateRevertCLParameters
 from waterfall import buildbot
 from waterfall.test import wf_testcase
-
-_CODEREVIEW = Rietveld('codereview.chromium.org')
 
 
 class CreateRevertCLPipelineTest(wf_testcase.WaterfallTestCase):
@@ -47,15 +45,14 @@ class CreateRevertCLPipelineTest(wf_testcase.WaterfallTestCase):
     self.mock(git, 'GetCodeReviewInfoForACommit',
               MockGetCodeReviewInfoForACommit)
 
+  @mock.patch.object(gerrit, '_GetCodeReview', return_value=Gerrit('host'))
   @mock.patch.object(
       time_util, 'GetUTCNow', return_value=datetime(2017, 2, 1, 16, 0, 0))
-  @mock.patch.object(_CODEREVIEW, 'PostMessage', return_value=True)
-  @mock.patch.object(_CODEREVIEW, 'AddReviewers', return_value=True)
+  @mock.patch.object(Gerrit, 'PostMessage', return_value=True)
+  @mock.patch.object(Gerrit, 'AddReviewers', return_value=True)
   @mock.patch.object(rotations, 'current_sheriffs', return_value=['a@b.com'])
-  @mock.patch.object(
-      codereview_util, 'GetCodeReviewForReview', return_value=_CODEREVIEW)
-  @mock.patch.object(_CODEREVIEW, 'CreateRevert')
-  @mock.patch.object(_CODEREVIEW, 'GetClDetails')
+  @mock.patch.object(Gerrit, 'CreateRevert')
+  @mock.patch.object(Gerrit, 'GetClDetails')
   def testRevertCLSucceed(self, mock_fn, mock_revert, *_):
     repo_name = 'chromium'
     revision = 'rev1'

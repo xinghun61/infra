@@ -6,7 +6,6 @@ from datetime import datetime
 import mock
 
 from common.waterfall import failure_type
-from infra_api_clients.codereview import codereview_util
 from infra_api_clients.codereview.cl_info import ClInfo
 from infra_api_clients.codereview.cl_info import Commit
 from infra_api_clients.codereview.gerrit import Gerrit
@@ -21,8 +20,6 @@ from services import git
 from services.parameters import SubmitRevertCLParameters
 from pipelines.submit_revert_cl_pipeline import SubmitRevertCLPipeline
 from waterfall.test import wf_testcase
-
-_CODEREVIEW = Gerrit('chromium-review.googlesource.com')
 
 
 class SubmitRevertCLPipelineTest(wf_testcase.WaterfallTestCase):
@@ -53,11 +50,9 @@ class SubmitRevertCLPipelineTest(wf_testcase.WaterfallTestCase):
   @mock.patch.object(
       time_util, 'GetUTCNow', return_value=datetime(2017, 2, 1, 5, 0, 0))
   @mock.patch.object(culprit_action, '_CanCommitRevert', return_value=True)
-  @mock.patch.object(
-      codereview_util, 'GetCodeReviewForReview', return_value=_CODEREVIEW)
   @mock.patch.object(gerrit, '_AddReviewers', return_value=True)
-  @mock.patch.object(_CODEREVIEW, 'SubmitRevert')
-  @mock.patch.object(_CODEREVIEW, 'GetClDetails')
+  @mock.patch.object(Gerrit, 'SubmitRevert')
+  @mock.patch.object(Gerrit, 'GetClDetails')
   def testSubmitRevertSucceed(self, mock_fn, mock_commit, *_):
     repo_name = 'chromium'
     revision = 'rev1'

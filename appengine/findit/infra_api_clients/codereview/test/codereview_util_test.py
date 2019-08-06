@@ -2,27 +2,19 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-import mock
-
+from parameterized import parameterized
 from testing_utils import testing
 
 from infra_api_clients.codereview import codereview_util
-from infra_api_clients.codereview.rietveld import Rietveld
-from infra_api_clients.codereview.gerrit import Gerrit
 
 
 class CodeReviewUtilTest(testing.AppengineTestCase):
 
-  def testGetCodeReviewForReviewOnRietveld(self):
-    review_host = 'codereview.chromium.org'
-    codereview = codereview_util.GetCodeReviewForReview(review_host)
-    self.assertTrue(isinstance(codereview, Rietveld))
-
-  def testGetCodeReviewForReviewOnGerrit(self):
-    review_host = 'chromium-review.googlesource.com'
-    codereview = codereview_util.GetCodeReviewForReview(review_host)
-    self.assertIsInstance(codereview, Gerrit)
-
-  def testGetCodeReviewForInvalidReviewUrl(self):
-    self.assertIsNone(codereview_util.GetCodeReviewForReview(None))
-    self.assertIsNone(codereview_util.GetCodeReviewForReview('invalid.com'))
+  @parameterized.expand([
+      ('chromium-review.googlesource.com', True),
+      (None, False),
+      ('invalid.com', False),
+  ])
+  def testIsCodeReviewGerrit(self, review_host, is_codereivew_gerrit):
+    self.assertEqual(is_codereivew_gerrit,
+                     codereview_util.IsCodeReviewGerrit(review_host))

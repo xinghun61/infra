@@ -643,12 +643,10 @@ class GerritTest(wf_testcase.WaterfallTestCase):
             'review_change_id': '123456'
         }))
 
-  @mock.patch.object(
-      codereview_util, 'GetCodeReviewForReview', return_value=_CODEREVIEW)
+  @mock.patch.object(codereview_util, 'IsCodeReviewGerrit', return_value=True)
   def testGetCodeReview(self, _):
     self.assertIsNone(gerrit._GetCodeReview({}))
-    self.assertEqual(
-        _CODEREVIEW,
+    self.assertIsInstance(
         gerrit._GetCodeReview({
             'review_server_host': 'review_server_host'
-        }))
+        }), Gerrit)

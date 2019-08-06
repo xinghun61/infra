@@ -83,8 +83,6 @@ def GetCommitsInfo(revisions, repo_url=CHROMIUM_GIT_REPOSITORY_URL, ref=None):
   """Gets commit_positions and review urls for revisions."""
   git_repo = CachedGitilesRepository(FinditHttpClient(), repo_url, ref)
   cls = {}
-  # TODO(crbug/767759): remove hard-coded 'chromium' when DEPS file parsing is
-  # supported.
   for revision in revisions:
     cls[revision] = {'revision': revision, 'repo_name': 'chromium'}
     change_log = git_repo.GetChangeLog(revision)

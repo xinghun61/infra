@@ -120,8 +120,6 @@ class ClInfo(object):
 
     # The value will be set if this CL is a revert of another CL.
     # The value is numeric change id (_number) of the original CL.
-    # This is only relevant to Gerrit, so for changes in rietveld,
-    # the value should always be None.
     self.revert_of = None
 
     # A map of revision to PatchSet objects.

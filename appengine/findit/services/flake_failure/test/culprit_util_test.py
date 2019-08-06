@@ -12,6 +12,7 @@ from libs import analysis_status
 from libs import time_util
 from infra_api_clients.codereview import codereview
 from infra_api_clients.codereview import codereview_util
+from infra_api_clients.codereview.gerrit import Gerrit
 from model.flake.analysis.flake_culprit import FlakeCulprit
 from model.flake.analysis.data_point import DataPoint
 from model.flake.analysis.master_flake_analysis import MasterFlakeAnalysis
@@ -25,7 +26,6 @@ from services.flake_failure import culprit_util
 from services.flake_failure import flake_constants
 from services.parameters import CreateRevertCLParameters
 from services.parameters import SubmitRevertCLParameters
-from waterfall import waterfall_config
 from waterfall.test import wf_testcase
 
 
@@ -581,7 +581,7 @@ class CulpritUtilTest(wf_testcase.WaterfallTestCase):
 
     self.assertTrue(culprit_util.ShouldNotifyCulprit(analysis))
 
-  @mock.patch.object(codereview_util, 'GetCodeReviewForReview')
+  @mock.patch.object(codereview_util, 'IsCodeReviewGerrit')
   @mock.patch.object(codereview.CodeReview, 'PostMessage')
   @mock.patch.object(git, 'GetCodeReviewInfoForACommit')
   def testNotifyCulpritNoCodeReview(
@@ -591,7 +591,7 @@ class CulpritUtilTest(wf_testcase.WaterfallTestCase):
         'review_change_id': 'change_id'
     }
     mocked_post_message.return_value = False
-    mocked_get_code_review.return_value = None
+    mocked_get_code_review.return_value = False
     culprit = FlakeCulprit.Create('repo', 'revision', 12345)
     culprit.put()
 
@@ -599,8 +599,8 @@ class CulpritUtilTest(wf_testcase.WaterfallTestCase):
     culprit = ndb.Key(urlsafe=culprit.key.urlsafe()).get()
     self.assertEqual(culprit.cr_notification_status, analysis_status.ERROR)
 
-  @mock.patch.object(codereview_util, 'GetCodeReviewForReview')
-  @mock.patch.object(codereview.CodeReview, 'PostMessage')
+  @mock.patch.object(codereview_util, 'IsCodeReviewGerrit')
+  @mock.patch.object(Gerrit, 'PostMessage')
   @mock.patch.object(git, 'GetCodeReviewInfoForACommit')
   def testSendNotificationForCulpritNoChangeId(
       self, mocked_culprit_info, mocked_post_message, mocked_get_code_review):
@@ -608,7 +608,7 @@ class CulpritUtilTest(wf_testcase.WaterfallTestCase):
         'review_server_host': 'host',
     }
     mocked_post_message.return_value = False
-    mocked_get_code_review.return_value = None
+    mocked_get_code_review.return_value = False
     culprit = FlakeCulprit.Create('repo', 'revision', 12345)
     culprit.put()
 
@@ -616,8 +616,8 @@ class CulpritUtilTest(wf_testcase.WaterfallTestCase):
     culprit = ndb.Key(urlsafe=culprit.key.urlsafe()).get()
     self.assertEqual(culprit.cr_notification_status, analysis_status.ERROR)
 
-  @mock.patch.object(codereview_util, 'GetCodeReviewForReview')
-  @mock.patch.object(codereview.CodeReview, 'PostMessage')
+  @mock.patch.object(codereview_util, 'IsCodeReviewGerrit', return_value=True)
+  @mock.patch.object(Gerrit, 'PostMessage')
   @mock.patch.object(git, 'GetCodeReviewInfoForACommit')
   def testSendNotificationForCulpritSuccess(self, mocked_culprit_info,
                                             mocked_post_message, _):
@@ -633,8 +633,8 @@ class CulpritUtilTest(wf_testcase.WaterfallTestCase):
     culprit = ndb.Key(urlsafe=culprit.key.urlsafe()).get()
     self.assertEqual(culprit.cr_notification_status, analysis_status.COMPLETED)
 
-  @mock.patch.object(codereview_util, 'GetCodeReviewForReview')
-  @mock.patch.object(codereview.CodeReview, 'PostMessage')
+  @mock.patch.object(codereview_util, 'IsCodeReviewGerrit', return_value=True)
+  @mock.patch.object(Gerrit, 'PostMessage')
   @mock.patch.object(git, 'GetCodeReviewInfoForACommit')
   def testSendNotificationForCulprit(self, mocked_culprit_info,
                                      mocked_post_message, _):

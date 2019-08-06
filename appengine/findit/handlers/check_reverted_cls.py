@@ -11,6 +11,7 @@ from common import constants
 from gae_libs.handlers.base_handler import BaseHandler
 from gae_libs.handlers.base_handler import Permission
 from infra_api_clients.codereview import codereview_util
+from infra_api_clients.codereview.gerrit import Gerrit
 from libs import time_util
 from model import revert_cl_status
 from model.wf_config import FinditConfig
@@ -84,8 +85,10 @@ def _CheckRevertStatusOfSuspectedCL(suspected_cl):
     return None, None, None
 
   code_review_settings = FinditConfig().Get().code_review_settings
-  codereview = codereview_util.GetCodeReviewForReview(review_server_host,
-                                                      code_review_settings)
+  codereview = Gerrit(
+      review_server_host
+  ) if review_server_host and codereview_util.IsCodeReviewGerrit(
+      review_server_host, code_review_settings) else None
   if not codereview:
     logging.error('Could not get codereview for %s/q/%s', review_server_host,
                   change_id)

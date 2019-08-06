@@ -22,6 +22,7 @@ from common import constants
 from common import rotations
 from common.waterfall import failure_type
 from infra_api_clients.codereview import codereview_util
+from infra_api_clients.codereview.gerrit import Gerrit
 from libs import analysis_status as status
 from libs import time_util
 from model import entity_util
@@ -43,10 +44,11 @@ _SURVEY_LINK = 'https://goo.gl/forms/iPQbwFyo98N9tJ7o1'
 
 def _GetCodeReview(code_review_data):
   """Get codereview object based on review_server_host in code_review_data."""
-  if not code_review_data or not code_review_data.get('review_server_host'):
+  if (not code_review_data or not code_review_data.get('review_server_host') or
+      not codereview_util.IsCodeReviewGerrit(
+          code_review_data['review_server_host'])):
     return None
-  return codereview_util.GetCodeReviewForReview(
-      code_review_data['review_server_host'])
+  return Gerrit(code_review_data['review_server_host'])
 
 
 def CreateFinditWrongBugLink(component, culprit_link, revision):
@@ -177,6 +179,7 @@ def RevertCulprit(urlsafe_key, build_id, build_failure_type, sample_step_name,
   culprit_change_id = codereview_info['review_change_id']
 
   codereview = _GetCodeReview(codereview_info)
+  print codereview
 
   if not codereview or not culprit_change_id:  # pragma: no cover
     logging.error('Failed to get change id for %s/%s', repo_name, revision)
