@@ -81,37 +81,66 @@ func (h *State) HandleMember(ctx *router.Context) {
 	}
 }
 
-func (h *State) memberPOST(ctx *router.Context, member *JSONMember) error {
-	var res rotang.Member
-	if err := json.NewDecoder(ctx.Request.Body).Decode(&res); err != nil {
+func (h *State) memberPOST(ctx *router.Context, user *JSONMember) error {
+	// Decode JSONMember from the post request body.
+	var jsonMember JSONMember
+	if err := json.NewDecoder(ctx.Request.Body).Decode(&jsonMember); err != nil {
 		return err
 	}
-	logging.Infof(ctx.Context, "res: %v", res)
-	if res.Email != member.Email {
+	logging.Infof(ctx.Context, "member: %v", jsonMember)
+
+	// A Member's information may only be changed by that member or an admin.
+	if jsonMember.Email != user.Email && !isAdmin(ctx) {
 		return status.Errorf(codes.PermissionDenied, "only changes to your own user allowed")
 	}
 
-	for i := range res.OOO {
-		if res.OOO[i].Comment == "" {
+	// Assert OOO dates have comments.
+	for i := range jsonMember.OOO {
+		if jsonMember.OOO[i].Comment == "" {
 			return status.Errorf(codes.InvalidArgument, "comment needs to be set")
 		}
-		logging.Infof(ctx.Context, "res.OOO[i}", res.OOO[i])
+		logging.Infof(ctx.Context, "member.OOO[i}", jsonMember.OOO[i])
 	}
-	loc, err := time.LoadLocation(member.TZString)
+
+	// Load TZString. Fall back to the user's TZString.
+	loc, err := time.LoadLocation(jsonMember.TZString)
 	if err != nil {
-		return err
+		loc, err = time.LoadLocation(user.TZString)
+		if err != nil {
+			return err
+		}
 	}
-	res.TZ = *loc
-	return h.memberStore(ctx.Context).UpdateMember(ctx.Context, &res)
+
+	member := rotang.Member{
+		Name:        jsonMember.Name,
+		Email:       jsonMember.Email,
+		TZ:          *loc,
+		OOO:         jsonMember.OOO,
+		Preferences: jsonMember.Preferences,
+	}
+
+	return h.memberStore(ctx.Context).UpdateMember(ctx.Context, &member)
 }
 
-func (h *State) memberGET(ctx *router.Context, member *rotang.Member) error {
+func (h *State) memberGET(ctx *router.Context, user *rotang.Member) error {
+	member := user
+
+	// Admins may request data for any member.
+	// They could use the cloud console instead, but this allows scripting in a
+	// way that the console does not.
+	if isAdmin(ctx) {
+		emails, ok := ctx.Request.URL.Query()["email"]
+		if ok && len(emails) == 1 {
+			m, err := h.memberStore(ctx.Context).Member(ctx.Context, emails[0])
+			if err == nil {
+				member = m
+			}
+		}
+	}
+
 	rotas, err := h.configStore(ctx.Context).MemberOf(ctx.Context, member.Email)
 	if err != nil {
 		return err
-	}
-	if len(rotas) < 1 {
-		return status.Errorf(codes.NotFound, "not a member of any rotations")
 	}
 
 	now := clock.Now(ctx.Context)

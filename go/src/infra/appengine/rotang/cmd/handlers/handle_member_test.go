@@ -147,6 +147,7 @@ func TestMemberGET(t *testing.T) {
 
 	tests := []struct {
 		name       string
+		isAdmin    bool
 		fail       bool
 		ctx        *router.Context
 		rota       string
@@ -156,7 +157,8 @@ func TestMemberGET(t *testing.T) {
 		shifts     []rotang.ShiftEntry
 		want       MemberInfo
 	}{{
-		name: "Success",
+		name:    "Success",
+		isAdmin: false,
 		ctx: &router.Context{
 			Context: ctx,
 			Writer:  httptest.NewRecorder(),
@@ -234,63 +236,8 @@ func TestMemberGET(t *testing.T) {
 			},
 		},
 	}, {
-		name: "Not a rota member",
-		fail: true,
-		ctx: &router.Context{
-			Context: ctx,
-			Writer:  httptest.NewRecorder(),
-			Request: httptest.NewRequest("GET", "/memberjson", nil),
-		},
-		rota: "Test Rota",
-		member: &rotang.Member{
-			Name:  "Test Member",
-			Email: "test@member.com",
-		},
-		memberPool: []rotang.Member{
-			{
-				Name:  "Test Member",
-				Email: "test@member.com",
-			}, {
-				Name:  "Not Test Member",
-				Email: "nottest@member.com",
-			},
-		},
-		cfgs: []rotang.Configuration{
-			{
-				Config: rotang.Config{
-					Name: "Test Rota",
-					Shifts: rotang.ShiftConfig{
-						Shifts: []rotang.Shift{
-							{
-								Name:     "Test All Day",
-								Duration: fullDay,
-							},
-						},
-					},
-				},
-				Members: []rotang.ShiftMember{
-					{
-						Email:     "nottest@member.com",
-						ShiftName: "Test All Day",
-					},
-				},
-			},
-		},
-		shifts: []rotang.ShiftEntry{
-			{
-				Name: "Test All Day",
-				OnCall: []rotang.ShiftMember{
-					{
-						Email:     "nottest@member.com",
-						ShiftName: "Test All Day",
-					},
-				},
-				StartTime: midnight,
-				EndTime:   midnight.Add(72 * time.Hour),
-			},
-		},
-	}, {
-		name: "No shifts",
+		name:    "No shifts",
+		isAdmin: false,
 		ctx: &router.Context{
 			Context: ctx,
 			Writer:  httptest.NewRecorder(),
@@ -337,7 +284,8 @@ func TestMemberGET(t *testing.T) {
 			},
 		},
 	}, {
-		name: "Member with TZ info",
+		name:    "Member with TZ info",
+		isAdmin: false,
 		ctx: &router.Context{
 			Context: ctx,
 			Writer:  httptest.NewRecorder(),
@@ -417,12 +365,97 @@ func TestMemberGET(t *testing.T) {
 			},
 		},
 	},
-	}
+		{
+			name:    "Admin user",
+			isAdmin: true,
+			ctx: &router.Context{
+				Context: ctx,
+				Writer:  httptest.NewRecorder(),
+				Request: httptest.NewRequest("GET", "/memberjson?email=user@example.com", nil),
+			},
+			rota: "Test Rota",
+			member: &rotang.Member{
+				Name:  "Test Member",
+				Email: "test@member.com",
+			},
+			memberPool: []rotang.Member{
+				{
+					Name:  "Example user",
+					Email: "user@example.com",
+				},
+				{
+					Name:  "Test Member",
+					Email: "test@member.com",
+				},
+			},
+			cfgs: []rotang.Configuration{
+				{
+					Config: rotang.Config{
+						Name: "Test Rota",
+						Shifts: rotang.ShiftConfig{
+							Shifts: []rotang.Shift{
+								{
+									Name:     "Test All Day",
+									Duration: fullDay,
+								},
+							},
+						},
+					},
+					Members: []rotang.ShiftMember{
+						{
+							Email:     "user@example.com",
+							ShiftName: "Test All Day",
+						},
+					},
+				},
+			},
+			shifts: []rotang.ShiftEntry{
+				{
+					Name: "Test All Day",
+					OnCall: []rotang.ShiftMember{
+						{
+							Email:     "user@example.com",
+							ShiftName: "Test All Day",
+						},
+					},
+					StartTime: midnight,
+					EndTime:   midnight.Add(72 * time.Hour),
+				},
+			},
+			want: MemberInfo{
+				Member: JSONMember{
+					Member: rotang.Member{
+						Name:  "Example user",
+						Email: "user@example.com",
+					},
+					TZString: "UTC",
+				},
+				Shifts: []RotaShift{
+					{
+						Name: "Test Rota",
+						Entries: []rotang.ShiftEntry{
+							{
+								Name: "Test All Day",
+								OnCall: []rotang.ShiftMember{
+									{
+										Email:     "user@example.com",
+										ShiftName: "Test All Day",
+									},
+								},
+								StartTime: midnight,
+								EndTime:   midnight.Add(72 * time.Hour),
+							},
+						},
+					},
+				},
+			},
+		}}
 
 	h := testSetup(t)
 
 	for _, tst := range tests {
 		t.Run(tst.name, func(t *testing.T) {
+			setAdminForTest(tst.isAdmin)
 			for _, m := range tst.memberPool {
 				if err := h.memberStore(ctx).CreateMember(ctx, &m); err != nil {
 					t.Fatalf("%s: CreateMember(ctx, _) failed: %v", tst.name, err)
@@ -472,15 +505,22 @@ func TestMemberPOST(t *testing.T) {
 		t.Fatalf("time.Parse() failed: %v", err)
 	}
 
+	limaLoc, err := time.LoadLocation("America/Lima")
+	if err != nil {
+		t.Fatalf("time.LoadLocation(%q) failed: %v", "Australia/Sydney", err)
+	}
+
 	tests := []struct {
 		name       string
+		isAdmin    bool
 		fail       bool
 		ctx        *router.Context
 		member     *JSONMember
 		want       *rotang.Member
 		memberPool []rotang.Member
 	}{{
-		name: "Success",
+		name:    "Success",
+		isAdmin: false,
 		ctx: &router.Context{
 			Context: ctx,
 			Request: httptest.NewRequest("POST", "/memberjson", bytes.NewBufferString(`
@@ -525,8 +565,9 @@ func TestMemberPOST(t *testing.T) {
 			},
 		},
 	}, {
-		name: "Changing other member",
-		fail: true,
+		name:    "Changing other member",
+		isAdmin: false,
+		fail:    true,
 		ctx: &router.Context{
 			Context: ctx,
 			Request: httptest.NewRequest("POST", "/memberjson", bytes.NewBufferString(`
@@ -564,8 +605,49 @@ func TestMemberPOST(t *testing.T) {
 			},
 		},
 	}, {
-		name: "Broken JSON",
-		fail: true,
+		name:    "Admin changing user TZ",
+		isAdmin: true,
+		fail:    false,
+		ctx: &router.Context{
+			Context: ctx,
+			Request: httptest.NewRequest("POST", "/memberjson", bytes.NewBufferString(`
+				{ "full_name":"Test Testson",
+					"email_address":"user@user.com",
+					"TZString":"America/Lima",
+					"Preferences":null
+				}`)),
+		},
+		member: &JSONMember{
+			Member: rotang.Member{
+				Name:  "Test Testson",
+				Email: "admin@user.com",
+				OOO: []rotang.OOO{{
+					Start:    midnight,
+					Duration: time.Hour * 72,
+					Comment:  "Out and about",
+				},
+				},
+			},
+		},
+		memberPool: []rotang.Member{
+			{
+				Name:  "Test Testson",
+				Email: "admin@user.com",
+			},
+			{
+				Name:  "Test Testson",
+				Email: "user@user.com",
+			},
+		},
+		want: &rotang.Member{
+			Name:  "Test Testson",
+			Email: "user@user.com",
+			TZ:    *limaLoc,
+		},
+	}, {
+		name:    "Broken JSON",
+		isAdmin: false,
+		fail:    true,
 		ctx: &router.Context{
 			Context: ctx,
 			Request: httptest.NewRequest("POST", "/memberjson", bytes.NewBufferString(`
@@ -599,8 +681,9 @@ func TestMemberPOST(t *testing.T) {
 			},
 		},
 	}, {
-		name: "Comment missing",
-		fail: true,
+		name:    "Comment missing",
+		isAdmin: false,
+		fail:    true,
 		ctx: &router.Context{
 			Context: ctx,
 			Request: httptest.NewRequest("POST", "/memberjson", bytes.NewBufferString(`
@@ -639,6 +722,7 @@ func TestMemberPOST(t *testing.T) {
 
 	for _, tst := range tests {
 		t.Run(tst.name, func(t *testing.T) {
+			setAdminForTest(tst.isAdmin)
 			for _, m := range tst.memberPool {
 				if err := h.memberStore(ctx).CreateMember(ctx, &m); err != nil {
 					t.Fatalf("%s: CreateMember(ctx, _) failed: %v", tst.name, err)
@@ -652,9 +736,15 @@ func TestMemberPOST(t *testing.T) {
 			if err != nil {
 				return
 			}
-			member, err := h.memberStore(ctx).Member(ctx, tst.member.Email)
+
+			var jsonMember JSONMember
+			if err := json.NewDecoder(tst.ctx.Request.Body).Decode(&jsonMember); err != nil {
+				return
+			}
+
+			member, err := h.memberStore(ctx).Member(ctx, jsonMember.Email)
 			if err != nil {
-				t.Fatalf("%s: Member(ctx, %q) failed: %v", tst.name, tst.member.Email, err)
+				t.Fatalf("%s: Member(ctx, %q) failed: %v", tst.name, jsonMember.Email, err)
 			}
 			if diff := pretty.Compare(tst.want, member); diff != "" {
 				t.Fatalf("%s: h.memberPOST(ctx, _) differ -want +got, \n%s", tst.name, diff)

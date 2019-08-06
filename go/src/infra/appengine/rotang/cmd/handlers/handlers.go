@@ -32,12 +32,22 @@ var mtvTime = func() *time.Location {
 	return loc
 }()
 
+var isAdminForTest = false
+
+func setAdminForTest(a bool) {
+	isAdminForTest = a
+}
+
+func isAdmin(ctx *router.Context) bool {
+	return isAdminForTest || aeuser.IsAdmin(appengine.NewContext(ctx.Request))
+}
+
 func adminOrOwner(ctx *router.Context, cfg *rotang.Configuration) bool {
 	usr := auth.CurrentUser(ctx.Context)
 	if usr == nil || usr.Email == "" {
 		return false
 	}
-	if aeuser.IsAdmin(appengine.NewContext(ctx.Request)) {
+	if isAdmin(ctx) {
 		return true
 	}
 	for _, m := range cfg.Config.Owners {
@@ -88,7 +98,7 @@ func (h *State) listRotations(ctx *router.Context, external bool) (templates.Arg
 		rotas = noExternal
 	}
 
-	if !aeuser.IsAdmin(appengine.NewContext(ctx.Request)) {
+	if !isAdmin(ctx) {
 		var permRotas []*rotang.Configuration
 		for _, rota := range rotas {
 			for _, m := range rota.Config.Owners {
