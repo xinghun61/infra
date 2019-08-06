@@ -6,6 +6,7 @@ import {combineReducers} from 'redux';
 import {createSelector} from 'reselect';
 import {createReducer, createRequestReducer} from './redux-helpers.js';
 import {prpcClient} from 'prpc-client-instance.js';
+import {objectToMap} from 'elements/shared/helpers.js';
 
 // Actions
 const FETCH_START = 'user/FETCH_START';
@@ -112,16 +113,8 @@ export const reducer = combineReducers({
 
 // Selectors
 export const requests = (state) => state.user.requests;
-export const user = (state) => state.user.currentUser;
-export const prefs = createSelector(user, (user) => {
-  const prefsMap = new Map();
-  if (user) {
-    Object.keys(user.prefs).forEach((key) => {
-      prefsMap.set(key, user.prefs[key]);
-    });
-  }
-  return prefsMap;
-});
+export const user = (state) => state.user.currentUser || {};
+export const prefs = createSelector(user, (user) => objectToMap(user.prefs));
 
 // Action Creators
 export const fetch = (displayName) => async (dispatch) => {

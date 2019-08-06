@@ -36,6 +36,14 @@ export function pluralize(count, singular, pluralArg) {
   return count === 1 ? singular : plural;
 }
 
+export function objectToMap(obj = {}) {
+  const map = new Map();
+  Object.keys(obj).forEach((key) => {
+    map.set(key, obj[key]);
+  });
+  return map;
+}
+
 export function isEmptyObject(obj) {
   return Object.keys(obj).length === 0;
 }

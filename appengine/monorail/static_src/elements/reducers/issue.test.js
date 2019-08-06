@@ -85,19 +85,28 @@ describe('issue', () => {
   });
 
   it('blockingIssues', () => {
-    const relatedIssues = new Map([
-      ['proj:1',
-        {localId: 1, projectName: 'proj', labelRefs: [{label: 'label'}]}],
-      ['proj:3',
-        {localId: 3, projectName: 'proj', labelRefs: []}],
-      ['chromium:332',
-        {localId: 332, projectName: 'chromium', labelRefs: []}],
-    ]);
+    const relatedIssues = {
+      ['proj:1']: {
+        localId: 1,
+        projectName: 'proj',
+        labelRefs: [{label: 'label'}],
+      },
+      ['proj:3']: {
+        localId: 3,
+        projectName: 'proj',
+        labelRefs: [],
+      },
+      ['chromium:332']: {
+        localId: 332,
+        projectName: 'chromium',
+        labelRefs: [],
+      },
+    };
     const stateNoReferences = {issue: {
       currentIssue: {
         blockingIssueRefs: [{localId: 1, projectName: 'proj'}],
       },
-      relatedIssues: new Map(),
+      relatedIssues: {},
     }};
     assert.deepEqual(issue.blockingIssues(stateNoReferences),
       [{localId: 1, projectName: 'proj'}]
@@ -143,19 +152,28 @@ describe('issue', () => {
   });
 
   it('blockedOnIssues', () => {
-    const relatedIssues = new Map([
-      ['proj:1',
-        {localId: 1, projectName: 'proj', labelRefs: [{label: 'label'}]}],
-      ['proj:3',
-        {localId: 3, projectName: 'proj', labelRefs: []}],
-      ['chromium:332',
-        {localId: 332, projectName: 'chromium', labelRefs: []}],
-    ]);
+    const relatedIssues = {
+      ['proj:1']: {
+        localId: 1,
+        projectName: 'proj',
+        labelRefs: [{label: 'label'}],
+      },
+      ['proj:3']: {
+        localId: 3,
+        projectName: 'proj',
+        labelRefs: [],
+      },
+      ['chromium:332']: {
+        localId: 332,
+        projectName: 'chromium',
+        labelRefs: [],
+      },
+    };
     const stateNoReferences = {issue: {
       currentIssue: {
         blockedOnIssueRefs: [{localId: 1, projectName: 'proj'}],
       },
-      relatedIssues: new Map(),
+      relatedIssues: {},
     }};
     assert.deepEqual(issue.blockedOnIssues(stateNoReferences),
       [{localId: 1, projectName: 'proj'}]
@@ -201,18 +219,33 @@ describe('issue', () => {
   });
 
   it('sortedBlockedOn', () => {
-    const relatedIssues = new Map([
-      ['proj:1',
-        {localId: 1, projectName: 'proj', statusRef: {meansOpen: true}}],
-      ['proj:3',
-        {localId: 3, projectName: 'proj', statusRef: {meansOpen: false}}],
-      ['proj:4',
-        {localId: 4, projectName: 'proj', statusRef: {meansOpen: false}}],
-      ['proj:5',
-        {localId: 5, projectName: 'proj', statusRef: {meansOpen: false}}],
-      ['chromium:332',
-        {localId: 332, projectName: 'chromium', statusRef: {meansOpen: true}}],
-    ]);
+    const relatedIssues = {
+      ['proj:1']: {
+        localId: 1,
+        projectName: 'proj',
+        statusRef: {meansOpen: true},
+      },
+      ['proj:3']: {
+        localId: 3,
+        projectName: 'proj',
+        statusRef: {meansOpen: false},
+      },
+      ['proj:4']: {
+        localId: 4,
+        projectName: 'proj',
+        statusRef: {meansOpen: false},
+      },
+      ['proj:5']: {
+        localId: 5,
+        projectName: 'proj',
+        statusRef: {meansOpen: false},
+      },
+      ['chromium:332']: {
+        localId: 332,
+        projectName: 'chromium',
+        statusRef: {meansOpen: true},
+      },
+    };
     const stateNoReferences = {issue: {
       currentIssue: {
         blockedOnIssueRefs: [
@@ -220,7 +253,7 @@ describe('issue', () => {
           {localId: 1, projectName: 'proj'},
         ],
       },
-      relatedIssues: new Map(),
+      relatedIssues: {},
     }};
     assert.deepEqual(issue.sortedBlockedOn(stateNoReferences), [
       {localId: 3, projectName: 'proj'},
@@ -276,9 +309,9 @@ describe('issue', () => {
         currentIssue: {
           mergedIntoIssueRef: {localId: 22, projectName: 'proj'},
         },
-        relatedIssues: new Map([
-          ['proj:22', {localId: 22, projectName: 'proj', summary: 'test'}],
-        ]),
+        relatedIssues: {
+          ['proj:22']: {localId: 22, projectName: 'proj', summary: 'test'},
+        },
       },
     });
     assert.deepEqual(merged, {

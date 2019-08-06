@@ -6,7 +6,7 @@ import {combineReducers} from 'redux';
 import {createSelector} from 'reselect';
 import {autolink} from 'autolink.js';
 import {fieldTypes, extractTypeForIssue} from 'elements/shared/issue-fields.js';
-import {removePrefix} from 'elements/shared/helpers.js';
+import {removePrefix, objectToMap} from 'elements/shared/helpers.js';
 import {issueRefToString} from 'elements/shared/converters.js';
 import {createReducer, createRequestReducer} from './redux-helpers.js';
 import * as project from './project.js';
@@ -98,10 +98,10 @@ const UPDATE_APPROVAL_FAILURE = 'UPDATE_APPROVAL_FAILURE';
     totalResults: Number,
   }
   comments: Array,
-  commentReferences: Map,
-  relatedIssues: Map,
+  commentReferences: Object,
+  relatedIssues: Object,
   referencedUsers: Array,
-  usersProjects: Map,
+  usersProjects: Object,
   isStarred: Boolean,
   permissions: Array,
   presubmitResponse: Object,
@@ -174,24 +174,24 @@ const commentsReducer = createReducer([], {
   [FETCH_COMMENTS_SUCCESS]: (_state, action) => action.comments,
 });
 
-const commentReferencesReducer = createReducer(new Map(), {
-  [FETCH_COMMENTS_START]: (_state, _action) => new Map(),
+const commentReferencesReducer = createReducer({}, {
+  [FETCH_COMMENTS_START]: (_state, _action) => ({}),
   [FETCH_COMMENT_REFERENCES_SUCCESS]: (_state, action) => {
     return action.commentReferences;
   },
 });
 
-const relatedIssuesReducer = createReducer(new Map(), {
+const relatedIssuesReducer = createReducer({}, {
   [FETCH_RELATED_ISSUES_SUCCESS]: (_state, action) => action.relatedIssues,
 });
 
-const referencedUsersReducer = createReducer(new Map(), {
+const referencedUsersReducer = createReducer({}, {
   [FETCH_REFERENCED_USERS_SUCCESS]: (_state, action) => action.referencedUsers,
 });
 
-const usersProjectsReducer = createReducer(new Map(), {
+const usersProjectsReducer = createReducer({}, {
   [FETCH_USERS_PROJECTS_SUCCESS]: (state, action) => {
-    const newState = new Map();
+    const newState = {};
     const updateNewState = (userProjects, displayName) => {
       newState.set(displayName, {
         ownerOf: [...(userProjects.ownerOf || [])],
@@ -310,7 +310,11 @@ export const issue = (state) => state.issue.currentIssue;
 
 export const comments = (state) => state.issue.comments;
 export const commentsLoaded = (state) => state.issue.commentsLoaded;
-export const commentReferences = (state) => state.issue.commentReferences;
+
+const _commentReferences = (state) => state.issue.commentReferences;
+export const commentReferences = createSelector(_commentReferences,
+  (commentReferences) => objectToMap(commentReferences));
+
 export const hotlists = (state) => state.issue.hotlists;
 export const issueList = (state) => state.issue.issueList.issues;
 export const totalIssues = (state) => state.issue.issueList.totalResults;
@@ -319,9 +323,19 @@ export const issueLoaded = (state) => state.issue.issueLoaded;
 export const permissions = (state) => state.issue.permissions;
 export const presubmitResponse = (state) => state.issue.presubmitResponse;
 export const predictedComponent = (state) => state.issue.predictedComponent;
-export const relatedIssues = (state) => state.issue.relatedIssues;
-export const referencedUsers = (state) => state.issue.referencedUsers;
-export const usersProjects = (state) => state.issue.usersProjects;
+
+const _relatedIssues = (state) => state.issue.relatedIssues || {};
+export const relatedIssues = createSelector(_relatedIssues,
+  (relatedIssues) => objectToMap(relatedIssues));
+
+const _referencedUsers = (state) => state.issue.referencedUsers || {};
+export const referencedUsers = createSelector(_referencedUsers,
+  (referencedUsers) => objectToMap(referencedUsers));
+
+const _usersProjects = (state) => state.issue.usersProjects || {};
+export const usersProjects = createSelector(_usersProjects,
+  (usersProjects) => objectToMap(usersProjects));
+
 export const isStarred = (state) => state.issue.isStarred;
 
 export const requests = (state) => state.issue.requests;
@@ -423,6 +437,9 @@ const mapRefsWithRelated = (blocking) => {
         refs = refs.concat(issue.danglingBlockedOnRefs);
       }
     }
+
+    // Note: relatedIssues is a Redux generated key for issues, not part of the
+    // pRPC Issue object.
     if (issue.relatedIssues) {
       refs = refs.concat(issue.relatedIssues);
     }
@@ -544,9 +561,9 @@ export const fetchCommentReferences = (comments, projectName) => {
 
     try {
       const refs = await autolink.getReferencedArtifacts(comments, projectName);
-      const commentRefs = new Map();
+      const commentRefs = {};
       refs.forEach(({componentName, existingRefs}) => {
-        commentRefs.set(componentName, existingRefs);
+        commentRefs[componentName] = existingRefs;
       });
       dispatch({
         type: FETCH_COMMENT_REFERENCES_SUCCESS,
@@ -562,6 +579,8 @@ export const fetchReferencedUsers = (issue) => async (dispatch) => {
   if (!issue) return;
   dispatch({type: FETCH_REFERENCED_USERS_START});
 
+  // TODO(zhangtiff): Make this function account for custom fields
+  // of type user.
   const userRefs = [...(issue.ccRefs || [])];
   if (issue.ownerRef) {
     userRefs.push(issue.ownerRef);
@@ -577,9 +596,9 @@ export const fetchReferencedUsers = (issue) => async (dispatch) => {
     const resp = await prpcClient.call(
       'monorail.Users', 'ListReferencedUsers', {userRefs});
 
-    const referencedUsers = new Map();
+    const referencedUsers = {};
     (resp.users || []).forEach((user) => {
-      referencedUsers.set(user.email, user);
+      referencedUsers[user.email] = user;
     });
     dispatch({type: FETCH_REFERENCED_USERS_SUCCESS, referencedUsers});
   } catch (error) {
@@ -595,9 +614,9 @@ export const fetchUsersProjects = (userRefs) => async (dispatch) => {
   try {
     const resp = await prpcClient.call(
       'monorail.Users', 'GetUsersProjects', {userRefs});
-    const usersProjects = new Map();
+    const usersProjects = {};
     (resp.usersProjects || []).forEach((userProjects) => {
-      usersProjects.set(userProjects.userRef.displayName, userProjects);
+      usersProjects[userProjects.userRef.displayName] = userProjects;
     });
     dispatch({type: FETCH_USERS_PROJECTS_SUCCESS, usersProjects});
   } catch (error) {
@@ -625,17 +644,17 @@ export const fetchRelatedIssues = (issue) => async (dispatch) => {
     const resp = await prpcClient.call(
       'monorail.Issues', 'ListReferencedIssues', message);
 
-    const relatedIssues = new Map();
+    const relatedIssues = {};
 
     const openIssues = resp.openRefs || [];
     const closedIssues = resp.closedRefs || [];
     openIssues.forEach((issue) => {
       issue.statusRef.meansOpen = true;
-      relatedIssues.set(issueRefToString(issue), issue);
+      relatedIssues[issueRefToString(issue)] = issue;
     });
     closedIssues.forEach((issue) => {
       issue.statusRef.meansOpen = false;
-      relatedIssues.set(issueRefToString(issue), issue);
+      relatedIssues[issueRefToString(issue)] = issue;
     });
     dispatch({
       type: FETCH_RELATED_ISSUES_SUCCESS,

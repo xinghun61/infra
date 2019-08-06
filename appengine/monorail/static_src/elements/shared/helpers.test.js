@@ -3,7 +3,7 @@
 // found in the LICENSE file.
 
 import {assert} from 'chai';
-import {hasPrefix, immutableSplice} from './helpers.js';
+import {hasPrefix, objectToMap, immutableSplice} from './helpers.js';
 
 describe('hasPrefix', () => {
   it('only true when has prefix', () => {
@@ -18,6 +18,17 @@ describe('hasPrefix', () => {
     assert.isTrue(hasPrefix('TEST-string', 'test-'));
     assert.isTrue(hasPrefix('test-string', 'test-'));
     assert.isTrue(hasPrefix('tEsT-string', 'test-'));
+  });
+});
+
+describe('objectToMap', () => {
+  it('converts Object to Map with the same keys', () => {
+    assert.deepEqual(objectToMap({}), new Map());
+    assert.deepEqual(objectToMap({test: 'value'}),
+      new Map([['test', 'value']]));
+    assert.deepEqual(objectToMap({['weird:key']: 'value',
+      ['what is this key']: 'v2'}), new Map([['weird:key', 'value'],
+      ['what is this key', 'v2']]));
   });
 });
 
