@@ -979,6 +979,31 @@ class AST2SelectTest(unittest.TestCase):
     self.assertTrue(sql._IsValidWhereCond(where[0][0]))
     self.assertEqual([], unsupported)
 
+  def testProcessSummaryCond(self):
+    fd = BUILTIN_ISSUE_FIELDS['summary']
+    cond = ast_pb2.MakeCond(ast_pb2.QueryOp.EQ, [fd], ['sum'], [])
+    left_joins, where, unsupported = ast2select._ProcessSummaryCond(cond,
+        'Cond1', 'Spare1', snapshot_mode=False)
+    self.assertEqual(
+        [('IssueSummary AS Cond1 ON Issue.id = Cond1.issue_id AND '
+          'Cond1.summary = %s', ['sum'])],
+        left_joins)
+    self.assertEqual(
+        [('Cond1.issue_id IS NOT NULL', [])],
+        where)
+    self.assertTrue(sql._IsValidWhereCond(where[0][0]))
+    self.assertEqual([], unsupported)
+
+  def testProcessSummaryCond_SnapshotMode(self):
+    """Issue summary is not currently included in issue snapshot, so ignore."""
+    fd = BUILTIN_ISSUE_FIELDS['summary']
+    cond = ast_pb2.MakeCond(ast_pb2.QueryOp.EQ, [fd], ['sum'], [])
+    left_joins, where, unsupported = ast2select._ProcessSummaryCond(cond,
+        'Cond1', 'Spare1', snapshot_mode=True)
+    self.assertEqual([], left_joins)
+    self.assertEqual([], where)
+    self.assertEqual([cond], unsupported)
+
   def testProcessLabelIDCond_NoValue(self):
     fd = BUILTIN_ISSUE_FIELDS['label_id']
     cond = ast_pb2.MakeCond(ast_pb2.QueryOp.EQ, [fd], [], [])

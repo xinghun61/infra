@@ -867,7 +867,10 @@ JOIN_RE_LIST = [
         r'( AND {tab_col} = {tab_col})?'
         r'( AND {tab_col} = {placeholder})?'
         r' AND \({tab_col} IS NULL OR'
-        r' {tab_col} != {placeholder}\)$'),
+        r' {tab_col} {compare_op} {placeholder}\)$'),
+    _MakeRE(
+        r'^{table}{opt_alias} ON {tab_col} = {tab_col}'
+        r' AND \({tab_col} IS NOT NULL AND {tab_col} != {placeholder}\)'),
     _MakeRE(
         r'^{table}{opt_alias} ON {tab_col} = {tab_col}'
         r' AND LOWER\({tab_col}\) = LOWER\({placeholder}\)'),

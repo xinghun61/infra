@@ -452,6 +452,29 @@ def _ProcessStatusIDCond(cond, _alias, _spare_alias, snapshot_mode):
   return [], where, []
 
 
+def _ProcessSummaryCond(cond, alias, _spare_alias, snapshot_mode):
+  """Convert a summary="exact string" cond to SQL."""
+  left_joins = []
+  where = []
+  field_type, field_values = _GetFieldTypeAndValues(cond)
+  if snapshot_mode:
+    return [], [], [cond]
+  elif cond.op in (ast_pb2.QueryOp.EQ, ast_pb2.QueryOp.NE,
+                   ast_pb2.QueryOp.GT, ast_pb2.QueryOp.LT,
+                   ast_pb2.QueryOp.GE, ast_pb2.QueryOp.LE,
+                   ast_pb2.QueryOp.IS_DEFINED, ast_pb2.QueryOp.IS_NOT_DEFINED):
+    summary_cond_str, summary_cond_args = _Compare(
+        alias, cond.op, field_type, 'summary', field_values)
+    left_joins = [(
+        'IssueSummary AS {alias} ON Issue.id = {alias}.issue_id AND '
+        '{summary_cond}'.format(
+          alias=alias, summary_cond=summary_cond_str),
+        summary_cond_args)]
+    where = [_CompareAlreadyJoined(alias, ast_pb2.QueryOp.EQ, 'issue_id')]
+
+  return left_joins, where, []
+
+
 def _ProcessLabelIDCond(cond, alias, _spare_alias, snapshot_mode):
   """Convert a label_id=ID cond to SQL."""
   if snapshot_mode:
@@ -755,6 +778,7 @@ _PROCESSORS = {
     'commentby': _ProcessCommentByCond,
     'commentby_id': _ProcessCommentByIDCond,
     'status_id': _ProcessStatusIDCond,
+    'summary': _ProcessSummaryCond,
     'label_id': _ProcessLabelIDCond,
     'component_id': _ProcessComponentIDCond,
     'blockedon_id': _ProcessBlockedOnIDCond,
@@ -814,8 +838,9 @@ def _ProcessCond(cond_num, cond, snapshot_mode):
     return _ProcessCustomFieldCond(
         cond, alias, spare_alias, phase_alias, snapshot_mode)
 
-  elif (field_def.field_name in tracker_fulltext.ISSUE_FULLTEXT_FIELDS or
-        field_def.field_name == 'any_field'):
+  elif (cond.op in (ast_pb2.QueryOp.TEXT_HAS, ast_pb2.QueryOp.NOT_TEXT_HAS) and
+        (field_def.field_name in tracker_fulltext.ISSUE_FULLTEXT_FIELDS or
+         field_def.field_name == 'any_field')):
     if snapshot_mode:
       return [], [], [cond]
     # This case handled by full-text search.
