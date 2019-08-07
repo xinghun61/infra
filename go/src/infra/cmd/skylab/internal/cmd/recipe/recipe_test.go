@@ -64,6 +64,9 @@ func TestRequest(t *testing.T) {
 			Decorations: &test_platform.Request_Params_Decorations{
 				AutotestKeyvals: map[string]string{"k1": "v1"},
 			},
+			Retry: &test_platform.Request_Params_Retry{
+				Allow: true,
+			},
 		},
 		TestPlan: &test_platform.Request_TestPlan{
 			Suite: []*test_platform.Request_Suite{

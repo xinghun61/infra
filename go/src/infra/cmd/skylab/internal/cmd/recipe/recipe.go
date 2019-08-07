@@ -90,6 +90,11 @@ func Request(a Args) (*test_platform.Request, error) {
 		SwarmingDimensions: a.FreeformSwarmingDimensions,
 	}
 
+	// TODO(akeshet): Make retry-allowance paramaterizable.
+	params.Retry = &test_platform.Request_Params_Retry{
+		Allow: true,
+	}
+
 	u := &url.URL{
 		Scheme: "gs",
 		Host:   "chromeos-image-archive",
@@ -103,9 +108,6 @@ func Request(a Args) (*test_platform.Request, error) {
 	params.Time = &test_platform.Request_Params_Time{
 		MaximumDuration: duration,
 	}
-
-	// TODO(akeshet): Determine retry parameters.
-	params.Retry = nil
 
 	return req, nil
 }
