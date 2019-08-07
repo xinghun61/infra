@@ -48,6 +48,11 @@ export class MrCodeFontToggle extends connectStore(LitElement) {
     this.userDisplayName = '';
   }
 
+  // Used by the legacy EZT page to interact with Redux.
+  fetchPrefs() {
+    store.dispatch(user.fetchPrefs());
+  }
+
   get _codeFont() {
     const {prefs, initialValue} = this;
     if (!prefs) return initialValue;
