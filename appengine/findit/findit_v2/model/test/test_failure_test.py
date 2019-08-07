@@ -49,10 +49,8 @@ class TestFailureTest(wf_testcase.WaterfallTestCase):
     test_name = 'test1'
     new_failure = TestFailure.Create(self.build.key, step_ui_name, test_name)
     new_failure.put()
-
-    test_failures = TestFailure.query(TestFailure.test == test_name).fetch()
-    self.assertEqual(1, len(test_failures))
-    self.assertEqual(new_failure, test_failures[0])
+    self.assertEqual(step_ui_name, new_failure.step_ui_name)
+    self.assertEqual(test_name, new_failure.test)
 
   def testCreateTestFailureNoTest(self):
     step_ui_name = 'step_ui_name2'
@@ -60,12 +58,8 @@ class TestFailureTest(wf_testcase.WaterfallTestCase):
     new_failure = TestFailure.Create(
         self.build.key, step_ui_name, None, properties=additional_properies)
     new_failure.put()
-
-    test_failures = TestFailure.query(
-        TestFailure.step_ui_name == step_ui_name).fetch()
-    self.assertEqual(1, len(test_failures))
-    self.assertEqual(new_failure, test_failures[0])
-    self.assertEqual(additional_properies, test_failures[0].properties)
+    self.assertEqual(step_ui_name, new_failure.step_ui_name)
+    self.assertIsNone(new_failure.test)
 
   def testGetMergedFailureKeyNoTestLevelInfo(self):
     step_ui_name = 'step_ui_name3'

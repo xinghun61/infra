@@ -43,12 +43,22 @@ class TestFailure(AtomicFailure):
 
   Test failures in the same build have the same parent.
   """
-  # Name of the failed test
-  test = ndb.StringProperty()
-
   # Key to the failure that this failure merges into.
   # No analysis on current failure, instead use the results of merged_failure.
   merged_failure_key = ndb.KeyProperty(kind='TestFailure')
+
+  @property
+  def test(self):
+    """Name of the failed test."""
+    entity_id = self.key.id()
+    id_parts = entity_id.split('@', 1)
+    assert len(id_parts) == 2, 'Atomic Failure ID is in wrong format: %s' % (
+        entity_id)
+    return id_parts[1] or None
+
+  @classmethod
+  def _CreateID(cls, step_ui_name, test):
+    return '{}@{}'.format(step_ui_name, test or '')
 
   # Arguments number differs from overridden method - pylint: disable=W0221
   @classmethod
@@ -62,10 +72,11 @@ class TestFailure(AtomicFailure):
              files=None,
              merged_failure_key=None,
              properties=None):
-    instance = super(TestFailure, cls).Create(
-        failed_build_key, step_ui_name, first_failed_build_id,
-        last_passed_build_id, failure_group_build_id, files, properties)
-    instance.test = test
+    instance = super(TestFailure,
+                     cls).Create(failed_build_key,
+                                 cls._CreateID(step_ui_name, test),
+                                 first_failed_build_id, last_passed_build_id,
+                                 failure_group_build_id, files, properties)
     instance.merged_failure_key = merged_failure_key
     return instance
 

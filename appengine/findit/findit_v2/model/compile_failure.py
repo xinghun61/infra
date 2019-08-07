@@ -3,6 +3,7 @@
 # found in the LICENSE file.
 
 from collections import defaultdict
+import hashlib
 
 from google.appengine.ext import ndb
 
@@ -46,6 +47,14 @@ class CompileFailure(AtomicFailure):
   # No analysis on current failure, instead use the results of merged_failure.
   merged_failure_key = ndb.KeyProperty(kind='CompileFailure')
 
+  @classmethod
+  def _CreateID(cls, step_ui_name, output_targets):
+    h = hashlib.sha256()
+    for t in sorted(output_targets or []):
+      h.update(t)
+      h.update('\n')
+    return '{}@{}'.format(step_ui_name, h.hexdigest())
+
   # Arguments number differs from overridden method - pylint: disable=W0221
   @classmethod
   def Create(cls,
@@ -61,8 +70,14 @@ class CompileFailure(AtomicFailure):
              merged_failure_key=None,
              properties=None):
     instance = super(CompileFailure, cls).Create(
-        failed_build_key, step_ui_name, first_failed_build_id,
-        last_passed_build_id, failure_group_build_id, files, properties)
+        failed_build_key,
+        cls._CreateID(step_ui_name, output_targets),
+        first_failed_build_id,
+        last_passed_build_id,
+        failure_group_build_id,
+        files,
+        properties,
+    )
     instance.output_targets = output_targets or []
     instance.rule = rule
     instance.dependencies = dependencies or []

@@ -26,14 +26,9 @@ class AtomicFailure(ndb.Model):
   - In test failure atom failure is a failed test.
 
   Key to an AtomicFailure entity is
-  Key(LuciFailedBuild, <build_id>, AtomicFailure, <numeric_id>(no meaning)).
-  Atomic failures happened in the same build have the same parent. And they'll
-  be queried together, so their identifier is not a part of the key.
+  Key(LuciFailedBuild, <build_id>,
+      <AtomicFailure>, 'step_ui_name@atomic_failure').
   """
-
-  # Full step name.
-  step_ui_name = ndb.StringProperty()
-
   # Id of the build in which this atom failure occurred the first time in
   # a sequence of consecutive failed builds.
   # For example, if a test passed in build 100, and failed in builds 101 - 105,
@@ -73,16 +68,31 @@ class AtomicFailure(ndb.Model):
     """Gets the id of the build that this failure belongs to."""
     return self.key.parent().id()
 
+  @property
+  def step_ui_name(self):
+    """Full step name of the failure."""
+    entity_id = self.key.id()
+    id_parts = entity_id.split('@', 1)
+    assert len(id_parts) == 2, 'Atomic Failure ID is in wrong format: %s' % (
+        entity_id)
+    return id_parts[0]
+
   @classmethod
   def Create(cls,
              failed_build_key,
-             step_ui_name,
+             failure_id,
              first_failed_build_id=None,
              last_passed_build_id=None,
              failure_group_build_id=None,
              files=None,
              properties=None):  # pragma: no cover
-    instance = cls(step_ui_name=step_ui_name, parent=failed_build_key)
+    instance = cls(
+        parent=failed_build_key,
+        id=failure_id,
+        first_failed_build_id=first_failed_build_id,
+        last_passed_build_id=last_passed_build_id,
+        failure_group_build_id=failure_group_build_id,
+        properties=properties)
 
     files_objs = []
     if files:
@@ -90,11 +100,6 @@ class AtomicFailure(ndb.Model):
         files_objs.append(
             FileInFailureLog(path=path, line_numbers=line_numbers))
     instance.files = files_objs
-
-    instance.first_failed_build_id = first_failed_build_id
-    instance.last_passed_build_id = last_passed_build_id
-    instance.failure_group_build_id = failure_group_build_id
-    instance.properties = properties
     return instance
 
   @classmethod
