@@ -4,7 +4,6 @@ Monorail API v1 aims to provide nearly identical interface to Google Code issue 
 
 * [One-page getting started](https://docs.google.com/document/d/1SLK0AYokyaIGG_riOgQJ9UUMXhC58kqmj8l4vZT42vM)
 * [Code example in python](example.py)
-* [Design doc](https://docs.google.com/document/d/1UIyWru7L-hJamgZb9JGYxkX6aF_w23TD0m3YoQub2PE)
 
 
 Rate limiting:
