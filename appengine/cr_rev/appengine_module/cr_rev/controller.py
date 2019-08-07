@@ -101,6 +101,8 @@ def make_gitiles_json_call(url, n=1000):
       # Gitiles serves JSONP, so we strip it out here.
       assert result.content[0:5] == ')]}\'\n'
       return json.loads(result.content[5:])
+    elif result.status_code == 404:
+      return {'status': 404}
     elif result.status_code != 429:
       raise pipeline.PipelineUserError(
           'urlfetch returned %d' % result.status_code)
@@ -306,13 +308,11 @@ class ProjectScanningPipeline(pipelines.AppenginePipeline):
 
         # Test if it's not a 'fake' repo like All-Users by testing its log for
         # 404.
-        try:
-          repo_url = calculate_repo_url(repo_obj)
-          crawl_url = repo_url + '+log/master'
-          make_gitiles_json_call(crawl_url, n=1)
+        repo_url = calculate_repo_url(repo_obj)
+        crawl_url = repo_url + '+log/master'
+        result = make_gitiles_json_call(crawl_url, n=1)
+        if result.get('status') != 404:
           repo_obj.real = True
-        except pipeline.PipelineUserError:
-          pass
         repo_obj.put()
 
     for repo in active_repo_names:
@@ -508,16 +508,27 @@ def scan_projects_for_repos():
   return spawn_pipelines(ProjectScanningPipeline, project_name_args)
 
 
+def has_active_task(project, repo):
+  client = memcache.Client()
+  key = MEMCACHE_REPO_SCAN_LOCK % models.Repo.repo_id(project, repo)
+  counter = client.gets(key)
+  return counter and counter['counter'] != 0
+
+
 def scan_repos():
   urls = []
   projects = get_projects()
   for project in projects:
     active_repo_objs = get_active_repos(project.name)
-    scanned_repos = [r for r in active_repo_objs if r.root_commit_scanned]
-    unscanned_repos = [r for r in active_repo_objs if not r.root_commit_scanned]
-    scanned_repo_name_args = [[project.name, r.repo] for r in scanned_repos]
+    scanned_repo_name_args = [
+        [project.name, r.repo] for r in active_repo_objs
+        if r.root_commit_scanned and not has_active_task(project.name, r.repo)]
     urls.extend(spawn_pipelines(RepoScanningPipeline, scanned_repo_name_args))
-    unscanned_repo_name_args = [[project.name, r.repo] for r in unscanned_repos]
+
+    unscanned_repo_name_args = [
+        [project.name, r.repo] for r in active_repo_objs
+        if (not r.root_commit_scanned
+            and not has_active_task(project.name, r.repo))]
     urls.extend(spawn_pipelines(
       RepoScanningPipeline,
       unscanned_repo_name_args,

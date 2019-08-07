@@ -406,13 +406,24 @@ class TestController(testing.AppengineTestCase):
     result = controller.make_gitiles_json_call(gitiles_base_url)
     self.assertEqual({'test': 3}, result)
 
-  def test_gitiles_call_error(self):
+  def test_gitiles_call_404_error(self):
     gitiles_base_url = 'https://chromium.definitely_real_gitiles.com/'
     with self.mock_urlfetch() as urlfetch:
       urlfetch.register_handler(
           gitiles_base_url + '404',
           self._gitiles_json({'test': 3}),
           status_code=404)
+
+    result = controller.make_gitiles_json_call(gitiles_base_url)
+    self.assertEqual({'status': 404}, result)
+
+  def test_gitiles_call_error(self):
+    gitiles_base_url = 'https://chromium.definitely_real_gitiles.com/'
+    with self.mock_urlfetch() as urlfetch:
+      urlfetch.register_handler(
+          gitiles_base_url + '?format=json&n=1000',
+          self._gitiles_json({'test': 3}),
+          status_code=403)
 
     with self.assertRaises(pipeline.PipelineUserError):
       controller.make_gitiles_json_call(gitiles_base_url)
