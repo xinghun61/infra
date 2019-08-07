@@ -54,6 +54,7 @@ NOFORK_PATHS = []
 
 # This project is whitelisted to use Typescript on a trial basis.
 ROTANG_DIR = os.path.join('go', 'src', 'infra', 'appengine', 'rotang')
+CHOPSUI_DIR = os.path.join('crdx', 'chopsui-npm')
 
 
 def CommandInGoEnv(input_api, output_api, name, cmd, kwargs):
@@ -417,7 +418,7 @@ def NoTypescriptCheck(input_api, output_api):  # pragma: no cover
   """Checks that typescript files aren't being added to infra."""
   output = []
   for f in input_api.AffectedFiles(include_deletes=False):
-    if str(f).startswith(ROTANG_DIR):
+    if str(f).startswith(ROTANG_DIR) or str(f).startswith(CHOPSUI_DIR):
       continue
     if str(f).endswith('.ts'):
       output.append(output_api.PresubmitError(
