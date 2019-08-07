@@ -66,8 +66,16 @@ func Request(a Args) (*test_platform.Request, error) {
 	req.Params = &test_platform.Request_Params{}
 	params := req.Params
 
+	model := a.Model
+	// TODO(crbug.com/991591): The model inference from board is a temporary
+	// workaround, that only works for non-unibuild requests. Once the traffic
+	// split rules are modified to support model-agnostic requests, this
+	// workaround should be removed.
+	if model == "" {
+		model = a.Board
+	}
 	params.HardwareAttributes = &test_platform.Request_Params_HardwareAttributes{
-		Model: a.Model,
+		Model: model,
 	}
 
 	params.Scheduling = toScheduling(a.Pool, a.QuotaAccount)
