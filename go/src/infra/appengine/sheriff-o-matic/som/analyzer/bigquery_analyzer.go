@@ -33,7 +33,9 @@ SELECT
 FROM
 	` + "`%s.events.sheriffable_failures`" + `
 WHERE
-	project = %q
+	(project = %q
+	OR
+	MasterName = %q)
   AND bucket NOT IN ("try",
     "cq",
     "staging",
@@ -146,7 +148,7 @@ func GetBigQueryAlerts(ctx context.Context, tree string) ([]messages.BuildFailur
 	if err != nil {
 		return nil, err
 	}
-	queryStr := fmt.Sprintf(failuresQuery, appID, tree)
+	queryStr := fmt.Sprintf(failuresQuery, appID, tree, tree)
 	if tree == "android" {
 		queryStr = fmt.Sprintf(androidFailuresQuery, appID)
 	}

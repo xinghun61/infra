@@ -64,7 +64,7 @@ cron:
     max_doublings: 5
 
 - description: Update Chromium Perf alerts
-  url: /_cron/analyze/chromium.perf
+  url: /_cron/analyze/chromium.perf?use=bigquery
   schedule: every 5 minutes
   target: analyzer
   retry_parameters:
