@@ -74,7 +74,7 @@
 
         # client.v8.fyi
         'Linux V8 FYI Release (NVIDIA)',
-        'V8-Blink Linux 64',
+        'V8 Blink Linux',
         'V8 Linux GN',
       ],
     },
