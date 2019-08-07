@@ -55,6 +55,15 @@ describe('mr-list-page', () => {
       ['ID', 'Summary', 'AllLabels', 'Priority']);
   });
 
+  it('colspec parsing preserves dashed parameters', async () => {
+    element.queryParams = {colspec: 'ID+Summary+Test-Label+Another-Label'};
+
+    await element.updateComplete;
+
+    assert.deepEqual(element.columns,
+      ['ID', 'Summary', 'Test-Label', 'Another-Label']);
+  });
+
   describe('edit actions', () => {
     beforeEach(() => {
       sinon.stub(window, 'alert');

@@ -3,13 +3,13 @@
 // found in the LICENSE file.
 
 import {LitElement, html, css} from 'lit-element';
-import {connectStore} from 'elements/reducers/base.js';
 import page from 'page';
 import qs from 'qs';
+import {connectStore} from 'elements/reducers/base.js';
+import * as issue from 'elements/reducers/issue.js';
 import * as project from 'elements/reducers/project.js';
 import './mr-grid-dropdown';
 import './mr-choice-buttons';
-import * as issue from 'elements/reducers/issue.js';
 import {getAvailableGridFields} from './extract-grid-data.js';
 
 export class MrGridControls extends connectStore(LitElement) {
@@ -21,14 +21,14 @@ export class MrGridControls extends connectStore(LitElement) {
         <mr-grid-dropdown
           class="rows"
           .text=${'Rows'}
-          .items=${this.issueProperties}
+          .items=${this.gridOptions}
           .selection=${this.queryParams.y}
           @change=${this._rowChanged}>
         </mr-grid-dropdown>
         <mr-grid-dropdown
           class="cols"
           .text=${'Cols'}
-          .items=${this.issueProperties}
+          .items=${this.gridOptions}
           .selection=${this.queryParams.x}
           @change=${this._colChanged}>
         </mr-grid-dropdown>
@@ -65,7 +65,7 @@ export class MrGridControls extends connectStore(LitElement) {
 
   constructor() {
     super();
-    this.issueProperties = getAvailableGridFields();
+    this.gridOptions = getAvailableGridFields();
     this.cells = [
       {text: 'Tile', value: 'tiles'},
       {text: 'IDs', value: 'ids'},
@@ -79,14 +79,14 @@ export class MrGridControls extends connectStore(LitElement) {
     this.queryParams = {y: 'None', x: 'None'};
     this.cellType = 'tiles';
 
+    this.totalIssues = 0;
     this._fieldDefs = [];
     this._labelPrefixFields = [];
-    this.totalIssues = 0;
   };
 
   static get properties() {
     return {
-      issueProperties: {type: Array},
+      gridOptions: {type: Array},
       cells: {type: Array},
       cellType: {type: String},
       viewSelector: {type: Array},
@@ -105,10 +105,10 @@ export class MrGridControls extends connectStore(LitElement) {
   }
 
   update(changedProperties) {
-    if (changedProperties.has('fieldDefs')
-        || changedProperties.has('labelPrefixFields')) {
-      this.issueProperties = getAvailableGridFields(
-        this.fieldDefs, this.labelPrefixFields);
+    if (changedProperties.has('_fieldDefs')
+        || changedProperties.has('_labelPrefixFields')) {
+      this.gridOptions = getAvailableGridFields(
+          this._fieldDefs, this._labelPrefixFields);
     }
     if (changedProperties.has('cells') && this.queryParams.cells) {
       this.cellType = this.queryParams.cells;

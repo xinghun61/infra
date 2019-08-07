@@ -13,7 +13,7 @@ import 'elements/framework/mr-issue-list/mr-issue-list.js';
 // eslint-disable-next-line max-len
 import 'elements/issue-detail/dialogs/mr-update-issue-hotlists/mr-update-issue-hotlists.js';
 
-const COLSPEC_DELIMITER_REGEX = /\W+/;
+const COLSPEC_DELIMITER_REGEX = /[\s\+]+/;
 const SITEWIDE_DEFAULT_COLUMNS = ['ID', 'Type', 'Status',
   'Priority', 'Milestone', 'Owner', 'Summary'];
 

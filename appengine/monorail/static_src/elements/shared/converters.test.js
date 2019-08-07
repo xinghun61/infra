@@ -7,15 +7,15 @@ import {displayNameToUserRef, labelStringToRef, labelRefToString,
   labelRefsToStrings, statusRefToString, statusRefsToStrings,
   componentStringToRef, componentRefToString, componentRefsToStrings,
   issueStringToRef, issueStringToBlockingRef, issueRefToString,
-  issueRefToUrl, fieldNameToLabelPrefix, commentListToDescriptionList,
-  valueToFieldValue, issueToIssueRef,
+  issueRefToUrl, fieldNameToLabelPrefix, labelNameToLabelPrefix,
+  commentListToDescriptionList, valueToFieldValue, issueToIssueRef,
 } from './converters.js';
 
 describe('displayNameToUserRef', () => {
   it('converts displayName', () => {
     assert.deepEqual(
-      displayNameToUserRef('foo@bar.com'),
-      {displayName: 'foo@bar.com'});
+        displayNameToUserRef('foo@bar.com'),
+        {displayName: 'foo@bar.com'});
   });
   it('throws on invalid email', () => {
     assert.throws(() => displayNameToUserRef('foo'));
@@ -37,7 +37,7 @@ describe('labelRefToString', () => {
 describe('labelRefsToStrings', () => {
   it('converts labelRefs', () => {
     assert.deepEqual(labelRefsToStrings([{label: 'foo'}, {label: 'test'}]),
-      ['foo', 'test']);
+        ['foo', 'test']);
   });
 });
 
@@ -46,6 +46,15 @@ describe('fieldNameToLabelPrefix', () => {
     assert.deepEqual(fieldNameToLabelPrefix('test'), 'test-');
     assert.deepEqual(fieldNameToLabelPrefix('test-hello'), 'test-hello-');
     assert.deepEqual(fieldNameToLabelPrefix('WHATEVER'), 'whatever-');
+  });
+});
+
+describe('labelNameToLabelPrefix', () => {
+  it('converts labelName', () => {
+    assert.deepEqual(labelNameToLabelPrefix('test'), 'test');
+    assert.deepEqual(labelNameToLabelPrefix('test-hello'), 'test');
+    assert.deepEqual(labelNameToLabelPrefix('WHATEVER-this-label-is'),
+        'WHATEVER');
   });
 });
 
@@ -58,7 +67,7 @@ describe('statusRefToString', () => {
 describe('statusRefsToStrings', () => {
   it('converts statusRefs', () => {
     assert.deepEqual(statusRefsToStrings(
-      [{status: 'hello'}, {status: 'world'}]), ['hello', 'world']);
+        [{status: 'hello'}, {status: 'world'}]), ['hello', 'world']);
   });
 });
 
@@ -71,34 +80,34 @@ describe('componentStringToRef', () => {
 describe('componentRefToString', () => {
   it('converts componentRef', () => {
     assert.deepEqual(componentRefToString({path: 'Hello>World'}),
-      'Hello>World');
+        'Hello>World');
   });
 });
 
 describe('componentRefsToStrings', () => {
   it('converts componentRefs', () => {
     assert.deepEqual(componentRefsToStrings(
-      [{path: 'Hello>World'}, {path: 'Test'}]), ['Hello>World', 'Test']);
+        [{path: 'Hello>World'}, {path: 'Test'}]), ['Hello>World', 'Test']);
   });
 });
 
 describe('issueStringToRef', () => {
   it('converts issue default project', () => {
     assert.deepEqual(
-      issueStringToRef('proj', '1234'),
-      {projectName: 'proj', localId: 1234});
+        issueStringToRef('proj', '1234'),
+        {projectName: 'proj', localId: 1234});
   });
 
   it('converts issue with project', () => {
     assert.deepEqual(
-      issueStringToRef('proj', 'foo:1234'),
-      {projectName: 'foo', localId: 1234});
+        issueStringToRef('proj', 'foo:1234'),
+        {projectName: 'foo', localId: 1234});
   });
 
   it('converts external issue references', () => {
     assert.deepEqual(
-      issueStringToRef('proj', 'b/123456'),
-      {extIdentifier: 'b/123456'});
+        issueStringToRef('proj', 'b/123456'),
+        {extIdentifier: 'b/123456'});
   });
 
   it('throws on invalid input', () => {
@@ -109,14 +118,14 @@ describe('issueStringToRef', () => {
 describe('issueStringToBlockingRef', () => {
   it('converts issue default project', () => {
     assert.deepEqual(
-      issueStringToBlockingRef('proj', 1, '1234'),
-      {projectName: 'proj', localId: 1234});
+        issueStringToBlockingRef('proj', 1, '1234'),
+        {projectName: 'proj', localId: 1234});
   });
 
   it('converts issue with project', () => {
     assert.deepEqual(
-      issueStringToBlockingRef('proj', 1, 'foo:1234'),
-      {projectName: 'foo', localId: 1234});
+        issueStringToBlockingRef('proj', 1, 'foo:1234'),
+        {projectName: 'foo', localId: 1234});
   });
 
   it('throws on invalid input', () => {
@@ -136,29 +145,29 @@ describe('issueRefToString', () => {
 
   it('ref with no project name', () => {
     assert.equal(
-      'other:1234',
-      issueRefToString({projectName: 'other', localId: 1234})
+        'other:1234',
+        issueRefToString({projectName: 'other', localId: 1234})
     );
   });
 
   it('ref with different project name', () => {
     assert.equal(
-      'other:1234',
-      issueRefToString({projectName: 'other', localId: 1234}, 'proj')
+        'other:1234',
+        issueRefToString({projectName: 'other', localId: 1234}, 'proj')
     );
   });
 
   it('ref with same project name', () => {
     assert.equal(
-      '1234',
-      issueRefToString({projectName: 'proj', localId: 1234}, 'proj')
+        '1234',
+        issueRefToString({projectName: 'proj', localId: 1234}, 'proj')
     );
   });
 
   it('external ref', () => {
     assert.equal(
-      'b/123456',
-      issueRefToString({extIdentifier: 'b/123456'}, 'proj')
+        'b/123456',
+        issueRefToString({extIdentifier: 'b/123456'}, 'proj')
     );
   });
 });
@@ -234,8 +243,8 @@ describe('commentListToDescriptionList', () => {
 describe('valueToFieldValue', () => {
   it('converts field ref and value', () => {
     assert.deepEqual(valueToFieldValue(
-      {fieldName: 'name', fieldId: 'id'},
-      'value',
+        {fieldName: 'name', fieldId: 'id'},
+        'value',
     ), {
       fieldRef: {fieldName: 'name', fieldId: 'id'},
       value: 'value',

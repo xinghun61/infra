@@ -41,7 +41,7 @@ export const fieldValueMapKey = (fieldName, phaseName) => {
   if (phaseName) {
     key.push(phaseName);
   }
-  return key.join(' ');
+  return key.join(' ').toLowerCase();
 };
 
 export const groupsForType = (fieldGroups, issueType) => {

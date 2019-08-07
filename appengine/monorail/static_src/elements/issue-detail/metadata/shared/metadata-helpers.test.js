@@ -26,7 +26,7 @@ describe('metadata-helpers', () => {
   it('fieldValueMapKey', () => {
     assert.equal(fieldValueMapKey('test', 'two'), 'test two');
 
-    assert.equal(fieldValueMapKey('noPhase'), 'noPhase');
+    assert.equal(fieldValueMapKey('noPhase'), 'nophase');
   });
 
   it('fieldDefsWithoutGroup ignores non applicable types', () => {

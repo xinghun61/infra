@@ -5,7 +5,8 @@
 import {combineReducers} from 'redux';
 import {createSelector} from 'reselect';
 import {autolink} from 'autolink.js';
-import {fieldTypes, extractTypeForIssue} from 'elements/shared/issue-fields.js';
+import {fieldTypes, extractTypeForIssue,
+  fieldValuesToMap} from 'elements/shared/issue-fields.js';
 import {removePrefix, objectToMap} from 'elements/shared/helpers.js';
 import {issueRefToString} from 'elements/shared/converters.js';
 import {createReducer, createRequestReducer} from './redux-helpers.js';
@@ -518,21 +519,7 @@ export const sortedBlockedOn = createSelector(
 // We want to turn this into a map of fieldNames -> values.
 export const fieldValueMap = createSelector(
   fieldValues,
-  (fieldValues) => {
-    if (!fieldValues) return new Map();
-    const acc = new Map();
-    for (const v of fieldValues) {
-      if (!v || !v.fieldRef || !v.fieldRef.fieldName || !v.value) continue;
-      const key = fieldValueMapKey(v.fieldRef.fieldName,
-        v.phaseRef && v.phaseRef.phaseName);
-      if (acc.has(key)) {
-        acc.get(key).push(v.value);
-      } else {
-        acc.set(key, [v.value]);
-      }
-    }
-    return acc;
-  }
+  (fieldValues) => fieldValuesToMap(fieldValues)
 );
 
 // Get the list of full componentDefs for the viewed issue.

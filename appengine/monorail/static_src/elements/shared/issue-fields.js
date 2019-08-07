@@ -5,7 +5,13 @@
 import {relativeTime} from
   'elements/chops/chops-timestamp/chops-timestamp-helpers.js';
 import {labelRefsToStrings, issueRefsToStrings, componentRefsToStrings,
-  userRefsToDisplayNames, statusRefsToStrings} from './converters.js';
+  userRefsToDisplayNames, statusRefsToStrings, labelNameToLabelPrefix,
+} from './converters.js';
+import {removePrefix} from './helpers.js';
+import {fieldValueMapKey} from
+  'elements/issue-detail/metadata/shared/metadata-helpers.js';
+
+// TODO(zhangtiff): Merge this field with metadata-helpers.js.
 
 export const fieldTypes = Object.freeze({
   APPROVAL_TYPE: 'APPROVAL_TYPE',
@@ -54,6 +60,22 @@ export function extractTypeForIssue(fieldValues, labelRefs) {
   return;
 }
 
+export function fieldValuesToMap(fieldValues) {
+  if (!fieldValues) return new Map();
+  const acc = new Map();
+  for (const v of fieldValues) {
+    if (!v || !v.fieldRef || !v.fieldRef.fieldName || !v.value) continue;
+    const key = fieldValueMapKey(v.fieldRef.fieldName,
+      v.phaseRef && v.phaseRef.phaseName);
+    if (acc.has(key)) {
+      acc.get(key).push(v.value);
+    } else {
+      acc.set(key, [v.value]);
+    }
+  }
+  return acc;
+}
+
 // Helper function used for fields with only one value that can be unset.
 const wrapValueIfExists = (value) => value ? [value] : [];
 
@@ -65,23 +87,23 @@ const wrapValueIfExists = (value) => value ? [value] : [];
 const defaultIssueFields = Object.freeze([
   {
     fieldName: 'ID',
-    fieldType: fieldTypes.ISSUE_TYPE,
+    type: fieldTypes.ISSUE_TYPE,
     extractor: ({localId, projectName}) => [{localId, projectName}],
   }, {
     fieldName: 'Project',
-    fieldType: fieldTypes.PROJECT_TYPE,
+    type: fieldTypes.PROJECT_TYPE,
     extractor: (issue) => [issue.projectName],
   }, {
     fieldName: 'Attachments',
-    fieldType: fieldTypes.INT_TYPE,
+    type: fieldTypes.INT_TYPE,
     extractor: (issue) => [issue.attachmentCount || 0],
   }, {
     fieldName: 'AllLabels',
-    fieldType: fieldTypes.LABEL_TYPE,
+    type: fieldTypes.LABEL_TYPE,
     extractor: (issue) => issue.labelRefs || [],
   }, {
     fieldName: 'Blocked',
-    fieldType: fieldTypes.STR_TYPE,
+    type: fieldTypes.STR_TYPE,
     extractor: (issue) => {
       if (issue.blockedOnIssueRefs && issue.blockedOnIssueRefs.length) {
         return ['Yes'];
@@ -90,68 +112,68 @@ const defaultIssueFields = Object.freeze([
     },
   }, {
     fieldName: 'BlockedOn',
-    fieldType: fieldTypes.ISSUE_TYPE,
+    type: fieldTypes.ISSUE_TYPE,
     extractor: (issue) => issue.blockedOnIssueRefs || [],
   }, {
     fieldName: 'Blocking',
-    fieldType: fieldTypes.ISSUE_TYPE,
+    type: fieldTypes.ISSUE_TYPE,
     extractor: (issue) => issue.blockingIssueRefs || [],
   }, {
     fieldName: 'CC',
-    fieldType: fieldTypes.USER_TYPE,
+    type: fieldTypes.USER_TYPE,
     extractor: (issue) => issue.ccRefs || [],
   }, {
     fieldName: 'Closed',
-    fieldType: fieldTypes.TIME_TYPE,
+    type: fieldTypes.TIME_TYPE,
     extractor: (issue) => wrapValueIfExists(issue.closedTimestamp),
   }, {
     fieldName: 'Component',
-    fieldType: fieldTypes.COMPONENT_TYPE,
+    type: fieldTypes.COMPONENT_TYPE,
     extractor: (issue) => issue.componentRefs || [],
   }, { // TODO(zhangtiff): Add "ComponentModified" to v2 API.
     fieldName: 'ComponentModified',
-    fieldType: fieldTypes.TIME_TYPE,
+    type: fieldTypes.TIME_TYPE,
     extractor: (issue) => [],
   }, {
     fieldName: 'MergedInto',
-    fieldType: fieldTypes.ISSUE_TYPE,
-    extractor: (issue) => wrapValueIfExists(issue.mergedInto),
+    type: fieldTypes.ISSUE_TYPE,
+    extractor: (issue) => wrapValueIfExists(issue.mergedIntoIssueRef),
   }, {
     fieldName: 'Modified',
-    fieldType: fieldTypes.TIME_TYPE,
+    type: fieldTypes.TIME_TYPE,
     extractor: (issue) => wrapValueIfExists(issue.modifiedTimestamp),
   }, {
     fieldName: 'Reporter',
-    fieldType: fieldTypes.USER_TYPE,
+    type: fieldTypes.USER_TYPE,
     extractor: (issue) => [issue.reporterRef],
   }, {
     fieldName: 'Stars',
-    fieldType: fieldTypes.INT_TYPE,
+    type: fieldTypes.INT_TYPE,
     extractor: (issue) => [issue.starCount || 0],
   }, {
     fieldName: 'Status',
-    fieldType: fieldTypes.STATUS_TYPE,
+    type: fieldTypes.STATUS_TYPE,
     extractor: (issue) => wrapValueIfExists(issue.statusRef),
   }, { // TODO(zhangtiff): Add "StatusModified" to v2 API.
     fieldName: 'StatusModified',
-    fieldType: fieldTypes.TIME_TYPE,
+    type: fieldTypes.TIME_TYPE,
     extractor: (issue) => [],
   }, {
     fieldName: 'Summary',
-    fieldType: fieldTypes.STR_TYPE,
+    type: fieldTypes.STR_TYPE,
     extractor: (issue) => [issue.summary],
   }, {
     fieldName: 'Type',
-    fieldType: fieldTypes.ENUM_TYPE,
+    type: fieldTypes.ENUM_TYPE,
     extractor: (issue) => wrapValueIfExists(extractTypeForIssue(
       issue.fieldValues, issue.labelRefs)),
   }, {
     fieldName: 'Owner',
-    fieldType: fieldTypes.USER_TYPE,
+    type: fieldTypes.USER_TYPE,
     extractor: (issue) => wrapValueIfExists(issue.ownerRef),
   }, {
     fieldName: 'Opened',
-    fieldType: fieldTypes.TIME_TYPE,
+    type: fieldTypes.TIME_TYPE,
     extractor: (issue) => [issue.openedTimestamp],
   },
 ]);
@@ -162,13 +184,16 @@ defaultIssueFields.forEach((field) => {
   defaultIssueFieldMap.set(field.fieldName.toLowerCase(), field);
 });
 
-// TODO(zhangtiff): Integrate this logic with Redux selectors somehow.
-export const stringValuesForIssueField = (issue, fieldName, projectName) => {
-  const key = fieldName.toLowerCase();
-  if (defaultIssueFieldMap.has(key)) {
-    const bakedFieldDef = defaultIssueFieldMap.get(key);
+// TODO(zhangtiff): Integrate this logic with Redux selectors.
+export const stringValuesForIssueField = (issue, fieldName, projectName,
+  fieldDefMap = new Map(), labelPrefixFields = new Set()) => {
+  const fieldKey = fieldName.toLowerCase();
+
+  // Look at whether the field is a built in field first.
+  if (defaultIssueFieldMap.has(fieldKey)) {
+    const bakedFieldDef = defaultIssueFieldMap.get(fieldKey);
     const values = bakedFieldDef.extractor(issue);
-    switch (bakedFieldDef.fieldType) {
+    switch (bakedFieldDef.type) {
       case fieldTypes.ISSUE_TYPE:
         return issueRefsToStrings(values, projectName);
       case fieldTypes.COMPONENT_TYPE:
@@ -187,22 +212,47 @@ export const stringValuesForIssueField = (issue, fieldName, projectName) => {
     return values.map((value) => `${value}`);
   }
 
-  // TODO(zhangtiff): Handle custom fields and label options.
+  // Handle custom fields.
+  if (fieldDefMap.has(fieldKey)) {
+    const fieldValuesMap = fieldValuesToMap(issue.fieldValues);
+    if (fieldValuesMap.has(fieldKey)) {
+      return fieldValuesMap.get(fieldKey);
+    }
+  }
+
+  // Label options are last in precedence.
+  if (labelPrefixFields.has(fieldKey)) {
+    const matchingLabels = (issue.labelRefs || []).filter((labelRef) => {
+      const labelPrefixKey = labelNameToLabelPrefix(
+        labelRef.label).toLowerCase();
+      return fieldKey === labelPrefixKey;
+    });
+    const labelPrefix = fieldKey + '-';
+    return matchingLabels.map(
+      (labelRef) => removePrefix(labelRef.label, labelPrefix));
+  }
 
   return [];
 };
 
-export const getTypeForFieldName = (fieldName) => {
+// TODO(zhangtiff): Integrate this logic with Redux selectors.
+export const getTypeForFieldName = (fieldName, fieldDefMap = new Map()) => {
   const key = fieldName.toLowerCase();
 
-  // If the field is a built in field.
+  // If the field is a built in field. Default fields have precedence
+  // over custom fields.
   if (defaultIssueFieldMap.has(key)) {
     return defaultIssueFieldMap.get(key);
   }
 
-  // TODO(zhangtiff): Add type retrieval for custom fields and label options.
+  // If the field is a custom field. Custom fields have precedence
+  // over label prefixes.
+  if (fieldDefMap.has(key)) {
+    return fieldDefMap.get(key).fieldRef.type;
+  }
 
-  return;
+  // Default to STR_TYPE, including for label fields.
+  return fieldTypes.STR_TYPE;
 };
 
 // TODO(zhangtiff): Implement hotlist specific fields: Rank, Added, Adder.

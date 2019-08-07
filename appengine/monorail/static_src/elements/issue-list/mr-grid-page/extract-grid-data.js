@@ -31,11 +31,13 @@ const SORTABLE_FIELD_TYPES = new Set([
   fieldTypes.DATE_TYPE,
   fieldTypes.ENUM_TYPE,
   fieldTypes.USER_TYPE,
+  fieldTypes.INT_TYPE,
 ]);
 
-// TODO(zhangtiff): add label options to this.
-export const getGridFieldSet = (fieldDefs = []) => {
-  const set = new Set(DEFAULT_GRID_FIELD_NAMES);
+// Get an underlying case senstitive version of the grid field set to be
+// used for cases where case needs to be preserved.
+const _getGridFieldSet = (fieldDefs = [], labelFields = []) => {
+  const set = new Set([...DEFAULT_GRID_FIELD_NAMES, ...labelFields]);
   fieldDefs.forEach((fd) => {
     if (SORTABLE_FIELD_TYPES.has(fd.fieldRef.type)) {
       set.add(fd.fieldRef.fieldName);
@@ -44,8 +46,18 @@ export const getGridFieldSet = (fieldDefs = []) => {
   return set;
 };
 
-export const getAvailableGridFields = (fieldDefs = []) => {
-  const list = [...getGridFieldSet(fieldDefs)];
+// Publicly available version of the grid field set uses lowercase keys.
+export const getGridFieldSet = (fieldDefs = [], labelFields = []) => {
+  const caseSensitiveSet = _getGridFieldSet(fieldDefs, labelFields);
+  const newSet = new Set();
+  caseSensitiveSet.forEach((field) => {
+    newSet.add(field.toLowerCase());
+  });
+  return newSet;
+};
+
+export const getAvailableGridFields = (fieldDefs = [], labelFields = []) => {
+  const list = [..._getGridFieldSet(fieldDefs, labelFields)];
   list.sort();
 
   list.unshift('None');
@@ -106,6 +118,9 @@ function sortHeadings(headingsSet, attribute) {
 
 function addValuesToHeadings(headingsSet, valuesAdded) {
   if (!valuesAdded.length) {
+    // Make sure issues are sorted into the "empty" category if
+    // they have no matching values.
+    valuesAdded.push(EMPTY_FIELD_VALUE);
     headingsSet.add(EMPTY_FIELD_VALUE);
   }
   for (const value of valuesAdded) {
@@ -120,18 +135,15 @@ export function makeGridCellKey(x, y) {
 }
 
 // Outer function that runs each custom extractor function
-export function extractGridData(issues, xField = '', yField = '') {
+export function extractGridData(issues, xField = '', yField = '',
+  projectName = '', fieldDefMap = new Map(), labelPrefixSet = new Set()) {
   const gridData = {
     xHeadings: [],
     yHeadings: [],
     sortedIssues: new Map(),
   };
 
-  // TODO(zhangtiff): Make a case insenstitive version of the grid fields.
-  const gridFields = new Set();
-  getGridFieldSet().forEach((field) => {
-    gridFields.add(field.toLowerCase());
-  });
+  const gridFields = getGridFieldSet([...fieldDefMap.values()], labelPrefixSet);
 
   const xHeadingsSet = new Set();
   const yHeadingsSet = new Set();
@@ -154,12 +166,14 @@ export function extractGridData(issues, xField = '', yField = '') {
 
   for (const issue of issues) {
     if (hasX) {
-      xKeysAdded = stringValuesForIssueField(issue, xField);
+      xKeysAdded = stringValuesForIssueField(issue, xField,
+        projectName, fieldDefMap, labelPrefixSet);
       addValuesToHeadings(xHeadingsSet, xKeysAdded);
     }
 
     if (hasY) {
-      yKeysAdded = stringValuesForIssueField(issue, yField);
+      yKeysAdded = stringValuesForIssueField(issue, yField,
+        projectName, fieldDefMap, labelPrefixSet);
       addValuesToHeadings(yHeadingsSet, yKeysAdded);
     }
 

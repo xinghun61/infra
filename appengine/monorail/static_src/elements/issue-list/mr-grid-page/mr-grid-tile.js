@@ -9,28 +9,21 @@ import '../../framework/mr-star-button/mr-star-button.js';
 export class MrGridTile extends LitElement {
   render() {
     return html`
-      <div class="tile">
-      <div class="in-line-header">
+      <div class="tile-header">
         <mr-star-button
           .issueRef=${this.issueRef}
         ></mr-star-button>
-        <a href=${this.issue.localId ?
-            issueRefToUrl(this.issue, this.queryParams) : ''}>
-            ${this.issue.localId ? html`
-              <div class="ids">
-                ${this.issue.localId}
-              </div>` : html`<div class="ids"></div>
-          `}
+        <a href=${issueRefToUrl(this.issue, this.queryParams)}>
+          <div class="issue-id">
+            ${this.issue.localId}
+          </div>
         </a>
-          ${this.issue.statusRef ? html`
-            <div class="status">
-              ${this.issue.statusRef.status}
-            </div>` : html`<div class="status"></div>
-          `}
-      </div>
-        <div class="summary">
-          ${this.issue.summary || ''}
+        <div class="status">
+          ${this.issue.statusRef ? this.issue.statusRef.status : ''}
         </div>
+      </div>
+      <div class="summary">
+        ${this.issue.summary || ''}
       </div>
     `;
   }
@@ -58,7 +51,8 @@ export class MrGridTile extends LitElement {
 
   static get styles() {
     return css`
-      .tile {
+      :host {
+        display: block;
         border: 2px solid #f1f1f1;
         border-radius: 6px;
         padding: 1px;
@@ -70,7 +64,7 @@ export class MrGridTile extends LitElement {
         table-layout: fixed;
         overflow: hidden;
       }
-      .in-line-header {
+      .tile-header {
         display: flex;
       }
       a:link, a:visited {
@@ -83,7 +77,7 @@ export class MrGridTile extends LitElement {
         display: inline-block;
         height: 1.5em;
       }
-      .ids {
+      .issue-id {
         font-size: var(--chops-large-font-size);
         font-weight: 500;
         display: inline-block;

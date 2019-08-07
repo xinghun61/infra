@@ -443,7 +443,7 @@ describe('mr-edit-metadata', () => {
   });
 
   it('changing custom fields produces delta', async () => {
-    element.fieldValueMap = new Map([['fakeField', ['prev value']]]);
+    element.fieldValueMap = new Map([['fakefield', ['prev value']]]);
     element.fieldDefs = [
       {
         fieldRef: {

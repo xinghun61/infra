@@ -44,13 +44,13 @@ describe('mr-grid-tile', () => {
     await element.updateComplete;
     const tileStatus =
       element.shadowRoot.querySelector('.status').textContent;
-    assert.equal(tileStatus, '');
+    assert.equal(tileStatus.trim(), '');
   });
 
   it('id displays', async () => {
     await element.updateComplete;
     const tileId =
-      element.shadowRoot.querySelector('.ids').textContent;
+      element.shadowRoot.querySelector('.issue-id').textContent;
     assert.equal(tileId.trim(), '2345');
   });
 });
