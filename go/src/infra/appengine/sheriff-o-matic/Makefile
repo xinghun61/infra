@@ -62,7 +62,7 @@ deploy_staging: build getversion_staging
 devserver:
 	dev_appserver.py frontend/app.yaml backend/app.yaml
 
-# The -remote commands expose the app on 0.0.0.0, so that it is externally
+# The -remote commands expose the app so that it is externally
 # accessible by hostname:port, rather than just localhost:port.
 devserver_remote:
-	dev_appserver.py --host 0.0.0.0 frontend/app.yaml backend/app.yaml
+	dev_appserver.py --host $$HOSTNAME frontend/app.yaml backend/app.yaml
