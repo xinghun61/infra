@@ -3,6 +3,7 @@
 // found in the LICENSE file.
 
 import {assert} from 'chai';
+import sinon from 'sinon';
 import {MrGridPage} from './mr-grid-page.js';
 
 let element;
@@ -38,6 +39,18 @@ describe('mr-grid-page', () => {
     const error =
       element.shadowRoot.querySelector('.error-message').textContent;
     assert.equal(error.trim(), 'Your search did not generate any results.');
+  });
+
+  it('calls to fetchIssueList made when q changes', async () => {
+    await element.updateComplete;
+    const issueListCall = sinon.stub(element, '_fetchMatchingIssues');
+    element.queryParams = {x: 'Blocked'};
+    await element.updateComplete;
+    sinon.assert.notCalled(issueListCall);
+
+    element.queryParams = {q: 'cc:me'};
+    await element.updateComplete;
+    sinon.assert.calledOnce(issueListCall);
   });
 });
 

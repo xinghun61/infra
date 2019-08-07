@@ -71,15 +71,20 @@ export class MrGridPage extends connectStore(LitElement) {
     // TODO(zosha): Abort sets of calls to ListIssues when
     // queryParams.q is changed.
     if (changedProperties.has('projectName')) {
-      store.dispatch(issue.fetchIssueList(this.queryParams,
-        this.projectName, {maxItems: 500}, 12));
-    } else if (changedProperties.has('queryParams').q) {
+      this._fetchMatchingIssues();
+    } else if (changedProperties.has('queryParams')) {
       const oldParams = changedProperties.get('queryParams');
-      if (oldParams.q !== this.queryParams.q) {
-        store.dispatch(issue.fetchIssueList(this.queryParams,
-          this.projectName, {maxItems: 500}, 12));
+      const oldQ = oldParams ? oldParams.q : '';
+      const newQ = this.queryParams.q;
+      if (oldQ !== newQ) {
+        this._fetchMatchingIssues();
       }
     }
+  }
+
+  _fetchMatchingIssues() {
+    store.dispatch(issue.fetchIssueList(this.queryParams,
+      this.projectName, {maxItems: 500}, 12));
   }
 
   stateChanged(state) {
