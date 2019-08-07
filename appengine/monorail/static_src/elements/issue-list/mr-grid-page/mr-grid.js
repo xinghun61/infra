@@ -69,14 +69,13 @@ export class MrGrid extends connectStore(LitElement) {
           </a>
         `;
       }
-    } else if (cellMode == 'tiles') {
+    } else if (cellMode === 'tiles') {
       return html`
         ${this.groupedIssues.get(cellHeading).map((issue) => html`
           <mr-grid-tile
             .issue=${issue}
             .queryParams=${this.queryParams}
-          ></mr-grid-tile>
-        `)}
+          ></mr-grid-tile>`)}
       `;
     }
   }

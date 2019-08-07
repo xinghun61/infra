@@ -10,6 +10,7 @@ import Mousetrap from 'mousetrap';
 import {store, connectStore} from 'elements/reducers/base.js';
 import * as issue from 'elements/reducers/issue.js';
 import 'elements/chops/chops-dialog/chops-dialog.js';
+import {issueRefToString} from '../../shared/converters';
 
 
 const SHORTCUT_DOC_GROUPS = [
@@ -192,7 +193,13 @@ export class MrKeystrokes extends connectStore(LitElement) {
 
   stateChanged(state) {
     this.issuePermissions = issue.permissions(state);
-    this._isStarred = issue.isStarred(state);
+    // Create an issue ref to fetch whether it's starred
+    const issueRef = {
+      projectName: this.projectName,
+      localId: this.issueId,
+    };
+    const starredIssues = issue.starredIssues(state);
+    this._isStarred = starredIssues.has(issueRefToString(issueRef));
     this._fetchingIsStarred = issue.requests(state).fetchIsStarred.requesting;
     this._starringIssue = issue.requests(state).star.requesting;
   }

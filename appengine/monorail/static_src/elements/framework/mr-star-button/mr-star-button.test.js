@@ -4,6 +4,7 @@
 
 import {assert} from 'chai';
 import {MrStarButton} from './mr-star-button.js';
+import {issueRefToString} from '../../shared/converters.js';
 import sinon from 'sinon';
 
 
@@ -68,15 +69,17 @@ describe('mr-star-button', () => {
     assert.isTrue(star.disabled);
   });
 
-  it('_isStarred changes displayed icon', async () => {
-    element._isStarred = true;
+  it('_starredIssues changes displayed icon', async () => {
+    element.issueRef = {projectName: 'proj', localId: 1};
+
+    element._starredIssues = new Set([issueRefToString(element.issueRef)]);
 
     await element.updateComplete;
 
     const star = element.shadowRoot.querySelector('button');
     assert.equal(star.textContent.trim(), 'star');
 
-    element._isStarred = false;
+    element._starredIssues = new Set();
 
     await element.updateComplete;
 

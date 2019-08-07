@@ -6,6 +6,7 @@ import {LitElement, html, css} from 'lit-element';
 import {connectStore, store} from 'elements/reducers/base.js';
 import * as user from 'elements/reducers/user.js';
 import * as issue from 'elements/reducers/issue.js';
+import {issueRefToString} from '../../shared/converters';
 
 /**
  * `<mr-star-button>`
@@ -49,7 +50,7 @@ export class MrStarButton extends connectStore(LitElement) {
         @click=${this.toggleStar}
         ?disabled=${!this._canStar}
       >
-        ${this._isStarred ? html`
+        ${this._starredIssues.has(issueRefToString(this.issueRef)) ? html`
           <i class="material-icons starred" title="You've starred this issue">
             star
           </i>
@@ -72,9 +73,9 @@ export class MrStarButton extends connectStore(LitElement) {
        */
       issueRef: {type: Object},
       /**
-       * Whether the issue is starred.
+       * Whether the issue is starred (used for accessing easily).
        */
-      _isStarred: {type: Boolean},
+      _starredIssues: {type: Set},
       /**
        * Whether the issue's star state is being fetched. This is taken from
        * the component's parent, which is expected to handle fetching initial
@@ -98,11 +99,10 @@ export class MrStarButton extends connectStore(LitElement) {
   stateChanged(state) {
     const currentUser = user.user(state);
     this._isLoggedIn = currentUser && currentUser.userId;
-
     // TODO(zhangtiff): Rework Redux to store separate requests for different
     // issues being starred.
     this._starringIssue = issue.requests(state).star.requesting;
-    this._isStarred = issue.isStarred(state);
+    this._starredIssues = issue.starredIssues(state);
     this._fetchingIsStarred = issue.requests(state).fetchIsStarred.requesting;
   }
 
@@ -113,9 +113,8 @@ export class MrStarButton extends connectStore(LitElement) {
 
   toggleStar() {
     if (!this._canStar) return;
-
-    const newIsStarred = !this._isStarred;
-
+    const newIsStarred = !this._starredIssues.has(
+      issueRefToString(this.issueRef));
     // This component assumes that the user of this component is connected to
     // Redux and will update their star state based on this.
     store.dispatch(issue.star(this.issueRef, newIsStarred));

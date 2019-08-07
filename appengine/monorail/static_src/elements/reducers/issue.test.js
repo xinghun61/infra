@@ -6,9 +6,11 @@ import {assert} from 'chai';
 import sinon from 'sinon';
 import * as issue from './issue.js';
 import {fieldTypes} from 'elements/shared/issue-fields.js';
+import {issueToIssueRef} from 'elements/shared/converters.js';
 import {prpcClient} from 'prpc-client-instance.js';
 
 let prpcCall;
+let dispatch;
 
 describe('issue', () => {
   it('issue', () => {
@@ -483,6 +485,133 @@ describe('issue', () => {
           totalResults: 6,
         },
       }));
+    });
+  });
+
+  describe('starring issues', () => {
+    describe('reducers', () => {
+      it('FETCH_IS_STARRED_SUCCESS updates the starredIssues object', () => {
+        const state = {};
+        const newState = issue.starredIssuesReducer(state,
+          {
+            type: issue.FETCH_IS_STARRED_SUCCESS,
+            starred: false,
+            ref: {
+              issueRef: {
+                projectName: 'proj',
+                localId: 1,
+              },
+            },
+          }
+        );
+        assert.deepEqual(newState, {'proj:1': false});
+      });
+
+      it('FETCH_ISSUES_STARRED_SUCCESS updates the starredIssues object',
+        () => {
+          const state = {};
+          const starredIssues = ['proj:1', 'proj:2'];
+          const newState = issue.starredIssuesReducer(state,
+            {type: issue.FETCH_ISSUES_STARRED_SUCCESS, starredIssues}
+          );
+          assert.deepEqual(newState, {'proj:1': true, 'proj:2': true});
+        });
+
+      it('STAR_SUCCESS updates the starredIssues object', () => {
+        const state = {'proj:1': true, 'proj:2': false};
+        const newState = issue.starredIssuesReducer(state,
+          {type: issue.STAR_SUCCESS, starred: true, ref: 'proj:2'});
+        assert.deepEqual(newState, {'proj:1': true, 'proj:2': true});
+      });
+    });
+
+    describe('selectors', () => {
+      it('starredIssues', () => {
+        const state = {issue:
+          {starredIssues: {'proj:1': true, 'proj:2': false}}};
+        assert.deepEqual(issue.starredIssues(state), new Set(['proj:1']));
+      });
+    });
+
+    describe('action creators', () => {
+      beforeEach(() => {
+        prpcCall = sinon.stub(prpcClient, 'call');
+
+        dispatch = sinon.stub();
+      });
+
+      afterEach(() => {
+        prpcCall.restore();
+      });
+
+      it('fetching if an issue is starred', async () => {
+        const message = {projectName: 'proj', localId: 1};
+        const action = issue.fetchIsStarred(message);
+
+        prpcCall.returns(Promise.resolve({isStarred: true}));
+
+        await action(dispatch);
+
+        sinon.assert.calledWith(dispatch, {type: issue.FETCH_IS_STARRED_START});
+
+        sinon.assert.calledWith(
+          prpcClient.call, 'monorail.Issues',
+          'IsIssueStarred', message
+        );
+
+        sinon.assert.calledWith(dispatch, {
+          type: issue.FETCH_IS_STARRED_SUCCESS,
+          starred: true,
+          ref: message,
+        });
+      });
+
+      it('fetching starred issues', async () => {
+        const returnedIssueRef = {projectName: 'proj', localId: 1};
+        const starredIssueRefs = [returnedIssueRef];
+        const action = issue.fetchStarredIssues();
+
+        prpcCall.returns(Promise.resolve({starredIssueRefs}));
+
+        await action(dispatch);
+
+        sinon.assert.calledWith(dispatch, {type: 'FETCH_ISSUES_STARRED_START'});
+
+        sinon.assert.calledWith(
+          prpcClient.call, 'monorail.Issues',
+          'ListStarredIssues', {}
+        );
+
+        sinon.assert.calledWith(dispatch, {
+          type: issue.FETCH_ISSUES_STARRED_SUCCESS,
+          starredIssues: ['proj:1'],
+        });
+      });
+
+      it('star', async () => {
+        const testIssue = {projectName: 'proj', localId: 1, starCount: 1};
+        const issueRef = issueToIssueRef(testIssue);
+        const action = issue.star(issueRef, false);
+
+        prpcCall.returns(Promise.resolve(testIssue));
+
+        await action(dispatch);
+
+        sinon.assert.calledWith(dispatch, {type: issue.STAR_START});
+
+        sinon.assert.calledWith(
+          prpcClient.call,
+          'monorail.Issues', 'StarIssue',
+          {issueRef, starred: false}
+        );
+
+        sinon.assert.calledWith(dispatch, {
+          type: issue.STAR_SUCCESS,
+          starCount: 1,
+          ref: 'proj:1',
+          starred: false,
+        });
+      });
     });
   });
 });

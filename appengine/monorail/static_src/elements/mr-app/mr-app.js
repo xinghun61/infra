@@ -84,6 +84,7 @@ export class MrApp extends connectStore(LitElement) {
         <mr-grid-page
           .projectName=${this.projectName}
           .queryParams=${this.queryParams}
+          .userDisplayName=${this.userDisplayName}
         ></mr-grid-page>
       `;
     } else if (this.page === 'list') {

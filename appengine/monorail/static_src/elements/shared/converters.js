@@ -127,6 +127,13 @@ export function issueRefToString(ref, projectName) {
   return `${ref.projectName}:${ref.localId}`;
 }
 
+export function issueToIssueRef(issue) {
+  if (!issue) return {};
+
+  return {localId: issue.localId,
+    projectName: issue.projectName};
+}
+
 export function issueRefToUrl(ref, queryParams = {}) {
   if (!ref) return '';
 

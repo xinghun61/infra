@@ -700,7 +700,9 @@ export class MrEditMetadata extends connectStore(LitElement) {
     this.projectName = issue.issueRef(state).projectName;
     this.issuePermissions = issue.permissions(state);
     this.optionsPerEnumField = project.optionsPerEnumField(state);
-    this.isStarred = issue.isStarred(state);
+    // Access boolean value from allStarredIssues
+    const starredIssues = issue.starredIssues(state);
+    this.isStarred = starredIssues.has(issueRefToString(this.issueRef));
   }
 
   disconnectedCallback() {

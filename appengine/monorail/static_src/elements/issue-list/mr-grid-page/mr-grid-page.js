@@ -59,6 +59,9 @@ export class MrGridPage extends connectStore(LitElement) {
   };
 
   updated(changedProperties) {
+    if (changedProperties.has('userDisplayName')) {
+      store.dispatch(issue.fetchStarredIssues());
+    }
     // TODO(zosha): Abort sets of calls to ListIssues when
     // queryParams.q is changed.
     if (changedProperties.has('projectName')) {

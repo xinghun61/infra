@@ -8,7 +8,7 @@ import {displayNameToUserRef, labelStringToRef, labelRefToString,
   componentStringToRef, componentRefToString, componentRefsToStrings,
   issueStringToRef, issueStringToBlockingRef, issueRefToString,
   issueRefToUrl, fieldNameToLabelPrefix, commentListToDescriptionList,
-  valueToFieldValue,
+  valueToFieldValue, issueToIssueRef,
 } from './converters.js';
 
 describe('displayNameToUserRef', () => {
@@ -160,6 +160,15 @@ describe('issueRefToString', () => {
       'b/123456',
       issueRefToString({extIdentifier: 'b/123456'}, 'proj')
     );
+  });
+});
+
+describe('issueToIssueRef', () => {
+  it('creates ref', () => {
+    const issue = {'localId': 1, 'projectName': 'proj', 'starCount': 1};
+    const expectedRef = {'localId': 1,
+      'projectName': 'proj'};
+    assert.deepEqual(issueToIssueRef(issue), expectedRef);
   });
 });
 
