@@ -23,6 +23,20 @@ from libs import analysis_status
 from libs import time_util
 from services import git
 
+# Max number a rerun build on one commit can be tried.
+_MAX_RERUN_BUILDS_TRIES = 3
+
+# Build statuses that indicate a build is usable since it's
+# 1. just created,
+# 2. still running,
+# 3. ended with deterministic results.
+_EXPECTED_BUILD_STATUSES = [
+    common_pb2.SCHEDULED,
+    common_pb2.STARTED,
+    common_pb2.FAILURE,
+    common_pb2.SUCCESS,
+]
+
 
 def _UpdateToEarlierBuild(failure_info, build2):
   """Compares builds by their ids.
@@ -1057,6 +1071,14 @@ class AnalysisAPI(object):
     # groups along with their regression range.
     return self._GroupFailuresByRegressionRange(failure_ranges)
 
+  def _GetUsableBuild(self, existing_builds):
+    """Checks if existing rerun builds can be used."""
+    for rerun_build in existing_builds:
+      if rerun_build.status in _EXPECTED_BUILD_STATUSES:
+        # If any of the rerun builds is running fine, Findit can use it.
+        return rerun_build
+    return None
+
   # pylint: disable=E1120
   @ndb.transactional(xg=True)
   def TriggerRerunBuild(self, context, analyzed_build_id, analysis_key,
@@ -1066,7 +1088,7 @@ class AnalysisAPI(object):
     Creates and saves a rerun build entity if a new build is triggered.
 
     Checking for existing build and saving new build are in one transaction to
-    make sure no duplicated rerun builds can be triggered.
+    make sure no unnecessary duplicated rerun builds can be triggered.
 
     Args:
       context (findit_v2.services.context.Context): Scope of the analysis.
@@ -1080,29 +1102,33 @@ class AnalysisAPI(object):
         'step': ['test1', ...], # for test failures
         ...
       }
+
+    Returns:
+      str: error message of triggering the rerun build.
     """
-    # Check if there's a running build on that commit already.
+    # Checks if there're rerun builds on that commit already.
     existing_builds = self._GetExistingRerunBuild(analysis_key, rerun_commit)
-    if existing_builds:
-      # TODO(crbug/957760): Re-trigger the build if the existing one(s) ends
-      # with unexpected failures.
+    if existing_builds and self._GetUsableBuild(existing_builds):
       logging.debug('Found existing rerun build for analysis %s on commit %d.',
                     analysis_key.urlsafe(), rerun_commit.commit_position)
-      return
+      return None
 
-    rerun_tags = self._GetRerunBuildTags(analyzed_build_id)
+    if len(existing_builds) >= _MAX_RERUN_BUILDS_TRIES:
+      # Number of rerun builds on the same commit has exceeded limit, should not
+      # trigger more builds.
+      return 'Number of rerun builds on commit {} has exceeded limit.'.format(
+          rerun_commit.gitiles_id)
 
     luci_project = context.luci_project_name
     project_api = projects.GetProjectAPI(luci_project)
     assert project_api, 'Unsupported project {}'.format(luci_project)
     input_properties = self._GetRerunBuildInputProperties(
         project_api, atomic_failures)
-    if not input_properties:
-      logging.error(
-          'Failed to get input properties to trigger rerun build'
-          'for build %d.', analyzed_build_id)
-      return
+    if input_properties is None:
+      return ('Failed to get input properties to trigger rerun build'
+              'for build {}.'.format(analyzed_build_id))
 
+    rerun_tags = self._GetRerunBuildTags(analyzed_build_id)
     gitiles_commit_pb = common_pb2.GitilesCommit(
         project=rerun_commit.gitiles_project,
         host=rerun_commit.gitiles_host,
@@ -1112,13 +1138,14 @@ class AnalysisAPI(object):
         rerun_builder, gitiles_commit_pb, input_properties, tags=rerun_tags)
 
     if not new_build:
-      logging.error(
-          'Failed to trigger rerun build for %s in build %d,'
-          'on commit %s', atomic_failures, analyzed_build_id,
-          rerun_commit.gitiles_id)
-      return
-    self._CreateRerunBuild(rerun_builder, new_build, rerun_commit,
-                           analysis_key).put()
+      return ('Failed to trigger rerun build for {} in build {},'
+              'on commit {}'.format(atomic_failures, analyzed_build_id,
+                                    rerun_commit.gitiles_id))
+
+    rerun_build = self._CreateRerunBuild(rerun_builder, new_build, rerun_commit,
+                                         analysis_key)
+    rerun_build.put()
+    return None
 
   def _SaveCulpritInFailures(self, failure_entities, culprit_commit):
     """Saves the culprit to failure entities.
@@ -1151,6 +1178,10 @@ class AnalysisAPI(object):
         analyzed_build_id (int): Build id of the build that's being analyzed.
     """
     analysis = self._GetFailureAnalysis(analyzed_build_id)
+    assert not analysis.completed, (
+        'RerunBasedAnalysis is called for a completed analysis '
+        'for build {}.'.format(analyzed_build_id))
+
     rerun_builder = luci_build.ParseBuilderId(analysis.rerun_builder_id)
 
     # Gets a map from commit_position to gitiles_ids (git_hash/ revision) for
@@ -1162,8 +1193,12 @@ class AnalysisAPI(object):
         analysis.last_passed_commit.commit_position,
         repo_url=git.GetRepoUrlFromContext(context),
         ref=context.gitiles_ref)
-    analysis_completed = True
-    analysis_error = None
+
+    # Flag to check if analysis completes successfully.
+    # True if all failures have culprits, False otherwise.
+    all_culprits_found = True
+    # List of error messages for each failure_range.
+    analysis_errors = []
 
     # Gets updated regression range for the targets based on rerun build
     # results. The format is like:
@@ -1192,30 +1227,41 @@ class AnalysisAPI(object):
       if culprit_commit:
         # Analysis for these failures has run to the end.
         self._SaveCulpritInFailures(failures, culprit_commit)
+        analysis_errors.append(None)
         continue
 
       # No culprit found for these failures, analysis continues.
-      analysis_completed = False
+      all_culprits_found = False
       if not rerun_commit:
         # TODO (crbug.com/957760): Properly recover failed analysis.
         analysis_error = (
             'Failed to find the next commit to run from the range {}..{}'
             .format(last_passed_commit.commit_position,
                     first_failed_commit.commit_position))
+        analysis_errors.append(analysis_error)
         continue
 
       # Triggers a rerun build unless there's an existing one.
       # It's possible if the existing one is still running so that Findit
       # doesn't know that build's result.
-      self.TriggerRerunBuild(context, analyzed_build_id, analysis.key,
-                             rerun_builder, rerun_commit,
-                             self._GetFailuresToRerun(failures))
+      analysis_error = self.TriggerRerunBuild(
+          context, analyzed_build_id, analysis.key, rerun_builder, rerun_commit,
+          self._GetFailuresToRerun(failures))
 
-    analysis.end_time = time_util.GetUTCNow()
-    analysis.status = (
-        analysis_status.COMPLETED
-        if analysis_completed else analysis_status.RUNNING)
-    analysis.error = analysis_error if analysis_error else analysis.error
+      analysis_errors.append(analysis_error)
+
+    analysis.start_time = analysis.start_time or time_util.GetUTCNow()
+    if all(analysis_errors):
+      analysis.status = analysis_status.ERROR
+      analysis.end_time = time_util.GetUTCNow()
+    elif all_culprits_found:
+      analysis.status = analysis_status.COMPLETED
+      analysis.end_time = time_util.GetUTCNow()
+    else:
+      analysis.status = analysis_status.RUNNING
+
+    error_str = '\n'.join([e for e in analysis_errors if e])
+    analysis.error = error_str if error_str else analysis.error
     analysis.put()
 
   def GetCulpritsForFailures(self, failures):

@@ -456,14 +456,14 @@ class AnalysisAPITest(wf_testcase.TestCase):
             'failures': {
                 frozenset(['target1', 'target2']): {
                     'properties': {
-                        'rule': 'CXX'
+                        'rule': 'CXX',
                     },
                     'first_failed_build': self.build_info,
                     'last_passed_build': None,
                 },
                 frozenset(['target3']): {
                     'properties': {
-                        'rule': 'ACTION'
+                        'rule': 'ACTION',
                     },
                     'first_failed_build': self.build_info,
                     'last_passed_build': None,
@@ -489,7 +489,7 @@ class AnalysisAPITest(wf_testcase.TestCase):
                 },
                 frozenset(['target3']): {
                     'properties': {
-                        'rule': 'ACTION'
+                        'rule': 'ACTION',
                     },
                     'first_failed_build': build_121_info,
                     'last_passed_build': build_120_info,
@@ -582,7 +582,7 @@ class AnalysisAPITest(wf_testcase.TestCase):
                 'last_passed_build': build_122_info,
             },
         },
-        'last_passed_build': build_122_info
+        'last_passed_build': build_122_info,
     }
 
     self.assertEqual(
@@ -660,7 +660,7 @@ class AnalysisAPITest(wf_testcase.TestCase):
                 'last_passed_build': build_122_info,
             },
         },
-        'last_passed_build': build_122_info
+        'last_passed_build': build_122_info,
     }
 
     self.assertEqual(
@@ -693,21 +693,21 @@ class AnalysisAPITest(wf_testcase.TestCase):
             'failures': {
                 frozenset(['target1', 'target2']): {
                     'properties': {
-                        'rule': 'CXX'
+                        'rule': 'CXX',
                     },
                     'first_failed_build': self.build_info,
                     'last_passed_build': build_122_info,
                 },
                 frozenset(['target3']): {
                     'properties': {
-                        'rule': 'ACTION'
+                        'rule': 'ACTION',
                     },
                     'first_failed_build': build_122_info,
                     'last_passed_build': None,
                 },
                 frozenset(['target4']): {
                     'properties': {
-                        'rule': 'ACTION'
+                        'rule': 'ACTION',
                     },
                     'first_failed_build': self.build_info,
                     'last_passed_build': build_121_info,
@@ -725,7 +725,7 @@ class AnalysisAPITest(wf_testcase.TestCase):
                 'last_passed_build': build_121_info,
             },
         },
-        'last_passed_build': build_121_info
+        'last_passed_build': build_121_info,
     }
     self.assertEqual(
         expected_res,
@@ -829,7 +829,7 @@ class AnalysisAPITest(wf_testcase.TestCase):
                 frozenset(['target1', 'target2']): {
                     'properties': {
                         'properties': {
-                            'rule': 'CXX'
+                            'rule': 'CXX',
                         },
                     },
                     'first_failed_build': self.build_info,
@@ -838,7 +838,7 @@ class AnalysisAPITest(wf_testcase.TestCase):
                 frozenset(['target3']): {
                     'properties': {
                         'properties': {
-                            'rule': 'ACTION'
+                            'rule': 'ACTION',
                         },
                     },
                     'first_failed_build': self.build_info,
@@ -891,7 +891,7 @@ class AnalysisAPITest(wf_testcase.TestCase):
                 frozenset(['target1', 'target2']): {
                     'properties': {
                         'properties': {
-                            'rule': 'CXX'
+                            'rule': 'CXX',
                         },
                     },
                     'first_failed_build': self.build_info,
@@ -900,7 +900,7 @@ class AnalysisAPITest(wf_testcase.TestCase):
                 frozenset(['target3']): {
                     'properties': {
                         'properties': {
-                            'rule': 'ACTION'
+                            'rule': 'ACTION',
                         },
                     },
                     'first_failed_build': self.build_info,
@@ -922,7 +922,7 @@ class AnalysisAPITest(wf_testcase.TestCase):
                 'last_passed_build': build_120_info,
             },
         },
-        'last_passed_build': build_120_info
+        'last_passed_build': build_120_info,
     }
     self.analysis_api.SaveFailureAnalysis(ChromiumProjectAPI(), self.context,
                                           self.build,
@@ -972,7 +972,7 @@ class AnalysisAPITest(wf_testcase.TestCase):
             'compile': {
                 'atomic_failures': [
                     frozenset(['target1']),
-                    frozenset(['target2'])
+                    frozenset(['target2']),
                 ],
                 'last_passed_build':
                     build_121_info,
@@ -988,7 +988,7 @@ class AnalysisAPITest(wf_testcase.TestCase):
                 frozenset(['target1']): {
                     'properties': {
                         'properties': {
-                            'rule': 'CXX'
+                            'rule': 'CXX',
                         },
                     },
                     'first_failed_build': self.build_info,
@@ -997,7 +997,7 @@ class AnalysisAPITest(wf_testcase.TestCase):
                 frozenset(['target2']): {
                     'properties': {
                         'properties': {
-                            'rule': 'ACTION'
+                            'rule': 'ACTION',
                         },
                     },
                     'first_failed_build': self.build_info,
@@ -1059,7 +1059,7 @@ class AnalysisAPITest(wf_testcase.TestCase):
             'compile': {
                 'atomic_failures': [
                     frozenset(['target1']),
-                    frozenset(['target2'])
+                    frozenset(['target2']),
                 ],
                 'last_passed_build':
                     build_121_info,
@@ -1100,7 +1100,7 @@ class AnalysisAPITest(wf_testcase.TestCase):
             'compile': {
                 'atomic_failures': [
                     frozenset(['target1']),
-                    frozenset(['target2'])
+                    frozenset(['target2']),
                 ],
                 'last_passed_build':
                     build_121_info,
@@ -1154,35 +1154,43 @@ class AnalysisAPITest(wf_testcase.TestCase):
     self.assertIsNone(culprit_commit)
 
   def testUpdateFailureRegressionRanges(self):
-    rerun_builds_info = [(self.commits[5], {}),
-                         (self.commits[7], {
-                             'compile': ['a.o']
-                         }), (self.commits[6], {
-                             'compile': ['a.o']
-                         }), (self.commits[8], {
-                             'compile': ['b.o']
-                         })]
-    failures_with_range = [{
-        'failure': self.compile_failure_1,
-        'last_passed_commit': self.commits[0],
-        'first_failed_commit': self.commits[10],
-    },
-                           {
-                               'failure': self.compile_failure_2,
-                               'last_passed_commit': self.commits[0],
-                               'first_failed_commit': self.commits[10],
-                           }]
+    rerun_builds_info = [
+        (self.commits[5], {}),
+        (self.commits[7], {
+            'compile': ['a.o'],
+        }),
+        (self.commits[6], {
+            'compile': ['a.o'],
+        }),
+        (self.commits[8], {
+            'compile': ['b.o'],
+        }),
+    ]
+    failures_with_range = [
+        {
+            'failure': self.compile_failure_1,
+            'last_passed_commit': self.commits[0],
+            'first_failed_commit': self.commits[10],
+        },
+        {
+            'failure': self.compile_failure_2,
+            'last_passed_commit': self.commits[0],
+            'first_failed_commit': self.commits[10],
+        },
+    ]
 
-    expected_results = [{
-        'failure': self.compile_failure_1,
-        'last_passed_commit': self.commits[5],
-        'first_failed_commit': self.commits[6],
-    },
-                        {
-                            'failure': self.compile_failure_2,
-                            'last_passed_commit': self.commits[7],
-                            'first_failed_commit': self.commits[8],
-                        }]
+    expected_results = [
+        {
+            'failure': self.compile_failure_1,
+            'last_passed_commit': self.commits[5],
+            'first_failed_commit': self.commits[6],
+        },
+        {
+            'failure': self.compile_failure_2,
+            'last_passed_commit': self.commits[7],
+            'first_failed_commit': self.commits[8],
+        },
+    ]
 
     self.analysis_api._UpdateFailureRegressionRanges(rerun_builds_info,
                                                      failures_with_range)
@@ -1253,7 +1261,7 @@ class AnalysisAPITest(wf_testcase.TestCase):
     self.assertEqual(1, len(culprits))
     self.assertEqual('git_hash_123', culprits[0].commit.id)
 
-  def _CreateCompileRerunBuild(self, commit_index=2):
+  def _CreateCompileRerunBuild(self, commit_index=2, build_id=None):
     rerun_commit = self.commits[commit_index]
 
     rerun_builder = BuilderID(
@@ -1263,7 +1271,7 @@ class AnalysisAPITest(wf_testcase.TestCase):
         luci_project=rerun_builder.project,
         luci_bucket=rerun_builder.bucket,
         luci_builder=rerun_builder.builder,
-        build_id=8000000000789,
+        build_id=build_id or 8000000000789,
         legacy_build_number=60789,
         gitiles_host=rerun_commit.gitiles_host,
         gitiles_project=rerun_commit.gitiles_project,
@@ -1307,13 +1315,16 @@ class AnalysisAPITest(wf_testcase.TestCase):
             host=rerun_commit.gitiles_host,
             ref=rerun_commit.gitiles_ref,
             id=rerun_commit.gitiles_id), {'recipe': 'compile'},
-        tags=[{
-            'value': 'compile-failure-culprit-finding',
-            'key': 'purpose'
-        }, {
-            'value': str(self.build_id),
-            'key': 'analyzed_build_id'
-        }])
+        tags=[
+            {
+                'value': 'compile-failure-culprit-finding',
+                'key': 'purpose',
+            },
+            {
+                'value': str(self.build_id),
+                'key': 'analyzed_build_id',
+            },
+        ])
 
   @mock.patch.object(
       ChromiumProjectAPI,
@@ -1328,6 +1339,77 @@ class AnalysisAPITest(wf_testcase.TestCase):
     output_targets = {'compile': ['a.o']}
 
     self._CreateCompileRerunBuild(commit_index=2)
+
+    self.analysis_api.TriggerRerunBuild(self.context, self.build_id,
+                                        self.analysis.key, rerun_builder,
+                                        self.commits[2], output_targets)
+
+    self.assertFalse(mock_trigger_build.called)
+
+  @mock.patch.object(
+      ChromiumProjectAPI,
+      'GetCompileRerunBuildInputProperties',
+      return_value={'recipe': 'compile'})
+  @mock.patch.object(buildbucket_client, 'TriggerV2Build')
+  def testTriggerRerunBuildFoundUnusableBuild(self, mock_trigger_build, _):
+    """This test is for the case where there's already an existing build, but it
+      ended with unusable results, so a new rerun-build should be scheduled."""
+    new_build_id = 800000024324
+    new_build = Build(id=new_build_id, number=300)
+    new_build.status = common_pb2.SCHEDULED
+    new_build.create_time.FromDatetime(datetime(2019, 4, 20))
+    rerun_builder = BuilderID(
+        project='chromium', bucket='findit', builder='findit-variables')
+    rerun_commit = self.commits[2]
+    output_targets = {'compile': ['a.o']}
+    mock_trigger_build.return_value = new_build
+
+    existing_build = self._CreateCompileRerunBuild(commit_index=2)
+    existing_build.status = common_pb2.INFRA_FAILURE
+    existing_build.put()
+
+    self.analysis_api.TriggerRerunBuild(self.context, self.build_id,
+                                        self.analysis.key, rerun_builder,
+                                        self.commits[2], output_targets)
+
+    rerun_build = CompileRerunBuild.get_by_id(
+        new_build_id, parent=self.analysis.key)
+    self.assertIsNotNone(rerun_build)
+    mock_trigger_build.assert_called_once_with(
+        rerun_builder,
+        common_pb2.GitilesCommit(
+            project=rerun_commit.gitiles_project,
+            host=rerun_commit.gitiles_host,
+            ref=rerun_commit.gitiles_ref,
+            id=rerun_commit.gitiles_id), {'recipe': 'compile'},
+        tags=[
+            {
+                'value': 'compile-failure-culprit-finding',
+                'key': 'purpose',
+            },
+            {
+                'value': str(self.build_id),
+                'key': 'analyzed_build_id',
+            },
+        ])
+
+  @mock.patch.object(
+      ChromiumProjectAPI,
+      'GetCompileRerunBuildInputProperties',
+      return_value={'recipe': 'compile'})
+  @mock.patch.object(buildbucket_client, 'TriggerV2Build')
+  def testTriggerRerunBuildUnusableBuildOverLimit(self, mock_trigger_build, _):
+    """This test is for the case where there're multiple invalid rerun builds,
+      so no new rerun-build should be scheduled."""
+    rerun_builder = BuilderID(
+        project='chromium', bucket='findit', builder='findit-variables')
+    output_targets = {'compile': ['a.o']}
+
+    for i in xrange(4):
+      existing_build = self._CreateCompileRerunBuild(
+          commit_index=2, build_id=8000000000110 + i)
+      existing_build.status = common_pb2.INFRA_FAILURE
+      existing_build.put()
 
     self.analysis_api.TriggerRerunBuild(self.context, self.build_id,
                                         self.analysis.key, rerun_builder,
@@ -1396,18 +1478,18 @@ class AnalysisAPITest(wf_testcase.TestCase):
     rerun_build.put()
 
     results = self.analysis_api._GetRegressionRangesForFailures(self.analysis)
-    expected_results = [{
-        'failures': [self.compile_failure_2],
-        'first_failed_commit': self.analysis.first_failed_commit,
-        'last_passed_commit': self.commits[2]
-    },
-                        {
-                            'failures': [self.compile_failure_1],
-                            'first_failed_commit':
-                                self.commits[2],
-                            'last_passed_commit':
-                                self.analysis.last_passed_commit
-                        }]
+    expected_results = [
+        {
+            'failures': [self.compile_failure_2],
+            'first_failed_commit': self.analysis.first_failed_commit,
+            'last_passed_commit': self.commits[2],
+        },
+        {
+            'failures': [self.compile_failure_1],
+            'first_failed_commit': self.commits[2],
+            'last_passed_commit': self.analysis.last_passed_commit,
+        },
+    ]
     self.assertEqual(expected_results, results)
 
   @mock.patch.object(
@@ -1428,8 +1510,9 @@ class AnalysisAPITest(wf_testcase.TestCase):
 
     analysis = CompileFailureAnalysis.GetVersion(self.build_id)
     self.assertEqual(analysis_status.RUNNING, analysis.status)
+    self.assertIsNone(analysis.end_time)
 
-    rerun_builds = CompileRerunBuild.query(ancestor=self.analysis.key).fetch()
+    rerun_builds = CompileRerunBuild.query(ancestor=analysis.key).fetch()
     self.assertEqual(1, len(rerun_builds))
     self.assertEqual(6000002, rerun_builds[0].gitiles_commit.commit_position)
 
@@ -1461,3 +1544,14 @@ class AnalysisAPITest(wf_testcase.TestCase):
     self.assertEqual(6000001, culprit.commit_position)
     self.assertItemsEqual([cf.key.urlsafe() for cf in compile_failures],
                           culprit.failure_urlsafe_keys)
+
+  @mock.patch.object(
+      CompileAnalysisAPI, 'TriggerRerunBuild', return_value='error')
+  @mock.patch.object(git, 'MapCommitPositionsToGitHashes')
+  def testRerunBasedAnalysisAborted(self, mock_revisions, _):
+    mock_revisions.return_value = {n: str(n) for n in xrange(6000000, 6000005)}
+
+    self.analysis_api.RerunBasedAnalysis(self.context, self.build_id)
+
+    analysis = CompileFailureAnalysis.GetVersion(self.build_id)
+    self.assertEqual(analysis_status.ERROR, analysis.status)
