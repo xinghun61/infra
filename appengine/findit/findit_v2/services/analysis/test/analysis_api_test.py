@@ -216,6 +216,56 @@ class AnalysisAPITest(wf_testcase.TestCase):
 
     self.assertEqual(expected_failures, detailed_compile_failures)
 
+  @mock.patch.object(ChromiumProjectAPI, 'GetCompileFailures')
+  @mock.patch.object(buildbucket_client, 'GetV2Build')
+  @mock.patch.object(buildbucket_client, 'SearchV2BuildsOnBuilder')
+  def testUpdateFailuresWithFirstFailureInfoOnlyStep(
+      self, mock_prev_builds, mock_get_build, mock_prev_failures):
+    """Test for the most common case: found both first_failed_build_id and
+      last_passed_build_id."""
+    mock_step = Step()
+    mock_step.name = 'compile'
+    mock_step.status = common_pb2.FAILURE
+    build_122 = self._MockBuild(122)
+    build_122.steps.extend([mock_step])
+    build_122_info = self._GetBuildInfo(122)
+
+    build_121 = self._MockBuild(121, build_status=common_pb2.SUCCESS)
+    build_121_info = self._GetBuildInfo(121)
+
+    mock_prev_builds.return_value = SearchBuildsResponse(
+        builds=[build_122, build_121])
+    mock_get_build.return_value = build_122
+
+    mock_prev_failures.return_value = {
+        'compile': {
+            'failures': {},
+            'first_failed_build': build_122_info,
+            'last_passed_build': None,
+        },
+    }
+
+    detailed_compile_failures = {
+        'compile': {
+            'failures': {},
+            'first_failed_build': self.build_info,
+            'last_passed_build': None,
+        },
+    }
+
+    self.analysis_api.UpdateFailuresWithFirstFailureInfo(
+        self.context, self.build, detailed_compile_failures)
+
+    expected_failures = {
+        'compile': {
+            'failures': {},
+            'first_failed_build': build_122_info,
+            'last_passed_build': build_121_info,
+        },
+    }
+
+    self.assertEqual(expected_failures, detailed_compile_failures)
+
   @mock.patch.object(buildbucket_client, 'GetV2Build')
   @mock.patch.object(buildbucket_client, 'SearchV2BuildsOnBuilder')
   def testUpdateFailuresWithFirstFailureInfoPrevBuildDifferentStep(

@@ -409,8 +409,17 @@ class AnalysisAPI(object):
           need_go_back = True
           continue
 
-        step_last_passed_found = True
         failures = step_info['failures']
+        if not failures:
+          # Same step failed, but there's no atomic level failure info.
+          if step_info['last_passed_build']:
+            # Last pass has been found for this failure, skip the failure.
+            continue
+          step_info['first_failed_build'] = prev_build_info
+          need_go_back = True
+          continue
+
+        step_last_passed_found = True
         for atomic_failure_identifier, failure in failures.iteritems():
           if failure['last_passed_build']:
             # Last pass has been found for this failure, skip the failure.
