@@ -22,7 +22,6 @@ import (
 
 	"go.chromium.org/gae/service/datastore"
 	"go.chromium.org/gae/service/info"
-	bbpb "go.chromium.org/luci/buildbucket/proto"
 	"go.chromium.org/luci/common/bq"
 	"go.chromium.org/luci/common/logging"
 	"go.chromium.org/luci/common/sync/parallel"
@@ -97,9 +96,7 @@ func GetAnalyzeHandler(ctx *router.Context) {
 	var err error
 
 	// TODO: remove this check once we're off buildbot.
-	if source == "buildbucket" {
-		alertsSummary, err = generateBuildBucketAlerts(ctx, a)
-	} else if source == "bigquery" {
+	if source == "bigquery" {
 		c = appengine.WithContext(c, r)
 		alertsSummary, err = generateBigQueryAlerts(c, a, tree)
 	} else {
@@ -157,92 +154,6 @@ func generateBigQueryAlerts(c context.Context, a *analyzer.Analyzer, tree string
 	}
 	logging.Infof(c, "filtered alerts, before: %d after: %d", len(builderAlerts), len(filteredBuilderAlerts))
 	builderAlerts = filteredBuilderAlerts
-
-	alerts := []messages.Alert{}
-	for _, ba := range builderAlerts {
-		title := fmt.Sprintf("Step %q failing on %d builder(s)", ba.StepAtFault.Step.Name, len(ba.Builders))
-		startTime := messages.TimeToEpochTime(time.Now())
-		severity := messages.NewFailure
-		for _, b := range ba.Builders {
-			if b.StartTime > 0 && b.StartTime < startTime {
-				startTime = b.StartTime
-			}
-			if b.LatestFailure-b.FirstFailure != 0 {
-				severity = messages.ReliableFailure
-			}
-		}
-
-		alert := messages.Alert{
-			Key:       fmt.Sprintf("%s.%v", tree, ba.Reason.Signature()),
-			Title:     title,
-			Extension: ba,
-			StartTime: startTime,
-			Severity:  severity,
-		}
-
-		switch ba.Reason.Kind() {
-		case "test":
-			alert.Type = messages.AlertTestFailure
-		default:
-			alert.Type = messages.AlertBuildFailure
-		}
-
-		alerts = append(alerts, alert)
-	}
-
-	logging.Infof(c, "%d alerts generated for tree %q", len(alerts), tree)
-
-	alertsSummary := &messages.AlertsSummary{
-		Timestamp:         messages.TimeToEpochTime(time.Now()),
-		RevisionSummaries: map[string]messages.RevisionSummary{},
-		Alerts:            alerts,
-	}
-
-	if err := storeAlertsSummary(c, a, tree, alertsSummary); err != nil {
-		logging.Errorf(c, "error storing alerts: %v", err)
-		return nil, err
-	}
-
-	return alertsSummary, nil
-}
-
-func generateBuildBucketAlerts(ctx *router.Context, a *analyzer.Analyzer) (*messages.AlertsSummary, error) {
-	c, w, p := ctx.Context, ctx.Writer, ctx.Params
-
-	tree := p.ByName("tree")
-	treeCfgs := a.Trees
-	if _, ok := treeCfgs[tree]; !ok {
-		errStatus(c, w, http.StatusNotFound, fmt.Sprintf("unrecognized tree: %s", tree))
-		return nil, fmt.Errorf("uncrecoginzed tree: %s", tree)
-	}
-
-	treeCfg := treeCfgs[tree]
-	logging.Infof(c, "analyzing tree %q with %d builders", treeCfg.TreeName, len(treeCfg.TreeBuilders))
-
-	builderIDs := []*bbpb.BuilderID{}
-	for _, builderCfg := range treeCfg.TreeBuilders {
-		for _, builder := range builderCfg.Builders {
-			builderIDs = append(builderIDs, &bbpb.BuilderID{
-				Project: builderCfg.Project,
-				Bucket:  builderCfg.Bucket,
-				Builder: builder,
-			})
-		}
-		// Check for bucket-wide configs.
-		if len(builderCfg.Builders) == 0 {
-			builderIDs = append(builderIDs, &bbpb.BuilderID{
-				Project: builderCfg.Project,
-				Bucket:  builderCfg.Bucket,
-				// Leave Builder unset to query all of them.
-			})
-		}
-	}
-
-	builderAlerts, err := a.BuildBucketAlerts(c, builderIDs)
-	if err != nil {
-		errStatus(c, w, http.StatusInternalServerError, fmt.Sprintf("error creating alerts: %+v", err))
-		return nil, err
-	}
 
 	alerts := []messages.Alert{}
 	for _, ba := range builderAlerts {
