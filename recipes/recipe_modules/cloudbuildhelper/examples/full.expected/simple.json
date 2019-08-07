@@ -26,6 +26,16 @@
   {
     "cmd": [
       "[START_DIR]/cbh/cloudbuildhelper",
+      "version"
+    ],
+    "name": "cloudbuildhelper version",
+    "~followup_annotations": [
+      "@@@STEP_TEXT@<br/>cloudbuildhelper v6.6.6<br/><br/>CIPD package name: infra/tools/cloudbuildhelper/...<br/>CIPD instance ID:  lTJD7x...@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "[START_DIR]/cbh/cloudbuildhelper",
       "build",
       "some/dir/target.yaml",
       "-canonical-tag",
@@ -47,7 +57,7 @@
     ],
     "name": "cloudbuildhelper build target",
     "~followup_annotations": [
-      "@@@STEP_TEXT@<br/>Image: example.com/fake-registry/target:123_456<br/>Digest: sha256:34a04005bcaf206e...@@@",
+      "@@@STEP_TEXT@<br/>Image: example.com/fake-registry/target:123_456<br/>Digest: sha256:34a04005bcaf206e...<br/>Tag: 123_456<br/>Tag: another<br/>Tag: latest@@@",
       "@@@STEP_LOG_LINE@json.output@{@@@",
       "@@@STEP_LOG_LINE@json.output@  \"image\": {@@@",
       "@@@STEP_LOG_LINE@json.output@    \"digest\": \"sha256:34a04005bcaf206e...\", @@@",
@@ -99,7 +109,7 @@
     ],
     "name": "cloudbuildhelper build a",
     "~followup_annotations": [
-      "@@@STEP_TEXT@<br/>Image: example.com/fake-registry/a:something<br/>Digest: sha256:ca978112ca1bbdca...@@@",
+      "@@@STEP_TEXT@<br/>Image: example.com/fake-registry/a:something<br/>Digest: sha256:ca978112ca1bbdca...<br/>Tag: something@@@",
       "@@@STEP_LOG_LINE@json.output@{@@@",
       "@@@STEP_LOG_LINE@json.output@  \"image\": {@@@",
       "@@@STEP_LOG_LINE@json.output@    \"digest\": \"sha256:ca978112ca1bbdca...\", @@@",
@@ -112,6 +122,33 @@
       "@@@STEP_LOG_END@json.output@@@",
       "@@@STEP_LINK@image@https://example.com/image/a@@@",
       "@@@STEP_LINK@build@https://example.com/build/a@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "[START_DIR]/cbh/cloudbuildhelper",
+      "build",
+      "b.yaml",
+      "-canonical-tag",
+      ":inputs-hash",
+      "-json-output",
+      "/path/to/tmp/json"
+    ],
+    "name": "cloudbuildhelper build b",
+    "~followup_annotations": [
+      "@@@STEP_TEXT@<br/>Image: example.com/fake-registry/b:cbh-inputs-deadbead...<br/>Digest: sha256:3e23e8160039594a...<br/>Tag: cbh-inputs-deadbead...@@@",
+      "@@@STEP_LOG_LINE@json.output@{@@@",
+      "@@@STEP_LOG_LINE@json.output@  \"image\": {@@@",
+      "@@@STEP_LOG_LINE@json.output@    \"digest\": \"sha256:3e23e8160039594a...\", @@@",
+      "@@@STEP_LOG_LINE@json.output@    \"image\": \"example.com/fake-registry/b\", @@@",
+      "@@@STEP_LOG_LINE@json.output@    \"tag\": \"cbh-inputs-deadbead...\"@@@",
+      "@@@STEP_LOG_LINE@json.output@  }, @@@",
+      "@@@STEP_LOG_LINE@json.output@  \"view_build_url\": \"https://example.com/build/b\", @@@",
+      "@@@STEP_LOG_LINE@json.output@  \"view_image_url\": \"https://example.com/image/b\"@@@",
+      "@@@STEP_LOG_LINE@json.output@}@@@",
+      "@@@STEP_LOG_END@json.output@@@",
+      "@@@STEP_LINK@image@https://example.com/image/b@@@",
+      "@@@STEP_LINK@build@https://example.com/build/b@@@"
     ]
   },
   {

@@ -63,6 +63,9 @@ def RunSteps(api, properties):
     # to make sure builders use same version as developers.
     api.cloudbuildhelper.command = 'cloudbuildhelper'
 
+    # Report the exact version we picked up from the infra checkout.
+    api.cloudbuildhelper.report_version()
+
     # Build, tag and upload corresponding images.
     fails = []
     for m in manifests:
@@ -188,11 +191,10 @@ def _checkout_cl(api, project):
   # what images to build and what trial deployments to kick off.
 
   return co, Metadata(
-      canonical_tag=None,
-      labels={
-          'org.chromium.build.cl.repo': repo_url,
-          'org.chromium.build.cl.ref': rev_info['ref'],
-      },
+      # ':inputs-hash' essentially tells cloudbuildhelper to skip the build if
+      # there's already an image built from the exact same inputs.
+      canonical_tag=':inputs-hash',
+      labels={'org.chromium.build.cl.repo': repo_url},
       tags=[
           # An "immutable" tag that identifies how the image was built.
           'cl-%s-%d-%d-%s' % (
@@ -228,9 +230,10 @@ def _discover_manifests(api, root, dirs):
   for d in dirs:
     found = api.file.listdir(
         'list %s' % d, root.join(d),
-        test_data=['target.yaml'])
-    paths.extend(found)
-  return found
+        recursive=True,
+        test_data=['target.yaml', 'something_else.md'])
+    paths.extend(f for f in found if api.path.splitext(f)[1] == '.yaml')
+  return paths
 
 
 def GenTests(api):

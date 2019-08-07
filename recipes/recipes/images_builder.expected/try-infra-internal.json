@@ -208,11 +208,13 @@
       "--json-output",
       "/path/to/tmp/json",
       "listdir",
-      "[CACHE]/infra_internal_gclient_with_go/infra_internal/build/images/deterministic"
+      "[CACHE]/infra_internal_gclient_with_go/infra_internal/build/images/deterministic",
+      "--recursive"
     ],
     "infra_step": true,
     "name": "list infra_internal/build/images/deterministic",
     "~followup_annotations": [
+      "@@@STEP_LOG_LINE@listdir@[CACHE]/infra_internal_gclient_with_go/infra_internal/build/images/deterministic/something_else.md@@@",
       "@@@STEP_LOG_LINE@listdir@[CACHE]/infra_internal_gclient_with_go/infra_internal/build/images/deterministic/target.yaml@@@",
       "@@@STEP_LOG_END@listdir@@@"
     ]
@@ -248,14 +250,35 @@
   {
     "cmd": [
       "cloudbuildhelper",
+      "version"
+    ],
+    "cwd": "[CACHE]/infra_internal_gclient_with_go",
+    "env": {
+      "GOPATH": "[CACHE]/infra_internal_gclient_with_go/infra_internal/go",
+      "GOROOT": "[CACHE]/infra_internal_gclient_with_go/golang/go"
+    },
+    "env_prefixes": {
+      "PATH": [
+        "[CACHE]/infra_internal_gclient_with_go/golang/go",
+        "[CACHE]/infra_internal_gclient_with_go/infra_internal/go/bin"
+      ]
+    },
+    "name": "cloudbuildhelper version",
+    "~followup_annotations": [
+      "@@@STEP_TEXT@<br/>cloudbuildhelper v6.6.6<br/><br/>CIPD package name: infra/tools/cloudbuildhelper/...<br/>CIPD instance ID:  lTJD7x...@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "cloudbuildhelper",
       "build",
       "[CACHE]/infra_internal_gclient_with_go/infra_internal/build/images/deterministic/target.yaml",
+      "-canonical-tag",
+      ":inputs-hash",
       "-build-id",
       "https://cr-buildbucket.appspot.com/build/8945511751514863184",
       "-infra",
       "dev",
-      "-label",
-      "org.chromium.build.cl.ref=refs/changes/../../..",
       "-label",
       "org.chromium.build.cl.repo=https://chrome-internal-review.googlesource.com/infra/infra_internal",
       "-tag",
@@ -278,12 +301,12 @@
     },
     "name": "cloudbuildhelper build target",
     "~followup_annotations": [
-      "@@@STEP_TEXT@<br/>Image: example.com/fake-registry/target:cl-2012.05.14-123456-7-author<br/>Digest: sha256:34a04005bcaf206e...@@@",
+      "@@@STEP_TEXT@<br/>Image: example.com/fake-registry/target:cbh-inputs-deadbead...<br/>Digest: sha256:34a04005bcaf206e...<br/>Tag: cbh-inputs-deadbead...<br/>Tag: cl-123456<br/>Tag: cl-2012.05.14-123456-7-author@@@",
       "@@@STEP_LOG_LINE@json.output@{@@@",
       "@@@STEP_LOG_LINE@json.output@  \"image\": {@@@",
       "@@@STEP_LOG_LINE@json.output@    \"digest\": \"sha256:34a04005bcaf206e...\", @@@",
       "@@@STEP_LOG_LINE@json.output@    \"image\": \"example.com/fake-registry/target\", @@@",
-      "@@@STEP_LOG_LINE@json.output@    \"tag\": null@@@",
+      "@@@STEP_LOG_LINE@json.output@    \"tag\": \"cbh-inputs-deadbead...\"@@@",
       "@@@STEP_LOG_LINE@json.output@  }, @@@",
       "@@@STEP_LOG_LINE@json.output@  \"view_build_url\": \"https://example.com/build/target\", @@@",
       "@@@STEP_LOG_LINE@json.output@  \"view_image_url\": \"https://example.com/image/target\"@@@",

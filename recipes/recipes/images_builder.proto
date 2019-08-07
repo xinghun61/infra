@@ -43,7 +43,8 @@ message Inputs {
   string infra = 3;
 
   // A path(s) within the gclient solution to a directory with *.yaml files to
-  // discover and build, e.g. 'infra/build/images/deterministic.
+  // discover and build, e.g. 'infra/build/images/deterministic. Will be listed
+  // recursively.
   //
   // Required.
   repeated string manifests = 4;

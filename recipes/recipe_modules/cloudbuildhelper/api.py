@@ -54,6 +54,25 @@ class CloudBuildHelperApi(recipe_api.RecipeApi):
     """Can be used to tell the module to use an existing binary."""
     self._cbh_bin = val
 
+  def report_version(self):
+    """Reports the version of cloudbuildhelper tool via the step text.
+
+    Returns:
+      None.
+    """
+    res = self.m.step(
+        name='cloudbuildhelper version',
+        cmd=[self.command, 'version'],
+        stdout=self.m.raw_io.output(),
+        step_test_data=lambda: self.m.raw_io.test_api.stream_output('\n'.join([
+            'cloudbuildhelper v6.6.6',
+            '',
+            'CIPD package name: infra/tools/cloudbuildhelper/...',
+            'CIPD instance ID:  lTJD7x...',
+        ])),
+    )
+    res.presentation.step_text += '\n' + res.stdout
+
   def build(self,
             manifest,
             canonical_tag=None,
@@ -149,10 +168,14 @@ class CloudBuildHelperApi(recipe_api.RecipeApi):
         ref = '%s:%s' % (img['image'], tag)
       else:
         ref = '%s@%s' % (img['image'], img['digest'])
-      r.presentation.step_text += '\n'.join([
+      lines = [
           '',
           'Image: %s' % ref,
           'Digest: %s' % img['digest'],
-      ])
+      ]
+      # Display all added tags (including the canonical one we got via `img`).
+      for t in set((tags or [])+([img['tag']] if img.get('tag') else [])):
+        lines.append('Tag: %s' % t)
+      r.presentation.step_text += '\n'.join(lines)
     else:
       r.presentation.step_text += '\nImage builds successfully'

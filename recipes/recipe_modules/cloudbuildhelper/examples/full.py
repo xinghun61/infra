@@ -9,6 +9,8 @@ DEPS = [
 
 
 def RunSteps(api):
+  api.cloudbuildhelper.report_version()
+
   # With all args.
   img = api.cloudbuildhelper.build(
       manifest='some/dir/target.yaml',
@@ -35,6 +37,9 @@ def RunSteps(api):
 
   # Using non-canonical tag.
   api.cloudbuildhelper.build('a.yaml', tags=['something'])
+
+  # Using :inputs-hash canonical tag.
+  api.cloudbuildhelper.build('b.yaml', canonical_tag=':inputs-hash')
 
   # Use custom binary from this point onward, for test coverage.
   api.cloudbuildhelper.command = 'custom_cloudbuildhelper'

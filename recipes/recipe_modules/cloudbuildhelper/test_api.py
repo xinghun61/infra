@@ -13,6 +13,8 @@ class CloudBuildHelperTestApi(recipe_test_api.RecipeTestApi):
       img = 'example.com/fake-registry/%s' % target
       digest = 'sha256:'+sha256(target).hexdigest()[:16]+'...'
       tag = canonical_tag
+      if tag == ':inputs-hash':
+        tag = 'cbh-inputs-deadbead...'
     else:
       img = image.image
       digest = image.digest

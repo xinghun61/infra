@@ -101,11 +101,13 @@
       "--json-output",
       "/path/to/tmp/json",
       "listdir",
-      "[CACHE]/infra_gclient_with_go/infra/build/images/deterministic"
+      "[CACHE]/infra_gclient_with_go/infra/build/images/deterministic",
+      "--recursive"
     ],
     "infra_step": true,
     "name": "list infra/build/images/deterministic",
     "~followup_annotations": [
+      "@@@STEP_LOG_LINE@listdir@[CACHE]/infra_gclient_with_go/infra/build/images/deterministic/something_else.md@@@",
       "@@@STEP_LOG_LINE@listdir@[CACHE]/infra_gclient_with_go/infra/build/images/deterministic/target.yaml@@@",
       "@@@STEP_LOG_END@listdir@@@"
     ]
@@ -141,6 +143,27 @@
   {
     "cmd": [
       "cloudbuildhelper",
+      "version"
+    ],
+    "cwd": "[CACHE]/infra_gclient_with_go",
+    "env": {
+      "GOPATH": "[CACHE]/infra_gclient_with_go/infra/go",
+      "GOROOT": "[CACHE]/infra_gclient_with_go/golang/go"
+    },
+    "env_prefixes": {
+      "PATH": [
+        "[CACHE]/infra_gclient_with_go/golang/go",
+        "[CACHE]/infra_gclient_with_go/infra/go/bin"
+      ]
+    },
+    "name": "cloudbuildhelper version",
+    "~followup_annotations": [
+      "@@@STEP_TEXT@<br/>cloudbuildhelper v6.6.6<br/><br/>CIPD package name: infra/tools/cloudbuildhelper/...<br/>CIPD instance ID:  lTJD7x...@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "cloudbuildhelper",
       "build",
       "[CACHE]/infra_gclient_with_go/infra/build/images/deterministic/target.yaml",
       "-canonical-tag",
@@ -171,7 +194,7 @@
     },
     "name": "cloudbuildhelper build target",
     "~followup_annotations": [
-      "@@@STEP_TEXT@<br/>Image: example.com/fake-registry/target:ci-2012.05.14-197293-5e03a58<br/>Digest: sha256:34a04005bcaf206e...@@@",
+      "@@@STEP_TEXT@<br/>Image: example.com/fake-registry/target:ci-2012.05.14-197293-5e03a58<br/>Digest: sha256:34a04005bcaf206e...<br/>Tag: ci-2012.05.14-197293-5e03a58<br/>Tag: latest@@@",
       "@@@STEP_LOG_LINE@json.output@{@@@",
       "@@@STEP_LOG_LINE@json.output@  \"image\": {@@@",
       "@@@STEP_LOG_LINE@json.output@    \"digest\": \"sha256:34a04005bcaf206e...\", @@@",

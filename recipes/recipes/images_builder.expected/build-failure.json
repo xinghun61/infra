@@ -101,11 +101,13 @@
       "--json-output",
       "/path/to/tmp/json",
       "listdir",
-      "[CACHE]/infra_gclient_with_go/infra/build/images/deterministic"
+      "[CACHE]/infra_gclient_with_go/infra/build/images/deterministic",
+      "--recursive"
     ],
     "infra_step": true,
     "name": "list infra/build/images/deterministic",
     "~followup_annotations": [
+      "@@@STEP_LOG_LINE@listdir@[CACHE]/infra_gclient_with_go/infra/build/images/deterministic/something_else.md@@@",
       "@@@STEP_LOG_LINE@listdir@[CACHE]/infra_gclient_with_go/infra/build/images/deterministic/target.yaml@@@",
       "@@@STEP_LOG_END@listdir@@@"
     ]
@@ -136,6 +138,27 @@
       "@@@STEP_LOG_LINE@json.output@  \"go_version\": \"1.66.6\"@@@",
       "@@@STEP_LOG_LINE@json.output@}@@@",
       "@@@STEP_LOG_END@json.output@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "cloudbuildhelper",
+      "version"
+    ],
+    "cwd": "[CACHE]/infra_gclient_with_go",
+    "env": {
+      "GOPATH": "[CACHE]/infra_gclient_with_go/infra/go",
+      "GOROOT": "[CACHE]/infra_gclient_with_go/golang/go"
+    },
+    "env_prefixes": {
+      "PATH": [
+        "[CACHE]/infra_gclient_with_go/golang/go",
+        "[CACHE]/infra_gclient_with_go/infra/go/bin"
+      ]
+    },
+    "name": "cloudbuildhelper version",
+    "~followup_annotations": [
+      "@@@STEP_TEXT@<br/>cloudbuildhelper v6.6.6<br/><br/>CIPD package name: infra/tools/cloudbuildhelper/...<br/>CIPD instance ID:  lTJD7x...@@@"
     ]
   },
   {
