@@ -783,8 +783,13 @@ export const fetchIssueList =
         totalCalls = Math.ceil(issueLimit / itemsPerCall) - 1;
       }
 
-      issueList.progress =
-        issueList.issues.length / totalIssues;
+      if (totalIssues) {
+        issueList.progress =
+          issueList.issues.length / totalIssues;
+      } else {
+        issueList.progress = 1;
+      }
+
       dispatch({type: FETCH_ISSUE_LIST_UPDATE, issueList});
 
       // remaining api calls are made.

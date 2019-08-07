@@ -3,9 +3,9 @@
 // found in the LICENSE file.
 
 import {LitElement, html, css} from 'lit-element';
+import {connectStore} from 'elements/reducers/base.js';
 import page from 'page';
 import qs from 'qs';
-import {connectStore} from 'elements/reducers/base.js';
 import * as project from 'elements/reducers/project.js';
 import './mr-grid-dropdown';
 import './mr-choice-buttons';
@@ -14,6 +14,7 @@ import {getAvailableGridFields} from './extract-grid-data.js';
 
 export class MrGridControls extends connectStore(LitElement) {
   render() {
+    const hideCounts = this.totalIssues === 0;
     return html`
     <div>
       <div class="rowscols">
@@ -42,14 +43,15 @@ export class MrGridControls extends connectStore(LitElement) {
       </div>
     </div>
     <div class="right-controls">
-      <div class="issue-count">
-        ${this.issueCount}
-        of
-        ${this.totalIssues}
-        ${this.totalIssues === 1 ? html`
-          issue `: html`
-          issues `} shown
-      </div>
+      ${hideCounts ? html`` : html`
+        <div class="issue-count">
+          ${this.issueCount}
+          of
+          ${this.totalIssues}
+          ${this.totalIssues === 1 ? html`
+            issue `: html`
+            issues `} shown
+        </div> `}
       <div class="view-selector">
         <mr-choice-buttons
           .options=${this.viewSelector}
@@ -114,6 +116,9 @@ export class MrGridControls extends connectStore(LitElement) {
     super.update(changedProperties);
   }
 
+  stateChanged(state) {
+    this.totalIssues = (issue.totalIssues(state) || 0);
+  }
   static get styles() {
     return css`
       :host {

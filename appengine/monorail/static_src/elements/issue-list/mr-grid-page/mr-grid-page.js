@@ -14,17 +14,23 @@ import './mr-grid.js';
 export class MrGridPage extends connectStore(LitElement) {
   render() {
     const doneLoading = this.progress === 1;
+    const noMatches = this.totalIssues === 0 && doneLoading;
     return html`
       <div id="grid-area">
         <mr-grid-controls
           .queryParams=${this.queryParams}
           .issueCount=${this.issues.length}>
         </mr-grid-controls>
-        <progress
-          title="${Math.round(this.progress * 100)}%"
-          value=${this.progress}
-          ?hidden=${doneLoading}
-        ></progress>
+        ${noMatches ? html`
+          <div
+            class="error-message">
+            Your search did not generate any results.
+          </div>` : html`
+          <progress
+            title="${Math.round(this.progress * 100)}%"
+            value=${this.progress}
+            ?hidden=${doneLoading}
+          ></progress>`}
         <br>
         <mr-grid
           .issues=${this.issues}
@@ -46,8 +52,8 @@ export class MrGridPage extends connectStore(LitElement) {
       userDisplayName: {type: String},
       issues: {type: Array},
       fields: {type: Array},
-      fetchingIssueList: {type: Boolean},
       progress: {type: Number},
+      totalIssues: {type: Number},
     };
   };
 
@@ -79,6 +85,7 @@ export class MrGridPage extends connectStore(LitElement) {
   stateChanged(state) {
     this.issues = (issue.issueList(state) || []);
     this.progress = (issue.issueListProgress(state) || 0);
+    this.totalIssues = (issue.totalIssues(state) || 0);
   }
 
   static get styles() {
@@ -96,6 +103,10 @@ export class MrGridPage extends connectStore(LitElement) {
       progress::-webkit-progress-value {
         transition: width 1s;
         background-color: var(--chops-blue-700);
+      }
+      .error-message {
+        text-align: center;
+        padding-top: 2em;
       }
     `;
   }

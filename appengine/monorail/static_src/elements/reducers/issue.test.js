@@ -486,6 +486,38 @@ describe('issue', () => {
         },
       }));
     });
+
+    it('returns progress of 1 when no totalIssues', async () => {
+      prpcCall.onFirstCall().returns({issues: [], totalResults: 0});
+
+      const dispatch = sinon.stub();
+      const action = issue.fetchIssueList('', '', {maxItems: 1}, 1);
+      await action(dispatch);
+
+      sinon.assert.calledWith(dispatch, sinon.match({
+        type: 'FETCH_ISSUE_LIST_SUCCESS',
+        issueList: {
+          issues: [],
+          progress: 1,
+        },
+      }));
+    });
+
+    it('returns progress of 1 when totalIssues undefined', async () => {
+      prpcCall.onFirstCall().returns({issues: [], totalResults: null});
+
+      const dispatch = sinon.stub();
+      const action = issue.fetchIssueList('', '', {maxItems: 1}, 1);
+      await action(dispatch);
+
+      sinon.assert.calledWith(dispatch, sinon.match({
+        type: 'FETCH_ISSUE_LIST_SUCCESS',
+        issueList: {
+          issues: [],
+          progress: 1,
+        },
+      }));
+    });
   });
 
   describe('starring issues', () => {

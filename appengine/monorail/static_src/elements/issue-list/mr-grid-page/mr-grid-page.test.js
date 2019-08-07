@@ -29,5 +29,15 @@ describe('mr-grid-page', () => {
       element.shadowRoot.querySelector('progress').getAttribute('title');
     assert.equal(title, '25%');
   });
+
+  it('displays error when no issues match query', async () => {
+    await element.updateComplete;
+    element.progress = 1;
+    element.totalIssues = 0;
+    await element.updateComplete;
+    const error =
+      element.shadowRoot.querySelector('.error-message').textContent;
+    assert.equal(error.trim(), 'Your search did not generate any results.');
+  });
 });
 
