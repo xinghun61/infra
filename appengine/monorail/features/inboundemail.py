@@ -24,6 +24,7 @@ import webapp2
 
 import settings
 from businesslogic import work_env
+from features import alert2issue
 from features import commitlogcommands
 from features import notify_helpers
 from framework import authdata
@@ -83,88 +84,6 @@ class InboundEmail(webapp2.RequestHandler):
 
     if email_tasks:
       notify_helpers.AddAllEmailTasks(email_tasks)
-
-  def IsWhitelisted(self, email_addr):
-    return email_addr.endswith(settings.alert_whitelisted_suffixes)
-
-  def FindAlertIssue(self, cnxn, project_id, incident_label):
-    """Find the existing issue with the incident_label."""
-    if not incident_label:
-      return None
-
-    label_id = self.services.config.LookupLabelID(
-        cnxn, project_id, incident_label)
-    if not label_id:
-      return None
-
-    # If a new notification is sent with an existing incident ID, then it
-    # should be added as a new comment into the existing issue.
-    #
-    # If there are more than one issues with a given incident ID, then
-    # it's either
-    # - there is a bug in this module,
-    # - the issues were manually updated with the same incident ID, OR
-    # - an issue auto update program updated the issues with the same
-    #  incident ID, which also sounds like a bug.
-    #
-    # In any cases, the latest issue should be used, whichever status it has.
-    # - The issue of an ongoing incident can be mistakenly closed by
-    # engineers.
-    # - A closed incident can be reopened, and, therefore, the issue also
-    # needs to be re-opened.
-    issue_ids = self.services.issue.GetIIDsByLabelIDs(
-        cnxn, [label_id], project_id, None)
-    issues = self.services.issue.GetIssues(cnxn, issue_ids)
-    if issues:
-      return max(issues, key=lambda issue: issue.modified_timestamp)
-    return None
-
-  def CreateAlertIssueProperties(self, cnxn, project_id, incident_id, label,
-                                 body):
-    """Create a dict of issue property values for the alert to be created with.
-
-    Args:
-      cnxn: connection to SQL database.
-      project_id: the ID of the Monorail project, in which the alert should
-        be created in.
-      incident_id: string containing an optional unique incident used to
-        de-dupe alert issues.
-      label: the label to be added to the alert issue.
-      body: the body text of the alert notification message.
-
-    Returns:
-      A dict of issue property values to be used for issue creation.
-    """
-    # TODO(crbug/807064) - parse and get property values from email headers.
-    props = {
-        'owner_id': None,
-        'cc_ids': [],
-        'component_ids': [],
-        'field_values': [],
-        'labels': [],
-        'status': 'Available',
-        'incident_label': '',
-    }
-
-    # component IDs
-    #
-    # TODO(crbug/807064): Remove this special casing once components can be set
-    # via the email header
-    config = self.services.config.GetProjectConfig(cnxn, project_id)
-    components = ['Infra>Codesearch'] if 'codesearch' in body else ['Infra']
-    props['component_ids'] = tracker_helpers.LookupComponentIDs(
-        components, config)
-
-    # labels
-    labels = set(['Restrict-View-Google', 'Pri-2'])
-    labels.add(label or 'Infra-Troopers-Alerts')
-    props['labels'] = list(labels)
-    if incident_id:
-      props['incident_label'] = 'Incident-Id-' + incident_id
-      labels.add(props['incident_label'])
-    props['labels'] = list(labels)
-
-    return props
 
   def ProcessMail(self, msg, project_addr):
     """Process an inbound email message."""
@@ -263,9 +182,10 @@ class InboundEmail(webapp2.RequestHandler):
 
     # If the email is an alert, switch to the alert handling path.
     if is_alert:
-        self.ProcessAlert(cnxn, project, project_addr, from_addr, auth,
-            subject, body, incident_id, label)
-        return None
+      alert2issue.ProcessEmailNotification(
+          self.services, cnxn, project, project_addr, from_addr,
+          auth, subject, body, incident_id, label)
+      return None
 
     # This email is a response to an email about a comment.
     self.ProcessIssueReply(
@@ -273,73 +193,6 @@ class InboundEmail(webapp2.RequestHandler):
         auth.effective_ids, perms, body)
 
     return None
-
-  def ProcessAlert(
-      self, cnxn, project, project_addr, from_addr, auth,
-      subject, body, incident_id, label=None):
-    """Examine an an alert issue email and create an issue based on the email.
-
-    Args:
-      cnxn: connection to SQL database.
-      project: Project PB for the project containing the issue.
-      project_addr: string email address the alert email was sent to.
-      from_addr: string email address of the user who sent the alert email
-          to our server.
-      auth: AuthData object with user_id and email address of the user who
-          will file the alert issue.
-      subject: the subject of the email message
-      body: the body text of the email message
-      incident_id: string containing an optional unique incident used to
-          de-dupe alert issues.
-      label: the label to be added to the issue.
-
-    Returns:
-      A list of follow-up work items, e.g., to notify other users of
-      the new comment, or to notify the user that their reply was not
-      processed.
-
-    Side-effect:
-      Adds a new comment to the issue, if no error is reported.
-    """
-    # Make sure the email address is whitelisted.
-    if not self.IsWhitelisted(from_addr):
-      logging.info('Unauthorized %s tried to send alert to %s',
-                     from_addr, project_addr)
-      return None
-
-    formatted_body = 'Filed by %s on behalf of %s\n\n%s' % (
-        auth.email, from_addr, body)
-
-    mc = monorailcontext.MonorailContext(self.services, auth=auth, cnxn=cnxn)
-    mc.LookupLoggedInUserPerms(project)
-    with work_env.WorkEnv(mc, self.services) as we:
-      alert_props = self.CreateAlertIssueProperties(
-          cnxn, project.project_id, incident_id, label, body)
-      alert_issue = self.FindAlertIssue(
-          cnxn, project.project_id, alert_props['incident_label'])
-
-      if alert_issue:
-        # Add a reply to the existing issue for this incident.
-            self.services.issue.CreateIssueComment(
-                cnxn, alert_issue, auth.user_id, formatted_body)
-      else:
-        # Create a new issue for this incident.
-        alert_issue, _ = we.CreateIssue(
-            project.project_id, subject,
-            alert_props['status'], alert_props['owner_id'],
-            alert_props['cc_ids'], alert_props['labels'],
-            alert_props['field_values'], alert_props['component_ids'],
-            formatted_body)
-
-      # Update issue using commands.
-      lines = body.strip().split('\n')
-      uia = commitlogcommands.UpdateIssueAction(alert_issue.local_id)
-      commands_found = uia.Parse(
-          cnxn, project.project_name, auth.user_id, lines,
-          self.services, strip_quoted_lines=True)
-
-      if commands_found:
-        uia.Run(cnxn, self.services, allow_edit=True)
 
   def ProcessIssueReply(
       self, cnxn, project, local_id, project_addr, from_addr, author_id,
