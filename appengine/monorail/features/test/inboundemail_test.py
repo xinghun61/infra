@@ -17,7 +17,9 @@ import time
 
 from google.appengine.ext.webapp.mail_handlers import BounceNotificationHandler
 
+import settings
 from businesslogic import work_env
+from features import alert2issue
 from features import commitlogcommands
 from features import inboundemail
 from framework import authdata
@@ -215,6 +217,44 @@ class InboundEmailTest(unittest.TestCase):
     self.mox.ReplayAll()
 
     ret = self.inbound.ProcessMail(self.msg, self.project_addr)
+    self.mox.VerifyAll()
+    self.assertIsNone(ret)
+
+  def testProcessMail_Success_with_AlertNotification(self):
+    """Test ProcessMail with an alert notification message.
+
+    This is a sanity check for alert2issue.ProcessEmailNotification to ensure
+    that it can be successfully invoked in ProcessMail. Each function of
+    alert2issue module should be tested in aler2issue_test.
+    """
+    project_name = self.project.project_name
+    verb = 'alert'
+    trooper_queue = 'my-trooper'
+    project_addr = '%s+%s+%s@example.com' % (project_name, verb, trooper_queue)
+
+    self.mox.StubOutWithMock(emailfmt, 'IsProjectAddressOnToLine')
+    emailfmt.IsProjectAddressOnToLine(
+        project_addr, mox.IgnoreArg()).AndReturn(True)
+
+    class MockAuthData(object):
+      def __init__(self):
+        self.user_pb = user_pb2.MakeUser(111)
+        self.effective_ids = set([1, 2, 3])
+        self.user_id = 111
+    mock_auth_data = MockAuthData()
+    self.mox.StubOutWithMock(authdata.AuthData, 'FromEmail')
+    authdata.AuthData.FromEmail(
+        mox.IgnoreArg(), settings.alert_service_account, self.services,
+        autocreate=True).AndReturn(mock_auth_data)
+
+    self.mox.StubOutWithMock(alert2issue, 'ProcessEmailNotification')
+    alert2issue.ProcessEmailNotification(
+        self.services, mox.IgnoreArg(), self.project, project_addr,
+        mox.IgnoreArg(), mock_auth_data, mox.IgnoreArg(), 'awesome!', '',
+        trooper_queue)
+
+    self.mox.ReplayAll()
+    ret = self.inbound.ProcessMail(self.msg, project_addr)
     self.mox.VerifyAll()
     self.assertIsNone(ret)
 

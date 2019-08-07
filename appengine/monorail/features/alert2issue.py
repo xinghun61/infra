@@ -51,7 +51,8 @@ def FindAlertIssue(services, cnxn, project_id, incident_label):
     return max(issues, key=lambda issue: issue.modified_timestamp)
   return None
 
-def GetAlertProperties(services, cnxn, project_id, incident_id, label, body):
+def GetAlertProperties(services, cnxn, project_id, incident_id, trooper_queue,
+                       body):
   """Create a dict of issue property values for the alert to be created with.
 
   Args:
@@ -60,41 +61,29 @@ def GetAlertProperties(services, cnxn, project_id, incident_id, label, body):
       be created in.
     incident_id: string containing an optional unique incident used to
       de-dupe alert issues.
-    label: the label to be added to the alert issue.
+    trooper_queue: the label specifying the trooper queue to add an issue into.
     body: the body text of the alert notification message.
 
   Returns:
     A dict of issue property values to be used for issue creation.
   """
   # TODO(crbug/807064) - parse and get property values from email headers.
+  proj_config = services.config.GetProjectConfig(cnxn, project_id)
   props = {
       'owner_id': None,
       'cc_ids': [],
-      'component_ids': [],
+      'component_ids': _GetComponentIDs(proj_config, body),
       'field_values': [],
-      'labels': [],
       'status': 'Available',
-      'incident_label': '',
+
+      # Props that are added as labels.
+      'incident_label': _GetIncidentLabel(incident_id),
+      'priority': 'Pri-2',
+      'trooper_queue': trooper_queue or 'Infra-Troopers-Alerts',
   }
 
-  # component IDs
-  #
-  # TODO(crbug/807064): Remove this special casing once components can be set
-  # via the email header
-  config = services.config.GetProjectConfig(cnxn, project_id)
-  components = set()
-  components.add('Infra>Codesearch' if 'codesearch' in body else 'Infra')
-  props['component_ids'] = tracker_helpers.LookupComponentIDs(
-      list(components), config)
-
-  # labels
-  labels = set(['Restrict-View-Google', 'Pri-2'])
-  labels.add(label or 'Infra-Troopers-Alerts')
-  props['labels'] = list(labels)
-  if incident_id:
-    props['incident_label'] = 'Incident-Id-' + incident_id
-    labels.add(props['incident_label'])
-  props['labels'] = list(labels)
+  props['labels'] = _GetLabels(
+      props['incident_label'], props['priority'], props['trooper_queue'])
 
   return props
 
@@ -159,3 +148,21 @@ def ProcessEmailNotification(
 
     if commands_found:
       uia.Run(cnxn, services, allow_edit=True)
+
+
+def _GetComponentIDs(proj_config, body):
+  # TODO(crbug/807064): Remove this special casing once components can be set
+  # via the email header
+  return tracker_helpers.LookupComponentIDs(
+      ['Infra>Codesearch' if 'codesearch' in body else 'Infra'], proj_config)
+
+
+def _GetIncidentLabel(incident_id):
+  return 'Incident-Id-%s' % incident_id if incident_id else ''
+
+
+def _GetLabels(incident_label, priority, trooper_queue):
+  labels = set(['Restrict-View-Google'])
+  labels.update(label for label in [incident_label, priority, trooper_queue]
+                if label)
+  return list(labels)

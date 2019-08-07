@@ -25,13 +25,17 @@ MINIMAL_HEADER_LINES = [
     ('To', 'proj@monorail.example.com'),
     ('Cc', 'ningerso@chromium.org'),
     ('Subject', 'Issue 123 in proj: broken link'),
-    ]
+]
 
 # Add one more (long) line for In-Reply-To
 HEADER_LINES = MINIMAL_HEADER_LINES + [
     ('In-Reply-To', '<0=969704940193871313=13442892928193434663='
      'proj@monorail.example.com>'),
-    ]
+]
+
+ALERT_EMAIL_HEADER_LINES = HEADER_LINES + [
+    ('X-Incident-Id', '1234567890123456789'),
+]
 
 
 def MakeMessage(header_list, body):

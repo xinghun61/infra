@@ -44,7 +44,7 @@ class Alert2IssueTest(unittest.TestCase):
     self.services.issue.TestAddIssue(self.issue)
 
     self.msg = testing_helpers.MakeMessage(
-        testing_helpers.HEADER_LINES, 'awesome!')
+        testing_helpers.ALERT_EMAIL_HEADER_LINES, 'awesome!')
 
     self.mox = mox.Mox()
 
@@ -52,25 +52,39 @@ class Alert2IssueTest(unittest.TestCase):
     self.mox.UnsetStubs()
     self.mox.ResetAll()
 
-  def testProcessEmailNotification_NonWhitelistedSender(self):
+  def testGoogleAddrsAreWhitelistedSender(self):
     self.assertTrue(alert2issue.IsWhitelisted('test@google.com'))
     self.assertFalse(alert2issue.IsWhitelisted('test@notgoogle.com'))
 
+  def testProcessEmailNotification_NoIssueUpdatedIfNonWhitelistedSender(self):
+    sender = 'user@malicious.com'
+    self.assertFalse(alert2issue.IsWhitelisted(sender))
     self.mox.StubOutWithMock(alert2issue, 'IsWhitelisted')
-    alert2issue.IsWhitelisted('user@malicious.com').AndReturn(False)
+    alert2issue.IsWhitelisted(sender).AndReturn(False)
 
+    incident_label = alert2issue._GetIncidentLabel(
+        self.msg.get('X-Incident-Id'))
+    self.assertTrue(incident_label)
+
+    # None of the below methods should be called if it is from a non-whitelisted
+    # sender.
+    self.mox.StubOutWithMock(self.services.issue, 'CreateIssueComment')
+    self.mox.StubOutWithMock(self.services.issue, 'CreateIssue')
     self.mox.ReplayAll()
-    auth = authdata.AuthData(user_id=111, email='user@example.com')
+    auth = authdata.AuthData(user_id=111, email=sender)
     alert2issue.ProcessEmailNotification(
         self.services, self.cnxn, self.project, self.project_addr,
-        'user@malicious.com', auth, 'issue title', 'issue body', 'incident')
-
+        sender, auth, 'issue title', 'issue body', incident_label)
     self.mox.VerifyAll()
 
   @patch('features.send_notifications.PrepareAndSendIssueBlockingNotification')
   @patch('features.send_notifications.PrepareAndSendIssueChangeNotification')
   def testProcessEmailNotification_NewIssue(self, fake_pasicn, fake_pasibn):
     """When an alert for a new incident comes in, create a new issue."""
+    incident_id = self.msg.get('X-Incident-Id')
+    incident_label = alert2issue._GetIncidentLabel(incident_id)
+    self.assertTrue(incident_label)
+
     self.mox.StubOutWithMock(tracker_helpers, 'LookupComponentIDs')
     tracker_helpers.LookupComponentIDs(
         ['Infra'],
@@ -78,8 +92,7 @@ class Alert2IssueTest(unittest.TestCase):
 
     self.mox.StubOutWithMock(self.services.config, 'LookupLabelID')
     self.services.config.LookupLabelID(
-        self.cnxn, self.project.project_id, 'Incident-Id-incident-1'
-    ).AndReturn(None)
+        self.cnxn, self.project.project_id, incident_label).AndReturn(None)
 
     # Mock command parsing.
     mock_uia = commitlogcommands.UpdateIssueAction(101)
@@ -96,7 +109,7 @@ class Alert2IssueTest(unittest.TestCase):
     auth = authdata.AuthData(user_id=111, email='user@example.com')
     alert2issue.ProcessEmailNotification(
         self.services, self.cnxn, self.project, self.project_addr,
-        'user@google.com', auth, 'issue title', 'issue body', 'incident-1')
+        'user@google.com', auth, 'issue title', 'issue body', incident_id)
 
     self.mox.VerifyAll()
 
@@ -111,7 +124,7 @@ class Alert2IssueTest(unittest.TestCase):
     self.assertEqual(None, actual_issue.owner_id)
     self.assertEqual(
         sorted(['Infra-Troopers-Alerts', 'Restrict-View-Google',
-                'Pri-2', 'Incident-Id-incident-1']),
+                'Pri-2', incident_label]),
         sorted(actual_issue.labels))
     self.assertEqual(
         'Filed by user@example.com on behalf of user@google.com\n\nissue body',
@@ -127,6 +140,10 @@ class Alert2IssueTest(unittest.TestCase):
 
     If the body contains the string 'codesearch' then we should auto-assign to
     the Infra>Codesearch component."""
+    incident_id = self.msg.get('X-Incident-Id')
+    incident_label = alert2issue._GetIncidentLabel(incident_id)
+    self.assertTrue(incident_label)
+
     self.mox.StubOutWithMock(tracker_helpers, 'LookupComponentIDs')
     tracker_helpers.LookupComponentIDs(
         ['Infra>Codesearch'],
@@ -134,7 +151,7 @@ class Alert2IssueTest(unittest.TestCase):
 
     self.mox.StubOutWithMock(self.services.config, 'LookupLabelID')
     self.services.config.LookupLabelID(
-        self.cnxn, self.project.project_id, 'Incident-Id-incident-1'
+        self.cnxn, self.project.project_id, incident_label,
     ).AndReturn(None)
 
     # Mock command parsing.
@@ -153,7 +170,7 @@ class Alert2IssueTest(unittest.TestCase):
     alert2issue.ProcessEmailNotification(
         self.services, self.cnxn, self.project, self.project_addr,
         'user@google.com', auth, 'issue title', 'issue body codesearch',
-        'incident-1')
+        incident_id)
 
     self.mox.VerifyAll()
 
@@ -165,10 +182,13 @@ class Alert2IssueTest(unittest.TestCase):
 
   def testProcessEmailNotification_ExistingIssue(self):
     """When an alert for an ongoing incident comes in, add a comment."""
-    self.issue.labels = ['Incident-Id-incident-1']
+    incident_id = self.msg.get('X-Incident-Id')
+    incident_label = alert2issue._GetIncidentLabel(incident_id)
+    self.assertTrue(incident_label)
+
     self.mox.StubOutWithMock(self.services.config, 'LookupLabelID')
     self.services.config.LookupLabelID(
-        self.cnxn, self.project.project_id, 'Incident-Id-incident-1'
+        self.cnxn, self.project.project_id, incident_label,
     ).AndReturn(1234)
 
     self.mox.StubOutWithMock(self.services.issue, 'GetIIDsByLabelIDs')
@@ -201,6 +221,6 @@ class Alert2IssueTest(unittest.TestCase):
     auth = authdata.AuthData(user_id=111, email='user@example.com')
     alert2issue.ProcessEmailNotification(
         self.services, self.cnxn, self.project, self.project_addr,
-        'user@google.com', auth, 'issue title', 'issue body', 'incident-1')
+        'user@google.com', auth, 'issue title', 'issue body', incident_id)
 
     self.mox.VerifyAll()
