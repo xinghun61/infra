@@ -24,7 +24,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   package='ts_mon.proto',
   syntax='proto2',
   serialized_options=None,
-  serialized_pb=_b('\n\rmetrics.proto\x12\x0cts_mon.proto\x1a\tany.proto\x1a\x0ftimestamp.proto\x1a acquisition_network_device.proto\x1a\x16\x61\x63quisition_task.proto\"M\n\x0eMetricsPayload\x12;\n\x12metrics_collection\x18\x01 \x03(\x0b\x32\x1f.ts_mon.proto.MetricsCollection\"\xb7\x01\n\x11MetricsCollection\x12\x36\n\x10metrics_data_set\x18\x01 \x03(\x0b\x32\x1c.ts_mon.proto.MetricsDataSet\x12\x35\n\x0enetwork_device\x18\x0b \x01(\x0b\x32\x1b.ts_mon.proto.NetworkDeviceH\x00\x12\"\n\x04task\x18\x0c \x01(\x0b\x32\x12.ts_mon.proto.TaskH\x00\x42\x0f\n\rtarget_schema\"\xe5\x03\n\x0eMetricsDataSet\x12\x13\n\x0bmetric_name\x18\x01 \x01(\t\x12L\n\x10\x66ield_descriptor\x18\x02 \x03(\x0b\x32\x32.ts_mon.proto.MetricsDataSet.MetricFieldDescriptor\x12-\n\x0bstream_kind\x18\x03 \x01(\x0e\x32\x18.ts_mon.proto.StreamKind\x12+\n\nvalue_type\x18\x04 \x01(\x0e\x32\x17.ts_mon.proto.ValueType\x12\x13\n\x0b\x64\x65scription\x18\x05 \x01(\t\x12.\n\x0b\x61nnotations\x18\x06 \x01(\x0b\x32\x19.ts_mon.proto.Annotations\x12\'\n\x04\x64\x61ta\x18\x07 \x03(\x0b\x32\x19.ts_mon.proto.MetricsData\x1a\xa5\x01\n\x15MetricFieldDescriptor\x12\x0c\n\x04name\x18\x01 \x01(\t\x12P\n\nfield_type\x18\x02 \x01(\x0e\x32<.ts_mon.proto.MetricsDataSet.MetricFieldDescriptor.FieldType\",\n\tFieldType\x12\n\n\x06STRING\x10\x00\x12\t\n\x05INT64\x10\x01\x12\x08\n\x04\x42OOL\x10\x02\"\xd3\t\n\x0bMetricsData\x12\x14\n\nbool_value\x18\x01 \x01(\x08H\x00\x12\x16\n\x0cstring_value\x18\x02 \x01(\tH\x00\x12\x15\n\x0bint64_value\x18\x03 \x01(\x03H\x00\x12\x16\n\x0c\x64ouble_value\x18\x04 \x01(\x01H\x00\x12\x44\n\x12\x64istribution_value\x18\x05 \x01(\x0b\x32&.ts_mon.proto.MetricsData.DistributionH\x00\x12\x34\n\x05\x66ield\x18\x06 \x03(\x0b\x32%.ts_mon.proto.MetricsData.MetricField\x12\x30\n\x0fstart_timestamp\x18\x07 \x01(\x0b\x32\x17.ts_mon.proto.Timestamp\x12.\n\rend_timestamp\x18\x08 \x01(\x0b\x32\x17.ts_mon.proto.Timestamp\x1ai\n\x0bMetricField\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x16\n\x0cstring_value\x18\x02 \x01(\tH\x00\x12\x15\n\x0bint64_value\x18\x03 \x01(\x03H\x00\x12\x14\n\nbool_value\x18\x04 \x01(\x08H\x00\x42\x07\n\x05value\x1a\x94\x06\n\x0c\x44istribution\x12\r\n\x05\x63ount\x18\x01 \x01(\x03\x12\x0c\n\x04mean\x18\x02 \x01(\x01\x12 \n\x18sum_of_squared_deviation\x18\x03 \x01(\x01\x12\x0f\n\x07minimum\x18\x04 \x01(\x01\x12\x0f\n\x07maximum\x18\x05 \x01(\x01\x12N\n\x0elinear_buckets\x18\x06 \x01(\x0b\x32\x34.ts_mon.proto.MetricsData.Distribution.LinearOptionsH\x00\x12X\n\x13\x65xponential_buckets\x18\x07 \x01(\x0b\x32\x39.ts_mon.proto.MetricsData.Distribution.ExponentialOptionsH\x00\x12R\n\x10\x65xplicit_buckets\x18\x08 \x01(\x0b\x32\x36.ts_mon.proto.MetricsData.Distribution.ExplicitOptionsH\x00\x12\x18\n\x0c\x62ucket_count\x18\t \x03(\x03\x42\x02\x10\x01\x12\x41\n\x08\x65xemplar\x18\n \x03(\x0b\x32/.ts_mon.proto.MetricsData.Distribution.Exemplar\x1aJ\n\rLinearOptions\x12\x1a\n\x12num_finite_buckets\x18\x01 \x01(\x05\x12\r\n\x05width\x18\x02 \x01(\x01\x12\x0e\n\x06offset\x18\x03 \x01(\x01\x1aV\n\x12\x45xponentialOptions\x12\x1a\n\x12num_finite_buckets\x18\x01 \x01(\x05\x12\x15\n\rgrowth_factor\x18\x02 \x01(\x01\x12\r\n\x05scale\x18\x03 \x01(\x01\x1a$\n\x0f\x45xplicitOptions\x12\x11\n\x05\x62ound\x18\x01 \x03(\x01\x42\x02\x10\x01\x1al\n\x08\x45xemplar\x12\r\n\x05value\x18\x01 \x01(\x01\x12*\n\ttimestamp\x18\x02 \x01(\x0b\x32\x17.ts_mon.proto.Timestamp\x12%\n\nattachment\x18\x03 \x03(\x0b\x32\x11.ts_mon.proto.AnyB\x10\n\x0e\x62ucket_optionsB\x07\n\x05value\"j\n\x0b\x41nnotations\x12\x0c\n\x04unit\x18\x01 \x01(\t\x12\x11\n\ttimestamp\x18\x02 \x01(\x08\x12\x13\n\x0b\x64\x65precation\x18\x03 \x01(\t\x12%\n\nannotation\x18\x04 \x03(\x0b\x32\x11.ts_mon.proto.Any*2\n\nStreamKind\x12\t\n\x05GAUGE\x10\x00\x12\x0e\n\nCUMULATIVE\x10\x01\x12\t\n\x05\x44\x45LTA\x10\x02*J\n\tValueType\x12\x08\n\x04\x42OOL\x10\x00\x12\n\n\x06STRING\x10\x01\x12\t\n\x05INT64\x10\x02\x12\n\n\x06\x44OUBLE\x10\x03\x12\x10\n\x0c\x44ISTRIBUTION\x10\x04')
+  serialized_pb=_b('\n\rmetrics.proto\x12\x0cts_mon.proto\x1a\tany.proto\x1a\x0ftimestamp.proto\x1a acquisition_network_device.proto\x1a\x16\x61\x63quisition_task.proto\"M\n\x0eMetricsPayload\x12;\n\x12metrics_collection\x18\x01 \x03(\x0b\x32\x1f.ts_mon.proto.MetricsCollection\"\xe1\x02\n\x11MetricsCollection\x12\x36\n\x10metrics_data_set\x18\x01 \x03(\x0b\x32\x1c.ts_mon.proto.MetricsDataSet\x12?\n\x0broot_labels\x18\x02 \x03(\x0b\x32*.ts_mon.proto.MetricsCollection.RootLabels\x12\x35\n\x0enetwork_device\x18\x0b \x01(\x0b\x32\x1b.ts_mon.proto.NetworkDeviceH\x00\x12\"\n\x04task\x18\x0c \x01(\x0b\x32\x12.ts_mon.proto.TaskH\x00\x1ag\n\nRootLabels\x12\x0b\n\x03key\x18\x01 \x02(\t\x12\x16\n\x0cstring_value\x18\x02 \x01(\tH\x00\x12\x15\n\x0bint64_value\x18\x03 \x01(\x03H\x00\x12\x14\n\nbool_value\x18\x04 \x01(\x08H\x00\x42\x07\n\x05valueB\x0f\n\rtarget_schema\"\xe5\x03\n\x0eMetricsDataSet\x12\x13\n\x0bmetric_name\x18\x01 \x01(\t\x12L\n\x10\x66ield_descriptor\x18\x02 \x03(\x0b\x32\x32.ts_mon.proto.MetricsDataSet.MetricFieldDescriptor\x12-\n\x0bstream_kind\x18\x03 \x01(\x0e\x32\x18.ts_mon.proto.StreamKind\x12+\n\nvalue_type\x18\x04 \x01(\x0e\x32\x17.ts_mon.proto.ValueType\x12\x13\n\x0b\x64\x65scription\x18\x05 \x01(\t\x12.\n\x0b\x61nnotations\x18\x06 \x01(\x0b\x32\x19.ts_mon.proto.Annotations\x12\'\n\x04\x64\x61ta\x18\x07 \x03(\x0b\x32\x19.ts_mon.proto.MetricsData\x1a\xa5\x01\n\x15MetricFieldDescriptor\x12\x0c\n\x04name\x18\x01 \x01(\t\x12P\n\nfield_type\x18\x02 \x01(\x0e\x32<.ts_mon.proto.MetricsDataSet.MetricFieldDescriptor.FieldType\",\n\tFieldType\x12\n\n\x06STRING\x10\x00\x12\t\n\x05INT64\x10\x01\x12\x08\n\x04\x42OOL\x10\x02\"\xd3\t\n\x0bMetricsData\x12\x14\n\nbool_value\x18\x01 \x01(\x08H\x00\x12\x16\n\x0cstring_value\x18\x02 \x01(\tH\x00\x12\x15\n\x0bint64_value\x18\x03 \x01(\x03H\x00\x12\x16\n\x0c\x64ouble_value\x18\x04 \x01(\x01H\x00\x12\x44\n\x12\x64istribution_value\x18\x05 \x01(\x0b\x32&.ts_mon.proto.MetricsData.DistributionH\x00\x12\x34\n\x05\x66ield\x18\x06 \x03(\x0b\x32%.ts_mon.proto.MetricsData.MetricField\x12\x30\n\x0fstart_timestamp\x18\x07 \x01(\x0b\x32\x17.ts_mon.proto.Timestamp\x12.\n\rend_timestamp\x18\x08 \x01(\x0b\x32\x17.ts_mon.proto.Timestamp\x1ai\n\x0bMetricField\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x16\n\x0cstring_value\x18\x02 \x01(\tH\x00\x12\x15\n\x0bint64_value\x18\x03 \x01(\x03H\x00\x12\x14\n\nbool_value\x18\x04 \x01(\x08H\x00\x42\x07\n\x05value\x1a\x94\x06\n\x0c\x44istribution\x12\r\n\x05\x63ount\x18\x01 \x01(\x03\x12\x0c\n\x04mean\x18\x02 \x01(\x01\x12 \n\x18sum_of_squared_deviation\x18\x03 \x01(\x01\x12\x0f\n\x07minimum\x18\x04 \x01(\x01\x12\x0f\n\x07maximum\x18\x05 \x01(\x01\x12N\n\x0elinear_buckets\x18\x06 \x01(\x0b\x32\x34.ts_mon.proto.MetricsData.Distribution.LinearOptionsH\x00\x12X\n\x13\x65xponential_buckets\x18\x07 \x01(\x0b\x32\x39.ts_mon.proto.MetricsData.Distribution.ExponentialOptionsH\x00\x12R\n\x10\x65xplicit_buckets\x18\x08 \x01(\x0b\x32\x36.ts_mon.proto.MetricsData.Distribution.ExplicitOptionsH\x00\x12\x18\n\x0c\x62ucket_count\x18\t \x03(\x03\x42\x02\x10\x01\x12\x41\n\x08\x65xemplar\x18\n \x03(\x0b\x32/.ts_mon.proto.MetricsData.Distribution.Exemplar\x1aJ\n\rLinearOptions\x12\x1a\n\x12num_finite_buckets\x18\x01 \x01(\x05\x12\r\n\x05width\x18\x02 \x01(\x01\x12\x0e\n\x06offset\x18\x03 \x01(\x01\x1aV\n\x12\x45xponentialOptions\x12\x1a\n\x12num_finite_buckets\x18\x01 \x01(\x05\x12\x15\n\rgrowth_factor\x18\x02 \x01(\x01\x12\r\n\x05scale\x18\x03 \x01(\x01\x1a$\n\x0f\x45xplicitOptions\x12\x11\n\x05\x62ound\x18\x01 \x03(\x01\x42\x02\x10\x01\x1al\n\x08\x45xemplar\x12\r\n\x05value\x18\x01 \x01(\x01\x12*\n\ttimestamp\x18\x02 \x01(\x0b\x32\x17.ts_mon.proto.Timestamp\x12%\n\nattachment\x18\x03 \x03(\x0b\x32\x11.ts_mon.proto.AnyB\x10\n\x0e\x62ucket_optionsB\x07\n\x05value\"j\n\x0b\x41nnotations\x12\x0c\n\x04unit\x18\x01 \x01(\t\x12\x11\n\ttimestamp\x18\x02 \x01(\x08\x12\x13\n\x0b\x64\x65precation\x18\x03 \x01(\t\x12%\n\nannotation\x18\x04 \x03(\x0b\x32\x11.ts_mon.proto.Any*2\n\nStreamKind\x12\t\n\x05GAUGE\x10\x00\x12\x0e\n\nCUMULATIVE\x10\x01\x12\t\n\x05\x44\x45LTA\x10\x02*J\n\tValueType\x12\x08\n\x04\x42OOL\x10\x00\x12\n\n\x06STRING\x10\x01\x12\t\n\x05INT64\x10\x02\x12\n\n\x06\x44OUBLE\x10\x03\x12\x10\n\x0c\x44ISTRIBUTION\x10\x04')
   ,
   dependencies=[any__pb2.DESCRIPTOR,timestamp__pb2.DESCRIPTOR,acquisition__network__device__pb2.DESCRIPTOR,acquisition__task__pb2.DESCRIPTOR,])
 
@@ -49,8 +49,8 @@ _STREAMKIND = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   serialized_options=None,
-  serialized_start=2216,
-  serialized_end=2266,
+  serialized_start=2386,
+  serialized_end=2436,
 )
 _sym_db.RegisterEnumDescriptor(_STREAMKIND)
 
@@ -84,8 +84,8 @@ _VALUETYPE = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   serialized_options=None,
-  serialized_start=2268,
-  serialized_end=2342,
+  serialized_start=2438,
+  serialized_end=2512,
 )
 _sym_db.RegisterEnumDescriptor(_VALUETYPE)
 
@@ -121,8 +121,8 @@ _METRICSDATASET_METRICFIELDDESCRIPTOR_FIELDTYPE = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   serialized_options=None,
-  serialized_start=824,
-  serialized_end=868,
+  serialized_start=994,
+  serialized_end=1038,
 )
 _sym_db.RegisterEnumDescriptor(_METRICSDATASET_METRICFIELDDESCRIPTOR_FIELDTYPE)
 
@@ -158,31 +158,38 @@ _METRICSPAYLOAD = _descriptor.Descriptor(
 )
 
 
-_METRICSCOLLECTION = _descriptor.Descriptor(
-  name='MetricsCollection',
-  full_name='ts_mon.proto.MetricsCollection',
+_METRICSCOLLECTION_ROOTLABELS = _descriptor.Descriptor(
+  name='RootLabels',
+  full_name='ts_mon.proto.MetricsCollection.RootLabels',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='metrics_data_set', full_name='ts_mon.proto.MetricsCollection.metrics_data_set', index=0,
-      number=1, type=11, cpp_type=10, label=3,
-      has_default_value=False, default_value=[],
+      name='key', full_name='ts_mon.proto.MetricsCollection.RootLabels.key', index=0,
+      number=1, type=9, cpp_type=9, label=2,
+      has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='network_device', full_name='ts_mon.proto.MetricsCollection.network_device', index=1,
-      number=11, type=11, cpp_type=10, label=1,
-      has_default_value=False, default_value=None,
+      name='string_value', full_name='ts_mon.proto.MetricsCollection.RootLabels.string_value', index=1,
+      number=2, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='task', full_name='ts_mon.proto.MetricsCollection.task', index=2,
-      number=12, type=11, cpp_type=10, label=1,
-      has_default_value=False, default_value=None,
+      name='int64_value', full_name='ts_mon.proto.MetricsCollection.RootLabels.int64_value', index=2,
+      number=3, type=3, cpp_type=2, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='bool_value', full_name='ts_mon.proto.MetricsCollection.RootLabels.bool_value', index=3,
+      number=4, type=8, cpp_type=7, label=1,
+      has_default_value=False, default_value=False,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
@@ -198,11 +205,65 @@ _METRICSCOLLECTION = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
     _descriptor.OneofDescriptor(
+      name='value', full_name='ts_mon.proto.MetricsCollection.RootLabels.value',
+      index=0, containing_type=None, fields=[]),
+  ],
+  serialized_start=430,
+  serialized_end=533,
+)
+
+_METRICSCOLLECTION = _descriptor.Descriptor(
+  name='MetricsCollection',
+  full_name='ts_mon.proto.MetricsCollection',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='metrics_data_set', full_name='ts_mon.proto.MetricsCollection.metrics_data_set', index=0,
+      number=1, type=11, cpp_type=10, label=3,
+      has_default_value=False, default_value=[],
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='root_labels', full_name='ts_mon.proto.MetricsCollection.root_labels', index=1,
+      number=2, type=11, cpp_type=10, label=3,
+      has_default_value=False, default_value=[],
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='network_device', full_name='ts_mon.proto.MetricsCollection.network_device', index=2,
+      number=11, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='task', full_name='ts_mon.proto.MetricsCollection.task', index=3,
+      number=12, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+  ],
+  extensions=[
+  ],
+  nested_types=[_METRICSCOLLECTION_ROOTLABELS, ],
+  enum_types=[
+  ],
+  serialized_options=None,
+  is_extendable=False,
+  syntax='proto2',
+  extension_ranges=[],
+  oneofs=[
+    _descriptor.OneofDescriptor(
       name='target_schema', full_name='ts_mon.proto.MetricsCollection.target_schema',
       index=0, containing_type=None, fields=[]),
   ],
   serialized_start=197,
-  serialized_end=380,
+  serialized_end=550,
 )
 
 
@@ -240,8 +301,8 @@ _METRICSDATASET_METRICFIELDDESCRIPTOR = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=703,
-  serialized_end=868,
+  serialized_start=873,
+  serialized_end=1038,
 )
 
 _METRICSDATASET = _descriptor.Descriptor(
@@ -312,8 +373,8 @@ _METRICSDATASET = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=383,
-  serialized_end=868,
+  serialized_start=553,
+  serialized_end=1038,
 )
 
 
@@ -367,8 +428,8 @@ _METRICSDATA_METRICFIELD = _descriptor.Descriptor(
       name='value', full_name='ts_mon.proto.MetricsData.MetricField.value',
       index=0, containing_type=None, fields=[]),
   ],
-  serialized_start=1201,
-  serialized_end=1306,
+  serialized_start=1371,
+  serialized_end=1476,
 )
 
 _METRICSDATA_DISTRIBUTION_LINEAROPTIONS = _descriptor.Descriptor(
@@ -411,8 +472,8 @@ _METRICSDATA_DISTRIBUTION_LINEAROPTIONS = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1769,
-  serialized_end=1843,
+  serialized_start=1939,
+  serialized_end=2013,
 )
 
 _METRICSDATA_DISTRIBUTION_EXPONENTIALOPTIONS = _descriptor.Descriptor(
@@ -455,8 +516,8 @@ _METRICSDATA_DISTRIBUTION_EXPONENTIALOPTIONS = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1845,
-  serialized_end=1931,
+  serialized_start=2015,
+  serialized_end=2101,
 )
 
 _METRICSDATA_DISTRIBUTION_EXPLICITOPTIONS = _descriptor.Descriptor(
@@ -485,8 +546,8 @@ _METRICSDATA_DISTRIBUTION_EXPLICITOPTIONS = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1933,
-  serialized_end=1969,
+  serialized_start=2103,
+  serialized_end=2139,
 )
 
 _METRICSDATA_DISTRIBUTION_EXEMPLAR = _descriptor.Descriptor(
@@ -529,8 +590,8 @@ _METRICSDATA_DISTRIBUTION_EXEMPLAR = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1971,
-  serialized_end=2079,
+  serialized_start=2141,
+  serialized_end=2249,
 )
 
 _METRICSDATA_DISTRIBUTION = _descriptor.Descriptor(
@@ -625,8 +686,8 @@ _METRICSDATA_DISTRIBUTION = _descriptor.Descriptor(
       name='bucket_options', full_name='ts_mon.proto.MetricsData.Distribution.bucket_options',
       index=0, containing_type=None, fields=[]),
   ],
-  serialized_start=1309,
-  serialized_end=2097,
+  serialized_start=1479,
+  serialized_end=2267,
 )
 
 _METRICSDATA = _descriptor.Descriptor(
@@ -707,8 +768,8 @@ _METRICSDATA = _descriptor.Descriptor(
       name='value', full_name='ts_mon.proto.MetricsData.value',
       index=0, containing_type=None, fields=[]),
   ],
-  serialized_start=871,
-  serialized_end=2106,
+  serialized_start=1041,
+  serialized_end=2276,
 )
 
 
@@ -759,12 +820,23 @@ _ANNOTATIONS = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=2108,
-  serialized_end=2214,
+  serialized_start=2278,
+  serialized_end=2384,
 )
 
 _METRICSPAYLOAD.fields_by_name['metrics_collection'].message_type = _METRICSCOLLECTION
+_METRICSCOLLECTION_ROOTLABELS.containing_type = _METRICSCOLLECTION
+_METRICSCOLLECTION_ROOTLABELS.oneofs_by_name['value'].fields.append(
+  _METRICSCOLLECTION_ROOTLABELS.fields_by_name['string_value'])
+_METRICSCOLLECTION_ROOTLABELS.fields_by_name['string_value'].containing_oneof = _METRICSCOLLECTION_ROOTLABELS.oneofs_by_name['value']
+_METRICSCOLLECTION_ROOTLABELS.oneofs_by_name['value'].fields.append(
+  _METRICSCOLLECTION_ROOTLABELS.fields_by_name['int64_value'])
+_METRICSCOLLECTION_ROOTLABELS.fields_by_name['int64_value'].containing_oneof = _METRICSCOLLECTION_ROOTLABELS.oneofs_by_name['value']
+_METRICSCOLLECTION_ROOTLABELS.oneofs_by_name['value'].fields.append(
+  _METRICSCOLLECTION_ROOTLABELS.fields_by_name['bool_value'])
+_METRICSCOLLECTION_ROOTLABELS.fields_by_name['bool_value'].containing_oneof = _METRICSCOLLECTION_ROOTLABELS.oneofs_by_name['value']
 _METRICSCOLLECTION.fields_by_name['metrics_data_set'].message_type = _METRICSDATASET
+_METRICSCOLLECTION.fields_by_name['root_labels'].message_type = _METRICSCOLLECTION_ROOTLABELS
 _METRICSCOLLECTION.fields_by_name['network_device'].message_type = acquisition__network__device__pb2._NETWORKDEVICE
 _METRICSCOLLECTION.fields_by_name['task'].message_type = acquisition__task__pb2._TASK
 _METRICSCOLLECTION.oneofs_by_name['target_schema'].fields.append(
@@ -848,11 +920,19 @@ MetricsPayload = _reflection.GeneratedProtocolMessageType('MetricsPayload', (_me
 _sym_db.RegisterMessage(MetricsPayload)
 
 MetricsCollection = _reflection.GeneratedProtocolMessageType('MetricsCollection', (_message.Message,), dict(
+
+  RootLabels = _reflection.GeneratedProtocolMessageType('RootLabels', (_message.Message,), dict(
+    DESCRIPTOR = _METRICSCOLLECTION_ROOTLABELS,
+    __module__ = 'metrics_pb2'
+    # @@protoc_insertion_point(class_scope:ts_mon.proto.MetricsCollection.RootLabels)
+    ))
+  ,
   DESCRIPTOR = _METRICSCOLLECTION,
   __module__ = 'metrics_pb2'
   # @@protoc_insertion_point(class_scope:ts_mon.proto.MetricsCollection)
   ))
 _sym_db.RegisterMessage(MetricsCollection)
+_sym_db.RegisterMessage(MetricsCollection.RootLabels)
 
 MetricsDataSet = _reflection.GeneratedProtocolMessageType('MetricsDataSet', (_message.Message,), dict(
 
