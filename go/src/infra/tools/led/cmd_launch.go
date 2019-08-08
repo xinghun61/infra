@@ -93,6 +93,28 @@ func setOutputResultPath(s *Systemland) error {
 	return nil
 }
 
+// setInputRecipes passes the CIPD package or isolate containing the recipes
+// code into the led recipe module. This gives the build the information it
+// needs to launch child builds using the same version of the recipes code.
+func setInputRecipes(u *Userland) error {
+	ledProperties := map[string]interface{}{
+		"launched_by_led": true,
+	}
+	if u.RecipeIsolatedHash != "" {
+		ledProperties["isolated_input"] = map[string]interface{}{
+			// TODO(iannucci): Set server and namespace too.
+			"hash": u.RecipeIsolatedHash,
+		}
+	} else if u.RecipeCIPDSource != nil {
+		ledProperties["cipd_input"] = map[string]interface{}{
+			"package": u.RecipeCIPDSource.Package,
+			"version": u.RecipeCIPDSource.Version,
+		}
+	}
+	u.RecipeProperties["$recipe_engine/led"] = ledProperties
+	return nil
+}
+
 func (c *cmdLaunch) Run(a subcommands.Application, args []string, env subcommands.Env) int {
 	ctx := c.logCfg.Set(cli.GetContext(a, c, env))
 	authOpts, err := c.validateFlags(ctx, args)
@@ -143,6 +165,7 @@ func (c *cmdLaunch) Run(a subcommands.Application, args []string, env subcommand
 	ejd := jd.Edit()
 	ejd.tweakSystemland(setOutputResultPath)
 	ejd.ConsolidateIsolateSources(ctx, isoClient)
+	ejd.tweakUserland(setInputRecipes)
 	if err := ejd.Finalize(); err != nil {
 		errors.Log(ctx, err)
 		return 1
