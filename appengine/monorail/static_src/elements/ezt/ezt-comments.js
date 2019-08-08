@@ -3,10 +3,12 @@
 // found in the LICENSE file.
 
 import {LitElement, html, css} from 'lit-element';
+import qs from 'qs';
 import {store, connectStore} from 'elements/reducers/base.js';
 import * as issue from 'elements/reducers/issue.js';
 import * as ui from 'elements/reducers/ui.js';
 import * as user from 'elements/reducers/user.js';
+import * as sitewide from 'elements/reducers/sitewide.js';
 import AutoRefreshPrpcClient from 'prpc.js';
 import 'elements/issue-detail/mr-comment-list/mr-comment-list.js';
 import 'elements/framework/mr-comment-content/mr-description.js';
@@ -114,6 +116,12 @@ export class EztComments extends connectStore(LitElement) {
   }
 
   _onLocationChanged() {
+    // Make flipper still work in legazy EZT page.
+    const params = qs.parse(window.location.search.substr(1));
+    if (params) {
+      store.dispatch(sitewide.setQueryParams(params));
+    }
+
     const hash = window.location.hash.substr(1);
     if (hash) {
       store.dispatch(ui.setFocusId(hash));
@@ -125,7 +133,7 @@ export class EztComments extends connectStore(LitElement) {
       // prpcClient is not defined yet, but we need it to fetch the
       // comment references for autocomplete.
       prpcClient = new AutoRefreshPrpcClient(
-        window.CS_env.token, window.CS_env.tokenExpiresSec);
+          window.CS_env.token, window.CS_env.tokenExpiresSec);
     }
 
     const allComments = [this.descriptionList[0]].concat(this.commentList);
@@ -137,7 +145,7 @@ export class EztComments extends connectStore(LitElement) {
     });
     store.dispatch(user.fetchPrefs());
     store.dispatch(issue.fetchCommentReferences(
-      allComments, this.projectName));
+        allComments, this.projectName));
   }
 }
 customElements.define('ezt-comments', EztComments);

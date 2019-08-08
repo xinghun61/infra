@@ -13,6 +13,7 @@ import * as project from 'elements/reducers/project.js';
 import * as issue from 'elements/reducers/issue.js';
 import * as user from 'elements/reducers/user.js';
 import * as ui from 'elements/reducers/ui.js';
+import * as sitewide from 'elements/reducers/sitewide.js';
 import {arrayToEnglish} from 'elements/shared/helpers.js';
 import 'elements/framework/mr-header/mr-header.js';
 import 'elements/framework/mr-keystrokes/mr-keystrokes.js';
@@ -158,6 +159,7 @@ export class MrApp extends connectStore(LitElement) {
 
   stateChanged(state) {
     this.dirtyForms = ui.dirtyForms(state);
+    this.queryParams = sitewide.queryParams(state);
   }
 
   updated(changedProperties) {
@@ -231,7 +233,8 @@ export class MrApp extends connectStore(LitElement) {
       lowerCaseParams[key.toLowerCase()] = params[key];
     });
     ctx.query = lowerCaseParams;
-    this.queryParams = ctx.query;
+    store.dispatch(sitewide.setQueryParams(ctx.query));
+
     this._currentContext = ctx;
 
     // Increment the count of navigations in the Redux store.

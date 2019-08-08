@@ -58,4 +58,18 @@ describe('mr-flipper', () => {
     assert.equal(listUrlEl.href, 'http://listurl/');
     assert.include(countsEl.innerText, '5 of 13');
   });
+
+  it('fetches flipper data when queryParams change', async () => {
+    await element.updateComplete;
+
+    sinon.stub(element, 'fetchFlipperData');
+
+    element.queryParams = {id: 21, q: 'owner:me'};
+
+    sinon.assert.notCalled(element.fetchFlipperData);
+
+    await element.updateComplete;
+
+    sinon.assert.calledWith(element.fetchFlipperData, 'id=21&q=owner%3Ame');
+  });
 });

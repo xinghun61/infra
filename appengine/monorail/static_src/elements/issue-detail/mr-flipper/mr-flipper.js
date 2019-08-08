@@ -3,28 +3,19 @@
 // found in the LICENSE file.
 
 import {LitElement, html, css} from 'lit-element';
+import qs from 'qs';
+import {connectStore} from 'elements/reducers/base.js';
+import * as sitewide from 'elements/reducers/sitewide.js';
 
-export default class MrFlipper extends LitElement {
+export default class MrFlipper extends connectStore(LitElement) {
   static get properties() {
     return {
-      currentIndex: {
-        type: Number,
-      },
-      totalCount: {
-        type: Number,
-      },
-      prevUrl: {
-        type: String,
-      },
-      nextUrl: {
-        type: String,
-      },
-      listUrl: {
-        type: String,
-      },
-      query: {
-        type: String,
-      },
+      currentIndex: {type: Number},
+      totalCount: {type: Number},
+      prevUrl: {type: String},
+      nextUrl: {type: String},
+      listUrl: {type: String},
+      queryParams: {type: Object},
     };
   }
 
@@ -35,14 +26,18 @@ export default class MrFlipper extends LitElement {
     this.prevUrl = null;
     this.nextUrl = null;
     this.listUrl = null;
+
+    this.queryParams = {};
   }
 
-  connectedCallback() {
-    super.connectedCallback();
+  stateChanged(state) {
+    this.queryParams = sitewide.queryParams(state);
+  }
 
-    // TODO(zhangtiff): Tie this value to frontend routing.
-    this.query = location.search;
-    this.fetchFlipperData(this.query);
+  updated(changedProperties) {
+    if (changedProperties.has('queryParams')) {
+      this.fetchFlipperData(qs.stringify(this.queryParams));
+    }
   }
 
   // Eventually this should be replaced with pRPC.
@@ -51,20 +46,20 @@ export default class MrFlipper extends LitElement {
       credentials: 'include',
       method: 'GET',
     };
-    fetch(`detail/flipper${query}`, options).then(
-      (response) => response.text()
+    fetch(`detail/flipper?${query}`, options).then(
+        (response) => response.text()
     ).then(
-      (responseBody) => {
-        let responseData;
-        try {
+        (responseBody) => {
+          let responseData;
+          try {
           // Strip XSSI prefix from response.
-          responseData = JSON.parse(responseBody.substr(5));
-        } catch (e) {
-          console.error(`Error parsing JSON response for flipper: ${e}`);
-          return;
+            responseData = JSON.parse(responseBody.substr(5));
+          } catch (e) {
+            console.error(`Error parsing JSON response for flipper: ${e}`);
+            return;
+          }
+          this._populateResponseData(responseData);
         }
-        this._populateResponseData(responseData);
-      }
     );
   }
 

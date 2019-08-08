@@ -5,23 +5,27 @@
 import sinon from 'sinon';
 import {assert} from 'chai';
 
-import {store} from 'elements/reducers/base.js';
+import {store, stateUpdated} from 'elements/reducers/base.js';
 import {prpcClient} from 'prpc-client-instance.js';
 import * as sitewide from './sitewide.js';
 
 let prpcCall;
-let stateUpdated;
 
 describe('sitewide', () => {
   beforeEach(() => {
     prpcCall = sinon.stub(prpcClient, 'call');
-    stateUpdated = new Promise((resolve) => {
-      store.subscribe(resolve);
-    });
   });
 
   afterEach(() => {
     prpcClient.call.restore();
+  });
+
+  it('setQueryParams updates queryParams', async () => {
+    store.dispatch(sitewide.setQueryParams({test: 'param'}));
+
+    await stateUpdated;
+
+    assert.deepEqual(sitewide.queryParams(store.getState()), {test: 'param'});
   });
 
   describe('getServerStatus', () => {
