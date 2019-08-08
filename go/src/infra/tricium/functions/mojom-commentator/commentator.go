@@ -137,7 +137,7 @@ func analyzeFile(scanner *bufio.Scanner, path string) (results []*tricium.Data_C
 }
 
 func makeComment(path string, line int, subcategory, message string) *tricium.Data_Comment {
-	const url = "https://chromium.googlesource.com/chromium/src/+/master/docs/security/mojo.md#Documentation"
+	const url = "https://bit.ly/31z0aCT"
 	return &tricium.Data_Comment{
 		Category:  fmt.Sprintf("MojomCommentator/%s", subcategory),
 		Message:   fmt.Sprintf("%s\n\nSee %s for details.", message, url),

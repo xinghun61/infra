@@ -25,7 +25,7 @@ func analyzeTestFile(t *testing.T, name string) []*tricium.Data_Comment {
 }
 
 const (
-	url = "https://chromium.googlesource.com/chromium/src/+/master/docs/security/mojo.md#Documentation"
+	url = "https://bit.ly/31z0aCT"
 
 	methodError            = "This method should have a comment describing its behavior, inputs, and outputs.\n\nSee " + url + " for details."
 	interfaceErrorFragment = " should have a top-level comment that at minimum describes the caller and callee and the high-level purpose.\n\nSee " + url + " for details."
