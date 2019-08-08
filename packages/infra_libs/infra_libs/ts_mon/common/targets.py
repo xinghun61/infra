@@ -26,32 +26,29 @@ class Target(object):
     """Populate the 'target' into a MetricsCollection."""
     raise NotImplementedError()
 
-  def to_dict(self):
-    """Return target field values as a dictionary."""
-    return {field: getattr(self, field) for field in self._fields}
-
   def update(self, target_fields):
-    """Update values of some target fields given as a dict."""
-    for field, value in target_fields.iteritems():
-      if field not in self._fields:
-        raise AttributeError('Bad target field: %s' % field)
+    """Update target fields from a dict."""
+    for name, value in target_fields.iteritems():
+      if name not in self._fields:
+        raise AttributeError('Bad target field: %s' % name)
       # Make sure the attribute actually exists in the object.
-      getattr(self, field)
-      setattr(self, field, value)
+      getattr(self, name)
+      setattr(self, name, value)
+
+  def to_dict(self):
+    """Return target fields as a dict."""
+    return {name: getattr(self, name) for name in self._fields}
 
   def __eq__(self, other):
     # pylint: disable=unidiomatic-typecheck
-    if type(self) != type(other):
-      return False
-
-    for field in self._fields:
-      if getattr(self, field) != getattr(other,field):
-        return False
-
-    return True
+    return (type(self) == type(other) and
+            self._fields == other._fields and
+            all(getattr(self, name) == getattr(other, name)
+                for name in self._fields))
 
   def __hash__(self):
-    return hash(tuple(sorted(self.to_dict())))
+    return hash(tuple(getattr(self, name) for name in self._fields))
+
 
 class DeviceTarget(Target):
   """Monitoring interface class for monitoring specific hosts or devices."""
