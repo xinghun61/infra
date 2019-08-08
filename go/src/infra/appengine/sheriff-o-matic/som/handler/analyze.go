@@ -153,7 +153,7 @@ func generateBigQueryAlerts(c context.Context, a *analyzer.Analyzer, tree string
 		}
 	}
 	logging.Infof(c, "filtered alerts, before: %d after: %d", len(builderAlerts), len(filteredBuilderAlerts))
-	builderAlerts = filteredBuilderAlerts
+	builderAlerts = attachFindItResults(c, filteredBuilderAlerts, a.FindIt)
 
 	alerts := []messages.Alert{}
 	for _, ba := range builderAlerts {
@@ -201,6 +201,36 @@ func generateBigQueryAlerts(c context.Context, a *analyzer.Analyzer, tree string
 	}
 
 	return alertsSummary, nil
+}
+
+func attachFindItResults(ctx context.Context, failures []messages.BuildFailure, finditClient client.FindIt) []messages.BuildFailure {
+	for _, bf := range failures {
+		stepName := bf.StepAtFault.Step.Name
+		for _, someBuilder := range bf.Builders {
+			buildAlternativeID := messages.BuildIdentifierByNumber{
+				Project: someBuilder.Project,
+				Bucket:  someBuilder.Bucket,
+				Builder: someBuilder.Name,
+				Number:  someBuilder.LatestFailure,
+			}
+			results, err := finditClient.FinditBuildbucket(ctx, &buildAlternativeID, []string{stepName})
+			if err != nil {
+				logging.Errorf(ctx, "error getting findit results: %v", err)
+			}
+
+			for _, result := range results {
+				if result.StepName != bf.StepAtFault.Step.Name {
+					continue
+				}
+
+				bf.Culprits = append(bf.Culprits, result.Culprits...)
+				bf.HasFindings = len(result.Culprits) > 0
+				bf.IsFinished = result.IsFinished
+				bf.IsSupported = result.IsSupported
+			}
+		}
+	}
+	return failures
 }
 
 func generateAlerts(ctx *router.Context, a *analyzer.Analyzer) (*messages.AlertsSummary, error) {
