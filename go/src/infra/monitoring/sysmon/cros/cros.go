@@ -19,7 +19,7 @@ import (
 var (
 	availMem = metric.NewInt("dev/cros/mem/available",
 		"Available memory of DUT.",
-		nil,
+		&types.MetricMetadata{Units: types.Kibibytes},
 		field.String("container_hostname"))
 	battCharge = metric.NewFloat("dev/cros/battery/charge",
 		"Percentage charge of battery.",
@@ -39,15 +39,15 @@ var (
 		field.String("container_hostname"))
 	temperature = metric.NewFloat("dev/cros/temperature",
 		"Temperature in °C",
-		nil,
+		&types.MetricMetadata{Units: types.DegreeCelsiusUnit},
 		field.String("container_hostname"), field.String("zone"))
 	totalMem = metric.NewInt("dev/cros/mem/total",
 		"Total memory of DUT.",
-		nil,
+		&types.MetricMetadata{Units: types.Kibibytes},
 		field.String("container_hostname"))
 	uptime = metric.NewFloat("dev/cros/uptime",
 		"Uptime of DUT in seconds",
-		nil,
+		&types.MetricMetadata{Units: types.Seconds},
 		field.String("container_hostname"))
 
 	allMetrics = []types.Metric{
