@@ -281,3 +281,32 @@ class IssueDateActionTaskTest(unittest.TestCase):
     self.assertEqual(1, len(tasks))
     notify_owner_task = tasks[0]
     self.assertEqual('starrer333@example.com', notify_owner_task['to'])
+
+  def testCalculateIssuePings_Normal(self):
+    """Return a ping for an issue that has a date that happened today."""
+    issue = fake.MakeTestIssue(
+        789, 1, 'summary', 'New', 0, issue_id=78901)
+    self.services.issue.TestAddIssue(issue)
+    now = int(time.time())
+    self.SetUpFieldValues(issue, now)
+    issue.project_name = 'proj'
+
+    pings = self.servlet._CalculateIssuePings(issue, self.config)
+
+    self.assertEqual(
+        [(self.config.field_defs[1], now),
+         (self.config.field_defs[0], now)],
+        pings)
+
+  def testCalculateIssuePings_Closed(self):
+    """Don't ping for a closed issue."""
+    issue = fake.MakeTestIssue(
+        789, 1, 'summary', 'Fixed', 0, issue_id=78901)
+    self.services.issue.TestAddIssue(issue)
+    now = int(time.time())
+    self.SetUpFieldValues(issue, now)
+    issue.project_name = 'proj'
+
+    pings = self.servlet._CalculateIssuePings(issue, self.config)
+
+    self.assertEqual([], pings)

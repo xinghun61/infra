@@ -32,6 +32,7 @@ from framework import timestr
 from framework import urls
 from proto import tracker_pb2
 from tracker import tracker_bizobj
+from tracker import tracker_helpers
 from tracker import tracker_views
 
 
@@ -204,6 +205,14 @@ class IssueDateActionTask(notify_helpers.NotifyTaskBase):
       if (field.field_id in arrived_dates_by_field_id and
           field.date_action in (tracker_pb2.DateAction.PING_OWNER_ONLY,
                                 tracker_pb2.DateAction.PING_PARTICIPANTS))]
+
+    # TODO(jrobbins): For now, assume all pings apply only to open issues.
+    # Later, allow each date action to specify whether it applies to open
+    # issues or all issues.
+    means_open = tracker_helpers.MeansOpenInProject(
+        tracker_bizobj.GetStatus(issue), config)
+    pings = [ping for ping in pings if means_open]
+
     pings = sorted(pings, key=lambda ping: ping[0].field_name)
     return pings
 
