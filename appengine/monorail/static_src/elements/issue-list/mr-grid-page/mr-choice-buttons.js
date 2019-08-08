@@ -36,16 +36,21 @@ export class MrChoiceButtons extends LitElement {
         display: grid;
         grid-auto-flow: column;
         grid-template-columns: auto;
-        grid-gap: 6px;
+        grid-gap: 2px;
       }
       chops-button {
+        color: var(--chops-gray-600);
         font-size: var(--chops-large-font-size);
         padding: 4px 10px;
         background: var(--chops-choice-bg);
         text-decoration: none;
+        border-radius: 16px;
+        outline: none;
       }
       chops-button[selected] {
         background: var(--chops-blue-50);
+        color: var(--chops-primary-accent-color);
+        border-radius: 16px;
       }
     `;
   };
