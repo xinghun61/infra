@@ -128,23 +128,23 @@ export class MrGrid extends connectStore(LitElement) {
   static get styles() {
     return css`
       table {
+        table-layout: auto;
         border-collapse: collapse;
-        margin: 20px 1%;
         width: 98%;
+        margin: 20px 1%;
         text-align: left;
       }
       th {
         border: 1px solid white;
         padding: 5px;
         background-color: var(--chops-table-header-bg);
+        white-space: nowrap;
       }
       td {
         border: var(--chops-table-divider);
+        padding-left: 0.3em;
         background-color: white;
-      }
-      td .issue-link {
-        margin-right: 0.6em;
-        margin-left: 0.6em;
+        vertical-align: top;
       }
     `;
   }
