@@ -13,6 +13,7 @@ import './mr-grid.js';
 
 export class MrGridPage extends connectStore(LitElement) {
   render() {
+    const displayedProgress = this.progress || 0.02;
     const doneLoading = this.progress === 1;
     const noMatches = this.totalIssues === 0 && doneLoading;
     return html`
@@ -27,8 +28,8 @@ export class MrGridPage extends connectStore(LitElement) {
             Your search did not generate any results.
           </div>` : html`
           <progress
-            title="${Math.round(this.progress * 100)}%"
-            value=${this.progress}
+            title="${Math.round(displayedProgress * 100)}%"
+            value=${displayedProgress}
             ?hidden=${doneLoading}
           ></progress>`}
         <br>
@@ -60,7 +61,7 @@ export class MrGridPage extends connectStore(LitElement) {
   constructor() {
     super();
     this.issues = [];
-    this.progress = 0;
+    this.progress = .0;
     this.queryParams = {y: 'None', x: 'None'};
   };
 
