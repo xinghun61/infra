@@ -959,13 +959,13 @@ class ServeCodeCoverageData(BaseHandler):
     """
     host = self.request.get('host')
     project = self.request.get('project')
-    change = self.request.get('change')
-    patchset = self.request.get('patchset')
+    change = int(self.request.get('change'))
+    patchset = int(self.request.get('patchset'))
 
     logging.info('Serving coverage data for CL:')
     logging.info('host=%s', host)
-    logging.info('change=%s', change)
-    logging.info('patchset=%s', patchset)
+    logging.info('change=%d', change)
+    logging.info('patchset=%d', patchset)
 
     if project and project not in _PROJECTS_WHITELIST:
       kwargs = {'is_project_supported': False}
@@ -987,8 +987,40 @@ class ServeCodeCoverageData(BaseHandler):
     entity = PresubmitCoverageData.Get(
         server_host=host, change=change, patchset=patchset)
     if not entity:
-      return BaseHandler.CreateError(
-          'Requested coverage data is not found.', 404, allowed_origin='*')
+      equivalent_patchsets = code_coverage_util.GetEquivalentPatchsets(
+          host, project, change, patchset)
+      if not equivalent_patchsets:
+        return BaseHandler.CreateError(
+            'Requested coverage data is not found.', 404, allowed_origin='*')
+
+      latest_patchset = None
+      latest_entity = None
+      for ps in sorted(equivalent_patchsets, reverse=True):
+        latest_entity = PresubmitCoverageData.Get(
+            server_host=host, change=change, patchset=ps)
+        if latest_entity:
+          latest_patchset = ps
+          break
+
+      if latest_patchset is None:
+        return BaseHandler.CreateError(
+            'Requested coverage data is not found.', 404, allowed_origin='*')
+
+      rebased_coverage_data = (
+          code_coverage_util.RebasePresubmitCoverageDataBetweenPatchsets(
+              host=host,
+              project=project,
+              change=change,
+              patchset_src=latest_patchset,
+              patchset_dest=patchset,
+              coverage_data_src=latest_entity.data))
+      entity = PresubmitCoverageData.Create(
+          server_host=host,
+          change=change,
+          patchset=patchset,
+          build_id=latest_entity.build_id,
+          data=rebased_coverage_data)
+      entity.put_async()
 
     data = entity.data
     formatted_data = {'files': []}

@@ -98,7 +98,6 @@ class CodeCoverageTest(WaterfallTestCase):
                 'first': 1,
                 'last': 3,
             }],
-            'total_lines': 3,
         },
         {
             'path': '//dir2/test2.cc',
@@ -107,7 +106,6 @@ class CodeCoverageTest(WaterfallTestCase):
                 'first': 5,
                 'last': 10,
             }],
-            'total_lines': 10,
         },
     ]
 
@@ -149,7 +147,6 @@ class CodeCoverageTest(WaterfallTestCase):
             'first': 1,
             'last': 5,
         }],
-        'total_lines': 5,
         'timestamp': 1357,
         'revision': '12345'
     }

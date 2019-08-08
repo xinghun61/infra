@@ -177,7 +177,6 @@ def _CreateSampleFileCoverageData():
               'last': 2,
               'first': 1
           }],
-          'total_lines': 2,
           'timestamp': '140000',
           'uncovered_blocks': [{
               'line': 1,
@@ -284,8 +283,6 @@ class ProcessCodeCoverageDataTest(WaterfallTestCase):
                 'first': 2,
                 'last': 2,
             }],
-            'total_lines':
-                2
         }],
         'summaries':
             None,
@@ -400,8 +397,6 @@ class ProcessCodeCoverageDataTest(WaterfallTestCase):
                 'last': 2,
                 'first': 1
             }],
-            'total_lines':
-                2,
             'timestamp':
                 '140000',
             'uncovered_blocks': [{
@@ -468,7 +463,6 @@ class ServeCodeCoverageDataTest(WaterfallTestCase):
             'first': 1,
             'last': 2,
         }],
-        'total_lines': 2
     }]
     PresubmitCoverageData.Create(
         server_host=host,
@@ -477,8 +471,8 @@ class ServeCodeCoverageDataTest(WaterfallTestCase):
         build_id=build_id,
         data=data).put()
 
-    request_url = ('/coverage/api/coverage-data?host=%s&project=%s&change=%s'
-                   '&patchset=%s&concise=1') % (host, project, change, patchset)
+    request_url = ('/coverage/api/coverage-data?host=%s&project=%s&change=%d'
+                   '&patchset=%d&concise=1') % (host, project, change, patchset)
     response = self.test_app.get(request_url)
 
     expected_response_body = json.dumps({
@@ -486,18 +480,117 @@ class ServeCodeCoverageDataTest(WaterfallTestCase):
         'host': 'chromium-review.googlesource.com',
         'data': {
             'files': [{
-                'path': 'dir/test.cc',
+                'path':
+                    'dir/test.cc',
                 'lines': [{
                     'count': 100,
-                    'line': 1
+                    'line': 1,
                 }, {
                     'count': 100,
-                    'line': 2
+                    'line': 2,
                 }]
             }]
         },
-        'patchset': '4',
-        'change': '138000'
+        'patchset': 4,
+        'change': 138000,
+    })
+    self.assertEqual(expected_response_body, response.body)
+
+  @mock.patch.object(code_coverage.code_coverage_util, 'GetEquivalentPatchsets')
+  def testServeCLPatchCoverageDataNoEquivalentPatchsets(self,
+                                                        mock_get_equivalent_ps):
+    self.UpdateUnitTestConfigSettings('code_coverage_settings',
+                                      {'serve_presubmit_coverage_data': True})
+    host = 'chromium-review.googlesource.com'
+    project = 'chromium/src'
+    change = 138000
+    patchset = 4
+    mock_get_equivalent_ps.return_value = []
+    request_url = ('/coverage/api/coverage-data?host=%s&project=%s&change=%d'
+                   '&patchset=%d&concise=1') % (host, project, change, patchset)
+    response = self.test_app.get(request_url, expect_errors=True)
+    self.assertEqual(404, response.status_int)
+
+  @mock.patch.object(code_coverage.code_coverage_util, 'GetEquivalentPatchsets')
+  def testServeCLPatchCoverageDataEquivalentPatchsetsHaveNoData(
+      self, mock_get_equivalent_ps):
+    self.UpdateUnitTestConfigSettings('code_coverage_settings',
+                                      {'serve_presubmit_coverage_data': True})
+    host = 'chromium-review.googlesource.com'
+    project = 'chromium/src'
+    change = 138000
+    patchset_src = 3
+    patchset_dest = 4
+    mock_get_equivalent_ps.return_value = [patchset_src]
+    request_url = ('/coverage/api/coverage-data?host=%s&project=%s&change=%d'
+                   '&patchset=%d&concise=1') % (host, project, change,
+                                                patchset_dest)
+    response = self.test_app.get(request_url, expect_errors=True)
+    self.assertEqual(404, response.status_int)
+
+  @mock.patch.object(code_coverage.code_coverage_util,
+                     'RebasePresubmitCoverageDataBetweenPatchsets')
+  @mock.patch.object(code_coverage.code_coverage_util, 'GetEquivalentPatchsets')
+  def testServeCLPatchCoverageDataEquivalentPatchsets(
+      self, mock_get_equivalent_ps, mock_rebase_data):
+    self.UpdateUnitTestConfigSettings('code_coverage_settings',
+                                      {'serve_presubmit_coverage_data': True})
+    host = 'chromium-review.googlesource.com'
+    project = 'chromium/src'
+    change = 138000
+    patchset_src = 3
+    patchset_dest = 4
+    build_id = 123456789
+    data = [{
+        'path': '//dir/test.cc',
+        'lines': [{
+            'count': 100,
+            'first': 1,
+            'last': 2,
+        }],
+    }]
+    PresubmitCoverageData.Create(
+        server_host=host,
+        change=change,
+        patchset=patchset_src,
+        build_id=build_id,
+        data=data).put()
+
+    rebased_coverage_data = [{
+        'path': '//dir/test.cc',
+        'lines': [{
+            'count': 100,
+            'first': 2,
+            'last': 3,
+        }],
+    }]
+
+    mock_get_equivalent_ps.return_value = [3]
+    mock_rebase_data.return_value = rebased_coverage_data
+
+    request_url = ('/coverage/api/coverage-data?host=%s&project=%s&change=%d'
+                   '&patchset=%d&concise=1') % (host, project, change,
+                                                patchset_dest)
+    response = self.test_app.get(request_url)
+
+    expected_response_body = json.dumps({
+        'project': 'chromium/src',
+        'host': 'chromium-review.googlesource.com',
+        'data': {
+            'files': [{
+                'path':
+                    'dir/test.cc',
+                'lines': [{
+                    'count': 100,
+                    'line': 2,
+                }, {
+                    'count': 100,
+                    'line': 3,
+                }]
+            }]
+        },
+        'patchset': 4,
+        'change': 138000,
     })
     self.assertEqual(expected_response_body, response.body)
 
