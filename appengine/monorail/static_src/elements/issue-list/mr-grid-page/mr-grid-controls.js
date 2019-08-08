@@ -116,9 +116,6 @@ export class MrGridControls extends connectStore(LitElement) {
     super.update(changedProperties);
   }
 
-  stateChanged(state) {
-    this.totalIssues = (issue.totalIssues(state) || 0);
-  }
   static get styles() {
     return css`
       :host {
