@@ -37,9 +37,18 @@ class WebComponentsPage(servlet.Servlet):
     Returns:
       Dict of values used by EZT for rendering the page.
     """
+    # Create link to view in old UI for grid view
+    is_grid = ''
+    old_ui_url = ''
+    if mr.mode == 'grid':
+      is_grid = 'grid'
+      old_ui_url = self.request.url.replace('/list_new', '/list')
+
     return {
        'local_id': mr.local_id,
        'other_ui_path': 'issues/detail_ezt',
+       'is_grid': is_grid,
+       'old_ui_url': old_ui_url,
         }
 
 

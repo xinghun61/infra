@@ -1,1 +1,7 @@
-[# Nothing at bottom yet ]
+<div class="new-link" style="text-align: center; padding-top: 20px">
+    [if-any new_ui_url]
+        <a href=[new_ui_url] style="text-decoration: none; display: inline-block">
+            Try the new grid view!
+        </a>
+    [end]
+</div>

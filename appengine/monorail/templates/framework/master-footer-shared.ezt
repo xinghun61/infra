@@ -2,14 +2,17 @@
 
 <div id="footer">
   [if-any other_ui_path]
-  <a href="/p/[projectname]/[other_ui_path]?id=[local_id]">
-    [is other_ui_path "issues/detail_ezt"]
-      View in old UI
-    [else]
-      View in new UI
+    [if-any local_id]
+      <a href="/p/[projectname]/[other_ui_path]?id=[local_id]">
+        [is other_ui_path "issues/detail_ezt"]
+          View in old UI
+        [else]
+          View in new UI
+        [end]
+      </a>
     [end]
-  </a>
   [end]
+
   <a href="https://bugs.chromium.org/p/monorail/adminIntro" title="Monorail [app_version]">About Monorail</a>
   <a href="https://chromium.googlesource.com/infra/infra/+/master/appengine/monorail/doc/release-notes.md">Release Notes</a>
   <a href="https://bugs.chromium.org/p/monorail/issues/entry" target="_blank">Feedback on Monorail</a>

@@ -151,6 +151,11 @@ class IssueList(servlet.Servlet):
     # grid view.
     user_hotlists = self.services.features.GetHotlistsByUserID(
         mr.cnxn, mr.auth.user_id)
+
+    new_ui_url = ''
+    if mr.mode == 'grid':
+      new_ui_url = self.request.url.replace('list', 'list_new')
+
     page_data.update({
         'issue_tab_mode': 'issueList',
         'pagination': pipeline.pagination,
@@ -175,6 +180,7 @@ class IssueList(servlet.Servlet):
         'add_local_ids': '',
         'placeholder': '',
         'col_spec': '',
+        'new_ui_url': new_ui_url,
     })
 
     return page_data
