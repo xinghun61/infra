@@ -205,7 +205,9 @@ func removeErroredEntities(es []*Entity, merr errors.MultiError) []*Entity {
 
 // freshDuration is the duration in which updated Entities are not
 // considered stale.
-const freshDuration = 1 * time.Hour
+// TODO(chromium:989980): Set freshduration to day.
+// TODO(gregorynisbet):   Decrease this threshold when safe.
+const freshDuration = 24 * time.Hour
 
 // removeStale returns a slice without the stale Entities.  Entities
 // are considered stale if they were updated more than freshDuration
