@@ -101,10 +101,10 @@ describe('mr-update-issue-hotlists', () => {
     await element.save();
 
     sinon.assert.calledWith(prpcClient.call, 'monorail.Features',
-      'AddIssuesToHotlists', {
-        hotlistRefs: [{name: 'Hotlist-2', owner: {userId: 67890}}],
-        issueRefs: [{localId: 22, projectName: 'test'}],
-      });
+        'AddIssuesToHotlists', {
+          hotlistRefs: [{name: 'Hotlist-2', owner: {userId: 67890}}],
+          issueRefs: [{localId: 22, projectName: 'test'}],
+        });
   });
 
   it('saving removes issues from hotlist', async () => {
@@ -116,10 +116,10 @@ describe('mr-update-issue-hotlists', () => {
     await element.save();
 
     sinon.assert.calledWith(prpcClient.call, 'monorail.Features',
-      'RemoveIssuesFromHotlists', {
-        hotlistRefs: [{name: 'Hotlist-2', owner: {userId: 67890}}],
-        issueRefs: [{localId: 22, projectName: 'test'}],
-      });
+        'RemoveIssuesFromHotlists', {
+          hotlistRefs: [{name: 'Hotlist-2', owner: {userId: 67890}}],
+          issueRefs: [{localId: 22, projectName: 'test'}],
+        });
   });
 
   it('saving creates new hotlist with issues', async () => {
@@ -131,11 +131,11 @@ describe('mr-update-issue-hotlists', () => {
     await element.save();
 
     sinon.assert.calledWith(prpcClient.call, 'monorail.Features',
-      'CreateHotlist', {
-        name: 'MyHotlist',
-        summary: 'the best hotlist',
-        issueRefs: [{localId: 22, projectName: 'test'}],
-      });
+        'CreateHotlist', {
+          name: 'MyHotlist',
+          summary: 'the best hotlist',
+          issueRefs: [{localId: 22, projectName: 'test'}],
+        });
   });
 
   it('saving refreshes issue hotlises if viewed issue is updated', async () => {
@@ -151,6 +151,6 @@ describe('mr-update-issue-hotlists', () => {
     await element.save();
 
     sinon.assert.calledWith(prpcClient.call, 'monorail.Features',
-      'ListHotlistsByIssue', {issue: {localId: 32, projectName: 'test'}});
+        'ListHotlistsByIssue', {issue: {localId: 32, projectName: 'test'}});
   });
 });

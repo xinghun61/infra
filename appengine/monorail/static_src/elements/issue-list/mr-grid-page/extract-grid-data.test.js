@@ -53,7 +53,7 @@ describe('extract headings from x and y attributes', () => {
 
     const expectedIssues = new Map();
     expectedIssues.set('Yes + All',
-      [{'blockedOnIssueRefs': [{'localId': 21}]}]);
+        [{'blockedOnIssueRefs': [{'localId': 21}]}]);
     expectedIssues.set('No + All', [{'otherIssueProperty': 'issueProperty'}]);
 
     assert.deepEqual(data.xHeadings, ['No', 'Yes']);
@@ -152,9 +152,9 @@ describe('extract headings from x and y attributes', () => {
 
     const expectedIssues = new Map();
     expectedIssues.set('All + testA@google.com',
-      [{'reporterRef': {'displayName': 'testA@google.com'}}]);
+        [{'reporterRef': {'displayName': 'testA@google.com'}}]);
     expectedIssues.set('All + testB@google.com',
-      [{'reporterRef': {'displayName': 'testB@google.com'}}]);
+        [{'reporterRef': {'displayName': 'testB@google.com'}}]);
 
     assert.deepEqual(data.xHeadings, ['All']);
     assert.deepEqual(data.yHeadings, ['testA@google.com', 'testB@google.com']);
@@ -187,7 +187,7 @@ describe('extract headings from x and y attributes', () => {
 
     const expectedIssues = new Map();
     expectedIssues.set('All + Accepted',
-      [{'statusRef': {'status': 'Accepted'}}]);
+        [{'statusRef': {'status': 'Accepted'}}]);
     expectedIssues.set('All + New', [{'statusRef': {'status': 'New'}},
       {'statusRef': {'status': 'New'}}]);
 

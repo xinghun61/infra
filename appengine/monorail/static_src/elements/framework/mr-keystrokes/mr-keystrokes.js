@@ -213,7 +213,7 @@ export class MrKeystrokes extends connectStore(LitElement) {
         || changedProperties.has('issuePermissions')
         || changedProperties.has('queryParams')) {
       this.bindIssueDetailKeys(this.projectName, this.issueId,
-        this.issuePermissions, this.queryParams);
+          this.issuePermissions, this.queryParams);
     }
   }
 
@@ -246,7 +246,7 @@ export class MrKeystrokes extends connectStore(LitElement) {
       e.preventDefault();
       // Focus search.
       this.dispatchEvent(new CustomEvent('focus-search',
-        {composed: true, bubbles: true}));
+          {composed: true, bubbles: true}));
     });
 
     Mousetrap.bind('?', () => {

@@ -18,7 +18,7 @@ const RFC_2821_EMAIL_REGEX = /^[-a-zA-Z0-9!#$%&'*+\/=?^_`{|}~]+(?:[.][-a-zA-Z0-9
 export function displayNameToUserRef(displayName) {
   if (displayName && !RFC_2821_EMAIL_REGEX.test(displayName)) {
     throw new UserInputError(
-      `Invalid email address: ${displayName}`);
+        `Invalid email address: ${displayName}`);
   }
   return {displayName};
 }
@@ -97,7 +97,7 @@ export function issueStringToRef(defaultProjectName, idStr) {
   const matches = idStr.match(ISSUE_ID_REGEX);
   if (!matches) {
     throw new UserInputError(
-      `Invalid issue ref: ${idStr}. Expected [projectName:]issueId.`);
+        `Invalid issue ref: ${idStr}. Expected [projectName:]issueId.`);
   }
   const projectName = matches[1] ? matches[1] : defaultProjectName;
   const localId = Number.parseInt(matches[2]);
@@ -108,7 +108,7 @@ export function issueStringToBlockingRef(projectName, localId, idStr) {
   const result = issueStringToRef(projectName, idStr);
   if (result.projectName === projectName && result.localId === localId) {
     throw new UserInputError(
-      `Invalid issue ref: ${idStr}. Cannot merge or block an issue on itself.`);
+        `Invalid issue ref: ${idStr}. Cannot merge or block an issue on itself.`);
   }
   return result;
 }

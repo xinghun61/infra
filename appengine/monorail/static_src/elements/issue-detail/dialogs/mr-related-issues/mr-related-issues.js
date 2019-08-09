@@ -257,18 +257,18 @@ export class MrRelatedIssues extends connectStore(LitElement) {
     const target = targetArg.cells[0].issue;
 
     const reorderRequest = prpcClient.call(
-      'monorail.Issues', 'RerankBlockedOnIssues', {
-        issueRef: this.issueRef,
-        movedRef: {
-          projectName: src.projectName,
-          localId: src.localId,
-        },
-        targetRef: {
-          projectName: target.projectName,
-          localId: target.localId,
-        },
-        splitAbove: above,
-      });
+        'monorail.Issues', 'RerankBlockedOnIssues', {
+          issueRef: this.issueRef,
+          movedRef: {
+            projectName: src.projectName,
+            localId: src.localId,
+          },
+          targetRef: {
+            projectName: target.projectName,
+            localId: target.localId,
+          },
+          splitAbove: above,
+        });
 
     reorderRequest.then((response) => {
       store.dispatch(issue.fetch({
@@ -283,14 +283,14 @@ export class MrRelatedIssues extends connectStore(LitElement) {
   _reorderRows(srcIndex, toIndex) {
     if (srcIndex <= toIndex) {
       this._renderedRows = this._renderedRows.slice(0, srcIndex).concat(
-        this._renderedRows.slice(srcIndex + 1, toIndex + 1),
-        [this._renderedRows[srcIndex]],
-        this._renderedRows.slice(toIndex + 1));
+          this._renderedRows.slice(srcIndex + 1, toIndex + 1),
+          [this._renderedRows[srcIndex]],
+          this._renderedRows.slice(toIndex + 1));
     } else {
       this._renderedRows = this._renderedRows.slice(0, toIndex).concat(
-        [this._renderedRows[srcIndex]],
-        this._renderedRows.slice(toIndex, srcIndex),
-        this._renderedRows.slice(srcIndex + 1));
+          [this._renderedRows[srcIndex]],
+          this._renderedRows.slice(toIndex, srcIndex),
+          this._renderedRows.slice(srcIndex + 1));
     }
   }
 }

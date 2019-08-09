@@ -115,7 +115,7 @@ export class MrCommentList extends connectStore(LitElement) {
       </button>
       ${cache(this._hideComments ? '' :
     html`${this.comments.slice(0, hiddenCount).map(
-      this.renderComment.bind(this))}`)}
+        this.renderComment.bind(this))}`)}
       ${this.comments.slice(hiddenCount).map(this.renderComment.bind(this))}
       <div class="edit-slot"
           ?hidden=${!_canAddComment(this.issuePermissions)}>
@@ -126,7 +126,7 @@ export class MrCommentList extends connectStore(LitElement) {
 
   renderComment(comment) {
     const commenterIsMember = userIsMember(
-      comment.commenter, comment.projectName, this.usersProjects);
+        comment.commenter, comment.projectName, this.usersProjects);
     return html`
       <mr-comment
           .comment=${comment}

@@ -174,27 +174,27 @@ export class MrUpdateIssueHotlists extends connectStore(LitElement) {
     const promises = [];
     if (changes.added && changes.added.length) {
       promises.push(prpcClient.call(
-        'monorail.Features', 'AddIssuesToHotlists', {
-          hotlistRefs: changes.added,
-          issueRefs,
-        }
+          'monorail.Features', 'AddIssuesToHotlists', {
+            hotlistRefs: changes.added,
+            issueRefs,
+          }
       ));
     }
     if (changes.removed && changes.removed.length) {
       promises.push(prpcClient.call(
-        'monorail.Features', 'RemoveIssuesFromHotlists', {
-          hotlistRefs: changes.removed,
-          issueRefs,
-        }
+          'monorail.Features', 'RemoveIssuesFromHotlists', {
+            hotlistRefs: changes.removed,
+            issueRefs,
+          }
       ));
     }
     if (changes.created) {
       promises.push(prpcClient.call(
-        'monorail.Features', 'CreateHotlist', {
-          name: changes.created.name,
-          summary: changes.created.summary,
-          issueRefs,
-        }
+          'monorail.Features', 'CreateHotlist', {
+            name: changes.created.name,
+            summary: changes.created.summary,
+            issueRefs,
+          }
       ));
     }
 

@@ -36,12 +36,12 @@ describe('mr-header', () => {
     await element.updateComplete;
 
     assert.equal(element.shadowRoot.querySelector('.project-logo').src,
-      'http://images.google.com/');
+        'http://images.google.com/');
 
     assert.equal(element.shadowRoot.querySelector('.new-issue-link').href,
-      'https://google.com/test/');
+        'https://google.com/test/');
 
     assert.equal(element.shadowRoot.querySelector('.project-selector').title,
-      'The best project');
+        'The best project');
   });
 });

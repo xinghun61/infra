@@ -41,7 +41,7 @@ export function extractTypeForIssue(fieldValues, labelRefs) {
   if (fieldValues) {
     // If there is a custom field for "Type", use that for type.
     const typeFieldValue = fieldValues.find(
-      (f) => (f.fieldRef && f.fieldRef.fieldName.toLowerCase() === 'type')
+        (f) => (f.fieldRef && f.fieldRef.fieldName.toLowerCase() === 'type')
     );
     if (typeFieldValue) {
       return typeFieldValue.value;
@@ -51,7 +51,7 @@ export function extractTypeForIssue(fieldValues, labelRefs) {
   // Otherwise, search through labels for a "Type" label.
   if (labelRefs) {
     const typeLabel = labelRefs.find(
-      (l) => l.label.toLowerCase().startsWith('type-'));
+        (l) => l.label.toLowerCase().startsWith('type-'));
     if (typeLabel) {
     // Strip length of prefix.
       return typeLabel.label.substr(5);
@@ -66,7 +66,7 @@ export function fieldValuesToMap(fieldValues) {
   for (const v of fieldValues) {
     if (!v || !v.fieldRef || !v.fieldRef.fieldName || !v.value) continue;
     const key = fieldValueMapKey(v.fieldRef.fieldName,
-      v.phaseRef && v.phaseRef.phaseName);
+        v.phaseRef && v.phaseRef.phaseName);
     if (acc.has(key)) {
       acc.get(key).push(v.value);
     } else {
@@ -166,7 +166,7 @@ const defaultIssueFields = Object.freeze([
     fieldName: 'Type',
     type: fieldTypes.ENUM_TYPE,
     extractor: (issue) => wrapValueIfExists(extractTypeForIssue(
-      issue.fieldValues, issue.labelRefs)),
+        issue.fieldValues, issue.labelRefs)),
   }, {
     fieldName: 'Owner',
     type: fieldTypes.USER_TYPE,
@@ -186,7 +186,7 @@ defaultIssueFields.forEach((field) => {
 
 // TODO(zhangtiff): Integrate this logic with Redux selectors.
 export const stringValuesForIssueField = (issue, fieldName, projectName,
-  fieldDefMap = new Map(), labelPrefixFields = new Set()) => {
+    fieldDefMap = new Map(), labelPrefixFields = new Set()) => {
   const fieldKey = fieldName.toLowerCase();
 
   // Look at whether the field is a built in field first.
@@ -224,12 +224,12 @@ export const stringValuesForIssueField = (issue, fieldName, projectName,
   if (labelPrefixFields.has(fieldKey)) {
     const matchingLabels = (issue.labelRefs || []).filter((labelRef) => {
       const labelPrefixKey = labelNameToLabelPrefix(
-        labelRef.label).toLowerCase();
+          labelRef.label).toLowerCase();
       return fieldKey === labelPrefixKey;
     });
     const labelPrefix = fieldKey + '-';
     return matchingLabels.map(
-      (labelRef) => removePrefix(labelRef.label, labelPrefix));
+        (labelRef) => removePrefix(labelRef.label, labelPrefix));
   }
 
   return [];

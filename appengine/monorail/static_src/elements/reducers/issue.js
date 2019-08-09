@@ -239,57 +239,57 @@ const permissionsReducer = createReducer([], {
 
 const requestsReducer = combineReducers({
   fetch: createRequestReducer(
-    FETCH_START, FETCH_SUCCESS, FETCH_FAILURE),
+      FETCH_START, FETCH_SUCCESS, FETCH_FAILURE),
   fetchHotlists: createRequestReducer(
-    FETCH_HOTLISTS_START, FETCH_HOTLISTS_SUCCESS, FETCH_HOTLISTS_FAILURE),
+      FETCH_HOTLISTS_START, FETCH_HOTLISTS_SUCCESS, FETCH_HOTLISTS_FAILURE),
   fetchIssueList: createRequestReducer(
-    FETCH_ISSUE_LIST_START,
-    FETCH_ISSUE_LIST_SUCCESS,
-    FETCH_ISSUE_LIST_FAILURE),
+      FETCH_ISSUE_LIST_START,
+      FETCH_ISSUE_LIST_SUCCESS,
+      FETCH_ISSUE_LIST_FAILURE),
   fetchPermissions: createRequestReducer(
-    FETCH_PERMISSIONS_START,
-    FETCH_PERMISSIONS_SUCCESS,
-    FETCH_PERMISSIONS_FAILURE),
+      FETCH_PERMISSIONS_START,
+      FETCH_PERMISSIONS_SUCCESS,
+      FETCH_PERMISSIONS_FAILURE),
   star: createRequestReducer(
-    STAR_START, STAR_SUCCESS, STAR_FAILURE),
+      STAR_START, STAR_SUCCESS, STAR_FAILURE),
   presubmit: createRequestReducer(
-    PRESUBMIT_START, PRESUBMIT_SUCCESS, PRESUBMIT_FAILURE),
+      PRESUBMIT_START, PRESUBMIT_SUCCESS, PRESUBMIT_FAILURE),
   predictComponent: createRequestReducer(
-    PREDICT_COMPONENT_START,
-    PREDICT_COMPONENT_SUCCESS,
-    PREDICT_COMPONENT_FAILURE),
+      PREDICT_COMPONENT_START,
+      PREDICT_COMPONENT_SUCCESS,
+      PREDICT_COMPONENT_FAILURE),
   fetchComments: createRequestReducer(
-    FETCH_COMMENTS_START, FETCH_COMMENTS_SUCCESS, FETCH_COMMENTS_FAILURE),
+      FETCH_COMMENTS_START, FETCH_COMMENTS_SUCCESS, FETCH_COMMENTS_FAILURE),
   fetchCommentReferences: createRequestReducer(
-    FETCH_COMMENT_REFERENCES_START,
-    FETCH_COMMENT_REFERENCES_SUCCESS,
-    FETCH_COMMENT_REFERENCES_FAILURE),
+      FETCH_COMMENT_REFERENCES_START,
+      FETCH_COMMENT_REFERENCES_SUCCESS,
+      FETCH_COMMENT_REFERENCES_FAILURE),
   fetchRelatedIssues: createRequestReducer(
-    FETCH_RELATED_ISSUES_START,
-    FETCH_RELATED_ISSUES_SUCCESS,
-    FETCH_RELATED_ISSUES_FAILURE),
+      FETCH_RELATED_ISSUES_START,
+      FETCH_RELATED_ISSUES_SUCCESS,
+      FETCH_RELATED_ISSUES_FAILURE),
   fetchReferencedUsers: createRequestReducer(
-    FETCH_REFERENCED_USERS_START,
-    FETCH_REFERENCED_USERS_SUCCESS,
-    FETCH_REFERENCED_USERS_FAILURE),
+      FETCH_REFERENCED_USERS_START,
+      FETCH_REFERENCED_USERS_SUCCESS,
+      FETCH_REFERENCED_USERS_FAILURE),
   fetchUsersProjects: createRequestReducer(
-    FETCH_USERS_PROJECTS_START,
-    FETCH_USERS_PROJECTS_SUCCESS,
-    FETCH_USERS_PROJECTS_FAILURE),
+      FETCH_USERS_PROJECTS_START,
+      FETCH_USERS_PROJECTS_SUCCESS,
+      FETCH_USERS_PROJECTS_FAILURE),
   fetchIsStarred: createRequestReducer(
-    FETCH_IS_STARRED_START, FETCH_IS_STARRED_SUCCESS, FETCH_IS_STARRED_FAILURE),
+      FETCH_IS_STARRED_START, FETCH_IS_STARRED_SUCCESS, FETCH_IS_STARRED_FAILURE),
   fetchStarredIssues: createRequestReducer(
-    FETCH_ISSUES_STARRED_START, FETCH_ISSUES_STARRED_SUCCESS,
-    FETCH_ISSUES_STARRED_FAILURE
+      FETCH_ISSUES_STARRED_START, FETCH_ISSUES_STARRED_SUCCESS,
+      FETCH_ISSUES_STARRED_FAILURE
   ),
   convert: createRequestReducer(
-    CONVERT_START, CONVERT_SUCCESS, CONVERT_FAILURE),
+      CONVERT_START, CONVERT_SUCCESS, CONVERT_FAILURE),
   update: createRequestReducer(
-    UPDATE_START, UPDATE_SUCCESS, UPDATE_FAILURE),
+      UPDATE_START, UPDATE_SUCCESS, UPDATE_FAILURE),
   // Assumption: It's okay to prevent the user from sending multiple
   // approval update requests at once, even for different approvals.
   updateApproval: createRequestReducer(
-    UPDATE_APPROVAL_START, UPDATE_APPROVAL_SUCCESS, UPDATE_APPROVAL_FAILURE),
+      UPDATE_APPROVAL_START, UPDATE_APPROVAL_SUCCESS, UPDATE_APPROVAL_FAILURE),
 });
 
 export const reducer = combineReducers({
@@ -332,7 +332,7 @@ export const commentsLoaded = (state) => state.issue.commentsLoaded;
 
 const _commentReferences = (state) => state.issue.commentReferences;
 export const commentReferences = createSelector(_commentReferences,
-  (commentReferences) => objectToMap(commentReferences));
+    (commentReferences) => objectToMap(commentReferences));
 
 export const hotlists = (state) => state.issue.hotlists;
 export const issueList = (state) => state.issue.issueList.issues;
@@ -345,15 +345,15 @@ export const predictedComponent = (state) => state.issue.predictedComponent;
 
 const _relatedIssues = (state) => state.issue.relatedIssues || {};
 export const relatedIssues = createSelector(_relatedIssues,
-  (relatedIssues) => objectToMap(relatedIssues));
+    (relatedIssues) => objectToMap(relatedIssues));
 
 const _referencedUsers = (state) => state.issue.referencedUsers || {};
 export const referencedUsers = createSelector(_referencedUsers,
-  (referencedUsers) => objectToMap(referencedUsers));
+    (referencedUsers) => objectToMap(referencedUsers));
 
 const _usersProjects = (state) => state.issue.usersProjects || {};
 export const usersProjects = createSelector(_usersProjects,
-  (usersProjects) => objectToMap(usersProjects));
+    (usersProjects) => objectToMap(usersProjects));
 
 export const isStarred = (state) => state.issue.isStarred;
 export const _starredIssues = (state) => state.issue.starredIssues;
@@ -361,91 +361,91 @@ export const _starredIssues = (state) => state.issue.starredIssues;
 export const requests = (state) => state.issue.requests;
 
 export const starredIssues = createSelector(
-  _starredIssues,
-  (starredIssues) => {
-    const stars = new Set();
-    for (const [ref, starred] of Object.entries(starredIssues)) {
-      if (starred) stars.add(ref);
+    _starredIssues,
+    (starredIssues) => {
+      const stars = new Set();
+      for (const [ref, starred] of Object.entries(starredIssues)) {
+        if (starred) stars.add(ref);
+      }
+      return stars;
     }
-    return stars;
-  }
 );
 
 // TODO(zhangtiff): Split up either comments or approvals into their own "duck".
 export const commentsByApprovalName = createSelector(
-  comments,
-  (comments) => {
-    const map = new Map();
-    comments.forEach((comment) => {
-      const key = (comment.approvalRef && comment.approvalRef.fieldName) || '';
-      if (map.has(key)) {
-        map.get(key).push(comment);
-      } else {
-        map.set(key, [comment]);
-      }
-    });
-    return map;
-  }
+    comments,
+    (comments) => {
+      const map = new Map();
+      comments.forEach((comment) => {
+        const key = (comment.approvalRef && comment.approvalRef.fieldName) || '';
+        if (map.has(key)) {
+          map.get(key).push(comment);
+        } else {
+          map.set(key, [comment]);
+        }
+      });
+      return map;
+    }
 );
 
 export const fieldValues = createSelector(
-  issue,
-  (issue) => issue && issue.fieldValues
+    issue,
+    (issue) => issue && issue.fieldValues
 );
 
 export const labelRefs = createSelector(
-  issue,
-  (issue) => issue && issue.labelRefs
+    issue,
+    (issue) => issue && issue.labelRefs
 );
 
 export const type = createSelector(
-  fieldValues,
-  labelRefs,
-  (fieldValues, labelRefs) => extractTypeForIssue(fieldValues, labelRefs)
+    fieldValues,
+    labelRefs,
+    (fieldValues, labelRefs) => extractTypeForIssue(fieldValues, labelRefs)
 );
 
 export const restrictions = createSelector(
-  labelRefs,
-  (labelRefs) => {
-    if (!labelRefs) return {};
+    labelRefs,
+    (labelRefs) => {
+      if (!labelRefs) return {};
 
-    const restrictions = {};
+      const restrictions = {};
 
-    labelRefs.forEach((labelRef) => {
-      const label = labelRef.label;
-      const lowerCaseLabel = label.toLowerCase();
+      labelRefs.forEach((labelRef) => {
+        const label = labelRef.label;
+        const lowerCaseLabel = label.toLowerCase();
 
-      if (lowerCaseLabel.startsWith(RESTRICT_VIEW_PREFIX)) {
-        const permissionType = removePrefix(label, RESTRICT_VIEW_PREFIX);
-        if (!('view' in restrictions)) {
-          restrictions['view'] = [permissionType];
-        } else {
-          restrictions['view'].push(permissionType);
+        if (lowerCaseLabel.startsWith(RESTRICT_VIEW_PREFIX)) {
+          const permissionType = removePrefix(label, RESTRICT_VIEW_PREFIX);
+          if (!('view' in restrictions)) {
+            restrictions['view'] = [permissionType];
+          } else {
+            restrictions['view'].push(permissionType);
+          }
+        } else if (lowerCaseLabel.startsWith(RESTRICT_EDIT_PREFIX)) {
+          const permissionType = removePrefix(label, RESTRICT_EDIT_PREFIX);
+          if (!('edit' in restrictions)) {
+            restrictions['edit'] = [permissionType];
+          } else {
+            restrictions['edit'].push(permissionType);
+          }
+        } else if (lowerCaseLabel.startsWith(RESTRICT_COMMENT_PREFIX)) {
+          const permissionType = removePrefix(label, RESTRICT_COMMENT_PREFIX);
+          if (!('comment' in restrictions)) {
+            restrictions['comment'] = [permissionType];
+          } else {
+            restrictions['comment'].push(permissionType);
+          }
         }
-      } else if (lowerCaseLabel.startsWith(RESTRICT_EDIT_PREFIX)) {
-        const permissionType = removePrefix(label, RESTRICT_EDIT_PREFIX);
-        if (!('edit' in restrictions)) {
-          restrictions['edit'] = [permissionType];
-        } else {
-          restrictions['edit'].push(permissionType);
-        }
-      } else if (lowerCaseLabel.startsWith(RESTRICT_COMMENT_PREFIX)) {
-        const permissionType = removePrefix(label, RESTRICT_COMMENT_PREFIX);
-        if (!('comment' in restrictions)) {
-          restrictions['comment'] = [permissionType];
-        } else {
-          restrictions['comment'].push(permissionType);
-        }
-      }
-    });
+      });
 
-    return restrictions;
-  }
+      return restrictions;
+    }
 );
 
 export const isOpen = createSelector(
-  issue,
-  (issue) => issue && issue.statusRef && issue.statusRef.meansOpen || false);
+    issue,
+    (issue) => issue && issue.statusRef && issue.statusRef.meansOpen || false);
 
 // Returns a function that, given an issue and its related issues,
 // returns a combined list of issue ref strings including related issues,
@@ -485,86 +485,86 @@ const mapRefsWithRelated = (blocking) => {
 };
 
 export const blockingIssues = createSelector(
-  issue, relatedIssues,
-  mapRefsWithRelated(true)
+    issue, relatedIssues,
+    mapRefsWithRelated(true)
 );
 
 export const blockedOnIssues = createSelector(
-  issue, relatedIssues,
-  mapRefsWithRelated(false)
+    issue, relatedIssues,
+    mapRefsWithRelated(false)
 );
 
 export const mergedInto = createSelector(
-  issue, relatedIssues,
-  (issue, relatedIssues) => {
-    if (!issue || !issue.mergedIntoIssueRef) return {};
-    const key = issueRefToString(issue.mergedIntoIssueRef);
-    if (relatedIssues && relatedIssues.has(key)) {
-      return relatedIssues.get(key);
+    issue, relatedIssues,
+    (issue, relatedIssues) => {
+      if (!issue || !issue.mergedIntoIssueRef) return {};
+      const key = issueRefToString(issue.mergedIntoIssueRef);
+      if (relatedIssues && relatedIssues.has(key)) {
+        return relatedIssues.get(key);
+      }
+      return issue.mergedIntoIssueRef;
     }
-    return issue.mergedIntoIssueRef;
-  }
 );
 
 export const sortedBlockedOn = createSelector(
-  blockedOnIssues,
-  (blockedOn) => blockedOn.sort((a, b) => {
-    const aIsOpen = a.statusRef && a.statusRef.meansOpen ? 1 : 0;
-    const bIsOpen = b.statusRef && b.statusRef.meansOpen ? 1 : 0;
-    return bIsOpen - aIsOpen;
-  })
+    blockedOnIssues,
+    (blockedOn) => blockedOn.sort((a, b) => {
+      const aIsOpen = a.statusRef && a.statusRef.meansOpen ? 1 : 0;
+      const bIsOpen = b.statusRef && b.statusRef.meansOpen ? 1 : 0;
+      return bIsOpen - aIsOpen;
+    })
 );
 
 // values (from issue.fieldValues) is an array with one entry per value.
 // We want to turn this into a map of fieldNames -> values.
 export const fieldValueMap = createSelector(
-  fieldValues,
-  (fieldValues) => fieldValuesToMap(fieldValues)
+    fieldValues,
+    (fieldValues) => fieldValuesToMap(fieldValues)
 );
 
 // Get the list of full componentDefs for the viewed issue.
 export const components = createSelector(
-  issue,
-  project.componentsMap,
-  (issue, components) => {
-    if (!issue || !issue.componentRefs) return [];
-    return issue.componentRefs.map((comp) => components.get(comp.path) || comp);
-  }
+    issue,
+    project.componentsMap,
+    (issue, components) => {
+      if (!issue || !issue.componentRefs) return [];
+      return issue.componentRefs.map((comp) => components.get(comp.path) || comp);
+    }
 );
 
 // Get custom fields that apply to a specific issue.
 export const fieldDefs = createSelector(
-  project.fieldDefs,
-  type,
-  fieldValueMap,
-  (fieldDefs, type, fieldValues) => {
-    if (!fieldDefs) return [];
-    type = type || '';
-    return fieldDefs.filter((f) => {
-      const fieldValueKey = fieldValueMapKey(f.fieldRef.fieldName,
-        f.phaseRef && f.phaseRef.phaseName);
-      if (fieldValues && fieldValues.has(fieldValueKey)) {
+    project.fieldDefs,
+    type,
+    fieldValueMap,
+    (fieldDefs, type, fieldValues) => {
+      if (!fieldDefs) return [];
+      type = type || '';
+      return fieldDefs.filter((f) => {
+        const fieldValueKey = fieldValueMapKey(f.fieldRef.fieldName,
+            f.phaseRef && f.phaseRef.phaseName);
+        if (fieldValues && fieldValues.has(fieldValueKey)) {
         // Regardless of other checks, include a particular field def if the
         // issue has a value defined.
-        return true;
-      }
-      // Skip approval type and phase fields here.
-      if (f.fieldRef.approvalName
+          return true;
+        }
+        // Skip approval type and phase fields here.
+        if (f.fieldRef.approvalName
           || f.fieldRef.type === fieldTypes.APPROVAL_TYPE
           || f.isPhaseField) {
-        return false;
-      }
+          return false;
+        }
 
-      // If this fieldDef belongs to only one type, filter out the field if
-      // that type isn't the specified type.
-      if (f.applicableType && type.toLowerCase()
+        // If this fieldDef belongs to only one type, filter out the field if
+        // that type isn't the specified type.
+        if (f.applicableType && type.toLowerCase()
           !== f.applicableType.toLowerCase()) {
-        return false;
-      }
+          return false;
+        }
 
-      return true;
-    });
-  }
+        return true;
+      });
+    }
 );
 
 // Action Creators
@@ -611,7 +611,7 @@ export const fetchReferencedUsers = (issue) => async (dispatch) => {
 
   try {
     const resp = await prpcClient.call(
-      'monorail.Users', 'ListReferencedUsers', {userRefs});
+        'monorail.Users', 'ListReferencedUsers', {userRefs});
 
     const referencedUsers = {};
     (resp.users || []).forEach((user) => {
@@ -630,7 +630,7 @@ export const fetchUsersProjects = (userRefs) => async (dispatch) => {
 
   try {
     const resp = await prpcClient.call(
-      'monorail.Users', 'GetUsersProjects', {userRefs});
+        'monorail.Users', 'GetUsersProjects', {userRefs});
     const usersProjects = {};
     (resp.usersProjects || []).forEach((userProjects) => {
       usersProjects[userProjects.userRef.displayName] = userProjects;
@@ -649,7 +649,7 @@ export const fetchRelatedIssues = (issue) => async (dispatch) => {
   dispatch({type: FETCH_RELATED_ISSUES_START});
 
   const refsToFetch = (issue.blockedOnIssueRefs || []).concat(
-    issue.blockingIssueRefs || []);
+      issue.blockingIssueRefs || []);
   if (issue.mergedIntoIssueRef) {
     refsToFetch.push(issue.mergedIntoIssueRef);
   }
@@ -659,7 +659,7 @@ export const fetchRelatedIssues = (issue) => async (dispatch) => {
   };
   try {
     const resp = await prpcClient.call(
-      'monorail.Issues', 'ListReferencedIssues', message);
+        'monorail.Issues', 'ListReferencedIssues', message);
 
     const relatedIssues = {};
 
@@ -694,7 +694,7 @@ export const fetch = (message) => async (dispatch) => {
 
   try {
     const resp = await prpcClient.call(
-      'monorail.Issues', 'GetIssue', message
+        'monorail.Issues', 'GetIssue', message
     );
     const movedToRef = resp.movedToRef;
     const issue = {...resp.issue};
@@ -720,7 +720,7 @@ export const fetchHotlists = (issue) => async (dispatch) => {
 
   try {
     const resp = await prpcClient.call(
-      'monorail.Features', 'ListHotlistsByIssue', {issue});
+        'monorail.Features', 'ListHotlistsByIssue', {issue});
 
     const hotlists = (resp.hotlists || []);
     hotlists.sort((hotlistA, hotlistB) => {
@@ -748,14 +748,14 @@ export const fetchIssueList =
     // the query.
     try {
       const resp = await prpcClient.call(
-        'monorail.Issues', 'ListIssues', {
-          query: params.q,
-          cannedQuery: params.can,
-          projectNames: [projectName],
-          pagination: pagination,
-          groupBySpec: params.groupby,
-          sortSpec: params.sort,
-        });
+          'monorail.Issues', 'ListIssues', {
+            query: params.q,
+            cannedQuery: params.can,
+            projectNames: [projectName],
+            pagination: pagination,
+            groupBySpec: params.groupby,
+            sortSpec: params.sort,
+          });
 
       issueList = (resp || {});
       issuesByRequest[0] = issueList.issues;
@@ -783,15 +783,15 @@ export const fetchIssueList =
       for (let i = 1; i <= totalCalls; i++) {
         promises[i - 1] = (async () => {
           const resp = await prpcClient.call(
-            'monorail.Issues', 'ListIssues', {
-              query: params.q,
-              cannedQuery: params.can,
-              projectNames: [projectName],
-              pagination:
+              'monorail.Issues', 'ListIssues', {
+                query: params.q,
+                cannedQuery: params.can,
+                projectNames: [projectName],
+                pagination:
                 {start: i * itemsPerCall, maxItems: itemsPerCall},
-              groupBySpec: params.groupby,
-              sortSpec: params.sort,
-            });
+                groupBySpec: params.groupby,
+                sortSpec: params.sort,
+              });
           issuesByRequest[i] = (resp.issues || []);
           // sort the issues in the correct order.
           issueList.issues = [];
@@ -817,7 +817,7 @@ export const fetchPermissions = (message) => async (dispatch) => {
 
   try {
     const resp = await prpcClient.call(
-      'monorail.Issues', 'ListIssuePermissions', message
+        'monorail.Issues', 'ListIssuePermissions', message
     );
 
     dispatch({type: FETCH_PERMISSIONS_SUCCESS, permissions: resp.permissions});
@@ -831,14 +831,14 @@ export const fetchComments = (message) => async (dispatch) => {
 
   try {
     const resp = await prpcClient.call(
-      'monorail.Issues', 'ListComments', message);
+        'monorail.Issues', 'ListComments', message);
 
     dispatch({type: FETCH_COMMENTS_SUCCESS, comments: resp.comments});
     dispatch(fetchCommentReferences(
-      resp.comments, message.issueRef.projectName));
+        resp.comments, message.issueRef.projectName));
 
     const commenterRefs = (resp.comments || []).map(
-      (comment) => comment.commenter);
+        (comment) => comment.commenter);
     dispatch(fetchUsersProjects(commenterRefs));
   } catch (error) {
     dispatch({type: FETCH_COMMENTS_FAILURE, error});
@@ -849,7 +849,7 @@ export const fetchIsStarred = (message) => async (dispatch) => {
   dispatch({type: FETCH_IS_STARRED_START});
   try {
     const resp = await prpcClient.call(
-      'monorail.Issues', 'IsIssueStarred', message
+        'monorail.Issues', 'IsIssueStarred', message
     );
 
     dispatch({
@@ -867,10 +867,10 @@ export const fetchStarredIssues = () => async (dispatch) => {
 
   try {
     const resp = await prpcClient.call(
-      'monorail.Issues', 'ListStarredIssues', {}
+        'monorail.Issues', 'ListStarredIssues', {}
     );
     const issueIds = (resp.starredIssueRefs || []).map(
-      (ref) => issueRefToString(ref));
+        (ref) => issueRefToString(ref));
     dispatch({type: FETCH_ISSUES_STARRED_SUCCESS, starredIssues: issueIds});
   } catch (error) {
     dispatch({type: FETCH_ISSUES_STARRED_FAILURE, error});
@@ -883,7 +883,7 @@ export const star = (issueRef, starred) => async (dispatch) => {
 
   try {
     const resp = await prpcClient.call(
-      'monorail.Issues', 'StarIssue', message
+        'monorail.Issues', 'StarIssue', message
     );
     const ref = issueRefToString(issueRef);
 
@@ -903,7 +903,7 @@ export const presubmit = (message) => async (dispatch) => {
 
   try {
     const resp = await prpcClient.call(
-      'monorail.Issues', 'PresubmitIssue', message);
+        'monorail.Issues', 'PresubmitIssue', message);
 
     dispatch({type: PRESUBMIT_SUCCESS, presubmitResponse: resp});
   } catch (error) {
@@ -921,7 +921,7 @@ export const predictComponent = (projectName, text) => async (dispatch) => {
 
   try {
     const response = await prpcClient.call(
-      'monorail.Features', 'PredictComponent', message);
+        'monorail.Features', 'PredictComponent', message);
     const component = response.componentRef && response.componentRef.path ?
       response.componentRef.path : '';
     dispatch({type: PREDICT_COMPONENT_SUCCESS, component});
@@ -935,7 +935,7 @@ export const updateApproval = (message) => async (dispatch) => {
 
   try {
     const resp = await prpcClient.call(
-      'monorail.Issues', 'UpdateApproval', message);
+        'monorail.Issues', 'UpdateApproval', message);
 
     dispatch({type: UPDATE_APPROVAL_SUCCESS, approval: resp.approval});
     const baseMessage = {issueRef: message.issueRef};
@@ -951,7 +951,7 @@ export const update = (message) => async (dispatch) => {
 
   try {
     const resp = await prpcClient.call(
-      'monorail.Issues', 'UpdateIssue', message);
+        'monorail.Issues', 'UpdateIssue', message);
 
     dispatch({type: UPDATE_SUCCESS, issue: resp.issue});
     const fetchCommentsMessage = {issueRef: message.issueRef};
@@ -968,7 +968,7 @@ export const convert = (message) => async (dispatch) => {
 
   try {
     const resp = await prpcClient.call(
-      'monorail.Issues', 'ConvertIssueApprovalsTemplate', message);
+        'monorail.Issues', 'ConvertIssueApprovalsTemplate', message);
 
     dispatch({type: CONVERT_SUCCESS, issue: resp.issue});
     const fetchCommentsMessage = {issueRef: message.issueRef};

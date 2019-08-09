@@ -110,7 +110,7 @@ export class MrMoveCopyIssue extends connectStore(LitElement) {
     prpcClient.call('monorail.Issues', method, {
       issueRef: this.issueRef,
       targetProjectName: this.shadowRoot.querySelector(
-        '#targetProjectInput').value,
+          '#targetProjectInput').value,
     }).then((response) => {
       const projectName = response.newIssueRef.projectName;
       const localId = response.newIssueRef.localId;

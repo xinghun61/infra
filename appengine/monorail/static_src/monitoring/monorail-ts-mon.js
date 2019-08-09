@@ -25,7 +25,7 @@ export default class MonorailTSMon extends TSMonClient {
     this.disableAfterNextFlush();
     // Create an instance of pRPC client for refreshing XSRF tokens.
     this.prpcClient = new AutoRefreshPrpcClient(
-      window.CS_env.token, window.CS_env.tokenExpiresSec);
+        window.CS_env.token, window.CS_env.tokenExpiresSec);
 
     // TODO(jeffcarp, 4415): Deduplicate metric defs.
     const standardFields = new Map([
@@ -39,9 +39,9 @@ export default class MonorailTSMon extends TSMonClient {
         eventName: 'new-issue',
         eventLabel: 'server-time',
         metric: this.cumulativeDistribution(
-          'monorail/frontend/issue_create_latency',
-          'Latency between issue entry form submit and issue detail page load.',
-          null, standardFields,
+            'monorail/frontend/issue_create_latency',
+            'Latency between issue entry form submit and issue detail page load.',
+            null, standardFields,
         ),
       },
       {
@@ -49,9 +49,9 @@ export default class MonorailTSMon extends TSMonClient {
         eventName: 'issue-update',
         eventLabel: 'computer-time',
         metric: this.cumulativeDistribution(
-          'monorail/frontend/issue_update_latency',
-          'Latency between issue update form submit and issue detail page load.',
-          null, standardFields,
+            'monorail/frontend/issue_update_latency',
+            'Latency between issue update form submit and issue detail page load.',
+            null, standardFields,
         ),
       },
       {
@@ -59,45 +59,45 @@ export default class MonorailTSMon extends TSMonClient {
         eventName: 'populate-options',
         eventLabel: 'user-time',
         metric: this.cumulativeDistribution(
-          'monorail/frontend/autocomplete_populate_latency',
-          'Latency between page load and autocomplete options loading.',
-          null, standardFields,
+            'monorail/frontend/autocomplete_populate_latency',
+            'Latency between page load and autocomplete options loading.',
+            null, standardFields,
         ),
       },
     ];
 
     this.dateRangeMetric = this.counter(
-      'monorail/frontend/charts/switch_date_range',
-      'Number of times user changes date range.',
-      null, (new Map([
-        ['client_id', TSMonClient.stringField('client_id')],
-        ['host_name', TSMonClient.stringField('host_name')],
-        ['document_visible', TSMonClient.boolField('document_visible')],
-        ['date_range', TSMonClient.intField('date_range')],
-      ]))
+        'monorail/frontend/charts/switch_date_range',
+        'Number of times user changes date range.',
+        null, (new Map([
+          ['client_id', TSMonClient.stringField('client_id')],
+          ['host_name', TSMonClient.stringField('host_name')],
+          ['document_visible', TSMonClient.boolField('document_visible')],
+          ['date_range', TSMonClient.intField('date_range')],
+        ]))
     );
 
     this.issueCommentsLoadMetric = this.cumulativeDistribution(
-      'monorail/frontend/issue_comments_load_latency',
-      'Time from navigation or click to issue comments loaded.',
-      null, (new Map([
-        ['client_id', TSMonClient.stringField('client_id')],
-        ['host_name', TSMonClient.stringField('host_name')],
-        ['template_name', TSMonClient.stringField('template_name')],
-        ['document_visible', TSMonClient.boolField('document_visible')],
-        ['full_app_load', TSMonClient.boolField('full_app_load')],
-      ]))
+        'monorail/frontend/issue_comments_load_latency',
+        'Time from navigation or click to issue comments loaded.',
+        null, (new Map([
+          ['client_id', TSMonClient.stringField('client_id')],
+          ['host_name', TSMonClient.stringField('host_name')],
+          ['template_name', TSMonClient.stringField('template_name')],
+          ['document_visible', TSMonClient.boolField('document_visible')],
+          ['full_app_load', TSMonClient.boolField('full_app_load')],
+        ]))
     );
 
     this.pageLoadMetric = this.cumulativeDistribution(
-      'frontend/dom_content_loaded',
-      'domContentLoaded performance timing.',
-      null, (new Map([
-        ['client_id', TSMonClient.stringField('client_id')],
-        ['host_name', TSMonClient.stringField('host_name')],
-        ['template_name', TSMonClient.stringField('template_name')],
-        ['document_visible', TSMonClient.boolField('document_visible')],
-      ]))
+        'frontend/dom_content_loaded',
+        'domContentLoaded performance timing.',
+        null, (new Map([
+          ['client_id', TSMonClient.stringField('client_id')],
+          ['host_name', TSMonClient.stringField('host_name')],
+          ['template_name', TSMonClient.stringField('template_name')],
+          ['document_visible', TSMonClient.boolField('document_visible')],
+        ]))
     );
   }
 

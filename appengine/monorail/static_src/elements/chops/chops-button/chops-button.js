@@ -133,7 +133,7 @@ export class ChopsButton extends LitElement {
   disconnectedCallback() {
     super.disconnectedCallback();
     window.removeEventListener('keypress', this._boundKeypressHandler,
-      true);
+        true);
   }
 
   _keypressHandler(event) {

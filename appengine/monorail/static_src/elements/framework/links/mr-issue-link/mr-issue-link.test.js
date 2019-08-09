@@ -25,15 +25,15 @@ describe('mr-issue-link', () => {
     await element.updateComplete;
     const link = element.shadowRoot.querySelector('#bugLink');
     assert.isFalse(
-      window.getComputedStyle(link).getPropertyValue(
-        'text-decoration').includes('line-through'));
+        window.getComputedStyle(link).getPropertyValue(
+            'text-decoration').includes('line-through'));
     element.issue = {statusRef: {meansOpen: false}};
 
     await element.updateComplete;
 
     assert.isTrue(
-      window.getComputedStyle(link).getPropertyValue(
-        'text-decoration').includes('line-through'));
+        window.getComputedStyle(link).getPropertyValue(
+            'text-decoration').includes('line-through'));
   });
 
   it('shortens link text when short is true', () => {

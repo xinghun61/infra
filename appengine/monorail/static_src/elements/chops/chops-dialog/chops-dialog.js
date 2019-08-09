@@ -124,9 +124,9 @@ export class ChopsDialog extends LitElement {
       if (!this.opened || !this.closeOnOutsideClick || this.forced) return;
 
       const hasDialog = evt.composedPath().find(
-        (node) => {
-          return node.classList && node.classList.contains('dialog-content');
-        }
+          (node) => {
+            return node.classList && node.classList.contains('dialog-content');
+          }
       );
       if (hasDialog) return;
 
@@ -139,7 +139,7 @@ export class ChopsDialog extends LitElement {
   disconnectedCallback() {
     super.disconnectedCallback();
     window.removeEventListener('keydown', this._boundKeydownHandler,
-      true);
+        true);
   }
 
   updated(changedProperties) {

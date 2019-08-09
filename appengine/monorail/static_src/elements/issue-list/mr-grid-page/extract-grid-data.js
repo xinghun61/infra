@@ -136,7 +136,7 @@ export function makeGridCellKey(x, y) {
 
 // Outer function that runs each custom extractor function
 export function extractGridData(issues, xField = '', yField = '',
-  projectName = '', fieldDefMap = new Map(), labelPrefixSet = new Set()) {
+    projectName = '', fieldDefMap = new Map(), labelPrefixSet = new Set()) {
   const gridData = {
     xHeadings: [],
     yHeadings: [],
@@ -167,13 +167,13 @@ export function extractGridData(issues, xField = '', yField = '',
   for (const issue of issues) {
     if (hasX) {
       xKeysAdded = stringValuesForIssueField(issue, xField,
-        projectName, fieldDefMap, labelPrefixSet);
+          projectName, fieldDefMap, labelPrefixSet);
       addValuesToHeadings(xHeadingsSet, xKeysAdded);
     }
 
     if (hasY) {
       yKeysAdded = stringValuesForIssueField(issue, yField,
-        projectName, fieldDefMap, labelPrefixSet);
+          projectName, fieldDefMap, labelPrefixSet);
       addValuesToHeadings(yHeadingsSet, yKeysAdded);
     }
 

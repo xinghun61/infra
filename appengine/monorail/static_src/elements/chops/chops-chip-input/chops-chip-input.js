@@ -299,7 +299,7 @@ export class ChopsChipInput extends LitElement {
     const values = this._readCollapsedValues(input);
     if (values.length) {
       this._saveValues(immutableSplice(
-        this.values, index, 1, ...values));
+          this.values, index, 1, ...values));
 
       if (this.collapsedChipIndex === index) {
         this.collapsedChipIndex = -1;
@@ -373,7 +373,7 @@ export class ChopsChipInput extends LitElement {
       if (e.key === 'Backspace') {
         // Delete the chip before this input.
         this._saveValues(immutableSplice(this.values,
-          index - 1, 1));
+            index - 1, 1));
 
         // Prevent autocomplete menu from opening.
         // TODO(zhangtiff): Remove this when reworking autocomplete as a

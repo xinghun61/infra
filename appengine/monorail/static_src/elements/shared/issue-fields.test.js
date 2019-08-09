@@ -49,35 +49,35 @@ describe('stringValuesForIssueField', () => {
       const fieldName = 'ID';
 
       assert.deepEqual(stringValuesForIssueField(issue, fieldName),
-        ['chromium:33']);
+          ['chromium:33']);
     });
 
     it('computes strings for Project', () => {
       const fieldName = 'Project';
 
       assert.deepEqual(stringValuesForIssueField(issue, fieldName),
-        ['chromium']);
+          ['chromium']);
     });
 
     it('computes strings for Attachments', () => {
       const fieldName = 'Attachments';
 
       assert.deepEqual(stringValuesForIssueField(issue, fieldName),
-        ['22']);
+          ['22']);
     });
 
     it('computes strings for AllLabels', () => {
       const fieldName = 'AllLabels';
 
       assert.deepEqual(stringValuesForIssueField(issue, fieldName),
-        ['Restrict-View-Google', 'Type-Defect']);
+          ['Restrict-View-Google', 'Type-Defect']);
     });
 
     it('computes strings for Blocked when issue is blocked', () => {
       const fieldName = 'Blocked';
 
       assert.deepEqual(stringValuesForIssueField(issue, fieldName),
-        ['Yes']);
+          ['Yes']);
     });
 
     it('computes strings for Blocked when issue is not blocked', () => {
@@ -85,98 +85,98 @@ describe('stringValuesForIssueField', () => {
       issue.blockedOnIssueRefs = [];
 
       assert.deepEqual(stringValuesForIssueField(issue, fieldName),
-        ['No']);
+          ['No']);
     });
 
     it('computes strings for BlockedOn', () => {
       const fieldName = 'BlockedOn';
 
       assert.deepEqual(stringValuesForIssueField(issue, fieldName),
-        ['chromium:30']);
+          ['chromium:30']);
     });
 
     it('computes strings for Blocking', () => {
       const fieldName = 'Blocking';
 
       assert.deepEqual(stringValuesForIssueField(issue, fieldName),
-        ['chromium:60']);
+          ['chromium:60']);
     });
 
     it('computes strings for CC', () => {
       const fieldName = 'CC';
 
       assert.deepEqual(stringValuesForIssueField(issue, fieldName),
-        ['test@example.com']);
+          ['test@example.com']);
     });
 
     it('computes strings for Closed', () => {
       const fieldName = 'Closed';
 
       assert.deepEqual(stringValuesForIssueField(issue, fieldName),
-        ['2 minutes ago']);
+          ['2 minutes ago']);
     });
 
     it('computes strings for Component', () => {
       const fieldName = 'Component';
 
       assert.deepEqual(stringValuesForIssueField(issue, fieldName),
-        ['Infra', 'Monorail>UI']);
+          ['Infra', 'Monorail>UI']);
     });
 
     it('computes strings for MergedInto', () => {
       const fieldName = 'MergedInto';
 
       assert.deepEqual(stringValuesForIssueField(issue, fieldName),
-        ['chromium:31']);
+          ['chromium:31']);
     });
 
     it('computes strings for Modified', () => {
       const fieldName = 'Modified';
 
       assert.deepEqual(stringValuesForIssueField(issue, fieldName),
-        ['a minute ago']);
+          ['a minute ago']);
     });
 
     it('computes strings for Reporter', () => {
       const fieldName = 'Reporter';
 
       assert.deepEqual(stringValuesForIssueField(issue, fieldName),
-        ['test@example.com']);
+          ['test@example.com']);
     });
 
     it('computes strings for Stars', () => {
       const fieldName = 'Stars';
 
       assert.deepEqual(stringValuesForIssueField(issue, fieldName),
-        ['2']);
+          ['2']);
     });
 
     it('computes strings for Summary', () => {
       const fieldName = 'Summary';
 
       assert.deepEqual(stringValuesForIssueField(issue, fieldName),
-        ['Test summary']);
+          ['Test summary']);
     });
 
     it('computes strings for Type', () => {
       const fieldName = 'Type';
 
       assert.deepEqual(stringValuesForIssueField(issue, fieldName),
-        ['Defect']);
+          ['Defect']);
     });
 
     it('computes strings for Owner', () => {
       const fieldName = 'Owner';
 
       assert.deepEqual(stringValuesForIssueField(issue, fieldName),
-        ['owner@example.com']);
+          ['owner@example.com']);
     });
 
     it('computes strings for Opened', () => {
       const fieldName = 'Opened';
 
       assert.deepEqual(stringValuesForIssueField(issue, fieldName),
-        ['a day ago']);
+          ['a day ago']);
     });
   });
 
@@ -200,9 +200,9 @@ describe('stringValuesForIssueField', () => {
         ['enum', {fieldRef: {type: 'ENUM_TYPE', fieldName: 'ENUM'}}],
       ]);
       assert.deepEqual(stringValuesForIssueField(issue, 'aString',
-        projectName, fieldDefMap), ['test', 'test2']);
+          projectName, fieldDefMap), ['test', 'test2']);
       assert.deepEqual(stringValuesForIssueField(issue, 'enum',
-        projectName, fieldDefMap), ['a-value']);
+          projectName, fieldDefMap), ['a-value']);
     });
 
     it('custom fields get precedence over label fields', () => {
@@ -213,7 +213,7 @@ describe('stringValuesForIssueField', () => {
       issue.labelRefs = [{label: 'aString-ignore'}];
       const labelPrefixSet = new Set(['aString']);
       assert.deepEqual(stringValuesForIssueField(issue, 'aString',
-        projectName, fieldDefMap, labelPrefixSet), ['test', 'test2']);
+          projectName, fieldDefMap, labelPrefixSet), ['test', 'test2']);
     });
   });
 
@@ -237,9 +237,9 @@ describe('stringValuesForIssueField', () => {
       const fieldDefMap = new Map();
       const labelPrefixSet = new Set(['test', 'milestone']);
       assert.deepEqual(stringValuesForIssueField(issue, 'test',
-        projectName, fieldDefMap, labelPrefixSet), ['label', 'label-2']);
+          projectName, fieldDefMap, labelPrefixSet), ['label', 'label-2']);
       assert.deepEqual(stringValuesForIssueField(issue, 'Milestone',
-        projectName, fieldDefMap, labelPrefixSet), ['UI', 'Goodies']);
+          projectName, fieldDefMap, labelPrefixSet), ['UI', 'Goodies']);
     });
   });
 });

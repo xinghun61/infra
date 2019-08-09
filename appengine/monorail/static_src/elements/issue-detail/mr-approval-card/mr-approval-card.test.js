@@ -84,7 +84,7 @@ describe('mr-approval-card', () => {
     assert.isTrue(element._hasApproverPrivileges);
 
     assert.equal(notice.textContent.trim(),
-      'Your site admin privileges give you full access to edit this approval.'
+        'Your site admin privileges give you full access to edit this approval.'
     );
   });
 

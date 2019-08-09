@@ -90,35 +90,35 @@ describe('mr-cue', () => {
   });
 
   it('availability cue is shown if issue particpants are unavailable',
-     async () => {
-    element.prefsLoaded = true;
-    element.cuePrefName = 'availability_msgs';
-    element.referencedUsers = new Map([
-      ['user@example.com', {availability: 'Never visited'}],
-    ]);
+      async () => {
+        element.prefsLoaded = true;
+        element.cuePrefName = 'availability_msgs';
+        element.referencedUsers = new Map([
+          ['user@example.com', {availability: 'Never visited'}],
+        ]);
 
-    element.issue = {
-      summary: 'owner is unavailable',
-      ownerRef: {displayName: 'user@example.com'},
-      ccRefs: [{}, {}],
-    };
-    await element.updateComplete;
+        element.issue = {
+          summary: 'owner is unavailable',
+          ownerRef: {displayName: 'user@example.com'},
+          ccRefs: [{}, {}],
+        };
+        await element.updateComplete;
 
-    assert.isFalse(element.hidden);
-    const messageEl = element.shadowRoot.querySelector('#message');
-    assert.include(messageEl.innerText, 'Clock icons');
+        assert.isFalse(element.hidden);
+        const messageEl = element.shadowRoot.querySelector('#message');
+        assert.include(messageEl.innerText, 'Clock icons');
 
-    element.issue = {
-      summary: 'owner is unavailable',
-      ownerRef: {},
-      ccRefs: [
-        {displayName: 'ok@example.com'},
-        {displayName: 'user@example.com'}],
-    };
-    await element.updateComplete;
-    assert.isFalse(element.hidden);
-    assert.include(messageEl.innerText, 'Clock icons');
-  });
+        element.issue = {
+          summary: 'owner is unavailable',
+          ownerRef: {},
+          ccRefs: [
+            {displayName: 'ok@example.com'},
+            {displayName: 'user@example.com'}],
+        };
+        await element.updateComplete;
+        assert.isFalse(element.hidden);
+        assert.include(messageEl.innerText, 'Clock icons');
+      });
 
   it('switch_to_parent_account cue is hidden if no linked account', () => {
     element.prefsLoaded = true;
@@ -132,16 +132,16 @@ describe('mr-cue', () => {
   });
 
   it('switch_to_parent_account is shown if user has parent account',
-     async () => {
-    element.prefsLoaded = true;
-    element.cuePrefName = 'switch_to_parent_account';
-    element.user = {linkedParentRef: {displayName: 'parent@example.com'}};
+      async () => {
+        element.prefsLoaded = true;
+        element.cuePrefName = 'switch_to_parent_account';
+        element.user = {linkedParentRef: {displayName: 'parent@example.com'}};
 
-    await element.updateComplete;
-    assert.isFalse(element.hidden);
-    const messageEl = element.shadowRoot.querySelector('#message');
-    assert.include(messageEl.innerText, 'a linked account');
-  });
+        await element.updateComplete;
+        assert.isFalse(element.hidden);
+        const messageEl = element.shadowRoot.querySelector('#message');
+        assert.include(messageEl.innerText, 'a linked account');
+      });
 
   it('search_for_numbers cue is hidden if no number was used', () => {
     element.prefsLoaded = true;
@@ -152,24 +152,24 @@ describe('mr-cue', () => {
   });
 
   it('search_for_numbers cue is shown if jumped to issue ID',
-     async () => {
-    element.prefsLoaded = true;
-    element.cuePrefName = 'search_for_numbers';
-    element.issue = {};
-    element.jumpLocalId = '123'.match(new RegExp('^\\d+$'));
+      async () => {
+        element.prefsLoaded = true;
+        element.cuePrefName = 'search_for_numbers';
+        element.issue = {};
+        element.jumpLocalId = '123'.match(new RegExp('^\\d+$'));
 
-    await element.updateComplete;
-    assert.isFalse(element.hidden);
-    const messageEl = element.shadowRoot.querySelector('#message');
-    assert.include(messageEl.innerText, 'use quotes');
-  });
+        await element.updateComplete;
+        assert.isFalse(element.hidden);
+        const messageEl = element.shadowRoot.querySelector('#message');
+        assert.include(messageEl.innerText, 'use quotes');
+      });
 
   it('cue is dismissible unless there is attribute nondismissible',
-     async () => {
-    assert.isFalse(element.nondismissible);
+      async () => {
+        assert.isFalse(element.nondismissible);
 
-    element.setAttribute('nondismissible', '');
-    await element.updateComplete;
-    assert.isTrue(element.nondismissible);
-  });
+        element.setAttribute('nondismissible', '');
+        await element.updateComplete;
+        assert.isTrue(element.nondismissible);
+      });
 });

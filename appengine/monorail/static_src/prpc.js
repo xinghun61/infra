@@ -49,8 +49,8 @@ export default class AutoRefreshPrpcClient {
    */
   call(service, method, message) {
     return this.ensureTokenIsValid().then(() => {
-        const headers = {'X-Xsrf-Token': this.token};
-        return this.prpcClient.call(service, method, message, headers);
+      const headers = {'X-Xsrf-Token': this.token};
+      return this.prpcClient.call(service, method, message, headers);
     });
   }
 

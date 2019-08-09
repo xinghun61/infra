@@ -112,7 +112,7 @@ describe('mr-comment-list', () => {
     await element.updateComplete;
 
     assert.isNull(
-      element.shadowRoot.querySelector('.edit-slot').getAttribute('hidden'));
+        element.shadowRoot.querySelector('.edit-slot').getAttribute('hidden'));
   });
 
   it('edit-metadata is hidden if user has no addissuecomment', async () => {
@@ -121,6 +121,6 @@ describe('mr-comment-list', () => {
     await element.updateComplete;
 
     assert.isNotNull(
-      element.shadowRoot.querySelector('.edit-slot').getAttribute('hidden'));
+        element.shadowRoot.querySelector('.edit-slot').getAttribute('hidden'));
   });
 });

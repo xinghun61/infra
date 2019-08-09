@@ -41,29 +41,29 @@ describe('mr-issue-header', () => {
     element.issuePermissions = [ISSUE_FLAGSPAM_PERMISSION];
     element.issue = {isSpam: false};
     assert.isDefined(findOptionWithText(element._issueOptions,
-      'Flag issue as spam'));
+        'Flag issue as spam'));
     assert.isUndefined(findOptionWithText(element._issueOptions,
-      'Un-flag issue as spam'));
+        'Un-flag issue as spam'));
 
     element.issue = {isSpam: true};
 
     assert.isUndefined(findOptionWithText(element._issueOptions,
-      'Flag issue as spam'));
+        'Flag issue as spam'));
     assert.isDefined(findOptionWithText(element._issueOptions,
-      'Un-flag issue as spam'));
+        'Un-flag issue as spam'));
 
     element.issuePermissions = [];
 
     assert.isUndefined(findOptionWithText(element._issueOptions,
-      'Flag issue as spam'));
+        'Flag issue as spam'));
     assert.isUndefined(findOptionWithText(element._issueOptions,
-      'Un-flag issue as spam'));
+        'Un-flag issue as spam'));
 
     element.issue = {isSpam: false};
     assert.isUndefined(findOptionWithText(element._issueOptions,
-      'Flag issue as spam'));
+        'Flag issue as spam'));
     assert.isUndefined(findOptionWithText(element._issueOptions,
-      'Un-flag issue as spam'));
+        'Un-flag issue as spam'));
   });
 
   it('_issueOptions toggles convert issue', () => {
@@ -71,64 +71,64 @@ describe('mr-issue-header', () => {
     element.projectTemplates = [];
 
     assert.isUndefined(findOptionWithText(element._issueOptions,
-      'Convert issue template'));
+        'Convert issue template'));
 
     element.projectTemplates = [{templateName: 'test'}];
 
     assert.isUndefined(findOptionWithText(element._issueOptions,
-      'Convert issue template'));
+        'Convert issue template'));
 
     element.issuePermissions = [ISSUE_EDIT_PERMISSION];
     element.projectTemplates = [];
     assert.isUndefined(findOptionWithText(element._issueOptions,
-      'Convert issue template'));
+        'Convert issue template'));
 
     element.projectTemplates = [{templateName: 'test'}];
     assert.isDefined(findOptionWithText(element._issueOptions,
-      'Convert issue template'));
+        'Convert issue template'));
   });
 
   it('_issueOptions toggles delete', () => {
     element.issuePermissions = [ISSUE_DELETE_PERMISSION];
     assert.isDefined(findOptionWithText(element._issueOptions,
-      'Delete issue'));
+        'Delete issue'));
 
     element.issuePermissions = [];
 
     assert.isUndefined(findOptionWithText(element._issueOptions,
-      'Delete issue'));
+        'Delete issue'));
   });
 
   it('_issueOptions toggles move and copy', () => {
     element.issuePermissions = [ISSUE_DELETE_PERMISSION];
     assert.isDefined(findOptionWithText(element._issueOptions,
-      'Move issue'));
+        'Move issue'));
     assert.isDefined(findOptionWithText(element._issueOptions,
-      'Copy issue'));
+        'Copy issue'));
 
     element.isRestricted = true;
     assert.isUndefined(findOptionWithText(element._issueOptions,
-      'Move issue'));
+        'Move issue'));
     assert.isUndefined(findOptionWithText(element._issueOptions,
-      'Copy issue'));
+        'Copy issue'));
 
     element.issuePermissions = [];
 
     assert.isUndefined(findOptionWithText(element._issueOptions,
-      'Move issue'));
+        'Move issue'));
     assert.isUndefined(findOptionWithText(element._issueOptions,
-      'Copy issue'));
+        'Copy issue'));
   });
 
   it('_issueOptions toggles edit description', () => {
     element.issuePermissions = [ISSUE_EDIT_PERMISSION];
     assert.isDefined(findOptionWithText(element._issueOptions,
-      'Edit issue description'));
+        'Edit issue description'));
 
     element.issuePermissions = [];
 
     assert.isUndefined(findOptionWithText(element._issueOptions,
-      'Edit issue description'));
+        'Edit issue description'));
   });
 });
 

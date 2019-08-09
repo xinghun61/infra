@@ -39,7 +39,7 @@ describe('mr-search-bar', () => {
     await element.updateComplete;
 
     const queryOptions = element.shadowRoot.querySelectorAll(
-      '.user-query');
+        '.user-query');
 
     assert.equal(queryOptions.length, 2);
 
@@ -60,7 +60,7 @@ describe('mr-search-bar', () => {
     await element.updateComplete;
 
     const queryOptions = element.shadowRoot.querySelectorAll(
-      '.project-query');
+        '.project-query');
 
     assert.equal(queryOptions.length, 2);
 
@@ -113,7 +113,7 @@ describe('mr-search-bar', () => {
 
       sinon.assert.calledOnce(element._navigateToList);
       sinon.assert.calledWith(element._navigateToList,
-        {q: 'test query', can: '3'});
+          {q: 'test query', can: '3'});
     });
 
     it('submit adds form values to url', async () => {
@@ -128,7 +128,7 @@ describe('mr-search-bar', () => {
 
       sinon.assert.calledOnce(element._navigateToList);
       sinon.assert.calledWith(element._navigateToList,
-        {q: 'test', can: '1'});
+          {q: 'test', can: '1'});
     });
 
     it('submit only keeps kept query params', async () => {
@@ -143,7 +143,7 @@ describe('mr-search-bar', () => {
 
       sinon.assert.calledOnce(element._navigateToList);
       sinon.assert.calledWith(element._navigateToList,
-        {q: '', can: '2', x: 'Status'});
+          {q: '', can: '2', x: 'Status'});
     });
   });
 });

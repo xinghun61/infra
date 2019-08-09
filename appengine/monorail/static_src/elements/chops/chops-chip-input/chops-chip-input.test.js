@@ -29,7 +29,7 @@ describe('mr-chip-input', () => {
 
     assert.equal(element.shadowRoot.querySelectorAll('chops-chip').length, 2);
     assert.deepEqual(
-      element.getValues(), ['hello', 'world']);
+        element.getValues(), ['hello', 'world']);
   });
 
   it('immutable values render', async () => {
@@ -48,7 +48,7 @@ describe('mr-chip-input', () => {
     assert.include(chips[3].textContent, 'hello');
     assert.include(chips[4].textContent, 'world');
     assert.deepEqual(
-      element.getValues(), ['hello', 'world']);
+        element.getValues(), ['hello', 'world']);
   });
 
   it('chip input is focused when chip is focused', async () => {
@@ -112,7 +112,7 @@ describe('mr-chip-input', () => {
 
     assert.equal(element.shadowRoot.querySelectorAll('chops-chip').length, 2);
     assert.deepEqual(
-      element.getValues(), ['hello', 'world']);
+        element.getValues(), ['hello', 'world']);
   });
 
   it('pressing left arrow key with chip focused changes focus', async () => {
@@ -147,7 +147,7 @@ describe('mr-chip-input', () => {
 
     assert.equal(element.shadowRoot.querySelectorAll('chops-chip').length, 3);
     assert.deepEqual(
-      element.getValues(), ['hello', 'middle', 'world']);
+        element.getValues(), ['hello', 'middle', 'world']);
   });
 
   it('pressing right arrow key with chip focused changes focus', async () => {
@@ -178,11 +178,11 @@ describe('mr-chip-input', () => {
 
     // Moves to the input.
     assert.equal(element.shadowRoot.activeElement,
-      element.shadowRoot.querySelector('.add-value'));
+        element.shadowRoot.querySelector('.add-value'));
 
     assert.equal(element.shadowRoot.querySelectorAll('chops-chip').length, 3);
     assert.deepEqual(
-      element.getValues(), ['hello', 'middle', 'world']);
+        element.getValues(), ['hello', 'middle', 'world']);
   });
 
   it('pressing left arrow key from input moves to last chip', async () => {
@@ -209,7 +209,7 @@ describe('mr-chip-input', () => {
 
     assert.equal(element.shadowRoot.querySelectorAll('chops-chip').length, 3);
     assert.deepEqual(
-      element.getValues(), ['hello', 'middle', 'world']);
+        element.getValues(), ['hello', 'middle', 'world']);
   });
 
   it('pressing backspace from input deletes last chip', async () => {
@@ -235,7 +235,7 @@ describe('mr-chip-input', () => {
 
     assert.equal(element.shadowRoot.querySelectorAll('chops-chip').length, 2);
     assert.deepEqual(
-      element.getValues(), ['hello', 'middle']);
+        element.getValues(), ['hello', 'middle']);
   });
 
   it('pressing backspace with chip focused deletes chip', async () => {
@@ -260,7 +260,7 @@ describe('mr-chip-input', () => {
 
     assert.equal(element.shadowRoot.querySelectorAll('chops-chip').length, 2);
     assert.deepEqual(
-      element.getValues(), ['hello', 'world']);
+        element.getValues(), ['hello', 'world']);
   });
 
   it('pressing backspace on last chip focuses add value input', async () => {
@@ -282,10 +282,10 @@ describe('mr-chip-input', () => {
 
     // Input is focused.
     assert.equal(element.shadowRoot.activeElement,
-      element.shadowRoot.querySelector('.add-value'));
+        element.shadowRoot.querySelector('.add-value'));
     assert.equal(element.shadowRoot.querySelectorAll('chops-chip').length, 0);
     assert.deepEqual(
-      element.getValues(), []);
+        element.getValues(), []);
   });
 
   it('input values with commas are turned into chips', async () => {
@@ -303,7 +303,7 @@ describe('mr-chip-input', () => {
 
     assert.equal(element.shadowRoot.querySelectorAll('chops-chip').length, 4);
     assert.deepEqual(
-      element.getValues(), ['jaunty', 'jackalope', 'jumps', 'joyously!']);
+        element.getValues(), ['jaunty', 'jackalope', 'jumps', 'joyously!']);
   });
 
   it('getValues finds trailing non-chip value', async () => {
@@ -321,7 +321,7 @@ describe('mr-chip-input', () => {
     assert.equal(element.shadowRoot.querySelectorAll('chops-chip').length, 2);
 
     assert.deepEqual(
-      element.getValues(), ['it', 'chip2', 'blah-no-delimiter']);
+        element.getValues(), ['it', 'chip2', 'blah-no-delimiter']);
   });
 
   it('undo restores old values', async () => {

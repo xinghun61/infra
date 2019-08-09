@@ -55,6 +55,6 @@ describe('mr-grid-controls', () => {
     cellsToggle.value = 'ids';
     cellsToggle.dispatchEvent(event);
     sinon.assert.calledWith(stub, sinon.match(
-      {cells: 'ids', x: 'None', y: 'None'}));
+        {cells: 'ids', x: 'None', y: 'None'}));
   });
 });

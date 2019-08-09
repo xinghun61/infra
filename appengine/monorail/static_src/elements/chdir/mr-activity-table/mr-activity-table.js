@@ -90,10 +90,10 @@ export class MrActivityTable extends LitElement {
   get _todayUnixTime() {
     const now = new Date();
     const today = new Date(Date.UTC(
-      now.getUTCFullYear(),
-      now.getUTCMonth(),
-      now.getUTCDate(),
-      24, 0, 0));
+        now.getUTCFullYear(),
+        now.getUTCMonth(),
+        now.getUTCDate(),
+        24, 0, 0));
     const todayEndTime = today.getTime() / 1000;
     return todayEndTime;
   }
@@ -113,7 +113,7 @@ export class MrActivityTable extends LitElement {
 
     for (let i = 0; i < comments.length; i++) {
       const commentAge = Math.floor(
-        (todayUnixEndTime - comments[i].timestamp) / SECONDS_PER_DAY);
+          (todayUnixEndTime - comments[i].timestamp) / SECONDS_PER_DAY);
       if (commentAge < MAX_COMMENT_AGE) {
         const pos = MAX_COMMENT_AGE - commentAge - 1;
         activityArray[pos].commentCount++;

@@ -114,7 +114,7 @@ export class MrStarButton extends connectStore(LitElement) {
   toggleStar() {
     if (!this._canStar) return;
     const newIsStarred = !this._starredIssues.has(
-      issueRefToString(this.issueRef));
+        issueRefToString(this.issueRef));
     // This component assumes that the user of this component is connected to
     // Redux and will update their star state based on this.
     store.dispatch(issue.star(this.issueRef, newIsStarred));

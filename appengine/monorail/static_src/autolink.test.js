@@ -42,14 +42,14 @@ describe('autolink', () => {
         ]};
       const actualRun = replacer(match, components);
       assert.deepEqual(
-        actualRun,
-        [{
-          tag: 'a',
-          css: 'strike-through',
-          href: '/p/monorail/issues/detail?id=1234',
-          title: 'Issue summary',
-          content: str,
-        }]
+          actualRun,
+          [{
+            tag: 'a',
+            css: 'strike-through',
+            href: '/p/monorail/issues/detail?id=1234',
+            title: 'Issue summary',
+            content: str,
+          }]
       );
     });
 
@@ -64,14 +64,14 @@ describe('autolink', () => {
         ]};
       const actualRun = replacer(match, components);
       assert.deepEqual(
-        actualRun,
-        [{
-          tag: 'a',
-          css: 'strike-through',
-          href: '/p/monorail/issues/detail?id=1234#c1',
-          title: 'Issue summary',
-          content: str,
-        }]
+          actualRun,
+          [{
+            tag: 'a',
+            css: 'strike-through',
+            href: '/p/monorail/issues/detail?id=1234#c1',
+            title: 'Issue summary',
+            content: str,
+          }]
       );
     });
 
@@ -87,14 +87,14 @@ describe('autolink', () => {
       };
       const actualRun = replacer(match, components);
       assert.deepEqual(
-        actualRun,
-        [{
-          tag: 'a',
-          href: '/p/chromium/issues/detail?id=1234',
-          css: '',
-          title: 'Issue 1234',
-          content: str,
-        }]
+          actualRun,
+          [{
+            tag: 'a',
+            href: '/p/chromium/issues/detail?id=1234',
+            css: '',
+            title: 'Issue 1234',
+            content: str,
+          }]
       );
     });
 
@@ -122,14 +122,14 @@ describe('autolink', () => {
       };
       const actualRun = replacer(match, components, 'foo');
       assert.deepEqual(
-        actualRun,
-        [{
-          tag: 'a',
-          href: '/p/chromium/issues/detail?id=1234',
-          css: '',
-          title: 'Issue 1234',
-          content: str,
-        }]
+          actualRun,
+          [{
+            tag: 'a',
+            href: '/p/chromium/issues/detail?id=1234',
+            css: '',
+            title: 'Issue 1234',
+            content: str,
+          }]
       );
     });
 
@@ -153,14 +153,14 @@ describe('autolink', () => {
         ]};
       const actualRun = replacer(match, components);
       assert.deepEqual(
-        actualRun,
-        [{
-          tag: 'a',
-          css: 'strike-through',
-          href: '/p/monorail/issues/detail?id=1234',
-          title: '',
-          content: str,
-        }]
+          actualRun,
+          [{
+            tag: 'a',
+            css: 'strike-through',
+            href: '/p/monorail/issues/detail?id=1234',
+            title: '',
+            content: str,
+          }]
       );
     });
   });
@@ -175,11 +175,11 @@ describe('autolink', () => {
     it('Extract tracker projects and local ids', () => {
       const actualRefs = extractRefs(match, 'foo-project');
       assert.deepEqual(
-        actualRefs,
-        [{projectName: 'foo-project', localId: '123'},
-          {projectName: 'monorail', localId: '234'},
-          {projectName: 'monorail', localId: '345'},
-          {projectName: 'PROJ', localId: '456'}]);
+          actualRefs,
+          [{projectName: 'foo-project', localId: '123'},
+            {projectName: 'monorail', localId: '234'},
+            {projectName: 'monorail', localId: '345'},
+            {projectName: 'PROJ', localId: '456'}]);
     });
 
     it('Replace tracker refs.', () => {
@@ -194,29 +194,29 @@ describe('autolink', () => {
       };
       const actualTextRuns = replacer(match, components, 'chromium');
       assert.deepEqual(
-        actualTextRuns,
-        [
-          {content: 'bugs='},
-          {
-            tag: 'a',
-            href: '/p/chromium/issues/detail?id=123',
-            css: '',
-            title: 'ma',
-            content: '123',
-          },
-          {content: ', '},
-          {content: 'monorail:234'},
-          {content: ' or '},
-          {content: '#345'},
-          {content: ' and '},
-          {
-            tag: 'a',
-            href: '/p/PROJ/issues/detail?id=456',
-            css: 'strike-through',
-            title: 'ry',
-            content: 'PROJ:#456',
-          },
-        ]
+          actualTextRuns,
+          [
+            {content: 'bugs='},
+            {
+              tag: 'a',
+              href: '/p/chromium/issues/detail?id=123',
+              css: '',
+              title: 'ma',
+              content: '123',
+            },
+            {content: ', '},
+            {content: 'monorail:234'},
+            {content: ' or '},
+            {content: '#345'},
+            {content: ' and '},
+            {
+              tag: 'a',
+              href: '/p/PROJ/issues/detail?id=456',
+              css: 'strike-through',
+              title: 'ry',
+              content: 'PROJ:#456',
+            },
+          ]
       );
     });
 
@@ -231,29 +231,29 @@ describe('autolink', () => {
       };
       const actualTextRuns = replacer(match, components, 'lEmUr');
       assert.deepEqual(
-        actualTextRuns,
-        [
-          {content: 'bugs='},
-          {
-            tag: 'a',
-            href: '/p/lEmUr/issues/detail?id=123',
-            css: 'strike-through',
-            title: '',
-            content: '123',
-          },
-          {content: ', '},
-          {
-            tag: 'a',
-            href: '/p/monorail/issues/detail?id=234',
-            css: '',
-            title: '',
-            content: 'monorail:234',
-          },
-          {content: ' or '},
-          {content: '#345'},
-          {content: ' and '},
-          {content: 'PROJ:#456'},
-        ],
+          actualTextRuns,
+          [
+            {content: 'bugs='},
+            {
+              tag: 'a',
+              href: '/p/lEmUr/issues/detail?id=123',
+              css: 'strike-through',
+              title: '',
+              content: '123',
+            },
+            {content: ', '},
+            {
+              tag: 'a',
+              href: '/p/monorail/issues/detail?id=234',
+              css: '',
+              title: '',
+              content: 'monorail:234',
+            },
+            {content: ' or '},
+            {content: '#345'},
+            {content: ' and '},
+            {content: 'PROJ:#456'},
+          ],
       );
     });
   });
@@ -274,20 +274,20 @@ describe('autolink', () => {
         users: [{email: 'user2@gmail.com'}, {email: 'user1@gmail.com'}]};
       const actualTextRun = replacer(match, components);
       assert.deepEqual(
-        actualTextRun,
-        [{tag: 'a', href: '/u/User1@gmail.com', content: 'User1@gmail.com'}]
+          actualTextRun,
+          [{tag: 'a', href: '/u/User1@gmail.com', content: 'User1@gmail.com'}]
       );
     });
 
     it('Replace non-existent user.', () => {
       const actualTextRun = replacer(match, {});
       assert.deepEqual(
-        actualTextRun,
-        [{
-          tag: 'a',
-          href: 'mailto:User1@gmail.com',
-          content: 'User1@gmail.com',
-        }]
+          actualTextRun,
+          [{
+            tag: 'a',
+            href: 'mailto:User1@gmail.com',
+            content: 'User1@gmail.com',
+          }]
       );
     });
   });
@@ -306,8 +306,8 @@ describe('autolink', () => {
         actualMatches.push(match[0]);
       }
       assert.deepEqual(
-        actualMatches,
-        ['https://www.go.com', 'http://website.net/other="(}])">']);
+          actualMatches,
+          ['https://www.go.com', 'http://website.net/other="(}])">']);
     });
 
     it('Replace URL existing http', () => {
@@ -315,12 +315,12 @@ describe('autolink', () => {
       refRegs[0].lastIndex = 0;
       const actualTextRuns = replacer(match);
       assert.deepEqual(
-        actualTextRuns,
-        [{tag: 'a',
-          href: 'https://website.net/other="here"',
-          content: 'https://website.net/other="here"',
-        },
-        {content: ').'}]
+          actualTextRuns,
+          [{tag: 'a',
+            href: 'https://website.net/other="here"',
+            content: 'https://website.net/other="here"',
+          },
+          {content: ').'}]
       );
     });
 
@@ -330,11 +330,11 @@ describe('autolink', () => {
       const actualTextRuns = replacer(match);
 
       assert.deepEqual(
-        actualTextRuns,
-        [{tag: 'a',
-          href: 'https://website.net/who/me/yes/you',
-          content: 'https://website.net/who/me/yes/you',
-        }]
+          actualTextRuns,
+          [{tag: 'a',
+            href: 'https://website.net/who/me/yes/you',
+            content: 'https://website.net/who/me/yes/you',
+          }]
       );
     });
 
@@ -344,11 +344,11 @@ describe('autolink', () => {
       const actualTextRuns = replacer(match);
 
       assert.deepEqual(
-        actualTextRuns,
-        [{tag: 'a',
-          href: 'https://website.net/who/foo@example.com',
-          content: 'https://website.net/who/foo@example.com',
-        }]
+          actualTextRuns,
+          [{tag: 'a',
+            href: 'https://website.net/who/foo@example.com',
+            content: 'https://website.net/who/foo@example.com',
+          }]
       );
     });
   });
@@ -367,13 +367,13 @@ describe('autolink', () => {
         'go/shortlinks ./_go/shortlinks bo/short bo/1234  ' +
         'https://who/shortlinks go/hey/?wct=(go)';
       let match;
-      let actualMatches = [];
+      const actualMatches = [];
       while ((match = shortLinkRE.exec(str)) !== null) {
         actualMatches.push(match[0]);
       }
       assert.deepEqual(
-        actualMatches,
-        ['go/shortlinks', ' https://who/shortlinks', ' go/hey/?wct=(go)']
+          actualMatches,
+          ['go/shortlinks', ' https://who/shortlinks', ' go/hey/?wct=(go)']
       );
     });
 
@@ -381,7 +381,7 @@ describe('autolink', () => {
       const shortNumLinkRE = refRegs[1];
       const str = 'go/nono omg/ohno omg/123 .cl/123 b/1234';
       let match;
-      let actualMatches = [];
+      const actualMatches = [];
       while ((match = shortNumLinkRE.exec(str)) !== null) {
         actualMatches.push(match[0]);
       }
@@ -392,12 +392,12 @@ describe('autolink', () => {
       const impliedLinkRE = refRegs[2];
       const str = 'incomplete.com .help.com hey.net/other="(blah)"';
       let match;
-      let actualMatches = [];
+      const actualMatches = [];
       while ((match = impliedLinkRE.exec(str)) !== null) {
         actualMatches.push(match[0]);
       }
       assert.deepEqual(
-        actualMatches, ['incomplete.com', ' hey.net/other="(blah)"']);
+          actualMatches, ['incomplete.com', ' hey.net/other="(blah)"']);
     });
 
     it('Replace URL plain text', () => {
@@ -405,13 +405,13 @@ describe('autolink', () => {
       refRegs[2].lastIndex = 0;
       const actualTextRuns = replacer(match);
       assert.deepEqual(
-        actualTextRuns,
-        [{content: '('},
-          {tag: 'a',
-            href: 'https://website.net/other="here"',
-            content: 'website.net/other="here"',
-          },
-          {content: ').'}]
+          actualTextRuns,
+          [{content: '('},
+            {tag: 'a',
+              href: 'https://website.net/other="here"',
+              content: 'website.net/other="here"',
+            },
+            {content: ').'}]
       );
     });
 
@@ -420,13 +420,13 @@ describe('autolink', () => {
       refRegs[0].lastIndex = 0;
       const actualTextRuns = replacer(match);
       assert.deepEqual(
-        actualTextRuns,
-        [{content: '('},
-          {tag: 'a',
-            href: 'http://who/me',
-            content: 'http://who/me',
-          },
-          {content: ').'}]
+          actualTextRuns,
+          [{content: '('},
+            {tag: 'a',
+              href: 'http://who/me',
+              content: 'http://who/me',
+            },
+            {content: ').'}]
       );
     });
 
@@ -435,13 +435,13 @@ describe('autolink', () => {
       refRegs[0].lastIndex = 0;
       const actualTextRuns = replacer(match);
       assert.deepEqual(
-        actualTextRuns,
-        [{content: '('},
-          {tag: 'a',
-            href: 'http://who/me',
-            content: 'who/me',
-          },
-          {content: ').'}]
+          actualTextRuns,
+          [{content: '('},
+            {tag: 'a',
+              href: 'http://who/me',
+              content: 'who/me',
+            },
+            {content: ').'}]
       );
     });
 
@@ -450,12 +450,12 @@ describe('autolink', () => {
       refRegs[0].lastIndex = 0;
       const actualTextRuns = replacer(match);
       assert.deepEqual(
-        actualTextRuns,
-        [{content: ' '},
-          {tag: 'a',
-            href: 'http://who/me',
-            content: 'who/me',
-          }]
+          actualTextRuns,
+          [{content: ' '},
+            {tag: 'a',
+              href: 'http://who/me',
+              content: 'who/me',
+            }]
       );
     });
 
@@ -465,13 +465,13 @@ describe('autolink', () => {
         refRegs[0].lastIndex = 0;
         const actualTextRuns = replacer(match);
         assert.deepEqual(
-          actualTextRuns,
-          [{content: '('},
-            {tag: 'a',
-              href: `http://${prefix}/abcd`,
-              content: `${prefix}/abcd`,
-            },
-            {content: ').'}]
+            actualTextRuns,
+            [{content: '('},
+              {tag: 'a',
+                href: `http://${prefix}/abcd`,
+                content: `${prefix}/abcd`,
+              },
+              {content: ').'}]
         );
       });
     });
@@ -482,12 +482,12 @@ describe('autolink', () => {
         refRegs[1].lastIndex = 0;
         const actualTextRuns = replacer(match);
         assert.deepEqual(
-          actualTextRuns,
-          [{content: '('},
-            {tag: 'a',
-              href: `http://${prefix}/1234`,
-              content: `${prefix}/1234`,
-            }]
+            actualTextRuns,
+            [{content: '('},
+              {tag: 'a',
+                href: `http://${prefix}/1234`,
+                content: `${prefix}/1234`,
+              }]
         );
       });
     });
@@ -509,11 +509,11 @@ describe('autolink', () => {
         actualMatches.push(match[0]);
       }
       assert.deepEqual(
-        actualMatches, [
-          'r63b72a71d5fbce6739c51c3846dd94bd62b91091',
-          'Revision 63b72a71d5fbce6739c51c3846dd94bd62b91091',
-          '63b72a71d5fbce6739c51c3846dd94bd62b91091',
-        ]);
+          actualMatches, [
+            'r63b72a71d5fbce6739c51c3846dd94bd62b91091',
+            'Revision 63b72a71d5fbce6739c51c3846dd94bd62b91091',
+            '63b72a71d5fbce6739c51c3846dd94bd62b91091',
+          ]);
     });
 
     it('test svn regex', () => {
@@ -529,40 +529,40 @@ describe('autolink', () => {
         actualMatches.push(match[0]);
       }
       assert.deepEqual(
-        actualMatches, [
-          'r1234',
-          'Revision 123456',
-        ]);
+          actualMatches, [
+            'r1234',
+            'Revision 123456',
+          ]);
     });
 
     it('replace revision refs plain text', () => {
       const str = 'r63b72a71d5fbce6739c51c3846dd94bd62b91091';
       const match = refRegs[0].exec(str);
       const actualTextRuns = replacer(
-        match, null, null, 'https://crrev.com/{revnum}');
+          match, null, null, 'https://crrev.com/{revnum}');
       refRegs[0].lastIndex = 0;
       assert.deepEqual(
-        actualTextRuns,
-        [{
-          content: 'r63b72a71d5fbce6739c51c3846dd94bd62b91091',
-          tag: 'a',
-          href: 'https://crrev.com/63b72a71d5fbce6739c51c3846dd94bd62b91091',
-        }]);
+          actualTextRuns,
+          [{
+            content: 'r63b72a71d5fbce6739c51c3846dd94bd62b91091',
+            tag: 'a',
+            href: 'https://crrev.com/63b72a71d5fbce6739c51c3846dd94bd62b91091',
+          }]);
     });
 
     it('replace revision refs plain text different template', () => {
       const str = 'r63b72a71d5fbce6739c51c3846dd94bd62b91091';
       const match = refRegs[0].exec(str);
       const actualTextRuns = replacer(
-        match, null, null, 'https://foo.bar/{revnum}/baz');
+          match, null, null, 'https://foo.bar/{revnum}/baz');
       refRegs[0].lastIndex = 0;
       assert.deepEqual(
-        actualTextRuns,
-        [{
-          content: 'r63b72a71d5fbce6739c51c3846dd94bd62b91091',
-          tag: 'a',
-          href: 'https://foo.bar/63b72a71d5fbce6739c51c3846dd94bd62b91091/baz',
-        }]);
+          actualTextRuns,
+          [{
+            content: 'r63b72a71d5fbce6739c51c3846dd94bd62b91091',
+            tag: 'a',
+            href: 'https://foo.bar/63b72a71d5fbce6739c51c3846dd94bd62b91091/baz',
+          }]);
     });
   });
 
@@ -590,52 +590,52 @@ describe('autolink', () => {
       const plainString = 'test <b>autolinking go/testlink</b> is not nested';
       const actualTextRuns = markupAutolinks(plainString, componentRefs);
       assert.deepEqual(
-        actualTextRuns, [
-          {content: 'test '},
-          {content: 'autolinking go/testlink', tag: 'b'},
-          {content: ' is not nested'},
-        ]);
+          actualTextRuns, [
+            {content: 'test '},
+            {content: 'autolinking go/testlink', tag: 'b'},
+            {content: ' is not nested'},
+          ]);
     });
 
     it('URLs are autolinked', () => {
       const plainString = 'this http string contains http://google.com for you';
       const actualTextRuns = markupAutolinks(plainString, componentRefs);
       assert.deepEqual(
-        actualTextRuns, [
-          {content: 'this http string contains '},
-          {content: 'http://google.com', tag: 'a', href: 'http://google.com'},
-          {content: ' for you'},
-        ]);
+          actualTextRuns, [
+            {content: 'this http string contains '},
+            {content: 'http://google.com', tag: 'a', href: 'http://google.com'},
+            {content: ' for you'},
+          ]);
     });
 
     it('different component types are correctly linked', () => {
       const plainString = 'test (User2@example.com and crbug.com/99) get link';
       const actualTextRuns = markupAutolinks(plainString, componentRefs);
       assert.deepEqual(
-        actualTextRuns,
-        [
-          {
-            content: 'test (',
-          },
-          {
-            content: 'User2@example.com',
-            tag: 'a',
-            href: '/u/User2@example.com',
-          },
-          {
-            content: ' and ',
-          },
-          {
-            content: 'crbug.com/99',
-            tag: 'a',
-            href: '/p/chromium/issues/detail?id=99',
-            title: '',
-            css: 'strike-through',
-          },
-          {
-            content: ') get link',
-          },
-        ]
+          actualTextRuns,
+          [
+            {
+              content: 'test (',
+            },
+            {
+              content: 'User2@example.com',
+              tag: 'a',
+              href: '/u/User2@example.com',
+            },
+            {
+              content: ' and ',
+            },
+            {
+              content: 'crbug.com/99',
+              tag: 'a',
+              href: '/p/chromium/issues/detail?id=99',
+              title: '',
+              css: 'strike-through',
+            },
+            {
+              content: ') get link',
+            },
+          ]
       );
     });
 
@@ -644,22 +644,22 @@ describe('autolink', () => {
         'bug123, bug 123a, bug-123 and https://bug:123.example.com ' +
         'do not get linked.';
       const actualTextRuns= markupAutolinks(
-        plainString, componentRefs, 'chromium');
+          plainString, componentRefs, 'chromium');
       assert.deepEqual(
-        actualTextRuns,
-        [
-          {
-            content: 'bug123, bug 123a, bug-123 and ',
-          },
-          {
-            content: 'https://bug:123.example.com',
-            tag: 'a',
-            href: 'https://bug:123.example.com',
-          },
-          {
-            content: ' do not get linked.',
-          },
-        ]);
+          actualTextRuns,
+          [
+            {
+              content: 'bug123, bug 123a, bug-123 and ',
+            },
+            {
+              content: 'https://bug:123.example.com',
+              tag: 'a',
+              href: 'https://bug:123.example.com',
+            },
+            {
+              content: ' do not get linked.',
+            },
+          ]);
     });
 
     it('Only existing issues get linked', () => {
@@ -667,52 +667,52 @@ describe('autolink', () => {
         'only existing bugs = 456, monorail:123, 234 and chromium:345 get ' +
         'linked';
       const actualTextRuns = markupAutolinks(
-        plainString, componentRefs, 'chromium');
+          plainString, componentRefs, 'chromium');
       assert.deepEqual(
-        actualTextRuns,
-        [
-          {
-            content: 'only existing ',
-          },
-          {
-            content: 'bugs = ',
-          },
-          {
-            content: '456',
-            tag: 'a',
-            href: '/p/chromium/issues/detail?id=456',
-            title: '',
-            css: 'strike-through',
-          },
-          {
-            content: ', ',
-          },
-          {
-            content: 'monorail:123',
-            tag: 'a',
-            href: '/p/monorail/issues/detail?id=123',
-            title: 'monorail',
-            css: '',
-          },
-          {
-            content: ', ',
-          },
-          {
-            content: '234',
-          },
-          {
-            content: ' and ',
-          },
-          {
-            content: 'chromium:345',
-          },
-          {
-            content: ' ',
-          },
-          {
-            content: 'get linked',
-          },
-        ]
+          actualTextRuns,
+          [
+            {
+              content: 'only existing ',
+            },
+            {
+              content: 'bugs = ',
+            },
+            {
+              content: '456',
+              tag: 'a',
+              href: '/p/chromium/issues/detail?id=456',
+              title: '',
+              css: 'strike-through',
+            },
+            {
+              content: ', ',
+            },
+            {
+              content: 'monorail:123',
+              tag: 'a',
+              href: '/p/monorail/issues/detail?id=123',
+              title: 'monorail',
+              css: '',
+            },
+            {
+              content: ', ',
+            },
+            {
+              content: '234',
+            },
+            {
+              content: ' and ',
+            },
+            {
+              content: 'chromium:345',
+            },
+            {
+              content: ' ',
+            },
+            {
+              content: 'get linked',
+            },
+          ]
       );
     });
 
@@ -722,27 +722,27 @@ describe('autolink', () => {
         'not allowed go/survey is still linked</b>';
       const actualTextRuns = markupAutolinks(plainString, componentRefs);
       assert.deepEqual(
-        actualTextRuns, [
-          {content: '<b>no multiline bolding '},
-          {tag: 'br'},
-          {content: 'not allowed'},
-          {content: ' '},
-          {content: 'go/survey', tag: 'a', href: 'http://go/survey'},
-          {content: ' is still linked</b>'},
-        ]);
+          actualTextRuns, [
+            {content: '<b>no multiline bolding '},
+            {tag: 'br'},
+            {content: 'not allowed'},
+            {content: ' '},
+            {content: 'go/survey', tag: 'a', href: 'http://go/survey'},
+            {content: ' is still linked</b>'},
+          ]);
 
       const plainString2 =
         '<b>no multiline bold \rwith carriage \r\nreturns</b>';
       const actualTextRuns2 = markupAutolinks(plainString2, componentRefs);
 
       assert.deepEqual(
-        actualTextRuns2, [
-          {content: '<b>no multiline bold '},
-          {tag: 'br'},
-          {content: 'with carriage '},
-          {tag: 'br'},
-          {content: 'returns</b>'},
-        ]);
+          actualTextRuns2, [
+            {content: '<b>no multiline bold '},
+            {tag: 'br'},
+            {content: 'with carriage '},
+            {tag: 'br'},
+            {content: 'returns</b>'},
+          ]);
     });
 
     // Check that comment references are properly linked.
@@ -751,45 +751,45 @@ describe('autolink', () => {
       'comment1, comment : 5, Comment =10, comment #4, #c57';
       const actualTextRuns = markupAutolinks(plainString, componentRefs);
       assert.deepEqual(
-        actualTextRuns, [
-          {
-            content: 'comment1',
-            tag: 'a',
-            href: '#c1',
-          },
-          {
-            content: ', ',
-          },
-          {
-            content: 'comment : 5',
-            tag: 'a',
-            href: '#c5',
-          },
-          {
-            content: ', ',
-          },
-          {
-            content: 'Comment =10',
-            tag: 'a',
-            href: '#c10',
-          },
-          {
-            content: ', ',
-          },
-          {
-            content: 'comment #4',
-            tag: 'a',
-            href: '#c4',
-          },
-          {
-            content: ', ',
-          },
-          {
-            content: '#c57',
-            tag: 'a',
-            href: '#c57',
-          },
-        ]
+          actualTextRuns, [
+            {
+              content: 'comment1',
+              tag: 'a',
+              href: '#c1',
+            },
+            {
+              content: ', ',
+            },
+            {
+              content: 'comment : 5',
+              tag: 'a',
+              href: '#c5',
+            },
+            {
+              content: ', ',
+            },
+            {
+              content: 'Comment =10',
+              tag: 'a',
+              href: '#c10',
+            },
+            {
+              content: ', ',
+            },
+            {
+              content: 'comment #4',
+              tag: 'a',
+              href: '#c4',
+            },
+            {
+              content: ', ',
+            },
+            {
+              content: '#c57',
+              tag: 'a',
+              href: '#c57',
+            },
+          ]
       );
     });
 
@@ -799,11 +799,11 @@ describe('autolink', () => {
       'comment number 4, comment-4, comment= # 5, comment#c56';
       const actualTextRuns = markupAutolinks(plainString, componentRefs);
       assert.deepEqual(
-        actualTextRuns, [
-          {
-            content: 'comment number 4, comment-4, comment= # 5, comment#c56',
-          },
-        ]
+          actualTextRuns, [
+            {
+              content: 'comment number 4, comment-4, comment= # 5, comment#c56',
+            },
+          ]
       );
     });
 
@@ -813,29 +813,29 @@ describe('autolink', () => {
       'issue 2 comment 3, issue2 comment 9, bug #3 comment=4';
       const actualTextRuns = markupAutolinks(plainString, componentRefs);
       assert.deepEqual(
-        actualTextRuns, [
-          {
-            content: 'issue 2 comment 3',
-            tag: 'a',
-            href: '?id=2#c3',
-          },
-          {
-            content: ', ',
-          },
-          {
-            content: 'issue2 comment 9',
-            tag: 'a',
-            href: '?id=2#c9',
-          },
-          {
-            content: ', ',
-          },
-          {
-            content: 'bug #3 comment=4',
-            tag: 'a',
-            href: '?id=3#c4',
-          },
-        ]
+          actualTextRuns, [
+            {
+              content: 'issue 2 comment 3',
+              tag: 'a',
+              href: '?id=2#c3',
+            },
+            {
+              content: ', ',
+            },
+            {
+              content: 'issue2 comment 9',
+              tag: 'a',
+              href: '?id=2#c9',
+            },
+            {
+              content: ', ',
+            },
+            {
+              content: 'bug #3 comment=4',
+              tag: 'a',
+              href: '?id=3#c4',
+            },
+          ]
       );
     });
 
@@ -845,11 +845,11 @@ describe('autolink', () => {
       'theissue 2comment 3, issue2comment 9';
       const actualTextRuns = markupAutolinks(plainString, componentRefs);
       assert.deepEqual(
-        actualTextRuns, [
-          {
-            content: 'theissue 2comment 3, issue2comment 9',
-          },
-        ]
+          actualTextRuns, [
+            {
+              content: 'theissue 2comment 3, issue2comment 9',
+            },
+          ]
       );
     });
   });
@@ -871,14 +871,14 @@ describe('autolink', () => {
       ];
       autolink.getReferencedArtifacts(comments, 'proj');
       assert.isTrue(prpcClient.call.calledWith(
-        'monorail.Issues',
-        'ListReferencedIssues',
-        {
-          issueRefs: [
-            {projectName: 'proj', localId: '1'},
-            {projectName: 'chromium', localId: '3'},
-          ],
-        },
+          'monorail.Issues',
+          'ListReferencedIssues',
+          {
+            issueRefs: [
+              {projectName: 'proj', localId: '1'},
+              {projectName: 'chromium', localId: '3'},
+            ],
+          },
       ));
     });
   });

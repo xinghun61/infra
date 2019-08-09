@@ -52,7 +52,7 @@ describe('mr-list-page', () => {
     await element.updateComplete;
 
     assert.deepEqual(element.columns,
-      ['ID', 'Summary', 'AllLabels', 'Priority']);
+        ['ID', 'Summary', 'AllLabels', 'Priority']);
   });
 
   it('colspec parsing preserves dashed parameters', async () => {
@@ -61,7 +61,7 @@ describe('mr-list-page', () => {
     await element.updateComplete;
 
     assert.deepEqual(element.columns,
-      ['ID', 'Summary', 'Test-Label', 'Another-Label']);
+        ['ID', 'Summary', 'Test-Label', 'Another-Label']);
   });
 
   describe('edit actions', () => {
@@ -80,7 +80,7 @@ describe('mr-list-page', () => {
       element.bulkEdit();
 
       sinon.assert.calledWith(window.alert,
-        'Please select some issues to edit.');
+          'Please select some issues to edit.');
     });
 
     it('bulk edit redirects to bulk edit page', () => {
@@ -94,7 +94,7 @@ describe('mr-list-page', () => {
       element.bulkEdit();
 
       sinon.assert.calledWith(element.page,
-        '/p/test/issues/bulkedit?ids=1%2C2');
+          '/p/test/issues/bulkedit?ids=1%2C2');
     });
 
     it('flag issue as spam stops when no issues selected', () => {
@@ -103,7 +103,7 @@ describe('mr-list-page', () => {
       element._flagIssues(true);
 
       sinon.assert.calledWith(window.alert,
-        'Please select some issues to flag as spam.');
+          'Please select some issues to flag as spam.');
     });
 
     it('un-flag issue as spam stops when no issues selected', () => {
@@ -112,7 +112,7 @@ describe('mr-list-page', () => {
       element._flagIssues(false);
 
       sinon.assert.calledWith(window.alert,
-        'Please select some issues to un-flag as spam.');
+          'Please select some issues to un-flag as spam.');
     });
 
     it('flagging issues as spam sends pRPC request', async () => {
@@ -125,13 +125,13 @@ describe('mr-list-page', () => {
       await element._flagIssues(true);
 
       sinon.assert.calledWith(prpcClient.call, 'monorail.Issues',
-        'FlagIssues', {
-          issueRefs: [
-            {localId: 1, projectName: 'test'},
-            {localId: 2, projectName: 'test'},
-          ],
-          flag: true,
-        });
+          'FlagIssues', {
+            issueRefs: [
+              {localId: 1, projectName: 'test'},
+              {localId: 2, projectName: 'test'},
+            ],
+            flag: true,
+          });
     });
 
     it('un-flagging issues as spam sends pRPC request', async () => {
@@ -144,13 +144,13 @@ describe('mr-list-page', () => {
       await element._flagIssues(false);
 
       sinon.assert.calledWith(prpcClient.call, 'monorail.Issues',
-        'FlagIssues', {
-          issueRefs: [
-            {localId: 1, projectName: 'test'},
-            {localId: 2, projectName: 'test'},
-          ],
-          flag: false,
-        });
+          'FlagIssues', {
+            issueRefs: [
+              {localId: 1, projectName: 'test'},
+              {localId: 2, projectName: 'test'},
+            ],
+            flag: false,
+          });
     });
 
     it('add to hotlist stops when no issues selected', () => {
@@ -160,7 +160,7 @@ describe('mr-list-page', () => {
       element.addToHotlist();
 
       sinon.assert.calledWith(window.alert,
-        'Please select some issues to add to hotlists.');
+          'Please select some issues to add to hotlists.');
     });
 
     it('add to hotlist dialog opens', async () => {
@@ -173,7 +173,7 @@ describe('mr-list-page', () => {
       await element.updateComplete;
 
       const dialog = element.shadowRoot.querySelector(
-        'mr-update-issue-hotlists');
+          'mr-update-issue-hotlists');
       sinon.stub(dialog, 'open');
 
       element.addToHotlist();

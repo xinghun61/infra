@@ -268,7 +268,7 @@ export class MrApprovalCard extends connectStore(LitElement) {
     if ((changedProperties.has('comments') || changedProperties.has('focusId'))
         && this.comments) {
       const focused = this.comments.find(
-        (comment) => `c${comment.sequenceNum}` === this.focusId);
+          (comment) => `c${comment.sequenceNum}` === this.focusId);
       if (focused) {
         // Make sure to open the card when a comment is focused.
         this.opened = true;
@@ -357,7 +357,7 @@ export class MrApprovalCard extends connectStore(LitElement) {
     const userGroups = this.user.groups || [];
     return !!this.approvers.find((a) => {
       return a.displayName === this.user.email || userGroups.find(
-        (group) => group.displayName === a.displayName
+          (group) => group.displayName === a.displayName
       );
     });
   }

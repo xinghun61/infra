@@ -33,7 +33,7 @@ export const fieldGroupMap = (fieldGroupsArg, issueType) => {
 export const valuesForField = (fieldValueMap, fieldName, phaseName) => {
   if (!fieldValueMap) return [];
   return fieldValueMap.get(
-    fieldValueMapKey(fieldName, phaseName)) || [];
+      fieldValueMapKey(fieldName, phaseName)) || [];
 };
 
 export const fieldValueMapKey = (fieldName, phaseName) => {
@@ -60,7 +60,7 @@ export const fieldDefsWithGroup = (fieldDefs, fieldGroupsArg, issueType) => {
     const groupFields = [];
     group.fieldNames.forEach((name) => {
       const fd = fieldDefs.find(
-        (fd) => (fd.fieldRef.fieldName == name));
+          (fd) => (fd.fieldRef.fieldName == name));
       if (fd) {
         groupFields.push(fd);
       }

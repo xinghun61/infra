@@ -25,7 +25,7 @@ describe('objectToMap', () => {
   it('converts Object to Map with the same keys', () => {
     assert.deepEqual(objectToMap({}), new Map());
     assert.deepEqual(objectToMap({test: 'value'}),
-      new Map([['test', 'value']]));
+        new Map([['test', 'value']]));
     assert.deepEqual(objectToMap({['weird:key']: 'value',
       ['what is this key']: 'v2'}), new Map([['weird:key', 'value'],
       ['what is this key', 'v2']]));
@@ -37,7 +37,7 @@ describe('immutableSplice', () => {
     const arr = ['apples', 'pears', 'oranges'];
 
     assert.deepEqual(immutableSplice(arr, 1, 1),
-      ['apples', 'oranges']);
+        ['apples', 'oranges']);
 
     assert.deepEqual(arr, ['apples', 'pears', 'oranges']);
   });
@@ -56,6 +56,6 @@ describe('immutableSplice', () => {
     assert.deepEqual(immutableSplice(arr, 1, 1, 4, 5, 6), [1, 4, 5, 6, 3]);
     assert.deepEqual(immutableSplice(arr, 2, 1, 4, 5, 6), [1, 2, 4, 5, 6]);
     assert.deepEqual(immutableSplice(arr, 0, 0, -3, -2, -1, 0),
-      [-3, -2, -1, 0, 1, 2, 3]);
+        [-3, -2, -1, 0, 1, 2, 3]);
   });
 });

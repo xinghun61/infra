@@ -212,7 +212,7 @@ export class MrHeader extends LitElement {
   // TODO(zhangtiff): Make this into an action creator.
   async _fetchPresentationConfig(projectName) {
     const presentationConfig = await prpcClient.call(
-      'monorail.Projects', 'GetPresentationConfig', {projectName});
+        'monorail.Projects', 'GetPresentationConfig', {projectName});
 
     this.presentationConfig = presentationConfig;
     this.projectThumbnailUrl = presentationConfig.projectThumbnailUrl;
@@ -226,7 +226,7 @@ export class MrHeader extends LitElement {
     //   as well.
     const userRefs = [{displayName}];
     const response = await prpcClient.call(
-      'monorail.Users', 'GetUsersProjects', {userRefs});
+        'monorail.Users', 'GetUsersProjects', {userRefs});
     this.userProjects = response.usersProjects[0];
   }
 
@@ -238,8 +238,8 @@ export class MrHeader extends LitElement {
     const items = [];
     const starredProjects = userProjects.starredProjects || [];
     const projects = (userProjects.ownerOf || [])
-      .concat(userProjects.memberOf || [])
-      .concat(userProjects.contributorTo || []);
+        .concat(userProjects.memberOf || [])
+        .concat(userProjects.contributorTo || []);
 
     if (projects.length) {
       projects.sort();

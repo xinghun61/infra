@@ -111,7 +111,7 @@ describe('issue', () => {
       relatedIssues: {},
     }};
     assert.deepEqual(issue.blockingIssues(stateNoReferences),
-      [{localId: 1, projectName: 'proj'}]
+        [{localId: 1, projectName: 'proj'}]
     );
 
     const stateNoIssues = {issue: {
@@ -132,10 +132,10 @@ describe('issue', () => {
       relatedIssues: relatedIssues,
     }};
     assert.deepEqual(issue.blockingIssues(stateIssuesWithReferences),
-      [
-        {localId: 1, projectName: 'proj', labelRefs: [{label: 'label'}]},
-        {localId: 332, projectName: 'chromium', labelRefs: []},
-      ]);
+        [
+          {localId: 1, projectName: 'proj', labelRefs: [{label: 'label'}]},
+          {localId: 332, projectName: 'chromium', labelRefs: []},
+        ]);
 
     const stateIssuesWithFederatedReferences = {issue: {
       currentIssue: {
@@ -147,10 +147,10 @@ describe('issue', () => {
       relatedIssues: relatedIssues,
     }};
     assert.deepEqual(issue.blockingIssues(stateIssuesWithFederatedReferences),
-      [
-        {localId: 1, projectName: 'proj', labelRefs: [{label: 'label'}]},
-        {extIdentifier: 'b/1234'},
-      ]);
+        [
+          {localId: 1, projectName: 'proj', labelRefs: [{label: 'label'}]},
+          {extIdentifier: 'b/1234'},
+        ]);
   });
 
   it('blockedOnIssues', () => {
@@ -178,7 +178,7 @@ describe('issue', () => {
       relatedIssues: {},
     }};
     assert.deepEqual(issue.blockedOnIssues(stateNoReferences),
-      [{localId: 1, projectName: 'proj'}]
+        [{localId: 1, projectName: 'proj'}]
     );
 
     const stateNoIssues = {issue: {
@@ -199,10 +199,10 @@ describe('issue', () => {
       relatedIssues: relatedIssues,
     }};
     assert.deepEqual(issue.blockedOnIssues(stateIssuesWithReferences),
-      [
-        {localId: 1, projectName: 'proj', labelRefs: [{label: 'label'}]},
-        {localId: 332, projectName: 'chromium', labelRefs: []},
-      ]);
+        [
+          {localId: 1, projectName: 'proj', labelRefs: [{label: 'label'}]},
+          {localId: 332, projectName: 'chromium', labelRefs: []},
+        ]);
 
     const stateIssuesWithFederatedReferences = {issue: {
       currentIssue: {
@@ -214,10 +214,10 @@ describe('issue', () => {
       relatedIssues: relatedIssues,
     }};
     assert.deepEqual(issue.blockedOnIssues(stateIssuesWithFederatedReferences),
-      [
-        {localId: 1, projectName: 'proj', labelRefs: [{label: 'label'}]},
-        {extIdentifier: 'b/1234'},
-      ]);
+        [
+          {localId: 1, projectName: 'proj', labelRefs: [{label: 'label'}]},
+          {extIdentifier: 'b/1234'},
+        ]);
   });
 
   it('sortedBlockedOn', () => {
@@ -287,13 +287,13 @@ describe('issue', () => {
       relatedIssues: relatedIssues,
     }};
     assert.deepEqual(issue.sortedBlockedOn(statePreservesArrayOrder),
-      [
-        {localId: 1, projectName: 'proj', statusRef: {meansOpen: true}},
-        {localId: 332, projectName: 'chromium', statusRef: {meansOpen: true}},
-        {localId: 5, projectName: 'proj', statusRef: {meansOpen: false}},
-        {localId: 4, projectName: 'proj', statusRef: {meansOpen: false}},
-        {localId: 3, projectName: 'proj', statusRef: {meansOpen: false}},
-      ]
+        [
+          {localId: 1, projectName: 'proj', statusRef: {meansOpen: true}},
+          {localId: 332, projectName: 'chromium', statusRef: {meansOpen: true}},
+          {localId: 5, projectName: 'proj', statusRef: {meansOpen: false}},
+          {localId: 4, projectName: 'proj', statusRef: {meansOpen: false}},
+          {localId: 3, projectName: 'proj', statusRef: {meansOpen: false}},
+        ]
     );
   });
 
@@ -422,17 +422,17 @@ describe('issue', () => {
       const dispatch = sinon.stub();
 
       const action = issue.predictComponent('chromium',
-        'test comments\nsummary');
+          'test comments\nsummary');
 
       await action(dispatch);
 
       sinon.assert.calledOnce(prpcCall);
 
       sinon.assert.calledWith(prpcCall, 'monorail.Features',
-        'PredictComponent', {
-          projectName: 'chromium',
-          text: 'test comments\nsummary',
-        });
+          'PredictComponent', {
+            projectName: 'chromium',
+            text: 'test comments\nsummary',
+          });
 
       sinon.assert.calledWith(dispatch, {type: 'PREDICT_COMPONENT_START'});
       sinon.assert.calledWith(dispatch, {
@@ -525,34 +525,34 @@ describe('issue', () => {
       it('FETCH_IS_STARRED_SUCCESS updates the starredIssues object', () => {
         const state = {};
         const newState = issue.starredIssuesReducer(state,
-          {
-            type: issue.FETCH_IS_STARRED_SUCCESS,
-            starred: false,
-            ref: {
-              issueRef: {
-                projectName: 'proj',
-                localId: 1,
+            {
+              type: issue.FETCH_IS_STARRED_SUCCESS,
+              starred: false,
+              ref: {
+                issueRef: {
+                  projectName: 'proj',
+                  localId: 1,
+                },
               },
-            },
-          }
+            }
         );
         assert.deepEqual(newState, {'proj:1': false});
       });
 
       it('FETCH_ISSUES_STARRED_SUCCESS updates the starredIssues object',
-        () => {
-          const state = {};
-          const starredIssues = ['proj:1', 'proj:2'];
-          const newState = issue.starredIssuesReducer(state,
-            {type: issue.FETCH_ISSUES_STARRED_SUCCESS, starredIssues}
-          );
-          assert.deepEqual(newState, {'proj:1': true, 'proj:2': true});
-        });
+          () => {
+            const state = {};
+            const starredIssues = ['proj:1', 'proj:2'];
+            const newState = issue.starredIssuesReducer(state,
+                {type: issue.FETCH_ISSUES_STARRED_SUCCESS, starredIssues}
+            );
+            assert.deepEqual(newState, {'proj:1': true, 'proj:2': true});
+          });
 
       it('STAR_SUCCESS updates the starredIssues object', () => {
         const state = {'proj:1': true, 'proj:2': false};
         const newState = issue.starredIssuesReducer(state,
-          {type: issue.STAR_SUCCESS, starred: true, ref: 'proj:2'});
+            {type: issue.STAR_SUCCESS, starred: true, ref: 'proj:2'});
         assert.deepEqual(newState, {'proj:1': true, 'proj:2': true});
       });
     });
@@ -587,8 +587,8 @@ describe('issue', () => {
         sinon.assert.calledWith(dispatch, {type: issue.FETCH_IS_STARRED_START});
 
         sinon.assert.calledWith(
-          prpcClient.call, 'monorail.Issues',
-          'IsIssueStarred', message
+            prpcClient.call, 'monorail.Issues',
+            'IsIssueStarred', message
         );
 
         sinon.assert.calledWith(dispatch, {
@@ -610,8 +610,8 @@ describe('issue', () => {
         sinon.assert.calledWith(dispatch, {type: 'FETCH_ISSUES_STARRED_START'});
 
         sinon.assert.calledWith(
-          prpcClient.call, 'monorail.Issues',
-          'ListStarredIssues', {}
+            prpcClient.call, 'monorail.Issues',
+            'ListStarredIssues', {}
         );
 
         sinon.assert.calledWith(dispatch, {
@@ -632,9 +632,9 @@ describe('issue', () => {
         sinon.assert.calledWith(dispatch, {type: issue.STAR_START});
 
         sinon.assert.calledWith(
-          prpcClient.call,
-          'monorail.Issues', 'StarIssue',
-          {issueRef, starred: false}
+            prpcClient.call,
+            'monorail.Issues', 'StarIssue',
+            {issueRef, starred: false}
         );
 
         sinon.assert.calledWith(dispatch, {

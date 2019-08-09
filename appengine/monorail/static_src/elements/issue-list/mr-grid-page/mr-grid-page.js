@@ -85,7 +85,7 @@ export class MrGridPage extends connectStore(LitElement) {
 
   _fetchMatchingIssues() {
     store.dispatch(issue.fetchIssueList(this.queryParams,
-      this.projectName, {maxItems: 500}, 12));
+        this.projectName, {maxItems: 500}, 12));
   }
 
   stateChanged(state) {

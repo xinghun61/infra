@@ -131,7 +131,7 @@ export class MrIssueHeader extends connectStore(LitElement) {
 
   render() {
     const reporterIsMember = userIsMember(
-      this.issue.reporterRef, this.issue.projectName, this.usersProjects);
+        this.issue.reporterRef, this.issue.projectName, this.usersProjects);
     return html`
       <div class="main-text-outer">
         <div class="main-text">

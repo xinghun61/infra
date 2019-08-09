@@ -147,13 +147,13 @@ export class MrAttachment extends connectStore(LitElement) {
     };
 
     const promise = prpcClient.call(
-      'monorail.Issues', 'DeleteAttachment',
-      {
-        issueRef,
-        sequenceNum: this.sequenceNum,
-        attachmentId: this.attachment.attachmentId,
-        delete: !this.attachment.isDeleted,
-      });
+        'monorail.Issues', 'DeleteAttachment',
+        {
+          issueRef,
+          sequenceNum: this.sequenceNum,
+          attachmentId: this.attachment.attachmentId,
+          delete: !this.attachment.isDeleted,
+        });
 
     promise.then(() => {
       store.dispatch(issue.fetchComments({issueRef}));

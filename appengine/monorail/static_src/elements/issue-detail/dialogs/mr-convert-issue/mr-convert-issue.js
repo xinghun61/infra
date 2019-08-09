@@ -168,7 +168,7 @@ export class MrConvertIssue extends connectStore(LitElement) {
 
   _templateInputChanged() {
     this.selectedTemplate = this.shadowRoot.querySelector(
-      '#templateInput').value;
+        '#templateInput').value;
   }
 }
 

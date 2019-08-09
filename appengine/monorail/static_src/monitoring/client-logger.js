@@ -74,7 +74,7 @@ export default class ClientLogger {
     // due to form validation issues.  Start a new timer, or keep
     // the original?
 
-    let startedEvent = this.startedEvents[eventName] || {
+    const startedEvent = this.startedEvents[eventName] || {
       time: new Date().getTime(),
     };
 
@@ -112,7 +112,7 @@ export default class ClientLogger {
       return;
     }
 
-    let elapsed = new Date().getTime() - startEvent.labels[eventLabel];
+    const elapsed = new Date().getTime() - startEvent.labels[eventLabel];
     if (!startEvent.elapsed) {
       startEvent.elapsed = {};
       startEvent.elapsed[eventLabel] = 0;
@@ -181,7 +181,7 @@ export default class ClientLogger {
       this._sendTiming(startEvent, eventName, null, maxThresholdMs);
 
       // And also end and report any labels they had running.
-      for (let label in startEvent.labels) {
+      for (const label in startEvent.labels) {
         this._sendTiming(startEvent, eventName, label, maxThresholdMs);
       }
 
@@ -220,7 +220,7 @@ export default class ClientLogger {
     }
     ga('send', 'timing', options);
     this.tsMon.recordUserTiming(
-      this.category, eventName, recordOnlyThisLabel, elapsed);
+        this.category, eventName, recordOnlyThisLabel, elapsed);
   }
 }
 

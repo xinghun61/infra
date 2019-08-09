@@ -43,7 +43,7 @@ describe('mr-edit-metadata', () => {
     await element.updateComplete;
 
     element.shadowRoot.querySelector('#editForm').dispatchEvent(
-      new Event('submit', {bubbles: true, cancellable: true}));
+        new Event('submit', {bubbles: true, cancellable: true}));
 
     sinon.assert.calledOnce(saveStub);
   });
@@ -57,12 +57,12 @@ describe('mr-edit-metadata', () => {
 
     assert.isTrue(store.dispatch.calledOnce);
     sinon.assert.calledWith(
-      store.dispatch,
-      {
-        type: 'REPORT_DIRTY_FORM',
-        name: 'test',
-        isDirty: false,
-      }
+        store.dispatch,
+        {
+          type: 'REPORT_DIRTY_FORM',
+          name: 'test',
+          isDirty: false,
+        }
     );
 
     document.body.appendChild(element);
@@ -257,8 +257,8 @@ describe('mr-edit-metadata', () => {
     statusComponent.shadowRoot.querySelector('#mergedIntoInput').setValue('xx');
     assert.deepEqual(element.delta, {});
     assert.equal(
-      element.error,
-      'Invalid issue ref: xx. Expected [projectName:]issueId.');
+        element.error,
+        'Invalid issue ref: xx. Expected [projectName:]issueId.');
   });
 
   it('cannot block an issue on itself', async () => {
@@ -273,14 +273,14 @@ describe('mr-edit-metadata', () => {
       input.setValue(['123']);
       assert.deepEqual(element.delta, {});
       assert.equal(
-        element.error,
-        `Invalid issue ref: 123. Cannot merge or block an issue on itself.`);
+          element.error,
+          `Invalid issue ref: 123. Cannot merge or block an issue on itself.`);
 
       input.setValue(['proj:123']);
       assert.deepEqual(element.delta, {});
       assert.equal(
-        element.error,
-        `Invalid issue ref: proj:123. ` +
+          element.error,
+          `Invalid issue ref: proj:123. ` +
         'Cannot merge or block an issue on itself.');
 
       input.setValue(['proj2:123']);
@@ -303,7 +303,7 @@ describe('mr-edit-metadata', () => {
     await element.updateComplete;
 
     const statusComponent = element.shadowRoot.querySelector(
-      '#statusInput');
+        '#statusInput');
     const root = statusComponent.shadowRoot;
     const statusInput = root.querySelector('#statusInput');
     statusInput.value = 'Duplicate';
@@ -314,14 +314,14 @@ describe('mr-edit-metadata', () => {
     root.querySelector('#mergedIntoInput').setValue('proj:123');
     assert.deepEqual(element.delta, {});
     assert.equal(
-      element.error,
-      `Invalid issue ref: proj:123. Cannot merge or block an issue on itself.`);
+        element.error,
+        `Invalid issue ref: proj:123. Cannot merge or block an issue on itself.`);
 
     root.querySelector('#mergedIntoInput').setValue('123');
     assert.deepEqual(element.delta, {});
     assert.equal(
-      element.error,
-      `Invalid issue ref: 123. Cannot merge or block an issue on itself.`);
+        element.error,
+        `Invalid issue ref: 123. Cannot merge or block an issue on itself.`);
 
     root.querySelector('#mergedIntoInput').setValue('proj2:123');
     assert.notDeepEqual(element.delta, {});
@@ -334,14 +334,14 @@ describe('mr-edit-metadata', () => {
     element.shadowRoot.querySelector('#ccInput').setValue(['invalid!email']);
     assert.deepEqual(element.delta, {});
     assert.equal(
-      element.error,
-      `Invalid email address: invalid!email`);
+        element.error,
+        `Invalid email address: invalid!email`);
 
     element.shadowRoot.querySelector('#ownerInput').setValue('invalid!email2');
     assert.deepEqual(element.delta, {});
     assert.equal(
-      element.error,
-      `Invalid email address: invalid!email2`);
+        element.error,
+        `Invalid email address: invalid!email2`);
   });
 
   it('can remove invalid values', async () => {
@@ -373,12 +373,12 @@ describe('mr-edit-metadata', () => {
     mergedIntoInput.setValue('proj:124');
 
     assert.deepEqual(
-      element.delta,
-      {
-        blockedOnRefsRemove: [{projectName: 'proj', localId: 123}],
-        blockingRefsRemove: [{projectName: 'proj', localId: 123}],
-        mergedIntoRef: {projectName: 'proj', localId: 124},
-      });
+        element.delta,
+        {
+          blockedOnRefsRemove: [{projectName: 'proj', localId: 123}],
+          blockingRefsRemove: [{projectName: 'proj', localId: 123}],
+          mergedIntoRef: {projectName: 'proj', localId: 124},
+        });
     assert.equal(element.error, '');
   });
 
@@ -411,7 +411,7 @@ describe('mr-edit-metadata', () => {
     await element.updateComplete;
 
     const statusComponent = element.shadowRoot.querySelector(
-      '#statusInput');
+        '#statusInput');
     const root = statusComponent.shadowRoot;
     const statusInput = root.querySelector('#statusInput');
     statusInput.value = 'Duplicate';
@@ -420,7 +420,7 @@ describe('mr-edit-metadata', () => {
     await element.updateComplete;
 
     root.querySelector('#mergedIntoInput').setValue(
-      'chromium:1234');
+        'chromium:1234');
     assert.deepEqual(element.delta, {
       status: 'Duplicate',
       mergedIntoRef: {
@@ -436,7 +436,7 @@ describe('mr-edit-metadata', () => {
     await element.updateComplete;
 
     element.shadowRoot.querySelector(
-      '#summaryInput').value = 'newfangled fancy summary';
+        '#summaryInput').value = 'newfangled fancy summary';
     assert.deepEqual(element.delta, {
       summary: 'newfangled fancy summary',
     });
@@ -502,7 +502,7 @@ describe('mr-edit-metadata', () => {
     await element.updateComplete;
 
     element.shadowRoot.querySelector('#approversInput').setValue(
-      ['chicken@example.com', 'foo@example.com', 'dog@example.com']);
+        ['chicken@example.com', 'foo@example.com', 'dog@example.com']);
 
     await element.updateComplete;
 
@@ -550,14 +550,14 @@ describe('mr-edit-metadata', () => {
       ['enumfield', [{optionName: 'one'}, {optionName: 'two'}]],
     ]);
     assert.deepEqual(
-      element._optionsForField(optionsPerEnumField, new Map(), 'enumField'), [
-        {
-          optionName: 'one',
-        },
-        {
-          optionName: 'two',
-        },
-      ]);
+        element._optionsForField(optionsPerEnumField, new Map(), 'enumField'), [
+          {
+            optionName: 'one',
+          },
+          {
+            optionName: 'two',
+          },
+        ]);
   });
 
   it('changing enum fields produces delta', async () => {
@@ -580,7 +580,7 @@ describe('mr-edit-metadata', () => {
     await element.updateComplete;
 
     element.shadowRoot.querySelector(
-      '#enumFieldInput').setValue(['one', 'two']);
+        '#enumFieldInput').setValue(['one', 'two']);
 
     await element.updateComplete;
 
@@ -698,14 +698,14 @@ describe('mr-edit-metadata', () => {
 
   it('approver input appears when user has privileges', async () => {
     assert.isNull(
-      element.shadowRoot.querySelector('#approversInput'));
+        element.shadowRoot.querySelector('#approversInput'));
     element.isApproval = true;
     element.hasApproverPrivileges = true;
 
     await element.updateComplete;
 
     assert.isNotNull(
-      element.shadowRoot.querySelector('#approversInput'));
+        element.shadowRoot.querySelector('#approversInput'));
   });
 
   it('reset empties form values', async () => {
@@ -740,9 +740,9 @@ describe('mr-edit-metadata', () => {
     await element.reset();
 
     assert.lengthOf(element.shadowRoot.querySelector(
-      '#testFieldInput').value, 0);
+        '#testFieldInput').value, 0);
     assert.lengthOf(element.shadowRoot.querySelector(
-      '#fakeFieldInput').value, 0);
+        '#fakeFieldInput').value, 0);
     assert.lengthOf(uploader.files, 0);
   });
 
@@ -788,10 +788,10 @@ describe('mr-edit-metadata', () => {
     await element.updateComplete;
 
     const statusComponent = element.shadowRoot.querySelector(
-      '#statusInput');
+        '#statusInput');
     const root = statusComponent.shadowRoot;
     assert.equal(
-      root.querySelector('#mergedIntoInput').value, '1234');
+        root.querySelector('#mergedIntoInput').value, '1234');
   });
 
   it('duplicate issue on different project is rendered correctly', async () => {
@@ -809,10 +809,10 @@ describe('mr-edit-metadata', () => {
     await element.updateComplete;
 
     const statusComponent = element.shadowRoot.querySelector(
-      '#statusInput');
+        '#statusInput');
     const root = statusComponent.shadowRoot;
     assert.equal(
-      root.querySelector('#mergedIntoInput').value, 'monorail:1234');
+        root.querySelector('#mergedIntoInput').value, 'monorail:1234');
   });
 
   it('blocking issues are rendered correctly', async () => {

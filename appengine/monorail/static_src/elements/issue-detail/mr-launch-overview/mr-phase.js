@@ -211,7 +211,7 @@ export class MrPhase extends connectStore(LitElement) {
 
       if (milestone && milestone !== oldMilestone) {
         window.fetch(
-          `https://chromiumdash.appspot.com/fetch_milestone_schedule?mstone=${milestone}`
+            `https://chromiumdash.appspot.com/fetch_milestone_schedule?mstone=${milestone}`
         ).then((resp) => resp.json()).then((resp) => {
           this._milestoneData = resp;
         });
@@ -240,11 +240,11 @@ export class MrPhase extends connectStore(LitElement) {
 
     if (delta.fieldValsAdd) {
       delta.fieldValsAdd = delta.fieldValsAdd.map(
-        (fv) => Object.assign({phaseRef: {phaseName: this.phaseName}}, fv));
+          (fv) => Object.assign({phaseRef: {phaseName: this.phaseName}}, fv));
     }
     if (delta.fieldValsRemove) {
       delta.fieldValsRemove = delta.fieldValsRemove.map(
-        (fv) => Object.assign({phaseRef: {phaseName: this.phaseName}}, fv));
+          (fv) => Object.assign({phaseRef: {phaseName: this.phaseName}}, fv));
     }
 
     const message = {
@@ -333,17 +333,17 @@ function _milestoneFieldValue(fieldValueMap, phaseName, fieldName) {
 
 function _approvedMilestone(fieldValueMap, phaseName) {
   return _milestoneFieldValue(fieldValueMap, phaseName,
-    'M-Approved');
+      'M-Approved');
 }
 
 function _launchedMilestone(fieldValueMap, phaseName) {
   return _milestoneFieldValue(fieldValueMap, phaseName,
-    'M-Launched');
+      'M-Launched');
 }
 
 function _targetMilestone(fieldValueMap, phaseName) {
   return _milestoneFieldValue(fieldValueMap, phaseName,
-    'M-Target');
+      'M-Target');
 }
 
 function _fetchedMilestone(fieldValueMap, phaseName) {

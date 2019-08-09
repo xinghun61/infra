@@ -110,7 +110,7 @@ describe('mr-chart', () => {
         [1541203199, 4], [1541289599, 5],
       ]);
       sinon.stub(MrChart.prototype, '_fetchDataAtTimestamp').callsFake(
-        async (ts) => ({issues: {'Issue Count': timestampMap.get(ts)}}));
+          async (ts) => ({issues: {'Issue Count': timestampMap.get(ts)}}));
 
       element.endDate = new Date(Date.UTC(2018, 10, 3, 23, 59, 59));
       await element._fetchData();
@@ -147,7 +147,7 @@ describe('mr-chart', () => {
     it('Retrieve data under groupby feature', async () => {
       const data = new Map([['Type-1', 0], ['Type-2', 1]]);
       sinon.stub(MrChart.prototype, '_fetchDataAtTimestamp').callsFake(
-        () => ({issues: data}));
+          () => ({issues: data}));
 
       element = beforeEachElement();
       await new Promise((resolve) => {
@@ -192,21 +192,21 @@ describe('mr-chart', () => {
     });
 
     it('illegal query: end_date - start_date requires more than 90 queries',
-      async () => {
-        await element.updateComplete;
+        async () => {
+          await element.updateComplete;
 
-        const startDateInput = element.shadowRoot.querySelector('#start-date');
-        startDateInput.value = '2016-10-03';
+          const startDateInput = element.shadowRoot.querySelector('#start-date');
+          startDateInput.value = '2016-10-03';
 
-        const event = new Event('change');
-        startDateInput.dispatchEvent(event);
+          const event = new Event('change');
+          startDateInput.dispatchEvent(event);
 
-        element._onDateChanged();
-        sinon.assert.calledOnce(element._fetchData);
-        assert.equal(element.dateRange, 90 * 7);
-        assert.equal(element.frequency, 7);
-        assert.equal(element.maxQuerySizeReached, true);
-      });
+          element._onDateChanged();
+          sinon.assert.calledOnce(element._fetchData);
+          assert.equal(element.dateRange, 90 * 7);
+          assert.equal(element.frequency, 7);
+          assert.equal(element.maxQuerySizeReached, true);
+        });
   });
 
   describe('end date change detection', () => {
@@ -235,7 +235,7 @@ describe('mr-chart', () => {
       sinon.assert.calledOnce(element._fetchData);
       sinon.assert.calledOnce(history.pushState);
       sinon.assert.calledWith(history.pushState, {}, '',
-        sinon.match('end-date=2017-10-02'));
+          sinon.match('end-date=2017-10-02'));
     });
   });
 
@@ -294,7 +294,7 @@ describe('mr-chart', () => {
         assert.deepEqual(MrChart.sortInBisectOrder([8, 9]), [8, 9]);
         assert.deepEqual(MrChart.sortInBisectOrder([7, 8, 9]), [7, 9, 8]);
         assert.deepEqual(
-          MrChart.sortInBisectOrder([1, 2, 3, 4, 5]), [1, 5, 3, 2, 4]);
+            MrChart.sortInBisectOrder([1, 2, 3, 4, 5]), [1, 5, 3, 2, 4]);
       });
     });
 
@@ -398,7 +398,7 @@ describe('mr-chart', () => {
         expectedDate.setSeconds(59);
 
         assert.equal(MrChart.getEndDate().getTime(),
-          expectedDate.getTime());
+            expectedDate.getTime());
       });
 
       it('returns EOD of URL param is empty', () => {
@@ -412,7 +412,7 @@ describe('mr-chart', () => {
         expectedDate.setSeconds(59);
 
         assert.equal(MrChart.getEndDate().getTime(),
-          expectedDate.getTime());
+            expectedDate.getTime());
       });
     });
 
@@ -454,7 +454,7 @@ describe('mr-chart', () => {
         const expectedDate = new Date(today.getTime()
           - 1000 * 90 * secondsInDay);
         assert.equal(MrChart.getStartDate(today, 90).getTime(),
-          expectedDate.getTime());
+            expectedDate.getTime());
       });
     });
 
@@ -526,24 +526,24 @@ describe('mr-chart', () => {
       });
 
       it('return top n lines in sorted order for more than n lines',
-        () => {
-          const arrayValues = [
-            {label: 'line1', data: [0, 0, 1]},
-            {label: 'line2', data: [0, 1, 2]},
-            {label: 'line3', data: [0, 4, 0]},
-            {label: 'line4', data: [4, 0, 3]},
-            {label: 'line5', data: [0, 2, 3]},
-          ];
-          const expectedValues = [
-            {label: 'line5', data: [0, 2, 3]},
-            {label: 'line4', data: [4, 0, 3]},
-            {label: 'line2', data: [0, 1, 2]},
-          ];
-          const actualValues = MrChart.getSortedLines(arrayValues, 3);
-          for (let i = 0; i < 3; i++) {
-            assert.deepEqual(expectedValues[i], actualValues[i]);
-          }
-        });
+          () => {
+            const arrayValues = [
+              {label: 'line1', data: [0, 0, 1]},
+              {label: 'line2', data: [0, 1, 2]},
+              {label: 'line3', data: [0, 4, 0]},
+              {label: 'line4', data: [4, 0, 3]},
+              {label: 'line5', data: [0, 2, 3]},
+            ];
+            const expectedValues = [
+              {label: 'line5', data: [0, 2, 3]},
+              {label: 'line4', data: [4, 0, 3]},
+              {label: 'line2', data: [0, 1, 2]},
+            ];
+            const actualValues = MrChart.getSortedLines(arrayValues, 3);
+            for (let i = 0; i < 3; i++) {
+              assert.deepEqual(expectedValues[i], actualValues[i]);
+            }
+          });
     });
 
     describe('getGroupByURL', () => {

@@ -207,7 +207,7 @@ describe('chops-autocomplete', () => {
     await element.updateComplete;
 
     assert.equal(input.getAttribute('aria-activedescendant'),
-      'chops-autocomplete-1-option-1');
+        'chops-autocomplete-1-option-1');
   });
 
   it('hovering over a completion selects it', async () => {

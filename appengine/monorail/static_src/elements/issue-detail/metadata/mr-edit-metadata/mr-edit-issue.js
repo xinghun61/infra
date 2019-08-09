@@ -189,7 +189,7 @@ export class MrEditIssue extends connectStore(LitElement) {
 
   get _commentsText() {
     return (this.comments || []).map(
-      (comment) => comment.content).join('\n').trim();
+        (comment) => comment.content).join('\n').trim();
   }
 
   get _labelNames() {
@@ -244,7 +244,7 @@ export class MrEditIssue extends connectStore(LitElement) {
     let statusDefs = statusDefsArg || [];
     statusDefs = statusDefs.filter((status) => !status.deprecated);
     if (!currentStatusRef || statusDefs.find(
-      (status) => status.status === currentStatusRef.status)) return statusDefs;
+        (status) => status.status === currentStatusRef.status)) return statusDefs;
     return [currentStatusRef, ...statusDefs];
   }
 }
@@ -252,8 +252,8 @@ export class MrEditIssue extends connectStore(LitElement) {
 function _checkRemovedRestrictions(labelRefsRemove) {
   if (!labelRefsRemove) return true;
   const removedRestrictions = labelRefsRemove
-    .map(({label}) => label)
-    .filter((label) => label.toLowerCase().startsWith('restrict-'));
+      .map(({label}) => label)
+      .filter((label) => label.toLowerCase().startsWith('restrict-'));
   const removeRestrictionsMessage =
     'You are removing these restrictions:\n' +
     arrayToEnglish(removedRestrictions) + '\n' +

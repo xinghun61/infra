@@ -117,14 +117,14 @@ describe('mr-edit-issue', () => {
   it('filter out empty or deleted user owners', () => {
     assert.equal(element._ownerDisplayName({displayName: '----'}), '');
     assert.equal(
-      element._ownerDisplayName({displayName: 'a_deleted_user'}),
-      '');
+        element._ownerDisplayName({displayName: 'a_deleted_user'}),
+        '');
     assert.equal(
-      element._ownerDisplayName({
-        displayName: 'test@example.com',
-        userId: '1234',
-      }),
-      'test@example.com');
+        element._ownerDisplayName({
+          displayName: 'test@example.com',
+          userId: '1234',
+        }),
+        'test@example.com');
   });
 
   it('presubmits issue on change', async () => {
@@ -141,7 +141,7 @@ describe('mr-edit-issue', () => {
     }));
 
     assert(prpcClient.call.calledWith('monorail.Issues', 'PresubmitIssue',
-      {issueDelta: {summary: 'Summary'}, issueRef: 'issueRef'}));
+        {issueDelta: {summary: 'Summary'}, issueRef: 'issueRef'}));
   });
 
   it('predicts components for chromium', async () => {
@@ -160,7 +160,7 @@ describe('mr-edit-issue', () => {
 
     const expectedText = 'comments text\nsummary\ncommentContent';
     assert(prpcClient.call.calledWith('monorail.Features', 'PredictComponent',
-      {text: expectedText, projectName: 'chromium'}));
+        {text: expectedText, projectName: 'chromium'}));
   });
 
   it('does not predict components for other projects', async () => {

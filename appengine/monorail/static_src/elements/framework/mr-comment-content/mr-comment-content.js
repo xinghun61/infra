@@ -61,8 +61,8 @@ export class MrCommentContent extends connectStore(LitElement) {
 
   render() {
     const runs = autolink.markupAutolinks(
-      this.content, this.commentReferences, this.projectName,
-      this.revisionUrlFormat);
+        this.content, this.commentReferences, this.projectName,
+        this.revisionUrlFormat);
     const templates = runs.map((run) => {
       switch (run.tag) {
         case 'b':

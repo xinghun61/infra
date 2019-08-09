@@ -400,7 +400,7 @@ export class ChopsAutocomplete extends LitElement {
 
   _keyInputHandler(e) {
     if (['Enter', 'Tab', 'ArrowUp', 'ArrowDown', 'Escape'].includes(
-      e.key)) return;
+        e.key)) return;
     this.showCompletions();
   }
 

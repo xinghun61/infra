@@ -70,7 +70,7 @@ export class MrListPage extends connectStore(LitElement) {
     }
 
     const selectedRefs = this.selectedIssues.map(
-      ({localId, projectName}) => ({localId, projectName}));
+        ({localId, projectName}) => ({localId, projectName}));
     return html`
       <div class="list-controls">
         <button @click=${this.bulkEdit}>
@@ -168,7 +168,7 @@ export class MrListPage extends connectStore(LitElement) {
 
   refresh() {
     store.dispatch(issue.fetchIssueList(this.queryParams, this.projectName,
-      {maxItems: 100, start: 0}));
+        {maxItems: 100, start: 0}));
   }
 
   stateChanged(state) {
@@ -203,7 +203,7 @@ export class MrListPage extends connectStore(LitElement) {
     const issues = this.selectedIssues;
     if (!issues || !issues.length) {
       return this.noneSelectedAlert(
-        `${flagAsSpam ? 'flag' : 'un-flag'} as spam`);
+          `${flagAsSpam ? 'flag' : 'un-flag'} as spam`);
     }
     const refs = issues.map((issue) => ({
       localId: issue.localId,

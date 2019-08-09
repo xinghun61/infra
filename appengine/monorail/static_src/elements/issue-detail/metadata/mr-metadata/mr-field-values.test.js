@@ -75,12 +75,12 @@ describe('mr-field-values', () => {
     assert.equal(3, links.length);
     assert.include(links[0].textContent, 'blah');
     assert.include(links[0].href,
-      '/p/project/issues/list?q=fieldName=%22blah%22');
+        '/p/project/issues/list?q=fieldName=%22blah%22');
     assert.include(links[1].textContent, 'random value');
     assert.include(links[1].href,
-      '/p/project/issues/list?q=fieldName=%22random%20value%22');
+        '/p/project/issues/list?q=fieldName=%22random%20value%22');
     assert.include(links[2].textContent, 'nothing here');
     assert.include(links[2].href,
-      '/p/project/issues/list?q=fieldName=%22nothing%20here%22');
+        '/p/project/issues/list?q=fieldName=%22nothing%20here%22');
   });
 });

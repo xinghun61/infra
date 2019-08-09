@@ -29,7 +29,7 @@ describe('mr-comment-content', () => {
     await element.updateComplete;
 
     const textContents = Array.from(element.shadowRoot.children).map(
-      (child) => child.textContent);
+        (child) => child.textContent);
 
     assert.deepEqual(textContents, [
       'Some text before a',
@@ -41,7 +41,7 @@ describe('mr-comment-content', () => {
     ]);
 
     assert.deepEqual(
-      element.shadowRoot.textContent,
-      'Some text before a go/link and more text before some bold text.');
+        element.shadowRoot.textContent,
+        'Some text before a go/link and more text before some bold text.');
   });
 });

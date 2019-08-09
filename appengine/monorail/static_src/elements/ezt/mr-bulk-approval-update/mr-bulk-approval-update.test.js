@@ -114,9 +114,9 @@ describe('mr-bulk-approval-update', () => {
 
     // Assert messages correct
     assert.equal(
-      true,
-      element.responseMessage.includes(
-        'Updated Approval-One in issues: 1, 3 (2 of 3).'));
+        true,
+        element.responseMessage.includes(
+            'Updated Approval-One in issues: 1, 3 (2 of 3).'));
     assert.equal('', element.errorMessage);
 
     // Assert all inputs not disabled.
@@ -141,10 +141,10 @@ describe('mr-bulk-approval-update', () => {
       send_email: true,
     };
     sinon.assert.calledWith(
-      prpcClient.call,
-      'monorail.Issues',
-      'BulkUpdateApprovals',
-      expectedMessage);
+        prpcClient.call,
+        'monorail.Issues',
+        'BulkUpdateApprovals',
+        expectedMessage);
   });
 
   it('save: no updates', async () => {

@@ -46,7 +46,7 @@ describe('mr-multi-input', () => {
 
     await element.setValues(['jaunty', 'jackalope', 'jumps', 'joyously']);
     assert.deepEqual(element.getValues(),
-      ['jaunty', 'jackalope', 'jumps', 'joyously']);
+        ['jaunty', 'jackalope', 'jumps', 'joyously']);
   });
 
   it('initial value does not change after user input', async () => {

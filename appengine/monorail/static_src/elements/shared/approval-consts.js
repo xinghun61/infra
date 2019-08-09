@@ -3,7 +3,7 @@
 // found in the LICENSE file.
 
 export const APPROVER_RESTRICTED_STATUSES = new Set(
-  ['NA', 'Approved', 'NotApproved']);
+    ['NA', 'Approved', 'NotApproved']);
 
 export const STATUS_ENUM_TO_TEXT = {
   '': 'NotSet',
@@ -58,4 +58,4 @@ export const CLASS_ICON_MAP = {
 };
 
 export const APPROVAL_STATUSES = Object.keys(STATUS_CLASS_MAP).map(
-  (status) => ({status, docstring: STATUS_DOCSTRING_MAP[status], rank: 1}));
+    (status) => ({status, docstring: STATUS_DOCSTRING_MAP[status], rank: 1}));

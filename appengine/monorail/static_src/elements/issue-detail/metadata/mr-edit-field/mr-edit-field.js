@@ -283,13 +283,13 @@ export class MrEditField extends LitElement {
   getValuesAdded() {
     if (!this.values || !this.values.length) return [];
     return arrayDifference(
-      this.values, this.initialValues, equalsIgnoreCase);
+        this.values, this.initialValues, equalsIgnoreCase);
   }
 
   getValuesRemoved() {
     if (!this.multi && (!this.values || this.values.length > 0)) return [];
     return arrayDifference(
-      this.initialValues, this.values, equalsIgnoreCase);
+        this.initialValues, this.values, equalsIgnoreCase);
   }
 
   _changeHandler(e) {

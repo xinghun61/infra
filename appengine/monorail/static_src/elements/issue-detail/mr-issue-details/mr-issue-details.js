@@ -122,7 +122,7 @@ export class MrIssueDetails extends connectStore(LitElement) {
     const measurement =
       performance.getEntriesByName(measurementName)[0].duration;
     window.getTSMonClient().recordIssueCommentsLoadTiming(
-      measurement, fullAppLoad);
+        measurement, fullAppLoad);
 
     // Be sure to clear this mark even on full page navigations.
     performance.clearMarks('start load issue detail page');

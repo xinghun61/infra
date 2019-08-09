@@ -31,5 +31,5 @@ export class CronTask {
 // getServerStatusCron requests status information from the server every 20
 // minutes.
 export const getServerStatusCron = new CronTask(
-  () => store.dispatch(sitewide.getServerStatus()),
-  SERVER_STATUS_DELAY_MS);
+    () => store.dispatch(sitewide.getServerStatus()),
+    SERVER_STATUS_DELAY_MS);

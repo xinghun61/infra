@@ -162,20 +162,20 @@ export class MrBulkApprovalUpdate extends LitElement {
   fetchApprovals(evt) {
     const message = {issueRefs: this.issueRefs};
     prpcClient.call('monorail.Issues', 'ListApplicableFieldDefs', message).then(
-      (resp) => {
-        if (resp.fieldDefs) {
-          this.approvals = resp.fieldDefs.filter((fieldDef) => {
-            return fieldDef.fieldRef.type == 'APPROVAL_TYPE';
-          });
-        }
-        if (!this.approvals.length) {
-          this.errorMessage = NO_APPROVALS_MESSAGE;
-        }
-        this.approvalsFetched = true;
-      }, (error) => {
-        this.approvalsFetched = true;
-        this.errorMessage = error;
-      });
+        (resp) => {
+          if (resp.fieldDefs) {
+            this.approvals = resp.fieldDefs.filter((fieldDef) => {
+              return fieldDef.fieldRef.type == 'APPROVAL_TYPE';
+            });
+          }
+          if (!this.approvals.length) {
+            this.errorMessage = NO_APPROVALS_MESSAGE;
+          }
+          this.approvalsFetched = true;
+        }, (error) => {
+          this.approvalsFetched = true;
+          this.errorMessage = error;
+        });
   }
 
   save(evt) {
@@ -184,9 +184,9 @@ export class MrBulkApprovalUpdate extends LitElement {
     this.toggleDisableForm();
     const root = this.shadowRoot;
     const selectedFieldDef = this.approvals.find(
-      (approval) => {
-        return approval.fieldRef.fieldName == root.querySelector('#approvalSelect').value;
-      }
+        (approval) => {
+          return approval.fieldRef.fieldName == root.querySelector('#approvalSelect').value;
+        }
     );
     const message = {
       issueRefs: this.issueRefs,
@@ -206,28 +206,28 @@ export class MrBulkApprovalUpdate extends LitElement {
     const approversAdded = approversInput.getValuesAdded();
     if (approversAdded.length) {
       delta.approverRefsAdd = approversAdded.map(
-        (name) => ({'displayName': name}));
+          (name) => ({'displayName': name}));
     }
     if (Object.keys(delta).length) {
       message.approvalDelta = delta;
     }
     prpcClient.call('monorail.Issues', 'BulkUpdateApprovals', message).then(
-      (resp) => {
-        if (resp.issueRefs && resp.issueRefs.length) {
-          const idsStr = Array.from(resp.issueRefs,
-            (ref) => ref.localId).join(', ');
-          this.responseMessage = `${this.getTimeStamp()}: Updated ${
-            selectedFieldDef.fieldRef.fieldName} in issues: ${idsStr} (${
-            resp.issueRefs.length} of ${this.issueRefs.length}).`;
-          root.querySelector('form').reset();
-        } else {
-          this.errorMessage = NO_UPDATES_MESSAGE;
-        };
-        this.toggleDisableForm();
-      }, (error) => {
-        this.errorMessage = error;
-        this.toggleDisableForm();
-      });
+        (resp) => {
+          if (resp.issueRefs && resp.issueRefs.length) {
+            const idsStr = Array.from(resp.issueRefs,
+                (ref) => ref.localId).join(', ');
+            this.responseMessage = `${this.getTimeStamp()}: Updated ${
+              selectedFieldDef.fieldRef.fieldName} in issues: ${idsStr} (${
+              resp.issueRefs.length} of ${this.issueRefs.length}).`;
+            root.querySelector('form').reset();
+          } else {
+            this.errorMessage = NO_UPDATES_MESSAGE;
+          };
+          this.toggleDisableForm();
+        }, (error) => {
+          this.errorMessage = error;
+          this.toggleDisableForm();
+        });
   }
 
   getTimeStamp() {
@@ -238,9 +238,9 @@ export class MrBulkApprovalUpdate extends LitElement {
   toggleDisableForm() {
     const root = this.shadowRoot;
     root.querySelectorAll('input, textarea, select, button').forEach(
-      (input) => {
-        input.disabled = !input.disabled;
-      });
+        (input) => {
+          input.disabled = !input.disabled;
+        });
   }
 }
 

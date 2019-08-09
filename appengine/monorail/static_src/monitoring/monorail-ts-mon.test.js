@@ -46,7 +46,7 @@ describe('MonorailTSMon', () => {
 
   describe('recordUserTiming', () => {
     it('records a timing metric only if matches', () => {
-      const metric = {add: sinon.spy() };
+      const metric = {add: sinon.spy()};
       mts._userTimingMetrics = [{
         category: 'rutabaga',
         eventName: 'rutabaga-name',
@@ -89,13 +89,13 @@ describe('MonorailTSMon', () => {
       sinon.assert.calledOnce(mts.pageLoadMetric.add);
       assert.isNumber(mts.pageLoadMetric.add.getCall(0).args[0]);
       assert.isString(mts.pageLoadMetric.add.getCall(0).args[1].get(
-        'client_id'));
+          'client_id'));
       assert.equal(mts.pageLoadMetric.add.getCall(0).args[1].get(
-        'host_name'), 'rutabaga-version');
+          'host_name'), 'rutabaga-version');
       assert.equal(mts.pageLoadMetric.add.getCall(0).args[1].get(
-        'template_name'), 'issue_list');
+          'template_name'), 'issue_list');
       assert.equal(mts.pageLoadMetric.add.getCall(0).args[1].get(
-        'document_visible'), true);
+          'document_visible'), true);
     });
 
     it('records page load on issue detail page', () => {
@@ -103,13 +103,13 @@ describe('MonorailTSMon', () => {
       sinon.assert.calledOnce(mts.pageLoadMetric.add);
       assert.isNumber(mts.pageLoadMetric.add.getCall(0).args[0]);
       assert.isString(mts.pageLoadMetric.add.getCall(0).args[1].get(
-        'client_id'));
+          'client_id'));
       assert.equal(mts.pageLoadMetric.add.getCall(0).args[1].get(
-        'host_name'), 'rutabaga-version');
+          'host_name'), 'rutabaga-version');
       assert.equal(mts.pageLoadMetric.add.getCall(0).args[1].get(
-        'template_name'), 'issue_detail');
+          'template_name'), 'issue_detail');
       assert.equal(mts.pageLoadMetric.add.getCall(0).args[1].get(
-        'document_visible'), true);
+          'document_visible'), true);
     });
 
     it('does not record page load timing on other pages', () => {
@@ -142,13 +142,13 @@ describe('MonorailTSMon', () => {
       assert.isNumber(mts.pageLoadMetric.add.getCall(0).args[0]);
       assert.equal(mts.pageLoadMetric.add.getCall(0).args[0], 999);
       assert.isString(mts.pageLoadMetric.add.getCall(0).args[1].get(
-        'client_id'));
+          'client_id'));
       assert.equal(mts.pageLoadMetric.add.getCall(0).args[1].get(
-        'host_name'), 'rutabaga-version');
+          'host_name'), 'rutabaga-version');
       assert.equal(mts.pageLoadMetric.add.getCall(0).args[1].get(
-        'template_name'), 'issue_detail');
+          'template_name'), 'issue_detail');
       assert.equal(mts.pageLoadMetric.add.getCall(0).args[1].get(
-        'document_visible'), false);
+          'document_visible'), false);
     });
   });
 

@@ -24,7 +24,7 @@ describe('user', () => {
       ];
 
       const newState = user.currentUserReducer(state,
-        {type: user.SET_PREFS_SUCCESS, newPrefs});
+          {type: user.SET_PREFS_SUCCESS, newPrefs});
 
       assert.deepEqual(newState, {prefs: {
         testPref: 'true',
@@ -69,10 +69,10 @@ describe('user', () => {
       sinon.assert.calledWith(dispatch, {type: user.SET_PREFS_START});
 
       sinon.assert.calledWith(
-        prpcClient.call,
-        'monorail.Users',
-        'SetUserPrefs',
-        {prefs: [{name: 'pref_name', value: 'true'}]});
+          prpcClient.call,
+          'monorail.Users',
+          'SetUserPrefs',
+          {prefs: [{name: 'pref_name', value: 'true'}]});
 
       sinon.assert.calledWith(dispatch, {
         type: user.SET_PREFS_SUCCESS,

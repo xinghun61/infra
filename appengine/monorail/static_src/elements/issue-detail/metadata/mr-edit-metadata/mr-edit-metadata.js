@@ -732,7 +732,7 @@ export class MrEditMetadata extends connectStore(LitElement) {
     if (this.isApproval) {
       if (this.hasApproverPrivileges) {
         const approversInput = this.shadowRoot.querySelector(
-          '#approversInput');
+            '#approversInput');
         if (approversInput) {
           approversInput.reset();
         }
@@ -805,7 +805,7 @@ export class MrEditMetadata extends connectStore(LitElement) {
       const statusDelta = statusInput.delta;
       if (statusDelta.mergedInto) {
         result.mergedIntoRef = issueStringToBlockingRef(
-          projectName, localId, statusDelta.mergedInto);
+            projectName, localId, statusDelta.mergedInto);
       }
       if (statusDelta.status) {
         result.status = statusDelta.status;
@@ -815,7 +815,7 @@ export class MrEditMetadata extends connectStore(LitElement) {
     if (this.isApproval) {
       if (this._canEditIssue && this.hasApproverPrivileges) {
         this._updateDeltaWithAddedAndRemoved(
-          result, 'approvers', 'approverRefs', displayNameToUserRef);
+            result, 'approvers', 'approverRefs', displayNameToUserRef);
       }
     } else {
       // TODO(zhangtiff): Consider representing baked-in fields such as owner,
@@ -843,22 +843,22 @@ export class MrEditMetadata extends connectStore(LitElement) {
 
       if (this._canEditCC) {
         this._updateDeltaWithAddedAndRemoved(
-          result, 'cc', 'ccRefs', displayNameToUserRef);
+            result, 'cc', 'ccRefs', displayNameToUserRef);
       }
 
       if (this._canEditIssue) {
         this._updateDeltaWithAddedAndRemoved(
-          result, 'labels', 'labelRefs', labelStringToRef);
+            result, 'labels', 'labelRefs', labelStringToRef);
         this._updateDeltaWithAddedAndRemoved(
-          result, 'components', 'compRefs', componentStringToRef);
+            result, 'components', 'compRefs', componentStringToRef);
         this._updateDeltaWithAddedAndRemoved(
-          result, 'blockedOn', 'blockedOnRefs',
-          issueStringToBlockingRef.bind(null, projectName, localId),
-          issueStringToRef.bind(null, projectName));
+            result, 'blockedOn', 'blockedOnRefs',
+            issueStringToBlockingRef.bind(null, projectName, localId),
+            issueStringToRef.bind(null, projectName));
         this._updateDeltaWithAddedAndRemoved(
-          result, 'blocking', 'blockingRefs',
-          issueStringToBlockingRef.bind(null, projectName, localId),
-          issueStringToRef.bind(null, projectName));
+            result, 'blocking', 'blockingRefs',
+            issueStringToBlockingRef.bind(null, projectName, localId),
+            issueStringToRef.bind(null, projectName));
       }
     }
 
@@ -866,8 +866,8 @@ export class MrEditMetadata extends connectStore(LitElement) {
       const fieldDefs = this.fieldDefs || [];
       fieldDefs.forEach(({fieldRef}) => {
         this._updateDeltaWithAddedAndRemoved(
-          result, fieldRef.fieldName, 'fieldVals',
-          valueToFieldValue.bind(null, fieldRef));
+            result, fieldRef.fieldName, 'fieldVals',
+            valueToFieldValue.bind(null, fieldRef));
       });
     }
 
@@ -881,13 +881,13 @@ export class MrEditMetadata extends connectStore(LitElement) {
     const valuesAdd = input.getValuesAdded();
     if (valuesAdd && valuesAdd.length) {
       delta[key + 'Add'] = (delta[key + 'Add'] || []).concat(
-        valuesAdd.map(addFn));
+          valuesAdd.map(addFn));
     }
 
     const valuesRemove = input.getValuesRemoved();
     if (valuesRemove && valuesRemove.length) {
       delta[key + 'Remove'] = (delta[key + 'Remove'] || []).concat(
-        valuesRemove.map(removeFn || addFn));
+          valuesRemove.map(removeFn || addFn));
     }
   }
 
@@ -896,7 +896,7 @@ export class MrEditMetadata extends connectStore(LitElement) {
 
     if (!this._debouncedProcessChanges) {
       this._debouncedProcessChanges = debounce(() => this._runProcessChanges(),
-        this.presubmitDebounceTimeOut);
+          this.presubmitDebounceTimeOut);
     }
     this._debouncedProcessChanges();
   }
@@ -948,7 +948,7 @@ export class MrEditMetadata extends connectStore(LitElement) {
     const values = valuesForField(fieldValueMap, fieldName, phaseName);
     values.forEach((v) => {
       const optionExists = options.find(
-        (opt) => equalsIgnoreCase(opt.optionName, v));
+          (opt) => equalsIgnoreCase(opt.optionName, v));
       if (!optionExists) {
         // Note that enum fields which are not explicitly defined can be set,
         // such as in the case when an issue is moved.

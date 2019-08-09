@@ -71,13 +71,13 @@ const templatesReducer = createReducer([], {
 
 const requestsReducer = combineReducers({
   fetchConfig: createRequestReducer(
-    FETCH_CONFIG_START, FETCH_CONFIG_SUCCESS, FETCH_CONFIG_FAILURE),
+      FETCH_CONFIG_START, FETCH_CONFIG_SUCCESS, FETCH_CONFIG_FAILURE),
   fetchTemplates: createRequestReducer(
-    FETCH_TEMPLATES_START, FETCH_TEMPLATES_SUCCESS, FETCH_TEMPLATES_FAILURE),
+      FETCH_TEMPLATES_START, FETCH_TEMPLATES_SUCCESS, FETCH_TEMPLATES_FAILURE),
   fetchFields: createRequestReducer(
-    FETCH_FIELDS_LIST_START,
-    FETCH_FIELDS_LIST_SUCCESS,
-    FETCH_FIELDS_LIST_FAILURE),
+      FETCH_FIELDS_LIST_START,
+      FETCH_FIELDS_LIST_SUCCESS,
+      FETCH_FIELDS_LIST_FAILURE),
 });
 
 export const reducer = combineReducers({
@@ -94,146 +94,146 @@ export const presentationConfig = (state) => state.project.presentationConfig;
 
 // Look up components by path.
 export const componentsMap = createSelector(
-  config,
-  (config) => {
-    if (!config || !config.componentDefs) return new Map();
-    const acc = new Map();
-    for (const v of config.componentDefs) {
-      acc.set(v.path, v);
+    config,
+    (config) => {
+      if (!config || !config.componentDefs) return new Map();
+      const acc = new Map();
+      for (const v of config.componentDefs) {
+        acc.set(v.path, v);
+      }
+      return acc;
     }
-    return acc;
-  }
 );
 
 export const fieldDefs = createSelector(
-  config, (config) => ((config && config.fieldDefs) || [])
+    config, (config) => ((config && config.fieldDefs) || [])
 );
 
 export const fieldDefMap = createSelector(
-  fieldDefs, (fieldDefs) => {
-    const map = new Map();
-    fieldDefs.forEach((fd) => {
-      map.set(fd.fieldRef.fieldName.toLowerCase(), fd);
-    });
-    return map;
-  }
+    fieldDefs, (fieldDefs) => {
+      const map = new Map();
+      fieldDefs.forEach((fd) => {
+        map.set(fd.fieldRef.fieldName.toLowerCase(), fd);
+      });
+      return map;
+    }
 );
 
 export const labelDefs = createSelector(
-  config, (config) => ((config && config.labelDefs) || [])
+    config, (config) => ((config && config.labelDefs) || [])
 );
 
 // labelDefs stored in an easily findable format with label names as keys.
 export const labelDefMap = createSelector(
-  labelDefs, (labelDefs) => {
-    const map = new Map();
-    labelDefs.forEach((ld) => {
-      map.set(ld.label.toLowerCase(), ld);
-    });
-    return map;
-  }
+    labelDefs, (labelDefs) => {
+      const map = new Map();
+      labelDefs.forEach((ld) => {
+        map.set(ld.label.toLowerCase(), ld);
+      });
+      return map;
+    }
 );
 
 // Find the options that exist for a given label prefix.
 export const labelPrefixOptions = createSelector(
-  labelDefs, (labelDefs) => {
-    const prefixMap = new Map();
-    labelDefs.forEach((ld) => {
-      const prefix = labelNameToLabelPrefix(ld.label).toLowerCase();
+    labelDefs, (labelDefs) => {
+      const prefixMap = new Map();
+      labelDefs.forEach((ld) => {
+        const prefix = labelNameToLabelPrefix(ld.label).toLowerCase();
 
-      if (prefixMap.has(prefix)) {
-        prefixMap.get(prefix).push(ld.label);
-      } else {
-        prefixMap.set(prefix, [ld.label]);
-      }
-    });
+        if (prefixMap.has(prefix)) {
+          prefixMap.get(prefix).push(ld.label);
+        } else {
+          prefixMap.set(prefix, [ld.label]);
+        }
+      });
 
-    return prefixMap;
-  }
+      return prefixMap;
+    }
 );
 
 // Some labels are implicitly used as custom fields in the grid and list view.
 // Make this an Array to keep casing in tact.
 export const labelPrefixFields = createSelector(
-  labelPrefixOptions, (map) => {
-    const prefixes = [];
+    labelPrefixOptions, (map) => {
+      const prefixes = [];
 
-    map.forEach((options) => {
+      map.forEach((options) => {
       // Ignore label prefixes with only one value.
-      if (options.length > 1) {
+        if (options.length > 1) {
         // Pick the first label defined to set the casing for the prefix value.
         // This shouldn't be too important of a decision because most labels
         // with shared prefixes should use the same casing across labels.
-        prefixes.push(labelNameToLabelPrefix(options[0]));
-      }
-    });
+          prefixes.push(labelNameToLabelPrefix(options[0]));
+        }
+      });
 
-    return prefixes;
-  }
+      return prefixes;
+    }
 );
 
 // Wrap label prefixes in a Set for fast lookup.
 export const labelPrefixSet = createSelector(
-  labelPrefixFields, (fields) => new Set(fields.map(
-    (field) => field.toLowerCase())),
+    labelPrefixFields, (fields) => new Set(fields.map(
+        (field) => field.toLowerCase())),
 );
 
 export const enumFieldDefs = createSelector(
-  fieldDefs,
-  (fieldDefs) => {
-    return fieldDefs.filter(
-      (fd) => fd.fieldRef.type === fieldTypes.ENUM_TYPE);
-  }
+    fieldDefs,
+    (fieldDefs) => {
+      return fieldDefs.filter(
+          (fd) => fd.fieldRef.type === fieldTypes.ENUM_TYPE);
+    }
 );
 
 export const optionsPerEnumField = createSelector(
-  enumFieldDefs,
-  labelDefs,
-  (fieldDefs, labelDefs) => {
-    const map = new Map(fieldDefs.map(
-      (fd) => [fd.fieldRef.fieldName.toLowerCase(), []]));
-    labelDefs.forEach((ld) => {
-      const labelName = ld.label;
+    enumFieldDefs,
+    labelDefs,
+    (fieldDefs, labelDefs) => {
+      const map = new Map(fieldDefs.map(
+          (fd) => [fd.fieldRef.fieldName.toLowerCase(), []]));
+      labelDefs.forEach((ld) => {
+        const labelName = ld.label;
 
-      const fd = fieldDefs.find((fd) => hasPrefix(
-        labelName, fieldNameToLabelPrefix(fd.fieldRef.fieldName)));
-      if (fd) {
-        const key = fd.fieldRef.fieldName.toLowerCase();
-        map.get(key).push({
-          ...ld,
-          optionName: removePrefix(labelName,
-            fieldNameToLabelPrefix(fd.fieldRef.fieldName)),
-        });
-      }
-    });
-    return map;
-  }
+        const fd = fieldDefs.find((fd) => hasPrefix(
+            labelName, fieldNameToLabelPrefix(fd.fieldRef.fieldName)));
+        if (fd) {
+          const key = fd.fieldRef.fieldName.toLowerCase();
+          map.get(key).push({
+            ...ld,
+            optionName: removePrefix(labelName,
+                fieldNameToLabelPrefix(fd.fieldRef.fieldName)),
+          });
+        }
+      });
+      return map;
+    }
 );
 
 export const fieldDefsForPhases = createSelector(
-  fieldDefs,
-  (fieldDefs) => {
-    if (!fieldDefs) return [];
-    return fieldDefs.filter((f) => f.isPhaseField);
-  }
+    fieldDefs,
+    (fieldDefs) => {
+      if (!fieldDefs) return [];
+      return fieldDefs.filter((f) => f.isPhaseField);
+    }
 );
 
 export const fieldDefsByApprovalName = createSelector(
-  fieldDefs,
-  (fieldDefs) => {
-    if (!fieldDefs) return new Map();
-    const acc = new Map();
-    for (const fd of fieldDefs) {
-      if (fd.fieldRef && fd.fieldRef.approvalName) {
-        if (acc.has(fd.fieldRef.approvalName)) {
-          acc.get(fd.fieldRef.approvalName).push(fd);
-        } else {
-          acc.set(fd.fieldRef.approvalName, [fd]);
+    fieldDefs,
+    (fieldDefs) => {
+      if (!fieldDefs) return new Map();
+      const acc = new Map();
+      for (const fd of fieldDefs) {
+        if (fd.fieldRef && fd.fieldRef.approvalName) {
+          if (acc.has(fd.fieldRef.approvalName)) {
+            acc.get(fd.fieldRef.approvalName).push(fd);
+          } else {
+            acc.set(fd.fieldRef.approvalName, [fd]);
+          }
         }
       }
+      return acc;
     }
-    return acc;
-  }
 );
 
 export const fetchingConfig = (state) => {
@@ -254,7 +254,7 @@ const fetchConfig = (projectName) => async (dispatch) => {
   dispatch({type: FETCH_CONFIG_START});
 
   const getConfig = prpcClient.call(
-    'monorail.Projects', 'GetConfig', {projectName});
+      'monorail.Projects', 'GetConfig', {projectName});
 
   try {
     const resp = await getConfig;
@@ -269,7 +269,7 @@ export const fetchPresentationConfig = (projectName) => async (dispatch) => {
 
   try {
     const presentationConfig = await prpcClient.call(
-      'monorail.Projects', 'GetPresentationConfig', {projectName});
+        'monorail.Projects', 'GetPresentationConfig', {projectName});
     dispatch({type: FETCH_PRESENTATION_CONFIG_SUCCESS, presentationConfig});
   } catch (error) {
     dispatch({type: FETCH_PRESENTATION_CONFIG_FAILURE, error});
@@ -280,7 +280,7 @@ const fetchTemplates = (projectName) => async (dispatch) => {
   dispatch({type: FETCH_TEMPLATES_START});
 
   const listTemplates = prpcClient.call(
-    'monorail.Projects', 'ListProjectTemplates', {projectName});
+      'monorail.Projects', 'ListProjectTemplates', {projectName});
 
   // TODO(zhangtiff): Remove (see above TODO).
   if (!listTemplates) return;
@@ -298,10 +298,10 @@ export const fetchFields = (projectName) => async (dispatch) => {
 
   try {
     const resp = await prpcClient.call(
-      'monorail.Projects', 'ListFields', {
-        projectName: projectName,
-        includeUserChoices: true,
-      }
+        'monorail.Projects', 'ListFields', {
+          projectName: projectName,
+          includeUserChoices: true,
+        }
     );
     const fieldDefs = (resp.fieldDefs || []);
     dispatch({type: FETCH_FIELDS_LIST_SUCCESS, fieldDefs});

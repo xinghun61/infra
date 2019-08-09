@@ -94,16 +94,16 @@ const requestsReducer = combineReducers({
   fetch: createRequestReducer(FETCH_START, FETCH_SUCCESS, FETCH_FAILURE),
   // Requests for fetching projects a user is related to.
   fetchProjects: createRequestReducer(
-    FETCH_PROJECTS_START, FETCH_PROJECTS_SUCCESS, FETCH_PROJECTS_FAILURE),
+      FETCH_PROJECTS_START, FETCH_PROJECTS_SUCCESS, FETCH_PROJECTS_FAILURE),
   // Request for getting a user's hotlists.
   fetchHotlists: createRequestReducer(
-    FETCH_HOTLISTS_START, FETCH_HOTLISTS_SUCCESS, FETCH_HOTLISTS_FAILURE),
+      FETCH_HOTLISTS_START, FETCH_HOTLISTS_SUCCESS, FETCH_HOTLISTS_FAILURE),
   // Request for getting a user's prefs.
   fetchPrefs: createRequestReducer(
-    FETCH_PREFS_START, FETCH_PREFS_SUCCESS, FETCH_PREFS_FAILURE),
+      FETCH_PREFS_START, FETCH_PREFS_SUCCESS, FETCH_PREFS_FAILURE),
   // Request for setting a user's prefs.
   setPrefs: createRequestReducer(
-    SET_PREFS_START, SET_PREFS_SUCCESS, SET_PREFS_FAILURE),
+      SET_PREFS_START, SET_PREFS_SUCCESS, SET_PREFS_FAILURE),
 });
 
 export const reducer = combineReducers({
@@ -127,9 +127,9 @@ export const fetch = (displayName) => async (dispatch) => {
   try {
     const resp = await Promise.all([
       prpcClient.call(
-        'monorail.Users', 'GetUser', message),
+          'monorail.Users', 'GetUser', message),
       prpcClient.call(
-        'monorail.Users', 'GetMemberships', message),
+          'monorail.Users', 'GetMemberships', message),
     ]);
 
     dispatch({
@@ -149,7 +149,7 @@ export const fetchProjects = (userRefs) => async (dispatch) => {
   dispatch({type: FETCH_PROJECTS_START});
   try {
     const resp = await prpcClient.call(
-      'monorail.Users', 'GetUsersProjects', {userRefs});
+        'monorail.Users', 'GetUsersProjects', {userRefs});
 
     // TODO(zhangtiff): Generalize this to work for multiple users. This will
     // require refactoring the reducer and store shape a bit.
@@ -165,7 +165,7 @@ export const fetchHotlists = (displayName) => async (dispatch) => {
 
   try {
     const resp = await prpcClient.call(
-      'monorail.Features', 'ListHotlistsByUser', {user: {displayName}});
+        'monorail.Features', 'ListHotlistsByUser', {user: {displayName}});
 
     const hotlists = resp.hotlists || [];
     hotlists.sort((hotlistA, hotlistB) => {
@@ -182,7 +182,7 @@ export const fetchPrefs = () => async (dispatch) => {
 
   try {
     const resp = await prpcClient.call(
-      'monorail.Users', 'GetUserPrefs', {});
+        'monorail.Users', 'GetUserPrefs', {});
     const prefs = {};
     (resp.prefs || []).forEach(({name, value}) => {
       prefs[name] = value;
@@ -212,7 +212,7 @@ export const setPrefs = (newPrefs, saveChanges = true) => async (dispatch) => {
   try {
     const message = {prefs: newPrefs};
     await prpcClient.call(
-      'monorail.Users', 'SetUserPrefs', message);
+        'monorail.Users', 'SetUserPrefs', message);
     dispatch({type: SET_PREFS_SUCCESS, newPrefs});
 
     // Re-fetch the user's prefs after saving to prevent prefs from

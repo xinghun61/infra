@@ -245,7 +245,7 @@ export class MrUpload extends LitElement {
 
     if (dt.items && dt.items.length) {
       const filteredItems = [...dt.items].filter(
-        (item) => item.kind === 'file');
+          (item) => item.kind === 'file');
       return filteredItems.map((item) => item.getAsFile());
     }
 

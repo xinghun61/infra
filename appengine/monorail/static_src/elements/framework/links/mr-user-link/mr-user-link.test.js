@@ -14,13 +14,13 @@ let availabilityText;
 
 function getElements() {
   availabilityIcon = element.shadowRoot.querySelector(
-    '#availability-icon');
+      '#availability-icon');
   userLink = element.shadowRoot.querySelector(
-    '#user-link');
+      '#user-link');
   userText = element.shadowRoot.querySelector(
-    '#user-text');
+      '#user-text');
   availabilityText = element.shadowRoot.querySelector(
-    '#availability-text');
+      '#availability-text');
 }
 
 describe('mr-user-link', () => {
@@ -84,7 +84,7 @@ describe('mr-user-link', () => {
   it('show availability', async () => {
     element.userRef = {userId: '1234', displayName: 'test@example.com'};
     element.referencedUsers = new Map(
-      [['test@example.com', {availability: 'foo'}]]);
+        [['test@example.com', {availability: 'foo'}]]);
     element.showAvailabilityIcon = true;
 
     await element.updateComplete;
@@ -101,7 +101,7 @@ describe('mr-user-link', () => {
   it('dont show availability', async () => {
     element.userRef = {userId: '1234', displayName: 'test@example.com'};
     element.referencedUsers = new Map(
-      [['test@example.com', {availability: 'foo'}]]);
+        [['test@example.com', {availability: 'foo'}]]);
 
     await element.updateComplete;
     getElements();
@@ -116,7 +116,7 @@ describe('mr-user-link', () => {
   it('show availability text', async () => {
     element.userRef = {userId: '1234', displayName: 'test@example.com'};
     element.referencedUsers = new Map(
-      [['test@example.com', {availability: 'foo'}]]);
+        [['test@example.com', {availability: 'foo'}]]);
     element.showAvailabilityText = true;
 
     await element.updateComplete;

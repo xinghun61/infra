@@ -260,7 +260,7 @@ export class MrSearchBar extends LitElement {
   updated(changedProperties) {
     if (this.userDisplayName && changedProperties.has('userDisplayName')) {
       const userSavedQueriesPromise = prpcClient.call('monorail.Users',
-        'GetSavedQueries', {});
+          'GetSavedQueries', {});
       userSavedQueriesPromise.then((resp) => {
         this.userSavedQueries = resp.savedQueries;
       });
@@ -318,7 +318,7 @@ export class MrSearchBar extends LitElement {
         // TODO(zhangtiff): Replace this event with Redux once all of Monorail
         // uses Redux.
         this.dispatchEvent(new Event('refreshList',
-          {'composed': true, 'bubbles': true}));
+            {'composed': true, 'bubbles': true}));
       } else {
         location.reload();
       }

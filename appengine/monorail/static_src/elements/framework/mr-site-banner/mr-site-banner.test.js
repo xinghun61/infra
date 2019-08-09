@@ -45,8 +45,8 @@ describe('mr-site-banner', () => {
     // because it's native code and can't be modified. So just use the FORMATTER
     // object.
     assert.include(
-      chopsTimestamp.shadowRoot.textContent,
-      FORMATTER.format(new Date(timestamp * 1000)));
+        chopsTimestamp.shadowRoot.textContent,
+        FORMATTER.format(new Date(timestamp * 1000)));
   });
 
   it('hides when there is no banner message', async () => {

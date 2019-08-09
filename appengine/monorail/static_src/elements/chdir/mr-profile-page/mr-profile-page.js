@@ -137,7 +137,7 @@ export class MrProfilePage extends LitElement {
     };
 
     const resp = await prpcClient.call(
-      'monorail.Issues', 'ListActivities', commentMessage
+        'monorail.Issues', 'ListActivities', commentMessage
     );
 
     this.comments = resp.comments;

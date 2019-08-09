@@ -152,14 +152,14 @@ describe('mr-upload', () => {
     assert.isFalse(element.expanded);
 
     element._onDragIntoWindow(mockEvent(
-      {dataTransfer: {files: [], items: [{kind: 'notFile'}]}}
+        {dataTransfer: {files: [], items: [{kind: 'notFile'}]}}
     ));
 
     assert.isFalse(element.expanded);
     assert.isFalse(preventDefault.called);
 
     element._onDragOutOfWindow(mockEvent(
-      {dataTransfer: {files: [], items: [{kind: 'notFile'}]}}
+        {dataTransfer: {files: [], items: [{kind: 'notFile'}]}}
     ));
 
     assert.isFalse(element.expanded);

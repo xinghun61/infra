@@ -84,7 +84,7 @@ describe('ClientLogger', () => {
       assert.isNumber(issueCreateMetric.add.getCall(0).args[0]);
       assert.isString(issueCreateMetric.add.getCall(0).args[1].get('client_id'));
       assert.equal(issueCreateMetric.add.getCall(0).args[1].get('host_name'),
-        'rutabaga-version');
+          'rutabaga-version');
     });
 
     it('issue-update', () => {
@@ -97,7 +97,7 @@ describe('ClientLogger', () => {
       assert.isNumber(issueUpdateMetric.add.getCall(0).args[0]);
       assert.isString(issueUpdateMetric.add.getCall(0).args[1].get('client_id'));
       assert.equal(issueUpdateMetric.add.getCall(0).args[1].get('host_name'),
-        'rutabaga-version');
+          'rutabaga-version');
     });
 
     it('populate-options', () => {
@@ -121,12 +121,13 @@ describe('ClientLogger', () => {
       assert.isNumber(autocompleteMetric.add.getCall(0).args[0]);
       assert.isString(autocompleteMetric.add.getCall(0).args[1].get('client_id'));
       assert.equal(autocompleteMetric.add.getCall(0).args[1].get('host_name'),
-        'rutabaga-version');
+          'rutabaga-version');
     });
   });
 
   describe('logStart', () => {
-    let c, clock;
+    let c;
+    let clock;
     const currentTime = 5000;
 
     beforeEach(() => {
@@ -144,7 +145,7 @@ describe('ClientLogger', () => {
 
       sinon.assert.calledOnce(ga);
       sinon.assert.calledWith(ga, 'send', 'event', 'rutabaga',
-        'event-name-start', 'event-label');
+          'event-name-start', 'event-label');
 
       const expectedStartedEvents = {
         'event-name': {
@@ -156,7 +157,7 @@ describe('ClientLogger', () => {
       };
       assert.deepEqual(c.startedEvents, expectedStartedEvents);
       assert.deepEqual(JSON.parse(sessionStorage[startedKey]),
-        expectedStartedEvents);
+          expectedStartedEvents);
     });
 
     it('uses an existing startedEvent', () => {
@@ -170,7 +171,7 @@ describe('ClientLogger', () => {
 
       sinon.assert.calledOnce(ga);
       sinon.assert.calledWith(ga, 'send', 'event', 'rutabaga',
-        'event-name-start', 'event-label');
+          'event-name-start', 'event-label');
 
       // TODO(jeffcarp): Audit is this wanted behavior? Replacing event time
       // but not label time?
@@ -184,14 +185,15 @@ describe('ClientLogger', () => {
       };
       assert.deepEqual(c.startedEvents, expectedStartedEvents);
       assert.deepEqual(JSON.parse(sessionStorage[startedKey]),
-        expectedStartedEvents);
+          expectedStartedEvents);
     });
   });
 
   describe('logPause', () => {
     const startTime = 1234;
     const currentTime = 5000;
-    let c, clock;
+    let c;
+    let clock;
 
     beforeEach(() => {
       clock = sinon.useFakeTimers(currentTime);
@@ -243,13 +245,14 @@ describe('ClientLogger', () => {
       };
       assert.deepEqual(c.startedEvents, expectedStartedEvents);
       assert.deepEqual(
-        JSON.parse(sessionStorage['ClientLogger.rutabaga.started']),
-        expectedStartedEvents);
+          JSON.parse(sessionStorage['ClientLogger.rutabaga.started']),
+          expectedStartedEvents);
     });
   });
 
   describe('logResume', () => {
-    let c, clock;
+    let c;
+    let clock;
     const startTimeEvent = 1234;
     const startTimeLabel = 2345;
     const labelElapsed = 4321;
@@ -316,8 +319,8 @@ describe('ClientLogger', () => {
       };
       assert.deepEqual(c.startedEvents, expectedStartedEvents);
       assert.deepEqual(
-        JSON.parse(sessionStorage['ClientLogger.rutabaga.started']),
-        expectedStartedEvents);
+          JSON.parse(sessionStorage['ClientLogger.rutabaga.started']),
+          expectedStartedEvents);
     });
   });
 
@@ -372,7 +375,7 @@ describe('ClientLogger', () => {
 
       sinon.assert.calledOnce(window.ga);
       sinon.assert.calledWith(window.ga, 'send', 'event', 'rutabaga',
-        'someEvent-end', null, undefined);
+          'someEvent-end', null, undefined);
       sinon.assert.notCalled(c.tsMon.recordUserTiming);
       assert.equal(sessionStorage.getItem(startedKey), '{}');
     });
@@ -387,7 +390,7 @@ describe('ClientLogger', () => {
 
       sinon.assert.calledOnce(window.ga);
       sinon.assert.calledWith(window.ga, 'send', 'event', 'rutabaga',
-        'someEvent-end', 'label1', undefined);
+          'someEvent-end', 'label1', undefined);
       // TODO(jeffcarp): Feature: add GA event if over threshold.
       sinon.assert.notCalled(c.tsMon.recordUserTiming);
 
@@ -404,7 +407,7 @@ describe('ClientLogger', () => {
       };
       assert.deepEqual(c.startedEvents, expectedStartedEvents);
       assert.deepEqual(JSON.parse(sessionStorage[startedKey]),
-        expectedStartedEvents);
+          expectedStartedEvents);
     });
 
     it('calls ga() with timing and event info for all labels', () => {
@@ -477,7 +480,7 @@ describe('ClientLogger', () => {
       ]);
       sinon.assert.calledOnce(c.tsMon.recordUserTiming);
       sinon.assert.calledWith(c.tsMon.recordUserTiming, 'rutabaga',
-        'someEvent', 'label2', (currentTime - startTimeLabel2) + label2Elapsed);
+          'someEvent', 'label2', (currentTime - startTimeLabel2) + label2Elapsed);
 
       const expectedStartedEvents = {
         someEvent: {
@@ -492,52 +495,52 @@ describe('ClientLogger', () => {
       };
       assert.deepEqual(c.startedEvents, expectedStartedEvents);
       assert.deepEqual(JSON.parse(sessionStorage[startedKey]),
-        expectedStartedEvents);
+          expectedStartedEvents);
     });
 
     it('calling logStart, logPause, logResume, and logEnd works for labels',
-      () => {
-        let countedElapsedTime = 0;
-        c.logStart('someEvent', 'label1');
-        clock.tick(1000);
-        countedElapsedTime += 1000;
-        c.logPause('someEvent', 'label1');
-        clock.tick(1000);
-        c.logResume('someEvent', 'label1');
-        clock.tick(1000);
-        countedElapsedTime += 1000;
-        c.logEnd('someEvent', 'label1');
+        () => {
+          let countedElapsedTime = 0;
+          c.logStart('someEvent', 'label1');
+          clock.tick(1000);
+          countedElapsedTime += 1000;
+          c.logPause('someEvent', 'label1');
+          clock.tick(1000);
+          c.logResume('someEvent', 'label1');
+          clock.tick(1000);
+          countedElapsedTime += 1000;
+          c.logEnd('someEvent', 'label1');
 
-        assert.deepEqual(ga.getCall(0).args, [
-          'send', 'event', 'rutabaga', 'someEvent-start', 'label1', undefined,
-        ]);
-        assert.deepEqual(ga.getCall(1).args, [
-          'send', 'timing', {
-            timingCategory: 'rutabaga',
-            timingValue: countedElapsedTime,
-            timingVar: 'someEvent',
-            timingLabel: 'label1',
-          }]);
-        assert.deepEqual(window.ga.getCall(2).args, [
-          'send', 'event', 'rutabaga', 'someEvent-end', 'label1', undefined,
-        ]);
-        sinon.assert.calledOnce(c.tsMon.recordUserTiming);
-        sinon.assert.calledWith(c.tsMon.recordUserTiming, 'rutabaga',
-          'someEvent', 'label1', countedElapsedTime);
+          assert.deepEqual(ga.getCall(0).args, [
+            'send', 'event', 'rutabaga', 'someEvent-start', 'label1', undefined,
+          ]);
+          assert.deepEqual(ga.getCall(1).args, [
+            'send', 'timing', {
+              timingCategory: 'rutabaga',
+              timingValue: countedElapsedTime,
+              timingVar: 'someEvent',
+              timingLabel: 'label1',
+            }]);
+          assert.deepEqual(window.ga.getCall(2).args, [
+            'send', 'event', 'rutabaga', 'someEvent-end', 'label1', undefined,
+          ]);
+          sinon.assert.calledOnce(c.tsMon.recordUserTiming);
+          sinon.assert.calledWith(c.tsMon.recordUserTiming, 'rutabaga',
+              'someEvent', 'label1', countedElapsedTime);
 
-        const expectedStartedEvents = {
-          someEvent: {
-            time: startTimeEvent,
-            labels: {
-              label2: startTimeLabel2,
+          const expectedStartedEvents = {
+            someEvent: {
+              time: startTimeEvent,
+              labels: {
+                label2: startTimeLabel2,
+              },
+              elapsed: {},
             },
-            elapsed: {},
-          },
-        };
-        assert.deepEqual(c.startedEvents, expectedStartedEvents);
-        assert.deepEqual(JSON.parse(sessionStorage[startedKey]),
-          expectedStartedEvents);
-      });
+          };
+          assert.deepEqual(c.startedEvents, expectedStartedEvents);
+          assert.deepEqual(JSON.parse(sessionStorage[startedKey]),
+              expectedStartedEvents);
+        });
 
     it('logs some events when others are above threshold', () => {
       c.startedEvents = {

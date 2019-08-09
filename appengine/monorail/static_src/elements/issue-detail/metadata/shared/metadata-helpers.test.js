@@ -31,12 +31,12 @@ describe('metadata-helpers', () => {
 
   it('fieldDefsWithoutGroup ignores non applicable types', () => {
     assert.deepEqual(fieldDefsWithoutGroup(
-      fieldDefs, fieldGroups, 'ungrouped-type'), fieldDefs);
+        fieldDefs, fieldGroups, 'ungrouped-type'), fieldDefs);
   });
 
   it('fieldDefsWithoutGroup filters grouped fields', () => {
     assert.deepEqual(fieldDefsWithoutGroup(
-      fieldDefs, fieldGroups, 'flt-launch'), [
+        fieldDefs, fieldGroups, 'flt-launch'), [
       {
         fieldRef: {
           fieldName: 'Ignore',
@@ -60,12 +60,12 @@ describe('metadata-helpers', () => {
     }];
 
     assert.deepEqual(
-      fieldDefsWithGroup(fieldDefs, fieldGroups, 'Not-FLT-Launch'), []);
+        fieldDefsWithGroup(fieldDefs, fieldGroups, 'Not-FLT-Launch'), []);
 
     assert.deepEqual(fieldDefsWithGroup(fieldDefs, fieldGroups, 'flt-launch'),
-      filteredGroupsList);
+        filteredGroupsList);
 
     assert.deepEqual(fieldDefsWithGroup(fieldDefs, fieldGroups, 'FLT-LAUNCH'),
-      filteredGroupsList);
+        filteredGroupsList);
   });
 });

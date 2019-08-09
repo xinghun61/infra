@@ -153,13 +153,13 @@ describe('mr-issue-page', () => {
     const deletePromise = Promise.resolve({});
     sinon.spy(element, '_undeleteIssue');
     prpcClient.call.withArgs('monorail.Issues', 'GetIssue', {issueRef})
-      .onFirstCall().returns(deletedIssuePromise)
-      .onSecondCall().returns(issuePromise);
+        .onFirstCall().returns(deletedIssuePromise)
+        .onSecondCall().returns(issuePromise);
     prpcClient.call.withArgs('monorail.Issues', 'DeleteIssue',
-      {delete: false, issueRef}).returns(deletePromise);
+        {delete: false, issueRef}).returns(deletePromise);
 
     store.dispatch(
-      issue.setIssueRef(issueRef.localId, issueRef.projectName));
+        issue.setIssueRef(issueRef.localId, issueRef.projectName));
 
     await deletedIssuePromise;
 
@@ -179,9 +179,9 @@ describe('mr-issue-page', () => {
     button.click();
 
     sinon.assert.calledWith(prpcClient.call, 'monorail.Issues', 'GetIssue',
-      {issueRef});
+        {issueRef});
     sinon.assert.calledWith(prpcClient.call, 'monorail.Issues', 'DeleteIssue',
-      {delete: false, issueRef});
+        {delete: false, issueRef});
 
     await deletePromise;
     await issuePromise;

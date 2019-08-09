@@ -17,7 +17,7 @@ describe('mr-grid', () => {
     element.xHeadings = ['All'];
     element.yHeadings = ['All'];
     element.groupedIssues.set(
-      'All + All', [{'localId': 1, 'projectName': 'monorail'}]
+        'All + All', [{'localId': 1, 'projectName': 'monorail'}]
     );
     document.body.appendChild(element);
   });
@@ -36,7 +36,7 @@ describe('mr-grid', () => {
     await element.updateComplete;
 
     assert.instanceOf(element.shadowRoot.querySelector(
-      'mr-issue-link'), MrIssueLink);
+        'mr-issue-link'), MrIssueLink);
   });
 
   it('renders one issue in counts mode', async () => {
@@ -122,6 +122,6 @@ describe('mr-grid', () => {
     const startIndex = href.indexOf('/list');
     const trimmedHref = href.substring(startIndex);
     assert.equal(trimmedHref,
-      '/list?x=Stars&y=Type&q=Type%3ADefect%20Stars%3D2&mode=');
+        '/list?x=Stars&y=Type&q=Type%3ADefect%20Stars%3D2&mode=');
   });
 });

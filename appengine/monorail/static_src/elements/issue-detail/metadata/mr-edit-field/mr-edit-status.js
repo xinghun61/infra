@@ -146,7 +146,7 @@ export class MrEditStatus extends LitElement {
 
     if (this._showMergedInto) {
       const newMergedInto = this.shadowRoot.querySelector(
-        '#mergedIntoInput').value;
+          '#mergedIntoInput').value;
       if (newMergedInto !== this.mergedInto) {
         result['mergedInto'] = newMergedInto;
       }

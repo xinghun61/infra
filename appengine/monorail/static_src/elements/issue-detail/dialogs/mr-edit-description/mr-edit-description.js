@@ -228,7 +228,7 @@ export class MrEditDescription extends connectStore(LitElement) {
 
     if (comment.attachments) {
       this._keptAttachmentIds = new Set(comment.attachments.map(
-        (attachment) => Number.parseInt(attachment.attachmentId)));
+          (attachment) => Number.parseInt(attachment.attachmentId)));
       this._attachments = comment.attachments;
     }
 
@@ -261,7 +261,7 @@ export class MrEditDescription extends connectStore(LitElement) {
     const markedLines = lines.map((line) => {
       let markedLine = line;
       const matchingBoldLine = this._boldLines.find(
-        (boldLine) => (line.startsWith(boldLine)));
+          (boldLine) => (line.startsWith(boldLine)));
       if (matchingBoldLine) {
         markedLine =
           `<b>${matchingBoldLine}</b>${line.slice(matchingBoldLine.length)}`;

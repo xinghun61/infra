@@ -177,9 +177,9 @@ export class MrMetadata extends connectStore(LitElement) {
 
   _renderCustomFields() {
     const grouped = fieldDefsWithGroup(this.fieldDefs,
-      this.fieldGroups, this.issueType);
+        this.fieldGroups, this.issueType);
     const ungrouped = fieldDefsWithoutGroup(this.fieldDefs,
-      this.fieldGroups, this.issueType);
+        this.fieldGroups, this.issueType);
     return html`
       ${grouped.map((group) => html`
         <tr>
@@ -201,7 +201,7 @@ export class MrMetadata extends connectStore(LitElement) {
     if (!fieldDefs || !fieldDefs.length) return '';
     return fieldDefs.map((field) => {
       const fieldValues = valuesForField(
-        this.fieldValueMap, field.fieldRef.fieldName) || [];
+          this.fieldValueMap, field.fieldRef.fieldName) || [];
       return html`
         <tr ?hidden=${field.isNiche && !fieldValues.length}>
           <th title=${field.docstring}>${field.fieldRef.fieldName}:</th>

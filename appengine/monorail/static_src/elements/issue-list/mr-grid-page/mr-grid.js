@@ -167,7 +167,7 @@ export class MrGrid extends connectStore(LitElement) {
     if (changedProperties.has('xAttr') || changedProperties.has('yAttr') ||
         changedProperties.has('issues')) {
       const gridData = extractGridData(this.issues, this.xAttr, this.yAttr,
-        this.projectName, this._fieldDefMap, this._labelPrefixSet);
+          this.projectName, this._fieldDefMap, this._labelPrefixSet);
       this.xHeadings = gridData.xHeadings;
       this.yHeadings = gridData.yHeadings;
       this.groupedIssues = gridData.sortedIssues;

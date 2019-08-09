@@ -193,9 +193,9 @@ export class MrDropdown extends LitElement {
     if (!this.opened) return;
 
     const hasMenu = evt.composedPath().find(
-      (node) => {
-        return node === this;
-      }
+        (node) => {
+          return node === this;
+        }
     );
     if (hasMenu) return;
 

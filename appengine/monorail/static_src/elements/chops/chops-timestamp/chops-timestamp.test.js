@@ -42,7 +42,7 @@ describe('chops-timestamp', () => {
     await element.updateComplete;
 
     assert.include(element.shadowRoot.textContent,
-      FORMATTER.format(new Date(timestamp * 1000)));
+        FORMATTER.format(new Date(timestamp * 1000)));
   });
 
   it('parses ISO dates', async () => {
@@ -52,7 +52,7 @@ describe('chops-timestamp', () => {
     await element.updateComplete;
 
     assert.include(element.shadowRoot.textContent,
-      FORMATTER.format(new Date(timestamp)));
+        FORMATTER.format(new Date(timestamp)));
   });
 
   it('invalid timestamp format', () => {
@@ -68,14 +68,14 @@ describe('chops-timestamp', () => {
     await element.updateComplete;
 
     assert.include(element.shadowRoot.textContent,
-      `just now`);
+        `just now`);
 
     element.timestamp = '60';
 
     await element.updateComplete;
 
     assert.include(element.shadowRoot.textContent,
-      `a minute from now`);
+        `a minute from now`);
 
     const timestamp = 1548808276;
     element.timestamp = String(timestamp);
@@ -83,6 +83,6 @@ describe('chops-timestamp', () => {
     await element.updateComplete;
 
     assert.include(element.shadowRoot.textContent,
-      SHORT_FORMATTER.format(timestamp * 1000));
+        SHORT_FORMATTER.format(timestamp * 1000));
   });
 });

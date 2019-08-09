@@ -133,7 +133,7 @@ export class MrIssueList extends connectStore(LitElement) {
         return issue.summary;
     }
     const values = stringValuesForIssueField(issue, column, this.projectName,
-      this._fieldDefMap, this._labelPrefixSet);
+        this._fieldDefMap, this._labelPrefixSet);
     return values.join(', ');
   }
 
@@ -334,7 +334,7 @@ export class MrIssueList extends connectStore(LitElement) {
 
   _clickIssueRow(e) {
     const containsIgnoredElement = e.path && e.path.find(
-      (node) => (node.tagName || '').toUpperCase() === 'A' || (node.classList
+        (node) => (node.tagName || '').toUpperCase() === 'A' || (node.classList
         && node.classList.contains('ignore-navigation')));
     if (containsIgnoredElement) return;
 

@@ -53,10 +53,10 @@ describe('mr-code-font-toggle', () => {
     await element.updateComplete;
 
     sinon.assert.calledWith(
-      prpcClient.call,
-      'monorail.Users',
-      'SetUserPrefs',
-      {prefs: [{name: 'code_font', value: 'true'}]});
+        prpcClient.call,
+        'monorail.Users',
+        'SetUserPrefs',
+        {prefs: [{name: 'code_font', value: 'true'}]});
 
     assert.deepEqual(element.prefs, new Map([['code_font', 'true']]));
   });
@@ -73,10 +73,10 @@ describe('mr-code-font-toggle', () => {
     await element.updateComplete;
 
     sinon.assert.calledWith(
-      prpcClient.call,
-      'monorail.Users',
-      'SetUserPrefs',
-      {prefs: [{name: 'code_font', value: 'false'}]});
+        prpcClient.call,
+        'monorail.Users',
+        'SetUserPrefs',
+        {prefs: [{name: 'code_font', value: 'false'}]});
 
     assert.deepEqual(element.prefs, new Map([['code_font', 'false']]));
   });

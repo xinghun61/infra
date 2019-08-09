@@ -103,10 +103,10 @@ describe('mr-issue-list', () => {
 
     const rowChild = element.shadowRoot.querySelector('.col-summary');
     rowChild.dispatchEvent(new MouseEvent('click',
-      {ctrlKey: true, bubbles: true}));
+        {ctrlKey: true, bubbles: true}));
 
     sinon.assert.calledWith(window.open,
-      '/p/chromium/issues/detail?id=24', '_blank', 'noopener');
+        '/p/chromium/issues/detail?id=24', '_blank', 'noopener');
   });
 
   it('meta+click on row on opens issue in new tab', async () => {
@@ -121,10 +121,10 @@ describe('mr-issue-list', () => {
 
     const rowChild = element.shadowRoot.querySelector('.col-summary');
     rowChild.dispatchEvent(new MouseEvent('click',
-      {metaKey: true, bubbles: true}));
+        {metaKey: true, bubbles: true}));
 
     sinon.assert.calledWith(window.open,
-      '/p/chromium/issues/detail?id=24', '_blank', 'noopener');
+        '/p/chromium/issues/detail?id=24', '_blank', 'noopener');
   });
 
   it('mouse wheel click on row on opens issue in new tab', async () => {
@@ -139,10 +139,10 @@ describe('mr-issue-list', () => {
 
     const rowChild = element.shadowRoot.querySelector('.col-summary');
     rowChild.dispatchEvent(new MouseEvent('auxclick',
-      {button: 1, bubbles: true}));
+        {button: 1, bubbles: true}));
 
     sinon.assert.calledWith(window.open,
-      '/p/chromium/issues/detail?id=24', '_blank', 'noopener');
+        '/p/chromium/issues/detail?id=24', '_blank', 'noopener');
   });
 
   it('AllLabels column renders', async () => {
@@ -337,13 +337,13 @@ describe('mr-issue-list', () => {
       await element.updateComplete;
 
       element.shadowRoot.querySelector('.row-1').querySelector(
-        'mr-issue-link').focus();
+          'mr-issue-link').focus();
 
       window.dispatchEvent(new KeyboardEvent('keydown', {key: 'k'}));
       listRowIsFocused(element, 2);
 
       element.shadowRoot.querySelector('.row-1').querySelector(
-        'mr-issue-link').focus();
+          'mr-issue-link').focus();
 
       window.dispatchEvent(new KeyboardEvent('keydown', {key: 'j'}));
       listRowIsFocused(element, 0);
@@ -431,7 +431,7 @@ describe('mr-issue-list', () => {
 
       const row = element.shadowRoot.querySelector('.row-1');
       row.dispatchEvent(new KeyboardEvent('keydown',
-        {key: 'O', shiftKey: true}));
+          {key: 'O', shiftKey: true}));
 
       await element.updateComplete;
 
