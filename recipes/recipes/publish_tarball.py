@@ -263,14 +263,29 @@ def publish_tarball(api):
       api.path['checkout'].join('tools', 'clang', 'scripts', update_script)
       ] + update_args)
 
+  # In M76 and certain versions of M77 (>= 77.0.3865.21) the AFDO profiles are
+  # downloaded via update_afdo_profiles.py, whereas in M78 and later it is done
+  # via download_cros_provided_profile.py. Since some M77 releases are also
+  # using the new path, detect the presence of the files rather than doing a
+  # simple version check.
   android_profile_path = api.path['checkout'].join(
       'chrome', 'android', 'profiles')
-  api.python('fetch android AFDO profile', api.path['checkout'].join(
-      'tools', 'download_cros_provided_profile.py'), [
-          '--newest_state', android_profile_path.join('newest.txt'),
-          '--local_state', android_profile_path.join('local.txt'),
-          '--output_name', android_profile_path.join('afdo.prof'),
-          '--gs_url_base=chromeos-prebuilt/afdo-job/llvm'])
+  old_afdo_script_path = android_profile_path.join('update_afdo_profile.py')
+  new_afdo_script_path = api.path['checkout'].join(
+      'tools', 'download_cros_provided_profile.py')
+  afdo_script_path = None
+  afdo_script_args = None
+  if api.path.exists(old_afdo_script_path):
+    afdo_script_path = old_afdo_script_path
+    afdo_script_args = []
+  else:
+    afdo_script_path = new_afdo_script_path
+    afdo_script_args = [
+        '--newest_state', android_profile_path.join('newest.txt'),
+        '--local_state', android_profile_path.join('local.txt'),
+        '--output_name', android_profile_path.join('afdo.prof'),
+        '--gs_url_base=chromeos-prebuilt/afdo-job/llvm']
+  api.python('fetch android AFDO profile', afdo_script_path, afdo_script_args)
 
   node_modules_sha_path = api.path['checkout'].join(
       'third_party', 'node', 'node_modules.tar.gz.sha1')
@@ -403,6 +418,20 @@ def GenTests(api):
                   stdout=api.raw_io.output('1496 (0790d304)')) +
     api.path.exists(api.path['checkout'].join(
         'third_party', 'node', 'node_modules.tar.gz.sha1'))
+  )
+
+  yield (
+    api.test('afdo-old-script') +
+    api.runtime(is_luci=True, is_experimental=False) +
+    api.properties.generic(version='76.0.3809.100') +
+    api.platform('linux', 64) +
+    api.step_data('gsutil ls', stdout=api.raw_io.output('')) +
+    api.step_data('get gn version',
+                  stdout=api.raw_io.output('1496 (0790d304)')) +
+    api.path.exists(api.path['checkout'].join(
+        'third_party', 'node', 'node_modules.tar.gz.sha1')) +
+    api.path.exists(api.path['checkout'].join(
+        'chrome', 'android', 'profiles', 'update_afdo_profile.py'))
   )
 
   yield (
