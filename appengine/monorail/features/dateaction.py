@@ -108,9 +108,9 @@ class IssueDateActionTask(notify_helpers.NotifyTaskBase):
       The main goal is the side-effect of sending emails.
     """
     issue_id = mr.GetPositiveIntParam('issue_id')
-    hostport = framework_helpers.GetHostPort()
     issue = self.services.issue.GetIssue(mr.cnxn, issue_id, use_cache=False)
     project = self.services.project.GetProject(mr.cnxn, issue.project_id)
+    hostport = framework_helpers.GetHostPort(project_name=project.project_name)
     config = self.services.config.GetProjectConfig(mr.cnxn, issue.project_id)
     pings = self._CalculateIssuePings(issue, config)
     if not pings:

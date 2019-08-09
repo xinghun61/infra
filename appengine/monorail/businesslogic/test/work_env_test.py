@@ -679,6 +679,52 @@ class WorkEnvTest(unittest.TestCase):
         actual_issue.issue_id, hostport, [], 111)
 
   @mock.patch(
+      'settings.preferred_domains', {'testing-app.appspot.com': 'example.com'})
+  @mock.patch(
+      'settings.branded_domains', {'proj': 'branded.com'})
+  @mock.patch(
+      'features.send_notifications.PrepareAndSendIssueBlockingNotification')
+  @mock.patch(
+      'features.send_notifications.PrepareAndSendIssueChangeNotification')
+  def testCreateIssue_Branded(self, fake_pasicn, fake_pasibn):
+    """Use branded domains in notification about creating an issue."""
+    self.SignIn(user_id=111)
+    with self.work_env as we:
+      actual_issue, comment = we.CreateIssue(
+          789, 'sum', 'New', 222, [333], ['Hot'], [], [], 'desc')
+
+    self.assertEqual('proj', actual_issue.project_name)
+    # Verify that tasks were queued to send email notifications.
+    hostport = 'branded.com'
+    fake_pasicn.assert_called_once_with(
+        actual_issue.issue_id, hostport, 111, comment_id=comment.id)
+    fake_pasibn.assert_called_once_with(
+        actual_issue.issue_id, hostport, [], 111)
+
+  @mock.patch(
+      'settings.preferred_domains', {'testing-app.appspot.com': 'example.com'})
+  @mock.patch(
+      'settings.branded_domains', {'other-proj': 'branded.com'})
+  @mock.patch(
+      'features.send_notifications.PrepareAndSendIssueBlockingNotification')
+  @mock.patch(
+      'features.send_notifications.PrepareAndSendIssueChangeNotification')
+  def testCreateIssue_Nonbranded(self, fake_pasicn, fake_pasibn):
+    """Don't use branded domains when creating issue in different project."""
+    self.SignIn(user_id=111)
+    with self.work_env as we:
+      actual_issue, comment = we.CreateIssue(
+          789, 'sum', 'New', 222, [333], ['Hot'], [], [], 'desc')
+
+    self.assertEqual('proj', actual_issue.project_name)
+    # Verify that tasks were queued to send email notifications.
+    hostport = 'example.com'
+    fake_pasicn.assert_called_once_with(
+        actual_issue.issue_id, hostport, 111, comment_id=comment.id)
+    fake_pasibn.assert_called_once_with(
+        actual_issue.issue_id, hostport, [], 111)
+
+  @mock.patch(
       'features.send_notifications.PrepareAndSendIssueBlockingNotification')
   @mock.patch(
       'features.send_notifications.PrepareAndSendIssueChangeNotification')
@@ -1904,6 +1950,30 @@ class WorkEnvTest(unittest.TestCase):
 
     fake_pasicn.assert_not_called()
 
+  @mock.patch(
+      'settings.preferred_domains', {'testing-app.appspot.com': 'example.com'})
+  @mock.patch(
+      'settings.branded_domains', {'proj': 'branded.com'})
+  @mock.patch(
+      'features.send_notifications.PrepareAndSendIssueChangeNotification')
+  def testUpdateIssue_BrandedDomain(self, fake_pasicn):
+    """Updating an issue in project with branded domain uses that domain."""
+    self.SignIn()
+    issue = fake.MakeTestIssue(789, 1, 'summary', 'Available', 0)
+    self.services.issue.TestAddIssue(issue)
+    delta = tracker_pb2.IssueDelta(
+        owner_id=111, summary='New summary', cc_ids_add=[333])
+
+    with self.work_env as we:
+      we.UpdateIssue(issue, delta, 'Getting started')
+
+    comments = self.services.issue.GetCommentsForIssue('cnxn', issue.issue_id)
+    comment_pb = comments[-1]
+    hostport = 'branded.com'
+    fake_pasicn.assert_called_with(
+        issue.issue_id, hostport, 111, send_email=True,
+        old_owner_id=0, comment_id=comment_pb.id)
+
   def testDeleteIssue(self):
     """We can mark and unmark an issue as deleted."""
     self.SignIn(user_id=self.admin_user.user_id)
@@ -2917,10 +2987,10 @@ class WorkEnvTest(unittest.TestCase):
     template = self.services.template.TestAddIssueTemplateDef(
         13, 16, 'template name', owner_id=user_3.user_id)
     project1 = self.services.project.TestAddProject(
-        'project1', owner_ids=[111, 333])
+        'project1', owner_ids=[111, 333], project_id=16)
     project2 = self.services.project.TestAddProject(
         'project2',owner_ids=[888], contrib_ids=[111, 222],
-        committer_ids=[333])
+        committer_ids=[333], project_id=17)
 
     self.services.features.TestAddFilterRule(
         16, 'owner:cow@test.com', add_cc_ids=[user_4.user_id])

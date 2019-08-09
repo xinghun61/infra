@@ -750,7 +750,8 @@ class WorkEnv(object):
 
     if send_email:
       with self.mc.profiler.Phase('queueing notification tasks'):
-        hostport = framework_helpers.GetHostPort()
+        hostport = framework_helpers.GetHostPort(
+            project_name=project.project_name)
         send_notifications.PrepareAndSendIssueChangeNotification(
             new_issue.issue_id, hostport, reporter_id, comment_id=comment.id)
         send_notifications.PrepareAndSendIssueBlockingNotification(
@@ -1130,8 +1131,10 @@ class WorkEnv(object):
           approval_delta, comment_content=comment_content,
           is_description=is_description, attachments=attachments,
           kept_attachments=kept_attachments)
+      hostport = framework_helpers.GetHostPort(
+          project_name=project.project_name)
       send_notifications.PrepareAndSendApprovalChangeNotification(
-          issue_id, approval_id, framework_helpers.GetHostPort(), comment_pb.id,
+          issue_id, approval_id, hostport, comment_pb.id,
           send_email=send_email)
 
     return approval_value, comment_pb
@@ -1151,8 +1154,9 @@ class WorkEnv(object):
       comment_pb = self.services.issue.UpdateIssueStructure(
           self.mc.cnxn, config, issue, template, self.mc.auth.user_id,
           comment_content)
+      hostport = framework_helpers.GetHostPort(project_name=issue.project_name)
       send_notifications.PrepareAndSendIssueChangeNotification(
-          issue.issue_id, framework_helpers.GetHostPort(), self.mc.auth.user_id,
+          issue.issue_id, hostport, self.mc.auth.user_id,
           send_email=send_email, comment_id=comment_pb.id)
 
   def UpdateIssue(
@@ -1258,7 +1262,8 @@ class WorkEnv(object):
 
     with self.mc.profiler.Phase('Generating notifications'):
       if comment_pb:
-        hostport = framework_helpers.GetHostPort()
+        hostport = framework_helpers.GetHostPort(
+            project_name=project.project_name)
         reporter_id = self.mc.auth.user_id
         send_notifications.PrepareAndSendIssueChangeNotification(
             issue.issue_id, hostport, reporter_id,
@@ -1838,8 +1843,10 @@ class WorkEnv(object):
       self.mc.cnxn.Commit()
       self.services.usergroup.group_dag.MarkObsolete()
 
-    hostport = framework_helpers.GetHostPort()
     for project_id, filter_rule_strs in rule_strs_by_project.items():
+      project = self.services.project.GetProject(self.mc.cnxn, project_id)
+      hostport = framework_helpers.GetHostPort(
+          project_name=project.project_name)
       send_notifications.PrepareAndSendDeletedFilterRulesNotification(
           project_id, hostport, filter_rule_strs)
 

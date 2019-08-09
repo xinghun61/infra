@@ -8,6 +8,7 @@ from __future__ import print_function
 from __future__ import division
 from __future__ import absolute_import
 
+import mock
 import unittest
 
 import mox
@@ -275,6 +276,35 @@ class UrlFormattingTest(unittest.TestCase):
         headers={'Host': 'www.test.com'}, path=path)
     url = framework_helpers.FormatAbsoluteURL(mr, path, include_project=False)
     self.assertEqual(url, 'http://www.test.com/some/path')
+
+  def testGetHostPort_Local(self):
+    """We use testing-app.appspot.com when running locally."""
+    self.assertEqual('testing-app.appspot.com',
+                     framework_helpers.GetHostPort())
+    self.assertEqual('testing-app.appspot.com',
+                     framework_helpers.GetHostPort(project_name='proj'))
+
+  @mock.patch('settings.preferred_domains',
+              {'testing-app.appspot.com': 'example.com'})
+  def testGetHostPort_PreferredDomain(self):
+    """A prod server can have a preferred domain."""
+    self.assertEqual('example.com',
+                     framework_helpers.GetHostPort())
+    self.assertEqual('example.com',
+                     framework_helpers.GetHostPort(project_name='proj'))
+
+  @mock.patch('settings.branded_domains',
+              {'proj': 'branded.com', '*': 'unbranded.com'})
+  @mock.patch('settings.preferred_domains',
+              {'testing-app.appspot.com': 'example.com'})
+  def testGetHostPort_BrandedDomain(self):
+    """A prod server can have a preferred domain."""
+    self.assertEqual('example.com',
+                     framework_helpers.GetHostPort())
+    self.assertEqual('branded.com',
+                     framework_helpers.GetHostPort(project_name='proj'))
+    self.assertEqual('unbranded.com',
+                     framework_helpers.GetHostPort(project_name='other-proj'))
 
   def testIssueCommentURL(self):
     hostport = 'port.someplex.com'

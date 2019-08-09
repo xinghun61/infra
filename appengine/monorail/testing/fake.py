@@ -1614,6 +1614,9 @@ class IssueService(object):
       phases=None, approval_values=None, importer_id=None):
     issue = tracker_pb2.Issue()
     issue.project_id = project_id
+    if services and services.project:
+      project = services.project.GetProject(cnxn, project_id)
+      issue.project_name = project.project_name
     issue.summary = summary
     issue.status = status
     if owner_id:

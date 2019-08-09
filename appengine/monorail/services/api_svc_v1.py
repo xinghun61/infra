@@ -587,8 +587,10 @@ class MonorailApi(remote.Service):
           merge_into_issue.issue_id, merge_into_project, new_starrers)
       merge_comment_pb = tracker_helpers.MergeCCsAndAddComment(
         self._services, mar, issue, merge_into_issue)
+      hostport = framework_helpers.GetHostPort(
+          project_name=merge_into_issue.project_name)
       send_notifications.PrepareAndSendIssueChangeNotification(
-          merge_into_issue.issue_id, framework_helpers.GetHostPort(),
+          merge_into_issue.issue_id, hostport,
           mar.auth.user_id, send_email=True, comment_id=merge_comment_pb.id)
 
     tracker_fulltext.IndexIssues(
@@ -603,10 +605,10 @@ class MonorailApi(remote.Service):
     seq = len(cmnts) - 1
 
     if request.sendEmail:
+      hostport = framework_helpers.GetHostPort(project_name=issue.project_name)
       send_notifications.PrepareAndSendIssueChangeNotification(
-          issue.issue_id, framework_helpers.GetHostPort(),
-          comment.user_id, send_email=True, old_owner_id=old_owner_id,
-          comment_id=comment.id)
+          issue.issue_id, hostport, comment.user_id, send_email=True,
+          old_owner_id=old_owner_id, comment_id=comment.id)
 
     issue_perms = permissions.UpdateIssuePermissions(
         mar.perms, mar.project, issue, mar.auth.effective_ids,
@@ -793,9 +795,10 @@ class MonorailApi(remote.Service):
     seq = len(cmnts) - 1
 
     if request.sendEmail:
+      hostport = framework_helpers.GetHostPort(project_name=issue.project_name)
       send_notifications.PrepareAndSendApprovalChangeNotification(
           issue.issue_id, approval.approval_id,
-          framework_helpers.GetHostPort(), comment.id, send_email=True)
+          hostport, comment.id, send_email=True)
 
     issue_perms = permissions.UpdateIssuePermissions(
         mar.perms, mar.project, issue, mar.auth.effective_ids,

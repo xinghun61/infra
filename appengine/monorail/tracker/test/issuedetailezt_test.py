@@ -947,14 +947,6 @@ class ShouldShowFlipperTest(unittest.TestCase):
 
   def setUp(self):
     self.cnxn = 'fake cnxn'
-    self.services = service_manager.Services(
-        config=fake.ConfigService(),
-        issue=fake.IssueService(),
-        issue_star=fake.IssueStarService(),
-        project=fake.ProjectService(),
-        user=fake.UserService())
-    self.project = self.services.project.TestAddProject(
-      'proj', project_id=987, committer_ids=[111])
 
   def VerifyShouldShowFlipper(
       self, expected, query, sort_spec, can, create_issues=0):
@@ -964,16 +956,18 @@ class ShouldShowFlipperTest(unittest.TestCase):
         issue=fake.IssueService(),
         project=fake.ProjectService(),
         user=fake.UserService())
-    mr = testing_helpers.MakeMonorailRequest(project=self.project)
+    project = services.project.TestAddProject(
+      'proj', project_id=987, committer_ids=[111])
+    mr = testing_helpers.MakeMonorailRequest(project=project)
     mr.query = query
     mr.sort_spec = sort_spec
     mr.can = can
-    mr.project_name = self.project.project_name
-    mr.project = self.project
+    mr.project_name = project.project_name
+    mr.project = project
 
     for idx in range(create_issues):
       _local_id, _ = services.issue.CreateIssue(
-          self.cnxn, services, self.project.project_id,
+          self.cnxn, services, project.project_id,
           'summary_%d' % idx, 'status', 111, [], [], [], [], 111,
           'description_%d' % idx)
 

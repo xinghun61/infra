@@ -492,7 +492,7 @@ class UserSettings(object):
     we.SetUserPrefs(user.user_id, user_prefs)
 
 
-def GetHostPort():
+def GetHostPort(project_name=None):
   """Get string domain name and port number."""
 
   app_id = app_identity.get_application_id()
@@ -506,7 +506,13 @@ def GetHostPort():
   else:
     hostport = '%s.appspot.com' % app_id
 
-  return GetPreferredDomain(hostport)
+  live_site_domain = GetPreferredDomain(hostport)
+  if project_name:
+    project_needed_domain = GetNeededDomain(project_name, live_site_domain)
+    if project_needed_domain:
+      return project_needed_domain
+
+  return live_site_domain
 
 
 def IssueCommentURL(
