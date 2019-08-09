@@ -4,6 +4,8 @@
 
 """Classes representing the monitoring interface for tasks or devices."""
 
+import attr
+
 
 class Target(object):
   """Abstract base class for a monitoring target.
@@ -14,15 +16,16 @@ class Target(object):
 
   Do not directly instantiate an object of this class.
   Use the concrete child classes instead:
+  * DeviceTarget to monitor a host machine that may be running a task;
   * TaskTarget to monitor a job or tasks running in (potentially) many places;
-  * DeviceTarget to monitor a host machine that may be running a task.
+  * CustomSchema to use a custom schema (i.e. arbitrary target fields).
   """
 
   def __init__(self):
     # Subclasses should list the updatable target fields here.
     self._fields = tuple()
 
-  def populate_target_pb(self, collection_pb):
+  def populate_target_pb(self, collection):
     """Populate the 'target' into a MetricsCollection."""
     raise NotImplementedError()
 
@@ -121,3 +124,37 @@ class TaskTarget(Target):
     collection.task.host_name = self.hostname
     collection.task.task_num = self.task_num
 
+
+class CustomSchema(Target):
+  """Monitoring interface class for using a custom schema."""
+
+  def __init__(self, fields):
+    """Create a Target object exporting info with arbitrary target fields.
+
+    Args:
+      fields (object): an instance of an @attr.s-decorated class from which
+          field names and default values will be copied
+    """
+    super(CustomSchema, self).__init__()
+    self._fields = tuple(field.name for field in attr.fields(type(fields)))
+    for name in self._fields:
+      value = getattr(fields, name)
+      setattr(self, name, value)
+
+  def populate_target_pb(self, collection):
+    """Populate the target into metrics_pb2.MetricsCollection.
+
+    Args:
+      collection (metrics_pb2.MetricsCollection): the collection proto to be
+          populated.
+    """
+    for name in self._fields:
+      value = getattr(self, name)
+      if isinstance(value, bool):
+        collection.root_labels.add(key=name, bool_value=value)
+      elif isinstance(value, int):
+        collection.root_labels.add(key=name, int64_value=value)
+      elif isinstance(value, str):
+        collection.root_labels.add(key=name, string_value=value)
+      else:
+        raise NotImplementedError()

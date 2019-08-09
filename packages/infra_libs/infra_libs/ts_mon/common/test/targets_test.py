@@ -2,6 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import attr
 import unittest
 
 from infra_libs.ts_mon.common import targets
@@ -50,12 +51,12 @@ class DeviceTargetTest(unittest.TestCase):
     pb = metrics_pb2.MetricsCollection()
     t = targets.DeviceTarget('reg', 'role', 'net', 'host')
     t.populate_target_pb(pb)
-    self.assertEquals(pb.network_device.metro, 'reg')
-    self.assertEquals(pb.network_device.role, 'role')
-    self.assertEquals(pb.network_device.hostgroup, 'net')
-    self.assertEquals(pb.network_device.hostname, 'host')
-    self.assertEquals(pb.network_device.realm, 'ACQ_CHROME')
-    self.assertEquals(pb.network_device.alertable, True)
+    self.assertEqual(pb.network_device.metro, 'reg')
+    self.assertEqual(pb.network_device.role, 'role')
+    self.assertEqual(pb.network_device.hostgroup, 'net')
+    self.assertEqual(pb.network_device.hostname, 'host')
+    self.assertEqual(pb.network_device.realm, 'ACQ_CHROME')
+    self.assertEqual(pb.network_device.alertable, True)
 
   def test_update_to_dict(self):
     target = targets.DeviceTarget('reg', 'role', 'net', 'host')
@@ -90,11 +91,11 @@ class TaskTargetTest(unittest.TestCase):
     pb = metrics_pb2.MetricsCollection()
     t = targets.TaskTarget('serv', 'job', 'reg', 'host')
     t.populate_target_pb(pb)
-    self.assertEquals(pb.task.service_name, 'serv')
-    self.assertEquals(pb.task.job_name, 'job')
-    self.assertEquals(pb.task.data_center, 'reg')
-    self.assertEquals(pb.task.host_name, 'host')
-    self.assertEquals(pb.task.task_num, 0)
+    self.assertEqual(pb.task.service_name, 'serv')
+    self.assertEqual(pb.task.job_name, 'job')
+    self.assertEqual(pb.task.data_center, 'reg')
+    self.assertEqual(pb.task.host_name, 'host')
+    self.assertEqual(pb.task.task_num, 0)
 
   def test_update_to_dict(self):
     target = targets.TaskTarget('serv', 'job', 'reg', 'host', 5)
@@ -119,6 +120,51 @@ class TaskTargetTest(unittest.TestCase):
 
   def test_update_nonexistent_field(self):
     target = targets.TaskTarget('serv', 'job', 'reg', 'host')
+    # Simulate a bug: exporting a non-existent field.
+    target._fields += ('bad',)
+    with self.assertRaises(AttributeError):
+      target.update({'bad': 'boo'})
+
+
+@attr.s
+class MyFields(object):
+  b = attr.ib(type=bool)
+  i = attr.ib(type=int)
+  s = attr.ib(type=str)
+
+
+class CustomSchemaTest(unittest.TestCase):
+
+  def test_populate_target(self):
+    pb = metrics_pb2.MetricsCollection()
+    t = targets.CustomSchema(MyFields(b=True, i=123, s='abc'))
+    t.populate_target_pb(pb)
+    self.assertEqual(pb.root_labels[0].key, 'b')
+    self.assertEqual(pb.root_labels[0].bool_value, True)
+    self.assertEqual(pb.root_labels[1].key, 'i')
+    self.assertEqual(pb.root_labels[1].int64_value, 123)
+    self.assertEqual(pb.root_labels[2].key, 's')
+    self.assertEqual(pb.root_labels[2].string_value, 'abc')
+
+  def test_update_to_dict(self):
+    target = targets.CustomSchema(MyFields(b=True, i=123, s='abc'))
+    self.assertEqual({
+      'b': True,
+      'i': 123,
+      's': 'abc'}, target.to_dict())
+    target.update({'b': False, 'i': 456, 's': 'def'})
+    self.assertEqual({
+      'b': False,
+      'i': 456,
+      's': 'def'}, target.to_dict())
+
+  def test_update_private_field(self):
+    target = targets.CustomSchema(MyFields(b=True, i=123, s='abc'))
+    with self.assertRaises(AttributeError):
+      target.update({'realm': 'boo'})
+
+  def test_update_nonexistent_field(self):
+    target = targets.CustomSchema(MyFields(b=True, i=123, s='abc'))
     # Simulate a bug: exporting a non-existent field.
     target._fields += ('bad',)
     with self.assertRaises(AttributeError):
