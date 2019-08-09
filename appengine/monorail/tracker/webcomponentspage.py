@@ -46,7 +46,6 @@ class WebComponentsPage(servlet.Servlet):
 
     return {
        'local_id': mr.local_id,
-       'other_ui_path': 'issues/detail_ezt',
        'is_grid': is_grid,
        'old_ui_url': old_ui_url,
         }

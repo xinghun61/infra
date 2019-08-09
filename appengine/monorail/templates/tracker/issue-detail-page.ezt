@@ -8,6 +8,13 @@
   [define offer_make_changes][end]
 [end]
 
+ <div style="font-weight:bold; color:var(--chops-field-error-color); padding:5px; margin-top:10px; text-align:center; background:var(--chops-orange-50);">
+  This page is deprecated and will be removed in August 2019.
+  Please <a href="/p/[projectname]/[other_ui_path]?id=[local_id]">view in new UI</a> instead.
+  If you cannot use the new UI, please <a href="https://bugs.chromium.org/p/monorail/issues/entry">report an issue</a>.
+ </div>
+
+
 <div id="color_control" class="[if-any issue.is_open][else]closed_colors[end] [if-any code_font]codefont[end]">
 
 <div id="issue-main">
