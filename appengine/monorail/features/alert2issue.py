@@ -16,8 +16,10 @@ from features import commitlogcommands
 from framework import monorailcontext
 from tracker import tracker_helpers
 
+
 def IsWhitelisted(email_addr):
   return email_addr.endswith(settings.alert_whitelisted_suffixes)
+
 
 def FindAlertIssue(services, cnxn, project_id, incident_label):
   """Find the existing issue with the incident_label."""
@@ -50,6 +52,7 @@ def FindAlertIssue(services, cnxn, project_id, incident_label):
   if issues:
     return max(issues, key=lambda issue: issue.modified_timestamp)
   return None
+
 
 def GetAlertProperties(services, cnxn, project_id, incident_id, trooper_queue,
                        body):
@@ -86,6 +89,7 @@ def GetAlertProperties(services, cnxn, project_id, incident_id, trooper_queue,
       props['incident_label'], props['priority'], props['trooper_queue'])
 
   return props
+
 
 def ProcessEmailNotification(
     services, cnxn, project, project_addr, from_addr, auth, subject, body,
