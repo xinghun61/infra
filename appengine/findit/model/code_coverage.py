@@ -145,6 +145,23 @@ class CLPatchset(ndb.Model):
   patchset = ndb.IntegerProperty(indexed=True, required=True)
 
 
+class CoveragePercentage(ndb.Model):
+  """Represents code coverage percentage metric for a file.
+
+  It is stored as a part of PresubmitCoverageData.
+  """
+
+  # The source absolute path of the file. E.g. //base/test.cc.
+  path = ndb.StringProperty(indexed=False, required=True)
+
+  # Total number of lines.
+  total_lines = ndb.IntegerProperty(
+      indexed=False, required=True, validator=lambda _, value: value > 0)
+
+  # Number of covered lines.
+  covered_lines = ndb.IntegerProperty(indexed=False, required=True)
+
+
 class PresubmitCoverageData(ndb.Model):
   """Represents the code coverage data of a change during presubmit."""
 
@@ -157,6 +174,14 @@ class PresubmitCoverageData(ndb.Model):
   # A list of file level coverage data for all the source files modified by the
   # this CL.
   data = ndb.JsonProperty(indexed=False, compressed=True, required=True)
+
+  # Coverage percentages of all executable lines of the files.
+  absolute_percentages = ndb.LocalStructuredProperty(
+      CoveragePercentage, indexed=False, repeated=True)
+
+  # Coverage percentages of *newly added* and executable lines of the files.
+  incremental_percentages = ndb.LocalStructuredProperty(
+      CoveragePercentage, indexed=False, repeated=True)
 
   @classmethod
   def _CreateKey(cls, server_host, change, patchset):

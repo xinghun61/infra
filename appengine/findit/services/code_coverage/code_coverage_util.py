@@ -1,7 +1,11 @@
 # Copyright 2019 The Chromium Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
-"""Utility functions for code coverage."""
+"""Utility functions for code coverage.
+
+The code coverage data format is defined at:
+https://chromium.googlesource.com/infra/infra/+/refs/heads/master/appengine/findit/model/proto/code_coverage.proto.
+"""
 
 import base64
 import difflib
@@ -11,6 +15,7 @@ import urllib2
 from common.findit_http_client import FinditHttpClient
 from gae_libs.caches import PickledMemCache
 from libs.cache_decorator import Cached
+from model.code_coverage import CoveragePercentage
 from services.code_coverage import diff_util
 
 # Mapping from metric names to detailed explanations, and one use case is to use
@@ -208,7 +213,7 @@ def DecompressLineRanges(line_ranges):
   """
   decompressed_lines = []
   for line_range in line_ranges:
-    for line_num in range(line_range['first'], line_range['last'] + 1):
+    for line_num in xrange(line_range['first'], line_range['last'] + 1):
       decompressed_lines.append({
           'line': line_num,
           'count': line_range['count'],
@@ -257,19 +262,16 @@ def RebasePresubmitCoverageDataBetweenPatchsets(
   or commit-message-edit away, for more details, please see
   |GetEquivalentPatchsets|.
 
-  The code coverage data format is defined at:
-  https://chromium.googlesource.com/infra/infra/+/refs/heads/master/appengine/findit/model/proto/code_coverage.proto
-
   Args:
     host (str): The url of the host.
     project (str): The project name.
     change (int): The change number.
     patchset_src (int): The patchset number to rebase coverage data from.
     patchset_dest (int): The patchset number to rebase coverage data for.
-    coverage_data_src (list): A list of File coverage data of |patchset_src|.
+    coverage_data_src (list): A list of File in coverage proto.
 
   Returns:
-    A list of File coverage data of |patchset_dest|.
+    A list of File in coverage proto.
   """
   change_details = _FetchChangeDetails(host, project, change)
   files_to_rebase = [line_data['path'][2:] for line_data in coverage_data_src]
@@ -374,3 +376,130 @@ def _FetchFilesContentFromGerrit(host, project, change, patchset, file_paths,
     result.append(content)
 
   return result
+
+
+def CalculateAbsolutePercentages(coverage_data):
+  """Calculates absolute coverage percentages for the given coverage data.
+
+  Args:
+    coverage_data (list): A list of File in coverage proto.
+
+  Returns:
+    A list of CoveragePercentage model entities.
+  """
+  results = []
+  for per_file_data in coverage_data:
+    covered_lines = 0
+    total_lines = 0
+    for range_data in per_file_data['lines']:
+      num_lines = range_data['last'] - range_data['first'] + 1
+      total_lines += num_lines
+      covered_lines += num_lines if range_data['count'] > 0 else 0
+
+    assert total_lines > 0, (
+        'Valid coverage data is expected to have at least one executable file.')
+
+    results.append(
+        CoveragePercentage(
+            path=per_file_data['path'],
+            total_lines=total_lines,
+            covered_lines=covered_lines))
+
+  return results
+
+
+def CalculateIncrementalPercentages(host, project, change, patchset,
+                                    coverage_data):
+  """Calculates incremental coverage percentages for the given coverage data.
+
+  Here incremental means that ONLY lines added or modified by the patchset are
+  taken into consideration.
+
+  Args:
+    host (str): The url of the host.
+    project (str): The project name.
+    change (int): The change number.
+    patchset (int): The patchset number.
+    coverage_data (list): A list of File in coverage proto.
+
+  Returns:
+    A list of CoveragePercentage model entities.
+  """
+  change_details = _FetchChangeDetails(host, project, change)
+  diff = _FetchDiffForPatchset(host, project, change, patchset, change_details)
+  added_lines = diff_util.parse_added_line_num_from_unified_diff(
+      diff.splitlines())
+
+  results = []
+  for per_file_data in coverage_data:
+    path = per_file_data['path'][2:]
+    if path not in added_lines:
+      continue
+
+    covered_lines = 0
+    total_lines = 0
+    for range_data in per_file_data['lines']:
+      for line_num in xrange(range_data['first'], range_data['last'] + 1):
+        if line_num not in added_lines[path]:
+          continue
+
+        total_lines += 1
+        covered_lines += 1 if range_data['count'] > 0 else 0
+
+    if total_lines == 0:
+      continue
+
+    results.append(
+        CoveragePercentage(
+            path=per_file_data['path'],
+            total_lines=total_lines,
+            covered_lines=covered_lines))
+
+  return results
+
+
+def _FetchDiffForPatchset(host, project, change, patchset, change_details):
+  """Fetches unified diff for a given patchset.
+
+  Args:
+    host (str): The url of the host.
+    project (str): The project name.
+    change (int): The change number.
+    patchset (int): The patchset number.
+    change_details (dict): The format conforms to the ChangeInfo object:
+                           https://gerrit-review.googlesource.com/Documentation/rest-api-changes.html#change-info
+
+  Returns:
+    A string representing the unified diff for all the files in the patchset.
+  """
+  patchset_revision = _GetPatchsetRevision(patchset, change_details)
+  # https://gerrit-review.googlesource.com/Documentation/rest-api-changes.html#get-patch
+  url_template = 'https://%s/changes/%s/revisions/%s/patch'
+  url = url_template % (host, _GetChangeId(project, change), patchset_revision)
+  status_code, response, _ = FinditHttpClient().Get(url)
+  if status_code != 200:
+    raise RuntimeError(
+        'Failed to get change details with status code: %d' % status_code)
+
+  return base64.b64decode(response)
+
+
+def _GetPatchsetRevision(patchset, change_details):
+  """Gets the corresponding revision of a given patchset.
+
+  Args:
+    patchset (int): The patchset number.
+    change_details (dict): The format conforms to the ChangeInfo object:
+                           https://gerrit-review.googlesource.com/Documentation/rest-api-changes.html#change-info
+
+  Returns:
+    Returns a string representing the revision if found in the change details,
+    otherwise, a runtime error is raised.
+  """
+  for revision, value in change_details['revisions'].iteritems():
+    if patchset == value['_number']:
+      return revision
+
+  raise RuntimeError(
+      'Patchset %d is not found in the returned change details: %s' %
+      (patchset, json.dumps(change_details)))

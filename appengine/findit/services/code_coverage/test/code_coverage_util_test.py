@@ -5,7 +5,9 @@
 import base64
 import json
 import mock
+import textwrap
 
+from model.code_coverage import CoveragePercentage
 from services.code_coverage import code_coverage_util
 from waterfall.test.wf_testcase import WaterfallTestCase
 
@@ -206,7 +208,7 @@ class CodeCoverageUtilTest(WaterfallTestCase):
     ]
 
     coverage_data_src = [{
-        'path': 'base/test.cc',
+        'path': '//base/test.cc',
         'lines': [{
             'first': 1,
             'last': 3,
@@ -228,7 +230,7 @@ class CodeCoverageUtilTest(WaterfallTestCase):
             'first': 2,
             'last': 3,
         }],
-        'path': 'base/test.cc',
+        'path': '//base/test.cc',
     }], rebased_coverage_data)
 
   @mock.patch.object(code_coverage_util.FinditHttpClient, 'Get')
@@ -274,3 +276,117 @@ class CodeCoverageUtilTest(WaterfallTestCase):
             'last': 24
         }]
     }], rebased_coverage_data[0]['uncovered_blocks'])
+
+  def testCalculateAbsolutePercentages(self):
+    coverage_data = [{
+        'path':
+            '//base/test.cc',
+        'lines': [
+            {
+                'first': 1,
+                'last': 3,
+                'count': 10,
+            },
+            {
+                'first': 4,
+                'last': 6,
+                'count': 0,
+            },
+        ]
+    }]
+    results = code_coverage_util.CalculateAbsolutePercentages(coverage_data)
+    expected_results = [
+        CoveragePercentage(
+            path='//base/test.cc', total_lines=6, covered_lines=3)
+    ]
+    self.assertEqual(1, len(results))
+    self.assertListEqual(expected_results, results)
+
+  @mock.patch.object(code_coverage_util.FinditHttpClient, 'Get')
+  def testCalculateIncrementalPercentages(self, mock_http_client):
+    revisions = {'revisions': {'1234': {'_number': 1}}}
+    diff = textwrap.dedent('''\
+        From cb98d2c12f258d0121c3e415f4c63e6dd5511f83 Mon Sep 17 00:00:00 2001
+        From: Some One <someone@chromium.org>
+        Date: Tue, 11 Dec 2018 14:47:11 -0800
+        Subject: Some CL for Testing
+
+        Change-Id: I503907407fd941fe2539eb29be3a5ac57e393623
+        ---
+
+        diff --git a/base/test.cc b/base/test.cc
+        index 21cefcc4..b33e680 100644
+        --- a/base/test.cc
+        +++ b/base/test.cc
+        @@ -1,6 +1,6 @@
+         line 1
+         line 2
+        -line 3
+        -line 4
+        +line 3 changed
+        +line 4 changed
+         line 5
+         line 6''')
+
+    mock_http_client.side_effect = [
+        (200, ')]}\'' + json.dumps(revisions), None),
+        (200, base64.b64encode(diff), None),
+    ]
+
+    coverage_data = [{
+        'path':
+            '//base/test.cc',
+        'lines': [
+            {
+                'first': 1,
+                'last': 3,
+                'count': 10,
+            },
+            {
+                'first': 4,
+                'last': 6,
+                'count': 0,
+            },
+        ]
+    }]
+
+    results = code_coverage_util.CalculateIncrementalPercentages(
+        'chromium-review.googlesource.com', 'chromium/src', 12345, 1,
+        coverage_data)
+    expected_results = [
+        CoveragePercentage(
+            path='//base/test.cc', total_lines=2, covered_lines=1)
+    ]
+    self.assertEqual(1, len(results))
+    self.assertListEqual(expected_results, results)
+
+  @mock.patch.object(code_coverage_util.FinditHttpClient, 'Get')
+  def testCalculateIncrementalPercentagesZeroTotalLines(self, mock_http_client):
+    revisions = {'revisions': {'1234': {'_number': 1}}}
+    diff = textwrap.dedent('''\
+        diff --git a/base/test.cc b/base/test.cc
+        index 21cefcc4..b33e680 100644
+        --- a/base/test.cc
+        +++ b/base/test.cc
+        @@ -1,2 +1,1 @@
+         line 1
+        -line 2''')
+
+    mock_http_client.side_effect = [
+        (200, ')]}\'' + json.dumps(revisions), None),
+        (200, base64.b64encode(diff), None),
+    ]
+
+    coverage_data = [{
+        'path': '//base/test.cc',
+        'lines': [{
+            'first': 1,
+            'last': 3,
+            'count': 10,
+        },]
+    }]
+
+    results = code_coverage_util.CalculateIncrementalPercentages(
+        'chromium-review.googlesource.com', 'chromium/src', 12345, 1,
+        coverage_data)
+    self.assertEqual(0, len(results))

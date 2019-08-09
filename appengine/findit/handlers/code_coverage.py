@@ -1,7 +1,11 @@
 # Copyright 2018 The Chromium Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
-"""This module is to process the code coverage metadata."""
+"""This module is to process the code coverage metadata.
+
+The code coverage data format is defined at:
+https://chromium.googlesource.com/infra/infra/+/refs/heads/master/appengine/findit/model/proto/code_coverage.proto.
+"""
 
 import collections
 import json
@@ -656,7 +660,7 @@ class ProcessCodeCoverageData(BaseHandler):
         queue_name='code-coverage-fetch-source-file',
         params=params)
 
-  def _ProcessCLPatchData(self, patch, data, build_id):
+  def _ProcessCLPatchData(self, patch, coverage_data, build_id):
     """Processes and updates coverage data for per-cl build.
 
     Part of the responsibility of this method is to calculate per-file coverage
@@ -666,37 +670,24 @@ class ProcessCodeCoverageData(BaseHandler):
     2. For metrics tracking to understand the impact of the coverage data.
 
     Args:
-      patch (tuple): A tuple of two properties: change (int) and patchset (int).
-      data (list): A list of dicts with the following properties:
-                     'path': Source absolute path to the source file.
-                     'lines': A list of dicts with the following properties:
-                       'count': #times the range is executed.
-                       'first': Starting line number of the range (inclusive).
-                       'last': Ending line number of the range (inclusive).
+      patch (buildbucket.v2.GerritChange): A gerrit change with fields: host,
+                                           project, change, patchset.
+      coverage_data (list): A list of File in coverage proto.
       build_id (int): Id of the build to process coverage data for.
     """
-    # Calculate absolute coverage percentage.
-    for per_file_data in data:
-      num_covered_lines = 0
-      num_total_lines = 0
-      for range_data in per_file_data['lines']:
-        num_lines = range_data['last'] - range_data['first'] + 1
-        num_total_lines += num_lines
-        if range_data['count'] > 0:
-          num_covered_lines += num_lines
-
-      absolute_percentage = (100 * num_covered_lines) / num_total_lines
-      per_file_data['covered_lines'] = num_covered_lines
-      per_file_data['total_lines'] = num_total_lines
-      per_file_data['absolute_coverage_percentage'] = absolute_percentage
-
-    # For a CL/patch, we save the entire data in one entity.
-    PresubmitCoverageData.Create(
+    entity = PresubmitCoverageData.Create(
         server_host=patch.host,
         change=patch.change,
         patchset=patch.patchset,
         build_id=build_id,
-        data=data).put()
+        data=coverage_data)
+    entity.absolute_percentages = (
+        code_coverage_util.CalculateAbsolutePercentages(coverage_data))
+    entity.incremental_percentages = (
+        code_coverage_util.CalculateIncrementalPercentages(
+            patch.host, patch.project, patch.change, patch.patchset,
+            coverage_data))
+    entity.put()
 
   def _processCodeCoverageData(self, build_id):
     build = GetV2Build(

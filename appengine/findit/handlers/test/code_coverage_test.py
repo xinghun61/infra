@@ -13,11 +13,13 @@ from google.appengine.ext import ndb
 from gae_libs.handlers.base_handler import BaseHandler
 from handlers import code_coverage
 from libs.gitiles.gitiles_repository import GitilesRepository
+from model.code_coverage import CoveragePercentage
 from model.code_coverage import DependencyRepository
 from model.code_coverage import FileCoverageData
 from model.code_coverage import PostsubmitReport
 from model.code_coverage import PresubmitCoverageData
 from model.code_coverage import SummaryCoverageData
+from services.code_coverage import code_coverage_util
 from waterfall.test.wf_testcase import WaterfallTestCase
 
 
@@ -245,11 +247,14 @@ class ProcessCodeCoverageDataTest(WaterfallTestCase):
   ],
                                        debug=True)
 
+  @mock.patch.object(code_coverage_util, 'CalculateIncrementalPercentages')
+  @mock.patch.object(code_coverage_util, 'CalculateAbsolutePercentages')
   @mock.patch.object(code_coverage, '_GetValidatedData')
   @mock.patch.object(code_coverage, 'GetV2Build')
   @mock.patch.object(BaseHandler, 'IsRequestFromAppSelf', return_value=True)
   def testProcessCLPatchData(self, mocked_is_request_from_appself,
-                             mocked_get_build, mocked_get_validated_data):
+                             mocked_get_build, mocked_get_validated_data,
+                             mocked_abs_percentages, mocked_inc_percentages):
     # Mock buildbucket v2 API.
     build = mock.Mock()
     build.builder.project = 'chromium'
@@ -263,7 +268,10 @@ class ProcessCodeCoverageDataTest(WaterfallTestCase):
     ]
     build.input.gerrit_changes = [
         mock.Mock(
-            host='chromium-review.googlesource.com', change=138000, patchset=4)
+            host='chromium-review.googlesource.com',
+            project='chromium/src',
+            change=138000,
+            patchset=4)
     ]
     mocked_get_build.return_value = build
 
@@ -291,6 +299,18 @@ class ProcessCodeCoverageDataTest(WaterfallTestCase):
     }
     mocked_get_validated_data.return_value = coverage_data
 
+    abs_percentages = [
+        CoveragePercentage(
+            path='//dir/test.cc', total_lines=2, covered_lines=1)
+    ]
+    mocked_abs_percentages.return_value = abs_percentages
+
+    inc_percentages = [
+        CoveragePercentage(
+            path='//dir/test.cc', total_lines=1, covered_lines=1)
+    ]
+    mocked_inc_percentages.return_value = inc_percentages
+
     request_url = '/coverage/task/process-data/build/123456789'
     response = self.test_app.post(request_url)
     self.assertEqual(200, response.status_int)
@@ -306,15 +326,12 @@ class ProcessCodeCoverageDataTest(WaterfallTestCase):
         patchset=4,
         build_id=123456789,
         data=coverage_data['files'])
+    expected_entity.absolute_percentages = abs_percentages
+    expected_entity.incremental_percentages = inc_percentages
     fetched_entities = PresubmitCoverageData.query().fetch()
 
     self.assertEqual(1, len(fetched_entities))
     self.assertEqual(expected_entity, fetched_entities[0])
-    data = fetched_entities[0].data
-    self.assertEqual('//dir/test.cc', data[0]['path'])
-    self.assertEqual(1, data[0]['covered_lines'])
-    self.assertEqual(2, data[0]['total_lines'])
-    self.assertEqual(50, data[0]['absolute_coverage_percentage'])
 
   @mock.patch.object(code_coverage.ProcessCodeCoverageData,
                      '_FetchAndSaveFileIfNecessary')
