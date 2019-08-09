@@ -20,6 +20,11 @@ def builder(name, recipe, builder_dimension=None, cores=8, **kwargs):
           'cores': str(cores),
           'builderless': '1',
       },
+      properties = {
+          '$gatekeeper': {
+              'group': 'infra.cron',
+          },
+      },
       **kwargs
   )
   luci.list_view_entry(
