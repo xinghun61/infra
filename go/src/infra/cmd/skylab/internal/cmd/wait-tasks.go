@@ -56,8 +56,8 @@ func (c *waitTasksRun) innerRun(a subcommands.Application, args []string, env su
 	uniqueIDs := stringset.NewFromSlice(args...)
 
 	ctx := cli.GetContext(a, c, env)
-	ctx, cancel := withTimeout(ctx, c.timeoutMins)
-	defer cancel()
+	ctx, cancel := maybeWithTimeout(ctx, c.timeoutMins)
+	defer cancel(context.Canceled)
 
 	var results <-chan waitItem
 	var err error
@@ -128,7 +128,14 @@ func consumeToMap(ctx context.Context, items int, results <-chan waitItem) (map[
 			return resultMap, ctx.Err()
 		case r, ok := <-results:
 			if !ok {
-				return resultMap, errors.New("results channel closed unexpectedly")
+				// Context and result channel close nearly simultaneously in case
+				// of wait-tasks timeout. In such a case, it is preferable to
+				// return the context's error message, which is more informative.
+				err := ctx.Err()
+				if err == nil {
+					errors.New("results channel closed unexpectedly")
+				}
+				return resultMap, err
 			}
 			if r.err != nil {
 				return resultMap, r.err

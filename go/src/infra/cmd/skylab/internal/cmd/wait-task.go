@@ -81,15 +81,15 @@ func (c *waitTaskRun) innerRunSwarming(a subcommands.Application, env subcommand
 	}
 
 	ctx := cli.GetContext(a, c, env)
-	ctx, cancel := withTimeout(ctx, c.timeoutMins)
-	defer cancel()
+	ctx, cancel := maybeWithTimeout(ctx, c.timeoutMins)
+	defer cancel(context.Canceled)
 
 	client, err := swarmingClient(ctx, c.authFlags, c.envFlags.Env())
+	if err != nil {
+		return nil, err
+	}
 
 	if err = waitSwarmingTask(ctx, taskID, client); err != nil {
-		if err == context.DeadlineExceeded {
-			return nil, errors.New("timed out waiting for task to complete")
-		}
 		return nil, err
 	}
 
@@ -116,8 +116,8 @@ func (c *waitTaskRun) innerRunBuildbucket(a subcommands.Application, env subcomm
 	}
 
 	ctx := cli.GetContext(a, c, env)
-	ctx, cancel := withTimeout(ctx, c.timeoutMins)
-	defer cancel()
+	ctx, cancel := maybeWithTimeout(ctx, c.timeoutMins)
+	defer cancel(context.Canceled)
 
 	bClient, err := bbClient(ctx, c.envFlags.Env(), c.authFlags)
 	if err != nil {
