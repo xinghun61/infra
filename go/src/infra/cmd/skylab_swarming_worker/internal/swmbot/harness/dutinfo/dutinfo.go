@@ -39,14 +39,17 @@ func (s *Store) Close() error {
 	}
 	c := s.DUT.GetCommon()
 	new := c.GetLabels()
+	inventory.SortLabels(new)
+	old := s.oldLabels
+	inventory.SortLabels(old)
 	if new.GetUselessSwitch() {
 		*new.UselessSwitch = false
 	}
-	if proto.Equal(new, s.oldLabels) {
+	if proto.Equal(new, old) {
 		log.Printf("Skipping label update since there are no changes")
 		return nil
 	}
-	log.Printf("Labels changed from %s to %s", s.oldLabels.String(), new.String())
+	log.Printf("Labels changed from %s to %s", old.String(), new.String())
 	log.Printf("Calling label update function")
 	if err := s.updateFunc(c.GetId(), new); err != nil {
 		return errors.Annotate(err, "close DUT inventory").Err()

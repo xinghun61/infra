@@ -10,6 +10,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"time"
 
@@ -101,4 +102,49 @@ func oneShotWriteFile(dataDir, fileName string, data string) error {
 	}
 	f = nil
 	return nil
+}
+
+// SortLabels takes a SchedulableLabels and destructively canonicalizes it.
+// If two SchedulableLabels are equal post-canonicalization,
+// then they represent the "same" thing.
+// An arbitrary SchedulableLabels is not necessarily in canonical form.
+// For example, the VideoAcceleration labels are not guaranteed to be sorted.
+// In order to use proto.Equal, we must canonicalize first.
+func SortLabels(labels *SchedulableLabels) {
+	{
+		p := labels.CriticalPools
+		sort.Slice(p, func(i, j int) bool {
+			return p[i] < p[j]
+		})
+	}
+	{
+		abi := labels.CtsAbi
+		sort.Slice(abi, func(i, j int) bool {
+			return abi[i] < abi[j]
+		})
+	}
+	{
+		cpu := labels.CtsCpu
+		sort.Slice(cpu, func(i, j int) bool {
+			return cpu[i] < cpu[j]
+		})
+	}
+	{
+		p := labels.SelfServePools
+		sort.Slice(p, func(i, j int) bool {
+			return p[i] < p[j]
+		})
+	}
+	{
+		v := labels.Variant
+		sort.Slice(v, func(i, j int) bool {
+			return v[i] < v[j]
+		})
+	}
+	{
+		v := labels.Capabilities.VideoAcceleration
+		sort.Slice(v, func(i, j int) bool {
+			return v[i] < v[j]
+		})
+	}
 }
