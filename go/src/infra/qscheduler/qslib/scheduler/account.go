@@ -66,7 +66,7 @@ func nextBalance(balance Balance, c *protos.AccountConfig, elapsedSecs float32, 
 		// if the account value is already above cap we want to leave it there.
 		// It likley got over cap due to preemption reimbursement.
 		if val < maxBalance {
-			val += elapsedSecs * c.ChargeRate[priority]
+			val += elapsedSecs * chargeRate
 			if val > maxBalance {
 				val = maxBalance
 			}
