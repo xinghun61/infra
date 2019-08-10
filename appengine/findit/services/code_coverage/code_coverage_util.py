@@ -274,19 +274,33 @@ def RebasePresubmitCoverageDataBetweenPatchsets(
     A list of File in coverage proto.
   """
   change_details = _FetchChangeDetails(host, project, change)
-  files_to_rebase = [line_data['path'][2:] for line_data in coverage_data_src]
+
+  # Cannot directly use the list of files of |patchset_src| as the files to
+  # rebase because two patchsets could have different list of changed files even
+  # though they're trivial-rebase away. This could happen when for example,
+  # patchset1 of a CL modifies file1 and file2, and the changes to file2 are
+  # extracted to another CL and landed, then this CL is rebased to patchset2 so
+  # that only file1 is modified now.
+  patchset_dest_files = _FetchPatchsetFiles(
+      host, project, change, _GetPatchsetRevision(patchset_dest,
+                                                  change_details))
+  coverage_data = [
+      d for d in coverage_data_src if d['path'][2:] in patchset_dest_files
+  ]
 
   # TODO(crbug.com/910289): Parallelize the requests to get file content.
-  files_content_src = _FetchFilesContentFromGerrit(
-      host, project, change, patchset_src, files_to_rebase, change_details)
-  files_content_dest = _FetchFilesContentFromGerrit(
-      host, project, change, patchset_dest, files_to_rebase, change_details)
-
-  assert len(files_content_src) == len(files_content_dest)
+  files_content = {}
+  for d in coverage_data:
+    f = d['path'][2:]
+    files_content[f] = [
+        _FetchFileContentFromGerrit(host, project, change, f,
+                                    _GetPatchsetRevision(ps, change_details))
+        for ps in (patchset_src, patchset_dest)
+    ]
 
   coverage_data_dest = []
-  for line_data_src, content_src, content_dest in zip(
-      coverage_data_src, files_content_src, files_content_dest):
+  for file_data_src in coverage_data:
+    content_src, content_dest = files_content[file_data_src['path'][2:]]
     diff_lines = list(
         difflib.unified_diff(content_src.splitlines(),
                              content_dest.splitlines()))
@@ -294,7 +308,7 @@ def RebasePresubmitCoverageDataBetweenPatchsets(
                                                      content_src.splitlines(),
                                                      content_dest.splitlines())
 
-    lines_src = DecompressLineRanges(line_data_src['lines'])
+    lines_src = DecompressLineRanges(file_data_src['lines'])
     lines_dest = []
     for line in lines_src:
       if line['line'] not in mapping:
@@ -305,7 +319,7 @@ def RebasePresubmitCoverageDataBetweenPatchsets(
           'count': line['count']
       })
 
-    blocks_src = line_data_src.get('uncovered_blocks', [])
+    blocks_src = file_data_src.get('uncovered_blocks', [])
     blocks_dest = []
     for block in blocks_src:
       if block['line'] not in mapping:
@@ -317,7 +331,7 @@ def RebasePresubmitCoverageDataBetweenPatchsets(
       })
 
     line_data_dest = {
-        'path': line_data_src['path'],
+        'path': file_data_src['path'],
         'lines': CompressLines(lines_dest),
     }
     if blocks_dest:
@@ -325,57 +339,64 @@ def RebasePresubmitCoverageDataBetweenPatchsets(
 
     coverage_data_dest.append(line_data_dest)
 
-  # TODO(crbug.com/910289): Filter the coverage data by list of files that are
-  # actually changed by the patchset.
   return coverage_data_dest
 
 
-def _FetchFilesContentFromGerrit(host, project, change, patchset, file_paths,
-                                 change_details):
-  """Fetches file content for a list of files from Gerrit.
+def _FetchPatchsetFiles(host, project, change, patchset_revision):
+  """Fetches the list of files modified, added or deleted by a patchset.
 
   Args:
     host (str): The url of the host.
     project (str): The project name.
     change (int): The change number.
-    patchset (int): The patchset number.
-    file_paths (list): A list of file paths that are relative to the checkout.
-    change_details (dict): The format conforms to the ChangeInfo object:
-                           https://gerrit-review.googlesource.com/Documentation/rest-api-changes.html#change-info
+    patchset_revision (str): The commit id of the patchset.
 
   Returns:
-    A list of String where each one corresponds to the content of each file.
+    A list of dict that conforms to the FileInfo object:
+    https://gerrit-review.googlesource.com/Documentation/rest-api-changes.html#file-info
   """
-  patchset_revision = None
-  for revision, value in change_details['revisions'].iteritems():
-    if patchset == value['_number']:
-      patchset_revision = revision
-      break
-
-  if not patchset_revision:
+  # https://gerrit-review.googlesource.com/Documentation/rest-api-changes.html#list-files
+  template_to_get_change = 'https://%s/changes/%s/revisions/%s/files'
+  url = template_to_get_change % (host, _GetChangeId(project, change),
+                                  patchset_revision)
+  status_code, response, _ = FinditHttpClient().Get(url)
+  if status_code != 200:
     raise RuntimeError(
-        'Patchset %d is not found in the returned change details: %s' %
-        (patchset, json.dumps(change_details)))
+        'Failed to get change details with status code: %d, response: %s' %
+        status_code, response)
 
-  result = []
-  # TODO(crbug.com/910289): Parallelize the requests to get file content.
-  for file_path in file_paths:
-    # Uses the Get Content API to get the file content from Gerrit.
-    # https://gerrit-review.googlesource.com/Documentation/rest-api-changes.html#get-content
-    quoted_file_path = urllib2.quote(file_path, safe='')
-    url = ('https://%s/changes/%s/revisions/%s/files/%s/content' %
-           (host, _GetChangeId(project, change), patchset_revision,
-            quoted_file_path))
+  # Remove XSSI magic prefix
+  if response.startswith(')]}\''):
+    response = response[4:]
 
-    status_code, response, _ = FinditHttpClient().Get(url)
-    if status_code != 200:
-      raise RuntimeError(
-          'Failed to get change details with status code: %d' % status_code)
+  return json.loads(response)
 
-    content = base64.b64decode(response)
-    result.append(content)
 
-  return result
+def _FetchFileContentFromGerrit(host, project, change, file_path,
+                                patchset_revision):
+  """Fetches file content for a given file from Gerrit.
+
+  Args:
+    host (str): The url of the host.
+    project (str): The project name.
+    change (int): The change number.
+    file_path (str): A file path that is relative to the checkout.
+    patchset_revision (str): The commit id of the patchset.
+
+  Returns:
+    A string representing the content of the file.
+  """
+  # Uses the Get Content API to get the file content from Gerrit.
+  # https://gerrit-review.googlesource.com/Documentation/rest-api-changes.html#get-content
+  quoted_file_path = urllib2.quote(file_path, safe='')
+  url = ('https://%s/changes/%s/revisions/%s/files/%s/content' % (
+      host, _GetChangeId(project, change), patchset_revision, quoted_file_path))
+  status_code, response, _ = FinditHttpClient().Get(url)
+  if status_code != 200:
+    raise RuntimeError(
+        'Failed to get change details with status code: %d' % status_code)
+
+  return base64.b64decode(response)
 
 
 def CalculateAbsolutePercentages(coverage_data):
@@ -426,7 +447,8 @@ def CalculateIncrementalPercentages(host, project, change, patchset,
     A list of CoveragePercentage model entities.
   """
   change_details = _FetchChangeDetails(host, project, change)
-  diff = _FetchDiffForPatchset(host, project, change, patchset, change_details)
+  diff = _FetchDiffForPatchset(host, project, change,
+                               _GetPatchsetRevision(patchset, change_details))
   added_lines = diff_util.parse_added_line_num_from_unified_diff(
       diff.splitlines())
 
@@ -458,7 +480,7 @@ def CalculateIncrementalPercentages(host, project, change, patchset,
   return results
 
 
-def _FetchDiffForPatchset(host, project, change, patchset, change_details):
+def _FetchDiffForPatchset(host, project, change, patchset_revision):
   """Fetches unified diff for a given patchset.
 
   Args:
@@ -466,13 +488,11 @@ def _FetchDiffForPatchset(host, project, change, patchset, change_details):
     project (str): The project name.
     change (int): The change number.
     patchset (int): The patchset number.
-    change_details (dict): The format conforms to the ChangeInfo object:
-                           https://gerrit-review.googlesource.com/Documentation/rest-api-changes.html#change-info
+    patchset_revision (str): The commit id of the patchset.
 
   Returns:
     A string representing the unified diff for all the files in the patchset.
   """
-  patchset_revision = _GetPatchsetRevision(patchset, change_details)
   # https://gerrit-review.googlesource.com/Documentation/rest-api-changes.html#get-patch
   url_template = 'https://%s/changes/%s/revisions/%s/patch'
   url = url_template % (host, _GetChangeId(project, change), patchset_revision)

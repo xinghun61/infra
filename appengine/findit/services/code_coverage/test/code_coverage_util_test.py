@@ -199,10 +199,12 @@ class CodeCoverageUtilTest(WaterfallTestCase):
   @mock.patch.object(code_coverage_util.FinditHttpClient, 'Get')
   def testRebasePresubmitCoverageDataLinesOnly(self, mock_http_client):
     revisions = {'revisions': {'1234': {'_number': 1}, '5678': {'_number': 2}}}
+    patchset_dest_files = {'/COMMIT_MSG': {'status': 'A'}, 'base/test.cc': {}}
     file_content_src = '1\n2\n3\n'
     file_content_dest = '0 added\n1\n2\n3 changed\n'
     mock_http_client.side_effect = [
         (200, ')]}\'' + json.dumps(revisions), None),
+        (200, ')]}\'' + json.dumps(patchset_dest_files), None),
         (200, base64.b64encode(file_content_src), None),
         (200, base64.b64encode(file_content_dest), None),
     ]
@@ -236,17 +238,19 @@ class CodeCoverageUtilTest(WaterfallTestCase):
   @mock.patch.object(code_coverage_util.FinditHttpClient, 'Get')
   def testRebasePresubmitCoverageDataLinesAndBlocks(self, mock_http_client):
     revisions = {'revisions': {'1234': {'_number': 1}, '5678': {'_number': 2}}}
+    patchset_dest_files = {'/COMMIT_MSG': {'status': 'A'}, 'base/test.cc': {}}
     file_content_src = '1\n2\n3\n'
     file_content_dest = '0 added\n1\n2\n3 changed\n'
     mock_http_client.side_effect = [
         (200, ')]}\'' + json.dumps(revisions), None),
+        (200, ')]}\'' + json.dumps(patchset_dest_files), None),
         (200, base64.b64encode(file_content_src), None),
         (200, base64.b64encode(file_content_dest), None),
     ]
 
     coverage_data_src = [{
         'path':
-            'base/test.cc',
+            '//base/test.cc',
         'lines': [{
             'first': 1,
             'last': 3,
@@ -390,3 +394,48 @@ class CodeCoverageUtilTest(WaterfallTestCase):
         'chromium-review.googlesource.com', 'chromium/src', 12345, 1,
         coverage_data)
     self.assertEqual(0, len(results))
+
+  # Tests the scenario when two patchsets have different set of changed files
+  # Even when they're traivial rebase away.
+  @mock.patch.object(code_coverage_util.FinditHttpClient, 'Get')
+  def testRebasePresubmitCoverageDataFileIsDroped(self, mock_http_client):
+    revisions = {'revisions': {'1234': {'_number': 1}, '5678': {'_number': 2}}}
+    patchset_dest_files = {'/COMMIT_MSG': {'status': 'A'}, 'base/test1.cc': {}}
+    file_content_src = '1\n2\n3\n'
+    file_content_dest = '0 added\n1\n2\n3 changed\n'
+    mock_http_client.side_effect = [
+        (200, ')]}\'' + json.dumps(revisions), None),
+        (200, ')]}\'' + json.dumps(patchset_dest_files), None),
+        (200, base64.b64encode(file_content_src), None),
+        (200, base64.b64encode(file_content_dest), None),
+    ]
+
+    coverage_data_src = [
+        {
+            'path': '//base/test1.cc',
+            'lines': [{
+                'first': 1,
+                'last': 3,
+                'count': 10,
+            }]
+        },
+        {
+            'path': '//base/test2.cc',
+            'lines': [{
+                'first': 7,
+                'last': 9,
+                'count': 20,
+            }]
+        },
+    ]
+    rebased_coverage_data = (
+        code_coverage_util.RebasePresubmitCoverageDataBetweenPatchsets(
+            host='chromium-review.googlesource.com',
+            project='chromium/src',
+            change=12345,
+            patchset_src=1,
+            patchset_dest=2,
+            coverage_data_src=coverage_data_src))
+
+    self.assertEqual(1, len(rebased_coverage_data))
+    self.assertEqual('//base/test1.cc', rebased_coverage_data[0]['path'])
