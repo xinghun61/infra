@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/maruel/subcommands"
@@ -18,6 +19,7 @@ import (
 	"go.chromium.org/luci/common/errors"
 	"go.chromium.org/luci/grpc/prpc"
 
+	"go.chromium.org/chromiumos/infra/proto/go/lab_platform"
 	"go.chromium.org/chromiumos/infra/proto/go/test_platform/skylab_local_state"
 	fleet "infra/appengine/crosskylabadmin/api/fleet/v1"
 	"infra/libs/skylab/inventory"
@@ -31,7 +33,16 @@ func Load(authOpts auth.Options) *subcommands.Command {
 		ShortDesc: "Gather DUT labels and attributes into a host info file.",
 		LongDesc: `Gather DUT labels and attributes into a host info file.
 
-	Placeholder only, not yet implemented.`,
+Get static labels and attributes from the inventory service and provisionable
+labels and attributes from the local bot state cache file.
+
+Write all labels and attributes as a
+test_platform/skylab_local_state/host_info.proto JSON-pb to the host info store
+file inside the results directory.
+
+Write provisionable labels and DUT hostname as a LoadResponse JSON-pb to
+stdout.
+`,
 		CommandRun: func() subcommands.CommandRun {
 			c := &loadRun{}
 
@@ -97,32 +108,34 @@ func (c *loadRun) innerRun(a subcommands.Application, args []string, env subcomm
 		return err
 	}
 
-	dut, err := getDutInfo(ctx, client, request.DutId)
+	dut, err := getDutInfo(ctx, client, request.DutName)
 	if err != nil {
 		return err
 	}
 
-	dutName := dut.GetCommon().GetHostname()
-	if dutName == "" {
-		return fmt.Errorf("Empty host name")
+	dutID := dut.GetCommon().GetId()
+	if dutID == "" {
+		return fmt.Errorf("No DUT ID for %s", request.DutName)
 	}
 
 	hostInfo := hostInfoFromDutInfo(dut)
 
-	// TODO(zamorzaev): read provisionable labels and attributes from bot state file.
-	if err := writeHostInfo(request.ResultsDir, dutName, hostInfo); err != nil {
+	dutState, err := getDutState(request.Config.AutotestDir, dutID)
+	if err != nil {
+		return err
+	}
+
+	addDutStateToHostInfo(hostInfo, dutState)
+
+	if err := writeHostInfo(request.ResultsDir, request.DutName, hostInfo); err != nil {
 		return err
 	}
 
 	response := skylab_local_state.LoadResponse{
-		DutName: dutName,
+		ProvisionableLabels: dutState.ProvisionableLabels,
 	}
 
-	if err := writeJSONPb(c.outputPath, &response); err != nil {
-		return err
-	}
-
-	return nil
+	return writeJSONPb(c.outputPath, &response)
 }
 
 func validateRequest(request *skylab_local_state.LoadRequest) error {
@@ -130,16 +143,26 @@ func validateRequest(request *skylab_local_state.LoadRequest) error {
 		return fmt.Errorf("nil request")
 	}
 
+	var missingArgs []string
+
 	if request.Config.GetAdminService() == "" {
-		return fmt.Errorf("no admin service provided")
+		missingArgs = append(missingArgs, "admin service")
+	}
+
+	if request.Config.GetAutotestDir() == "" {
+		missingArgs = append(missingArgs, "autotest dir")
 	}
 
 	if request.ResultsDir == "" {
-		return fmt.Errorf("no results dir provided")
+		missingArgs = append(missingArgs, "results dir")
 	}
 
-	if request.DutId == "" {
-		return fmt.Errorf("no DUT ID provided")
+	if request.DutName == "" {
+		missingArgs = append(missingArgs, "DUT hostname")
+	}
+
+	if len(missingArgs) > 0 {
+		return fmt.Errorf("no %s provided", strings.Join(missingArgs, ", "))
 	}
 
 	return nil
@@ -168,8 +191,8 @@ func newInventoryClient(ctx context.Context, adminService string, authFlags *aut
 }
 
 // getDutInfo fetches the DUT inventory entry from the admin service.
-func getDutInfo(ctx context.Context, client fleet.InventoryClient, dutID string) (*inventory.DeviceUnderTest, error) {
-	resp, err := client.GetDutInfo(ctx, &fleet.GetDutInfoRequest{Id: dutID})
+func getDutInfo(ctx context.Context, client fleet.InventoryClient, dutName string) (*inventory.DeviceUnderTest, error) {
+	resp, err := client.GetDutInfo(ctx, &fleet.GetDutInfoRequest{Hostname: dutName})
 	if err != nil {
 		return nil, errors.Annotate(err, "get DUT info").Err()
 	}
@@ -185,16 +208,38 @@ const currentSerializerVersion = 1
 // hostInfoFromDutInfo extracts attributes and labels from an inventory
 // entry and assembles them into a host info file proto.
 func hostInfoFromDutInfo(dut *inventory.DeviceUnderTest) *skylab_local_state.AutotestHostInfo {
-	hostInfo := skylab_local_state.AutotestHostInfo{
+	i := skylab_local_state.AutotestHostInfo{
 		Attributes:        map[string]string{},
 		Labels:            labels.Convert(dut.Common.GetLabels()),
 		SerializerVersion: currentSerializerVersion,
 	}
 
 	for _, attribute := range dut.Common.GetAttributes() {
-		hostInfo.Attributes[attribute.GetKey()] = attribute.GetValue()
+		i.Attributes[attribute.GetKey()] = attribute.GetValue()
 	}
-	return &hostInfo
+	return &i
+}
+
+// getDutState reads the local bot state from the cache file.
+func getDutState(autotestDir string, dutID string) (*lab_platform.DutState, error) {
+	fileName := dutID + dutStateFileSuffix
+	filePath := filepath.Join(autotestDir, dutStateSubDir, fileName)
+	s := lab_platform.DutState{}
+	if err := readJSONPb(filePath, &s); err != nil {
+		return nil, errors.Annotate(err, "get bot state").Err()
+	}
+	return &s, nil
+}
+
+// addDutStateToHostInfo adds provisionable labels and attributes from
+// the bot state to the host info labels and attributes.
+func addDutStateToHostInfo(hostInfo *skylab_local_state.AutotestHostInfo, dutState *lab_platform.DutState) {
+	for label, value := range dutState.GetProvisionableLabels() {
+		hostInfo.Labels = append(hostInfo.Labels, label+":"+value)
+	}
+	for attribute, value := range dutState.GetProvisionableAttributes() {
+		hostInfo.Attributes[attribute] = value
+	}
 }
 
 // writeHostInfo writes a JSON-encoded AutotestHostInfo proto to the

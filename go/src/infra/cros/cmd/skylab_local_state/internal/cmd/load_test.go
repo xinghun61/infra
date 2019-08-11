@@ -10,6 +10,7 @@ import (
 
 	. "github.com/smartystreets/goconvey/convey"
 
+	"go.chromium.org/chromiumos/infra/proto/go/lab_platform"
 	"go.chromium.org/chromiumos/infra/proto/go/test_platform/skylab_local_state"
 	"infra/libs/skylab/inventory"
 )
@@ -56,6 +57,49 @@ func TestDutInfoToHostInfoConversion(t *testing.T) {
 		}
 
 		So(want, ShouldResemble, got)
+	})
+}
+
+func TestAddBotStateToHostInfo(t *testing.T) {
+	Convey("When host info is updated from bot info the resulting labels and attributes are correct.", t, func() {
+		hostInfo := &skylab_local_state.AutotestHostInfo{
+			Attributes: map[string]string{
+				"attribute1": "value1",
+			},
+			Labels: []string{
+				"label2:value2",
+			},
+			SerializerVersion: 1,
+		}
+
+		s := &lab_platform.DutState{
+			State: "ready",
+			ProvisionableAttributes: map[string]string{
+				"attribute3": "value3",
+			},
+			ProvisionableLabels: map[string]string{
+				"label4": "value4",
+			},
+		}
+
+		addDutStateToHostInfo(hostInfo, s)
+
+		// There's no guarantee on the order.
+		sort.Strings(hostInfo.Labels)
+
+		want := &skylab_local_state.AutotestHostInfo{
+			Attributes: map[string]string{
+				"attribute1": "value1",
+				"attribute3": "value3",
+			},
+			Labels: []string{
+				"label2:value2",
+				"label4:value4",
+			},
+			SerializerVersion: 1,
+		}
+
+		So(want, ShouldResemble, hostInfo)
 	})
 }
 

@@ -15,6 +15,8 @@ import (
 const (
 	hostInfoSubDir     = "host_info_store"
 	hostInfoFileSuffix = ".store"
+	dutStateSubDir     = "swarming_state"
+	dutStateFileSuffix = ".json"
 )
 
 // readJSONPb reads a JSON string from inFile and unpacks it as a proto.
