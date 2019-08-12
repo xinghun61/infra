@@ -205,7 +205,7 @@ class Flake(ndb.Model):
   # to services/step.py (with a better name) for reuse by other code once the
   # base_test_target field is in place.
   @staticmethod
-  def NormalizeStepName(build_id, step_name):
+  def NormalizeStepName(build_id, step_name, partial_match=True):
     """Normalizes step name according to the above mentioned definitions.
 
     The most reliable solution to obtain base test target names is to add a
@@ -220,13 +220,16 @@ class Flake(ndb.Model):
     Args:
       build_id: Build id of the build of the step.
       step_name: The original step name, and it may contain hardware information
-                 and 'with(out) patch' suffixes.
+        and 'with(out) patch' suffixes.
+      partial_match: If the step_name is not found among the steps in the
+        builder, allow the function to retrieve step metadata from a step whose
+        name contains step_name as a prefix.
 
     Returns:
       Normalized version of the given step name.
     """
     isolate_target_name = step_util.GetIsolateTargetName(
-        build_id=build_id, step_name=step_name)
+        build_id=build_id, step_name=step_name, partial_match=partial_match)
     if isolate_target_name:
       if 'webkit_layout_tests' in isolate_target_name:
         return 'webkit_layout_tests'
@@ -239,7 +242,7 @@ class Flake(ndb.Model):
         'Failed to obtain isolate_target_name for step: %s in build id: %s. '
         'Fall back to use canonical_step_name.', step_name, build_id)
     canonical_step_name = step_util.GetCanonicalStepName(
-        build_id=build_id, step_name=step_name)
+        build_id=build_id, step_name=step_name, partial_match=partial_match)
     if canonical_step_name:
       return canonical_step_name
 

@@ -255,31 +255,34 @@ class StepUtilTest(wf_testcase.WaterfallTestCase):
 
   @parameterized.expand([
       ({
-          'build_return': Build(),
           'step_log_return': wf_testcase.SAMPLE_STEP_METADATA,
           'expected_step_metadata': wf_testcase.SAMPLE_STEP_METADATA
       },),
       ({
-          'build_return': Build(),
+          'step_log_return': wf_testcase.SAMPLE_STEP_METADATA,
+          'expected_step_metadata': wf_testcase.SAMPLE_STEP_METADATA
+      },),
+      ({
           'step_log_return': None,
           'expected_step_metadata': None
       },),
       ({
-          'build_return': None,
+          'step_log_return': None,
           'expected_step_metadata': None
       },),
   ])
-  @mock.patch.object(step_util, 'GetStepLogFromBuildObject')
-  @mock.patch.object(buildbucket_client, 'GetV2Build')
-  def testGetStepMetadata(self, cases, mock_build, mock_step_log):
-    mock_build.return_value = cases['build_return']
-    # Function executes GetStepLogFromBuildObject
-    if 'step_log_return' in cases:
-      mock_step_log.return_value = cases['step_log_return']
-
+  @mock.patch.object(step_util, 'GetStepLogForLuciBuild')
+  def testGetStepMetadata(self, cases, mock_step_log):
+    mock_step_log.return_value = cases['step_log_return']
     step_metadata = step_util.GetStepMetadata(123, 'step')
-
     self.assertEqual(cases['expected_step_metadata'], step_metadata)
+
+  @mock.patch.object(step_util, 'GetStepLogForLuciBuild')
+  def testGetStepMetadataPartialMatch(self, mock_step_log):
+    step_util.GetStepMetadata(123, 'step', True)
+    self.assertIn(True, mock_step_log.call_args[0])
+    step_util.GetStepMetadata(123, 'step', False)
+    self.assertIn(False, mock_step_log.call_args[0])
 
   @mock.patch.object(
       logdog_util, '_GetAnnotationsProtoForPath', return_value='step')
@@ -404,6 +407,23 @@ class StepUtilTest(wf_testcase.WaterfallTestCase):
         step_util.GetStepLogForLuciBuild(build_id, 's', None, 'step_metadata'))
     mock_get_log.assert_called_once_with('view_url', None)
 
+  @mock.patch.object(buildbucket_client, 'GetV2Build')
+  @mock.patch.object(step_util, 'GetStepLogFromBuildObject')
+  def testGetStepLogForLuciBuildPartialMatch(self, mock_log_from_build, _):
+    step_util.GetStepLogForLuciBuild('87654321', 's', None)
+    self.assertIn(False, mock_log_from_build.call_args[0])
+    step_util.GetStepLogForLuciBuild('87654321', 's', None, True)
+    self.assertIn(True, mock_log_from_build.call_args[0])
+
+  @mock.patch.object(step_util, '_GetStepLogViewUrl', return_value=None)
+  def testGetStepLogFromBuildObjectPartialMatch(self, mock_get_log_url):
+    step_util.GetStepLogFromBuildObject(Build(), 'full_step_name',
+                                        'http_client')
+    self.assertIn(False, mock_get_log_url.call_args[0])
+    step_util.GetStepLogFromBuildObject(
+        Build(), 'full_step_name', 'http_client', partial_match=True)
+    self.assertIn(True, mock_get_log_url.call_args[0])
+
   def testGetStepLogViewUrlNoMatchingLog(self):
     build_id = 8945610992972640896
     mock_log = common_pb2.Log()
@@ -419,6 +439,41 @@ class StepUtilTest(wf_testcase.WaterfallTestCase):
     mock_build.id = build_id
     mock_build.steps.extend([mock_step1, mock_step2])
     self.assertIsNone(step_util._GetStepLogViewUrl(mock_build, 's2', 'log'))
+
+  @parameterized.expand([
+      (True, 'step_name', 'view_url', 'view_url_partial_match'),
+      (False, 'step_name', 'view_url', None),
+  ])
+  def testGetStepLogViewUrlPartialMatching(self, partial_match, full_step_name,
+                                           expected_url_in_build1,
+                                           expected_url_in_build2):
+    mock_step1 = Step()
+    mock_step1.name = 'step_name'
+    mock_log1 = common_pb2.Log()
+    mock_log1.name = 'log'
+    mock_log1.view_url = 'view_url'
+    mock_step1.logs.extend([mock_log1])
+
+    mock_step2 = Step()
+    mock_step2.name = 'step_name_longer'
+    mock_log2 = common_pb2.Log()
+    mock_log2.name = 'log'
+    mock_log2.view_url = 'view_url_partial_match'
+    mock_step2.logs.extend([mock_log2])
+
+    mock_build1 = Build()
+    mock_build1.steps.extend([mock_step1, mock_step2])
+    self.assertEqual(
+        expected_url_in_build1,
+        step_util._GetStepLogViewUrl(
+            mock_build1, full_step_name, 'log', partial_match=partial_match))
+
+    mock_build2 = Build()
+    mock_build2.steps.extend([mock_step2])
+    self.assertEqual(
+        expected_url_in_build2,
+        step_util._GetStepLogViewUrl(
+            mock_build2, full_step_name, 'log', partial_match=partial_match))
 
   @mock.patch.object(
       step_util,
@@ -463,8 +518,7 @@ class StepUtilTest(wf_testcase.WaterfallTestCase):
                                        'step_name on a platform'))
     self.assertTrue(mock_fn.call_count == 2)
 
-  @mock.patch.object(buildbucket_client, 'GetV2Build', return_value=Build())
-  @mock.patch.object(step_util, 'GetStepLogFromBuildObject')
+  @mock.patch.object(step_util, 'GetStepLogForLuciBuild')
   def testGetStepMetadataCached(self, mock_fn, *_):
     mock_fn.side_effect = [None, {'canonical_step_name': 'step_name'}]
     # Returns the invalid step_metadata but not cache it.
@@ -504,6 +558,13 @@ class StepUtilTest(wf_testcase.WaterfallTestCase):
         expected_canonical_step,
         step_util.GetCanonicalStepName(123, 'step_name (with patch)'))
 
+  @mock.patch.object(step_util, 'GetStepMetadata')
+  def testGetCanonicalStepNamePartialMatch(self, mock_get_step_metadata):
+    step_util.GetCanonicalStepName(123, 'full step name')
+    self.assertIn(False, mock_get_step_metadata.call_args[0])
+    step_util.GetCanonicalStepName(123, 'full step name', True)
+    self.assertIn(True, mock_get_step_metadata.call_args[0])
+
   @mock.patch.object(
       step_util,
       'LegacyGetStepMetadata',
@@ -541,24 +602,38 @@ class StepUtilTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(expected_isolate_target,
                      step_util.GetIsolateTargetName(123, 'full step name'))
 
+  @mock.patch.object(step_util, 'GetStepMetadata')
+  def testGetIsolateTargetPartialMatch(self, mock_get_step_metadata):
+    step_util.GetIsolateTargetName(123, 'full step name')
+    self.assertIn(False, mock_get_step_metadata.call_args[0])
+    step_util.GetIsolateTargetName(123, 'full step name', True)
+    self.assertIn(True, mock_get_step_metadata.call_args[0])
+
   @parameterized.expand([(wf_testcase.SAMPLE_STEP_METADATA, 'platform'),
                          (None, None)])
   @mock.patch.object(step_util, 'GetStepMetadata')
-  def testGetPlatform(self, mock_fn_return, expected_platform, mock_fn):
+  def testGetOS(self, mock_fn_return, expected_platform, mock_fn):
     mock_fn.return_value = mock_fn_return
     self.assertEqual(expected_platform,
-                     step_util.GetPlatform(123, 'builder_name', 'step_name'))
+                     step_util.GetOS(123, 'builder_name', 'step_name'))
+
+  @mock.patch.object(step_util, 'GetStepMetadata')
+  def testGetOSPartialMatch(self, mock_get_step_metadata):
+    step_util.GetOS(123, 'builder_name', 'step_name')
+    self.assertIn(False, mock_get_step_metadata.call_args[0])
+    step_util.GetOS(123, 'builder_name', 'step_name', True)
+    self.assertIn(True, mock_get_step_metadata.call_args[0])
 
   @mock.patch.object(
       step_util,
       'GetStepMetadata',
       return_value=wf_testcase.SAMPLE_STEP_METADATA)
-  def testGetPlatformCached(self, mock_fn):
+  def testGetOSCached(self, mock_fn):
     self.assertEqual('platform',
-                     step_util.GetPlatform(123, 'builder_name', 'step_name'))
+                     step_util.GetOS(123, 'builder_name', 'step_name'))
     self.assertEqual(1, mock_fn.call_count)
     self.assertEqual('platform',
-                     step_util.GetPlatform(123, 'builder_name', 'step_name'))
+                     step_util.GetOS(123, 'builder_name', 'step_name'))
     self.assertEqual(1, mock_fn.call_count)
 
   def testGetStepStartAndEndTime(self):

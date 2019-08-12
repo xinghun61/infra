@@ -341,13 +341,16 @@ def _ParseStepLogIfAppropriate(data, log_name):
   return data
 
 
-def _GetStepLogViewUrl(build, full_step_name, log_name):
+def _GetStepLogViewUrl(build, full_step_name, log_name, partial_match=False):
   """Gets view url of the requested log.
 
   Args:
-    build(A buildbucket_proto.build_pb2.Build proto): Information about a build.
-    full_step_name(str): Full name of the step.
-    log_name(str): Type of the log.
+    build (buildbucket_proto.build_pb2.Build proto): Information about a build.
+    full_step_name (str): Full name of the step.
+    log_name (str): Type of the log.
+    partial_match (bool): If the step_name is not found among the steps in the
+      builder, allow the function to retrieve the step log for a step whose name
+      contains step_name as a prefix.
 
   Returns:
     (str): view_url of the requested log.
@@ -358,21 +361,32 @@ def _GetStepLogViewUrl(build, full_step_name, log_name):
         if log.name.lower() == log_name:
           return log.view_url
 
+  if partial_match:
+    for step in build.steps or []:
+      if step.name.startswith(full_step_name):
+        for log in step.logs or []:
+          if log.name.lower() == log_name:
+            return log.view_url
+
   return None
 
 
 def GetStepLogFromBuildObject(build,
                               full_step_name,
                               http_client,
-                              log_name='stdout'):
+                              log_name='stdout',
+                              partial_match=False):
   """Returns specific log of the specified step from build_pb2.Build object.
 
   Args:
-    build(build_pb2.Build): See
+    build (build_pb2.Build): See
     https://cs.chromium.org/chromium/infra/go/src/go.chromium.org/luci/buildbucket/proto/build.proto # pylint:disable=line-too-long
-    full_step_name(str): Full name of the step.
-    http_client(FinditHttpClient): Http_client to make the request.
-    log_name(str): Name of the log.
+    full_step_name (str): Full name of the step.
+    http_client (FinditHttpClient): Http_client to make the request.
+    log_name (str): Name of the log.
+    partial_match (bool): If the step_name is not found among the steps in the
+      builder, allow the function to retrieve the step log for a step whose name
+      contains step_name as a prefix.
 
   Returns:
     Requested Log after processing based on the log_name.
@@ -380,7 +394,8 @@ def GetStepLogFromBuildObject(build,
       'json.output[ninja_info]'
     - return the deserialized log otherwise.
   """
-  log_view_url = _GetStepLogViewUrl(build, full_step_name, log_name)
+  log_view_url = _GetStepLogViewUrl(build, full_step_name, log_name,
+                                    partial_match)
   if not log_view_url:
     logging.exception('Didn\'t retrieve log_view_url at build: %s for %s of %s.'
                       % (build.id, log_name, full_step_name))
@@ -394,7 +409,8 @@ def GetStepLogFromBuildObject(build,
 def GetStepLogForLuciBuild(build_id,
                            full_step_name,
                            http_client,
-                           log_name='stdout'):
+                           log_name='stdout',
+                           partial_match=False):
   """Returns specific log of the specified step in a LUCI build.
 
   Args:
@@ -410,12 +426,14 @@ def GetStepLogForLuciBuild(build_id,
     - return the deserialized log otherwise.
   """
 
-  build = buildbucket_client.GetV2Build(build_id, FieldMask(paths=['steps']))
+  build = buildbucket_client.GetV2Build(build_id,
+                                        FieldMask(paths=['id', 'steps']))
   if not build:
     logging.exception('Error retrieving buildbucket build id: %s' % build_id)
     return None
 
-  return GetStepLogFromBuildObject(build, full_step_name, http_client, log_name)
+  return GetStepLogFromBuildObject(build, full_step_name, http_client, log_name,
+                                   partial_match)
 
 
 def _CanonicalStepNameKeyGenerator(func, args, kwargs, namespace=None):
@@ -503,12 +521,9 @@ def LegacyGetStepMetadata(master_name, builder_name, build_number, step_name):
     namespace='step_metadata',
     expire_time=_METADATA_CACHE_EXPIRE_TIME_SECONDS,
     result_validator=lambda step_metadata: isinstance(step_metadata, dict))
-def GetStepMetadata(build_id, step_name):
-  build = buildbucket_client.GetV2Build(build_id, FieldMask(paths=['steps']))
-  if not build:
-    return None
-  return GetStepLogFromBuildObject(build, step_name, FinditHttpClient(),
-                                   'step_metadata')
+def GetStepMetadata(build_id, step_name, partial_match=False):
+  return GetStepLogForLuciBuild(build_id, step_name, FinditHttpClient(),
+                                'step_metadata', partial_match)
 
 
 # TODO(crbug.com/987718): Remove after Findit v2 migration and buildbot info
@@ -531,19 +546,21 @@ def LegacyGetCanonicalStepName(master_name, builder_name, build_number,
     namespace='step_metadata',
     expire_time=_METADATA_ELEMENT_CACHE_EXPIRE_TIME_SECONDS,
     key_generator=_CanonicalStepNameKeyGenerator)
-def GetCanonicalStepName(build_id, step_name):
+def GetCanonicalStepName(build_id, step_name, partial_match=False):
   """ Returns the canonical_step_name in the step_metadata.
 
   Args:
     build_id: Build id of the build.
     step_name: The original step name to get canonical_step_name for, and the
-               step name may contain hardware information and 'with(out) patch'
-               suffixes.
+      step name may contain hardware information and 'with(out) patch' suffixes.
+    partial_match: If the step_name is not found among the steps in the builder,
+      allow the function to retrieve step metadata from a step whose name
+      contains step_name as a prefix.
 
   Returns:
     The canonical_step_name if it exists, otherwise, step_name.split()[0].
   """
-  step_metadata = GetStepMetadata(build_id, step_name)
+  step_metadata = GetStepMetadata(build_id, step_name, partial_match)
   return step_metadata.get(
       'canonical_step_name') if step_metadata else step_name.split()[0]
 
@@ -559,8 +576,7 @@ def LegacyGetIsolateTargetName(master_name, builder_name, build_number,
     builder_name: Builder name of the build.
     build_number: Build number of the build.
     step_name: The original step name to get isolate_target_name for, and the
-               step name may contain hardware information and 'with(out) patch'
-               suffixes.
+      step name may contain hardware information and 'with(out) patch' suffixes.
 
   Returns:
     The isolate_target_name if it exists, otherwise, None.
@@ -575,41 +591,44 @@ def LegacyGetIsolateTargetName(master_name, builder_name, build_number,
     namespace='isolate_target',
     expire_time=_METADATA_ELEMENT_CACHE_EXPIRE_TIME_SECONDS,
     key_generator=_CanonicalStepNameKeyGenerator)
-def GetIsolateTargetName(build_id, step_name):
+def GetIsolateTargetName(build_id, step_name, partial_match=False):
   """ Returns the isolate_target_name in the step_metadata.
 
   Args:
     build_id: Build id of the build.
     step_name: The original step name to get isolate_target_name for, and the
-               step name may contain hardware information and 'with(out) patch'
-               suffixes.
+      step name may contain hardware information and 'with(out) patch' suffixes.
+    partial_match: If the step_name is not found among the steps in the builder,
+      allow the function to retrieve step metadata from a step whose name
+      contains step_name as a prefix.
 
   Returns:
     The isolate_target_name if it exists, otherwise, None.
   """
-  step_metadata = GetStepMetadata(build_id, step_name)
+  step_metadata = GetStepMetadata(build_id, step_name, partial_match)
   return step_metadata.get('isolate_target_name') if step_metadata else None
 
 
 @Cached(
     PickledMemCache(),
-    namespace='platform',
+    namespace='step_os',
     expire_time=_METADATA_ELEMENT_CACHE_EXPIRE_TIME_SECONDS,
     key_generator=_PlatformKeyGenerator)
-def GetPlatform(build_id, builder_name, step_name):
+def GetOS(build_id, builder_name, step_name, partial_match=False):
   # pylint:disable=unused-argument
-  """Returns the platform in the step_metadata.
+  """Returns the operating system in the step_metadata.
 
   Args:
-    build_id: Build id of the build.
-    builder_name: Builder name of the build.
-    step_name: The original step name used to get the step metadata.
+    build_id (int): Build id of the build.
+    builder_name (str): Builder name of the build.
+    step_name (str): The original step name used to get the step metadata.
 
   Returns:
-    The platform if it exists, otherwise, None.
+    The operating system if it exists, otherwise, None.
   """
-  step_metadata = GetStepMetadata(build_id, step_name)
-  return step_metadata.get('dimensions').get('os') if step_metadata else None
+  step_metadata = GetStepMetadata(build_id, step_name, partial_match)
+  return step_metadata.get('dimensions',
+                           {}).get('os') if step_metadata else None
 
 
 def StepIsSupportedForMaster(master_name, builder_name, build_number,

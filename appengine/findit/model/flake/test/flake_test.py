@@ -57,6 +57,13 @@ class FlakeTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(cases['canonical_fn_call_count'],
                      mock_canonical.call_count)
 
+  @mock.patch.object(step_util, 'GetStepMetadata')
+  def testNormalizeStepNamePartialMatch(self, mock_get_step):
+    Flake.NormalizeStepName(123, 'step_name')
+    self.assertIn(True, mock_get_step.call_args[0])
+    Flake.NormalizeStepName(123, 'step_name', False)
+    self.assertIn(False, mock_get_step.call_args[0])
+
   @mock.patch.object(
       step_util,
       'LegacyGetCanonicalStepName',
