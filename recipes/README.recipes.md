@@ -1216,9 +1216,9 @@ triggered by Tricium.
 
 [DEPS](/recipes/recipes/update_submodules_mirror.py#10): [depot\_tools/gclient][depot_tools/recipe_modules/gclient], [depot\_tools/git][depot_tools/recipe_modules/git], [depot\_tools/gitiles][depot_tools/recipe_modules/gitiles], [recipe\_engine/buildbucket][recipe_engine/recipe_modules/buildbucket], [recipe\_engine/context][recipe_engine/recipe_modules/context], [recipe\_engine/file][recipe_engine/recipe_modules/file], [recipe\_engine/json][recipe_engine/recipe_modules/json], [recipe\_engine/path][recipe_engine/recipe_modules/path], [recipe\_engine/properties][recipe_engine/recipe_modules/properties], [recipe\_engine/raw\_io][recipe_engine/recipe_modules/raw_io], [recipe\_engine/step][recipe_engine/recipe_modules/step]
 
-&mdash; **def [RunSteps](/recipes/recipes/update_submodules_mirror.py#37)(api, source_repo, target_repo):**
+&mdash; **def [RunSteps](/recipes/recipes/update_submodules_mirror.py#41)(api, source_repo, target_repo, extra_submodules):**
 
-&mdash; **def [ShouldGenerateNewCommit](/recipes/recipes/update_submodules_mirror.py#168)(api, target_repo):**
+&mdash; **def [ShouldGenerateNewCommit](/recipes/recipes/update_submodules_mirror.py#176)(api, target_repo):**
 
 See if we can avoid running the rest of the recipe, if there's no new
 commits to incorporate into the mirror. We should be conservative in the

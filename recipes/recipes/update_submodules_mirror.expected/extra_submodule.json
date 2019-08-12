@@ -1,0 +1,229 @@
+[
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "ensure-directory",
+      "--mode",
+      "0777",
+      "[CACHE]/codesearch_update_submodules_mirror"
+    ],
+    "infra_step": true,
+    "name": "Create checkout parent dir"
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "glob",
+      "[CACHE]/codesearch_update_submodules_mirror",
+      "src/"
+    ],
+    "infra_step": true,
+    "name": "Check for existing source checkout dir",
+    "~followup_annotations": [
+      "@@@STEP_LOG_LINE@glob@[CACHE]/codesearch_update_submodules_mirror/src@@@",
+      "@@@STEP_LOG_END@glob@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "git",
+      "fetch"
+    ],
+    "cwd": "[CACHE]/codesearch_update_submodules_mirror/src/",
+    "infra_step": true,
+    "name": "git fetch"
+  },
+  {
+    "cmd": [
+      "git",
+      "reset",
+      "--hard",
+      "origin/master"
+    ],
+    "cwd": "[CACHE]/codesearch_update_submodules_mirror/src/",
+    "infra_step": true,
+    "name": "git reset"
+  },
+  {
+    "cmd": [],
+    "name": "Check for new commits"
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[depot_tools::gitiles]/resources/gerrit_client.py",
+      "--json-file",
+      "/path/to/tmp/json",
+      "--url",
+      "https://chromium.googlesource.com/codesearch/src_mirror/+log/master",
+      "--format",
+      "json",
+      "--log-limit",
+      "2"
+    ],
+    "name": "Check for new commits.Find latest commit to target repo",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@",
+      "@@@STEP_TEXT@<br />1 commits fetched@@@",
+      "@@@STEP_LOG_LINE@json.output@{@@@",
+      "@@@STEP_LOG_LINE@json.output@  \"log\": [@@@",
+      "@@@STEP_LOG_LINE@json.output@    {@@@",
+      "@@@STEP_LOG_LINE@json.output@      \"author\": {@@@",
+      "@@@STEP_LOG_LINE@json.output@        \"name\": \"Someone else\"@@@",
+      "@@@STEP_LOG_LINE@json.output@      }, @@@",
+      "@@@STEP_LOG_LINE@json.output@      \"commit\": \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"@@@",
+      "@@@STEP_LOG_LINE@json.output@    }@@@",
+      "@@@STEP_LOG_LINE@json.output@  ]@@@",
+      "@@@STEP_LOG_LINE@json.output@}@@@",
+      "@@@STEP_LOG_END@json.output@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_REPO[depot_tools]/gclient.py",
+      "revinfo",
+      "--deps",
+      "all",
+      "--ignore-dep-type=cipd",
+      "--spec",
+      "solutions=[{'managed':False,'name':'src/','url':'https://chromium.googlesource.com/chromium/src','deps_file':'DEPS'}]",
+      "--output-json=-"
+    ],
+    "cwd": "[CACHE]/codesearch_update_submodules_mirror",
+    "env_suffixes": {
+      "PATH": [
+        "RECIPE_REPO[depot_tools]"
+      ]
+    },
+    "infra_step": true,
+    "name": "gclient evaluate DEPS"
+  },
+  {
+    "cmd": [
+      "git",
+      "ls-remote",
+      "https://extra.googlesource.com/extra",
+      "master"
+    ],
+    "cwd": "[CACHE]/codesearch_update_submodules_mirror/src/",
+    "infra_step": true,
+    "name": "git ls-remote"
+  },
+  {
+    "cmd": [
+      "git",
+      "update-index",
+      "--add",
+      "--cacheinfo",
+      "160000,4ad2459561d76217c9b7aff412c5c086b491078a,v8",
+      "--cacheinfo",
+      "160000,bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb,extra",
+      "--cacheinfo",
+      "160000,13a00f110ef910a25763346d6538b60f12845656,buildtools"
+    ],
+    "cwd": "[CACHE]/codesearch_update_submodules_mirror/src/",
+    "infra_step": true,
+    "name": "Add gitlinks"
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "copy",
+      "[submodule \"v8\"]\n\tpath = v8\n\turl = https://chromium.googlesource.com/v8/v8.git\n[submodule \"extra\"]\n\tpath = extra\n\turl = https://extra.googlesource.com/extra\n[submodule \"buildtools\"]\n\tpath = buildtools\n\turl = https://chromium.googlesource.com/chromium/buildtools.git",
+      "[CACHE]/codesearch_update_submodules_mirror/src/.gitmodules"
+    ],
+    "infra_step": true,
+    "name": "Write .gitmodules file",
+    "~followup_annotations": [
+      "@@@STEP_LOG_LINE@.gitmodules@[submodule \"v8\"]@@@",
+      "@@@STEP_LOG_LINE@.gitmodules@\tpath = v8@@@",
+      "@@@STEP_LOG_LINE@.gitmodules@\turl = https://chromium.googlesource.com/v8/v8.git@@@",
+      "@@@STEP_LOG_LINE@.gitmodules@[submodule \"extra\"]@@@",
+      "@@@STEP_LOG_LINE@.gitmodules@\tpath = extra@@@",
+      "@@@STEP_LOG_LINE@.gitmodules@\turl = https://extra.googlesource.com/extra@@@",
+      "@@@STEP_LOG_LINE@.gitmodules@[submodule \"buildtools\"]@@@",
+      "@@@STEP_LOG_LINE@.gitmodules@\tpath = buildtools@@@",
+      "@@@STEP_LOG_LINE@.gitmodules@\turl = https://chromium.googlesource.com/chromium/buildtools.git@@@",
+      "@@@STEP_LOG_END@.gitmodules@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "git",
+      "add",
+      ".gitmodules"
+    ],
+    "cwd": "[CACHE]/codesearch_update_submodules_mirror/src/",
+    "infra_step": true,
+    "name": "git add"
+  },
+  {
+    "cmd": [
+      "git",
+      "-c",
+      "user.name=Submodules bot",
+      "-c",
+      "user.email=infra-codesearch@chops-service-accounts.iam.gserviceaccount.com",
+      "commit",
+      "-m",
+      "Synthetic commit for submodules"
+    ],
+    "cwd": "[CACHE]/codesearch_update_submodules_mirror/src/",
+    "infra_step": true,
+    "name": "git commit"
+  },
+  {
+    "cmd": [
+      "git",
+      "branch",
+      "-f",
+      "master-original",
+      "HEAD~"
+    ],
+    "cwd": "[CACHE]/codesearch_update_submodules_mirror/src/",
+    "infra_step": true,
+    "name": "git branch"
+  },
+  {
+    "cmd": [
+      "git",
+      "push",
+      "--push-option=skip-validation",
+      "--force",
+      "--all",
+      "https://chromium.googlesource.com/codesearch/src_mirror"
+    ],
+    "cwd": "[CACHE]/codesearch_update_submodules_mirror/src/",
+    "infra_step": true,
+    "name": "git push --all"
+  },
+  {
+    "cmd": [
+      "git",
+      "push",
+      "--tags",
+      "https://chromium.googlesource.com/codesearch/src_mirror"
+    ],
+    "cwd": "[CACHE]/codesearch_update_submodules_mirror/src/",
+    "infra_step": true,
+    "name": "git push --tags"
+  },
+  {
+    "name": "$result"
+  }
+]

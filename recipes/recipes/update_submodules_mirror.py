@@ -26,6 +26,10 @@ PROPERTIES = {
         help='The URL of the repo to be mirrored with submodules'),
     'target_repo': Property(
         help='The URL of the mirror repo to be built/maintained'),
+    'extra_submodules': Property(
+        default=[],
+        help='A list of <path>=<url> strings, indicating extra submodules to '
+             'add to the mirror repo.'),
 }
 
 COMMIT_USERNAME = 'Submodules bot'
@@ -34,7 +38,7 @@ COMMIT_EMAIL_ADDRESS = \
 
 SHA1_RE = re.compile(r'[0-9a-fA-F]{40}')
 
-def RunSteps(api, source_repo, target_repo):
+def RunSteps(api, source_repo, target_repo, extra_submodules):
   _, source_project = api.gitiles.parse_repo_url(source_repo)
 
   # NOTE: This name must match the definition in cr-buildbucket.cfg. Do not
@@ -88,6 +92,10 @@ def RunSteps(api, source_repo, target_repo):
                                    '--ignore-dep-type=cipd',
                                    '--spec', gclient_spec, '--output-json=-'],
                                   stdout=api.raw_io.output_text()).stdout)
+
+  for item in extra_submodules:
+    path, url = item.split('=')
+    deps[path] = {'url': url, 'rev': 'master'}
 
   gitmodules_entries = []
   update_index_entries = []
@@ -424,4 +432,29 @@ def GenTests(api):
       api.step_data('gclient evaluate DEPS',
                     api.raw_io.stream_output(fake_deps_with_trailing_slash,
                                              stream='stdout'))
+  )
+
+  yield (
+      api.test('extra_submodule') +
+      api.properties(
+          source_repo='https://chromium.googlesource.com/chromium/src',
+          target_repo='https://chromium.googlesource.com/codesearch/src_mirror',
+          extra_submodules=['src/extra=https://extra.googlesource.com/extra']
+      ) +
+      api.step_data('Check for existing source checkout dir',
+                    api.raw_io.stream_output('src', stream='stdout')) +
+      api.step_data('Check for new commits.Find latest commit to target repo',
+                    api.json.output({'log': [
+                        {
+                            'commit': 'a' * 40,
+                            'author': {'name': 'Someone else'},
+                        },
+                    ]})) +
+      api.step_data('gclient evaluate DEPS',
+                    api.raw_io.stream_output(fake_src_deps, stream='stdout')) +
+      api.step_data('git ls-remote',
+                    api.raw_io.stream_output(
+                        'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\t' +
+                        'refs/heads/master',
+                        stream='stdout'))
   )
