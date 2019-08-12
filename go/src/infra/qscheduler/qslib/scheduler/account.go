@@ -84,10 +84,8 @@ func nextBalance(balance Balance, c *AccountConfig, elapsedSecs float32, running
 	for priority := 0; priority < NumPriorities; priority++ {
 		val := balance[priority]
 		val -= elapsedSecs * float32(runningJobsArray[priority])
-		var chargeRate float32
-		if len(c.ChargeRate) > priority {
-			chargeRate = c.ChargeRate[priority]
-		}
+		chargeRate := c.ChargeRate[priority]
+
 		maxBalance := chargeRate * c.MaxChargeSeconds
 		// Check for value overflow prior to recharging or capping, because
 		// if the account value is already above cap we want to leave it there.

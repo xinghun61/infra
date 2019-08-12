@@ -372,11 +372,7 @@ func (run *schedulerRun) reprioritizeRunningTasks(priority Priority, events Even
 
 		runningAtP := workersAt[accountPriority{priority, accountID}]
 
-		var chargeRate float32
-		if int(priority) < len(accountConfig.ChargeRate) {
-			chargeRate = accountConfig.ChargeRate[priority]
-		}
-		chargeRate -= float32(len(runningAtP))
+		chargeRate := accountConfig.ChargeRate[priority] - float32(len(runningAtP))
 
 		switch {
 		case demote && chargeRate < 0:
