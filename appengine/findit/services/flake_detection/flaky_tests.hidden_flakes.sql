@@ -14,7 +14,7 @@
   # Caveat:
   # 1. This query does NOT support projects that do not retry test failures.
   # 2. This query only supports Luci builds, because
-  #    cr-buildbucket.builds.completed_BETA has no steps for buildbot-based
+  #    cr-buildbucket.raw.completed_builds_prod has no steps for buildbot-based
   #    builds even they are through buildbucket.
   # 3. This query does NOT support the case that the test have multiple
   #    unexpected test results without a PASS or expected one. This category
@@ -116,14 +116,14 @@ WITH
         '$.got_revision_cp') AS gitiles_revision_cp,
       build.steps
     FROM
-      `cr-buildbucket.builds.completed_BETA` AS build
+      `cr-buildbucket.raw.completed_builds_prod` AS build
     CROSS JOIN
       UNNEST(build.input.gerrit_changes) AS gerrit_change
     WHERE
       # cr-buildbucket is a partitioned table, but not by ingestion time.
       build.create_time >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 1 day)
       # Chromium CQ builds should have only one patchset, thus the arrary
-      # cr-buildbucket.builds.completed_BETA.input.gerrit_changes would
+      # cr-buildbucket.raw.completed_builds_prod.input.gerrit_changes would
       # effectively have only one element. But still check just in case.
       AND ARRAY_LENGTH(build.input.gerrit_changes) = 1 ) AS build
   ON

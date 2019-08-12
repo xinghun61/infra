@@ -97,7 +97,7 @@ Score = Sum(CQ flake type weight * impacted CLs) + Sum(CI flake type weight * oc
 ### Workflow
 #### For CQ flakes
 * It leverages existing data sources for CQ ([cq_raw]), completed builds
- ([completed_builds_BETA]) and test results ([test_results]) BigQuery tables.
+ ([completed_builds]) and test results ([test_results]) BigQuery tables.
 * Cron jobs that execute [SQL queries] run once every 30 minutes to detect flaky tests and store the results.
   * The query for cq hidden flakes is executed every 2 hours.
 
@@ -195,7 +195,7 @@ For questions and general discussions, please use [findit group].
 [Analyze Tip-of-tree]: images/analyze_tip_of_tree.png
 [binary==content_browsertests]: https://analysis.chromium.org/p/chromium/flake-portal/flakes?flake_filter=binary::content_browsertests
 [builder==win7_chromium_rel_ng]: https://analysis.chromium.org/p/chromium/flake-portal/flakes?flake_filter=builder::win7_chromium_rel_ng
-[completed_builds_BETA]: https://bigquery.cloud.google.com/table/cr-buildbucket:builds.completed_BETA?tab=details
+[completed_builds]: https://bigquery.cloud.google.com/table/cr-buildbucket:raw.completed_builds_prod?tab=details
 [component==Blink>Accessibility]: https://analysis.chromium.org/p/chromium/flake-portal/flakes?flake_filter=component::Blink>Accessibility
 [Component Report]: images/component_report.png
 [CQ]: https://chrome-internal.googlesource.com/infra/infra_internal/+/master/infra_internal/services/cq/README.md

@@ -113,14 +113,14 @@ WITH
       JSON_EXTRACT_SCALAR(build.output.properties, '$.got_revision_cp') AS gitiles_revision_cp,
       build.steps
     FROM
-        `cr-buildbucket.builds.completed_BETA` AS build
+        `cr-buildbucket.raw.completed_builds_prod` AS build
       CROSS JOIN
         UNNEST(build.input.gerrit_changes) AS gerrit_change
     WHERE
       # cr-buildbucket is a partitioned table, but not by ingestion time.
       build.create_time >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 1 day)
       # Chromium CQ builds should have only one patchset, thus the arrary
-      # cr-buildbucket.builds.completed_BETA.input.gerrit_changes would
+      # cr-buildbucket.raw.completed_builds_prod.input.gerrit_changes would
       # effectively have only one element. But still check just in case.
       AND ARRAY_LENGTH(build.input.gerrit_changes) = 1
     ) AS build

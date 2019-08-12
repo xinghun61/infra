@@ -111,7 +111,7 @@ def main():
   cq_events_pcol = p | 'read raw CQ events' >> chops_beam.BQRead(q)
 
   q = ('SELECT id, builder.builder, status from '
-       '`cr-buildbucket.chromium.completed_builds_BETA`')
+       '`cr-buildbucket.chromium.builds`')
   bb_entries_pcol = p | 'read BuildBucket' >> chops_beam.BQRead(q)
 
   results = process_input(cq_events_pcol, bb_entries_pcol)
