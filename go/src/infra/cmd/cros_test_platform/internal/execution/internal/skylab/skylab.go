@@ -143,8 +143,8 @@ func NewTaskSet(tests []*steps.EnumerationResponse_AutotestInvocation, params *t
 }
 
 // LaunchAndWait launches a skylab execution and waits for it to complete,
-// polling for new results periodically (TODO(akeshet): and retrying tests that
-// need retry, based on retry policy).
+// polling for new results periodically, and retrying tests that need retry,
+// based on retry policy.
 //
 // If the supplied context is cancelled prior to completion, or some other error
 // is encountered, this method returns whatever partial execution response
@@ -350,7 +350,6 @@ func toInventoryLabels(params *test_platform.Request_Params, deps []*build_api.A
 		inv.SelfServePools = append(inv.SelfServePools, v.UnmanagedPool)
 	case *test_platform.Request_Params_Scheduling_QuotaAccount:
 		inv.CriticalPools = append(inv.CriticalPools, inventory.SchedulableLabels_DUT_POOL_QUOTA)
-		// TODO(akeshet): In this case, we need to set the quota account correctly.
 	}
 
 	return inv, nil
