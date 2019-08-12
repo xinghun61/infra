@@ -65,19 +65,21 @@ func TestAccountAdvanceWithNoOverflow(t *testing.T) {
 // account balance is capped if it is supposed to be).
 func TestAccountAdvanceWithOverflow(t *testing.T) {
 	t.Parallel()
-	expect := Balance{10, 11, 10}
+	expect := Balance{10, 11, 10, -1}
 	// P0 bucket will start below max and reach max.
 	// P1 bucket will have started above max already, but have spend that causes
 	//    it to be pulled to a lower value still above max.
 	// P2 bucket will have started above max, but have spend that causes it to be
 	//    pulled below max, and then will recharge to reach max again.
+	// P3 bucket will be pulled to -1 because of a running job, and will not
+	//    panic even though account doesn't specify a P3 charge rate.
 	config := &protos.AccountConfig{
 		ChargeRate:       []float32{1, 1, 1},
 		MaxChargeSeconds: 10,
 	}
 
 	before := Balance{9.5, 12, 10.5}
-	actual := nextBalance(before, config, 1, []int{0, 1, 1})
+	actual := nextBalance(before, config, 1, []int{0, 1, 1, 1})
 
 	if diff := pretty.Compare(actual, expect); diff != "" {
 		t.Errorf("Unexpected diff (-got +want): %s", diff)

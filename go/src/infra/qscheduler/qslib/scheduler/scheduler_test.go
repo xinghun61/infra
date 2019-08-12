@@ -42,7 +42,7 @@ func TestSchedulerReprioritize(t *testing.T) {
 		tm0 := time.Unix(0, 0)
 		s := New(tm0)
 		aid := AccountID("a1")
-		s.AddAccount(ctx, aid, NewAccountConfig(0, 0, []float32{1.1, 0.9}), []float32{2 * DemoteThreshold, 2 * PromoteThreshold})
+		s.AddAccount(ctx, aid, NewAccountConfig(0, 0, []float32{1.1, 0.9}), []float32{2 * DemoteThreshold, 2 * PromoteThreshold, 2 * PromoteThreshold})
 
 		for _, i := range []int{1, 2} {
 			rid := RequestID(fmt.Sprintf("r%d", i))
