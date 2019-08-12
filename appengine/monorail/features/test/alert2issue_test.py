@@ -23,32 +23,94 @@ from testing import testing_helpers
 from tracker import tracker_helpers
 
 
-class Alert2IssueTest(unittest.TestCase):
+class TestData(object):
+  # Constants or such objects that are intended to be read-only.
+  cnxn = 'fake cnxn'
+  test_issue_local_id = 100
+  component_id = 123
+  trooper_queue = 'my-trooper-bug-queue'
+
+  project_name = 'proj'
+  project_addr = '%s+ALERT+%s@monorail.example.com' % (
+      project_name, trooper_queue)
+  project_id = 987
+
+  from_addr = 'user@monorail.example.com'
+  user_id = 111
+
+  msg_body = 'this is the body'
+  msg_subject = 'this is the subject'
+  msg = testing_helpers.MakeMessage(
+      testing_helpers.ALERT_EMAIL_HEADER_LINES, msg_body)
+
+  incident_id = msg.get('X-Incident-Id')
+  incident_label = alert2issue._GetIncidentLabel(incident_id)
+
+  # All the tests in this class use the following alert properties, and
+  # the generator functions/logic should be tested in a separate class.
+  alert_props = {
+      'owner_id': None,
+      'cc_ids': [],
+      'status': 'Available',
+      'incident_label': incident_label,
+      'priority': 'Pri-0',
+      'trooper_queue': trooper_queue,
+      'field_values': [],
+      'labels': ['Restrict-View-Google', 'Pri-0', incident_label,
+                 trooper_queue],
+      'component_ids': [component_id],
+  }
+
+
+class ProcessEmailNotificationTests(unittest.TestCase, TestData):
+  """Implements unit tests for alert2issue.ProcessEmailNotification."""
 
   def setUp(self):
-    self.cnxn = 'fake cnxn'
+    # services
     self.services = service_manager.Services(
         config=fake.ConfigService(),
         issue=fake.IssueService(),
         user=fake.UserService(),
         usergroup=fake.UserGroupService(),
         project=fake.ProjectService())
-    self.project = self.services.project.TestAddProject(
-        'proj', project_id=987, process_inbound_email=True,
-        contrib_ids=[111])
-    self.project_addr = 'proj@monorail.example.com'
 
-    self.issue = tracker_pb2.Issue()
-    self.issue.project_id = 987
-    self.issue.local_id = 100
+    # project
+    self.project = self.services.project.TestAddProject(
+        self.project_name, project_id=self.project_id,
+        process_inbound_email=True, contrib_ids=[self.user_id])
+
+    # sender
+    self.auth = authdata.AuthData(user_id=self.user_id, email=self.from_addr)
+
+    # issue
+    self.issue = tracker_pb2.Issue(
+        project_id=self.project_id,
+        local_id=self.test_issue_local_id,
+        summary=self.msg_subject,
+        reporter_id=self.user_id,
+        component_ids=[self.component_id],
+        status=self.alert_props['status'],
+        labels=self.alert_props['labels'],
+    )
     self.services.issue.TestAddIssue(self.issue)
 
-    self.msg = testing_helpers.MakeMessage(
-        testing_helpers.ALERT_EMAIL_HEADER_LINES, 'awesome!')
+    # Patch send_notifications functions.
+    self.notification_patchers = [
+        patch('features.send_notifications.%s' % func, spec=True)
+        for func in [
+            'PrepareAndSendIssueBlockingNotification',
+            'PrepareAndSendIssueChangeNotification',
+        ]
+    ]
+    self.blocking_notification = self.notification_patchers[0].start()
+    self.blocking_notification = self.notification_patchers[1].start()
 
     self.mox = mox.Mox()
 
   def tearDown(self):
+    self.notification_patchers[0].stop()
+    self.notification_patchers[1].stop()
+
     self.mox.UnsetStubs()
     self.mox.ResetAll()
 
@@ -56,171 +118,187 @@ class Alert2IssueTest(unittest.TestCase):
     self.assertTrue(alert2issue.IsWhitelisted('test@google.com'))
     self.assertFalse(alert2issue.IsWhitelisted('test@notgoogle.com'))
 
-  def testProcessEmailNotification_NoIssueUpdatedIfNonWhitelistedSender(self):
-    sender = 'user@malicious.com'
-    self.assertFalse(alert2issue.IsWhitelisted(sender))
+  def testSkipNotification_IfFromNonWhitelistedSender(self):
     self.mox.StubOutWithMock(alert2issue, 'IsWhitelisted')
-    alert2issue.IsWhitelisted(sender).AndReturn(False)
+    alert2issue.IsWhitelisted(self.from_addr).AndReturn(False)
 
-    incident_label = alert2issue._GetIncidentLabel(
-        self.msg.get('X-Incident-Id'))
-    self.assertTrue(incident_label)
-
-    # None of the below methods should be called if it is from a non-whitelisted
-    # sender.
+    # None of them should be called, if the sender has not been whitelisted.
     self.mox.StubOutWithMock(self.services.issue, 'CreateIssueComment')
     self.mox.StubOutWithMock(self.services.issue, 'CreateIssue')
     self.mox.ReplayAll()
-    auth = authdata.AuthData(user_id=111, email=sender)
+
     alert2issue.ProcessEmailNotification(
         self.services, self.cnxn, self.project, self.project_addr,
-        sender, auth, 'issue title', 'issue body', incident_label)
+        self.from_addr, self.auth, self.msg_subject, self.msg_body,
+        self.incident_label)
     self.mox.VerifyAll()
 
-  @patch('features.send_notifications.PrepareAndSendIssueBlockingNotification')
-  @patch('features.send_notifications.PrepareAndSendIssueChangeNotification')
-  def testProcessEmailNotification_NewIssue(self, fake_pasicn, fake_pasibn):
-    """When an alert for a new incident comes in, create a new issue."""
-    incident_id = self.msg.get('X-Incident-Id')
-    incident_label = alert2issue._GetIncidentLabel(incident_id)
-    self.assertTrue(incident_label)
+  def testProcessNotification_IfFromWhitelistedSender(self):
+    self.mox.StubOutWithMock(alert2issue, 'IsWhitelisted')
+    alert2issue.IsWhitelisted(self.from_addr).AndReturn(True)
 
     self.mox.StubOutWithMock(tracker_helpers, 'LookupComponentIDs')
     tracker_helpers.LookupComponentIDs(
         ['Infra'],
         mox.IgnoreArg()).AndReturn([1])
-
-    self.mox.StubOutWithMock(self.services.config, 'LookupLabelID')
-    self.services.config.LookupLabelID(
-        self.cnxn, self.project.project_id, incident_label).AndReturn(None)
-
-    # Mock command parsing.
-    mock_uia = commitlogcommands.UpdateIssueAction(101)
-    self.mox.StubOutWithMock(commitlogcommands, 'UpdateIssueAction')
-    commitlogcommands.UpdateIssueAction(101).AndReturn(mock_uia)
-
-    self.mox.StubOutWithMock(mock_uia, 'Parse')
-    mock_uia.Parse(
-        self.cnxn, self.project.project_name, 111, ['issue body'],
-        self.services, strip_quoted_lines=True)
-
+    self.mox.StubOutWithMock(self.services.issue, 'CreateIssueComment')
+    self.mox.StubOutWithMock(self.services.issue, 'CreateIssue')
     self.mox.ReplayAll()
 
-    auth = authdata.AuthData(user_id=111, email='user@example.com')
-    alert2issue.ProcessEmailNotification(
-        self.services, self.cnxn, self.project, self.project_addr,
-        'user@google.com', auth, 'issue title', 'issue body', incident_id)
+    # Either of the methods should be called, if the sender is whitelisted.
+    with self.assertRaises(mox.UnexpectedMethodCallError):
+      alert2issue.ProcessEmailNotification(
+          self.services, self.cnxn, self.project, self.project_addr,
+          self.from_addr, self.auth, self.msg_subject, self.msg_body,
+          self.incident_label, self.trooper_queue)
 
     self.mox.VerifyAll()
 
-    actual_issue = self.services.issue.GetIssueByLocalID(
-        self.cnxn, self.project.project_id, 101)
-    actual_comments = self.services.issue.GetCommentsForIssue(
-        self.cnxn, actual_issue.issue_id)
-    self.assertEqual('issue title', actual_issue.summary)
-    self.assertEqual('Available', actual_issue.status)
-    self.assertEqual(111, actual_issue.reporter_id)
-    self.assertEqual([1], actual_issue.component_ids)
-    self.assertEqual(None, actual_issue.owner_id)
-    self.assertEqual(
-        sorted(['Infra-Troopers-Alerts', 'Restrict-View-Google',
-                'Pri-2', incident_label]),
-        sorted(actual_issue.labels))
-    self.assertEqual(
-        'Filed by user@example.com on behalf of user@google.com\n\nissue body',
-        actual_comments[0].content)
-    self.assertEqual(1, len(fake_pasicn.mock_calls))
-    self.assertEqual(1, len(fake_pasibn.mock_calls))
+  def testIssueCreated_ForNewIncident(self):
+    """Tests if a new issue is created for a new incident."""
+    self.mox.StubOutWithMock(alert2issue, 'IsWhitelisted')
+    alert2issue.IsWhitelisted(self.from_addr).AndReturn(True)
 
-  @patch('features.send_notifications.PrepareAndSendIssueBlockingNotification')
-  @patch('features.send_notifications.PrepareAndSendIssueChangeNotification')
-  def testProcessEmailNotification_NewIssue_Codesearch(
-      self, fake_pasicn, fake_pasibn):
-    """When an alert for a new incident comes in, create a new issue.
+    # FindAlertIssue() returns None for a new incident.
+    self.mox.StubOutWithMock(alert2issue, 'FindAlertIssue')
+    alert2issue.FindAlertIssue(
+        self.services, self.cnxn, self.project.project_id,
+        self.incident_label).AndReturn(None)
 
-    If the body contains the string 'codesearch' then we should auto-assign to
-    the Infra>Codesearch component."""
-    incident_id = self.msg.get('X-Incident-Id')
-    incident_label = alert2issue._GetIncidentLabel(incident_id)
-    self.assertTrue(incident_label)
-
-    self.mox.StubOutWithMock(tracker_helpers, 'LookupComponentIDs')
-    tracker_helpers.LookupComponentIDs(
-        ['Infra>Codesearch'],
-        mox.IgnoreArg()).AndReturn([2])
-
-    self.mox.StubOutWithMock(self.services.config, 'LookupLabelID')
-    self.services.config.LookupLabelID(
-        self.cnxn, self.project.project_id, incident_label,
-    ).AndReturn(None)
-
-    # Mock command parsing.
-    mock_uia = commitlogcommands.UpdateIssueAction(101)
-    self.mox.StubOutWithMock(commitlogcommands, 'UpdateIssueAction')
-    commitlogcommands.UpdateIssueAction(101).AndReturn(mock_uia)
-
-    self.mox.StubOutWithMock(mock_uia, 'Parse')
-    mock_uia.Parse(
-        self.cnxn, self.project.project_name, 111, ['issue body codesearch'],
-        self.services, strip_quoted_lines=True)
+    # Mock GetAlertProperties() to create the issue with the expected
+    # properties.
+    self.mox.StubOutWithMock(alert2issue, 'GetAlertProperties')
+    alert2issue.GetAlertProperties(
+        self.services, self.cnxn, self.project_id, self.incident_id,
+        self.trooper_queue, self.msg_body).AndReturn(self.alert_props)
 
     self.mox.ReplayAll()
-
-    auth = authdata.AuthData(user_id=111, email='user@example.com')
     alert2issue.ProcessEmailNotification(
         self.services, self.cnxn, self.project, self.project_addr,
-        'user@google.com', auth, 'issue title', 'issue body codesearch',
-        incident_id)
+        self.from_addr, self.auth, self.msg_subject, self.msg_body,
+        self.incident_id, self.trooper_queue)
+
+    # the local ID of the newly created issue should be +1 from the highest ID
+    # in the existing issues.
+    comments = self._verifyIssue(self.test_issue_local_id + 1, self.alert_props)
+    self.assertEqual(comments[0].content,
+                     'Filed by %s on behalf of %s\n\n%s' % (
+                         self.from_addr, self.from_addr, self.msg_body))
 
     self.mox.VerifyAll()
-
-    actual_issue = self.services.issue.GetIssueByLocalID(
-        self.cnxn, self.project.project_id, 101)
-    self.assertEqual([2], actual_issue.component_ids)
-    self.assertEqual(1, len(fake_pasicn.mock_calls))
-    self.assertEqual(1, len(fake_pasibn.mock_calls))
 
   def testProcessEmailNotification_ExistingIssue(self):
     """When an alert for an ongoing incident comes in, add a comment."""
-    incident_id = self.msg.get('X-Incident-Id')
-    incident_label = alert2issue._GetIncidentLabel(incident_id)
-    self.assertTrue(incident_label)
+    self.mox.StubOutWithMock(alert2issue, 'IsWhitelisted')
+    alert2issue.IsWhitelisted(self.from_addr).AndReturn(True)
 
-    self.mox.StubOutWithMock(self.services.config, 'LookupLabelID')
-    self.services.config.LookupLabelID(
-        self.cnxn, self.project.project_id, incident_label,
-    ).AndReturn(1234)
+    # FindAlertIssue() returns None for a new incident.
+    self.mox.StubOutWithMock(alert2issue, 'FindAlertIssue')
+    alert2issue.FindAlertIssue(
+        self.services, self.cnxn, self.project.project_id,
+        self.incident_label).AndReturn(self.issue)
 
-    self.mox.StubOutWithMock(self.services.issue, 'GetIIDsByLabelIDs')
-    self.services.issue.GetIIDsByLabelIDs(
-        self.cnxn, [1234], self.project.project_id, None
-        ).AndReturn([1])
-
-    self.mox.StubOutWithMock(self.services.issue, 'GetIssues')
-    self.services.issue.GetIssues(
-        self.cnxn, [1]).AndReturn([self.issue])
-
-    self.mox.StubOutWithMock(self.services.issue, 'CreateIssueComment')
-    self.services.issue.CreateIssueComment(
-        self.cnxn, self.issue, 111,
-        'Filed by user@example.com on behalf of user@google.com\n\nissue body'
-        ).AndReturn(None)
-
-    # Mock command parsing.
-    mock_uia = commitlogcommands.UpdateIssueAction(self.issue.local_id)
-    self.mox.StubOutWithMock(commitlogcommands, 'UpdateIssueAction')
-    commitlogcommands.UpdateIssueAction(self.issue.local_id).AndReturn(mock_uia)
-
-    self.mox.StubOutWithMock(mock_uia, 'Parse')
-    mock_uia.Parse(
-        self.cnxn, self.project.project_name, 111, ['issue body'],
-        self.services, strip_quoted_lines=True)
+    # Mock GetAlertProperties() to create the issue with the expected
+    # properties.
+    self.mox.StubOutWithMock(alert2issue, 'GetAlertProperties')
+    alert2issue.GetAlertProperties(
+        self.services, self.cnxn, self.project_id, self.incident_id,
+        self.trooper_queue, self.msg_body).AndReturn(self.alert_props)
 
     self.mox.ReplayAll()
 
-    auth = authdata.AuthData(user_id=111, email='user@example.com')
+    # Before processing the notification, ensures that there is only 1 comment
+    # in the test issue.
+    comments = self._verifyIssue(self.test_issue_local_id, self.alert_props)
+    self.assertEqual(len(comments), 1)
+
+    # Process
     alert2issue.ProcessEmailNotification(
         self.services, self.cnxn, self.project, self.project_addr,
-        'user@google.com', auth, 'issue title', 'issue body', incident_id)
+        self.from_addr, self.auth, self.msg_subject, self.msg_body,
+        self.incident_id, self.trooper_queue)
+
+    # Now, it should have a new comment added.
+    comments = self._verifyIssue(self.test_issue_local_id, self.alert_props)
+    self.assertEqual(len(comments), 2)
+    self.assertEqual(comments[1].content,
+                     'Filed by %s on behalf of %s\n\n%s' % (
+                         self.from_addr, self.from_addr, self.msg_body))
 
     self.mox.VerifyAll()
+
+  def _verifyIssue(self, local_issue_id, alert_props):
+    actual_issue = self.services.issue.GetIssueByLocalID(
+        self.cnxn, self.project.project_id, local_issue_id)
+    actual_comments = self.services.issue.GetCommentsForIssue(
+        self.cnxn, actual_issue.issue_id)
+
+    self.assertEqual(actual_issue.summary, self.msg_subject)
+    self.assertEqual(actual_issue.status, alert_props['status'])
+    self.assertEqual(actual_issue.reporter_id, self.user_id)
+    self.assertEqual(actual_issue.component_ids, [self.component_id])
+    self.assertEqual(actual_issue.owner_id, alert_props['owner_id'])
+    self.assertEqual(sorted(actual_issue.labels), sorted(alert_props['labels']))
+    return actual_comments
+
+
+class GetAlertPropertiesTests(unittest.TestCase, TestData):
+  """Implements unit tests for alert2issue.GetAlertProperties."""
+
+  def setUp(self):
+    # services
+    self.services = service_manager.Services(
+        config=fake.ConfigService(),
+        issue=fake.IssueService(),
+        user=fake.UserService(),
+        usergroup=fake.UserGroupService(),
+        project=fake.ProjectService())
+
+    # project
+    self.project = self.services.project.TestAddProject(
+        self.project_name, project_id=self.project_id,
+        process_inbound_email=True, contrib_ids=[self.user_id])
+
+    self.mox = mox.Mox()
+
+  def testComponentWithCodesearch(self):
+    """Checks if the component is Infra>Codesearch, if msg contains codesearch.
+    """
+    component_id = self.component_id + 1
+    self.mox.StubOutWithMock(tracker_helpers, 'LookupComponentIDs')
+    tracker_helpers.LookupComponentIDs(
+        ['Infra>Codesearch'],
+        mox.IgnoreArg()).AndReturn([component_id])
+
+    self.mox.ReplayAll()
+    props = alert2issue.GetAlertProperties(
+        self.services, self.cnxn, self.project_id, self.incident_id,
+        self.trooper_queue, self.msg_body + 'codesearch')
+    self.assertEqual(props['component_ids'], [component_id])
+    self.mox.VerifyAll()
+
+  def testDefaultComponent(self):
+    """Checks if the default component is Infra."""
+    component_id = self.component_id
+    self.mox.StubOutWithMock(tracker_helpers, 'LookupComponentIDs')
+    tracker_helpers.LookupComponentIDs(
+        ['Infra'],
+        mox.IgnoreArg()).AndReturn([component_id])
+
+    self.mox.ReplayAll()
+    props = alert2issue.GetAlertProperties(
+        self.services, self.cnxn, self.project_id, self.incident_id,
+        self.trooper_queue, self.msg_body)
+    self.assertEqual(props['component_ids'], [component_id])
+    self.mox.VerifyAll()
+
+  def testLabelsWithNecessaryValues(self):
+    """Checks if the labels contain all the necessary values."""
+    props = alert2issue.GetAlertProperties(
+        self.services, self.cnxn, self.project_id, self.incident_id,
+        self.trooper_queue, self.msg_body)
+
+    self.assertTrue('Restrict-View-Google' in props['labels'])
+    self.assertTrue(self.incident_label in props['labels'])
+    self.assertTrue(self.trooper_queue in props['labels'])
+    self.assertTrue(props['priority'] in props['labels'])
