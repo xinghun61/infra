@@ -27,6 +27,7 @@ func TestRequest(t *testing.T) {
 		Timeout:                    30 * time.Minute,
 		Keyvals:                    map[string]string{"k1": "v1"},
 		FreeformSwarmingDimensions: []string{"freeform-key:freeform-value"},
+		MaxRetries:                 5,
 	}
 	got, err := Request(a)
 	want := &test_platform.Request{
@@ -66,6 +67,7 @@ func TestRequest(t *testing.T) {
 			},
 			Retry: &test_platform.Request_Params_Retry{
 				Allow: true,
+				Max:   5,
 			},
 		},
 		TestPlan: &test_platform.Request_TestPlan{

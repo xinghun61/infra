@@ -36,6 +36,7 @@ type Args struct {
 	Keyvals                    map[string]string
 	FreeformSwarmingDimensions []string
 	AutotestTestArgs           string
+	MaxRetries                 int
 }
 
 // Request constructs a cros_test_platform request from the given arguments.
@@ -100,7 +101,8 @@ func Request(a Args) (*test_platform.Request, error) {
 
 	// TODO(akeshet): Make retry-allowance paramaterizable.
 	params.Retry = &test_platform.Request_Params_Retry{
-		Allow: true,
+		Max:   int32(a.MaxRetries),
+		Allow: a.MaxRetries != 0,
 	}
 
 	u := &url.URL{

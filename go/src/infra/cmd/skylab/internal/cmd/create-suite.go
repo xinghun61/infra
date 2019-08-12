@@ -206,9 +206,6 @@ func (c *createSuiteRun) validateForBB() error {
 	if c.priority != defaultTaskPriority {
 		return errors.Reason("nondefault priority not yet supported in -bb mode").Err()
 	}
-	if c.maxRetries != 0 {
-		return errors.Reason("retries not yet supported in -bb mode").Err()
-	}
 	if c.orphan {
 		return errors.Reason("orphan not supported in -bb mode").Err()
 	}
