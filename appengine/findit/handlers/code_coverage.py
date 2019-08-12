@@ -1011,7 +1011,7 @@ class ServeCodeCoverageData(BaseHandler):
           patchset=patchset,
           build_id=latest_entity.build_id,
           data=rebased_coverage_data)
-      entity.put_async()
+      entity.put()
 
     data = entity.data
     formatted_data = {'files': []}
