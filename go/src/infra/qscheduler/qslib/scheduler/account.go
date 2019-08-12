@@ -32,6 +32,33 @@ const (
 	DemoteThreshold = -5.0
 )
 
+// AccountConfig represents a single account's config. It is the native struct
+// version of the AccountConfig proto.
+type AccountConfig struct {
+	// ChargeRate is the rates (per second) at which per-priority accounts grow.
+	//
+	// Conceptually this is the time-averaged number of workers that this account
+	// may use, at each priority level.
+	ChargeRate Balance
+	// MaxChargeSeconds is the maximum amount of time over which this account can
+	// accumulate quota before hitting its cap.
+	//
+	// Conceptually this sets the time window over which the time averaged
+	// utilization by this account is measured. Very bursty clients will need to
+	// use a wider window, whereas very consistent clients will use a narrow one.
+	MaxChargeSeconds float32
+	// MaxFanout is the maximum number of concurrent paid jobs for a single
+	// provisionable label that this account will pay for (0 = no limit).
+	//
+	// Additional jobs beyond this may run if there is idle capacity, but they
+	// will run in the FreeBucket priority level (except if DisableFreeTasks
+	// is true, in which case they will not run).
+	MaxFanout int32
+	// If DisableFreeTasks is true, then jobs for this account will not start
+	// running if they would be run at FreeBucket priority.
+	DisableFreeTasks bool
+}
+
 // BestPriorityFor determines the highest available priority for a quota
 // account, given its balance.
 //
@@ -51,7 +78,7 @@ func BestPriorityFor(b Balance) Priority {
 // The new balance calculation is based on the account's recharge rate,
 // maximum balance, and the number of currently running jobs per priority
 // bucket for that account.
-func nextBalance(balance Balance, c *protos.AccountConfig, elapsedSecs float32, runningJobs []int) Balance {
+func nextBalance(balance Balance, c *AccountConfig, elapsedSecs float32, runningJobs []int) Balance {
 	var runningJobsArray [NumPriorities]int
 	copy(runningJobsArray[:], runningJobs)
 	for priority := 0; priority < NumPriorities; priority++ {
@@ -78,10 +105,23 @@ func nextBalance(balance Balance, c *protos.AccountConfig, elapsedSecs float32, 
 }
 
 // NewAccountConfig creates a new Config instance.
-func NewAccountConfig(fanout int, chargeSeconds float32, chargeRate []float32) *protos.AccountConfig {
-	return &protos.AccountConfig{
-		ChargeRate:       chargeRate,
+func NewAccountConfig(fanout int, chargeSeconds float32, chargeRate []float32, disableFreeTasks bool) *AccountConfig {
+	b := Balance{}
+	copy(b[:], chargeRate)
+	return &AccountConfig{
+		ChargeRate:       b,
 		MaxChargeSeconds: chargeSeconds,
 		MaxFanout:        int32(fanout),
+		DisableFreeTasks: disableFreeTasks,
 	}
+}
+
+// NewAccountConfigFromProto creates a new Config instance.
+func NewAccountConfigFromProto(c *protos.AccountConfig) *AccountConfig {
+	return NewAccountConfig(
+		int(c.MaxFanout),
+		c.MaxChargeSeconds,
+		c.ChargeRate,
+		c.DisableFreeTasks,
+	)
 }

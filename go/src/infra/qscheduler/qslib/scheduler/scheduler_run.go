@@ -359,7 +359,7 @@ func (run *schedulerRun) reprioritizeRunningTasks(priority Priority, events Even
 	// was deleted while running).
 	for accountID, fullBalance := range state.balances {
 		// TODO(akeshet): move the body of this loop to own function.
-		accountConfig, ok := config.AccountConfigs[string(accountID)]
+		accountConfig, ok := config.AccountConfigs[accountID]
 		if !ok {
 			panic(fmt.Sprintf("There was a balance for unknown account %s", accountID))
 		}

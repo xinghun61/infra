@@ -42,7 +42,7 @@ func TestSchedulerReprioritize(t *testing.T) {
 		tm0 := time.Unix(0, 0)
 		s := New(tm0)
 		aid := AccountID("a1")
-		s.AddAccount(ctx, aid, NewAccountConfig(0, 0, []float32{1.1, 0.9}), []float32{2 * DemoteThreshold, 2 * PromoteThreshold, 2 * PromoteThreshold})
+		s.AddAccount(ctx, aid, NewAccountConfig(0, 0, []float32{1.1, 0.9}, false), []float32{2 * DemoteThreshold, 2 * PromoteThreshold, 2 * PromoteThreshold})
 
 		for _, i := range []int{1, 2} {
 			rid := RequestID(fmt.Sprintf("r%d", i))
@@ -84,7 +84,7 @@ func TestSchedulerPreempt(t *testing.T) {
 		ctx := context.Background()
 		tm0 := time.Unix(0, 0)
 		s := New(tm0)
-		s.AddAccount(ctx, "a1", NewAccountConfig(0, 0, []float32{1, 1, 1}), []float32{0.5 * PromoteThreshold, 1})
+		s.AddAccount(ctx, "a1", NewAccountConfig(0, 0, []float32{1, 1, 1}, false), []float32{0.5 * PromoteThreshold, 1})
 		for _, i := range []int{1, 2} {
 			rid := RequestID(fmt.Sprintf("r%d", i))
 			wid := WorkerID(fmt.Sprintf("w%d", i))
@@ -94,7 +94,7 @@ func TestSchedulerPreempt(t *testing.T) {
 		}
 		s.state.workers["w1"].runningTask.cost = Balance{0, 1, 0}
 		Convey("given a new P0 request from a different account", func() {
-			s.AddAccount(ctx, "a2", NewAccountConfig(0, 0, nil), nil)
+			s.AddAccount(ctx, "a2", NewAccountConfig(0, 0, nil, false), nil)
 			s.AddRequest(ctx, NewTaskRequest("r3", "a2", nil, nil, tm0), tm0, nil, NullEventSink)
 			Convey("given sufficient balance", func() {
 				s.state.balances["a2"] = Balance{1}
@@ -142,7 +142,7 @@ func TestDisableFreeTasks(t *testing.T) {
 			s.AddRequest(ctx, NewTaskRequest("rid", aid, nil, nil, tm0), tm0, nil, NullEventSink)
 			s.MarkIdle(ctx, "worker", nil, tm0, NullEventSink)
 			Convey("when free tasks are enabled", func() {
-				config := &protos.AccountConfig{DisableFreeTasks: false}
+				config := NewAccountConfig(0, 0, nil, false)
 				s.AddAccount(ctx, aid, config, nil)
 				Convey("then when the scheduler runs, the task is assigned.", func() {
 					assignments := s.RunOnce(ctx, NullEventSink)
@@ -150,7 +150,7 @@ func TestDisableFreeTasks(t *testing.T) {
 				})
 			})
 			Convey("when free tasks are disabled", func() {
-				config := &protos.AccountConfig{DisableFreeTasks: true}
+				config := NewAccountConfig(0, 0, nil, true)
 				s.AddAccount(ctx, aid, config, nil)
 				Convey("then when the scheduler runs, no task is assigned.", func() {
 					assignments := s.RunOnce(ctx, NullEventSink)
@@ -170,7 +170,7 @@ func TestUpdateBalance(t *testing.T) {
 		ctx := context.Background()
 		s := New(t0)
 		var maxTime float32 = 2.0
-		s.AddAccount(ctx, aID, NewAccountConfig(0, maxTime, []float32{1, 2, 3}), nil)
+		s.AddAccount(ctx, aID, NewAccountConfig(0, maxTime, []float32{1, 2, 3}, false), nil)
 
 		Convey("then a zeroed balance for that account exists", func() {
 			So(s.state.balances, ShouldContainKey, aID)
@@ -194,7 +194,7 @@ func TestUpdateBalance(t *testing.T) {
 		})
 
 		Convey("when account config is removed", func() {
-			delete(s.config.AccountConfigs, string(aID))
+			delete(s.config.AccountConfigs, aID)
 			Convey("when updating time forward", func() {
 				t1 := t0.Add(time.Second)
 				s.UpdateTime(ctx, t1)
@@ -329,7 +329,7 @@ func TestExaminedTime(t *testing.T) {
 		ctx := context.Background()
 		t0 := time.Unix(100, 0).UTC()
 		s := New(t0)
-		accountConfig := NewAccountConfig(1, 10, []float32{100})
+		accountConfig := NewAccountConfig(1, 10, []float32{100}, false)
 		accountConfig.DisableFreeTasks = true
 		s.AddAccount(ctx, "a1", accountConfig, []float32{100})
 

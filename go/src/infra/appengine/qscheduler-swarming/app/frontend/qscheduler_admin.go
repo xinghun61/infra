@@ -27,7 +27,6 @@ import (
 
 	"infra/qscheduler/qslib/reconciler"
 	"infra/qscheduler/qslib/scheduler"
-	"infra/qscheduler/qslib/tutils"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -48,7 +47,7 @@ func (s *QSchedulerAdminServerImpl) CreateSchedulerPool(ctx context.Context, r *
 	sp := types.QScheduler{
 		SchedulerID: r.PoolId,
 		Reconciler:  reconciler.New(),
-		Scheduler:   scheduler.NewWithConfig(time.Now(), r.Config),
+		Scheduler:   scheduler.NewWithConfig(time.Now(), scheduler.NewConfigFromProto(r.Config)),
 	}
 	store := state.NewStore(r.PoolId)
 	if err := store.Save(ctx, &sp); err != nil {
@@ -70,7 +69,13 @@ func (s *QSchedulerAdminServerImpl) CreateAccount(ctx context.Context, r *qsched
 			return err
 		}
 
-		sp.Scheduler.AddAccount(ctx, scheduler.AccountID(r.AccountId), r.Config, nil)
+		var ac *scheduler.AccountConfig
+		if r.Config != nil {
+			ac = scheduler.NewAccountConfigFromProto(r.Config)
+		} else {
+			ac = &scheduler.AccountConfig{}
+		}
+		sp.Scheduler.AddAccount(ctx, scheduler.AccountID(r.AccountId), ac, nil)
 
 		return store.Save(ctx, sp)
 	}
@@ -118,7 +123,7 @@ func (s *QSchedulerAdminServerImpl) ModAccount(ctx context.Context, r *qschedule
 			return err
 		}
 		config := sp.Scheduler.Config()
-		accountConfig, ok := config.AccountConfigs[r.AccountId]
+		accountConfig, ok := config.AccountConfigs[scheduler.AccountID(r.AccountId)]
 		if !ok {
 			return status.Errorf(codes.NotFound, "no account with id %s", r.AccountId)
 		}
@@ -133,7 +138,9 @@ func (s *QSchedulerAdminServerImpl) ModAccount(ctx context.Context, r *qschedule
 			accountConfig.DisableFreeTasks = r.DisableFreeTasks.Value
 		}
 		if len(r.ChargeRate) != 0 {
-			accountConfig.ChargeRate = r.ChargeRate
+			bal := scheduler.Balance{}
+			copy(bal[:], r.ChargeRate)
+			accountConfig.ChargeRate = bal
 		}
 		return store.Save(ctx, sp)
 	}
@@ -161,7 +168,7 @@ func (s *QSchedulerAdminServerImpl) ModSchedulerPool(ctx context.Context, r *qsc
 			config.DisablePreemption = r.DisablePreemption.Value
 		}
 		if r.BotExpirationSeconds != nil {
-			config.BotExpiration = tutils.DurationProto(time.Duration(r.BotExpirationSeconds.Value) * time.Second)
+			config.BotExpiration = time.Duration(r.BotExpirationSeconds.Value) * time.Second
 		}
 
 		return store.Save(ctx, sp)

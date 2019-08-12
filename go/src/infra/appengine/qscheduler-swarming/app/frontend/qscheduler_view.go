@@ -105,7 +105,7 @@ func (s *QSchedulerViewServerImpl) InspectPool(ctx context.Context, r *qschedule
 		WaitingTasks:      waiting,
 		IdleBots:          idle,
 		AccountBalances:   responseBalance,
-		AccountConfigs:    sp.Scheduler.Config().AccountConfigs,
+		AccountConfigs:    sp.Scheduler.Config().ToProto().AccountConfigs,
 		DisablePreemption: sp.Scheduler.Config().DisablePreemption,
 	}
 

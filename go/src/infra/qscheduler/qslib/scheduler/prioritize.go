@@ -47,7 +47,7 @@ func (s *Scheduler) prioritizeRequests(fanoutCounter *fanoutCounter) [NumPriorit
 		}
 
 		disableIfFree := false
-		if c, ok := s.config.AccountConfigs[string(req.AccountID)]; ok {
+		if c, ok := s.config.AccountConfigs[req.AccountID]; ok {
 			disableIfFree = c.DisableFreeTasks
 		}
 

@@ -33,7 +33,6 @@ import (
 
 	"infra/qscheduler/qslib/protos"
 	"infra/qscheduler/qslib/protos/metrics"
-	"infra/qscheduler/qslib/tutils"
 )
 
 // Scheduler encapsulates the state and configuration of a running
@@ -41,7 +40,7 @@ import (
 // of the quotascheduler algorithm.
 type Scheduler struct {
 	state  *state
-	config *protos.SchedulerConfig
+	config *Config
 }
 
 // AccountID (a string) identifies an account.
@@ -96,7 +95,7 @@ func New(t time.Time) *Scheduler {
 }
 
 // NewWithConfig returns a newly initialized Scheduler.
-func NewWithConfig(t time.Time, c *protos.SchedulerConfig) *Scheduler {
+func NewWithConfig(t time.Time, c *Config) *Scheduler {
 	return &Scheduler{
 		state:  newState(t),
 		config: c,
@@ -105,32 +104,26 @@ func NewWithConfig(t time.Time, c *protos.SchedulerConfig) *Scheduler {
 
 // NewFromProto returns a new Scheduler from proto representation.
 func NewFromProto(s *protos.Scheduler) *Scheduler {
-	c := s.Config
-	if c.AccountConfigs == nil {
-		c.AccountConfigs = make(map[string]*protos.AccountConfig)
-	}
-	return &Scheduler{newStateFromProto(s.State), c}
+	return &Scheduler{newStateFromProto(s.State), NewConfigFromProto(s.Config)}
 }
 
 // ToProto returns a proto representation of the state and configuration of Scheduler.
 func (s *Scheduler) ToProto() *protos.Scheduler {
 	return &protos.Scheduler{
 		State:  s.state.toProto(),
-		Config: s.config,
+		Config: s.config.ToProto(),
 	}
-}
-
-// Config gets the scheduler config.
-func (s *Scheduler) Config() *protos.SchedulerConfig {
-	return s.config
 }
 
 // AddAccount creates a new account with the given id, config, and initialBalance
 // (or zero balance if nil).
 //
 // If an account with that id already exists, then it is overwritten.
-func (s *Scheduler) AddAccount(ctx context.Context, id AccountID, config *protos.AccountConfig, initialBalance []float32) {
-	s.config.AccountConfigs[string(id)] = config
+func (s *Scheduler) AddAccount(ctx context.Context, id AccountID, config *AccountConfig, initialBalance []float32) {
+	if len(initialBalance) > NumPriorities {
+		panic("too many values supplied in initialBalance")
+	}
+	s.config.AccountConfigs[id] = config
 	bal := Balance{}
 	copy(bal[:], initialBalance)
 	s.state.balances[id] = bal
@@ -199,7 +192,7 @@ func (s *Scheduler) UpdateTime(ctx context.Context, t time.Time) {
 
 	// Null out balances with no corresponding config.
 	for aid := range s.state.balances {
-		if _, ok := config.AccountConfigs[string(aid)]; !ok {
+		if _, ok := config.AccountConfigs[aid]; !ok {
 			delete(s.state.balances, aid)
 		}
 	}
@@ -297,15 +290,20 @@ func (s *Scheduler) RunningRequests() int {
 
 // DeleteAccount deletes the given account.
 func (s *Scheduler) DeleteAccount(aid AccountID) {
-	delete(s.config.AccountConfigs, string(aid))
+	delete(s.config.AccountConfigs, aid)
 	delete(s.state.balances, aid)
+}
+
+// Config returns the scheduler's config.
+func (s *Scheduler) Config() *Config {
+	return s.config
 }
 
 // expireWorkers deletes idle workers that haven't been heard from recently.
 func (s *Scheduler) expireWorkers() {
 	expiry := 300 * time.Second
-	if s.config.BotExpiration != nil {
-		expiry = tutils.Duration(s.config.BotExpiration)
+	if s.config.BotExpiration != 0 {
+		expiry = s.config.BotExpiration
 	}
 
 	for wid, w := range s.state.workers {

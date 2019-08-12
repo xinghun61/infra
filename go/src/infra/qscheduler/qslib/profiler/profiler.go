@@ -23,7 +23,6 @@ import (
 	"time"
 
 	"infra/qscheduler/qslib/scheduler"
-	"infra/qscheduler/qslib/tutils"
 
 	"go.chromium.org/luci/common/data/stringset"
 )
@@ -74,7 +73,7 @@ func newStateWithAccount(ctx context.Context, params StateParams, t time.Time) *
 		for j := range chargeRate {
 			chargeRate[j] = rand.Float32() * params.ChargeRateMax
 		}
-		accountConfig := scheduler.NewAccountConfig(params.Fanout, params.ChargeTime, chargeRate)
+		accountConfig := scheduler.NewAccountConfig(params.Fanout, params.ChargeTime, chargeRate, false)
 		accountConfig.DisableFreeTasks = params.DisableFreeTasks
 
 		state.AddAccount(ctx, accountName(i), accountConfig, nil)
@@ -142,7 +141,7 @@ func RunSimulation(params SimulationParams) {
 	// The preemption pass of scheduler has not yet been optimized for
 	// large state size. Disable it for simulation purposes.
 	state.Config().DisablePreemption = true
-	state.Config().BotExpiration = tutils.DurationProto(time.Hour * 100)
+	state.Config().BotExpiration = time.Hour * 100
 
 	labels := labelCorpus(params.StateParams.LabelCorpusSize)
 

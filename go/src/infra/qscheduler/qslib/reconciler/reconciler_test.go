@@ -252,7 +252,7 @@ func TestPreemption(t *testing.T) {
 
 			Convey("given a new request with higher priority", func() {
 				aid := scheduler.AccountID("Account1")
-				s.AddAccount(ctx, aid, scheduler.NewAccountConfig(0, 0, nil), []float32{1})
+				s.AddAccount(ctx, aid, scheduler.NewAccountConfig(0, 0, nil, false), []float32{1})
 				t1 := time.Unix(1, 0)
 				newRequest := scheduler.RequestID("Request2")
 				taskUpdate := &TaskWaitingRequest{

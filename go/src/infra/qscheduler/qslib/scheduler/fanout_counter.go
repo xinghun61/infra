@@ -16,21 +16,19 @@ package scheduler
 
 import (
 	"math"
-
-	"infra/qscheduler/qslib/protos"
 )
 
 type accountConfigGetter interface {
-	getAccountConfig(AccountID) (config *protos.AccountConfig, ok bool)
+	getAccountConfig(AccountID) (config *AccountConfig, ok bool)
 }
 
-// acGetter is a SchedulerConfig wrapper that implements accountConfigGetter
+// acGetter is a Config wrapper that implements accountConfigGetter
 type acGetter struct {
-	*protos.SchedulerConfig
+	*Config
 }
 
-func (g acGetter) getAccountConfig(aid AccountID) (config *protos.AccountConfig, ok bool) {
-	config, ok = g.AccountConfigs[string(aid)]
+func (g acGetter) getAccountConfig(aid AccountID) (config *AccountConfig, ok bool) {
+	config, ok = g.AccountConfigs[aid]
 	return config, ok
 }
 
@@ -42,7 +40,7 @@ type fanoutCounter struct {
 }
 
 // netFanoutCounter initializes a fanoutCounter
-func newFanoutCounter(config *protos.SchedulerConfig) *fanoutCounter {
+func newFanoutCounter(config *Config) *fanoutCounter {
 	return &fanoutCounter{
 		jobsUntilThrottled: make(map[fanoutGroup]int),
 		configGetter:       acGetter{config},

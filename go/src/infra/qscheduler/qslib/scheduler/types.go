@@ -26,13 +26,6 @@ import (
 
 var unixZeroTime = time.Unix(0, 0).UTC()
 
-// NewConfig creates an returns a new Config instance with all maps initialized.
-func NewConfig() *protos.SchedulerConfig {
-	return &protos.SchedulerConfig{
-		AccountConfigs: map[string]*protos.AccountConfig{},
-	}
-}
-
 // newState creates an returns a new State instance with all maps initialized.
 func newState(t time.Time) *state {
 	return &state{

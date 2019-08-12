@@ -37,7 +37,7 @@ func Example() {
 	s := scheduler.New(time.Now())
 
 	// Create a quota account with no initial balance.
-	accountConfig := scheduler.NewAccountConfig(0, 1, []float32{1, 2, 3})
+	accountConfig := scheduler.NewAccountConfig(0, 1, []float32{1, 2, 3}, false)
 	accountID := scheduler.AccountID("Account1")
 	s.AddAccount(ctx, accountID, accountConfig, nil)
 
