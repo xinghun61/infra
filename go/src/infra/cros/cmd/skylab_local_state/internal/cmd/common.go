@@ -6,17 +6,11 @@ package cmd
 
 import (
 	"os"
+	"path/filepath"
 
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/golang/protobuf/proto"
 	"go.chromium.org/luci/common/errors"
-)
-
-const (
-	hostInfoSubDir     = "host_info_store"
-	hostInfoFileSuffix = ".store"
-	dutStateSubDir     = "swarming_state"
-	dutStateFileSuffix = ".json"
 )
 
 // readJSONPb reads a JSON string from inFile and unpacks it as a proto.
@@ -37,6 +31,12 @@ func readJSONPb(inFile string, payload proto.Message) error {
 
 // writeJSONPb writes a JSON encoded proto to outFile.
 func writeJSONPb(outFile string, payload proto.Message) error {
+	dir := filepath.Dir(outFile)
+	// Create the directory if it doesn't exist.
+	if err := os.MkdirAll(dir, 0777); err != nil {
+		return errors.Annotate(err, "write JSON pb").Err()
+	}
+
 	w, err := os.Create(outFile)
 	if err != nil {
 		return errors.Annotate(err, "write JSON pb").Err()

@@ -7,8 +7,6 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"os"
-	"path/filepath"
 	"strings"
 
 	"github.com/golang/protobuf/proto"
@@ -22,6 +20,7 @@ import (
 	"go.chromium.org/chromiumos/infra/proto/go/lab_platform"
 	"go.chromium.org/chromiumos/infra/proto/go/test_platform/skylab_local_state"
 	fleet "infra/appengine/crosskylabadmin/api/fleet/v1"
+	"infra/libs/skylab/dutstate"
 	"infra/libs/skylab/inventory"
 	"infra/libs/skylab/inventory/autotest/labels"
 )
@@ -97,7 +96,7 @@ func (c *loadRun) innerRun(a subcommands.Application, args []string, env subcomm
 		return err
 	}
 
-	if err := validateRequest(&request); err != nil {
+	if err := validateLoadRequest(&request); err != nil {
 		return err
 	}
 
@@ -138,7 +137,7 @@ func (c *loadRun) innerRun(a subcommands.Application, args []string, env subcomm
 	return writeJSONPb(c.outputPath, &response)
 }
 
-func validateRequest(request *skylab_local_state.LoadRequest) error {
+func validateLoadRequest(request *skylab_local_state.LoadRequest) error {
 	if request == nil {
 		return fmt.Errorf("nil request")
 	}
@@ -222,12 +221,13 @@ func hostInfoFromDutInfo(dut *inventory.DeviceUnderTest) *skylab_local_state.Aut
 
 // getDutState reads the local bot state from the cache file.
 func getDutState(autotestDir string, dutID string) (*lab_platform.DutState, error) {
-	fileName := dutID + dutStateFileSuffix
-	filePath := filepath.Join(autotestDir, dutStateSubDir, fileName)
+	p := dutstate.CacheFilePath(autotestDir, dutID)
 	s := lab_platform.DutState{}
-	if err := readJSONPb(filePath, &s); err != nil {
+
+	if err := readJSONPb(p, &s); err != nil {
 		return nil, errors.Annotate(err, "get bot state").Err()
 	}
+
 	return &s, nil
 }
 
@@ -244,15 +244,10 @@ func addDutStateToHostInfo(hostInfo *skylab_local_state.AutotestHostInfo, dutSta
 
 // writeHostInfo writes a JSON-encoded AutotestHostInfo proto to the
 // DUT host info file inside the results directory.
-func writeHostInfo(resultsDir string, dutName string, hostInfo *skylab_local_state.AutotestHostInfo) error {
-	hostInfoDir := filepath.Join(resultsDir, hostInfoSubDir)
-	if err := os.MkdirAll(hostInfoDir, 0777); err != nil {
-		return errors.Annotate(err, "write host info").Err()
-	}
+func writeHostInfo(resultsDir string, dutName string, i *skylab_local_state.AutotestHostInfo) error {
+	p := dutstate.HostInfoFilePath(resultsDir, dutName)
 
-	hostInfoFilePath := filepath.Join(hostInfoDir, dutName+hostInfoFileSuffix)
-
-	if err := writeJSONPb(hostInfoFilePath, hostInfo); err != nil {
+	if err := writeJSONPb(p, i); err != nil {
 		return errors.Annotate(err, "write host info").Err()
 	}
 
