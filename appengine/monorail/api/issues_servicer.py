@@ -143,11 +143,14 @@ class IssuesServicer(monorail_servicer.MonorailServicer):
   def ListIssues(self, mc, request):
     """Return the list of issues for projects that satisfy the given query."""
     use_cached_searches = not settings.local_mode
+    # TODO(zhangtiff): Rework FrontendSearchPipeline to not depend on url_params
+    # for can.
+    can = request.canned_query or 1
     with work_env.WorkEnv(mc, self.services) as we:
       start, max_items = converters.IngestPagination(request.pagination)
       pipeline = we.ListIssues(
           request.query, request.project_names, mc.auth.user_id,
-          max_items, start, [], request.canned_query or 1,
+          max_items, start, [('can', can)], can,
           request.group_by_spec, request.sort_spec, use_cached_searches)
     with mc.profiler.Phase('reveal emails to members'):
       projects = self.services.project.GetProjectsByName(

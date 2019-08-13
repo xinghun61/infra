@@ -236,6 +236,8 @@ class IssuesServicerTest(unittest.TestCase):
     self.assertEqual(actual_issue_2.local_id, 2)
     self.assertEqual(2, response.total_results)
 
+  # TODO(zhangtiff): Add tests for ListIssues + canned queries.
+
   def testListReferencedIssues(self):
     """We can get the referenced issues that exist."""
     self.services.project.TestAddProject(
