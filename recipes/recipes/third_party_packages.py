@@ -137,7 +137,8 @@ def GenTests(api):
 
   yield (
       api.test('basic-buildbot') +
-      GenTestData())
+      GenTestData() +
+      api.runtime(is_luci=False, is_experimental=False))
 
   yield (
       api.test('dry_run') +
