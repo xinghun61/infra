@@ -97,6 +97,19 @@ func httpClient(ctx context.Context, f *authcli.Flags) (*http.Client, error) {
 	return c, nil
 }
 
+// newSwarmingClient returns a new client for the Swarming service.
+func newSwarmingClient(ctx context.Context, authFlags authcli.Flags, env site.Environment) (*swarming.Client, error) {
+	h, err := httpClient(ctx, &authFlags)
+	if err != nil {
+		return nil, errors.Annotate(err, "failed to create http client").Err()
+	}
+	client, err := swarming.New(ctx, h, env.SwarmingService)
+	if err != nil {
+		return nil, err
+	}
+	return client, nil
+}
+
 type taskInfo struct {
 	Name string `json:"task_name"`
 	ID   string `json:"task_id"`

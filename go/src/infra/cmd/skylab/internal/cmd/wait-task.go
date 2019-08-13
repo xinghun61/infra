@@ -19,7 +19,6 @@ import (
 	"go.chromium.org/luci/auth/client/authcli"
 	swarming_api "go.chromium.org/luci/common/api/swarming/swarming/v1"
 	"go.chromium.org/luci/common/cli"
-	"go.chromium.org/luci/common/errors"
 
 	"infra/libs/skylab/swarming"
 )
@@ -94,19 +93,6 @@ func (c *waitTaskRun) innerRunSwarming(a subcommands.Application, env subcommand
 	}
 
 	return extractSwarmingResult(ctx, taskID, client)
-}
-
-// TODO(akeshet): Move to common file.
-func newSwarmingClient(ctx context.Context, authFlags authcli.Flags, env site.Environment) (*swarming.Client, error) {
-	h, err := httpClient(ctx, &authFlags)
-	if err != nil {
-		return nil, errors.Annotate(err, "failed to create http client").Err()
-	}
-	client, err := swarming.New(ctx, h, env.SwarmingService)
-	if err != nil {
-		return nil, err
-	}
-	return client, nil
 }
 
 func (c *waitTaskRun) innerRunBuildbucket(a subcommands.Application, env subcommands.Env) (*skylab_tool.WaitTaskResult, error) {
