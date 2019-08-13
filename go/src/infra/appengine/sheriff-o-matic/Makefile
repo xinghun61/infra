@@ -1,7 +1,7 @@
 .PHONY: test
 WCT_PATH = ./node_modules/web-component-tester/bin/wct
 VULCANIZE_PATH = ./node_modules/vulcanize/bin/vulcanize
-GAE_PY?= python gae.py
+GAE_PY?= ../../../../../../gcloud/bin/dev_appserver.py
 
 default: help
 
@@ -60,9 +60,9 @@ deploy_staging: build getversion_staging
 	rm frontend/elements/som-app/som-app.vulcanized.html
 
 devserver:
-	dev_appserver.py frontend/app.yaml backend/app.yaml
+	$(GAE_PY) frontend/app.yaml backend/app.yaml
 
 # The -remote commands expose the app so that it is externally
 # accessible by hostname:port, rather than just localhost:port.
 devserver_remote:
-	dev_appserver.py --host $$HOSTNAME frontend/app.yaml backend/app.yaml
+	$(GAE_PY) --host $$HOSTNAME frontend/app.yaml backend/app.yaml
