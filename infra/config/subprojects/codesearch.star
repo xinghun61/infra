@@ -126,16 +126,20 @@ def update_submodules_mirror(
       short_name,
       source_repo,
       target_repo,
+      extra_submodules=None,
       triggered_by=None,
   ):
+  properties = {
+      'source_repo': source_repo,
+      'target_repo': target_repo,
+  }
+  if extra_submodules:
+    properties['extra_submodules'] = extra_submodules
   builder(
       name = name,
       execution_timeout = time.hour,
       executable = infra.recipe('update_submodules_mirror'),
-      properties = {
-          'source_repo': source_repo,
-          'target_repo': target_repo,
-      },
+      properties = properties,
       caches = [swarming.cache('codesearch_update_submodules_mirror')],
       category = 'update-submodules-mirror',
       short_name = short_name,
@@ -185,6 +189,7 @@ update_submodules_mirror(
     short_name = 'src',
     source_repo = 'https://chromium.googlesource.com/chromium/src',
     target_repo = 'https://chromium.googlesource.com/codesearch/chromium/src',
+    extra_submodules = ['src/out=https://chromium.googlesource.com/chromium/src/out'],
     triggered_by = chromium_src_poller(),
 )
 update_submodules_mirror(
