@@ -1,0 +1,10 @@
+{
+  "extends": "./tsconfig.build.json",
+  "compilerOptions": {
+    "baseUrl": "./",
+    "paths": {
+      "@chopsui/*": ["elements/*"],
+      "*": ["node_modules"],
+    },
+  },
+}
