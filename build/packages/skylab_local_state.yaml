@@ -1,0 +1,10 @@
+package: chromiumos/infra/skylab_local_state/${platform}
+description: Tool for interacting with host info and DUT state files.
+platforms:
+  - linux-amd64
+go_packages:
+  - infra/cros/cmd/skylab_local_state
+root: ../../go/bin
+data:
+  - file: skylab_local_state${exe_suffix}
+  - version_file: .versions/skylab_local_state${exe_suffix}.cipd_version
