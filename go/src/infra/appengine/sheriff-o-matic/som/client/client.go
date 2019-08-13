@@ -23,7 +23,6 @@ import (
 	"infra/monitoring/messages"
 	"infra/monorail"
 
-	bbpb "go.chromium.org/luci/buildbucket/proto"
 	"go.chromium.org/luci/common/logging"
 	"go.chromium.org/luci/grpc/prpc"
 	milo "go.chromium.org/luci/milo/api/proto"
@@ -449,7 +448,7 @@ func NewMonorail(c context.Context, baseURL string) monorail.MonorailClient {
 }
 
 // ProdClients returns a set of service clients pointed at production.
-func ProdClients(ctx context.Context) (LogReader, FindIt, Milo, CrBug, monorail.MonorailClient, TestResults, BuildBucket) {
+func ProdClients(ctx context.Context) (LogReader, FindIt, Milo, CrBug, monorail.MonorailClient, TestResults) {
 	findIt := NewFindit("https://findit-for-me.appspot.com")
 
 	client, err := getAsSelfOAuthClient(ctx)
@@ -472,20 +471,12 @@ func ProdClients(ctx context.Context) (LogReader, FindIt, Milo, CrBug, monorail.
 	testResultsClient := NewTestResults("https://test-results.appspot.com")
 	crBugs := &CrBugs{}
 
-	buildBucketPRPCClient := &prpc.Client{
-		C:       client,
-		Host:    "cr-buildbucket.appspot.com",
-		Options: opts,
-	}
-	buildbucketClientStub := bbpb.NewBuildsPRPCClient(buildBucketPRPCClient)
-	buildbucket := &buildbucketClient{BuildBucket: buildbucketClientStub}
-
-	return NewLogReader(), findIt, miloClient, crBugs, monorailClient, testResultsClient, buildbucket
+	return NewLogReader(), findIt, miloClient, crBugs, monorailClient, testResultsClient
 }
 
 // StagingClients returns a set of service clients pointed at instances suitable for a
 // staging environment.
-func StagingClients(ctx context.Context) (LogReader, FindIt, Milo, CrBug, monorail.MonorailClient, TestResults, BuildBucket) {
+func StagingClients(ctx context.Context) (LogReader, FindIt, Milo, CrBug, monorail.MonorailClient, TestResults) {
 	findIt := NewFindit("https://findit-for-me-staging.appspot.com")
 
 	client, err := getAsSelfOAuthClient(ctx)
@@ -508,13 +499,5 @@ func StagingClients(ctx context.Context) (LogReader, FindIt, Milo, CrBug, monora
 	testResultsClient := NewTestResults("https://test-results.appspot.com")
 	crBugs := &CrBugs{}
 
-	buildBucketPRPCClient := &prpc.Client{
-		C:       client,
-		Host:    "cr-buildbucket.appspot.com",
-		Options: opts,
-	}
-	buildbucketClientStub := bbpb.NewBuildsPRPCClient(buildBucketPRPCClient)
-	buildbucket := &buildbucketClient{BuildBucket: buildbucketClientStub}
-
-	return NewLogReader(), findIt, miloClient, crBugs, monorailClient, testResultsClient, buildbucket
+	return NewLogReader(), findIt, miloClient, crBugs, monorailClient, testResultsClient
 }

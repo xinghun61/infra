@@ -155,13 +155,13 @@ func setServiceClients(ctx *router.Context, a *analyzer.Analyzer) {
 	// TODO: audit this code to make sure frontend module actually uses
 	// Analyzer and/or any of these clients besides milo and crbug.
 	if info.AppID(ctx.Context) == prodAppID {
-		logReader, findIt, miloClient, crBug, _, testResults, _ := client.ProdClients(ctx.Context)
+		logReader, findIt, miloClient, crBug, _, testResults := client.ProdClients(ctx.Context)
 		a.StepAnalyzers = step.DefaultStepAnalyzers(logReader, findIt, testResults)
 		a.CrBug = crBug
 		a.Milo = miloClient
 		a.FindIt = findIt
 	} else {
-		logReader, findIt, miloClient, crBug, _, testResults, _ := client.StagingClients(ctx.Context)
+		logReader, findIt, miloClient, crBug, _, testResults := client.StagingClients(ctx.Context)
 		a.StepAnalyzers = step.DefaultStepAnalyzers(logReader, findIt, testResults)
 		a.CrBug = crBug
 		a.Milo = miloClient
