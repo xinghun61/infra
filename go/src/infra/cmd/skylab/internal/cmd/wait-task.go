@@ -84,7 +84,7 @@ func (c *waitTaskRun) innerRunSwarming(a subcommands.Application, env subcommand
 	ctx, cancel := maybeWithTimeout(ctx, c.timeoutMins)
 	defer cancel(context.Canceled)
 
-	client, err := swarmingClient(ctx, c.authFlags, c.envFlags.Env())
+	client, err := newSwarmingClient(ctx, c.authFlags, c.envFlags.Env())
 	if err != nil {
 		return nil, err
 	}
@@ -97,7 +97,7 @@ func (c *waitTaskRun) innerRunSwarming(a subcommands.Application, env subcommand
 }
 
 // TODO(akeshet): Move to common file.
-func swarmingClient(ctx context.Context, authFlags authcli.Flags, env site.Environment) (*swarming.Client, error) {
+func newSwarmingClient(ctx context.Context, authFlags authcli.Flags, env site.Environment) (*swarming.Client, error) {
 	h, err := httpClient(ctx, &authFlags)
 	if err != nil {
 		return nil, errors.Annotate(err, "failed to create http client").Err()

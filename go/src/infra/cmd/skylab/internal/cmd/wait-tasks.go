@@ -152,7 +152,7 @@ type waitItem struct {
 }
 
 func waitMultiSwarming(ctx context.Context, IDs stringset.Set, authFlags authcli.Flags, env site.Environment) (<-chan waitItem, error) {
-	client, err := swarmingClient(ctx, authFlags, env)
+	client, err := newSwarmingClient(ctx, authFlags, env)
 	if err != nil {
 		return nil, err
 	}
