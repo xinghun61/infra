@@ -69,15 +69,16 @@ export class MrGrid extends connectStore(LitElement) {
           </a>
         `;
       }
-    } else if (cellMode === 'tiles') {
-      return html`
-        ${this.groupedIssues.get(cellHeading).map((issue) => html`
-          <mr-grid-tile
-            .issue=${issue}
-            .queryParams=${this.queryParams}
-          ></mr-grid-tile>`)}
-      `;
     }
+
+    // Default to tiles.
+    return html`
+      ${this.groupedIssues.get(cellHeading).map((issue) => html`
+        <mr-grid-tile
+          .issue=${issue}
+          .queryParams=${this.queryParams}
+        ></mr-grid-tile>`)}
+    `;
   }
 
   formatCountsURL(xHeading, yHeading) {
@@ -113,11 +114,8 @@ export class MrGrid extends connectStore(LitElement) {
     return {
       xAttr: {type: String},
       yAttr: {type: String},
-      xHeadings: {type: Array},
-      yHeadings: {type: Array},
       issues: {type: Array},
       cellMode: {type: String},
-      groupedIssues: {type: Map},
       queryParams: {type: Object},
       projectName: {type: String},
       _fieldDefMap: {type: Object},
@@ -151,6 +149,7 @@ export class MrGrid extends connectStore(LitElement) {
 
   constructor() {
     super();
+    this.cellMode = 'tiles';
     this.xHeadings = [];
     this.yHeadings = [];
     this.groupedIssues = new Map();
@@ -163,15 +162,19 @@ export class MrGrid extends connectStore(LitElement) {
     this._labelPrefixSet = project.labelPrefixSet(state);
   }
 
-  updated(changedProperties) {
+  update(changedProperties) {
     if (changedProperties.has('xAttr') || changedProperties.has('yAttr') ||
-        changedProperties.has('issues')) {
+        changedProperties.has('issues') ||
+        changedProperties.has('_fieldDefMap') ||
+        changedProperties.has('_labelPrefixSet')) {
       const gridData = extractGridData(this.issues, this.xAttr, this.yAttr,
           this.projectName, this._fieldDefMap, this._labelPrefixSet);
       this.xHeadings = gridData.xHeadings;
       this.yHeadings = gridData.yHeadings;
       this.groupedIssues = gridData.sortedIssues;
     }
+
+    super.update();
   }
 };
 customElements.define('mr-grid', MrGrid);

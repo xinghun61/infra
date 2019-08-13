@@ -11,14 +11,9 @@ let element;
 describe('mr-grid', () => {
   beforeEach(() => {
     element = document.createElement('mr-grid');
-    element.queryParams = {'x': '', 'y': ''};
+    element.queryParams = {x: '', y: ''};
+    element.issues = [{localId: 1, projectName: 'monorail'}];
     element.projectName = 'monorail';
-    element.groupedIssues = new Map();
-    element.xHeadings = ['All'];
-    element.yHeadings = ['All'];
-    element.groupedIssues.set(
-        'All + All', [{'localId': 1, 'projectName': 'monorail'}]
-    );
     document.body.appendChild(element);
   });
 
@@ -45,83 +40,136 @@ describe('mr-grid', () => {
     await element.updateComplete;
 
     const href = element.shadowRoot.querySelector('.counts').href;
-    const startIndex = href.indexOf('/p');
-    const trimmedHref = href.substring(startIndex);
-    assert.equal(trimmedHref, '/p/monorail/issues/detail?id=1&x=&y=');
+    assert.include(href, '/p/monorail/issues/detail?id=1&x=&y=');
+  });
+
+  it('renders as tiles when invalid cell mode set', async () => {
+    element.cellMode = 'InvalidCells';
+
+    await element.updateComplete;
+
+    const tile = element.shadowRoot.querySelector('mr-grid-tile');
+    assert.isDefined(tile);
+    assert.deepEqual(tile.issue, {localId: 1, projectName: 'monorail'});
+  });
+
+  it('sorts issues before rendering', async () => {
+    const testIssue = {
+      localId: 1,
+      projectName: 'monorail',
+      starCount: 2,
+      blockedOnIssueRefs: [{localId: 22, projectName: 'chromium'}],
+    };
+
+    element.cellMode = 'Tiles';
+
+    element.issues = [testIssue];
+    element.xAttr = 'Stars';
+    element.yAttr = 'Blocked';
+
+    await element.updateComplete;
+
+    assert.deepEqual(element.groupedIssues, new Map([
+      ['2 + Yes', [testIssue]],
+    ]));
+
+    const rows = element.shadowRoot.querySelectorAll('tr');
+
+    const colHeader = rows[0].querySelectorAll('th')[1];
+    assert.equal(colHeader.textContent.trim(), '2');
+
+    const rowHeader = rows[1].querySelector('th');
+    assert.equal(rowHeader.textContent.trim(), 'Yes');
+
+    const issueCell = rows[1].querySelector('td');
+    const tile = issueCell.querySelector('mr-grid-tile');
+
+    assert.isDefined(tile);
+    assert.deepEqual(tile.issue, testIssue);
   });
 
   it('computes href for multiple items in counts mode', async () => {
     element.cellMode = 'Counts';
 
-    const issues = element.groupedIssues.get('All + All');
-    issues.push({'localId': 2, 'projectName': 'monorail'});
-    element.groupedIssues.set('All + All', issues);
+    element.issues = [
+      {localId: 1, projectName: 'monorail'},
+      {localId: 2, projectName: 'monorail'},
+    ];
 
     await element.updateComplete;
 
     const href = element.shadowRoot.querySelector('.counts').href;
-    const startIndex = href.indexOf('/list');
-    const trimmedHref = href.substring(startIndex);
-    assert.equal(trimmedHref, '/list?x=&y=&mode=');
+    assert.include(href, '/list?x=&y=&mode=');
   });
 
-  it('computes href when grouped by row, counts', async () => {
+  it('computes counts link when grouped by row', async () => {
+    await element.updateComplete;
+
     element.cellMode = 'Counts';
-    element.queryParams = {'x': 'Type', 'y': '', 'q': 'Type:Defect'};
-    element.xHeadings.push('Defect');
-    const issues = [];
-    issues.push({'localId': 2, 'projectName': 'monorail',
-      'labelRefs': [{'label': 'Type-Defect'}]});
-    issues.push({'localId': 3, 'projectName': 'monorail',
-      'labelRefs': [{'label': 'Type-Defect'}]});
-    element.groupedIssues.set('Defect + All', issues);
+    element.queryParams = {x: 'Type', y: '', q: 'Type:Defect'};
+    element.xHeadings = ['All', 'Defect'];
+    element.yHeadings = ['All'];
+    element.groupedIssues = new Map([
+      ['All + All', [{'localId': 1, 'projectName': 'monorail'}]],
+      ['Defect + All', [
+        {localId: 2, projectName: 'monorail',
+          labelRefs: [{label: 'Type-Defect'}]},
+        {localId: 3, projectName: 'monorail',
+          labelRefs: [{label: 'Type-Defect'}]},
+      ]],
+    ]);
 
     await element.updateComplete;
 
     const href = element.shadowRoot.querySelectorAll('.counts')[1].href;
-    const startIndex = href.indexOf('/list');
-    const trimmedHref = href.substring(startIndex);
-    assert.equal(trimmedHref, '/list?x=Type&y=&q=Type%3ADefect&mode=');
+    assert.include(href, '/list?x=Type&y=&q=Type%3ADefect&mode=');
   });
 
-  it('computes href when grouped by col, counts', async () => {
+  it('computes counts link when grouped by col', async () => {
+    await element.updateComplete;
+
     element.cellMode = 'Counts';
-    element.queryParams = {'x': '', 'y': 'Type', 'q': 'Type:Defect'};
-    element.yHeadings.push('Defect');
-    const issues = [];
-    issues.push({'localId': 2, 'projectName': 'monorail',
-      'labelRefs': [{'label': 'Type-Defect'}]});
-    issues.push({'localId': 3, 'projectName': 'monorail',
-      'labelRefs': [{'label': 'Type-Defect'}]});
-    element.groupedIssues.set('All + Defect', issues);
+    element.queryParams = {x: '', y: 'Type', q: 'Type:Defect'};
+    element.xHeadings = ['All'];
+    element.yHeadings = ['All', 'Defect'];
+    element.groupedIssues = new Map([
+      ['All + All', [{'localId': 1, 'projectName': 'monorail'}]],
+      ['All + Defect', [
+        {localId: 2, projectName: 'monorail',
+          labelRefs: [{label: 'Type-Defect'}]},
+        {localId: 3, projectName: 'monorail',
+          labelRefs: [{label: 'Type-Defect'}]},
+      ]],
+    ]);
 
     await element.updateComplete;
 
     const href = element.shadowRoot.querySelectorAll('.counts')[1].href;
-    const startIndex = href.indexOf('/list');
-    const trimmedHref = href.substring(startIndex);
-    assert.equal(trimmedHref, '/list?x=&y=Type&q=Type%3ADefect&mode=');
+    assert.include(href, '/list?x=&y=Type&q=Type%3ADefect&mode=');
   });
 
-  it('computes href when grouped by row and col, counts', async () => {
+  it('computes counts link when grouped by row and col', async () => {
+    await element.updateComplete;
+
     element.cellMode = 'Counts';
-    element.queryParams = {'x': 'Stars', 'y': 'Type',
-      'q': 'Type:Defect Stars=2'};
-    element.xHeadings.push('2');
-    element.yHeadings.push('Defect');
-    const issues = [];
-    issues.push({'localId': 2, 'projectName': 'monorail',
-      'labelRefs': [{'label': 'Type-Defect'}], 'starCount': '2'});
-    issues.push({'localId': 3, 'projectName': 'monorail',
-      'labelRefs': [{'label': 'Type-Defect'}], 'starCount': '2'});
-    element.groupedIssues.set('2 + Defect', issues);
+    element.queryParams = {x: 'Stars', y: 'Type',
+      q: 'Type:Defect Stars=2'};
+    element.xHeadings = ['All', '2'];
+    element.yHeadings = ['All', 'Defect'];
+    element.groupedIssues = new Map([
+      ['All + All', [{'localId': 1, 'projectName': 'monorail'}]],
+      ['2 + Defect', [
+        {localId: 2, projectName: 'monorail',
+          labelRefs: [{label: 'Type-Defect'}], starCount: 2},
+        {localId: 3, projectName: 'monorail',
+          labelRefs: [{label: 'Type-Defect'}], starCount: 2},
+      ]],
+    ]);
 
     await element.updateComplete;
 
     const href = element.shadowRoot.querySelectorAll('.counts')[1].href;
-    const startIndex = href.indexOf('/list');
-    const trimmedHref = href.substring(startIndex);
-    assert.equal(trimmedHref,
+    assert.include(href,
         '/list?x=Stars&y=Type&q=Type%3ADefect%20Stars%3D2&mode=');
   });
 });
