@@ -4,6 +4,7 @@
 
 import {assert} from 'chai';
 import sinon from 'sinon';
+import {store} from './base.js';
 import * as issue from './issue.js';
 import {fieldTypes} from 'elements/shared/issue-fields.js';
 import {issueToIssueRef} from 'elements/shared/converters.js';
@@ -441,6 +442,43 @@ describe('issue', () => {
       });
     });
 
+    it('fetchIssueList calls ListIssues', async () => {
+      prpcCall.callsFake(() => {
+        return {
+          issues: [{localId: 1}, {localId: 2}, {localId: 3}],
+          totalResults: 6,
+        };
+      });
+
+      store.dispatch(issue.fetchIssueList({q: 'owner:me', can: '4'},
+          'chromium'));
+
+      sinon.assert.calledWith(prpcCall, 'monorail.Issues', 'ListIssues', {
+        query: 'owner:me',
+        cannedQuery: 4,
+        projectNames: ['chromium'],
+        pagination: {},
+        groupBySpec: undefined,
+        sortSpec: undefined,
+      });
+    });
+
+    it('fetchIssueList does not set can when can is NaN', async () => {
+      prpcCall.callsFake(() => ({}));
+
+      store.dispatch(issue.fetchIssueList({q: 'owner:me',
+        can: 'four-leaf-clover'}, 'chromium'));
+
+      sinon.assert.calledWith(prpcCall, 'monorail.Issues', 'ListIssues', {
+        query: 'owner:me',
+        cannedQuery: undefined,
+        projectNames: ['chromium'],
+        pagination: {},
+        groupBySpec: undefined,
+        sortSpec: undefined,
+      });
+    });
+
     it('fetchIssueList makes several calls to ListIssues', async () => {
       prpcCall.callsFake(() => {
         return {
@@ -450,11 +488,11 @@ describe('issue', () => {
       });
 
       const dispatch = sinon.stub();
-      const action = issue.fetchIssueList('', '', {maxItems: 3}, 2);
+      const action = issue.fetchIssueList({}, 'chromium', {maxItems: 3}, 2);
       await action(dispatch);
 
       sinon.assert.calledTwice(prpcCall);
-      sinon.assert.calledWith(dispatch, sinon.match({
+      sinon.assert.calledWith(dispatch, {
         type: 'FETCH_ISSUE_LIST_SUCCESS',
         issueList: {
           issues:
@@ -463,7 +501,7 @@ describe('issue', () => {
           progress: 1,
           totalResults: 6,
         },
-      }));
+      });
     });
 
     it('fetchIssueList orders issues correctly', async () => {
@@ -474,49 +512,50 @@ describe('issue', () => {
       prpcCall.onThirdCall().returns({issues: [{localId: 3}], totalResults: 6});
 
       const dispatch = sinon.stub();
-      const action = issue.fetchIssueList('', '', {maxItems: 1}, 3);
+      const action = issue.fetchIssueList({}, 'chromium', {maxItems: 1}, 3);
       await action(dispatch);
 
-      sinon.assert.calledWith(dispatch, sinon.match({
+      sinon.assert.calledWith(dispatch, {
         type: 'FETCH_ISSUE_LIST_SUCCESS',
         issueList: {
           issues: [{localId: 1}, {localId: 2}, {localId: 3}],
           progress: 1,
           totalResults: 6,
         },
-      }));
+      });
     });
 
     it('returns progress of 1 when no totalIssues', async () => {
       prpcCall.onFirstCall().returns({issues: [], totalResults: 0});
 
       const dispatch = sinon.stub();
-      const action = issue.fetchIssueList('', '', {maxItems: 1}, 1);
+      const action = issue.fetchIssueList({}, 'chromium', {maxItems: 1}, 1);
       await action(dispatch);
 
-      sinon.assert.calledWith(dispatch, sinon.match({
+      sinon.assert.calledWith(dispatch, {
         type: 'FETCH_ISSUE_LIST_SUCCESS',
         issueList: {
           issues: [],
           progress: 1,
+          totalResults: 0,
         },
-      }));
+      });
     });
 
     it('returns progress of 1 when totalIssues undefined', async () => {
-      prpcCall.onFirstCall().returns({issues: [], totalResults: null});
+      prpcCall.onFirstCall().returns({issues: []});
 
       const dispatch = sinon.stub();
-      const action = issue.fetchIssueList('', '', {maxItems: 1}, 1);
+      const action = issue.fetchIssueList({}, 'chromium', {maxItems: 1}, 1);
       await action(dispatch);
 
-      sinon.assert.calledWith(dispatch, sinon.match({
+      sinon.assert.calledWith(dispatch, {
         type: 'FETCH_ISSUE_LIST_SUCCESS',
         issueList: {
           issues: [],
           progress: 1,
         },
-      }));
+      });
     });
   });
 

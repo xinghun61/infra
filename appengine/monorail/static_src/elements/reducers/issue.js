@@ -528,7 +528,8 @@ export const components = createSelector(
     project.componentsMap,
     (issue, components) => {
       if (!issue || !issue.componentRefs) return [];
-      return issue.componentRefs.map((comp) => components.get(comp.path) || comp);
+      return issue.componentRefs.map(
+          (comp) => components.get(comp.path) || comp);
     }
 );
 
@@ -742,15 +743,19 @@ export const fetchIssueList =
     let totalCalls;
     const itemsPerCall = (pagination.maxItems || 1000);
 
+    const can = Number.parseInt(params.can) || undefined;
+
     dispatch({type: FETCH_ISSUE_LIST_START});
 
     // initial api call made to determine total number of issues matching
     // the query.
     try {
+      // TODO(zhangtiff): Refactor this action creator when adding issue
+      // list pagination.
       const resp = await prpcClient.call(
           'monorail.Issues', 'ListIssues', {
             query: params.q,
-            cannedQuery: params.can,
+            cannedQuery: can,
             projectNames: [projectName],
             pagination: pagination,
             groupBySpec: params.groupby,
@@ -785,10 +790,9 @@ export const fetchIssueList =
           const resp = await prpcClient.call(
               'monorail.Issues', 'ListIssues', {
                 query: params.q,
-                cannedQuery: params.can,
+                cannedQuery: can,
                 projectNames: [projectName],
-                pagination:
-                {start: i * itemsPerCall, maxItems: itemsPerCall},
+                pagination: {start: i * itemsPerCall, maxItems: itemsPerCall},
                 groupBySpec: params.groupby,
                 sortSpec: params.sort,
               });
