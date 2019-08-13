@@ -12,7 +12,10 @@ import difflib
 import json
 import urllib2
 
+from google.appengine.ext import ndb
+
 from common.findit_http_client import FinditHttpClient
+from components import gitiles
 from gae_libs.caches import PickledMemCache
 from libs.cache_decorator import Cached
 from model.code_coverage import CoveragePercentage
@@ -288,19 +291,22 @@ def RebasePresubmitCoverageDataBetweenPatchsets(
       d for d in coverage_data_src if d['path'][2:] in patchset_dest_files
   ]
 
-  # TODO(crbug.com/910289): Parallelize the requests to get file content.
   files_content = {}
   for d in coverage_data:
     f = d['path'][2:]
     files_content[f] = [
-        _FetchFileContentFromGerrit(host, project, change, f,
-                                    _GetPatchsetRevision(ps, change_details))
+        # In luci/components, all paths start with '/'.
+        gitiles.get_file_content_async(
+            host.replace('-review', ''), project,
+            _GetPatchsetRevision(ps, change_details), '/' + f)
         for ps in (patchset_src, patchset_dest)
     ]
 
   coverage_data_dest = []
   for file_data_src in coverage_data:
-    content_src, content_dest = files_content[file_data_src['path'][2:]]
+    content_src, content_dest = [
+        fut.get_result() for fut in files_content[file_data_src['path'][2:]]
+    ]
     diff_lines = list(
         difflib.unified_diff(content_src.splitlines(),
                              content_dest.splitlines()))
@@ -370,33 +376,6 @@ def _FetchPatchsetFiles(host, project, change, patchset_revision):
     response = response[4:]
 
   return json.loads(response)
-
-
-def _FetchFileContentFromGerrit(host, project, change, file_path,
-                                patchset_revision):
-  """Fetches file content for a given file from Gerrit.
-
-  Args:
-    host (str): The url of the host.
-    project (str): The project name.
-    change (int): The change number.
-    file_path (str): A file path that is relative to the checkout.
-    patchset_revision (str): The commit id of the patchset.
-
-  Returns:
-    A string representing the content of the file.
-  """
-  # Uses the Get Content API to get the file content from Gerrit.
-  # https://gerrit-review.googlesource.com/Documentation/rest-api-changes.html#get-content
-  quoted_file_path = urllib2.quote(file_path, safe='')
-  url = ('https://%s/changes/%s/revisions/%s/files/%s/content' % (
-      host, _GetChangeId(project, change), patchset_revision, quoted_file_path))
-  status_code, response, _ = FinditHttpClient().Get(url)
-  if status_code != 200:
-    raise RuntimeError(
-        'Failed to get change details with status code: %d' % status_code)
-
-  return base64.b64decode(response)
 
 
 def CalculateAbsolutePercentages(coverage_data):

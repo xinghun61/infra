@@ -7,9 +7,17 @@ import json
 import mock
 import textwrap
 
+from google.appengine.ext import ndb
+
 from model.code_coverage import CoveragePercentage
 from services.code_coverage import code_coverage_util
 from waterfall.test.wf_testcase import WaterfallTestCase
+
+
+def _CreateNDBFuture(result):
+  future = ndb.Future()
+  future.set_result(result)
+  return future
 
 
 class CodeCoverageUtilTest(WaterfallTestCase):
@@ -196,8 +204,10 @@ class CodeCoverageUtilTest(WaterfallTestCase):
 
     self.assertListEqual(expected_lines, lines)
 
+  @mock.patch.object(code_coverage_util.gitiles, 'get_file_content_async')
   @mock.patch.object(code_coverage_util.FinditHttpClient, 'Get')
-  def testRebasePresubmitCoverageDataLinesOnly(self, mock_http_client):
+  def testRebasePresubmitCoverageDataLinesOnly(self, mock_http_client,
+                                               mock_get_file_content_async):
     revisions = {'revisions': {'1234': {'_number': 1}, '5678': {'_number': 2}}}
     patchset_dest_files = {'/COMMIT_MSG': {'status': 'A'}, 'base/test.cc': {}}
     file_content_src = '1\n2\n3\n'
@@ -205,8 +215,11 @@ class CodeCoverageUtilTest(WaterfallTestCase):
     mock_http_client.side_effect = [
         (200, ')]}\'' + json.dumps(revisions), None),
         (200, ')]}\'' + json.dumps(patchset_dest_files), None),
-        (200, base64.b64encode(file_content_src), None),
-        (200, base64.b64encode(file_content_dest), None),
+    ]
+
+    mock_get_file_content_async.side_effect = [
+        _CreateNDBFuture(file_content_src),
+        _CreateNDBFuture(file_content_dest),
     ]
 
     coverage_data_src = [{
@@ -235,8 +248,10 @@ class CodeCoverageUtilTest(WaterfallTestCase):
         'path': '//base/test.cc',
     }], rebased_coverage_data)
 
+  @mock.patch.object(code_coverage_util.gitiles, 'get_file_content_async')
   @mock.patch.object(code_coverage_util.FinditHttpClient, 'Get')
-  def testRebasePresubmitCoverageDataLinesAndBlocks(self, mock_http_client):
+  def testRebasePresubmitCoverageDataLinesAndBlocks(
+      self, mock_http_client, mock_get_file_content_async):
     revisions = {'revisions': {'1234': {'_number': 1}, '5678': {'_number': 2}}}
     patchset_dest_files = {'/COMMIT_MSG': {'status': 'A'}, 'base/test.cc': {}}
     file_content_src = '1\n2\n3\n'
@@ -244,8 +259,11 @@ class CodeCoverageUtilTest(WaterfallTestCase):
     mock_http_client.side_effect = [
         (200, ')]}\'' + json.dumps(revisions), None),
         (200, ')]}\'' + json.dumps(patchset_dest_files), None),
-        (200, base64.b64encode(file_content_src), None),
-        (200, base64.b64encode(file_content_dest), None),
+    ]
+
+    mock_get_file_content_async.side_effect = [
+        _CreateNDBFuture(file_content_src),
+        _CreateNDBFuture(file_content_dest),
     ]
 
     coverage_data_src = [{
@@ -397,8 +415,10 @@ class CodeCoverageUtilTest(WaterfallTestCase):
 
   # Tests the scenario when two patchsets have different set of changed files
   # Even when they're traivial rebase away.
+  @mock.patch.object(code_coverage_util.gitiles, 'get_file_content_async')
   @mock.patch.object(code_coverage_util.FinditHttpClient, 'Get')
-  def testRebasePresubmitCoverageDataFileIsDroped(self, mock_http_client):
+  def testRebasePresubmitCoverageDataFileIsDroped(self, mock_http_client,
+                                                  mock_get_file_content_async):
     revisions = {'revisions': {'1234': {'_number': 1}, '5678': {'_number': 2}}}
     patchset_dest_files = {'/COMMIT_MSG': {'status': 'A'}, 'base/test1.cc': {}}
     file_content_src = '1\n2\n3\n'
@@ -406,8 +426,11 @@ class CodeCoverageUtilTest(WaterfallTestCase):
     mock_http_client.side_effect = [
         (200, ')]}\'' + json.dumps(revisions), None),
         (200, ')]}\'' + json.dumps(patchset_dest_files), None),
-        (200, base64.b64encode(file_content_src), None),
-        (200, base64.b64encode(file_content_dest), None),
+    ]
+
+    mock_get_file_content_async.side_effect = [
+        _CreateNDBFuture(file_content_src),
+        _CreateNDBFuture(file_content_dest),
     ]
 
     coverage_data_src = [
