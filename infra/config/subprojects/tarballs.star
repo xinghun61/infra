@@ -22,7 +22,7 @@ def builder(name, recipe, builder_dimension=None, cores=8, **kwargs):
       },
       properties = {
           '$gatekeeper': {
-              'group': 'infra.cron',
+              'group': 'chromium.infra.cron',
           },
       },
       **kwargs

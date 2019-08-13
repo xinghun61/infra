@@ -23,7 +23,7 @@ def ci_builder(name, os, cpu=None):
       triggered_by = [infra.poller()],
       properties = {
           '$gatekeeper': {
-              'group': 'infra.ci',
+              'group': 'chromium.infra',
           },
       },
   )
