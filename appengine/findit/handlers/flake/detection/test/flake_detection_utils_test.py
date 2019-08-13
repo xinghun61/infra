@@ -48,6 +48,7 @@ class FlakeDetectionUtilsTest(WaterfallTestCase):
     flake.test_location.file_path = '../../some/test/path/a.cc'
     flake.test_location.line_number = 42
     flake.flake_issue_key = flake_issue.key
+    flake.flake_score_last_week = 10
     flake.put()
 
     build_id = 123
@@ -217,7 +218,7 @@ class FlakeDetectionUtilsTest(WaterfallTestCase):
             },
         ],
         'flake_score_last_week':
-            0,
+            10,
         'flake_issue': {
             'flake_culprit_key':
                 None,

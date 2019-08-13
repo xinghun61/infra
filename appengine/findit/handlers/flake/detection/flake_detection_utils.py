@@ -254,12 +254,9 @@ def GetFlakeInformation(flake, max_occurrence_count, with_occurrences=True):
     flake occurrences.
   """
   occurrences = []
-  if not max_occurrence_count or flake.archived:
-    # fetch all occurrences regardless of types if is requested to show all
-    # occurrences or the flake is archived.
-    occurrences = FlakeOccurrence.query(
-        ancestor=flake.key).order(-FlakeOccurrence.time_happened).fetch()
-  else:
+  if (max_occurrence_count and not flake.archived and
+      flake.flake_score_last_week > 0):
+    # On-going flakes, queries the ones in the past-week.
     for flake_type in [
         FlakeType.CQ_FALSE_REJECTION, FlakeType.RETRY_WITH_PATCH,
         FlakeType.CI_FAILED_STEP, FlakeType.CQ_HIDDEN_FLAKE
@@ -275,6 +272,10 @@ def GetFlakeInformation(flake, max_occurrence_count, with_occurrences=True):
     # Makes sure occurrences are sorted by time_happened in descending order,
     # regardless of types.
     occurrences.sort(key=lambda x: x.time_happened, reverse=True)
+
+  # Falls back to query all recent occurrences.
+  occurrences = occurrences or FlakeOccurrence.query(ancestor=flake.key).order(
+      -FlakeOccurrence.time_happened).fetch(max_occurrence_count)
 
   if not occurrences and with_occurrences:
     # Flake must be with occurrences, but there is no occurrence, bail out.
