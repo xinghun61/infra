@@ -106,6 +106,7 @@ var RuleMap = map[string]*RepoConfig{
 					fileFreeTypeOptionH,
 					fileFuchsiaSDKLinux,
 					fileFuchsiaSDKMac,
+					fileOrderfile,
 				}),
 			"autoroll-rules-chromium-internal": AutoRollRulesDEPS("chromium-internal-autoroll@skia-corp.google.com.iam.gserviceaccount.com"),
 			"autoroll-rules-wpt":               AutoRollRulesLayoutTests("wpt-autoroller@chops-service-accounts.iam.gserviceaccount.com"),
