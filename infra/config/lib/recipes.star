@@ -33,17 +33,21 @@ def simulation_tester(
       triggered_by,
       console_view=None,
       console_category=None,
+      gatekeeper_group=None,
   ):
   """Defines a CI builder that runs recipe simulation tests."""
+  # Normally, this builder will be triggered on specific commit in this
+  # git_repo, and hence additional git_repo property is redundant. However, if
+  # one uses LUCI scheduler "Trigger Now" feature, there will be no associated
+  # commit and hence we need git_repo property.
+  properties = {'git_repo': _repo_url(project_under_test)}
+  if gatekeeper_group:
+    properties['$gatekeeper'] = {'group': gatekeeper_group}
   luci.builder(
       name = name,
       bucket = 'ci',
       executable = infra.recipe('recipe_simulation'),
-      # Normally, this builder will be triggered on specific commit in this
-      # git_repo, and hence additional git_repo property is redundant. However,
-      # if one uses LUCI scheduler "Trigger Now" feature, there will be no
-      # associated commit and hence we need git_repo property.
-      properties = {'git_repo': _repo_url(project_under_test)},
+      properties = properties,
       dimensions = {
           'os': 'Ubuntu-16.04',
           'cpu': 'x86-64',

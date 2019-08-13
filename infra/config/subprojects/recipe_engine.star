@@ -52,6 +52,7 @@ recipes.simulation_tester(
         repo = REPO_URL,
     ),
     console_view = 'recipes-py',
+    gatekeeper_group = 'chromium.infra',
 )
 
 

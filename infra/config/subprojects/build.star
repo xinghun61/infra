@@ -46,6 +46,7 @@ recipes.simulation_tester(
     project_under_test = 'build',
     triggered_by = build.poller(),
     console_view = 'build',
+    gatekeeper_group = 'chromium.infra',
 )
 
 

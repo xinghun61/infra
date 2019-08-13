@@ -31,6 +31,7 @@ def ci_builder(name, os):
               repo = REPO_URL,
           ),
       ],
+      gatekeeper_group = 'chromium.infra',
   )
   luci.console_view_entry(
       builder = name,

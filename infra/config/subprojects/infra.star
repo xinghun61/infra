@@ -21,11 +21,7 @@ def ci_builder(name, os, cpu=None):
       os = os,
       cpu = cpu,
       triggered_by = [infra.poller()],
-      properties = {
-          '$gatekeeper': {
-              'group': 'chromium.infra',
-          },
-      },
+      gatekeeper_group = 'chromium.infra',
   )
   luci.console_view_entry(
       builder = name,

@@ -64,6 +64,7 @@ def builder(
 
       # Misc tweaks.
       properties=None,
+      gatekeeper_group=None,
       schedule=None,
 
       # Triggering relations.
@@ -90,6 +91,10 @@ def builder(
   caches = [infra.cache_gclient_with_go]
   if os.startswith('Mac'):
     caches.append(infra.cache_osx_sdk)
+
+  if gatekeeper_group:
+    properties = properties or {}
+    properties['$gatekeeper'] = {'group': gatekeeper_group}
 
   luci.builder(
       name = name,
