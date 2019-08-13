@@ -98,4 +98,5 @@ recipes.simulation_tester(
     triggered_by = infra.poller(),
     console_view = 'infra',
     console_category = 'misc',
+    gatekeeper_group = 'chromium.infra',
 )
