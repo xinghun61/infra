@@ -78,7 +78,7 @@ func (c *dutInfoRun) innerRun(a subcommands.Application, args []string, env subc
 	}
 
 	ctx := cli.GetContext(a, c, env)
-	hc, err := httpClient(ctx, &c.authFlags)
+	hc, err := newHTTPClient(ctx, &c.authFlags)
 	if err != nil {
 		return err
 	}

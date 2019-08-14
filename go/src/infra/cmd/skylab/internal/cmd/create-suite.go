@@ -144,7 +144,7 @@ func (c *createSuiteRun) innerRun(a subcommands.Application, args []string, env 
 		"label-pool:"+c.pool,
 		"priority:"+strconv.Itoa(c.priority))
 
-	h, err := httpClient(ctx, &c.authFlags)
+	h, err := newHTTPClient(ctx, &c.authFlags)
 	if err != nil {
 		return errors.Annotate(err, "failed to create http client").Err()
 	}

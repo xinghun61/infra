@@ -82,7 +82,7 @@ func buildbucketRun(ctx context.Context, args recipe.Args, env site.Environment,
 }
 
 func bbClient(ctx context.Context, env site.Environment, authFlags authcli.Flags) (buildbucket_pb.BuildsClient, error) {
-	hClient, err := httpClient(ctx, &authFlags)
+	hClient, err := newHTTPClient(ctx, &authFlags)
 	if err != nil {
 		return nil, err
 	}

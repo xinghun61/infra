@@ -52,7 +52,7 @@ func (c *internalListDroneDutsRun) innerRun(a subcommands.Application, args []st
 	}
 	hostname := args[0]
 	ctx := cli.GetContext(a, c, env)
-	hc, err := httpClient(ctx, &c.authFlags)
+	hc, err := newHTTPClient(ctx, &c.authFlags)
 	if err != nil {
 		return err
 	}

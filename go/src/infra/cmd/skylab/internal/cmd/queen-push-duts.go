@@ -53,7 +53,7 @@ func (c *queenPushDutsRun) Run(a subcommands.Application, args []string, env sub
 
 func (c *queenPushDutsRun) innerRun(a subcommands.Application, args []string, env subcommands.Env) error {
 	ctx := cli.GetContext(a, c, env)
-	hc, err := httpClient(ctx, &c.authFlags)
+	hc, err := newHTTPClient(ctx, &c.authFlags)
 	if err != nil {
 		return err
 	}

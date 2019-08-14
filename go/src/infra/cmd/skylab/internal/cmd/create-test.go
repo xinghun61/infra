@@ -218,7 +218,7 @@ func (c *createTestRun) innerRunSwarming(a subcommands.Application, args []strin
 	}
 	req, err := request.New(ra)
 
-	h, err := httpClient(ctx, &c.authFlags)
+	h, err := newHTTPClient(ctx, &c.authFlags)
 	if err != nil {
 		return errors.Annotate(err, "failed to create http client").Err()
 	}

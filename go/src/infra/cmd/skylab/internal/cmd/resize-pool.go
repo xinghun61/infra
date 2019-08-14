@@ -69,7 +69,7 @@ func (c *resizePoolRun) innerRun(a subcommands.Application, args []string, env s
 	size := int32(s)
 
 	ctx := cli.GetContext(a, c, env)
-	hc, err := httpClient(ctx, &c.authFlags)
+	hc, err := newHTTPClient(ctx, &c.authFlags)
 	if err != nil {
 		return err
 	}

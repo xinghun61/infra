@@ -55,7 +55,7 @@ func (c *quickAddDutsRun) Run(app subcommands.Application, args []string, env su
 
 func (c *quickAddDutsRun) innerRun(app subcommands.Application, args []string, env subcommands.Env) error {
 	ctx := cli.GetContext(app, c, env)
-	hc, err := httpClient(ctx, &c.authFlags)
+	hc, err := newHTTPClient(ctx, &c.authFlags)
 	if err != nil {
 		return err
 	}

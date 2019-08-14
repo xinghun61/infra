@@ -69,7 +69,7 @@ func (c *ensurePoolHealthyRun) Run(a subcommands.Application, args []string, env
 
 func (c *ensurePoolHealthyRun) innerRun(a subcommands.Application, args []string, env subcommands.Env) error {
 	ctx := cli.GetContext(a, c, env)
-	hc, err := httpClient(ctx, &c.authFlags)
+	hc, err := newHTTPClient(ctx, &c.authFlags)
 	if err != nil {
 		return err
 	}

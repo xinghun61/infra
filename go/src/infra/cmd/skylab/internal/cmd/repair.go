@@ -51,7 +51,7 @@ func (c *repairRun) Run(a subcommands.Application, args []string, env subcommand
 
 func (c *repairRun) innerRun(a subcommands.Application, args []string, env subcommands.Env) error {
 	ctx := cli.GetContext(a, c, env)
-	h, err := httpClient(ctx, &c.authFlags)
+	h, err := newHTTPClient(ctx, &c.authFlags)
 	if err != nil {
 		return errors.Annotate(err, "failed to create http client").Err()
 	}

@@ -83,8 +83,8 @@ func (rr *removalReason) Register(f *flag.FlagSet) {
 	f.Var(lflag.RelativeTime{T: &rr.expire}, "expires-in", "Expire removal reason in `days`.")
 }
 
-// httpClient returns an HTTP client with authentication set up.
-func httpClient(ctx context.Context, f *authcli.Flags) (*http.Client, error) {
+// newHTTPClient returns an HTTP client with authentication set up.
+func newHTTPClient(ctx context.Context, f *authcli.Flags) (*http.Client, error) {
 	o, err := f.Options()
 	if err != nil {
 		return nil, errors.Annotate(err, "failed to get auth options").Err()
@@ -99,7 +99,7 @@ func httpClient(ctx context.Context, f *authcli.Flags) (*http.Client, error) {
 
 // newSwarmingClient returns a new client for the Swarming service.
 func newSwarmingClient(ctx context.Context, authFlags authcli.Flags, env site.Environment) (*swarming.Client, error) {
-	h, err := httpClient(ctx, &authFlags)
+	h, err := newHTTPClient(ctx, &authFlags)
 	if err != nil {
 		return nil, errors.Annotate(err, "failed to create http client").Err()
 	}

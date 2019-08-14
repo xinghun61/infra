@@ -60,7 +60,7 @@ func (c *diagnoseRun) Run(a subcommands.Application, args []string, env subcomma
 
 func (c *diagnoseRun) innerRun(a subcommands.Application, args []string, env subcommands.Env) error {
 	ctx := cli.GetContext(a, c, env)
-	hc, err := httpClient(ctx, &c.authFlags)
+	hc, err := newHTTPClient(ctx, &c.authFlags)
 	if err != nil {
 		return errors.Annotate(err, "failed to get auth options").Err()
 	}
