@@ -187,6 +187,58 @@ func TestTrafficSplit(t *testing.T) {
 	}
 }
 
+func TestRulesMatchingModel(t *testing.T) {
+	rules := []*scheduler.Rule{
+		unmanagedPoolRule("wrongModel", "wrongBuildTarget", "wrongPool", scheduler.Backend_BACKEND_SKYLAB),
+		unmanagedPoolRule("model", "buildTarget", "pool", scheduler.Backend_BACKEND_SKYLAB),
+		unmanagedPoolRule("model", "wrongBuildTarget", "wrongPool", scheduler.Backend_BACKEND_SKYLAB),
+	}
+	request := unmanagedPoolRequest("model", "buildTarget", "pool")
+	got := determineRulesMatchingModel(request, rules)
+	want := []*scheduler.Rule{
+		unmanagedPoolRule("model", "buildTarget", "pool", scheduler.Backend_BACKEND_SKYLAB),
+		unmanagedPoolRule("model", "wrongBuildTarget", "wrongPool", scheduler.Backend_BACKEND_SKYLAB),
+	}
+	if diff := pretty.Compare(want, got); diff != "" {
+		t.Errorf("Incorrect rules matching model, -want, +got: %s", diff)
+	}
+}
+
+func TestRulesMatchingBuildTarget(t *testing.T) {
+	rules := []*scheduler.Rule{
+		unmanagedPoolRule("wrongModel", "wrongBuildTarget", "wrongPool", scheduler.Backend_BACKEND_SKYLAB),
+		unmanagedPoolRule("model", "buildTarget", "pool", scheduler.Backend_BACKEND_SKYLAB),
+		unmanagedPoolRule("wrongModel", "buildTarget", "wrongPool", scheduler.Backend_BACKEND_SKYLAB),
+	}
+	request := unmanagedPoolRequest("model", "buildTarget", "pool")
+	got := determineRulesMatchingBuildTarget(request, rules)
+	want := []*scheduler.Rule{
+		unmanagedPoolRule("model", "buildTarget", "pool", scheduler.Backend_BACKEND_SKYLAB),
+		unmanagedPoolRule("wrongModel", "buildTarget", "wrongPool", scheduler.Backend_BACKEND_SKYLAB),
+	}
+	if diff := pretty.Compare(want, got); diff != "" {
+		t.Errorf("Incorrect rules matching buildTarget, -want, +got: %s", diff)
+	}
+}
+
+func TestRulesMatchingScheduling(t *testing.T) {
+	rules := []*scheduler.Rule{
+		unmanagedPoolRule("wrongModel", "wrongBuildTarget", "wrongPool", scheduler.Backend_BACKEND_SKYLAB),
+		managedPoolRule("model", "target", test_platform.Request_Params_Scheduling_MANAGED_POOL_CQ, scheduler.Backend_BACKEND_SKYLAB),
+		unmanagedPoolRule("model", "buildTarget", "pool", scheduler.Backend_BACKEND_SKYLAB),
+		unmanagedPoolRule("wrongModel", "wrongBuildTarget", "pool", scheduler.Backend_BACKEND_SKYLAB),
+	}
+	request := unmanagedPoolRequest("model", "buildTarget", "pool")
+	got := determineRulesMatchingScheduling(request, rules)
+	want := []*scheduler.Rule{
+		unmanagedPoolRule("model", "buildTarget", "pool", scheduler.Backend_BACKEND_SKYLAB),
+		unmanagedPoolRule("wrongModel", "wrongBuildTarget", "pool", scheduler.Backend_BACKEND_SKYLAB),
+	}
+	if diff := pretty.Compare(want, got); diff != "" {
+		t.Errorf("Incorrect rules matching scheduling, -want, +got: %s", diff)
+	}
+}
+
 func trafficSplitWithRules(rules ...*scheduler.Rule) *scheduler.TrafficSplit {
 	return &scheduler.TrafficSplit{
 		Rules: rules,

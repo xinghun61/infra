@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"strings"
 
+	"go.chromium.org/chromiumos/infra/proto/go/chromiumos"
 	"go.chromium.org/chromiumos/infra/proto/go/test_platform"
 
 	"infra/cmd/cros_test_platform/internal/site"
@@ -22,6 +23,7 @@ import (
 	"go.chromium.org/luci/common/api/gitiles"
 	"go.chromium.org/luci/common/cli"
 	"go.chromium.org/luci/common/errors"
+	"go.chromium.org/luci/common/logging"
 	gitilespb "go.chromium.org/luci/common/proto/gitiles"
 )
 
@@ -76,6 +78,7 @@ func (c *schedulerTrafficSplitRun) innerRun(a subcommands.Application, args []st
 	}
 	resp, err := determineTrafficSplit(&request, split)
 	if err != nil {
+		logPotentiallyRelevantRules(ctx, request.Request, split.Rules)
 		return err
 	}
 	return writeResponse(c.outputPath, resp, nil)
@@ -225,4 +228,60 @@ func isSchedulingRelevant(got, want *test_platform.Request_Params_Scheduling) bo
 
 func isNonEmptyAndDistinct(got, want string) bool {
 	return got != "" && got != want
+}
+
+func logPotentiallyRelevantRules(ctx context.Context, request *test_platform.Request, rules []*scheduler.Rule) {
+	logger := logging.Get(ctx)
+	logger.Warningf("No matching rule found. Printing partially matching rules...")
+	if pr := determineRulesMatchingModel(request, rules); len(pr) > 0 {
+		logger.Warningf("Following rules match requested model: %s", formatFirstFewRules(pr))
+	}
+	if pr := determineRulesMatchingBuildTarget(request, rules); len(pr) > 0 {
+		logger.Warningf("Following rules match requested buildTarget: %s", formatFirstFewRules(pr))
+	}
+	if pr := determineRulesMatchingScheduling(request, rules); len(pr) > 0 {
+		logger.Warningf("Following rules match requested scheduling: %s", formatFirstFewRules(pr))
+	}
+}
+
+func formatFirstFewRules(rules []*scheduler.Rule) string {
+	const rulesToPrint = 5
+	s := fmt.Sprintf("%v", rules[:rulesToPrint])
+	if len(s) > rulesToPrint {
+		s = fmt.Sprintf("%s... [%d more]", s, len(s)-rulesToPrint)
+	}
+	return s
+}
+
+func determineRulesMatchingModel(request *test_platform.Request, rules []*scheduler.Rule) []*scheduler.Rule {
+	r := test_platform.Request{
+		Params: &test_platform.Request_Params{
+			HardwareAttributes: &test_platform.Request_Params_HardwareAttributes{
+				Model: request.GetParams().GetHardwareAttributes().GetModel(),
+			},
+		},
+	}
+	return determineRelevantRules(&r, rules)
+}
+
+func determineRulesMatchingBuildTarget(request *test_platform.Request, rules []*scheduler.Rule) []*scheduler.Rule {
+	r := test_platform.Request{
+		Params: &test_platform.Request_Params{
+			SoftwareAttributes: &test_platform.Request_Params_SoftwareAttributes{
+				BuildTarget: &chromiumos.BuildTarget{
+					Name: request.GetParams().GetSoftwareAttributes().GetBuildTarget().GetName(),
+				},
+			},
+		},
+	}
+	return determineRelevantRules(&r, rules)
+}
+
+func determineRulesMatchingScheduling(request *test_platform.Request, rules []*scheduler.Rule) []*scheduler.Rule {
+	r := test_platform.Request{
+		Params: &test_platform.Request_Params{
+			Scheduling: request.GetParams().GetScheduling(),
+		},
+	}
+	return determineRelevantRules(&r, rules)
 }
