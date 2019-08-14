@@ -140,15 +140,20 @@ func determineTrafficSplit(request *steps.SchedulerTrafficSplitRequest, trafficS
 		return nil, errors.Annotate(err, "determine traffic split").Err()
 	}
 	rules := determineRelevantRules(request.Request, trafficSplitConfig.Rules)
+
+	var rule *scheduler.Rule
 	switch {
 	case len(rules) == 0:
 		return nil, errors.Reason("no matching traffic split rule").Err()
-	case len(rules) > 1:
-		return nil, errors.Reason("too many matching traffic split rules %s for request %s", rules, request).Err()
+	case len(rules) == 1:
+		rule = rules[0]
 	default:
-		// good case fallthrough.
+		if err := ensureRulesAreCompatible(rules); err != nil {
+			return nil, errors.Annotate(err, "determine traffic split").Err()
+		}
+		rule = rules[0]
 	}
-	return applyTrafficSplitRule(request, rules[0])
+	return applyTrafficSplitRule(request, rule)
 }
 
 func ensureSufficientForTrafficSplit(r *test_platform.Request) error {
@@ -156,6 +161,33 @@ func ensureSufficientForTrafficSplit(r *test_platform.Request) error {
 		return errors.Reason("request contains no pool information").Err()
 	}
 	return nil
+}
+
+func ensureRulesAreCompatible(rules []*scheduler.Rule) error {
+	b := rules[0].GetBackend()
+	s := rules[0].GetRequestMod().GetScheduling()
+	for _, r := range rules[1:] {
+		if r.GetBackend() != b {
+			return errors.Reason("Rules %s and %s contain conflicting backends", rules[0], r).Err()
+		}
+		if schedulingNotEqual(s, r.GetRequestMod().GetScheduling()) {
+			return errors.Reason("Rules %s and %s contain conflicting request modifications", rules[0], r).Err()
+		}
+	}
+	return nil
+}
+
+func schedulingNotEqual(s1, s2 *test_platform.Request_Params_Scheduling) bool {
+	if s1.GetUnmanagedPool() != s2.GetUnmanagedPool() {
+		return true
+	}
+	if s1.GetManagedPool() != s2.GetManagedPool() {
+		return true
+	}
+	if s1.GetQuotaAccount() != s2.GetQuotaAccount() {
+		return true
+	}
+	return false
 }
 
 func applyTrafficSplitRule(request *steps.SchedulerTrafficSplitRequest, rule *scheduler.Rule) (*steps.SchedulerTrafficSplitResponse, error) {

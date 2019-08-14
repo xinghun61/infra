@@ -164,6 +164,15 @@ func TestTrafficSplit(t *testing.T) {
 			Request:             quotaAccountRequest("link", "link", "quota_account_cq"),
 			WantAutotestRequest: managedPoolRequest("link", "link", test_platform.Request_Params_Scheduling_MANAGED_POOL_BVT),
 		},
+		{
+			Tag: "(unmanaged pool, buildTarget) match for Skylab for multiple rules",
+			TrafficSplitConfig: trafficSplitWithRules(
+				unmanagedPoolRule("atlas", "grunt", "toolchain", scheduler.Backend_BACKEND_SKYLAB),
+				unmanagedPoolRule("barla", "grunt", "toolchain", scheduler.Backend_BACKEND_SKYLAB),
+			),
+			Request:           unmanagedPoolRequest("", "grunt", "toolchain"),
+			WantSkylabRequest: unmanagedPoolRequest("", "grunt", "toolchain"),
+		},
 	}
 
 	for _, c := range cases {
@@ -184,6 +193,36 @@ func TestTrafficSplit(t *testing.T) {
 				t.Errorf("Incorrect skylab request, -want, +got: %s", diff)
 			}
 		})
+	}
+}
+
+func TestTrafficSplitWithConflictingTargetsReturnsError(t *testing.T) {
+	_, err := determineTrafficSplit(
+		&steps.SchedulerTrafficSplitRequest{
+			Request: unmanagedPoolRequest("", "grunt", "toolchain"),
+		},
+		trafficSplitWithRules(
+			unmanagedPoolRule("atlas", "grunt", "toolchain", scheduler.Backend_BACKEND_AUTOTEST),
+			unmanagedPoolRule("barla", "grunt", "toolchain", scheduler.Backend_BACKEND_SKYLAB),
+		),
+	)
+	if err == nil {
+		t.Errorf("no error returned for request with matching rules and conflicting targets")
+	}
+}
+
+func TestTrafficSplitWithConflictingRequestModReturnsError(t *testing.T) {
+	_, err := determineTrafficSplit(
+		&steps.SchedulerTrafficSplitRequest{
+			Request: unmanagedPoolRequest("", "grunt", "toolchain"),
+		},
+		trafficSplitWithRules(
+			unmanagedPoolRuleWithQuotaAccountOverride("atlas", "grunt", "toolchain", scheduler.Backend_BACKEND_SKYLAB, "quota_account_cq"),
+			unmanagedPoolRule("barla", "grunt", "toolchain", scheduler.Backend_BACKEND_SKYLAB),
+		),
+	)
+	if err == nil {
+		t.Errorf("no error returned for request with matching rules and conflicting request modifications")
 	}
 }
 
