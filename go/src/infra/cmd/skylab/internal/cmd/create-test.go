@@ -64,7 +64,7 @@ will be executed in a low priority. If the tasks runs in a quotascheduler contro
 multiple times.  Optional.`)
 		c.Flags.StringVar(&c.parentTaskID, "parent-task-run-id", "", "For internal use only. Task run ID of the parent (suite) task to this test. Note that this must be a run ID (i.e. not ending in 0).")
 		c.Flags.Var(flag.StringSlice(&c.dimensions), "dim", "Additional scheduling dimension to apply to tests, as a KEY:VALUE string; may be specified multiple times.")
-		c.Flags.BoolVar(&c.buildBucket, "bb", false, "(Expert use only, not a stable API) use buildbucket recipe backend.")
+		c.Flags.BoolVar(&c.buildBucket, "bb", false, "Use buildbucket recipe backend.")
 		return c
 	},
 }

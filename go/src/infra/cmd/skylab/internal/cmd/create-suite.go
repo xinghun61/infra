@@ -58,7 +58,7 @@ specified multiple times.`)
 		c.Flags.BoolVar(&c.orphan, "orphan", false, "Create a suite that doesn't wait for its child tests to finish. Internal or expert use ONLY!")
 		c.Flags.BoolVar(&c.json, "json", false, "Format output as JSON")
 		c.Flags.StringVar(&c.taskName, "task-name", "", "Optional name to be used for the Swarming task.")
-		c.Flags.BoolVar(&c.buildBucket, "bb", false, "(Expert use only, not a stable API) use buildbucket recipe backend.")
+		c.Flags.BoolVar(&c.buildBucket, "bb", false, "Use buildbucket recipe backend.")
 		return c
 	},
 }

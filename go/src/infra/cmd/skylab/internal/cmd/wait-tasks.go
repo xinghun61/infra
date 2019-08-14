@@ -31,7 +31,7 @@ var WaitTasks = &subcommands.Command{
 		c.envFlags.Register(&c.Flags)
 
 		c.Flags.IntVar(&c.timeoutMins, "timeout-mins", -1, "The maxinum number of minutes to wait for the task to finish. Default: no timeout.")
-		c.Flags.BoolVar(&c.buildBucket, "bb", false, "(Expert use only, not a stable API) use buildbucket recipe backend. If specified, TASK_ID is interpreted as a buildbucket task id.")
+		c.Flags.BoolVar(&c.buildBucket, "bb", false, "Use buildbucket recipe backend. If specified, TASK_ID is interpreted as a buildbucket task id.")
 		return c
 	},
 }
