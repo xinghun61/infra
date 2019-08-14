@@ -958,11 +958,17 @@ class ServeCodeCoverageData(BaseHandler):
     logging.info('change=%d', change)
     logging.info('patchset=%d', patchset)
 
+    if host and host.replace('-review', '') not in _ALLOWED_GITILES_HOST:
+      return BaseHandler.CreateError(
+          error_message='Host "%s" is not whitelisted.' % host,
+          return_code=400,
+          allowed_origin='*')
+
     if project and project not in _PROJECTS_WHITELIST:
       kwargs = {'is_project_supported': False}
       return BaseHandler.CreateError(
           error_message='Project "%s" is not supported.' % project,
-          return_code=404,
+          return_code=400,
           allowed_origin='*',
           **kwargs)
 
@@ -971,7 +977,7 @@ class ServeCodeCoverageData(BaseHandler):
       kwargs = {'is_project_supported': False}
       return BaseHandler.CreateError(
           error_message=('The functionality has been temporarity disabled.'),
-          return_code=404,
+          return_code=400,
           allowed_origin='*',
           **kwargs)
 
