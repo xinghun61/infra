@@ -301,3 +301,49 @@ class ChromeOSProjectAPI(ProjectAPI):
             },
         },
     }
+
+  def GetTestRerunBuildInputProperties(self, tests):
+    """Gets build input properties to trigger a rerun build for test failures.
+
+    Args:
+      tests (dict): Tests Findit wants to rerun in the build. For chromeos
+        there is only steps.
+      {
+        'step': {
+          'tests': [],
+          'properties': {
+            # Properties for this step.
+          },
+        },
+      }
+
+    Returns:
+      dict:
+      {
+        '$chromeos/cros_bisect': {
+            'test': {
+                'xx_test_failures': [
+                    {
+                        'test_spec': 'test_spec1'
+                    },
+                    ...
+                ],
+                ...
+            },
+        },
+    }
+    """
+    bisect_input = defaultdict(list)
+    for step_failure in tests.itervalues():
+      failure_type = step_failure.get('properties', {}).get('failure_type')
+      test_spec = step_failure.get('properties', {}).get('test_spec')
+      assert failure_type, 'No failure type found for ChromeOS test failure'
+      assert test_spec, 'No test_spec found for ChromeOS test failure'
+
+      bisect_input[failure_type].append({'test_spec': test_spec})
+
+    return {
+        '$chromeos/cros_bisect': {
+            'test': bisect_input,
+        },
+    }

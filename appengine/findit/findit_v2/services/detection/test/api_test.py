@@ -16,20 +16,26 @@ from findit_v2.services.failure_type import StepTypeEnum
 from findit_v2.services.project_api import ProjectAPI
 
 
-class DummyProjectAPI(ProjectAPI):
+class DummyProjectAPI(ProjectAPI):  # pragma: no cover.
 
   def ClassifyStepType(self, _build, step):
     if step.name == 'compile':
       return StepTypeEnum.COMPILE
     return StepTypeEnum.INFRA
 
-  def GetCompileFailures(self, *_):  # pragma: no cover.
+  def GetCompileFailures(self, *_):
     pass
 
-  def GetRerunBuilderId(self, _):  # pragma: no cover.
+  def GetRerunBuilderId(self, _):
     pass
 
-  def GetTestFailures(self, *_):  # pragma: no cover.
+  def GetTestFailures(self, *_):
+    pass
+
+  def GetCompileRerunBuildInputProperties(self, _):
+    pass
+
+  def GetTestRerunBuildInputProperties(self, _):
     pass
 
 

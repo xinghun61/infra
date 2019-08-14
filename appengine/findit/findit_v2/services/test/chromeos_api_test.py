@@ -53,6 +53,16 @@ class ChromeOSProjectAPITest(wf_testcase.TestCase):
         build_failure_type=StepTypeEnum.COMPILE)
     self.group_build.put()
 
+    self.output_target1 = json.dumps({
+        'category': 'chromeos-base',
+        'packageName': 'target1'
+    })
+    self.output_target2 = json.dumps({
+        'category': 'chromeos-base',
+        'packageName': 'target2'
+    })
+    self.output_targets = [self.output_target1, self.output_target2]
+
   def _CreateBuildbucketBuild(self, build_id, build_number):
     build = Build(id=build_id, number=build_number)
     build.input.gitiles_commit.host = 'gitiles.host.com'
@@ -105,17 +115,10 @@ class ChromeOSProjectAPITest(wf_testcase.TestCase):
     compile_step_name = 'install packages|installation results'
     build_id = 8765432109123
     build_number = 123
-    output_target1 = json.dumps({
-        'category': 'chromeos-base',
-        'packageName': 'target1'
-    })
-    output_target2 = json.dumps({
-        'category': 'chromeos-base',
-        'packageName': 'target2'
-    })
     build = self._CreateBuildbucketBuildForCompile(
         build_id,
-        build_number, [output_target1, output_target2],
+        build_number,
+        self.output_targets,
         step_name=compile_step_name)
     step = Step()
     step.name = compile_step_name
@@ -128,17 +131,10 @@ class ChromeOSProjectAPITest(wf_testcase.TestCase):
     compile_step_name = 'install packages|installation results'
     build_id = 8765432109123
     build_number = 123
-    output_target1 = json.dumps({
-        'category': 'chromeos-base',
-        'packageName': 'target1'
-    })
-    output_target2 = json.dumps({
-        'category': 'chromeos-base',
-        'packageName': 'target2'
-    })
     build = self._CreateBuildbucketBuildForCompile(
         build_id,
-        build_number, [output_target1, output_target2],
+        build_number,
+        self.output_targets,
         step_name=compile_step_name)
     step = Step()
     step.name = 'Failure Reason'
@@ -151,16 +147,8 @@ class ChromeOSProjectAPITest(wf_testcase.TestCase):
     compile_step_name = 'install packages|installation results'
     build_id = 8765432109123
     build_number = 123
-    output_target1 = json.dumps({
-        'category': 'chromeos-base',
-        'packageName': 'target1'
-    })
-    output_target2 = json.dumps({
-        'category': 'chromeos-base',
-        'packageName': 'target2'
-    })
-    build = self._CreateBuildbucketBuildForCompile(
-        build_id, build_number, [output_target1, output_target2])
+    build = self._CreateBuildbucketBuildForCompile(build_id, build_number,
+                                                   self.output_targets)
     step = Step()
     step.name = compile_step_name
     log = step.logs.add()
@@ -206,32 +194,22 @@ class ChromeOSProjectAPITest(wf_testcase.TestCase):
     step_name = 'install packages'
     build_id = 8765432109123
     build_number = 123
-    output_target1 = json.dumps({
-        'category': 'chromeos-base',
-        'packageName': 'target1'
-    })
-    output_target2 = json.dumps({
-        'category': 'chromeos-base',
-        'packageName': 'target2'
-    })
     build = self._CreateBuildbucketBuildForCompile(
-        build_id,
-        build_number, [output_target1, output_target2],
-        step_name=step_name)
+        build_id, build_number, self.output_targets, step_name=step_name)
     step = Step()
     step.name = step_name
 
     expected_failures = {
         'install packages': {
             'failures': {
-                frozenset([output_target1, output_target2]): {
+                frozenset(self.output_targets): {
                     'properties': {
                         'rule': 'emerge',
                     },
                     'first_failed_build': {
                         'id': build_id,
                         'number': build_number,
-                        'commit_id': 'git_sha'
+                        'commit_id': 'git_sha',
                     },
                     'last_passed_build': None,
                 },
@@ -239,7 +217,7 @@ class ChromeOSProjectAPITest(wf_testcase.TestCase):
             'first_failed_build': {
                 'id': build_id,
                 'number': build_number,
-                'commit_id': 'git_sha'
+                'commit_id': 'git_sha',
             },
             'last_passed_build': None,
         },
@@ -254,7 +232,7 @@ class ChromeOSProjectAPITest(wf_testcase.TestCase):
     build_number = 123
     output_target = json.dumps({
         'category': 'chromeos-base',
-        'packageName': 'target2'
+        'packageName': 'target2',
     })
     build = self._CreateBuildbucketBuildForCompile(build_id, build_number,
                                                    [output_target])
@@ -282,16 +260,12 @@ class ChromeOSProjectAPITest(wf_testcase.TestCase):
                      ChromeOSProjectAPI().GetRerunBuilderId(build))
 
   def testGetCompileRerunBuildInputProperties(self):
-    output_target1 = json.dumps({
-        'category': 'chromeos-base',
-        'packageName': 'target1'
-    })
-    targets = {'install packages': [output_target1]}
+    targets = {'install packages': [self.output_target1]}
 
     expected_prop = {
         '$chromeos/cros_bisect': {
             'compile': {
-                'targets': [output_target1],
+                'targets': [self.output_target1],
             },
         },
     }
@@ -315,22 +289,17 @@ class ChromeOSProjectAPITest(wf_testcase.TestCase):
     last_passed_build_info = {
         'id': 8000000000121,
         'number': 121,
-        'commit_id': 'git_sha_121'
+        'commit_id': 'git_sha_121',
     }
-
-    output_target1 = json.dumps({
-        'category': 'chromeos-base',
-        'packageName': 'target1'
-    })
 
     first_failures_in_current_build = {
         'failures': {
             'install packages': {
-                'atomic_failures': [frozenset([output_target1])],
+                'atomic_failures': [frozenset([self.output_target1])],
                 'last_passed_build': last_passed_build_info,
             },
         },
-        'last_passed_build': last_passed_build_info
+        'last_passed_build': last_passed_build_info,
     }
 
     self.assertEqual(
@@ -347,38 +316,29 @@ class ChromeOSProjectAPITest(wf_testcase.TestCase):
     build.input.gitiles_commit.ref = 'ref/heads/master'
     build.input.gitiles_commit.id = 'git_sha'
 
-    output_target1 = json.dumps({
-        'category': 'chromeos-base',
-        'packageName': 'target1'
-    })
-    output_target2 = json.dumps({
-        'category': 'chromeos-base',
-        'packageName': 'target2'
-    })
-
     last_passed_build_info = {
         'id': 8000000000121,
         'number': 121,
-        'commit_id': 'git_sha_121'
+        'commit_id': 'git_sha_121',
     }
 
     first_failures_in_current_build = {
         'failures': {
             'install packages': {
                 'atomic_failures': [
-                    frozenset([output_target1]),
-                    frozenset([output_target2])
+                    frozenset([self.output_target1]),
+                    frozenset([self.output_target2]),
                 ],
                 'last_passed_build':
                     last_passed_build_info,
             },
         },
-        'last_passed_build': last_passed_build_info
+        'last_passed_build': last_passed_build_info,
     }
 
     compile_failure = CompileFailure.Create(
         self.group_build.key,
-        'install packages', [output_target1],
+        'install packages', [self.output_target1],
         'CXX',
         first_failed_build_id=self.group_build_id,
         last_passed_build_id=8000000000160)
@@ -413,7 +373,7 @@ class ChromeOSProjectAPITest(wf_testcase.TestCase):
     last_passed_build_info = {
         'id': 8000000000121,
         'number': 121,
-        'commit_id': 'git_sha_121'
+        'commit_id': 'git_sha_121',
     }
 
     first_failures_in_current_build = {
@@ -423,7 +383,7 @@ class ChromeOSProjectAPITest(wf_testcase.TestCase):
                 'last_passed_build': last_passed_build_info,
             },
         },
-        'last_passed_build': last_passed_build_info
+        'last_passed_build': last_passed_build_info,
     }
 
     compile_failure = CompileFailure.Create(
@@ -449,7 +409,7 @@ class ChromeOSProjectAPITest(wf_testcase.TestCase):
 
     expected_failures_with_existing_group = {
         'install packages': {
-            frozenset(['target1']): self.group_build_id
+            frozenset(['target1']): self.group_build_id,
         }
     }
 
@@ -473,13 +433,13 @@ class ChromeOSProjectAPITest(wf_testcase.TestCase):
             'first_failed_build': {
                 'id': build_id,
                 'number': build_number,
-                'commit_id': 'git_sha'
+                'commit_id': 'git_sha',
             },
             'last_passed_build': None,
             'properties': {
                 'failure_type': 'xx_test_failures',
-                'test_spec': 'test_spec'
-            }
+                'test_spec': 'test_spec',
+            },
         },
     }
 
@@ -521,10 +481,44 @@ class ChromeOSProjectAPITest(wf_testcase.TestCase):
                 'last_passed_build': last_passed_build_info,
             },
         },
-        'last_passed_build': last_passed_build_info
+        'last_passed_build': last_passed_build_info,
     }
 
     self.assertEqual(
         {},
         ChromeOSProjectAPI().GetFailuresWithMatchingTestFailureGroups(
             self.context, build, first_failures_in_current_build))
+
+  def testGetTestRerunBuildInputProperties(self):
+    tests = {
+        'step1': {
+            'tests': [],
+            'properties': {
+                'failure_type': 'xx_test_failures',
+                'test_spec': 'test_spec1',
+            }
+        },
+        'step2': {
+            'tests': [],
+            'properties': {
+                'failure_type': 'xx_test_failures',
+                'test_spec': 'test_spec2',
+            }
+        }
+    }
+
+    expected_input = {
+        '$chromeos/cros_bisect': {
+            'test': {
+                'xx_test_failures': [{
+                    'test_spec': 'test_spec2'
+                }, {
+                    'test_spec': 'test_spec1'
+                }],
+            },
+        },
+    }
+
+    self.assertEqual(
+        expected_input,
+        ChromeOSProjectAPI().GetTestRerunBuildInputProperties(tests))

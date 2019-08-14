@@ -205,3 +205,29 @@ class ProjectAPI(object):  # pragma: no cover.
     """
     # pylint: disable=unused-argument
     return {}
+
+  def GetTestRerunBuildInputProperties(self, tests):
+    """Gets input properties of a rerun build for test failures.
+
+    Args:
+      tests (dict): Tests Findit wants to rerun in the build.
+      {
+        'step': {
+          'tests': [
+            {
+              'name': 'test',
+              'properties': {
+                # Properties for this test.
+              },
+            },
+          ],
+          'properties': {
+            # Properties for this step.
+          },
+        },
+      }
+
+    Returns:
+      (dict): input properties of the rerun build."""
+    # pylint: disable=unused-argument
+    raise NotImplementedError
