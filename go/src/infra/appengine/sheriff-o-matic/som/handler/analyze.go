@@ -94,10 +94,10 @@ func GetAnalyzeHandler(ctx *router.Context) {
 	source := r.FormValue("use")
 	var alertsSummary *messages.AlertsSummary
 	var err error
+	c = appengine.WithContext(c, r)
 
 	// TODO: remove this check once we're off buildbot.
 	if source == "bigquery" {
-		c = appengine.WithContext(c, r)
 		alertsSummary, err = generateBigQueryAlerts(c, a, tree)
 	} else {
 		alertsSummary, err = generateAlerts(ctx, a)
