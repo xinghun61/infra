@@ -106,7 +106,6 @@
   {
     "cmd": [
       "git",
-      "retry",
       "fetch",
       "origin",
       "refs/tags/v3.9.2",

@@ -84,7 +84,6 @@
   {
     "cmd": [
       "git",
-      "retry",
       "fetch",
       "origin",
       "refs/tags/v2.12.2.2",

@@ -33,7 +33,7 @@
       "src@HEAD"
     ],
     "cwd": "[CACHE]/foo_builder",
-    "env_prefixes": {
+    "env_suffixes": {
       "PATH": [
         "RECIPE_REPO[depot_tools]"
       ]
@@ -100,7 +100,6 @@
   {
     "cmd": [
       "git",
-      "retry",
       "fetch",
       "origin",
       "master",

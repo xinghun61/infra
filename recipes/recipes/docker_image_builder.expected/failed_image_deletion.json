@@ -17,7 +17,7 @@
       "--revision",
       "infra@HEAD"
     ],
-    "env_prefixes": {
+    "env_suffixes": {
       "PATH": [
         "RECIPE_REPO[depot_tools]"
       ]
@@ -138,15 +138,13 @@
     "cmd": [
       "luci-auth",
       "token",
-      "-service-account-json",
-      "/creds/service_accounts/service-account-container_registry_pusher.json",
       "-scopes",
       "https://www.googleapis.com/auth/cloud-platform",
       "-lifetime",
       "3m"
     ],
     "infra_step": true,
-    "name": "get access token for service-account-container_registry_pusher.json"
+    "name": "get access token for default account"
   },
   {
     "cmd": [

@@ -305,6 +305,7 @@
       "[TMP_BASE]/crash_report_id",
       "--builder-id-json",
       "{\"bucket\": \"master.test_master\", \"builder\": \"test_builder\", \"project\": \"\"}",
+      "--is-luci",
       "--buildbot-buildername",
       "test_builder",
       "--buildbot-mastername",

@@ -33,7 +33,7 @@
       "s@HEAD"
     ],
     "cwd": "[CACHE]/builder/https___chromium_chromium_tools_build",
-    "env_prefixes": {
+    "env_suffixes": {
       "PATH": [
         "RECIPE_REPO[depot_tools]"
       ]

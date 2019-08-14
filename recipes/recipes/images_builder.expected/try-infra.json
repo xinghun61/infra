@@ -78,7 +78,7 @@
       "infra@HEAD"
     ],
     "cwd": "[CACHE]/infra_gclient_with_go",
-    "env_prefixes": {
+    "env_suffixes": {
       "PATH": [
         "RECIPE_REPO[depot_tools]"
       ]

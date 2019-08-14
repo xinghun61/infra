@@ -3,21 +3,6 @@
     "cmd": [
       "python",
       "-u",
-      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
-      "--json-output",
-      "/path/to/tmp/json",
-      "ensure-directory",
-      "--mode",
-      "0777",
-      "[BUILDER_CACHE]/V8_lkgr_finder"
-    ],
-    "infra_step": true,
-    "name": "makedirs checkout path"
-  },
-  {
-    "cmd": [
-      "python",
-      "-u",
       "RECIPE_MODULE[depot_tools::bot_update]/resources/bot_update.py",
       "--spec-path",
       "cache_dir = '[GIT_CACHE]'\nsolutions = [{'deps_file': '.DEPS.git', 'managed': True, 'name': 'infra', 'url': 'https://chromium.googlesource.com/infra/infra.git'}]",
@@ -32,8 +17,8 @@
       "--revision",
       "infra@HEAD"
     ],
-    "cwd": "[BUILDER_CACHE]/V8_lkgr_finder",
-    "env_prefixes": {
+    "cwd": "[CACHE]/builder",
+    "env_suffixes": {
       "PATH": [
         "RECIPE_REPO[depot_tools]"
       ]
@@ -85,7 +70,7 @@
       "RECIPE_REPO[depot_tools]/gclient.py",
       "runhooks"
     ],
-    "cwd": "[BUILDER_CACHE]/V8_lkgr_finder/infra",
+    "cwd": "[CACHE]/builder/infra",
     "env_suffixes": {
       "PATH": [
         "RECIPE_REPO[depot_tools]"
@@ -139,7 +124,7 @@
       "ensure-directory",
       "--mode",
       "0777",
-      "[BUILDER_CACHE]/V8_lkgr_finder/lw"
+      "[CACHE]/builder/lw"
     ],
     "infra_step": true,
     "name": "mkdirs builder/lw"
@@ -148,7 +133,7 @@
     "cmd": [
       "python",
       "-u",
-      "[BUILDER_CACHE]/V8_lkgr_finder/infra/run.py",
+      "[CACHE]/builder/infra/run.py",
       "infra.services.lkgr_finder",
       "--project=v8",
       "--verbose",
@@ -157,13 +142,13 @@
       "--write-to-file",
       "/path/to/tmp/",
       "--workdir",
-      "[BUILDER_CACHE]/V8_lkgr_finder/lw",
+      "[CACHE]/builder/lw",
       "--email-errors",
       "--allowed-lag=4",
       "--html",
       "/path/to/tmp/"
     ],
-    "cwd": "[BUILDER_CACHE]/V8_lkgr_finder/infra",
+    "cwd": "[CACHE]/builder/infra",
     "name": "calculate v8 lkgr"
   },
   {
@@ -194,7 +179,7 @@
       "-u",
       "RECIPE_MODULE[depot_tools::git]/resources/git_setup.py",
       "--path",
-      "[BUILDER_CACHE]/V8_lkgr_finder/workdir",
+      "[CACHE]/builder/workdir",
       "--url",
       "https://chromium.googlesource.com/v8/v8"
     ],
@@ -203,14 +188,13 @@
   {
     "cmd": [
       "git",
-      "retry",
       "cache",
       "populate",
       "-c",
       "[GIT_CACHE]",
       "https://chromium.googlesource.com/v8/v8"
     ],
-    "cwd": "[BUILDER_CACHE]/V8_lkgr_finder/workdir",
+    "cwd": "[CACHE]/builder/workdir",
     "env": {
       "PATH": "RECIPE_REPO[depot_tools]:<PATH>"
     },
@@ -227,7 +211,7 @@
       "[GIT_CACHE]",
       "https://chromium.googlesource.com/v8/v8"
     ],
-    "cwd": "[BUILDER_CACHE]/V8_lkgr_finder/workdir",
+    "cwd": "[CACHE]/builder/workdir",
     "env": {
       "PATH": "RECIPE_REPO[depot_tools]:<PATH>"
     },
@@ -242,7 +226,7 @@
       "origin",
       "mirror_dir"
     ],
-    "cwd": "[BUILDER_CACHE]/V8_lkgr_finder/workdir",
+    "cwd": "[CACHE]/builder/workdir",
     "env": {
       "PATH": "RECIPE_REPO[depot_tools]:<PATH>"
     },
@@ -252,13 +236,12 @@
   {
     "cmd": [
       "git",
-      "retry",
       "fetch",
       "origin",
       "master",
       "--progress"
     ],
-    "cwd": "[BUILDER_CACHE]/V8_lkgr_finder/workdir",
+    "cwd": "[CACHE]/builder/workdir",
     "env": {
       "PATH": "RECIPE_REPO[depot_tools]:<PATH>"
     },
@@ -272,7 +255,7 @@
       "-f",
       "FETCH_HEAD"
     ],
-    "cwd": "[BUILDER_CACHE]/V8_lkgr_finder/workdir",
+    "cwd": "[CACHE]/builder/workdir",
     "infra_step": true,
     "name": "git checkout"
   },
@@ -282,7 +265,7 @@
       "rev-parse",
       "HEAD"
     ],
-    "cwd": "[BUILDER_CACHE]/V8_lkgr_finder/workdir",
+    "cwd": "[CACHE]/builder/workdir",
     "infra_step": true,
     "name": "read revision",
     "~followup_annotations": [
@@ -297,7 +280,7 @@
       "-d",
       "-x"
     ],
-    "cwd": "[BUILDER_CACHE]/V8_lkgr_finder/workdir",
+    "cwd": "[CACHE]/builder/workdir",
     "infra_step": true,
     "name": "git clean"
   },
@@ -308,7 +291,7 @@
       "https://chromium.googlesource.com/v8/v8",
       "deadbeefdeadbeefdeadbeefdeadbeefdeadbeef:refs/heads/lkgr"
     ],
-    "cwd": "[BUILDER_CACHE]/V8_lkgr_finder/workdir",
+    "cwd": "[CACHE]/builder/workdir",
     "infra_step": true,
     "name": "push lkgr to ref"
   },
