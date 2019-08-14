@@ -129,7 +129,7 @@ export class MrGrid extends connectStore(LitElement) {
         table-layout: auto;
         border-collapse: collapse;
         width: 98%;
-        margin: 20px 1%;
+        margin: 0.5em 1%;
         text-align: left;
       }
       th {
@@ -143,6 +143,10 @@ export class MrGrid extends connectStore(LitElement) {
         padding-left: 0.3em;
         background-color: white;
         vertical-align: top;
+      }
+      mr-issue-link {
+        display: inline-block;
+        margin-right: 8px;
       }
     `;
   }

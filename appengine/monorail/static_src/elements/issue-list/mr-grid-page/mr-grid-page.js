@@ -23,8 +23,7 @@ export class MrGridPage extends connectStore(LitElement) {
           .issueCount=${this.issues.length}>
         </mr-grid-controls>
         ${noMatches ? html`
-          <div
-            class="error-message">
+          <div class="empty-search">
             Your search did not generate any results.
           </div>` : html`
           <progress
@@ -61,8 +60,8 @@ export class MrGridPage extends connectStore(LitElement) {
   constructor() {
     super();
     this.issues = [];
-    this.progress = .0;
-    this.queryParams = {y: 'None', x: 'None'};
+    this.progress = 0;
+    this.queryParams = {};
   };
 
   updated(changedProperties) {
@@ -98,10 +97,11 @@ export class MrGridPage extends connectStore(LitElement) {
     return css `
       progress {
         background-color: white;
-        border: 1px solid var(--chops-blue-700);
-        width: 25%;
+        border: 1px solid var(--chops-gray-500);
+        width: 40%;
+        margin-left: 1%;
+        margin-top: 0.5em;
         visibility: visible;
-        margin-left: 1.5em;
       }
       ::-webkit-progress-bar {
         background-color: white;
@@ -110,7 +110,7 @@ export class MrGridPage extends connectStore(LitElement) {
         transition: width 1s;
         background-color: var(--chops-blue-700);
       }
-      .error-message {
+      .empty-search {
         text-align: center;
         padding-top: 2em;
       }

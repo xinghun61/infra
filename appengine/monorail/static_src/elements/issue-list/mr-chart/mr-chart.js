@@ -168,7 +168,7 @@ export default class MrChart extends LitElement {
       }
       progress {
         background-color: white;
-        border: 1px solid #666;
+        border: 1px solid var(--chops-gray-500);
         margin: 0 0 1em;
         width: 100%;
         visibility: visible;

@@ -13,10 +13,8 @@ export class MrGridTile extends LitElement {
         <mr-star-button
           .issueRef=${this.issueRef}
         ></mr-star-button>
-        <a href=${issueRefToUrl(this.issue, this.queryParams)}>
-          <div class="issue-id">
-            ${this.issue.localId}
-          </div>
+        <a class="issue-id" href=${issueRefToUrl(this.issue, this.queryParams)}>
+          ${this.issue.localId}
         </a>
         <div class="status">
           ${this.issue.statusRef ? this.issue.statusRef.status : ''}
@@ -53,7 +51,7 @@ export class MrGridTile extends LitElement {
     return css`
       :host {
         display: block;
-        border: 2px solid #f1f1f1;
+        border: 2px solid var(--chops-gray-200);
         border-radius: 6px;
         padding: 1px;
         margin: 3px;
@@ -64,29 +62,32 @@ export class MrGridTile extends LitElement {
         table-layout: fixed;
         overflow: hidden;
       }
+      :host(:hover) {
+        border-color: var(--chops-blue-100);
+      }
       .tile-header {
         display: flex;
-      }
-      a:link, a:visited {
-        text-decoration: none;
-        font-size: var(--chops-main-font-size);
-        color: var(--chops-gray-800);
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        margin-bottom: 0.1em;
       }
       mr-star-button {
-        float: left;
-        display: inline-block;
-        height: 1.5em;
+        --mr-star-button-size: 16px;
       }
-      .issue-id {
-        font-size: var(--chops-large-font-size);
+      a.issue-id {
         font-weight: 500;
+        text-decoration: none;
         display: inline-block;
         padding-left: .25em;
+        color: var(--chops-blue-700);
       }
       .status {
         display: inline-block;
         font-size: 90%;
-        padding-left: .5em;
+        max-width: 30%;
+        white-space: nowrap;
+        padding-left: 4px;
       }
       .summary {
         height: 3.7em;
@@ -96,7 +97,7 @@ export class MrGridTile extends LitElement {
         position: relative;
       }
       a:hover {
-        color: var(--chops-blue-700);
+        text-decoration: underline;
       }
     `;
   };

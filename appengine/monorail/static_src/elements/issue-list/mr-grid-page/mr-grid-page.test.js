@@ -37,7 +37,7 @@ describe('mr-grid-page', () => {
     element.totalIssues = 0;
     await element.updateComplete;
     const error =
-      element.shadowRoot.querySelector('.error-message').textContent;
+      element.shadowRoot.querySelector('.empty-search').textContent;
     assert.equal(error.trim(), 'Your search did not generate any results.');
   });
 

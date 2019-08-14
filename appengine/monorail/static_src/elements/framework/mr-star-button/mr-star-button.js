@@ -19,6 +19,7 @@ export class MrStarButton extends connectStore(LitElement) {
     return css`
       :host {
         display: block;
+        --mr-star-button-size: var(--chops-icon-font-size);
       }
       button {
         background: none;
@@ -34,8 +35,8 @@ export class MrStarButton extends connectStore(LitElement) {
         cursor: default;
       }
       i.material-icons {
-        font-size: var(--chops-icon-font-size);
-        color: var(--chops-primary-icon-color);
+        font-size: var(--mr-star-button-size);
+        color: var(--chops-gray-500);
       }
       i.material-icons.starred {
         color: var(--chops-blue-700);
