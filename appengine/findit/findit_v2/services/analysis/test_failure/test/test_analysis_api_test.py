@@ -1365,5 +1365,3 @@ class TestAnalysisAPITest(wf_testcase.TestCase):
     self.assertIsNotNone(culprit_key)
     culprit = culprit_key.get()
     self.assertEqual(6000001, culprit.commit_position)
-    self.assertItemsEqual([cf.key.urlsafe() for cf in test_failures],
-                          culprit.failure_urlsafe_keys)
