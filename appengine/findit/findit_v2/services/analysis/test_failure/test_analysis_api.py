@@ -10,9 +10,13 @@ needed or not.
 from google.appengine.ext import ndb
 
 from findit_v2.model import luci_build
+from findit_v2.model import test_failure
 from findit_v2.model.test_failure import TestFailure
 from findit_v2.model.test_failure import TestFailureAnalysis
 from findit_v2.model.test_failure import TestFailureGroup
+from findit_v2.model.test_failure import TestFailureInRerunBuild
+from findit_v2.model.test_failure import TestRerunBuild
+from findit_v2.services import constants
 from findit_v2.services.analysis.analysis_api import AnalysisAPI
 from findit_v2.services.failure_type import StepTypeEnum
 
@@ -106,26 +110,97 @@ class TestAnalysisAPI(AnalysisAPI):
     return analysis
 
   def _GetFailuresInAnalysis(self, analysis):
-    return ndb.get_multi(analysis.compile_failure_keys)
+    return ndb.get_multi(analysis.test_failure_keys)
 
   def _FetchRerunBuildsOfAnalysis(self, analysis):
-    return []
+    return TestRerunBuild.query(ancestor=analysis.key).order(
+        TestRerunBuild.gitiles_commit.commit_position).fetch()
 
   def _GetFailureAnalysis(self, analyzed_build_id):
-    return None
+    analysis = TestFailureAnalysis.GetVersion(analyzed_build_id)
+    assert analysis, 'Failed to get TestFailureAnalysis for build {}'.format(
+        analyzed_build_id)
+    return analysis
 
   def _GetFailuresToRerun(self, failure_entities):
-    return {}
+    """Gets atomic failures in a dict format."""
+    return test_failure.GetTestFailures(failure_entities)
 
   def _GetExistingRerunBuild(self, analysis_key, rerun_commit):
-    return []
+    return TestRerunBuild.SearchBuildOnCommit(analysis_key, rerun_commit)
 
   def _CreateRerunBuild(self, rerun_builder, new_build, rerun_commit,
                         analysis_key):
-    return None
+    return TestRerunBuild.Create(
+        luci_project=rerun_builder.project,
+        luci_bucket=rerun_builder.bucket,
+        luci_builder=rerun_builder.builder,
+        build_id=new_build.id,
+        legacy_build_number=new_build.number,
+        gitiles_host=rerun_commit.gitiles_host,
+        gitiles_project=rerun_commit.gitiles_project,
+        gitiles_ref=rerun_commit.gitiles_ref,
+        gitiles_id=rerun_commit.gitiles_id,
+        commit_position=rerun_commit.commit_position,
+        status=new_build.status,
+        create_time=new_build.create_time.ToDatetime(),
+        parent_key=analysis_key)
 
   def _GetRerunBuildTags(self, analyzed_build_id):
-    return []
+    return [
+        {
+            'key': constants.RERUN_BUILD_PURPOSE_TAG_KEY,
+            'value': constants.TEST_RERUN_BUILD_PURPOSE,
+        },
+        {
+            'key': constants.ANALYZED_BUILD_ID_TAG_KEY,
+            'value': str(analyzed_build_id),
+        },
+    ]
 
-  def _GetRerunBuildInputProperties(self, project_api, rerun_failures):
-    return {}
+  def _GetRerunBuildInputProperties(self, project_api, test_failures):
+    return project_api.GetTestRerunBuildInputProperties(test_failures)
+
+  def SaveRerunBuildResults(self, rerun_build_entity, status,
+                            detailed_test_failures):
+    """Saves the results of the rerun build.
+
+    Args:
+      status (int): status of the build. See common_pb2 for available values.
+      detailed_test_failures (dict): Test failures in the rerun build.
+      Format is like:
+      {
+        'step_name': {
+          'failures': {
+            frozenset(['test1']): {
+              'first_failed_build': {
+                'id': 8765432109,
+                'number': 123,
+                'commit_id': 654321
+              },
+              'last_passed_build': None,
+              'properties': {
+                # Arbitrary information about the failure if exists.
+              }
+            },
+          'first_failed_build': {
+            'id': 8765432109,
+            'number': 123,
+            'commit_id': 654321
+          },
+          'last_passed_build': None,
+          'properties': {
+            # Arbitrary information about the failure if exists.
+          }
+        },
+      }
+    """
+    rerun_build_entity.status = status
+    rerun_build_entity.failures = []
+    for step_ui_name, step_info in detailed_test_failures.iteritems():
+      for test_set in step_info['failures']:
+        failure_entity = TestFailureInRerunBuild(
+            step_ui_name=step_ui_name,
+            test=next(iter(test_set)) if test_set else None)
+        rerun_build_entity.failures.append(failure_entity)
+    rerun_build_entity.put()

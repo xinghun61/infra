@@ -192,7 +192,7 @@ class AnalysisAPI(object):
       return failure_entity.GetFailureIdentifier().issubset(
           set(failures_in_rerun_build))
 
-    # Both analyzed build and rerun build have no target level failure info, so
+    # Both analyzed build and rerun build have no atomic level failure info, so
     # the same failed step will be used to decide that the same failure happens
     # again.
     return not bool(failures_in_rerun_build)

@@ -11,6 +11,9 @@ from buildbucket_proto.build_pb2 import Build
 from buildbucket_proto.build_pb2 import BuilderID
 from buildbucket_proto.rpc_pb2 import SearchBuildsResponse
 from buildbucket_proto.step_pb2 import Step
+from google.appengine.ext import ndb
+
+from findit_v2.model.gitiles_commit import Culprit as CulpritNdb
 
 from common.waterfall import buildbucket_client
 from findit_v2.model import luci_build
@@ -19,11 +22,13 @@ from findit_v2.model.luci_build import LuciFailedBuild
 from findit_v2.model.test_failure import TestFailure
 from findit_v2.model.test_failure import TestFailureAnalysis
 from findit_v2.model.test_failure import TestFailureGroup
+from findit_v2.model.test_failure import TestRerunBuild
 from findit_v2.services.analysis.test_failure.test_analysis_api import (
     TestAnalysisAPI)
 from findit_v2.services.chromium_api import ChromiumProjectAPI
 from findit_v2.services.context import Context
 from findit_v2.services.failure_type import StepTypeEnum
+from libs import analysis_status
 from services import git
 from waterfall.test import wf_testcase
 
@@ -1002,3 +1007,363 @@ class TestAnalysisAPITest(wf_testcase.TestCase):
         self.analysis_api.GetFirstFailuresInCurrentBuildWithoutGroup(
             ChromiumProjectAPI(), self.context, self.build,
             first_failures_in_current_build))
+
+  def testBisectGitilesCommitGetCulpritCommit(self):
+    gitiles_host = 'gitiles.host.com'
+    gitiles_project = 'project/name'
+    gitiles_ref = 'ref/heads/master'
+
+    context = Context(
+        luci_project_name='chromium',
+        gitiles_project=gitiles_project,
+        gitiles_host=gitiles_host,
+        gitiles_ref=gitiles_ref,
+        gitiles_id=self.commits[10].gitiles_id)
+
+    revisions = {n: str(n) for n in xrange(100, 110)}
+
+    bisect_commit, culprit_commit = self.analysis_api._BisectGitilesCommit(
+        context, self.commits[9], self.commits[10], revisions)
+
+    self.assertIsNone(bisect_commit)
+    self.assertEqual(6000010, culprit_commit.commit_position)
+
+  def testBisectGitilesCommitFailedToGetGitilesId(self):
+    gitiles_host = 'gitiles.host.com'
+    gitiles_project = 'project/name'
+    gitiles_ref = 'ref/heads/master'
+
+    context = Context(
+        luci_project_name='chromium',
+        gitiles_project=gitiles_project,
+        gitiles_host=gitiles_host,
+        gitiles_ref=gitiles_ref,
+        gitiles_id=self.commits[10].gitiles_id)
+
+    bisect_commit, culprit_commit = self.analysis_api._BisectGitilesCommit(
+        context, self.commits[0], self.commits[10], {})
+
+    self.assertIsNone(bisect_commit)
+    self.assertIsNone(culprit_commit)
+
+  def testUpdateFailureRegressionRanges(self):
+    rerun_builds_info = [(self.commits[5], {}),
+                         (self.commits[7], {
+                             'step_ui_name': ['test1']
+                         }), (self.commits[6], {
+                             'step_ui_name': ['test1']
+                         }), (self.commits[8], {
+                             'step_ui_name': ['test2']
+                         })]
+    failures_with_range = [{
+        'failure': self.test_failure_1,
+        'last_passed_commit': self.commits[0],
+        'first_failed_commit': self.commits[10],
+    },
+                           {
+                               'failure': self.test_failure_2,
+                               'last_passed_commit': self.commits[0],
+                               'first_failed_commit': self.commits[10],
+                           }]
+
+    expected_results = [{
+        'failure': self.test_failure_1,
+        'last_passed_commit': self.commits[5],
+        'first_failed_commit': self.commits[6],
+    },
+                        {
+                            'failure': self.test_failure_2,
+                            'last_passed_commit': self.commits[7],
+                            'first_failed_commit': self.commits[8],
+                        }]
+
+    self.analysis_api._UpdateFailureRegressionRanges(rerun_builds_info,
+                                                     failures_with_range)
+
+    for real_failure in failures_with_range:
+      for expected_result in expected_results:
+        if real_failure['failure'].GetFailureIdentifier(
+        ) == expected_result['failure'].GetFailureIdentifier():
+          self.assertEqual(expected_result['last_passed_commit'].gitiles_id,
+                           real_failure['last_passed_commit'].gitiles_id)
+          self.assertEqual(expected_result['first_failed_commit'].gitiles_id,
+                           real_failure['first_failed_commit'].gitiles_id)
+
+  def testGroupFailuresByRegressionRange(self):
+    test_failure_3 = TestFailure.Create(self.build_entity.key, 'step_ui_name',
+                                        'test6')
+    test_failure_3.put()
+
+    failures_with_range = [{
+        'failure': self.test_failure_1,
+        'last_passed_commit': self.commits[5],
+        'first_failed_commit': self.commits[6],
+    },
+                           {
+                               'failure': self.test_failure_2,
+                               'last_passed_commit': self.commits[7],
+                               'first_failed_commit': self.commits[8],
+                           },
+                           {
+                               'failure': test_failure_3,
+                               'last_passed_commit': self.commits[5],
+                               'first_failed_commit': self.commits[6],
+                           }]
+
+    expected_result = [
+        {
+            'failures': [self.test_failure_1, test_failure_3],
+            'last_passed_commit': self.commits[5],
+            'first_failed_commit': self.commits[6],
+        },
+        {
+            'failures': [self.test_failure_2],
+            'last_passed_commit': self.commits[7],
+            'first_failed_commit': self.commits[8],
+        },
+    ]
+
+    result = self.analysis_api._GroupFailuresByRegressionRange(
+        failures_with_range)
+    self.assertItemsEqual(expected_result, result)
+
+  def testGetCulpritsForFailures(self):
+    culprit = CulpritNdb.Create(self.gitiles_host, self.gitiles_project,
+                                self.gitiles_ref, 'git_hash_123', 123)
+    culprit.put()
+
+    failure1 = TestFailure.Create(self.build_entity.key, 'step_ui_name',
+                                  'test1')
+    failure1.culprit_commit_key = culprit.key
+    failure1.put()
+
+    failure2 = TestFailure.Create(self.build_entity.key, 'step_ui_name',
+                                  'test2')
+    failure2.culprit_commit_key = culprit.key
+    failure2.put()
+
+    culprits = self.analysis_api.GetCulpritsForFailures([failure1, failure2])
+    self.assertEqual(1, len(culprits))
+    self.assertEqual('git_hash_123', culprits[0].commit.id)
+
+  def _CreateTestRerunBuild(self, commit_index=2):
+    rerun_commit = self.commits[commit_index]
+
+    rerun_builder = BuilderID(
+        project='chromium', bucket='findit', builder='findit-variables')
+
+    rerun_build = TestRerunBuild.Create(
+        luci_project=rerun_builder.project,
+        luci_bucket=rerun_builder.bucket,
+        luci_builder=rerun_builder.builder,
+        build_id=8000000000789,
+        legacy_build_number=60789,
+        gitiles_host=rerun_commit.gitiles_host,
+        gitiles_project=rerun_commit.gitiles_project,
+        gitiles_ref=rerun_commit.gitiles_ref,
+        gitiles_id=rerun_commit.gitiles_id,
+        commit_position=rerun_commit.commit_position,
+        status=1,
+        create_time=datetime(2019, 3, 28),
+        parent_key=self.analysis.key)
+    rerun_build.put()
+    return rerun_build
+
+  @mock.patch.object(
+      ChromiumProjectAPI,
+      'GetTestRerunBuildInputProperties',
+      return_value={'recipe': 'step_ui_name'})
+  @mock.patch.object(buildbucket_client, 'TriggerV2Build')
+  def testTriggerRerunBuild(self, mock_trigger_build, _):
+    new_build_id = 800000024324
+    new_build = Build(id=new_build_id, number=300)
+    new_build.status = common_pb2.SCHEDULED
+    new_build.create_time.FromDatetime(datetime(2019, 4, 20))
+    rerun_builder = BuilderID(
+        project='chromium', bucket='findit', builder='findit-variables')
+    rerun_commit = self.commits[2]
+    rerun_tests = {'step_ui_name': ['test1']}
+
+    mock_trigger_build.return_value = new_build
+
+    self.analysis_api.TriggerRerunBuild(self.context, self.build_id,
+                                        self.analysis.key, rerun_builder,
+                                        rerun_commit, rerun_tests)
+
+    rerun_build = TestRerunBuild.get_by_id(
+        new_build_id, parent=self.analysis.key)
+    self.assertIsNotNone(rerun_build)
+    mock_trigger_build.assert_called_once_with(
+        rerun_builder,
+        common_pb2.GitilesCommit(
+            project=rerun_commit.gitiles_project,
+            host=rerun_commit.gitiles_host,
+            ref=rerun_commit.gitiles_ref,
+            id=rerun_commit.gitiles_id), {'recipe': 'step_ui_name'},
+        tags=[{
+            'value': 'test-failure-culprit-finding',
+            'key': 'purpose'
+        }, {
+            'value': str(self.build.id),
+            'key': 'analyzed_build_id'
+        }])
+
+  @mock.patch.object(
+      ChromiumProjectAPI,
+      'GetTestRerunBuildInputProperties',
+      return_value={'recipe': 'step_ui_name'})
+  @mock.patch.object(buildbucket_client, 'TriggerV2Build')
+  def testTriggerRerunBuildFoundRunningBuild(self, mock_trigger_build, _):
+    """This test is for the case where there's already an existing rerun build,
+      so no new rerun-build should be scheduled."""
+    rerun_builder = BuilderID(
+        project='chromium', bucket='findit', builder='findit-variables')
+    rerun_tests = {'step_ui_name': ['test1']}
+
+    self._CreateTestRerunBuild(commit_index=2)
+
+    self.analysis_api.TriggerRerunBuild(self.context, self.build_id,
+                                        self.analysis.key, rerun_builder,
+                                        self.commits[2], rerun_tests)
+
+    self.assertFalse(mock_trigger_build.called)
+
+  @mock.patch.object(
+      ChromiumProjectAPI, 'GetTestRerunBuildInputProperties', return_value=None)
+  @mock.patch.object(buildbucket_client, 'TriggerV2Build')
+  def testTriggerRerunBuildFailedToGetProperty(self, mock_trigger_build, _):
+    """This test is for the case where there's already an existing rerun build,
+      so no new rerun-build should be scheduled."""
+    rerun_commit = self.commits[2]
+
+    rerun_builder = BuilderID(
+        project='chromium', bucket='findit', builder='findit-variables')
+    rerun_tests = {'step_ui_name': ['test1']}
+
+    self.analysis_api.TriggerRerunBuild(self.context, self.build_id,
+                                        self.analysis.key, rerun_builder,
+                                        rerun_commit, rerun_tests)
+
+    self.assertFalse(mock_trigger_build.called)
+
+  @mock.patch.object(
+      ChromiumProjectAPI,
+      'GetTestRerunBuildInputProperties',
+      return_value={'recipe': 'step_ui_name'})
+  @mock.patch.object(buildbucket_client, 'TriggerV2Build', return_value=None)
+  def testTriggerRerunBuildFailedToTriggerBuild(self, mock_trigger_build, _):
+    """This test is for the case where there's already an existing rerun build,
+      so no new rerun-build should be scheduled."""
+    rerun_commit = self.commits[2]
+
+    rerun_builder = BuilderID(
+        project='chromium', bucket='findit', builder='findit-variables')
+    rerun_tests = {'step_ui_name': ['test1']}
+
+    self.analysis_api.TriggerRerunBuild(self.context, self.build_id,
+                                        self.analysis.key, rerun_builder,
+                                        rerun_commit, rerun_tests)
+
+    self.assertTrue(mock_trigger_build.called)
+    rerun_builds = TestRerunBuild.query(ancestor=self.analysis.key).fetch()
+    self.assertEqual([], rerun_builds)
+
+  def testGetRegressionRangesForFailuresNoRerunBuilds(self):
+    result = self.analysis_api._GetRegressionRangesForFailures(self.analysis)
+
+    expected_result = [{
+        'failures': [self.test_failure_1, self.test_failure_2],
+        'last_passed_commit': self.analysis.last_passed_commit,
+        'first_failed_commit': self.analysis.first_failed_commit
+    }]
+    self.assertEqual(expected_result, result)
+
+  def testGetRegressionRangesForFailures(self):
+    rerun_build_failures = {
+        'step_ui_name': {
+            'failures': {
+                frozenset(['test1']): {
+                    'properties': {}
+                }
+            }
+        }
+    }
+
+    rerun_build = self._CreateTestRerunBuild(commit_index=2)
+    self.analysis_api.SaveRerunBuildResults(rerun_build, 20,
+                                            rerun_build_failures)
+
+    results = self.analysis_api._GetRegressionRangesForFailures(self.analysis)
+    expected_results = [{
+        'failures': [self.test_failure_2],
+        'first_failed_commit': self.analysis.first_failed_commit,
+        'last_passed_commit': self.commits[2]
+    },
+                        {
+                            'failures': [self.test_failure_1],
+                            'first_failed_commit':
+                                self.commits[2],
+                            'last_passed_commit':
+                                self.analysis.last_passed_commit
+                        }]
+    self.assertEqual(expected_results, results)
+
+  @mock.patch.object(
+      TestAnalysisAPI,
+      '_GetRerunBuildInputProperties',
+      return_value={'recipe': 'step_ui_name'})
+  @mock.patch.object(buildbucket_client, 'TriggerV2Build')
+  @mock.patch.object(git, 'MapCommitPositionsToGitHashes')
+  def testRerunBasedAnalysisContinueWithNextRerunBuild(self, mock_revisions,
+                                                       mock_trigger_build, _):
+    mock_revisions.return_value = {n: str(n) for n in xrange(6000000, 6000005)}
+    mock_rerun_build = Build(id=8000055000123, number=78990)
+    mock_rerun_build.create_time.FromDatetime(datetime(2019, 4, 30))
+    mock_trigger_build.return_value = mock_rerun_build
+
+    self.analysis_api.RerunBasedAnalysis(self.context, self.build_id)
+    self.assertTrue(mock_trigger_build.called)
+
+    analysis = TestFailureAnalysis.GetVersion(self.build_id)
+    self.assertEqual(analysis_status.RUNNING, analysis.status)
+
+    rerun_builds = TestRerunBuild.query(ancestor=self.analysis.key).fetch()
+    self.assertEqual(1, len(rerun_builds))
+    self.assertEqual(6000002, rerun_builds[0].gitiles_commit.commit_position)
+
+  @mock.patch.object(TestAnalysisAPI, 'TriggerRerunBuild')
+  @mock.patch.object(git, 'MapCommitPositionsToGitHashes')
+  def testRerunBasedAnalysisEndWithCulprit(self, mock_revisions,
+                                           mock_trigger_build):
+    rerun_build_failures = {
+        'step_ui_name': {
+            'failures': {
+                frozenset(['test1']): {
+                    'properties': {}
+                },
+                frozenset(['test2']): {
+                    'properties': {}
+                }
+            }
+        }
+    }
+
+    rerun_build = self._CreateTestRerunBuild(commit_index=1)
+    self.analysis_api.SaveRerunBuildResults(rerun_build, 20,
+                                            rerun_build_failures)
+
+    mock_revisions.return_value = {n: str(n) for n in xrange(6000000, 6000005)}
+
+    self.analysis_api.RerunBasedAnalysis(self.context, self.build_id)
+    self.assertFalse(mock_trigger_build.called)
+
+    analysis = TestFailureAnalysis.GetVersion(self.build_id)
+    self.assertEqual(analysis_status.COMPLETED, analysis.status)
+
+    test_failures = ndb.get_multi(analysis.test_failure_keys)
+    culprit_key = test_failures[0].culprit_commit_key
+    self.assertIsNotNone(culprit_key)
+    culprit = culprit_key.get()
+    self.assertEqual(6000001, culprit.commit_position)
+    self.assertItemsEqual([cf.key.urlsafe() for cf in test_failures],
+                          culprit.failure_urlsafe_keys)

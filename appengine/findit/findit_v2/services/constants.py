@@ -11,5 +11,8 @@ RERUN_BUILD_PURPOSE_TAG_KEY = 'purpose'
 # Purpose of a rerun build in compile failure analysis.
 COMPILE_RERUN_BUILD_PURPOSE = 'compile-failure-culprit-finding'
 
+# Purpose of a rerun build in test failure analysis.
+TEST_RERUN_BUILD_PURPOSE = 'test-failure-culprit-finding'
+
 # Tag for the build id that is analyzed by a rerun build.
 ANALYZED_BUILD_ID_TAG_KEY = 'analyzed_build_id'

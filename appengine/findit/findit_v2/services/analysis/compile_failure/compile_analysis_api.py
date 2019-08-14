@@ -139,11 +139,11 @@ class CompileAnalysisAPI(AnalysisAPI):
     return [
         {
             'key': constants.RERUN_BUILD_PURPOSE_TAG_KEY,
-            'value': constants.COMPILE_RERUN_BUILD_PURPOSE
+            'value': constants.COMPILE_RERUN_BUILD_PURPOSE,
         },
         {
             'key': constants.ANALYZED_BUILD_ID_TAG_KEY,
-            'value': str(analyzed_build_id)
+            'value': str(analyzed_build_id),
         },
     ]
 
