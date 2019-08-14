@@ -1,6 +1,7 @@
 [define title]Hotlist [hotlist.name][end]
 [define category_css]css/ph_list.css[end]
 [define category2_css]css/ph_detail.css[end]
+[define new_ui_url][end]
 [include "../framework/master-header.ezt" "showtabs"]
 
 <table width="100%" cellpadding="0" cellspacing="0" border="0" class="hotlist-issues-page" id="meta-container"
