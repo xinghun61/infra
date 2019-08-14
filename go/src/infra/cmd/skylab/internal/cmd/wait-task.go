@@ -19,6 +19,7 @@ import (
 	"go.chromium.org/luci/auth/client/authcli"
 	swarming_api "go.chromium.org/luci/common/api/swarming/swarming/v1"
 	"go.chromium.org/luci/common/cli"
+	"go.chromium.org/luci/common/logging"
 
 	"infra/libs/skylab/swarming"
 )
@@ -154,6 +155,8 @@ func responseToTaskResult(e site.Environment, buildID int64, response *steps.Exe
 // rpc failures (after transient retry).
 func waitSwarmingTask(ctx context.Context, taskID string, t *swarming.Client) error {
 	sleepInterval := time.Duration(15 * time.Second)
+	throttledLogger := newThrottledInfoLogger(logging.Get(ctx), 5*time.Minute)
+	progressMessage := fmt.Sprintf("Still waiting for result from task ID %s", taskID)
 	for {
 		results, err := t.GetResults(ctx, []string{taskID})
 		if err != nil {
@@ -177,6 +180,7 @@ func waitSwarmingTask(ctx context.Context, taskID string, t *swarming.Client) er
 		if err = sleepOrCancel(ctx, sleepInterval); err != nil {
 			return err
 		}
+		throttledLogger.MaybeLog(progressMessage)
 	}
 }
 

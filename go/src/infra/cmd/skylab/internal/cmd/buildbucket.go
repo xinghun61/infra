@@ -19,6 +19,7 @@ import (
 	"go.chromium.org/luci/auth/client/authcli"
 	buildbucket_pb "go.chromium.org/luci/buildbucket/proto"
 	"go.chromium.org/luci/common/errors"
+	"go.chromium.org/luci/common/logging"
 	"go.chromium.org/luci/grpc/prpc"
 	"google.golang.org/genproto/protobuf/field_mask"
 
@@ -123,6 +124,9 @@ func waitBuildbucketTask(ctx context.Context, ID string, client buildbucket_pb.B
 }
 
 func bbWaitBuild(ctx context.Context, client buildbucket_pb.BuildsClient, buildID int64) (*buildbucket_pb.Build, error) {
+	throttledLogger := newThrottledInfoLogger(logging.Get(ctx), 5*time.Minute)
+	progressMessage := fmt.Sprintf("Still waiting for result from testplatform build ID %d", buildID)
+
 	fields := &field_mask.FieldMask{Paths: getBuildFields}
 	req := &buildbucket_pb.GetBuildRequest{
 		Id:     buildID,
@@ -142,6 +146,7 @@ func bbWaitBuild(ctx context.Context, client buildbucket_pb.BuildsClient, buildI
 			return nil, ctx.Err()
 		case <-time.After(15 * time.Second):
 		}
+		throttledLogger.MaybeLog(progressMessage)
 	}
 }
 

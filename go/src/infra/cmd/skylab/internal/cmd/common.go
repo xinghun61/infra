@@ -26,6 +26,7 @@ import (
 	"go.chromium.org/luci/common/data/strpair"
 	"go.chromium.org/luci/common/errors"
 	lflag "go.chromium.org/luci/common/flag"
+	"go.chromium.org/luci/common/logging"
 
 	"infra/cmd/skylab/internal/site"
 	"infra/libs/skylab/common/errctx"
@@ -215,4 +216,36 @@ func printTaskInfo(results []*swarming_api.SwarmingRpcsTaskResult, showLimit int
 		fmt.Fprintf(os.Stderr, "... and %d more tasks\n", len(results)-showTaskLimit)
 	}
 	fmt.Fprintln(os.Stderr, strings.Repeat("-", 80))
+}
+
+// newThrottledInfoLogger returns a logger that logs messages at info level no
+// more than once every delay interval.
+func newThrottledInfoLogger(logger logging.Logger, delay time.Duration) *throttledInfoLogger {
+	return &throttledInfoLogger{
+		logger: logger,
+		delay:  delay,
+	}
+}
+
+type throttledInfoLogger struct {
+	logger       logging.Logger
+	delay        time.Duration
+	latestOutput time.Time
+}
+
+// MaybeLog logs the given message if the last message successfully logged is
+// older than a prespecified delay.
+func (t *throttledInfoLogger) MaybeLog(message string) {
+	if t.shouldLog() {
+		t.logger.Infof("%s", message)
+		t.reportLogged()
+	}
+}
+
+func (t *throttledInfoLogger) shouldLog() bool {
+	return t.logger != nil && time.Now().After(t.latestOutput.Add(t.delay))
+}
+
+func (t *throttledInfoLogger) reportLogged() {
+	t.latestOutput = time.Now()
 }
