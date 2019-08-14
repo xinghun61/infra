@@ -207,7 +207,9 @@ runOnLoad(function() {
 
   [if-any allow_edit]
     let addPhasesCheckbox = document.getElementById('cb_add_approvals');
-    addPhasesCheckbox.addEventListener('change', toggleGatesView);
+    if (addPhasesCheckbox) {
+      addPhasesCheckbox.addEventListener('change', toggleGatesView);
+    }
 
     var acobElements = document.getElementsByClassName("acob");
     for (var i = 0; i < acobElements.length; ++i) {
@@ -235,7 +237,9 @@ runOnLoad(function() {
 
   toggleGatesView();
   function toggleGatesView() {
-    let addPhases = document.getElementById('cb_add_approvals').checked;
+    let addPhasesCheckbox = document.getElementById('cb_add_approvals');
+    if (addPhasesCheckbox === null) return;
+    let addPhases = addPhasesCheckbox.checked;
     let subfieldRow = $('subfield-row');
     let phasefieldRow = $('phasefield-row');
     if (addPhases) {
