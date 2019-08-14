@@ -75,8 +75,13 @@ def _main_docker_generate(args, system):
 
 def _main_wheel_build(args, system):
   wheels = set(args.wheel or ())
-  wheel_re = re.compile('^%s$' % '|'.join('(%s)' % r for r in args.wheel_re))
-  wheels.update(x for x in wheel.SPEC_NAMES if wheel_re.match(x))
+  if args.wheel_re:
+    regex = r'^%s$' % '|'.join('(%s)' % r for r in args.wheel_re)
+    wheel_re = re.compile(regex)
+    wheels.update(x for x in wheel.SPEC_NAMES if wheel_re.match(x))
+    if not wheels:
+      util.LOGGER.error("--wheel_re didn't match any wheels: %s", regex)
+      return
 
   platforms, specs = _filter_platform_specs(args.platform, wheels)
 
@@ -243,6 +248,7 @@ def add_argparse_options(parser):
       choices=wheel.SPEC_NAMES,
       help='Only build packages for the specified wheel(s).')
   subparser.add_argument('--wheel_re', action='append', default=[],
+      metavar='REGEX',
       help='Only build packages for the wheels matching these regexes.')
   subparser.add_argument('--rebuild', action='store_true',
       help='Force rebuild of package even if it is already built.')
