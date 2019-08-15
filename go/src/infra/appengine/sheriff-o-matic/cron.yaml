@@ -72,7 +72,7 @@ cron:
     max_doublings: 5
 
 - description: Update Chromium GPU FYI alerts
-  url: /_cron/analyze/chromium.gpu.fyi
+  url: /_cron/analyze/chromium.gpu.fyi?use=bigquery
   schedule: every 5 minutes
   target: analyzer
   retry_parameters:

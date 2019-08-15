@@ -76,6 +76,26 @@ LIMIT
 	1000
 `
 
+const chromiumGPUFYIFailuresQuery = `
+SELECT
+  Project,
+  Bucket,
+  Builder,
+  MasterName,
+  StepName,
+  BuildRangeBegin,
+  BuildRangeEnd,
+  CPRangeOutputBegin,
+  CPRangeOutputEnd,
+  CPRangeInputBegin,
+  CPRangeInputEnd,
+	StartTime
+FROM
+	` + "`%s.events.sheriffable_failures`" + `
+WHERE
+  MasterName = "chromium.gpu.fyi"
+`
+
 type failureRow struct {
 	StepName           string
 	MasterName         bigquery.NullString
@@ -148,11 +168,19 @@ func GetBigQueryAlerts(ctx context.Context, tree string) ([]messages.BuildFailur
 	if err != nil {
 		return nil, err
 	}
-	queryStr := fmt.Sprintf(failuresQuery, appID, tree, tree)
-	if tree == "android" {
+	queryStr := ""
+	switch tree {
+	case "android":
 		queryStr = fmt.Sprintf(androidFailuresQuery, appID)
+		break
+	case "chromium.gpu.fyi":
+		queryStr = fmt.Sprintf(chromiumGPUFYIFailuresQuery, appID)
+		break
+	default:
+		queryStr = fmt.Sprintf(failuresQuery, appID, tree, tree)
 	}
-	logging.Infof(ctx, "query: %q", queryStr)
+
+	logging.Infof(ctx, "query: %s", queryStr)
 	q := client.Query(queryStr)
 	it, err := q.Read(ctx)
 	if err != nil {
