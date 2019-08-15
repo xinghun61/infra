@@ -21,6 +21,7 @@ from findit_v2.model.gitiles_commit import GitilesCommit
 from findit_v2.model.luci_build import LuciFailedBuild
 from findit_v2.model.test_failure import TestFailure
 from findit_v2.model.test_failure import TestFailureAnalysis
+from findit_v2.model.test_failure import TestFailureInRerunBuild
 from findit_v2.model.test_failure import TestFailureGroup
 from findit_v2.model.test_failure import TestRerunBuild
 from findit_v2.services.analysis.test_failure.test_analysis_api import (
@@ -508,8 +509,7 @@ class TestAnalysisAPITest(wf_testcase.TestCase):
 
     self.assertEqual(
         expected_res,
-        self.analysis_api.GetFirstFailuresInCurrentBuild(
-            self.context, self.build, failures))
+        self.analysis_api.GetFirstFailuresInCurrentBuild(self.build, failures))
 
   def testGetFirstFailuresInCurrentBuildNoFirstFailures(self):
     build_122_info = self._GetBuildInfo(122)
@@ -533,8 +533,7 @@ class TestAnalysisAPITest(wf_testcase.TestCase):
 
     self.assertEqual(
         expected_res,
-        self.analysis_api.GetFirstFailuresInCurrentBuild(
-            self.context, self.build, failures))
+        self.analysis_api.GetFirstFailuresInCurrentBuild(self.build, failures))
 
   def testGetFirstFailuresInCurrentBuildNoLastPass(self):
 
@@ -556,8 +555,7 @@ class TestAnalysisAPITest(wf_testcase.TestCase):
 
     self.assertEqual(
         expected_res,
-        self.analysis_api.GetFirstFailuresInCurrentBuild(
-            self.context, self.build, failures))
+        self.analysis_api.GetFirstFailuresInCurrentBuild(self.build, failures))
 
   def testGetFirstFailuresInCurrentBuildOnlyStep(self):
     build_122_info = self._GetBuildInfo(122)
@@ -582,8 +580,7 @@ class TestAnalysisAPITest(wf_testcase.TestCase):
 
     self.assertEqual(
         expected_res,
-        self.analysis_api.GetFirstFailuresInCurrentBuild(
-            self.context, self.build, failures))
+        self.analysis_api.GetFirstFailuresInCurrentBuild(self.build, failures))
 
   def testGetFirstFailuresInCurrentBuildOnlyStepFailedBefore(self):
     build_122_info = self._GetBuildInfo(122)
@@ -601,8 +598,7 @@ class TestAnalysisAPITest(wf_testcase.TestCase):
 
     self.assertEqual(
         expected_res,
-        self.analysis_api.GetFirstFailuresInCurrentBuild(
-            self.context, self.build, failures))
+        self.analysis_api.GetFirstFailuresInCurrentBuild(self.build, failures))
 
   def testGetFirstFailuresInCurrentBuildFailureStartedInDifferentBuild(self):
     build_122_info = self._GetBuildInfo(122)
@@ -645,8 +641,7 @@ class TestAnalysisAPITest(wf_testcase.TestCase):
     }
     self.assertEqual(
         expected_res,
-        self.analysis_api.GetFirstFailuresInCurrentBuild(
-            self.context, self.build, failures))
+        self.analysis_api.GetFirstFailuresInCurrentBuild(self.build, failures))
 
   @mock.patch.object(git, 'GetCommitPositionFromRevision', return_value=67890)
   def testSaveFailures(self, _):
@@ -1279,19 +1274,12 @@ class TestAnalysisAPITest(wf_testcase.TestCase):
     self.assertEqual(expected_result, result)
 
   def testGetRegressionRangesForFailures(self):
-    rerun_build_failures = {
-        'step_ui_name': {
-            'failures': {
-                frozenset(['test1']): {
-                    'properties': {}
-                }
-            }
-        }
-    }
-
     rerun_build = self._CreateTestRerunBuild(commit_index=2)
-    self.analysis_api.SaveRerunBuildResults(rerun_build, 20,
-                                            rerun_build_failures)
+    rerun_build.status = 20
+    failure_entity = TestFailureInRerunBuild(
+        step_ui_name='step_ui_name', test='test1')
+    rerun_build.failures = [failure_entity]
+    rerun_build.put()
 
     results = self.analysis_api._GetRegressionRangesForFailures(self.analysis)
     expected_results = [{
@@ -1335,22 +1323,14 @@ class TestAnalysisAPITest(wf_testcase.TestCase):
   @mock.patch.object(git, 'MapCommitPositionsToGitHashes')
   def testRerunBasedAnalysisEndWithCulprit(self, mock_revisions,
                                            mock_trigger_build):
-    rerun_build_failures = {
-        'step_ui_name': {
-            'failures': {
-                frozenset(['test1']): {
-                    'properties': {}
-                },
-                frozenset(['test2']): {
-                    'properties': {}
-                }
-            }
-        }
-    }
-
     rerun_build = self._CreateTestRerunBuild(commit_index=1)
-    self.analysis_api.SaveRerunBuildResults(rerun_build, 20,
-                                            rerun_build_failures)
+    rerun_build.status = 20
+    failure_entity_a = TestFailureInRerunBuild(
+        step_ui_name='step_ui_name', test='test1')
+    failure_entity_b = TestFailureInRerunBuild(
+        step_ui_name='step_ui_name', test='test2')
+    rerun_build.failures = [failure_entity_a, failure_entity_b]
+    rerun_build.put()
 
     mock_revisions.return_value = {n: str(n) for n in xrange(6000000, 6000005)}
 

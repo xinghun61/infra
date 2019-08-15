@@ -19,6 +19,10 @@ from findit_v2.services.analysis.compile_failure.compile_analysis_api import (
     CompileAnalysisAPI)
 from findit_v2.services.failure_type import StepTypeEnum
 
+# Placeholder to ack as a failed target in a failed step, if in fact there's no
+# target level failure info for that step.
+_COMPILE_FAILURE_PLACEHOLDER = {frozenset([]): {}}
+
 
 def AnalyzeCompileFailure(context, build, compile_steps):
   """Analyzes compile failure from a failed ci/postsubmit build.
@@ -37,9 +41,6 @@ def AnalyzeCompileFailure(context, build, compile_steps):
     return False
 
   project_api = projects.GetProjectAPI(luci_project)
-  if not project_api:
-    logging.debug('Unsupported project %s', luci_project)
-    return False
 
   analysis_api = CompileAnalysisAPI()
 
@@ -58,7 +59,7 @@ def AnalyzeCompileFailure(context, build, compile_steps):
 
   # Looks for the failures that started to fail in the current build.
   first_failures_in_current_build = (
-      analysis_api.GetFirstFailuresInCurrentBuild(context, build,
+      analysis_api.GetFirstFailuresInCurrentBuild(build,
                                                   detailed_compile_failures))
   if not first_failures_in_current_build.get('failures'):
     logging.info(
@@ -125,7 +126,8 @@ def _SaveRerunBuildResults(rerun_build_entity, status,
   rerun_build_entity.status = status
   rerun_build_entity.failures = []
   for step_ui_name, step_info in detailed_compile_failures.iteritems():
-    for output_targets in step_info['failures']:
+    for output_targets in step_info.get(
+        'failures') or _COMPILE_FAILURE_PLACEHOLDER:
       failure_entity = CompileFailureInRerunBuild(
           step_ui_name=step_ui_name, output_targets=output_targets)
       rerun_build_entity.failures.append(failure_entity)
@@ -144,7 +146,6 @@ def _ProcessAndSaveRerunBuildResult(context, analyzed_build_id, rerun_build):
      True if the rerun build entity is updated, otherwise False.
   """
   project_api = projects.GetProjectAPI(context.luci_project_name)
-  assert project_api, 'Unsupported project %s.' % context.luci_project_name
 
   analysis = CompileFailureAnalysis.GetVersion(analyzed_build_id)
   if not analysis:

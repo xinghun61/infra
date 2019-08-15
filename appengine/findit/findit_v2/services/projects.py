@@ -76,7 +76,9 @@ PROJECT_CFG = {
 
 def GetProjectAPI(project):
   """Gets the project API for the project."""
-  return PROJECT_CFG.get(project, {}).get('project_api')
+  project_api = PROJECT_CFG.get(project, {}).get('project_api')
+  assert project_api, 'Unsupported project %s.' % project
+  return project_api
 
 
 def GetBuilderType(project, bucket, builder_name):

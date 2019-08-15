@@ -21,7 +21,6 @@ def GetFailedStepsInBuild(context, build):
     its type.
   """
   project_api = projects.GetProjectAPI(context.luci_project_name)
-  assert project_api, 'Unsupported project {}'.format(context.luci_project_name)
 
   failed_steps = []
   for step in build.steps:

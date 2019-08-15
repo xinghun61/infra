@@ -14,7 +14,6 @@ from findit_v2.model import test_failure
 from findit_v2.model.test_failure import TestFailure
 from findit_v2.model.test_failure import TestFailureAnalysis
 from findit_v2.model.test_failure import TestFailureGroup
-from findit_v2.model.test_failure import TestFailureInRerunBuild
 from findit_v2.model.test_failure import TestRerunBuild
 from findit_v2.services import constants
 from findit_v2.services.analysis.analysis_api import AnalysisAPI
@@ -160,47 +159,3 @@ class TestAnalysisAPI(AnalysisAPI):
 
   def _GetRerunBuildInputProperties(self, project_api, test_failures):
     return project_api.GetTestRerunBuildInputProperties(test_failures)
-
-  def SaveRerunBuildResults(self, rerun_build_entity, status,
-                            detailed_test_failures):
-    """Saves the results of the rerun build.
-
-    Args:
-      status (int): status of the build. See common_pb2 for available values.
-      detailed_test_failures (dict): Test failures in the rerun build.
-      Format is like:
-      {
-        'step_name': {
-          'failures': {
-            frozenset(['test1']): {
-              'first_failed_build': {
-                'id': 8765432109,
-                'number': 123,
-                'commit_id': 654321
-              },
-              'last_passed_build': None,
-              'properties': {
-                # Arbitrary information about the failure if exists.
-              }
-            },
-          'first_failed_build': {
-            'id': 8765432109,
-            'number': 123,
-            'commit_id': 654321
-          },
-          'last_passed_build': None,
-          'properties': {
-            # Arbitrary information about the failure if exists.
-          }
-        },
-      }
-    """
-    rerun_build_entity.status = status
-    rerun_build_entity.failures = []
-    for step_ui_name, step_info in detailed_test_failures.iteritems():
-      for test_set in step_info['failures']:
-        failure_entity = TestFailureInRerunBuild(
-            step_ui_name=step_ui_name,
-            test=next(iter(test_set)) if test_set else None)
-        rerun_build_entity.failures.append(failure_entity)
-    rerun_build_entity.put()

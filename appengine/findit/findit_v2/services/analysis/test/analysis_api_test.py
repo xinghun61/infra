@@ -587,8 +587,7 @@ class AnalysisAPITest(wf_testcase.TestCase):
 
     self.assertEqual(
         expected_res,
-        self.analysis_api.GetFirstFailuresInCurrentBuild(
-            self.context, self.build, failures))
+        self.analysis_api.GetFirstFailuresInCurrentBuild(self.build, failures))
 
   def testGetFirstFailuresInCurrentBuildNoFirstFailures(self):
     build_122_info = self._GetBuildInfo(122)
@@ -614,8 +613,7 @@ class AnalysisAPITest(wf_testcase.TestCase):
 
     self.assertEqual(
         expected_res,
-        self.analysis_api.GetFirstFailuresInCurrentBuild(
-            self.context, self.build, failures))
+        self.analysis_api.GetFirstFailuresInCurrentBuild(self.build, failures))
 
   def testGetFirstFailuresInCurrentBuildNoLastPass(self):
 
@@ -639,8 +637,7 @@ class AnalysisAPITest(wf_testcase.TestCase):
 
     self.assertEqual(
         expected_res,
-        self.analysis_api.GetFirstFailuresInCurrentBuild(
-            self.context, self.build, failures))
+        self.analysis_api.GetFirstFailuresInCurrentBuild(self.build, failures))
 
   def testGetFirstFailuresInCurrentBuildOnlyStep(self):
     build_122_info = self._GetBuildInfo(122)
@@ -665,8 +662,7 @@ class AnalysisAPITest(wf_testcase.TestCase):
 
     self.assertEqual(
         expected_res,
-        self.analysis_api.GetFirstFailuresInCurrentBuild(
-            self.context, self.build, failures))
+        self.analysis_api.GetFirstFailuresInCurrentBuild(self.build, failures))
 
   def testGetFirstFailuresInCurrentBuildOnlyStepFailedBefore(self):
     failures = {
@@ -681,8 +677,7 @@ class AnalysisAPITest(wf_testcase.TestCase):
 
     self.assertEqual(
         expected_res,
-        self.analysis_api.GetFirstFailuresInCurrentBuild(
-            self.context, self.build, failures))
+        self.analysis_api.GetFirstFailuresInCurrentBuild(self.build, failures))
 
   def testGetFirstFailuresInCurrentBuildFailureStartedInDifferentBuild(self):
     build_122_info = self._GetBuildInfo(122)
@@ -729,8 +724,7 @@ class AnalysisAPITest(wf_testcase.TestCase):
     }
     self.assertEqual(
         expected_res,
-        self.analysis_api.GetFirstFailuresInCurrentBuild(
-            self.context, self.build, failures))
+        self.analysis_api.GetFirstFailuresInCurrentBuild(self.build, failures))
 
   @mock.patch.object(git, 'GetCommitPositionFromRevision', return_value=67890)
   def testSaveFailures(self, _):

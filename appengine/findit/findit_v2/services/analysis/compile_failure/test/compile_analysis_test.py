@@ -62,11 +62,6 @@ class CompileAnalysisTest(wf_testcase.TestCase):
     self.assertFalse(
         compile_analysis.AnalyzeCompileFailure(context, None, None))
 
-  def testAnalyzeCompileFailureBailoutUnsupportedProject(self):
-    context = Context(luci_project_name='unsupported')
-    self.assertFalse(
-        compile_analysis.AnalyzeCompileFailure(context, None, None))
-
   @mock.patch.object(
       CompileAnalysisAPI,
       'GetFirstFailuresInCurrentBuild',

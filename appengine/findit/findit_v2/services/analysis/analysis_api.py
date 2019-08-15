@@ -369,7 +369,6 @@ class AnalysisAPI(object):
     """
     luci_project = context.luci_project_name
     project_api = projects.GetProjectAPI(luci_project)
-    assert project_api, 'Unsupported project {}'.format(luci_project)
 
     # Gets previous builds, the builds are sorted by build number in descending
     # order.
@@ -457,7 +456,7 @@ class AnalysisAPI(object):
       if not need_go_back:
         return
 
-  def GetFirstFailuresInCurrentBuild(self, context, build, detailed_failures):
+  def GetFirstFailuresInCurrentBuild(self, build, detailed_failures):
     """Gets failures that happened the first time in the current build.
 
     Failures without last_passed_build will not be included even if they failed
@@ -468,7 +467,6 @@ class AnalysisAPI(object):
     If first failures have different last_passed_build, use the earliest one.
 
     Args:
-      context (findit_v2.services.context.Context): Scope of the analysis.
       build (buildbucket build.proto): ALL info about the build.
       detailed_failures (dict): A dict of detailed failures.
         {
@@ -523,10 +521,6 @@ class AnalysisAPI(object):
         }
       }
     """
-    luci_project = context.luci_project_name
-    project_api = projects.GetProjectAPI(luci_project)
-    assert project_api, 'Unsupported project {}'.format(luci_project)
-
     first_failures_in_current_build = {
         'failures': {},
         'last_passed_build': None
@@ -1121,7 +1115,6 @@ class AnalysisAPI(object):
 
     luci_project = context.luci_project_name
     project_api = projects.GetProjectAPI(luci_project)
-    assert project_api, 'Unsupported project {}'.format(luci_project)
     input_properties = self._GetRerunBuildInputProperties(
         project_api, atomic_failures)
     if input_properties is None:
