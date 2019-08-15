@@ -8,10 +8,12 @@ import json
 from buildbucket_proto.build_pb2 import Build
 from buildbucket_proto.build_pb2 import BuilderID
 from buildbucket_proto.step_pb2 import Step
+from google.appengine.ext import ndb
 
 from findit_v2.model.compile_failure import CompileFailure
 from findit_v2.model.compile_failure import CompileFailureGroup
 from findit_v2.model.luci_build import LuciFailedBuild
+from findit_v2.model.test_failure import TestFailure
 from findit_v2.services.chromeos_api import ChromeOSProjectAPI
 from findit_v2.services.context import Context
 from findit_v2.services.failure_type import StepTypeEnum
@@ -106,7 +108,8 @@ class ChromeOSProjectAPITest(wf_testcase.TestCase):
       build.output.properties['test_failures'] = {
           'xx_test_failures': [{
               'failed_step': step_name,
-              'test_spec': 'test_spec'
+              'test_spec': 'test_spec',
+              'suite': 'suite'
           },],
       }
     return build
@@ -439,7 +442,8 @@ class ChromeOSProjectAPITest(wf_testcase.TestCase):
             'properties': {
                 'failure_type': 'xx_test_failures',
                 'test_spec': 'test_spec',
-            },
+                'suite': 'suite',
+            }
         },
     }
 
@@ -522,3 +526,36 @@ class ChromeOSProjectAPITest(wf_testcase.TestCase):
     self.assertEqual(
         expected_input,
         ChromeOSProjectAPI().GetTestRerunBuildInputProperties(tests))
+
+  def testGetFailureKeysToAnalyzeTestFailures(self):
+    failure_entities = []
+    for i in xrange(2):
+      test_failure = TestFailure.Create(
+          failed_build_key=ndb.Key(LuciFailedBuild, 8000000000123),
+          step_ui_name='step%d.suite' % i,
+          test=None,
+          properties={'suite': 'suite'})
+      failure_entities.append(test_failure)
+    ndb.put_multi(failure_entities)
+    analyzed_failure_keys = ChromeOSProjectAPI(
+    ).GetFailureKeysToAnalyzeTestFailures(failure_entities)
+    self.assertEqual(1, len(analyzed_failure_keys))
+
+    deduped_failure_keys = set([f.key for f in failure_entities
+                               ]) - set(analyzed_failure_keys)
+    self.assertEqual(analyzed_failure_keys[0],
+                     deduped_failure_keys.pop().get().merged_failure_key)
+
+  def testGetFailureKeysToAnalyzeTestFailuresDidderentSuites(self):
+    failure_entities = []
+    for i in xrange(2):
+      test_failure = TestFailure.Create(
+          failed_build_key=ndb.Key(LuciFailedBuild, 8000000000123),
+          step_ui_name='step.suite%d' % i,
+          test=None,
+          properties={'suite': 'suite%d' % i})
+      failure_entities.append(test_failure)
+    ndb.put_multi(failure_entities)
+    analyzed_failure_keys = ChromeOSProjectAPI(
+    ).GetFailureKeysToAnalyzeTestFailures(failure_entities)
+    self.assertEqual(2, len(analyzed_failure_keys))

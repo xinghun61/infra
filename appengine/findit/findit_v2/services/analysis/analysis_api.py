@@ -226,6 +226,14 @@ class AnalysisAPI(object):
     """Gets project specific input properties to rerun failures."""
     raise NotImplementedError
 
+  def _GetFailureKeysToAnalyze(self, failure_entities, _project_api):
+    """Gets failures that'll actually be analyzed in the analysis.
+
+    Placeholder for project specific logic, for example in-build failure
+    grouping for ChromeOS test failure analysis.
+    """
+    return [f.key for f in failure_entities]
+
   def SaveFailures(self, context, build, detailed_failures):
     """Saves the failed build and failures in data store.
 
@@ -567,7 +575,6 @@ class AnalysisAPI(object):
 
       _UpdateToEarlierBuild(first_failures_in_current_build,
                             first_failures_in_step['last_passed_build'])
-
     return first_failures_in_current_build
 
   def _GetFailuresWithoutMatchingFailureGroups(self, current_build_id,
@@ -716,8 +723,8 @@ class AnalysisAPI(object):
     return self._GetFailuresWithoutMatchingFailureGroups(
         build.id, first_failures_in_current_build, failures_with_existing_group)
 
-  def _GetFirstFailureKeysWithoutGroup(self, build,
-                                       failures_without_existing_group):
+  def _GetFirstFailuresWithoutGroup(self, build,
+                                    failures_without_existing_group):
     """Gets keys to the failures that failed the first time in the build and
       are not in any existing groups.
 
@@ -749,8 +756,7 @@ class AnalysisAPI(object):
         failures_without_existing_group['failures'].iteritems()
     }
     return [
-        f.key
-        for f in failure_entities
+        f for f in failure_entities
         if f.GetFailureIdentifier() in first_failures.get(f.step_ui_name, [])
     ]
 
@@ -790,11 +796,6 @@ class AnalysisAPI(object):
     """
     rerun_builder_id = project_api.GetRerunBuilderId(build)
 
-    # Gets keys to the failures that failed the first time in the build.
-    # They will be the failures to analyze.
-    failure_keys = self._GetFirstFailureKeysWithoutGroup(
-        build, failures_without_existing_group)
-
     repo_url = git.GetRepoUrlFromContext(context)
     last_passed_gitiles_id = failures_without_existing_group[
         'last_passed_build']['commit_id']
@@ -803,11 +804,17 @@ class AnalysisAPI(object):
     first_failed_commit_position = git.GetCommitPositionFromRevision(
         context.gitiles_id, repo_url, ref=context.gitiles_ref)
 
+    # Gets failures that failed the first time in the build.
+    first_failures = self._GetFirstFailuresWithoutGroup(
+        build, failures_without_existing_group)
+    failure_keys = [f.key for f in first_failures]
+
     if should_group_failures:
       group = self._CreateFailureGroup(
           context, build, failure_keys, last_passed_gitiles_id,
           last_passed_commit_position, first_failed_commit_position)
       group.put()
+      failure_keys = self._GetFailureKeysToAnalyze(first_failures, project_api)
 
     analysis = self._CreateFailureAnalysis(
         context.luci_project_name, context, build, last_passed_gitiles_id,

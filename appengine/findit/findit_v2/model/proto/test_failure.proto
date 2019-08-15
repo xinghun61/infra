@@ -20,6 +20,9 @@ message BuildTestFailureOutput {
     // Findit receives it from the failed build and passes it as is to rerun
     // builds.
     string test_spec = 2;
+
+    // Name of the test suite.
+    string suite = 3;
   }
 
   // All failed hardware test suites in one build.

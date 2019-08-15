@@ -231,3 +231,7 @@ class ProjectAPI(object):  # pragma: no cover.
       (dict): input properties of the rerun build."""
     # pylint: disable=unused-argument
     raise NotImplementedError
+
+  def GetFailureKeysToAnalyzeTestFailures(self, failure_entities):
+    """Gets failures that'll actually be analyzed in the analysis."""
+    return [f.key for f in failure_entities]

@@ -6,6 +6,7 @@
 from collections import defaultdict
 import logging
 
+from google.appengine.ext import ndb
 from google.protobuf import json_format
 
 from findit_v2.model.compile_failure import CompileFailureGroup
@@ -22,7 +23,6 @@ class ChromeOSProjectAPI(ProjectAPI):
     # Converts the Struct to standard dict, to use .get, .iteritems etc.
     build_failure_output = json_format.MessageToDict(
         build.output.properties).get(output_name)
-
     return build_failure_output
 
   def ClassifyStepType(self, build, step):
@@ -183,7 +183,8 @@ class ChromeOSProjectAPI(ProjectAPI):
       for failure in failures:
         failed_step = failure.get('failed_step')
         test_spec = failure.get('test_spec')
-        if not failed_step or not test_spec:
+        suite = failure.get('suite')
+        if not failed_step or not test_spec or not suite:
           logging.error(
               'Malformed %s for ChromeOs build %d - failure_type: %s,'
               ' failure_info: %r.', _TEST_FAILURE_OUTPUT_NAME, build.id,
@@ -196,7 +197,8 @@ class ChromeOSProjectAPI(ProjectAPI):
             'last_passed_build': None,
             'properties': {
                 'failure_type': failure_type,
-                'test_spec': test_spec
+                'test_spec': test_spec,
+                'suite': suite,
             }
         }
 
@@ -274,6 +276,40 @@ class ChromeOSProjectAPI(ProjectAPI):
               output_target_frozenset] = group.key.id()
 
     return failures_with_existing_group
+
+  def GetFailureKeysToAnalyzeTestFailures(self, failure_entities):
+    """Gets failures that'll actually be analyzed in the analysis.
+
+    Groups failures by suite, picks one failure per group and links other
+    failures in group to it.
+
+    Note because of the lack of test level failure info, such in-build grouping
+    could cause false positives, but we still decide to do it in consideration
+    of saving resources and speeding up analysis.
+    """
+    suite_to_failure_map = defaultdict(list)
+    for failure in failure_entities:
+      properties = failure.properties or {}
+      suite_to_failure_map[properties.get('suite')].append(failure)
+
+    analyzing_failure_keys = []
+    failures_to_update = []
+    for same_suite_failures in suite_to_failure_map.itervalues():
+      sample_failure_key = same_suite_failures[0].key
+      analyzing_failure_keys.append(sample_failure_key)
+      if len(same_suite_failures) == 1:
+        continue
+
+      for i in xrange(1, len(same_suite_failures)):
+        # Merges the rest of failures into the sample failure.
+        failure = same_suite_failures[i]
+        failure.merged_failure_key = sample_failure_key
+        failures_to_update.append(failure)
+
+    if failures_to_update:
+      ndb.put_multi(failures_to_update)
+
+    return analyzing_failure_keys
 
   def GetRerunBuilderId(self, build):
     rerun_builder = json_format.MessageToDict(
