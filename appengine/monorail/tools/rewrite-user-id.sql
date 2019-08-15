@@ -13,7 +13,8 @@ DROP PROCEDURE IF EXISTS RewriteUserID;
 delimiter //
 
 CREATE PROCEDURE RewriteUserID(
-    IN in_old_email VARCHAR(255), IN in_new_email VARCHAR(255))
+    IN in_old_email VARCHAR(255) CHARACTER SET utf8 COLLATE utf8_unicode_ci,
+    IN in_new_email VARCHAR(255) CHARACTER SET utf8 COLLATE utf8_unicode_ci)
 proc_label:BEGIN
   DECLARE old_id INT UNSIGNED;
   DECLARE new_id INT UNSIGNED;
