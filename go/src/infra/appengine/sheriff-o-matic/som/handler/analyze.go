@@ -143,7 +143,11 @@ func generateBigQueryAlerts(c context.Context, a *analyzer.Analyzer, tree string
 				URL: *masterURL,
 			}
 
-			if !gkRules.ExcludeFailure(c, tree, master, b.Name, ba.StepAtFault.Step.Name) {
+			// The chromium.clang tree specifically wants all of the failures.
+			// Some other trees, who also reference chromium.clang builders do *not* want all of them.
+			// This extra tree == "chromium.clang" condition works around this shortcoming of the gatekeeper
+			// tree config format.
+			if tree == "chromium.clang" || !gkRules.ExcludeFailure(c, tree, master, b.Name, ba.StepAtFault.Step.Name) {
 				builders = append(builders, b)
 			}
 		}
