@@ -5,7 +5,11 @@
 package cmd
 
 import (
+	"encoding/json"
+	"io/ioutil"
+
 	"infra/libs/skylab/inventory"
+	"infra/libs/skylab/inventory/cmd/skmigration/internal/cmd/snapshotdevice"
 	"path/filepath"
 
 	"go.chromium.org/luci/common/errors"
@@ -30,6 +34,18 @@ func loadAllLabsData(root string) (*allLabs, error) {
 		return nil, errors.Annotate(err, "load skylab lab").Err()
 	}
 	return &labs, nil
+}
+
+func loadSnapshotData(dir string) ([]snapshotdevice.SnapshotDevice, error) {
+	var devices []snapshotdevice.SnapshotDevice
+	toRead, err := ioutil.ReadFile(filepath.Join(dir, "combine_lab_data.json"))
+	if err != nil {
+		return nil, err
+	}
+	if err := json.Unmarshal(toRead, &devices); err != nil {
+		return nil, err
+	}
+	return devices, nil
 }
 
 func writeSkylabLabData(root string, lab *allLabs) error {

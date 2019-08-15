@@ -37,6 +37,7 @@ func getApplication() *cli.Application {
 			cmd.Migrate,
 			cmd.Summarize,
 			cmd.Upsync,
+			cmd.SyncSkylabLabels,
 		},
 	}
 }
