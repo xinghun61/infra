@@ -111,7 +111,7 @@ class InboundEmail(webapp2.RequestHandler):
     if not emailfmt.IsProjectAddressOnToLine(project_addr, to_addrs):
       return None
 
-    project_name, verb, label = emailfmt.IdentifyProjectVerbAndLabel(
+    project_name, verb, trooper_queue = emailfmt.IdentifyProjectVerbAndLabel(
         project_addr)
 
     is_alert = bool(verb and verb.lower() == 'alert')
@@ -184,7 +184,7 @@ class InboundEmail(webapp2.RequestHandler):
     if is_alert:
       alert2issue.ProcessEmailNotification(
           self.services, cnxn, project, project_addr, from_addr,
-          auth, subject, body, incident_id, label)
+          auth, subject, body, incident_id, msg, trooper_queue)
       return None
 
     # This email is a response to an email about a comment.

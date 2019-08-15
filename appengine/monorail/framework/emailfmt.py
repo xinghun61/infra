@@ -34,6 +34,29 @@ MAX_BODY_SIZE = 100 * 1024
 MAX_HEADER_CHARS_CONSIDERED = 255
 
 
+def _checkEmailHeaderPrefix(key):
+  """Ensures that a given email header starts with Alert2Issue prefix."""
+  # this is to catch typos in the email header prefix and raises an exception
+  # during package loading time.
+  assert key.startswith('X-Alert2Issue-')
+  return key
+
+
+class AlertEmailHeader(object):
+  """A list of the email header keys supported by Alert2Issue."""
+  # pylint: disable=bad-whitespace
+  #
+  # The prefix has been hard-coded without string substitution to make them
+  # searchable with the header keys.
+  INCIDENT_ID = 'X-Incident-Id'
+  OWNER       = _checkEmailHeaderPrefix('X-Alert2Issue-owner')
+  CC          = _checkEmailHeaderPrefix('X-Alert2Issue-cc')
+  PRIORITY    = _checkEmailHeaderPrefix('X-Alert2Issue-priority')
+  STATUS      = _checkEmailHeaderPrefix('X-Alert2Issue-status')
+  COMPONENT   = _checkEmailHeaderPrefix('X-Alert2Issue-component')
+  OS          = _checkEmailHeaderPrefix('X-Alert2Issue-os')
+  TYPE        = _checkEmailHeaderPrefix('X-Alert2Issue-type')
+
 
 def IsBodyTooBigToParse(body):
   """Return True if the email message body is too big to process."""
@@ -72,7 +95,7 @@ def ParseEmailMessage(msg):
   cc_addrs = _ExtractAddrs(msg.get('cc', ''))
 
   in_reply_to = msg.get('in-reply-to', '')
-  incident_id = msg.get('x-incident-id', '')
+  incident_id = msg.get(AlertEmailHeader.INCIDENT_ID, '')
   references = msg.get('references', '').split()
   references = list({ref for ref in [in_reply_to] + references if ref})
   subject = _StripSubjectPrefixes(msg.get('subject', ''))

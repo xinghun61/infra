@@ -251,7 +251,7 @@ class InboundEmailTest(unittest.TestCase):
     alert2issue.ProcessEmailNotification(
         self.services, mox.IgnoreArg(), self.project, project_addr,
         mox.IgnoreArg(), mock_auth_data, mox.IgnoreArg(), 'awesome!', '',
-        trooper_queue)
+        self.msg, trooper_queue)
 
     self.mox.ReplayAll()
     ret = self.inbound.ProcessMail(self.msg, project_addr)

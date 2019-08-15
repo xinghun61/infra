@@ -9,15 +9,20 @@ from __future__ import division
 from __future__ import absolute_import
 
 import logging
+import rfc822
 
 import settings
 from businesslogic import work_env
 from features import commitlogcommands
 from framework import monorailcontext
+from framework import emailfmt
 from tracker import tracker_helpers
+
+AlertEmailHeader = emailfmt.AlertEmailHeader
 
 
 def IsWhitelisted(email_addr):
+  """Returns whether a given email is from one of the whitelisted domains."""
   return email_addr.endswith(settings.alert_whitelisted_suffixes)
 
 
@@ -55,7 +60,7 @@ def FindAlertIssue(services, cnxn, project_id, incident_label):
 
 
 def GetAlertProperties(services, cnxn, project_id, incident_id, trooper_queue,
-                       body):
+                       body, msg):
   """Create a dict of issue property values for the alert to be created with.
 
   Args:
@@ -66,15 +71,17 @@ def GetAlertProperties(services, cnxn, project_id, incident_id, trooper_queue,
       de-dupe alert issues.
     trooper_queue: the label specifying the trooper queue to add an issue into.
     body: the body text of the alert notification message.
+    msg: the email.Message object containing the alert notification.
 
   Returns:
     A dict of issue property values to be used for issue creation.
   """
-  # TODO(crbug/807064) - parse and get property values from email headers.
   proj_config = services.config.GetProjectConfig(cnxn, project_id)
   props = {
-      'owner_id': None,
-      'cc_ids': [],
+      'owner_id': (
+          _GetOwnerID(services.user, cnxn, msg.get(AlertEmailHeader.OWNER))),
+      'cc_ids': (
+          _GetCCIDs(services.user, cnxn, msg.get(AlertEmailHeader.CC))),
       'component_ids': _GetComponentIDs(proj_config, body),
       'field_values': [],
       'status': 'Available',
@@ -93,7 +100,7 @@ def GetAlertProperties(services, cnxn, project_id, incident_id, trooper_queue,
 
 def ProcessEmailNotification(
     services, cnxn, project, project_addr, from_addr, auth, subject, body,
-    incident_id, label=None):
+    incident_id, msg, trooper_queue=None):
   """Process an alert notification email to create or update issues.""
 
   Args:
@@ -108,7 +115,10 @@ def ProcessEmailNotification(
     body: the body text of the email message
     incident_id: string containing an optional unique incident used to
         de-dupe alert issues.
-    label: the label to be added to the issue.
+    msg: the email.Message object that the notification was delivered via.
+    trooper_queue: the label specifying the trooper queue that the alert
+      notification was sent to. If not given, the notification is sent to
+      Infra-Troopers-Alerts.
 
   Side-effect:
     Creates an issue or issue comment, if no error was reported.
@@ -126,14 +136,15 @@ def ProcessEmailNotification(
   mc.LookupLoggedInUserPerms(project)
   with work_env.WorkEnv(mc, services) as we:
     alert_props = GetAlertProperties(
-        services, cnxn, project.project_id, incident_id, label, body)
+        services, cnxn, project.project_id, incident_id, trooper_queue, body,
+        msg)
     alert_issue = FindAlertIssue(
         services, cnxn, project.project_id, alert_props['incident_label'])
 
     if alert_issue:
       # Add a reply to the existing issue for this incident.
-          services.issue.CreateIssueComment(
-              cnxn, alert_issue, auth.user_id, formatted_body)
+      services.issue.CreateIssueComment(
+          cnxn, alert_issue, auth.user_id, formatted_body)
     else:
       # Create a new issue for this incident.
       alert_issue, _ = we.CreateIssue(
@@ -170,3 +181,19 @@ def _GetLabels(incident_label, priority, trooper_queue):
   labels.update(label for label in [incident_label, priority, trooper_queue]
                 if label)
   return list(labels)
+
+
+def _GetOwnerID(user_svc, cnxn, owner_email):
+  if not owner_email:
+    return None
+  emails = [addr for _, addr in rfc822.AddressList(owner_email)]
+  return user_svc.LookupExistingUserIDs(cnxn, emails).get(owner_email)
+
+
+def _GetCCIDs(user_svc, cnxn, cc_emails):
+  if not cc_emails:
+    return []
+  emails = [addr for _, addr in rfc822.AddressList(cc_emails)]
+  return [userID for _, userID
+          in user_svc.LookupExistingUserIDs(cnxn, emails).iteritems()
+          if userID is not None]

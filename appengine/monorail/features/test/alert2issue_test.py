@@ -8,23 +8,26 @@ from __future__ import print_function
 from __future__ import division
 from __future__ import absolute_import
 
+import email
 import unittest
 from mock import patch
-
 import mox
+from parameterized import parameterized
 
 from features import alert2issue
-from features import commitlogcommands
 from framework import authdata
+from framework import emailfmt
 from proto import tracker_pb2
 from services import service_manager
 from testing import fake
 from testing import testing_helpers
 from tracker import tracker_helpers
 
+AlertEmailHeader = emailfmt.AlertEmailHeader
+
 
 class TestData(object):
-  # Constants or such objects that are intended to be read-only.
+  """Contains constants or such objects that are intended to be read-only."""
   cnxn = 'fake cnxn'
   test_issue_local_id = 100
   component_id = 123
@@ -43,7 +46,7 @@ class TestData(object):
   msg = testing_helpers.MakeMessage(
       testing_helpers.ALERT_EMAIL_HEADER_LINES, msg_body)
 
-  incident_id = msg.get('X-Incident-Id')
+  incident_id = msg.get(AlertEmailHeader.INCIDENT_ID)
   incident_label = alert2issue._GetIncidentLabel(incident_id)
 
   # All the tests in this class use the following alert properties, and
@@ -130,7 +133,7 @@ class ProcessEmailNotificationTests(unittest.TestCase, TestData):
     alert2issue.ProcessEmailNotification(
         self.services, self.cnxn, self.project, self.project_addr,
         self.from_addr, self.auth, self.msg_subject, self.msg_body,
-        self.incident_label)
+        self.incident_label, self.msg, self.trooper_queue)
     self.mox.VerifyAll()
 
   def testProcessNotification_IfFromWhitelistedSender(self):
@@ -150,7 +153,7 @@ class ProcessEmailNotificationTests(unittest.TestCase, TestData):
       alert2issue.ProcessEmailNotification(
           self.services, self.cnxn, self.project, self.project_addr,
           self.from_addr, self.auth, self.msg_subject, self.msg_body,
-          self.incident_label, self.trooper_queue)
+          self.incident_label, self.msg, self.trooper_queue)
 
     self.mox.VerifyAll()
 
@@ -170,13 +173,13 @@ class ProcessEmailNotificationTests(unittest.TestCase, TestData):
     self.mox.StubOutWithMock(alert2issue, 'GetAlertProperties')
     alert2issue.GetAlertProperties(
         self.services, self.cnxn, self.project_id, self.incident_id,
-        self.trooper_queue, self.msg_body).AndReturn(self.alert_props)
+        self.trooper_queue, self.msg_body, self.msg).AndReturn(self.alert_props)
 
     self.mox.ReplayAll()
     alert2issue.ProcessEmailNotification(
         self.services, self.cnxn, self.project, self.project_addr,
         self.from_addr, self.auth, self.msg_subject, self.msg_body,
-        self.incident_id, self.trooper_queue)
+        self.incident_id, self.msg, self.trooper_queue)
 
     # the local ID of the newly created issue should be +1 from the highest ID
     # in the existing issues.
@@ -203,7 +206,7 @@ class ProcessEmailNotificationTests(unittest.TestCase, TestData):
     self.mox.StubOutWithMock(alert2issue, 'GetAlertProperties')
     alert2issue.GetAlertProperties(
         self.services, self.cnxn, self.project_id, self.incident_id,
-        self.trooper_queue, self.msg_body).AndReturn(self.alert_props)
+        self.trooper_queue, self.msg_body, self.msg).AndReturn(self.alert_props)
 
     self.mox.ReplayAll()
 
@@ -216,7 +219,7 @@ class ProcessEmailNotificationTests(unittest.TestCase, TestData):
     alert2issue.ProcessEmailNotification(
         self.services, self.cnxn, self.project, self.project_addr,
         self.from_addr, self.auth, self.msg_subject, self.msg_body,
-        self.incident_id, self.trooper_queue)
+        self.incident_id, self.msg, self.trooper_queue)
 
     # Now, it should have a new comment added.
     comments = self._verifyIssue(self.test_issue_local_id, self.alert_props)
@@ -259,10 +262,16 @@ class GetAlertPropertiesTests(unittest.TestCase, TestData):
         self.project_name, project_id=self.project_id,
         process_inbound_email=True, contrib_ids=[self.user_id])
 
+    # create a test email message, which tests can alternate the header values
+    # to verify the behaviour of a given parser function.
+    self.test_msg = email.Message.Message()
+    for key, value in self.msg.items():
+      self.test_msg[key] = value
+
     self.mox = mox.Mox()
 
   def testComponentWithCodesearch(self):
-    """Checks if the component is Infra>Codesearch, if msg contains codesearch.
+    """Checks if the component is Infra>Codesearch, if the body with codesearch.
     """
     component_id = self.component_id + 1
     self.mox.StubOutWithMock(tracker_helpers, 'LookupComponentIDs')
@@ -273,7 +282,7 @@ class GetAlertPropertiesTests(unittest.TestCase, TestData):
     self.mox.ReplayAll()
     props = alert2issue.GetAlertProperties(
         self.services, self.cnxn, self.project_id, self.incident_id,
-        self.trooper_queue, self.msg_body + 'codesearch')
+        self.trooper_queue, self.msg_body + 'codesearch', self.msg)
     self.assertEqual(props['component_ids'], [component_id])
     self.mox.VerifyAll()
 
@@ -288,7 +297,7 @@ class GetAlertPropertiesTests(unittest.TestCase, TestData):
     self.mox.ReplayAll()
     props = alert2issue.GetAlertProperties(
         self.services, self.cnxn, self.project_id, self.incident_id,
-        self.trooper_queue, self.msg_body)
+        self.trooper_queue, self.msg_body, self.msg)
     self.assertEqual(props['component_ids'], [component_id])
     self.mox.VerifyAll()
 
@@ -296,9 +305,84 @@ class GetAlertPropertiesTests(unittest.TestCase, TestData):
     """Checks if the labels contain all the necessary values."""
     props = alert2issue.GetAlertProperties(
         self.services, self.cnxn, self.project_id, self.incident_id,
-        self.trooper_queue, self.msg_body)
+        self.trooper_queue, self.msg_body, self.msg)
 
     self.assertTrue('Restrict-View-Google' in props['labels'])
     self.assertTrue(self.incident_label in props['labels'])
     self.assertTrue(self.trooper_queue in props['labels'])
     self.assertTrue(props['priority'] in props['labels'])
+
+  @parameterized.expand([
+      (None, None),
+      ('', None),
+  ])
+  def testDefaultOwnerID(self, header_value, expected_owner_id):
+    """Checks if _GetOwnerID returns None in default."""
+    self.test_msg.replace_header(AlertEmailHeader.OWNER, header_value)
+    props = alert2issue.GetAlertProperties(
+        self.services, self.cnxn, self.project_id, self.incident_id,
+        self.trooper_queue, self.msg_body, self.test_msg)
+    self.assertEqual(props['owner_id'], expected_owner_id)
+
+  @parameterized.expand([
+      # an existing user with userID 1.
+      ('owner@example.org', 1),
+      # a non-existing user.
+      ('owner@example.org', None),
+  ])
+  def testGetOwnerID(self, owner, expected_owner_id):
+    """Tests _GetOwnerID returns the ID of the owner."""
+    self.test_msg.replace_header(AlertEmailHeader.CC, '')
+    self.test_msg.replace_header(AlertEmailHeader.OWNER, owner)
+
+    self.mox.StubOutWithMock(self.services.user, 'LookupExistingUserIDs')
+    self.services.user.LookupExistingUserIDs(self.cnxn, [owner]).AndReturn(
+        {owner: expected_owner_id})
+
+    self.mox.ReplayAll()
+    props = alert2issue.GetAlertProperties(
+        self.services, self.cnxn, self.project_id, self.incident_id,
+        self.trooper_queue, self.msg_body, self.test_msg)
+    self.mox.VerifyAll()
+    self.assertEqual(props['owner_id'], expected_owner_id)
+
+  @parameterized.expand([
+      (None, []),
+      ('', []),
+  ])
+  def testDefaultCCIDs(self, header_value, expected_cc_ids):
+    """Checks if _GetCCIDs returns an empty list in default."""
+    self.test_msg.replace_header(AlertEmailHeader.OWNER, header_value)
+    props = alert2issue.GetAlertProperties(
+        self.services, self.cnxn, self.project_id, self.incident_id,
+        self.trooper_queue, self.msg_body, self.test_msg)
+    self.assertEqual(props['cc_ids'], expected_cc_ids)
+
+  @parameterized.expand([
+      # with one existing user cc-ed.
+      ({'user1@example.org': 1}, [1]),
+      # with two of existing users.
+      ({'user1@example.org': 1, 'user2@example.org': 2}, [1, 2]),
+      # with one non-existing user.
+      ({'user1@example.org': None}, []),
+      # with two of non-existing users.
+      ({'user1@example.org': None, 'user2@example.org': None}, []),
+      # with a mix of existing and non-existing users.
+      ({'user1@example.org': 1, 'user2@example.org': None}, [1]),
+  ])
+  def testGetCCIDs(self, ccers, expected_cc_ids):
+    """Tests _GetCCIDs returns the IDs of the email addresses to be cc-ed."""
+    self.test_msg.replace_header(
+        AlertEmailHeader.CC, ','.join(sorted(ccers.keys())))
+    self.test_msg.replace_header(AlertEmailHeader.OWNER, '')
+
+    self.mox.StubOutWithMock(self.services.user, 'LookupExistingUserIDs')
+    self.services.user.LookupExistingUserIDs(
+        self.cnxn, sorted(ccers.keys())).AndReturn(ccers)
+
+    self.mox.ReplayAll()
+    props = alert2issue.GetAlertProperties(
+        self.services, self.cnxn, self.project_id, self.incident_id,
+        self.trooper_queue, self.msg_body, self.test_msg)
+    self.mox.VerifyAll()
+    self.assertEqual(sorted(props['cc_ids']), sorted(expected_cc_ids))

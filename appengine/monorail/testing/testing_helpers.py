@@ -10,6 +10,7 @@ from __future__ import absolute_import
 
 import email
 
+from framework import emailfmt
 from proto import user_pb2
 from services import service_manager
 from services import template_svc
@@ -18,7 +19,6 @@ from tracker import tracker_constants
 import webapp2
 
 DEFAULT_HOST = '127.0.0.1'
-
 
 MINIMAL_HEADER_LINES = [
     ('From', 'user@example.com'),
@@ -33,8 +33,11 @@ HEADER_LINES = MINIMAL_HEADER_LINES + [
      'proj@monorail.example.com>'),
 ]
 
+AlertEmailHeader = emailfmt.AlertEmailHeader
 ALERT_EMAIL_HEADER_LINES = HEADER_LINES + [
-    ('X-Incident-Id', '1234567890123456789'),
+    (AlertEmailHeader.INCIDENT_ID, '1234567890123456789'),
+    (AlertEmailHeader.OWNER, 'owner@example.com'),
+    (AlertEmailHeader.CC, 'cc1@example.com,cc2@example.com'),
 ]
 
 
