@@ -40,6 +40,8 @@ LUCI_PROJECTS = {
         'postsubmit': {
             'supported_builder_pattern': r'.*-postsubmit',
             'rerun_builder_pattern': r'.*-bisect',
+            'supported_builders': ['postsubmit-orchestrator'],
+            'rerun_builders': ['bisecting-orchestrator']
         }
     }
 }

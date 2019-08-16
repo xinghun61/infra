@@ -66,7 +66,7 @@ def AnalyzeTestFailure(context, build, test_steps):
   if should_group_failures:
     failures_without_existing_group = (
         analysis_api.GetFirstFailuresInCurrentBuildWithoutGroup(
-            context, build, first_failures_in_current_build))
+            project_api, context, build, first_failures_in_current_build))
   else:
     failures_without_existing_group = first_failures_in_current_build
 

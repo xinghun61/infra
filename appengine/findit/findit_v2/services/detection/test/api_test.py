@@ -10,6 +10,7 @@ from buildbucket_proto.build_pb2 import Build
 
 from findit_v2.services import constants
 from findit_v2.services.analysis.compile_failure import compile_analysis
+from findit_v2.services.analysis.test_failure import test_analysis
 from findit_v2.services.context import Context
 from findit_v2.services.detection import api
 from findit_v2.services.failure_type import StepTypeEnum
@@ -21,6 +22,8 @@ class DummyProjectAPI(ProjectAPI):  # pragma: no cover.
   def ClassifyStepType(self, _build, step):
     if step.name == 'compile':
       return StepTypeEnum.COMPILE
+    if step.name == 'test':
+      return StepTypeEnum.TEST
     return StepTypeEnum.INFRA
 
   def GetCompileFailures(self, *_):
@@ -63,25 +66,27 @@ class APITest(unittest.TestCase):
   @mock.patch(
       'findit_v2.services.projects.GetProjectAPI',
       return_value=DummyProjectAPI())
-  def testTestFailure(self, *_):
+  @mock.patch.object(test_analysis, 'AnalyzeTestFailure')
+  def testTestFailure(self, mock_analyzer, _):
     build = Build()
     step = build.steps.add()
     step.name = 'test'
     step.status = common_pb2.FAILURE
-    self.assertFalse(api.OnBuildFailure(self.context, build))
+    self.assertTrue(api.OnBuildFailure(self.context, build))
+    mock_analyzer.assert_called_once_with(
+      self.context, build, [step])
 
   @mock.patch(
       'findit_v2.services.projects.GetProjectAPI',
       return_value=DummyProjectAPI())
-  @mock.patch('findit_v2.services.analysis.compile_failure.compile_analysis.'
-              'AnalyzeCompileFailure')
-  def testCompileFailure(self, mocked_AnalyzeCompileFailure, _):
+  @mock.patch.object(compile_analysis, 'AnalyzeCompileFailure')
+  def testCompileFailure(self, mock_analyzer, _):
     build = Build()
     step = build.steps.add()
     step.name = 'compile'
     step.status = common_pb2.FAILURE
     self.assertTrue(api.OnBuildFailure(self.context, build))
-    mocked_AnalyzeCompileFailure.assert_called_once_with(
+    mock_analyzer.assert_called_once_with(
         self.context, build, [step])
 
   @mock.patch.object(
@@ -92,6 +97,21 @@ class APITest(unittest.TestCase):
         tags=[{
             'key': constants.RERUN_BUILD_PURPOSE_TAG_KEY,
             'value': constants.COMPILE_RERUN_BUILD_PURPOSE
+        }, {
+            'key': 'analyzed_build_id',
+            'value': '800000000'
+        }])
+    self.assertTrue(api.OnRerunBuildCompletion(self.context, build))
+    mock_build_result.assert_called_once_with(self.context, build)
+
+  @mock.patch.object(
+      test_analysis, 'OnTestRerunBuildCompletion', return_value=True)
+  def testOnRerunBuildCompletionForTestFailure(self, mock_build_result):
+    build = Build(
+        id=800000500,
+        tags=[{
+            'key': constants.RERUN_BUILD_PURPOSE_TAG_KEY,
+            'value': constants.TEST_RERUN_BUILD_PURPOSE
         }, {
             'key': 'analyzed_build_id',
             'value': '800000000'
