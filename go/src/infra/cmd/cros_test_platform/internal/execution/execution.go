@@ -27,8 +27,8 @@ type Runner interface {
 
 // NewSkylabRunner returns a Runner that will execute the given tests in
 // the skylab environment.
-func NewSkylabRunner(tests []*steps.EnumerationResponse_AutotestInvocation, params *test_platform.Request_Params, workerConfig *config.Config_SkylabWorker) Runner {
-	return skylab.NewTaskSet(tests, params, workerConfig)
+func NewSkylabRunner(tests []*steps.EnumerationResponse_AutotestInvocation, params *test_platform.Request_Params, workerConfig *config.Config_SkylabWorker, parentTaskID string) Runner {
+	return skylab.NewTaskSet(tests, params, workerConfig, parentTaskID)
 }
 
 // NewAutotestRunner returns a Runner that will execute the given tests in

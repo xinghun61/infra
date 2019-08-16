@@ -219,7 +219,7 @@ func TestLaunchAndWaitTest(t *testing.T) {
 		invs = append(invs, invocation("", "", false), invocation("", "", true))
 
 		Convey("when running a skylab execution", func() {
-			run := skylab.NewTaskSet(invs, basicParams(), basicConfig())
+			run := skylab.NewTaskSet(invs, basicParams(), basicConfig(), "foo-parent-task-id")
 
 			err := run.LaunchAndWait(ctx, swarming, gf)
 			So(err, ShouldBeNil)
@@ -296,7 +296,7 @@ func TestTaskStates(t *testing.T) {
 				getter.SetAutotestResult(&skylab_test_runner.Result_Autotest{})
 				gf := fakeGetterFactory(getter)
 
-				run := skylab.NewTaskSet(invs, basicParams(), basicConfig())
+				run := skylab.NewTaskSet(invs, basicParams(), basicConfig(), "foo-parent-task-id")
 				err := run.LaunchAndWait(ctx, swarming, gf)
 				So(err, ShouldBeNil)
 
@@ -318,7 +318,7 @@ func TestServiceError(t *testing.T) {
 		gf := fakeGetterFactory(getter)
 
 		invs := []*steps.EnumerationResponse_AutotestInvocation{invocation("", "", false)}
-		run := skylab.NewTaskSet(invs, basicParams(), basicConfig())
+		run := skylab.NewTaskSet(invs, basicParams(), basicConfig(), "foo-parent-task-id")
 
 		Convey("when the swarming service immediately returns errors, that error is surfaced as a launch error.", func() {
 			swarming.setError(fmt.Errorf("foo error"))
@@ -348,7 +348,7 @@ func TestTaskURL(t *testing.T) {
 		gf := fakeGetterFactory(getter)
 
 		invs := []*steps.EnumerationResponse_AutotestInvocation{invocation("", "", false)}
-		run := skylab.NewTaskSet(invs, basicParams(), basicConfig())
+		run := skylab.NewTaskSet(invs, basicParams(), basicConfig(), "foo-parent-task-id")
 		run.LaunchAndWait(ctx, swarming, gf)
 
 		resp := run.Response(swarming)
@@ -369,7 +369,7 @@ func TestIncompleteWait(t *testing.T) {
 		gf := fakeGetterFactory(getter)
 
 		invs := []*steps.EnumerationResponse_AutotestInvocation{invocation("", "", false)}
-		run := skylab.NewTaskSet(invs, basicParams(), basicConfig())
+		run := skylab.NewTaskSet(invs, basicParams(), basicConfig(), "foo-parent-task-id")
 
 		wg := sync.WaitGroup{}
 		wg.Add(1)
@@ -405,7 +405,7 @@ func TestRequestArguments(t *testing.T) {
 			invocation("name1", "foo-arg1 foo-arg2", false, &build_api.AutotestTaskDependency{Label: "cr50:pvt"}),
 		}
 
-		run := skylab.NewTaskSet(invs, basicParams(), basicConfig())
+		run := skylab.NewTaskSet(invs, basicParams(), basicConfig(), "foo-parent-task-id")
 		run.LaunchAndWait(ctx, swarming, gf)
 
 		Convey("the launched task request should have correct parameters.", func() {
@@ -414,6 +414,7 @@ func TestRequestArguments(t *testing.T) {
 			So(create.TaskSlices, ShouldHaveLength, 2)
 
 			So(create.Tags, ShouldContain, "luci_project:foo-luci-project")
+			So(create.ParentTaskId, ShouldEqual, "foo-parent-task-id")
 
 			prefix := "log_location:"
 			var logdogURL string
@@ -591,7 +592,7 @@ func TestRetries(t *testing.T) {
 				invs[0].Test.AllowRetries = c.testAllowRetry
 				invs[0].Test.MaxRetries = c.testMaxRetry
 
-				run := skylab.NewTaskSet(invs, params, basicConfig())
+				run := skylab.NewTaskSet(invs, params, basicConfig(), "foo-parent-task-id")
 				err := run.LaunchAndWait(ctx, swarming, gf)
 				So(err, ShouldBeNil)
 				response := run.Response(swarming)
@@ -615,7 +616,7 @@ func TestClientTestArg(t *testing.T) {
 
 		invs := []*steps.EnumerationResponse_AutotestInvocation{invocation("name1", "", true)}
 
-		run := skylab.NewTaskSet(invs, basicParams(), basicConfig())
+		run := skylab.NewTaskSet(invs, basicParams(), basicConfig(), "foo-parent-task-id")
 		run.LaunchAndWait(ctx, swarming, fakeGetterFactory(newFakeGetter()))
 
 		Convey("the launched task request should have correct parameters.", func() {
@@ -640,7 +641,7 @@ func TestQuotaSchedulerAccount(t *testing.T) {
 			QuotaAccount: "foo-account",
 		}
 
-		run := skylab.NewTaskSet(invs, params, basicConfig())
+		run := skylab.NewTaskSet(invs, params, basicConfig(), "foo-parent-task-id")
 		run.LaunchAndWait(ctx, swarming, fakeGetterFactory(newFakeGetter()))
 
 		Convey("the launched task request should have a tag specifying the correct quota account and run in the quota pool.", func() {
@@ -668,7 +669,7 @@ func TestUnmanagedPool(t *testing.T) {
 			UnmanagedPool: "foo-pool",
 		}
 
-		run := skylab.NewTaskSet(invs, params, basicConfig())
+		run := skylab.NewTaskSet(invs, params, basicConfig(), "foo-parent-task-id")
 		run.LaunchAndWait(ctx, swarming, fakeGetterFactory(newFakeGetter()))
 
 		Convey("the launched task request run in the unmanaged pool.", func() {
@@ -704,7 +705,7 @@ func TestResponseVerdict(t *testing.T) {
 		getter := newFakeGetter()
 		gf := fakeGetterFactory(getter)
 
-		run := skylab.NewTaskSet(invs, params, basicConfig())
+		run := skylab.NewTaskSet(invs, params, basicConfig(), "foo-parent-task-id")
 
 		Convey("when tests are still running, response verdict is correct.", func() {
 			swarming.setTaskState(jsonrpc.TaskState_RUNNING)

@@ -44,6 +44,14 @@ func getApplication() *cli.Application {
 			cmd.AutotestExecute,
 			cmd.SkylabExecute,
 		},
+		EnvVars: map[string]subcommands.EnvVarDefinition{
+			"SWARMING_TASK_ID": {
+				ShortDesc: "Swarming task id in which this task is running.",
+			},
+			"SWARMING_SERVER": {
+				ShortDesc: "Swarming server that this task belongs to.",
+			},
+		},
 	}
 }
 

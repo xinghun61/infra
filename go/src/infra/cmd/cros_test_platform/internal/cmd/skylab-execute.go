@@ -7,6 +7,7 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"net/url"
 
 	"github.com/maruel/subcommands"
 
@@ -70,7 +71,17 @@ func (c *skylabExecuteRun) innerRun(a subcommands.Application, args []string, en
 
 	gf := c.getterFactory(request.Config.SkylabIsolate)
 
-	runner := execution.NewSkylabRunner(request.Enumeration.AutotestInvocations, request.RequestParams, request.Config.SkylabWorker)
+	var taskID string
+	// taskID will be used as the parent task ID for child jobs created by
+	// this execution. This is only valid if the child runs on the same swarming
+	// instance as the parent (which is not true for cros_test_platform-dev).
+	// TODO(crbug.com/994289): Move cros_test_platform-dev to the same instance
+	// as its child jobs, then delete this conditional.
+	if sameHost(env["SWARMING_SERVER"].Value, request.Config.SkylabSwarming.Server) {
+		taskID = env["SWARMING_TASK_ID"].Value
+	}
+
+	runner := execution.NewSkylabRunner(request.Enumeration.AutotestInvocations, request.RequestParams, request.Config.SkylabWorker, taskID)
 
 	response, err := c.handleRequest(ctx, runner, client, gf)
 	if err != nil && response == nil {
@@ -79,6 +90,18 @@ func (c *skylabExecuteRun) innerRun(a subcommands.Application, args []string, en
 	}
 
 	return writeResponse(c.outputPath, response, err)
+}
+
+func sameHost(urlA, urlB string) bool {
+	a, err := url.Parse(urlA)
+	if err != nil {
+		return false
+	}
+	b, err := url.Parse(urlB)
+	if err != nil {
+		return false
+	}
+	return a.Host == b.Host
 }
 
 func (c *skylabExecuteRun) validateRequest(request *steps.ExecuteRequest) error {

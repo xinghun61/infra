@@ -43,6 +43,8 @@ type TaskSet struct {
 	complete bool
 	// running indicates that the TaskSet is still running.
 	running bool
+
+	parentTaskID string
 }
 
 type testRun struct {
@@ -50,7 +52,7 @@ type testRun struct {
 	attempts   []*attempt
 }
 
-func (t *testRun) RequestArgs(params *test_platform.Request_Params, workerConfig *config.Config_SkylabWorker) (request.Args, error) {
+func (t *testRun) RequestArgs(params *test_platform.Request_Params, workerConfig *config.Config_SkylabWorker, parentTaskID string) (request.Args, error) {
 	isClient, err := t.isClientTest()
 	if err != nil {
 		return request.Args{}, errors.Annotate(err, "create request args").Err()
@@ -84,8 +86,7 @@ func (t *testRun) RequestArgs(params *test_platform.Request_Params, workerConfig
 		Cmd:               *cmd,
 		SchedulableLabels: *labels,
 		Dimensions:        params.GetFreeformAttributes().GetSwarmingDimensions(),
-		// TODO(akeshet): Determine parent task ID correctly.
-		ParentTaskID: "",
+		ParentTaskID:      parentTaskID,
 		// TODO(akeshet): Determine priority correctly.
 		Priority:                0,
 		ProvisionableDimensions: provisionableDimensions,
@@ -129,7 +130,7 @@ func (a *attempt) complete() bool {
 }
 
 // NewTaskSet creates a new TaskSet.
-func NewTaskSet(tests []*steps.EnumerationResponse_AutotestInvocation, params *test_platform.Request_Params, workerConfig *config.Config_SkylabWorker) *TaskSet {
+func NewTaskSet(tests []*steps.EnumerationResponse_AutotestInvocation, params *test_platform.Request_Params, workerConfig *config.Config_SkylabWorker, parentTaskID string) *TaskSet {
 	testRuns := make([]*testRun, len(tests))
 	for i, test := range tests {
 		testRuns[i] = &testRun{invocation: test}
@@ -139,6 +140,7 @@ func NewTaskSet(tests []*steps.EnumerationResponse_AutotestInvocation, params *t
 		params:       params,
 		workerConfig: workerConfig,
 		running:      true,
+		parentTaskID: parentTaskID,
 	}
 }
 
@@ -174,7 +176,7 @@ func (r *TaskSet) launchAll(ctx context.Context, swarming swarming.Client) error
 }
 
 func (r *TaskSet) launchSingle(ctx context.Context, swarming swarming.Client, tr *testRun) error {
-	args, err := tr.RequestArgs(r.params, r.workerConfig)
+	args, err := tr.RequestArgs(r.params, r.workerConfig, r.parentTaskID)
 	if err != nil {
 		return errors.Annotate(err, "launch test named %s", tr.invocation.Test.Name).Err()
 	}
