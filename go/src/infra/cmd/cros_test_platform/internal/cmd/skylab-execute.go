@@ -24,9 +24,7 @@ import (
 var SkylabExecute = &subcommands.Command{
 	UsageLine: "skylab-execute -input_json /path/to/input.json -output_json /path/to/output.json",
 	ShortDesc: "Run a set of enumerated tests against skylab backend.",
-	LongDesc: `Run a set of enumerated tests against skylab backend.
-
-	Placeholder only, not yet implemented.`,
+	LongDesc:  `Run a set of enumerated tests against skylab backend.`,
 	CommandRun: func() subcommands.CommandRun {
 		c := &skylabExecuteRun{}
 		c.addFlags()
