@@ -13,9 +13,6 @@ from services import issue_generator
 from services import monorail_util
 from waterfall.test import wf_testcase
 
-# pylint:disable=unused-argument, unused-variable
-# https://crbug.com/947753
-
 
 class TestIssueGenerator(issue_generator.FlakyTestIssueGenerator):
   """A FlakyTestIssueGenerator used for testing."""
@@ -118,14 +115,8 @@ class MonorailUtilTest(wf_testcase.WaterfallTestCase):
     })
 
     monorail_util.CreateBug(issue, project_id=project_id)
-    # Assertions have never worked properly because we were using mock 1.0.1.
-    # After rolling to mock 2.0.0, which fixes assertions, these assertions now
-    # fail. https://crbug.com/947753.
-    # mock_api.assert_has_calls(mock.call(project_id, use_staging=False))
-    # Assertions have never worked properly because we were using mock 1.0.1.
-    # After rolling to mock 2.0.0, which fixes assertions, these assertions now
-    # fail. https://crbug.com/947753.
-    # mock_api.return_value.create.assert_has_calls(mock.call(issue))
+    mock_api.assert_called_once_with(project_id, use_staging=False)
+    mock_api.return_value.create.assert_called_once_with(issue)
 
   @mock.patch('services.monorail_util.IssueTrackerAPI')
   def testUpdateBug(self, mock_api):
@@ -142,22 +133,19 @@ class MonorailUtilTest(wf_testcase.WaterfallTestCase):
     })
 
     monorail_util.UpdateBug(issue, comment, project_id=project_id)
-    # Assertions have never worked properly because we were using mock 1.0.1.
-    # After rolling to mock 2.0.0, which fixes assertions, these assertions now
-    # fail. https://crbug.com/947753.
-    # mock_api.assert_has_calls(mock.call(project_id, use_staging=False))
-    # mock_api.return_value.update.assert_has_calls(
-    #     mock.call(issue, comment, send_email=True))
+    mock_api.assert_called_once_with(project_id, use_staging=False)
+    mock_api.return_value.update.assert_called_once_with(
+        issue, comment, send_email=True)
 
   @mock.patch('services.monorail_util.IssueTrackerAPI')
-  def testGetMergedDestinationIssueWithoutMergeInto(self, mock_api):
-    issue = Issue({'id': 12345})
-    mock_api.return_value.getIssue.return_value = issue
-    self.assertEqual(issue, monorail_util.GetMergedDestinationIssueForId(12345))
-
-  @mock.patch('services.monorail_util.IssueTrackerAPI')
-  def testGetMergedDestinationIssueWithMergeInto(self, mock_api):
-    issue = Issue({'id': 12345, 'mergedInto': {'issueId': 56789}})
+  def testGetMergedDestinationOpenIssueWithMergeInto(self, mock_api):
+    issue = Issue({
+        'id': 12345,
+        'status': 'Duplicate',
+        'mergedInto': {
+            'issueId': 56789
+        },
+    })
 
     another_issue = Issue({'id': 56789})
 
@@ -173,6 +161,36 @@ class MonorailUtilTest(wf_testcase.WaterfallTestCase):
     mock_api.return_value.getIssue.side_effect = _return_issue
     self.assertEqual(another_issue,
                      monorail_util.GetMergedDestinationIssueForId(12345))
+
+  @mock.patch('services.monorail_util.IssueTrackerAPI')
+  def testGetMergedDestinationIssueWithoutMergeInto(self, mock_api):
+    issue = Issue({'id': 12345})
+    mock_api.return_value.getIssue.return_value = issue
+    self.assertEqual(issue, monorail_util.GetMergedDestinationIssueForId(12345))
+
+  @mock.patch('services.monorail_util.IssueTrackerAPI')
+  def testGetMergedDestinationIssueWithMergeInto(self, mock_api):
+    issue = Issue({
+        'id': 12345,
+        'status': 'Available',
+        'mergedInto': {
+            'issueId': 56789
+        },
+    })
+
+    another_issue = Issue({'id': 56789})
+
+    def _return_issue(issue_id):
+      if issue_id == 12345:
+        return issue
+
+      if issue_id == 56789:
+        return another_issue
+
+      return None
+
+    mock_api.return_value.getIssue.side_effect = _return_issue
+    self.assertEqual(issue, monorail_util.GetMergedDestinationIssueForId(12345))
 
   @mock.patch('services.monorail_util.IssueTrackerAPI')
   def testGetMergedDestinationIssueWithMergeInCircle(self, mock_api):
