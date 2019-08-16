@@ -1547,12 +1547,12 @@ wheel: <
 
 ## **infra_libs**
 
-### 2.0.8
+### 2.0.9
 
 ```protobuf
 wheel: <
   name: "infra/python/wheels/infra_libs-py2"
-  version: "version:2.0.8"
+  version: "version:2.0.9"
 >
 ```
 
@@ -1676,6 +1676,18 @@ wheel: <
 wheel: <
   name: "infra/python/wheels/libusb1-py2_py3"
   version: "version:1.5.3"
+>
+```
+
+
+* *universal*
+
+### 1.7.1
+
+```protobuf
+wheel: <
+  name: "infra/python/wheels/libusb1-py2_py3"
+  version: "version:1.7.1"
 >
 ```
 
