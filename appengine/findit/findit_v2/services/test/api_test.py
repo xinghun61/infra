@@ -13,6 +13,7 @@ from findit_v2.model.luci_build import LuciFailedBuild
 from findit_v2.model.messages import findit_result
 from findit_v2.services import api
 from findit_v2.services.analysis.compile_failure import compile_analysis
+from findit_v2.services.analysis.test_failure import test_analysis
 from findit_v2.services.context import Context
 from findit_v2.services.failure_type import StepTypeEnum
 from waterfall.test.wf_testcase import WaterfallTestCase
@@ -231,7 +232,7 @@ class APITest(WaterfallTestCase):
         create_time=datetime(2019, 3, 28),
         start_time=datetime(2019, 3, 28, 0, 1),
         end_time=datetime(2019, 3, 28, 1),
-        build_failure_type=StepTypeEnum.TEST)
+        build_failure_type=StepTypeEnum.INFRA)
     build.put()
 
     request = findit_result.BuildFailureAnalysisRequest(
@@ -243,7 +244,8 @@ class APITest(WaterfallTestCase):
       compile_analysis,
       'OnCompileFailureAnalysisResultRequested',
       return_value=['responses'])
-  def testOnBuildFailureAnalysisResultRequested(self, mock_compile_analysis):
+  def testOnBuildFailureAnalysisResultRequestedCompile(self,
+                                                       mock_compile_analysis):
     luci_project = 'chromium'
     luci_bucket = 'ci'
     luci_builder = 'Linux Builder'
@@ -271,3 +273,36 @@ class APITest(WaterfallTestCase):
     self.assertEqual(['responses'],
                      api.OnBuildFailureAnalysisResultRequested(request))
     mock_compile_analysis.assert_called_once_with(request, build)
+
+  @mock.patch.object(
+      test_analysis,
+      'OnTestFailureAnalysisResultRequested',
+      return_value=['responses'])
+  def testOnBuildFailureAnalysisResultRequestedTest(self, mock_test_analysis):
+    luci_project = 'chromium'
+    luci_bucket = 'ci'
+    luci_builder = 'Linux Builder'
+    build_number = 4567
+    build = LuciFailedBuild.Create(
+        luci_project=luci_project,
+        luci_bucket=luci_bucket,
+        luci_builder=luci_builder,
+        build_id=80004567,
+        legacy_build_number=build_number,
+        gitiles_host='chromium.googlesource.com',
+        gitiles_project='chromium/src',
+        gitiles_ref='refs/heads/master',
+        gitiles_id='git_hash',
+        commit_position=65450,
+        status=20,
+        create_time=datetime(2019, 3, 28),
+        start_time=datetime(2019, 3, 28, 0, 1),
+        end_time=datetime(2019, 3, 28, 1),
+        build_failure_type=StepTypeEnum.TEST)
+    build.put()
+
+    request = findit_result.BuildFailureAnalysisRequest(
+        build_id=80004567, failed_steps=['test step'])
+    self.assertEqual(['responses'],
+                     api.OnBuildFailureAnalysisResultRequested(request))
+    mock_test_analysis.assert_called_once_with(request, build)

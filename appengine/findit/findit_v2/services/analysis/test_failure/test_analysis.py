@@ -2,10 +2,14 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+from collections import defaultdict
 import logging
 
 from buildbucket_proto import common_pb2
 
+from findit_v2.model.messages.findit_result import (
+    BuildFailureAnalysisResponse)
+from findit_v2.model.test_failure import TestFailure
 from findit_v2.model.test_failure import TestFailureAnalysis
 from findit_v2.model.test_failure import TestFailureInRerunBuild
 from findit_v2.model.test_failure import TestRerunBuild
@@ -190,3 +194,76 @@ def OnTestRerunBuildCompletion(context, rerun_build):
 
   TestAnalysisAPI().RerunBasedAnalysis(context, analyzed_build_id)
   return True
+
+
+def _IsAnalysisFinished(failures):
+  """ Checks if the analysis has finished.
+
+  Here the 'analysis' refers to the overall analysis for the failures, it's
+  possible that there are multiple analyses analyzing different failures, but
+  Findit will just summarize all and return a single flag.
+
+  Returns:
+    True if analyses exist and have completed, otherwise False.
+  """
+  analysis_build_ids = set([failure.build_id for failure in failures])
+  for analysis_build_id in analysis_build_ids:
+    analysis = TestFailureAnalysis.GetVersion(analysis_build_id)
+    if not analysis:
+      logging.warning('Not found test analysis for build %d', analysis_build_id)
+      return False
+
+    if not analysis.completed:
+      return False
+
+  return True
+
+
+def OnTestFailureAnalysisResultRequested(request, requested_build):
+  """Returns the findings for the requested build's test failure.
+
+  Since SoM doesn't have atomic failure info for test steps, currently Findit
+  will only respond with aggregated step level results.
+
+  Args:
+    request(findit_result.BuildFailureAnalysisRequest): request for a build
+      failure.
+    requested_build(LuciFailedBuild): A LuciFailedBuild entity with TEST
+      build_failure_type.
+
+  Returns:
+    [findit_result.BuildFailureAnalysisResponse]: Analysis results
+      for the requested build.
+  """
+  test_failures = TestFailure.query(ancestor=requested_build.key).fetch()
+  if not test_failures:
+    return None
+
+  requested_steps = request.failed_steps
+  requested_failures = defaultdict(list)
+
+  for failure in test_failures:
+    if requested_steps and failure.step_ui_name not in requested_steps:
+      continue
+    requested_failures[failure.step_ui_name].append(failure)
+
+  responses = []
+  for step_ui_name, requested_failures_in_step in requested_failures.iteritems(
+  ):
+    for failure in requested_failures_in_step:
+      # This failure may not directly be analyzed if it's grouped into another
+      # one. Gets the sample failure of the group, then get's it's culprits.
+      merged_failure = failure.GetMergedFailure()
+      culprits = TestAnalysisAPI().GetCulpritsForFailures([merged_failure])
+      response = BuildFailureAnalysisResponse(
+          build_id=request.build_id,
+          build_alternative_id=request.build_alternative_id,
+          step_name=step_ui_name,
+          test_name=failure.test,
+          culprits=culprits,
+          is_finished=_IsAnalysisFinished([merged_failure]),
+          is_supported=True,
+      )
+      responses.append(response)
+
+  return responses

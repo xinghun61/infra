@@ -9,7 +9,12 @@ from buildbucket_proto import common_pb2
 from buildbucket_proto.build_pb2 import Build
 from buildbucket_proto.build_pb2 import BuilderID
 from buildbucket_proto.step_pb2 import Step
+from google.appengine.ext import ndb
 
+from findit_v2.model.gitiles_commit import Culprit
+from findit_v2.model.luci_build import LuciFailedBuild
+from findit_v2.model.messages import findit_result
+from findit_v2.model.test_failure import TestFailure
 from findit_v2.model.test_failure import TestFailureAnalysis
 from findit_v2.model.test_failure import TestRerunBuild
 from findit_v2.services.analysis.test_failure import test_analysis
@@ -17,6 +22,8 @@ from findit_v2.services.analysis.test_failure.test_analysis_api import (
     TestAnalysisAPI)
 from findit_v2.services.chromeos_api import ChromeOSProjectAPI
 from findit_v2.services.context import Context
+from findit_v2.services.failure_type import StepTypeEnum
+from libs import analysis_status
 from waterfall.test import wf_testcase
 
 
@@ -286,3 +293,188 @@ class TestAnalysisTest(wf_testcase.TestCase):
     self.assertEqual({}, rerun_build.GetFailuresInBuild())
 
     self.assertTrue(mock_analysis.called)
+
+  def testOnTestFailureAnalysisResultRequested(self):
+    build_id = 800000000123
+    request = findit_result.BuildFailureAnalysisRequest(
+        build_id=build_id, failed_steps=[self.test_step_name])
+
+    build = LuciFailedBuild.Create(
+        luci_project='chromium',
+        luci_bucket='ci',
+        luci_builder='Linux Builder',
+        build_id=build_id,
+        legacy_build_number=12345,
+        gitiles_host='chromium.googlesource.com',
+        gitiles_project='chromium/src',
+        gitiles_ref='refs/heads/master',
+        gitiles_id='git_hash',
+        commit_position=65450,
+        status=20,
+        create_time=datetime(2019, 3, 28),
+        start_time=datetime(2019, 3, 28, 0, 1),
+        end_time=datetime(2019, 3, 28, 1),
+        build_failure_type=StepTypeEnum.TEST)
+    build.put()
+
+    culprit_id = 'git_hash_65432'
+    culprit_commit_position = 65432
+    culprit = Culprit.Create(
+        self.context.gitiles_host, self.context.gitiles_project,
+        self.context.gitiles_ref, culprit_id, culprit_commit_position)
+    culprit.put()
+
+    test_failure = TestFailure.Create(build.key, self.test_step_name, 'test7')
+    test_failure.culprit_commit_key = culprit.key
+    test_failure.first_failed_build_id = build.build_id
+    test_failure.failure_group_build_id = build.build_id
+    test_failure.put()
+
+    analysis = TestFailureAnalysis.Create(
+        luci_project=self.context.luci_project_name,
+        luci_bucket='postsubmit',
+        luci_builder='Linux Builder',
+        build_id=build_id,
+        gitiles_host=self.context.gitiles_host,
+        gitiles_project=self.context.gitiles_project,
+        gitiles_ref=self.context.gitiles_ref,
+        last_passed_gitiles_id='last_passed_git_hash',
+        last_passed_commit_position=65430,
+        first_failed_gitiles_id='git_hash',
+        first_failed_commit_position=65450,
+        rerun_builder_id='chromeos/postsubmit/builder-bisect',
+        test_failure_keys=[test_failure.key])
+    analysis.status = analysis_status.COMPLETED
+    analysis.Save()
+
+    responses = test_analysis.OnTestFailureAnalysisResultRequested(
+        request, build)
+
+    self.assertEqual(1, len(responses))
+    self.assertEqual(1, len(responses[0].culprits))
+    self.assertEqual(culprit_id, responses[0].culprits[0].commit.id)
+    self.assertTrue(responses[0].is_finished)
+    self.assertEqual('test7', responses[0].test_name)
+
+  def testOnTestFailureAnalysisResultRequestedAnalysisRunning(self):
+    build_id = 800000000123
+    request = findit_result.BuildFailureAnalysisRequest(
+        build_id=build_id, failed_steps=[self.test_step_name])
+
+    build = LuciFailedBuild.Create(
+        luci_project='chromium',
+        luci_bucket='ci',
+        luci_builder='Linux Builder',
+        build_id=build_id,
+        legacy_build_number=12345,
+        gitiles_host='chromium.googlesource.com',
+        gitiles_project='chromium/src',
+        gitiles_ref='refs/heads/master',
+        gitiles_id='git_hash',
+        commit_position=65450,
+        status=20,
+        create_time=datetime(2019, 3, 28),
+        start_time=datetime(2019, 3, 28, 0, 1),
+        end_time=datetime(2019, 3, 28, 1),
+        build_failure_type=StepTypeEnum.TEST)
+    build.put()
+
+    test_failure = TestFailure.Create(build.key, self.test_step_name, 'test8')
+    test_failure.first_failed_build_id = build.build_id
+    test_failure.failure_group_build_id = build.build_id
+    test_failure.put()
+
+    analysis = TestFailureAnalysis.Create(
+        luci_project=self.context.luci_project_name,
+        luci_bucket='postsubmit',
+        luci_builder='Linux Builder',
+        build_id=build_id,
+        gitiles_host=self.context.gitiles_host,
+        gitiles_project=self.context.gitiles_project,
+        gitiles_ref=self.context.gitiles_ref,
+        last_passed_gitiles_id='last_passed_git_hash',
+        last_passed_commit_position=65430,
+        first_failed_gitiles_id='git_hash',
+        first_failed_commit_position=65450,
+        rerun_builder_id='chromeos/postsubmit/builder-bisect',
+        test_failure_keys=[])
+    analysis.status = analysis_status.RUNNING
+    analysis.Save()
+
+    responses = test_analysis.OnTestFailureAnalysisResultRequested(
+        request, build)
+
+    self.assertEqual(1, len(responses))
+    self.assertEqual(0, len(responses[0].culprits))
+    self.assertFalse(responses[0].is_finished)
+    self.assertTrue(responses[0].is_supported)
+
+  def testOnTestFailureAnalysisResultRequestedGetCulpritFromMergedFailure(self):
+    build_id = 800000000123
+    request = findit_result.BuildFailureAnalysisRequest(
+        build_id=build_id, failed_steps=[self.test_step_name])
+
+    culprit_id = 'git_hash_65432'
+    culprit_commit_position = 65432
+    culprit = Culprit.Create(
+        self.context.gitiles_host, self.context.gitiles_project,
+        self.context.gitiles_ref, culprit_id, culprit_commit_position)
+    culprit.put()
+
+    merge_failure = TestFailure.Create(
+        ndb.Key(LuciFailedBuild, build_id), self.test_step_name, 'test7')
+    merge_failure.culprit_commit_key = culprit.key
+    merge_failure.first_failed_build_id = build_id
+    merge_failure.failure_group_build_id = build_id
+    merge_failure.put()
+
+    analysis = TestFailureAnalysis.Create(
+        luci_project=self.context.luci_project_name,
+        luci_bucket='postsubmit',
+        luci_builder='Linux Builder',
+        build_id=build_id,
+        gitiles_host=self.context.gitiles_host,
+        gitiles_project=self.context.gitiles_project,
+        gitiles_ref=self.context.gitiles_ref,
+        last_passed_gitiles_id='last_passed_git_hash',
+        last_passed_commit_position=65430,
+        first_failed_gitiles_id='git_hash',
+        first_failed_commit_position=65450,
+        rerun_builder_id='chromeos/postsubmit/builder-bisect',
+        test_failure_keys=[merge_failure.key])
+    analysis.status = analysis_status.COMPLETED
+    analysis.Save()
+
+    build = LuciFailedBuild.Create(
+        luci_project='chromium',
+        luci_bucket='ci',
+        luci_builder='Linux Builder',
+        build_id=800000000124,
+        legacy_build_number=12345,
+        gitiles_host='chromium.googlesource.com',
+        gitiles_project='chromium/src',
+        gitiles_ref='refs/heads/master',
+        gitiles_id='git_hash',
+        commit_position=65450,
+        status=20,
+        create_time=datetime(2019, 3, 28),
+        start_time=datetime(2019, 3, 28, 0, 1),
+        end_time=datetime(2019, 3, 28, 1),
+        build_failure_type=StepTypeEnum.TEST)
+    build.put()
+
+    test_failure = TestFailure.Create(
+        ndb.Key(LuciFailedBuild, 800000000124), self.test_step_name, 'test7')
+    test_failure.merged_failure_key = merge_failure.key
+    test_failure.first_failed_build_id = build.build_id
+    test_failure.failure_group_build_id = build.build_id
+    test_failure.put()
+
+    responses = test_analysis.OnTestFailureAnalysisResultRequested(
+        request, build)
+
+    self.assertEqual(1, len(responses))
+    self.assertEqual(1, len(responses[0].culprits))
+    self.assertEqual(culprit_id, responses[0].culprits[0].commit.id)
+    self.assertTrue(responses[0].is_finished)
+    self.assertEqual('test7', responses[0].test_name)
