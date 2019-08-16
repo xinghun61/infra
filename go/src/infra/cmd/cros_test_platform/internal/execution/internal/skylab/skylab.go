@@ -73,7 +73,7 @@ func (t *testRun) RequestArgs(params *test_platform.Request_Params, workerConfig
 		ClientTest:      isClient,
 		OutputToIsolate: true,
 		TestArgs:        t.invocation.TestArgs,
-		Keyvals:         params.GetDecorations().GetAutotestKeyvals(),
+		Keyvals:         getKeyvals(params, parentTaskID),
 	}
 	cmd.Config(wrap(workerConfig))
 
@@ -95,6 +95,21 @@ func (t *testRun) RequestArgs(params *test_platform.Request_Params, workerConfig
 	}
 
 	return args, nil
+}
+
+func getKeyvals(params *test_platform.Request_Params, parentTaskID string) map[string]string {
+	keyvals := params.GetDecorations().GetAutotestKeyvals()
+	if keyvals == nil {
+		keyvals = make(map[string]string)
+	}
+	if parentTaskID != "" {
+		// This keyval is inspected by some downstream results consumers such as
+		// goldeneye and stainless.
+		// TODO(akeshet): Consider whether parameter-specified parent_job_id
+		// should be respected if it was specified.
+		keyvals["parent_job_id"] = parentTaskID
+	}
+	return keyvals
 }
 
 func (t *testRun) isClientTest() (bool, error) {

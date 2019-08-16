@@ -444,7 +444,7 @@ func TestRequestArguments(t *testing.T) {
 				So(slice.Properties.Command, ShouldContain, "-test-args")
 				So(slice.Properties.Command, ShouldContain, "foo-arg1 foo-arg2")
 
-				So(flatCommand, ShouldContainSubstring, `-keyvals {"k1":"v1"}`)
+				So(flatCommand, ShouldContainSubstring, `-keyvals {"k1":"v1","parent_job_id":"foo-parent-task-id"}`)
 
 				provisionArg := "-provision-labels cros-version:foo-build,fwro-version:foo-ro-firmware,fwrw-version:foo-rw-firmware"
 
