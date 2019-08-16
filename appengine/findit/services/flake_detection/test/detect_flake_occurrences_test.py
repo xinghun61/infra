@@ -47,6 +47,9 @@ class DetectFlakesOccurrencesTest(WaterfallTestCase):
     """
     return {
         'rows': [],
+        'jobReference': {
+            'jobId': 123
+        },
         'jobComplete': True,
         'totalRows': '0',
         'schema': {
@@ -149,6 +152,9 @@ class DetectFlakesOccurrencesTest(WaterfallTestCase):
     """
     return {
         'rows': [],
+        'jobReference': {
+            'jobId': 123
+        },
         'jobComplete': True,
         'totalRows': '0',
         'schema': {
@@ -686,6 +692,7 @@ class DetectFlakesOccurrencesTest(WaterfallTestCase):
     mocked_client = mock.Mock()
     mocked_get_client.return_value = mocked_client
     mocked_client.jobs().query().execute.return_value = query_response
+    mocked_client.jobs().getQueryResults().execute.return_value = query_response
 
     detect_flake_occurrences.QueryAndStoreHiddenFlakes()
 
@@ -837,6 +844,7 @@ class DetectFlakesOccurrencesTest(WaterfallTestCase):
     mocked_client = mock.Mock()
     mocked_get_client.return_value = mocked_client
     mocked_client.jobs().query().execute.return_value = query_response
+    mocked_client.jobs().getQueryResults().execute.return_value = query_response
 
     taskqueue_task_names = []
 

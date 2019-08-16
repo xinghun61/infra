@@ -127,9 +127,8 @@ def _AssignTypeToRow(schema, row):
   row_dict = {}
   for idx, schema_field in enumerate(schema):
     type_func = schema_field['type_conversion_function']
-    row_dict[schema_field['name']] = type_func(row['f'][idx]['v'],
-                                               schema_field['nullable'],
-                                               schema_field['repeated'])
+    row_dict[schema_field['name']] = type_func(
+        row['f'][idx]['v'], schema_field['nullable'], schema_field['repeated'])
   return row_dict
 
 
@@ -164,7 +163,7 @@ def InsertRequest(client, project_id, dataset_id, table_id, rows):
   """Inserts the given rows into a bigquery table.
 
   Args:
-    client (apiclient.dicovery): Bigquery client.
+    client (apiclient.discovery): Bigquery client.
     project_id (str): Project Id in google cloud.
     dataset_id (str): Dataset Id in Bigquery.
     table_id (str): Table Id in Bigquery.
@@ -216,8 +215,40 @@ def _GenerateQueryParameters(parameters):
   return query_params
 
 
-def ExecuteQuery(project_id, query, parameters=None):  # pragma: no cover
-  return QueryRequest(_GetBigqueryClient(), project_id, query, parameters)
+def ExecuteQuery(project_id,
+                 query=None,
+                 parameters=None,
+                 paging=False,
+                 job_id=None,
+                 page_token=None,
+                 max_results=None,
+                 timeout=_TIMEOUT_MS):  # pragma: no cover
+
+  if not paging:
+    return QueryRequest(
+        _GetBigqueryClient(),
+        project_id,
+        query,
+        parameters=parameters,
+        timeout=timeout)
+
+  # Return first page when paging is True.
+  if job_id is None:
+    return QueryRequestPaging(
+        _GetBigqueryClient(),
+        project_id,
+        query=query,
+        parameters=parameters,
+        max_results=max_results,
+        timeout=timeout)
+
+  # Return specified page of results when paging is True.
+  return QueryRequestPaging(
+      _GetBigqueryClient(),
+      project_id,
+      job_id=job_id,
+      page_token=page_token,
+      timeout=timeout)
 
 
 def QueryRequest(client,
@@ -225,16 +256,113 @@ def QueryRequest(client,
                  query,
                  parameters=None,
                  timeout=_TIMEOUT_MS):
-  """Inserts the given rows into a bigquery table.
+  """Runs a BigQuery SQL Query and returns all query result rows.
 
   Args:
-    client (apiclient.dicovery): Bigquery client.
+    client (apiclient.discovery): Bigquery client.
     project_id (str): Project Id in google cloud.
     query (str): query to run.
-    parameters ([tuple]): parameters to be used in parameterized queries.
+    parameters ([tuple]): Parameters to be used in parameterized queries.
+    timeout (int): How long to wait for the query to complete, in milliseconds,
+      before the request times out and returns. Note that this is only a timeout
+      for the request, not the query. If the query takes longer to run than the
+      timeout value, the call returns without any results and with the
+      'jobComplete' flag set to false.
+
   Returns:
     (boolean, [dict]) Boolean to indicate success/failure, and the rows that
         match the query.
+  """
+  job_id = _RunBigQuery(
+      client, project_id, query, parameters=parameters, timeout=timeout)
+  success, rows, page_token = _ReadQueryResultsPage(client, project_id, job_id)
+  while page_token:
+    success, next_page_rows, page_token = _ReadQueryResultsPage(
+        client, project_id, job_id, page_token=page_token)
+    if not success:
+      return success, []
+
+    rows += next_page_rows
+  return success, rows
+
+
+def QueryRequestPaging(client,
+                       project_id,
+                       query=None,
+                       job_id=None,
+                       page_token=None,
+                       parameters=None,
+                       max_results=None,
+                       timeout=_TIMEOUT_MS):
+  """Runs a BigQuery SQL Query and returns one page of the query results rows.
+
+  Args:
+    client (apiclient.discovery): Bigquery client.
+    project_id (str): Project Id in google cloud.
+    query (str): query to run.
+    job_id (str): Job ID of the query job.
+    page_token (str): Page token, returned by a previous call, to request the
+      next page of results. Can only be used if a job_id is also given.
+    parameters ([tuple]): Parameters to be used in parameterized queries.
+    max_results (int): The maximum number of rows of data to return per page of
+      results. In addition to this limit, responses are also limited to 10 MB.
+      By default, there is no maximum row count, and only the byte limit
+      applies.
+    timeout (int): How long to wait for the query to complete, in milliseconds,
+      before the request times out and returns. Note that this is only a timeout
+      for the request, not the query. If the query takes longer to run than the
+      timeout value, the call returns without any results and with the
+      'jobComplete' flag set to false.
+
+  Returns:
+    success (boolean): Boolean to indicate success/failure of the request.
+    rows ([dict]): Rows that match the query.
+    job_id (str) : Job ID of the query job.
+    page_token (str): Page token, returned by a previous call, to request the
+      next page of results.
+  """
+  if job_id:
+    assert query is None, 'Cannot specify the job id and give a query.'
+
+  if job_id is None:
+    assert page_token is None, 'Need to specify the job id to use a page token.'
+    assert query, 'No query or job id given to read query results.'
+
+    job_id = _RunBigQuery(
+        client,
+        project_id,
+        query,
+        parameters=parameters,
+        max_results=max_results,
+        timeout=timeout)
+
+  success, rows, page_token = _ReadQueryResultsPage(
+      client, project_id, job_id=job_id, page_token=page_token)
+  return success, rows, job_id, page_token
+
+
+def _RunBigQuery(client,
+                 project_id,
+                 query,
+                 parameters=None,
+                 max_results=None,
+                 timeout=_TIMEOUT_MS):
+  """Runs a BigQuery SQL query and returns the job id.
+
+  Args:
+    client (apiclient.discovery): Bigquery client.
+    project_id (str): Project Id in google cloud.
+    query (str): query to run.
+    parameters ([tuple]): Parameters to be used in parameterized queries.
+    max_results (int): The maximum number of rows of data to return per page of
+      results. In addition to this limit, responses are also limited to 10 MB.
+      By default, there is no maximum row count, and only the byte limit
+      applies.
+    timeout (int): How long to wait for the query to complete, in milliseconds,
+      before the request times out and returns. Note that this is only a timeout
+      for the request, not the query. If the query takes longer to run than the
+      timeout value, the call returns without any results and with the
+      'jobComplete' flag set to false.
   """
   body = {
       'kind': 'bigquery#queryRequest',
@@ -244,39 +372,54 @@ def QueryRequest(client,
       'parameterMode': 'NAMED',
       'queryParameters': _GenerateQueryParameters(parameters) or []
   }
+  if max_results:
+    body['maxResults'] = max_results
   request = client.jobs().query(projectId=project_id, body=body)
   response = request.execute(num_retries=_REQUEST_RETRIES)
+  return response.get('jobReference').get('jobId')
+
+
+def _ReadQueryResultsPage(client, project_id, job_id, page_token=None):
+  """Gets the results of a query job by page.
+
+  Args:
+    client (apiclient.discovery): Bigquery client.
+    project_id (str): Project Id in google cloud.
+    job_id (str): Job ID of the query job.
+    page_token (str): Page token, returned by a previous call, to request the
+      next page of results.
+
+  Returns:
+    success (boolean): Boolean to indicate success/failure of the request.
+    rows ([dict]): Rows that match the query.
+    page_token (str): Page token, returned by a previous call, to request the
+      next page of results.
+  """
+  response = client.jobs().getQueryResults(
+      projectId=project_id, jobId=job_id, pageToken=page_token).execute()
 
   if response.get('errors'):
     logging.error('QueryRequest reported errors: %s', response.get('errors'))
-    return False, []
+    return False, [], None
 
-  if not response.get('jobComplete'):
-    logging.error('QueryRequest didn\'t finish, possibly due to timeout.')
-    return False, []
+  # First results page specific errors
+  if not page_token:
+    if not response.get('jobComplete'):
+      logging.error('QueryRequest didn\'t finish, possibly due to timeout.')
+      return False, [], None
 
-  if response.get('totalRows') == '0':
-    logging.info('QueryRequest succeeded, but there were no rows returned.')
-    return True, []
+    if response.get('totalRows') == 0:
+      logging.info('QueryRequest succeeded, but there were no rows returned.')
+      return True, [], None
 
-  if (not response.get('schema') or not response.get('rows')):
-    logging.error('QueryRequest succeeded, but there were missing fields.')
-    return False, []
+    if (not response.get('schema') or not response.get('rows')):
+      logging.error('QueryRequest succeeded, but there were missing fields.')
+      return False, [], None
 
   rows = _RowsResponseToDicts(response['schema']['fields'], response['rows'])
-  while 'pageToken' in response:
-    response = client.jobs().getQueryResults(
-        projectId=project_id,
-        jobId=response['jobReference']['jobId'],
-        pageToken=response['pageToken']).execute()
+  page_token = response.get('pageToken')
 
-    if response.get('errors'):
-      logging.error('QueryRequest reported errors: %s', response.get('errors'))
-      return False, []
-
-    rows += _RowsResponseToDicts(response['schema']['fields'],
-                                 response['rows'])
-  return True, rows
+  return True, rows, page_token
 
 
 def ReportEventsToBigquery(events_and_ids, project_id, dataset_id, table_id):
