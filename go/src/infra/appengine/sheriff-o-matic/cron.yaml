@@ -86,3 +86,11 @@ cron:
   retry_parameters:
     min_backoff_seconds: 2.5
     max_doublings: 5
+
+- description: Update Fuchsia alerts
+  url: /_cron/analyze/fuchsia?use=bigquery
+  schedule: every 5 minutes
+  target: analyzer
+  retry_parameters:
+    min_backoff_seconds: 2.5
+    max_doublings: 5

@@ -14,25 +14,31 @@ import (
 	"time"
 )
 
-// TODO: customize the WHERE clause for chromium.  I suspect
-// just using the project field isn't quite right.
-const failuresQuery = `
+// TODO: Update bigquery/ scripts to match staging!
+const selectFromWhere = `
 SELECT
   Project,
   Bucket,
   Builder,
   MasterName,
   StepName,
-  BuildRangeBegin,
-  BuildRangeEnd,
+  BuildNumberBegin,
+  BuildNumberEnd,
   CPRangeOutputBegin,
   CPRangeOutputEnd,
   CPRangeInputBegin,
   CPRangeInputEnd,
+  CulpritIdRangeBegin,
+  CulpritIdRangeEnd,
   StartTime
 FROM
 	` + "`%s.events.sheriffable_failures`" + `
 WHERE
+`
+
+// TODO: customize the WHERE clause for chromium.  I suspect
+// just using the project field isn't quite right.
+const failuresQuery = selectFromWhere + `
 	(project = %q
 	OR
 	MasterName = %q)
@@ -47,23 +53,7 @@ LIMIT
 	1000
 `
 
-const androidFailuresQuery = `
-SELECT
-  Project,
-  Bucket,
-  Builder,
-  MasterName,
-  StepName,
-  BuildRangeBegin,
-  BuildRangeEnd,
-  CPRangeOutputBegin,
-  CPRangeOutputEnd,
-  CPRangeInputBegin,
-  CPRangeInputEnd,
-	StartTime
-FROM
-	` + "`%s.events.sheriffable_failures`" + `
-WHERE
+const androidFailuresQuery = selectFromWhere + `
 MasterName IN ("internal.client.clank",
     "internal.client.clank_tot",
     "chromium.android")
@@ -76,39 +66,25 @@ LIMIT
 	1000
 `
 
-const chromiumGPUFYIFailuresQuery = `
-SELECT
-  Project,
-  Bucket,
-  Builder,
-  MasterName,
-  StepName,
-  BuildRangeBegin,
-  BuildRangeEnd,
-  CPRangeOutputBegin,
-  CPRangeOutputEnd,
-  CPRangeInputBegin,
-  CPRangeInputEnd,
-	StartTime
-FROM
-	` + "`%s.events.sheriffable_failures`" + `
-WHERE
+const chromiumGPUFYIFailuresQuery = selectFromWhere + `
   MasterName = "chromium.gpu.fyi"
 `
 
 type failureRow struct {
-	StepName           string
-	MasterName         bigquery.NullString
-	Builder            string
-	Bucket             string
-	Project            string
-	BuildRangeBegin    bigquery.NullInt64
-	BuildRangeEnd      bigquery.NullInt64
-	CPRangeInputBegin  *GitCommit
-	CPRangeInputEnd    *GitCommit
-	CPRangeOutputBegin *GitCommit
-	CPRangeOutputEnd   *GitCommit
-	StartTime          bigquery.NullTimestamp
+	StepName            string
+	MasterName          bigquery.NullString
+	Builder             string
+	Bucket              string
+	Project             string
+	BuildNumberBegin    bigquery.NullInt64
+	BuildNumberEnd      bigquery.NullInt64
+	CPRangeInputBegin   *GitCommit
+	CPRangeInputEnd     *GitCommit
+	CPRangeOutputBegin  *GitCommit
+	CPRangeOutputEnd    *GitCommit
+	CulpritIDRangeBegin bigquery.NullInt64
+	CulpritIDRangeEnd   bigquery.NullInt64
+	StartTime           bigquery.NullTimestamp
 }
 
 // GitCommit represents a struct column for BQ query results.
@@ -197,9 +173,10 @@ func GetBigQueryAlerts(ctx context.Context, tree string) ([]messages.BuildFailur
 		if err != nil {
 			return nil, err
 		}
+
 		// TODO: figure out how to better handle build steps that
 		// have never passed, ever.
-		if r.BuildRangeBegin.Int64 == 0 {
+		if r.BuildNumberBegin.Int64 == 0 && r.CulpritIDRangeBegin.Int64 == 0 {
 			continue
 		}
 		gitBegin := r.CPRangeOutputBegin
@@ -230,12 +207,13 @@ func GetBigQueryAlerts(ctx context.Context, tree string) ([]messages.BuildFailur
 			}
 		}
 		ab := messages.AlertedBuilder{
-			Project:          r.Project,
-			Bucket:           r.Bucket,
-			Name:             r.Builder,
-			Master:           r.MasterName.StringVal,
-			FirstFailure:     r.BuildRangeBegin.Int64,
-			LatestFailure:    r.BuildRangeEnd.Int64,
+			Project: r.Project,
+			Bucket:  r.Bucket,
+			Name:    r.Builder,
+			Master:  r.MasterName.StringVal,
+			// REplace these with build IDs.
+			FirstFailure:     r.BuildNumberBegin.Int64,
+			LatestFailure:    r.BuildNumberEnd.Int64,
 			URL:              fmt.Sprintf("https://ci.chromium.org/p/%s/builders/%s/%s", r.Project, r.Bucket, r.Builder),
 			LatestPassingRev: latestPassingRev,
 			FirstFailingRev:  firstFailingRev,

@@ -37,6 +37,7 @@ SELECT
   bucket,
   builder,
   latest.number,
+  b.latest.id,
   JSON_EXTRACT_SCALAR(latest.input.properties,
     "$.mastername") AS mastername,
   b.latest.output.gitiles_commit,
