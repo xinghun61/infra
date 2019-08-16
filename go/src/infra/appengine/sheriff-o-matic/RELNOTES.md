@@ -1,3 +1,32 @@
+# Release Notes sheriff-o-matic 2019-08-16
+
+- 13 commits, 4 bugs affected since c3446a6 ()
+- 1 Authors:
+  - seanmccullough@chromium.org
+
+## Changes in this release
+
+- [[som] Add fuchsia project](https://chromium-review.googlesource.com/c/infra/infra/+/1755377) (seanmccullough@chromium.org)
+- [[som] Move chromium.perf back to the old analyzer so test results work](https://chromium-review.googlesource.com/c/infra/infra/+/1758170) (seanmccullough@chromium.org)
+- [[som] Add chromium.clang tree](https://chromium-review.googlesource.com/c/infra/infra/+/1754987) (seanmccullough@chromium.org)
+- [[som] migrate chromium.perf.fyi alerts to use the bq analyzer](https://chromium-review.googlesource.com/c/infra/infra/+/1754984) (seanmccullough@chromium.org)
+- [[som] Fix the part of the analyzer that writes alerts to BQ](https://chromium-review.googlesource.com/c/infra/infra/+/1754591) (seanmccullough@chromium.org)
+- [[som] clean up remaining buildbucket api client bits](https://chromium-review.googlesource.com/c/infra/infra/+/1754250) (seanmccullough@chromium.org)
+- [[som] rm buildbucket grpc client code](https://chromium-review.googlesource.com/c/infra/infra/+/1753091) (seanmccullough@chromium.org)
+- [[som] Update Makefile to use gcloud/bin from infra checkout](https://chromium-review.googlesource.com/c/infra/infra/+/1753065) (seanmccullough@chromium.org)
+- [[som] reinstante findit results for bigquery analyzer alerts](https://chromium-review.googlesource.com/c/infra/infra/+/1743464) (seanmccullough@chromium.org)
+- [[som] fix devserver_remote Makefile target](https://chromium-review.googlesource.com/c/infra/infra/+/1741720) (seanmccullough@chromium.org)
+- [[som] Switch chromium.perf to the new bigquery analyzer.](https://chromium-review.googlesource.com/c/infra/infra/+/1740748) (seanmccullough@chromium.org)
+- [[som] Remove buildbucket API analyzer.](https://chromium-review.googlesource.com/c/infra/infra/+/1740749) (seanmccullough@chromium.org)
+- [[som] Update RELNOTES.md for push](https://chromium-review.googlesource.com/c/infra/infra/+/1740011) (seanmccullough@chromium.org)
+
+## Bugs updated, by author
+- seanmccullough@chromium.org:
+  -  [https://crbug.com/947318](https://crbug.com/947318)
+  -  [https://crbug.com/984159](https://crbug.com/984159)
+  -  [https://crbug.com/993133](https://crbug.com/993133)
+  -  [https://crbug.com/993987](https://crbug.com/993987)
+
 # Release Notes sheriff-o-matic 2019-08-06
 
 - 16 commits, 6 bugs affected since 563a161 ()
