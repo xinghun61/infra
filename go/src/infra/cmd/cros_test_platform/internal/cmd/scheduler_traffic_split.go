@@ -22,6 +22,7 @@ import (
 	"go.chromium.org/luci/auth/client/authcli"
 	"go.chromium.org/luci/common/api/gitiles"
 	"go.chromium.org/luci/common/cli"
+	"go.chromium.org/luci/common/data/stringset"
 	"go.chromium.org/luci/common/errors"
 	"go.chromium.org/luci/common/logging"
 	gitilespb "go.chromium.org/luci/common/proto/gitiles"
@@ -139,7 +140,11 @@ func determineTrafficSplit(request *steps.SchedulerTrafficSplitRequest, trafficS
 	if err := ensureSufficientForTrafficSplit(request.Request); err != nil {
 		return nil, errors.Annotate(err, "determine traffic split").Err()
 	}
-	rules := determineRelevantRules(request.Request, trafficSplitConfig.Rules)
+
+	rules := determineRelevantSuiteRules(request.Request, trafficSplitConfig.SuiteOverrides)
+	if len(rules) == 0 {
+		rules = determineRelevantRules(request.Request, trafficSplitConfig.Rules)
+	}
 
 	var rule *scheduler.Rule
 	switch {
@@ -217,6 +222,24 @@ func applyRequestModification(request *test_platform.Request, mod *scheduler.Req
 	}
 	proto.Merge(dst.Params.Scheduling, mod.Scheduling)
 	return &dst
+}
+
+func determineRelevantSuiteRules(request *test_platform.Request, suiteOverrides []*scheduler.SuiteOverride) []*scheduler.Rule {
+	suites := make(stringset.Set)
+	for _, s := range request.GetTestPlan().GetSuite() {
+		if s.GetName() != "" {
+			suites.Add(s.GetName())
+		}
+	}
+
+	rules := []*scheduler.Rule{}
+	for _, so := range suiteOverrides {
+		r := so.Rule
+		if suites.Has(so.GetSuite().GetName()) && isRuleRelevant(request, r) {
+			rules = append(rules, r)
+		}
+	}
+	return rules
 }
 
 func determineRelevantRules(request *test_platform.Request, rules []*scheduler.Rule) []*scheduler.Rule {

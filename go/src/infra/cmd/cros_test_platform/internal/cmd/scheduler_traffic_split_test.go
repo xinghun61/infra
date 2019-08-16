@@ -173,6 +173,33 @@ func TestTrafficSplit(t *testing.T) {
 			Request:           unmanagedPoolRequest("", "grunt", "toolchain"),
 			WantSkylabRequest: unmanagedPoolRequest("", "grunt", "toolchain"),
 		},
+		{
+			Tag: "(unmanaged pool, buildTarget) match for Skylab but overridden for suite to Autotest",
+			TrafficSplitConfig: trafficSplitWithSuiteOverrides(
+				unmanagedPoolRule("link", "link", "toolchain", scheduler.Backend_BACKEND_SKYLAB),
+				suiteOverride("bvt-inline", unmanagedPoolRule("link", "link", "toolchain", scheduler.Backend_BACKEND_AUTOTEST)),
+			),
+			Request:             requestWithSuite("bvt-inline", unmanagedPoolRequest("", "link", "toolchain")),
+			WantAutotestRequest: requestWithSuite("bvt-inline", unmanagedPoolRequest("", "link", "toolchain")),
+		},
+		{
+			Tag: "(unmanaged pool, buildTarget) match for Skylab and not overridden due to missing suite",
+			TrafficSplitConfig: trafficSplitWithSuiteOverrides(
+				unmanagedPoolRule("link", "link", "toolchain", scheduler.Backend_BACKEND_SKYLAB),
+				suiteOverride("bvt-inline", unmanagedPoolRule("link", "link", "toolchain", scheduler.Backend_BACKEND_AUTOTEST)),
+			),
+			Request:           unmanagedPoolRequest("", "link", "toolchain"),
+			WantSkylabRequest: unmanagedPoolRequest("", "link", "toolchain"),
+		},
+		{
+			Tag: "(unmanaged pool, buildTarget) match for Skylab and not overridden due to mismatched suite",
+			TrafficSplitConfig: trafficSplitWithSuiteOverrides(
+				unmanagedPoolRule("link", "link", "toolchain", scheduler.Backend_BACKEND_SKYLAB),
+				suiteOverride("bvt-inline", unmanagedPoolRule("link", "link", "toolchain", scheduler.Backend_BACKEND_AUTOTEST)),
+			),
+			Request:           requestWithSuite("bvt-cq", unmanagedPoolRequest("", "link", "toolchain")),
+			WantSkylabRequest: requestWithSuite("bvt-cq", unmanagedPoolRequest("", "link", "toolchain")),
+		},
 	}
 
 	for _, c := range cases {
@@ -396,4 +423,27 @@ func quotaAcccountRuleWithManagedPoolOverride(model, buildTarget, account string
 		},
 	}
 	return r
+}
+
+func trafficSplitWithSuiteOverrides(rule *scheduler.Rule, suiteOverrides ...*scheduler.SuiteOverride) *scheduler.TrafficSplit {
+	return &scheduler.TrafficSplit{
+		Rules:          []*scheduler.Rule{rule},
+		SuiteOverrides: suiteOverrides,
+	}
+}
+
+func suiteOverride(suite string, rule *scheduler.Rule) *scheduler.SuiteOverride {
+	return &scheduler.SuiteOverride{
+		Suite: &test_platform.Request_Suite{Name: suite},
+		Rule:  rule,
+	}
+}
+
+func requestWithSuite(suite string, request *test_platform.Request) *test_platform.Request {
+	request.TestPlan = &test_platform.Request_TestPlan{
+		Suite: []*test_platform.Request_Suite{
+			{Name: suite},
+		},
+	}
+	return request
 }
