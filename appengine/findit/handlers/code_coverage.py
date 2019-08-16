@@ -93,13 +93,6 @@ _POSTSUBMIT_PLATFORM_INFO_MAP = {
         'coverage_tool': 'clang',
         'ui_name': 'ChromeOS on Linux (C/C++)',
     },
-    'oobe-code-mauve': {
-        'bucket': 'ci',
-        'builder': 'linux-chromeos-oobe-code-coverage',
-        'coverage_tool': 'clang',
-        'ui_name': 'ChromeOS on Linux for OOBE (C/C++)',
-        'hidden': True,
-    },
     'android-java': {
         'bucket': 'ci',
         'builder': 'android-code-coverage',
@@ -780,9 +773,8 @@ class ProcessCodeCoverageData(BaseHandler):
     return (project in ('chromium', 'chrome') and
             bucket in ('coverage', 'ci', 'try') and
             builder in ('linux-rel', 'chromeos-vm-code-coverage',
-                        'linux-chromeos-code-coverage',
-                        'linux-chromeos-oobe-code-coverage',
-                        'linux-code-coverage', 'android-code-coverage'))
+                        'linux-chromeos-code-coverage', 'linux-code-coverage',
+                        'android-code-coverage'))
 
   def HandlePost(self):
     """Loads the data from GS bucket, and dumps them into ndb."""
