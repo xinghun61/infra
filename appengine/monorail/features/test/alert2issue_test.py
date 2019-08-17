@@ -248,6 +248,10 @@ class ProcessEmailNotificationTests(unittest.TestCase, TestData):
 class GetAlertPropertiesTests(unittest.TestCase, TestData):
   """Implements unit tests for alert2issue.GetAlertProperties."""
 
+  def assertCaseInsensitiveEqual(self, lhs, rhs):
+    self.assertEqual(lhs if lhs is None else lhs.lower(),
+                     rhs if lhs is None else rhs.lower())
+
   def setUp(self):
     # services
     self.services = service_manager.Services(
@@ -262,6 +266,20 @@ class GetAlertPropertiesTests(unittest.TestCase, TestData):
         self.project_name, project_id=self.project_id,
         process_inbound_email=True, contrib_ids=[self.user_id])
 
+    proj_config = fake.MakeTestConfig(
+        self.project_id,
+        [
+            # test labels for Pri field
+            'Pri-0', 'Pri-1', 'Pri-2', 'Pri-3',
+            # test labels for OS field
+            'OS-Android', 'OS-Windows',
+            # test labels for Type field
+            'Type-Bug', 'Type-Bug-Regression', 'Type-Bug-Security', 'Type-Task',
+        ],
+        ['Assigned', 'Available', 'Unconfirmed']
+    )
+    self.services.config.StoreConfig(self.cnxn, proj_config)
+
     # create a test email message, which tests can alternate the header values
     # to verify the behaviour of a given parser function.
     self.test_msg = email.Message.Message()
@@ -270,47 +288,104 @@ class GetAlertPropertiesTests(unittest.TestCase, TestData):
 
     self.mox = mox.Mox()
 
-  def testComponentWithCodesearch(self):
+  @parameterized.expand([
+      ('',),
+      ('Infra,Project-Foo',),
+      ('Infra>Codesearch',),
+      ('Codesearch',),
+      ('Infra>Codesearch,Infra',),
+  ])
+  def testComponentWithCodesearch(self, header_value):
     """Checks if the component is Infra>Codesearch, if the body with codesearch.
     """
-    component_id = self.component_id + 1
+    self.test_msg.replace_header(AlertEmailHeader.COMPONENT, header_value)
+    msg_body = self.msg_body + 'codesearch'
     self.mox.StubOutWithMock(tracker_helpers, 'LookupComponentIDs')
     tracker_helpers.LookupComponentIDs(
         ['Infra>Codesearch'],
-        mox.IgnoreArg()).AndReturn([component_id])
+        mox.IgnoreArg()).AndReturn([self.component_id])
 
     self.mox.ReplayAll()
     props = alert2issue.GetAlertProperties(
         self.services, self.cnxn, self.project_id, self.incident_id,
-        self.trooper_queue, self.msg_body + 'codesearch', self.msg)
-    self.assertEqual(props['component_ids'], [component_id])
+        self.trooper_queue, msg_body, self.test_msg)
+    self.assertEqual(props['component_ids'], [self.component_id])
     self.mox.VerifyAll()
 
-  def testDefaultComponent(self):
+  @parameterized.expand([
+      (None,),
+      ('',),
+  ])
+  def testDefaultComponent(self, header_value):
     """Checks if the default component is Infra."""
-    component_id = self.component_id
+    self.test_msg.replace_header(AlertEmailHeader.COMPONENT, header_value)
     self.mox.StubOutWithMock(tracker_helpers, 'LookupComponentIDs')
     tracker_helpers.LookupComponentIDs(
         ['Infra'],
-        mox.IgnoreArg()).AndReturn([component_id])
+        mox.IgnoreArg()).AndReturn([self.component_id])
 
     self.mox.ReplayAll()
     props = alert2issue.GetAlertProperties(
         self.services, self.cnxn, self.project_id, self.incident_id,
-        self.trooper_queue, self.msg_body, self.msg)
-    self.assertEqual(props['component_ids'], [component_id])
+        self.trooper_queue, self.msg_body, self.test_msg)
+    self.assertEqual(props['component_ids'], [self.component_id])
     self.mox.VerifyAll()
+
+  @parameterized.expand([
+      # an existing single component with componentID 1
+      ({'Infra': 1}, [1]),
+      # 3 of existing components
+      ({'Infra': 1, 'Foo': 2, 'Bar': 3}, [1, 2, 3]),
+      # a non-existing component
+      ({'Infra': None}, []),
+      # 3 of non-existing components
+      ({'Infra': None, 'Foo': None, 'Bar': None}, []),
+      # a mix of existing and non-existing components
+      ({'Infra': 1, 'Foo': None, 'Bar': 2}, [1, 2]),
+  ])
+  def testGetComponentIDs(self, components, expected_component_ids):
+    """Tests _GetComponentIDs."""
+    self.test_msg.replace_header(
+        AlertEmailHeader.COMPONENT, ','.join(sorted(components.keys())))
+
+    self.mox.StubOutWithMock(tracker_helpers, 'LookupComponentIDs')
+    tracker_helpers.LookupComponentIDs(
+        sorted(components.keys()),
+        mox.IgnoreArg()).AndReturn(
+            [components[key] for key in sorted(components.keys())
+             if components[key]]
+        )
+
+    self.mox.ReplayAll()
+    props = alert2issue.GetAlertProperties(
+        self.services, self.cnxn, self.project_id, self.incident_id,
+        self.trooper_queue, self.msg_body, self.test_msg)
+    self.assertEqual(sorted(props['component_ids']),
+                     sorted(expected_component_ids))
+    self.mox.VerifyAll()
+
 
   def testLabelsWithNecessaryValues(self):
     """Checks if the labels contain all the necessary values."""
     props = alert2issue.GetAlertProperties(
         self.services, self.cnxn, self.project_id, self.incident_id,
-        self.trooper_queue, self.msg_body, self.msg)
+        self.trooper_queue, self.msg_body, self.test_msg)
 
-    self.assertTrue('Restrict-View-Google' in props['labels'])
-    self.assertTrue(self.incident_label in props['labels'])
-    self.assertTrue(self.trooper_queue in props['labels'])
-    self.assertTrue(props['priority'] in props['labels'])
+    # This test assumes that the test message contains non-empty values for
+    # all the headers.
+    self.assertTrue(props['incident_label'])
+    self.assertTrue(props['priority'])
+    self.assertTrue(props['issue_type'])
+    self.assertTrue(props['oses'])
+
+    # Here are a list of the labels that props['labels'] should contain
+    self.assertIn('Restrict-View-Google', props['labels'])
+    self.assertIn(self.trooper_queue, props['labels'])
+    self.assertIn(props['incident_label'], props['labels'])
+    self.assertIn(props['priority'], props['labels'])
+    self.assertIn(props['issue_type'], props['labels'])
+    for os in props['oses']:
+      self.assertIn(os, props['labels'])
 
   @parameterized.expand([
       (None, None),
@@ -386,3 +461,145 @@ class GetAlertPropertiesTests(unittest.TestCase, TestData):
         self.trooper_queue, self.msg_body, self.test_msg)
     self.mox.VerifyAll()
     self.assertEqual(sorted(props['cc_ids']), sorted(expected_cc_ids))
+
+  @parameterized.expand([
+      # None and '' should result in the default priority returned.
+      (None, 'Pri-2'),
+      ('', 'Pri-2'),
+
+      # Tests for valid priority values
+      ('0', 'Pri-0'),
+      ('1', 'Pri-1'),
+      ('2', 'Pri-2'),
+      ('3', 'Pri-3'),
+
+      # Tests for invalid priority values
+      ('test', 'Pri-2'),
+      ('foo', 'Pri-2'),
+      ('critical', 'Pri-2'),
+      ('4', 'Pri-2'),
+      ('3x', 'Pri-2'),
+      ('00', 'Pri-2'),
+      ('01', 'Pri-2'),
+  ])
+  def testGetPriority(self, header_value, expected_priority):
+    """Tests _GetPriority."""
+    self.test_msg.replace_header(AlertEmailHeader.PRIORITY, header_value)
+    props = alert2issue.GetAlertProperties(
+        self.services, self.cnxn, self.project_id, self.incident_id,
+        self.trooper_queue, self.msg_body, self.test_msg)
+    self.assertCaseInsensitiveEqual(props['priority'], expected_priority)
+
+  @parameterized.expand([
+      (None, 'Available'),
+      ('', 'Available'),
+  ])
+  def testDefaultStatus(self, header_value, expected_status):
+    """Checks if _GetStatus return Available in default."""
+    self.test_msg.replace_header(AlertEmailHeader.STATUS, header_value)
+    props = alert2issue.GetAlertProperties(
+        self.services, self.cnxn, self.project_id, self.incident_id,
+        self.trooper_queue, self.msg_body, self.test_msg)
+    self.assertCaseInsensitiveEqual(props['status'], expected_status)
+
+  @parameterized.expand([
+      ('random_status', True, 'random_status'),
+      # If the status is not one of the open statuses, the default status
+      # should be returned instead.
+      ('random_status', False, 'Available'),
+  ])
+  def testGetStatusWithoutOwner(self, status, means_open, expected_status):
+    """Tests GetStatus without an owner."""
+    self.test_msg.replace_header(AlertEmailHeader.STATUS, status)
+    self.mox.StubOutWithMock(tracker_helpers, 'MeansOpenInProject')
+    tracker_helpers.MeansOpenInProject(status, mox.IgnoreArg()).AndReturn(
+        means_open)
+
+    self.mox.ReplayAll()
+    props = alert2issue.GetAlertProperties(
+        self.services, self.cnxn, self.project_id, self.incident_id,
+        self.trooper_queue, self.msg_body, self.test_msg)
+    self.assertCaseInsensitiveEqual(props['status'], expected_status)
+    self.mox.VerifyAll()
+
+  @parameterized.expand([
+      ('random_status', 'Assigned'),
+      ('Available', 'Assigned'),
+      ('Unconfirmed', 'Assigned'),
+      ('Fixed', 'Assigned'),
+  ])
+  def testGetStatusWithOwner(self, status, expected_status):
+    """Tests GetStatus with an owner."""
+    owner = 'owner@example.org'
+    self.test_msg.replace_header(AlertEmailHeader.OWNER, owner)
+    self.test_msg.replace_header(AlertEmailHeader.CC, '')
+    self.test_msg.replace_header(AlertEmailHeader.STATUS, status)
+
+    self.mox.StubOutWithMock(self.services.user, 'LookupExistingUserIDs')
+    self.services.user.LookupExistingUserIDs(self.cnxn, [owner]).AndReturn(
+        {owner: 1})
+
+    self.mox.ReplayAll()
+    props = alert2issue.GetAlertProperties(
+        self.services, self.cnxn, self.project_id, self.incident_id,
+        self.trooper_queue, self.msg_body, self.test_msg)
+    self.assertCaseInsensitiveEqual(props['status'], expected_status)
+    self.mox.VerifyAll()
+
+  @parameterized.expand([
+      # None and '' should result in None returned.
+      (None, None),
+      ('', None),
+
+      # whitelisted issue types
+      ('Bug', 'Type-Bug'),
+      ('Bug-Regression', 'Type-Bug-Regression'),
+      ('Bug-Security', 'Type-Bug-Security'),
+      ('Task', 'Type-Task'),
+
+      # non-whitelisted issue types
+      ('foo', None),
+      ('bar', None),
+      ('Bug,Bug-Regression', None),
+      ('Bug,', None),
+      (',Task', None),
+  ])
+  def testGetIssueType(self, header_value, expected_issue_type):
+    """Tests _GetIssueType."""
+    self.test_msg.replace_header(AlertEmailHeader.TYPE, header_value)
+    props = alert2issue.GetAlertProperties(
+        self.services, self.cnxn, self.project_id, self.incident_id,
+        self.trooper_queue, self.msg_body, self.test_msg)
+    self.assertCaseInsensitiveEqual(props['issue_type'], expected_issue_type)
+
+  @parameterized.expand([
+      # None and '' should result in an empty list returned.
+      (None, []),
+      ('', []),
+
+      # a single, whitelisted os
+      ('Android', ['OS-Android']),
+      # a single, non-whitelisted OS
+      ('Bendroid', []),
+      # multiple, whitelisted oses
+      ('Android,Windows', ['OS-Android', 'OS-Windows']),
+      # multiple, non-whitelisted oses
+      ('Bendroid,Findows', []),
+      # a mix of whitelisted and non-whitelisted oses
+      ('Android,Findows,Windows,Bendroid', ['OS-Android', 'OS-Windows']),
+      # a mix of whitelisted and non-whitelisted oses with trailing commas.
+      ('Android,Findows,Windows,Bendroid,,', ['OS-Android', 'OS-Windows']),
+      # a mix of whitelisted and non-whitelisted oses with commas at the
+      # beginning.
+      (',,Android,Findows,Windows,Bendroid,,', ['OS-Android', 'OS-Windows']),
+  ])
+  def testGetOS(self, header_value, expected_oses):
+    """Tests _GetOSes."""
+    self.test_msg.replace_header(AlertEmailHeader.OS, header_value)
+    props = alert2issue.GetAlertProperties(
+        self.services, self.cnxn, self.project_id, self.incident_id,
+        self.trooper_queue, self.msg_body, self.test_msg)
+    self.assertEqual(sorted(os if os is None else os.lower()
+                            for os in props['oses']),
+                     sorted(os if os is None else os.lower()
+                            for os in expected_oses))

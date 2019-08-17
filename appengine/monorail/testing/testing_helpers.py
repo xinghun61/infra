@@ -38,6 +38,11 @@ ALERT_EMAIL_HEADER_LINES = HEADER_LINES + [
     (AlertEmailHeader.INCIDENT_ID, '1234567890123456789'),
     (AlertEmailHeader.OWNER, 'owner@example.com'),
     (AlertEmailHeader.CC, 'cc1@example.com,cc2@example.com'),
+    (AlertEmailHeader.PRIORITY, '0'),
+    (AlertEmailHeader.STATUS, 'Unconfirmed'),
+    (AlertEmailHeader.COMPONENT, 'Component'),
+    (AlertEmailHeader.TYPE, 'Bug'),
+    (AlertEmailHeader.OS, 'Android,Windows'),
 ]
 
 

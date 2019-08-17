@@ -8,6 +8,7 @@ from __future__ import print_function
 from __future__ import division
 from __future__ import absolute_import
 
+import itertools
 import logging
 import rfc822
 
@@ -77,23 +78,32 @@ def GetAlertProperties(services, cnxn, project_id, incident_id, trooper_queue,
     A dict of issue property values to be used for issue creation.
   """
   proj_config = services.config.GetProjectConfig(cnxn, project_id)
-  props = {
-      'owner_id': (
-          _GetOwnerID(services.user, cnxn, msg.get(AlertEmailHeader.OWNER))),
-      'cc_ids': (
-          _GetCCIDs(services.user, cnxn, msg.get(AlertEmailHeader.CC))),
-      'component_ids': _GetComponentIDs(proj_config, body),
-      'field_values': [],
-      'status': 'Available',
+  user_svc = services.user
+  known_labels = set(wkl.label.lower() for wkl in proj_config.well_known_labels)
+
+  props = dict(
+      owner_id=_GetOwnerID(user_svc, cnxn, msg.get(AlertEmailHeader.OWNER)),
+      cc_ids=_GetCCIDs(user_svc, cnxn, msg.get(AlertEmailHeader.CC)),
+      component_ids=_GetComponentIDs(
+          proj_config, body, msg.get(AlertEmailHeader.COMPONENT)),
 
       # Props that are added as labels.
-      'incident_label': _GetIncidentLabel(incident_id),
-      'priority': 'Pri-2',
-      'trooper_queue': trooper_queue or 'Infra-Troopers-Alerts',
-  }
+      trooper_queue=(trooper_queue or 'Infra-Troopers-Alerts'),
+      incident_label=_GetIncidentLabel(incident_id),
+      priority=_GetPriority(known_labels, msg.get(AlertEmailHeader.PRIORITY)),
+      oses=_GetOSes(known_labels, msg.get(AlertEmailHeader.OS)),
+      issue_type=_GetIssueType(known_labels, msg.get(AlertEmailHeader.TYPE)),
 
-  props['labels'] = _GetLabels(
-      props['incident_label'], props['priority'], props['trooper_queue'])
+      field_values=[],
+  )
+
+  # Props that depend on other props.
+  props.update(
+      status=_GetStatus(proj_config, props['owner_id'],
+                        msg.get(AlertEmailHeader.STATUS)),
+      labels=_GetLabels(props['trooper_queue'], props['incident_label'],
+                        props['priority'], props['issue_type'], props['oses']),
+  )
 
   return props
 
@@ -165,21 +175,29 @@ def ProcessEmailNotification(
       uia.Run(cnxn, services, allow_edit=True)
 
 
-def _GetComponentIDs(proj_config, body):
+def _GetComponentIDs(proj_config, body, components):
   # TODO(crbug/807064): Remove this special casing once components can be set
   # via the email header
-  return tracker_helpers.LookupComponentIDs(
-      ['Infra>Codesearch' if 'codesearch' in body else 'Infra'], proj_config)
+  comps = ['Infra']
+  if 'codesearch' in body:
+    comps = ['Infra>Codesearch']
+  elif components:
+    comps = components.split(',')
+
+  return tracker_helpers.LookupComponentIDs(comps, proj_config)
 
 
 def _GetIncidentLabel(incident_id):
   return 'Incident-Id-%s' % incident_id if incident_id else ''
 
 
-def _GetLabels(incident_label, priority, trooper_queue):
+def _GetLabels(trooper_queue, incident_label, priority, issue_type, oses):
   labels = set(['Restrict-View-Google'])
-  labels.update(label for label in [incident_label, priority, trooper_queue]
-                if label)
+  labels.update(
+      label for label in itertools.chain(
+          [trooper_queue, incident_label, priority, issue_type], oses)
+      if label
+  )
   return list(labels)
 
 
@@ -197,3 +215,57 @@ def _GetCCIDs(user_svc, cnxn, cc_emails):
   return [userID for _, userID
           in user_svc.LookupExistingUserIDs(cnxn, emails).iteritems()
           if userID is not None]
+
+
+def _GetPriority(known_labels, priority):
+  priority_label = ('Pri-%s' % priority).lower()
+  if priority:
+    if priority_label in known_labels:
+      return priority_label
+    logging.info('invalid priority %s for alerts; default to pri-2', priority)
+
+  # XXX: what if 'Pri-2' doesn't exist in known_labels?
+  return 'pri-2'
+
+
+def _GetStatus(proj_config, owner_id, status):
+  # XXX: what if assigned and available are not in known_statuses?
+  if owner_id:
+    # If there is an owner, the status must be 'Assigned'.
+    if status and status.lower() != 'assigned':
+      logging.info(
+          'invalid status %s for an alert with an owner; default to assigned',
+          status)
+    return 'assigned'
+
+  if status:
+    if tracker_helpers.MeansOpenInProject(status, proj_config):
+      return status
+    logging.info('invalid status %s for an alert; default to available', status)
+
+  return 'available'
+
+
+def _GetOSes(known_labels, oses):
+  if not oses:
+    return []
+
+  os_labels_to_lookup = {('OS-%s' % os).lower() for os in oses.split(',') if os}
+  os_labels_to_return = os_labels_to_lookup & known_labels
+  invalid_os_labels = os_labels_to_lookup - os_labels_to_return
+  if invalid_os_labels:
+    logging.info('invalid OSes %s', ','.join(invalid_os_labels))
+
+  return list(os_labels_to_return)
+
+
+def _GetIssueType(known_labels, issue_type):
+  if not issue_type:
+    return None
+
+  issue_type_label = ('Type-%s' % issue_type).lower()
+  if issue_type_label in known_labels:
+    return issue_type_label
+
+  logging.info('invalid type %s for an alert; default to None', issue_type)
+  return None
