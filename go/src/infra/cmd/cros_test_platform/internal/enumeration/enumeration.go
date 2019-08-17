@@ -45,14 +45,14 @@ func GetForTests(metadata *api.AutotestTestMetadata, tests []*test_platform.Requ
 func GetForSuites(metadata *api.AutotestTestMetadata, suites []*test_platform.Request_Suite) []*steps.EnumerationResponse_AutotestInvocation {
 	sNames := suiteNames(suites)
 	tNames := testsInSuites(metadata.GetSuites(), sNames)
-	tests := testsByName(metadata.GetTests(), tNames)
+	tests := filterTests(metadata.GetTests(), tNames)
 	return wrapInAutotestInvocation(tests)
 }
 
-func testsByName(tests []*api.AutotestTest, names stringset.Set) []*api.AutotestTest {
-	ret := make([]*api.AutotestTest, 0, len(names))
+func filterTests(tests []*api.AutotestTest, keep stringset.Set) []*api.AutotestTest {
+	ret := make([]*api.AutotestTest, 0, len(keep))
 	for _, t := range tests {
-		if names.Has(t.GetName()) {
+		if keep.Has(t.GetName()) {
 			ret = append(ret, t)
 		}
 	}
