@@ -14,30 +14,24 @@ import (
 
 // GetForTests returns the test metadata for specified tests.
 func GetForTests(metadata *api.AutotestTestMetadata, tests []*test_platform.Request_Test) ([]*steps.EnumerationResponse_AutotestInvocation, error) {
-	var invs []*steps.EnumerationResponse_AutotestInvocation
-	autotestTests := metadata.GetTests()
+	tNames, err := testNames(tests)
+	if err != nil {
+		return nil, err
+	}
+	ts := testsByName(filterTests(metadata.GetTests(), tNames))
 
-	// TODO(akeshet): This loop is O(autotest test corpus size) * O(num requested tests).
-	// It should be possible to optimize.
+	var invs []*steps.EnumerationResponse_AutotestInvocation
 	for _, tr := range tests {
-		switch h := tr.Harness.(type) {
-		case *test_platform.Request_Test_Autotest_:
-			for _, a := range autotestTests {
-				if a.Name == h.Autotest.Name {
-					invs = append(invs, &steps.EnumerationResponse_AutotestInvocation{
-						Test:     a,
-						TestArgs: h.Autotest.TestArgs,
-					})
-					// Autotest test names are unique, so bail out of searching
-					// for other matches.
-					break
-				}
-			}
-		default:
-			return nil, errors.Reason("unknown harness %+v", h).Err()
+		// Any tests of incorrect type would already be caught by testNames()
+		// above. Better panic in case of failure here.
+		h := tr.Harness.(*test_platform.Request_Test_Autotest_)
+		if t, ok := ts[h.Autotest.Name]; ok {
+			invs = append(invs, &steps.EnumerationResponse_AutotestInvocation{
+				Test:     t,
+				TestArgs: h.Autotest.TestArgs,
+			})
 		}
 	}
-
 	return invs, nil
 }
 
@@ -55,6 +49,14 @@ func filterTests(tests []*api.AutotestTest, keep stringset.Set) []*api.AutotestT
 		if keep.Has(t.GetName()) {
 			ret = append(ret, t)
 		}
+	}
+	return ret
+}
+
+func testsByName(tests []*api.AutotestTest) map[string]*api.AutotestTest {
+	ret := make(map[string]*api.AutotestTest)
+	for _, t := range tests {
+		ret[t.GetName()] = t
 	}
 	return ret
 }
