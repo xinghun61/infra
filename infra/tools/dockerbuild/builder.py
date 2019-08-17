@@ -5,6 +5,7 @@
 import glob
 import os
 import shutil
+import subprocess
 
 from . import util
 
@@ -196,6 +197,11 @@ def BuildPackageFromSource(system, wheel, src, env=None):
   dx = system.dockcross_image(wheel.plat)
   with system.temp_subdir('%s_%s' % wheel.spec.tuple) as tdir:
     build_dir = system.repo.ensure(src, tdir)
+
+    for patch in src.get_patches():
+      util.LOGGER.info('Applying patch %s', os.path.basename(patch))
+      cmd = ['patch', '-p1', '--quiet', '-i', patch]
+      subprocess.check_call(cmd, cwd=build_dir)
 
     cmd = [
       'python', '-m', 'pip', 'wheel',

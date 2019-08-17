@@ -30,13 +30,17 @@ class Source(collections.namedtuple('Source', (
   'version', # The version of the source.
   'download_type', # Type of download function to use.
   'download_meta', # Arbitrary metadata to pass to download function.
+  'patches', # Short patch names to apply to the source tree.
   ))):
 
   # A registry of all created Source instances.
   _REGISTRY = {}
 
   def __new__(cls, *args, **kwargs):
+    kwargs.setdefault('patches', ())
     src = super(Source, cls).__new__(cls, *args, **kwargs)
+
+    src._patches_hash = None
 
     # Register source with "_REGISTRY" and enforce that any source with the same
     # (name, version) is defined exactly the same.
@@ -59,7 +63,38 @@ class Source(collections.namedtuple('Source', (
 
   @property
   def tag(self):
+    """A tag that identifies back to the upstream package."""
     return '%s-%s' % (self.name, self.version)
+
+  @property
+  def buildid(self):
+    """Uniquely identifies this package & local patches."""
+    ret = self.version
+    srchash = self.patches_hash
+    if srchash:
+      ret += '-' + srchash
+    return ret
+
+  @property
+  def patches_hash(self):
+    """Return a hash of all the patches applied to this source."""
+    if self._patches_hash is None:
+      self._patches_hash = ''
+      patches = self.get_patches()
+      if patches:
+        hash_obj = hashlib.md5()
+        for patch in sorted(patches):
+          with open(patch) as f:
+            hash_obj.update(f.read())
+        self._patches_hash = hash_obj.hexdigest().lower()
+
+    return self._patches_hash
+
+  def get_patches(self):
+    """Return list of patches (full paths) to be applied."""
+    return [os.path.join(util.PATCHES_DIR,
+                         '%s-%s-%s.patch' % (self.name, self.version, x))
+            for x in self.patches]
 
 
 class Repository(object):
@@ -137,7 +172,7 @@ class Repository(object):
         util.LOGGER.info('Uploaded CIPD source package')
       else:
         self._missing_sources = True
-        util.LOGGER.warning('Missing CIPD package, but not uploaded.')
+        util.LOGGER.warning('Missing CIPD source package, but not uploaded.')
 
     # Install the CIPD package into our source directory. This is a no-op if it
     # is already installed.
@@ -283,7 +318,7 @@ def local_directory(name, version, path):
 Repository._DOWNLOAD_MAP['local_directory'] = _download_local
 
 
-def pypi_sdist(name, version):
+def pypi_sdist(name, version, patches=None):
   """Defines a Source whose remote data is a PyPi source distribution."""
 
   return Source(
@@ -291,4 +326,5 @@ def pypi_sdist(name, version):
     version=version,
     download_type='pypi_archive',
     download_meta=(name, version),
+    patches=patches,
   )

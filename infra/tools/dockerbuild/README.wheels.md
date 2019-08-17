@@ -134,3 +134,33 @@ Since the 'wheel-build' command is executed locally (i.e. not by a bot) we
 typically TBR these changes to an OWNER as long as they're only touching
 wheels.py and wheels.md (since 'wheel-build' pushes the wheels directly to
 CIPD/prod).
+
+## Custom patches
+
+While we strongly prefer to not patch anything, sometimes we need a backport
+or local fix for our system.
+
+Here's the quick overview:
+
+* Patches are only supported with `UniversalSource` since we need to unpack
+  the source & patch it directly before building the wheel.
+* All patches live under `patches/`.
+* All patches must be in the `-p1` format.
+* The filenames must start with the respective package name & version and end
+  in `.patch`.  e.g. `UniversalSource('scandir', '1.9.0')` will have a prefix
+  of `scandir-1.9.0-` and a suffix of `.patch`.
+* Add the shortnames into the `patches=(...)` tuple to `UniversalSource`.
+* All patches should be well documented in the file header itself.
+
+A short example:
+
+```python
+  UniversalSource('scandir', '1.9.0', patches=(
+      'some-fix',
+      'another-change',
+  )),
+```
+
+This will apply the two patches:
+* `patches/scandir-1.9.0-some-fix.patch`
+* `patches/scandir-1.9.0-another-change.patch`

@@ -17,6 +17,7 @@ import requests.exceptions
 
 PKG_DIR = os.path.abspath(os.path.dirname(__file__))
 RESOURCES_DIR = os.path.join(PKG_DIR, 'resources')
+PATCHES_DIR = os.path.join(PKG_DIR, 'patches')
 
 DOWNLOAD_CHUNK_SIZE = 4 * 1024 * 1024
 

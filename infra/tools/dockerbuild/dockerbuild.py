@@ -100,20 +100,17 @@ def _main_wheel_build(args, system):
         continue
       seen.add(package)
 
-      # We have other tags (like git_revision) for advisory reasons. Pluck out
-      # the actual version tag.
-      versions = [t for t in package.tags if t.startswith('version:')]
-      if len(versions) != 1:
-        raise ValueError(
-            'Can only use one authoritative version tag. Must start with '
-            '"version:". Got: %r' % versions)
-      cipd_exists = system.cipd.exists(package.name, versions[0])
+      # Figure out the unique version id for this wheel build.
+      buildid = build.version_fn(system)
+      version_tag = 'version:%s' % (buildid,)
+      cipd_exists = system.cipd.exists(package.name, version_tag)
       if cipd_exists and not args.rebuild:
-        util.LOGGER.info('Package already exists: %s', package)
+        util.LOGGER.info('Package [%s] with buildid [%s] already exists.',
+            package, buildid)
         continue
 
-      util.LOGGER.info('Running wheel build [%s] for [%s]',
-          spec_name, plat.name)
+      util.LOGGER.info('Running wheel build [%s] with buildid [%s] for [%s]',
+          spec_name, buildid, plat.name)
       try:
         pkg_path = build.build(w, system, rebuild=args.rebuild)
         if not pkg_path:

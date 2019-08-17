@@ -119,7 +119,7 @@ class Universal(Builder):
 
 class UniversalSource(Builder):
   def __init__(self, name, pypi_version, pyversions=None, pypi_name=None,
-               **kwargs):
+               patches=(), **kwargs):
     """Universal wheel version of SourceOrPrebuilt that always builds from
     source.
 
@@ -132,13 +132,15 @@ class UniversalSource(Builder):
       pypi_name (str or None): Name of the package in PyPi. This can be useful
           when translating between the CIPD package name (uses underscores) and
           the PyPi package name (may use hyphens).
+      patches (tuple): Short patch names to apply to the source tree.
       kwargs: Keyword arguments forwarded to Builder.
 
     Returns (Builder): A configured Builder for the specified wheel.
     """
     self._pypi_src = source.pypi_sdist(
         name=pypi_name or name,
-        version=pypi_version)
+        version=pypi_version,
+        patches=patches)
     super(UniversalSource, self).__init__(Spec(
         name, self._pypi_src.version,
         universal=UniversalSpec(pyversions=pyversions),
@@ -148,3 +150,5 @@ class UniversalSource(Builder):
   def build_fn(self, system, wheel):
     return BuildPackageFromSource(system, wheel, self._pypi_src)
 
+  def version_fn(self, _system):
+    return self._pypi_src.buildid
