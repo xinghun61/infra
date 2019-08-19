@@ -45,7 +45,8 @@ export class MrDropdown extends LitElement {
         padding: 0 2px;
         box-sizing: border-box;
       }
-      i.material-icons[hidden] {
+      i.material-icons[hidden],
+      .menu-item > i.material-icons[hidden] {
         display: none;
       }
       .menu-item > i.material-icons {

@@ -55,6 +55,47 @@ describe('mr-dropdown', () => {
     assert.isFalse(element.opened);
   });
 
+  it('icon hidden when undefined', async () => {
+    element.items = [
+      {text: 'test'},
+    ];
+
+    await element.updateComplete;
+
+    const icon = element.shadowRoot.querySelector(
+        '.menu-item > .material-icons');
+
+    assert.isTrue(icon.hidden);
+  });
+
+  it('icon shown when defined, even as empty string', async () => {
+    element.items = [
+      {text: 'test', icon: ''},
+    ];
+
+    await element.updateComplete;
+
+    const icon = element.shadowRoot.querySelector(
+        '.menu-item > .material-icons');
+
+    assert.isFalse(icon.hidden);
+    assert.equal(icon.textContent.trim(), '');
+  });
+
+  it('icon shown when set to material icon', async () => {
+    element.items = [
+      {text: 'test', icon: 'check'},
+    ];
+
+    await element.updateComplete;
+
+    const icon = element.shadowRoot.querySelector(
+        '.menu-item > .material-icons');
+
+    assert.isFalse(icon.hidden);
+    assert.equal(icon.textContent.trim(), 'check');
+  });
+
   it('items with handlers are handled', async () => {
     const handler1 = sinon.spy();
     const handler2 = sinon.spy();
@@ -82,14 +123,14 @@ describe('mr-dropdown', () => {
 
     await element.updateComplete;
 
-    const items = element.shadowRoot.querySelectorAll('.menu-item');
+    element.clickItem(0);
 
-    items[0].click();
     assert.isTrue(handler1.calledOnce);
     assert.isFalse(handler2.called);
     assert.isFalse(handler3.called);
 
-    items[2].click();
+    element.clickItem(2);
+
     assert.isTrue(handler1.calledOnce);
     assert.isFalse(handler2.called);
     assert.isTrue(handler3.calledOnce);
