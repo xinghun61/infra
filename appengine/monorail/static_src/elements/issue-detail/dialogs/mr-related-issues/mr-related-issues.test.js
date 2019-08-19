@@ -22,6 +22,23 @@ describe('mr-related-issues', () => {
     assert.instanceOf(element, MrRelatedIssues);
   });
 
+  it('dialog closes when issueRef changes', async () => {
+    element.issueRef = {projectName: 'chromium', localId: 22};
+    await element.updateComplete;
+
+    const dialog = element.shadowRoot.querySelector('chops-dialog');
+
+    element.open();
+    await element.updateComplete;
+
+    assert.isTrue(dialog.opened);
+
+    element.issueRef = {projectName: 'chromium', localId: 23};
+    await element.updateComplete;
+
+    assert.isFalse(dialog.opened);
+  });
+
   it('computes blocked on table rows', () => {
     element.projectName = 'proj';
     element.sortedBlockedOn = [

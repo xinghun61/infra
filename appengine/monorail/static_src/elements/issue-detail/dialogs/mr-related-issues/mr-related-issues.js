@@ -170,6 +170,12 @@ export class MrRelatedIssues extends connectStore(LitElement) {
     super.update(changedProperties);
   }
 
+  updated(changedProperties) {
+    if (changedProperties.has('issueRef')) {
+      this.close();
+    }
+  }
+
   get _rows() {
     const blockedOn = this.sortedBlockedOn;
     if (!blockedOn) return [];
