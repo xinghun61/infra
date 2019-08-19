@@ -180,7 +180,7 @@ export class MrKeystrokes extends connectStore(LitElement) {
       queryParams: {type: Object},
       _isStarred: {type: Boolean},
       _fetchingIsStarred: {type: Boolean},
-      _starringIssue: {type: Boolean},
+      _starringIssues: {type: Object},
     };
   }
 
@@ -189,6 +189,7 @@ export class MrKeystrokes extends connectStore(LitElement) {
 
     this.shortcutDocGroups = SHORTCUT_DOC_GROUPS;
     this.opened = false;
+    this._starringIssues = new Map();
   }
 
   stateChanged(state) {
@@ -201,7 +202,7 @@ export class MrKeystrokes extends connectStore(LitElement) {
     const starredIssues = issue.starredIssues(state);
     this._isStarred = starredIssues.has(issueRefToString(issueRef));
     this._fetchingIsStarred = issue.requests(state).fetchIsStarred.requesting;
-    this._starringIssue = issue.requests(state).star.requesting;
+    this._starringIssues = issue.starringIssues(state);
   }
 
   updated(changedProperties) {
@@ -221,6 +222,14 @@ export class MrKeystrokes extends connectStore(LitElement) {
     super.disconnectedCallback();
     this.unbindProjectKeys();
     this.unbindIssueDetailKeys();
+  }
+
+  get _isStarring() {
+    const requestKey = issueRefToString(this.issueRef);
+    if (this._starringIssues.has(requestKey)) {
+      return this._starringIssuesget(requestKey).requesting;
+    }
+    return false;
   }
 
   toggleDialog() {
@@ -319,7 +328,7 @@ export class MrKeystrokes extends connectStore(LitElement) {
     if (canStar) {
       Mousetrap.bind('s', () => {
         // Star an issue.
-        if (!this._fetchingIsStarred && !this._starringIssue) {
+        if (!this._fetchingIsStarred && !this._isStarring) {
           const newIsStarred = !this._isStarred;
           const issueRef = {
             projectName: this.projectName,

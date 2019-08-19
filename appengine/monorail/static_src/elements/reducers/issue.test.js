@@ -602,6 +602,21 @@ describe('issue', () => {
           {starredIssues: {'proj:1': true, 'proj:2': false}}};
         assert.deepEqual(issue.starredIssues(state), new Set(['proj:1']));
       });
+
+      it('starringIssues', () => {
+        const state = {issue: {
+          requests: {
+            starringIssues: {
+              'proj:1': {requesting: true},
+              'proj:2': {requestin: false, error: 'unknown error'},
+            },
+          },
+        }};
+        assert.deepEqual(issue.starringIssues(state), new Map([
+          ['proj:1', {requesting: true}],
+          ['proj:2', {requestin: false, error: 'unknown error'}],
+        ]));
+      });
     });
 
     describe('action creators', () => {
@@ -668,7 +683,10 @@ describe('issue', () => {
 
         await action(dispatch);
 
-        sinon.assert.calledWith(dispatch, {type: issue.STAR_START});
+        sinon.assert.calledWith(dispatch, {
+          type: issue.STAR_START,
+          requestKey: 'proj:1',
+        });
 
         sinon.assert.calledWith(
             prpcClient.call,
@@ -681,6 +699,7 @@ describe('issue', () => {
           starCount: 1,
           ref: 'proj:1',
           starred: false,
+          requestKey: 'proj:1',
         });
       });
     });

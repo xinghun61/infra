@@ -9,7 +9,8 @@ import {fieldTypes, extractTypeForIssue,
   fieldValuesToMap} from 'elements/shared/issue-fields.js';
 import {removePrefix, objectToMap} from 'elements/shared/helpers.js';
 import {issueRefToString} from 'elements/shared/converters.js';
-import {createReducer, createRequestReducer} from './redux-helpers.js';
+import {createReducer, createRequestReducer,
+  createKeyedRequestReducer} from './redux-helpers.js';
 import * as project from './project.js';
 import {fieldValueMapKey} from
   '../issue-detail/metadata/shared/metadata-helpers.js';
@@ -250,7 +251,7 @@ const requestsReducer = combineReducers({
       FETCH_PERMISSIONS_START,
       FETCH_PERMISSIONS_SUCCESS,
       FETCH_PERMISSIONS_FAILURE),
-  star: createRequestReducer(
+  starringIssues: createKeyedRequestReducer(
       STAR_START, STAR_SUCCESS, STAR_FAILURE),
   presubmit: createRequestReducer(
       PRESUBMIT_START, PRESUBMIT_SUCCESS, PRESUBMIT_FAILURE),
@@ -277,7 +278,8 @@ const requestsReducer = combineReducers({
       FETCH_USERS_PROJECTS_SUCCESS,
       FETCH_USERS_PROJECTS_FAILURE),
   fetchIsStarred: createRequestReducer(
-      FETCH_IS_STARRED_START, FETCH_IS_STARRED_SUCCESS, FETCH_IS_STARRED_FAILURE),
+      FETCH_IS_STARRED_START, FETCH_IS_STARRED_SUCCESS,
+      FETCH_IS_STARRED_FAILURE),
   fetchStarredIssues: createRequestReducer(
       FETCH_ISSUES_STARRED_START, FETCH_ISSUES_STARRED_SUCCESS,
       FETCH_ISSUES_STARRED_FAILURE
@@ -359,6 +361,10 @@ export const isStarred = (state) => state.issue.isStarred;
 export const _starredIssues = (state) => state.issue.starredIssues;
 
 export const requests = (state) => state.issue.requests;
+
+// Returns a Map of in flight StarIssues requests, keyed by issueRef.
+export const starringIssues = createSelector(requests, (requests) =>
+  objectToMap(requests.starringIssues));
 
 export const starredIssues = createSelector(
     _starredIssues,
@@ -882,7 +888,9 @@ export const fetchStarredIssues = () => async (dispatch) => {
 };
 
 export const star = (issueRef, starred) => async (dispatch) => {
-  dispatch({type: STAR_START});
+  const requestKey = issueRefToString(issueRef);
+
+  dispatch({type: STAR_START, requestKey});
   const message = {issueRef, starred};
 
   try {
@@ -896,9 +904,10 @@ export const star = (issueRef, starred) => async (dispatch) => {
       starCount: resp.starCount,
       ref: ref,
       starred: starred,
+      requestKey,
     });
   } catch (error) {
-    dispatch({type: STAR_FAILURE, error});
+    dispatch({type: STAR_FAILURE, error, requestKey});
   }
 };
 

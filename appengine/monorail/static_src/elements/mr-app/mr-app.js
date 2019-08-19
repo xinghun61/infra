@@ -93,6 +93,7 @@ export class MrApp extends connectStore(LitElement) {
         <mr-list-page
           .projectName=${this.projectName}
           .queryParams=${this.queryParams}
+          .userDisplayName=${this.userDisplayName}
         ></mr-list-page>
       `;
     }

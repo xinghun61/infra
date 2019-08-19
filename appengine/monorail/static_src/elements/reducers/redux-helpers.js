@@ -13,6 +13,46 @@ export const createReducer = (initialState, handlers) => {
   };
 };
 
+const DEFAULT_REQUEST_KEY = '*';
+
+export const createKeyedRequestReducer = (start, success, failure) => {
+  return createReducer({}, {
+    [start]: (state, action) => {
+      const requestKey = action.requestKey || DEFAULT_REQUEST_KEY;
+
+      return {
+        ...state,
+        [requestKey]: {
+          requesting: true,
+          error: null,
+        },
+      };
+    },
+    [success]: (state, action) =>{
+      const requestKey = action.requestKey || DEFAULT_REQUEST_KEY;
+
+      return {
+        ...state,
+        [requestKey]: {
+          requesting: false,
+          error: null,
+        },
+      };
+    },
+    [failure]: (state, action) => {
+      const requestKey = action.requestKey || DEFAULT_REQUEST_KEY;
+
+      return {
+        ...state,
+        [requestKey]: {
+          requesting: false,
+          error: action.error,
+        },
+      };
+    },
+  });
+};
+
 export const createRequestReducer = (start, success, failure) => {
   return createReducer({requesting: false, error: null}, {
     [start]: (_state, _action) => ({

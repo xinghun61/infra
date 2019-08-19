@@ -49,9 +49,24 @@ describe('mr-star-button', () => {
     assert.isTrue(star.disabled);
   });
 
-  it('starring is disabled when _starringIssue true', async () => {
+  it('_isStarring true only when issue ref is being starred', async () => {
+    element._starringIssues = new Map([['chromium:22', {requesting: true}]]);
+    element.issueRef = {projectName: 'chromium', localId: 5};
+
+    assert.isFalse(element._isStarring);
+
+    element.issueRef = {projectName: 'chromium', localId: 22};
+
+    assert.isTrue(element._isStarring);
+
+    element._starringIssues = new Map([['chromium:22', {requesting: false}]]);
+
+    assert.isFalse(element._isStarring);
+  });
+
+  it('starring is disabled when _isStarring true', async () => {
     element._isLoggedIn = true;
-    element._starringIssue = true;
+    sinon.stub(element, '_isStarring').get(() => true);
 
     await element.updateComplete;
 

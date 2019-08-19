@@ -7,7 +7,8 @@ import page from 'page';
 import {connectStore} from 'elements/reducers/base.js';
 import * as project from 'elements/reducers/project.js';
 import 'elements/framework/links/mr-issue-link/mr-issue-link.js';
-import {issueRefToUrl} from 'elements/shared/converters.js';
+import 'elements/framework/mr-star-button/mr-star-button.js';
+import {issueRefToUrl, issueToIssueRef} from 'elements/shared/converters.js';
 import {isTextInput} from 'elements/shared/dom-helpers';
 import {stringValuesForIssueField,
   EMPTY_FIELD_VALUE} from 'elements/shared/issue-fields.js';
@@ -21,8 +22,19 @@ export class MrIssueList extends connectStore(LitElement) {
         width: 100%;
         font-size: var(--chops-main-font-size);
       }
+      .edit-widget-container {
+        display: flex;
+        flex-wrap: no-wrap;
+        align-items: center;
+      }
+      mr-star-button {
+        --mr-star-button-size: 18px;
+        margin-bottom: 1px;
+        margin-left: 4px;
+      }
       input {
         cursor: pointer;
+        margin: 0 4px;
       }
       td {
         padding: 4px 8px;
@@ -93,19 +105,24 @@ export class MrIssueList extends connectStore(LitElement) {
         tabindex="0"
       >
         <td class="first-column ignore-navigation">
-          ${draggable ? html`
-            <i class="material-icons draggable">drag_indicator</i>
-          ` : ''}
-          ${this.selectionEnabled ? html`
-            <input
-              class="issue-checkbox"
-              .value=${i}
-              ?checked=${rowSelected}
-              type="checkbox"
-              aria-label="Select Issue ${issue.localId}"
-              @change=${this._selectIssue}
-            />
-          ` : ''}
+          <div class="edit-widget-container">
+            ${draggable ? html`
+              <i class="material-icons draggable">drag_indicator</i>
+            ` : ''}
+            ${this.selectionEnabled ? html`
+              <input
+                class="issue-checkbox"
+                .value=${i}
+                ?checked=${rowSelected}
+                type="checkbox"
+                aria-label="Select Issue ${issue.localId}"
+                @change=${this._selectIssue}
+              />
+            ` : ''}
+            <mr-star-button
+              .issueRef=${issueToIssueRef(issue)}
+            ></mr-star-button>
+          </div>
         </td>
 
         ${this.columns.map((column) => html`

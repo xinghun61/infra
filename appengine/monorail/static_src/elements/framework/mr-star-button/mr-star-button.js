@@ -84,11 +84,9 @@ export class MrStarButton extends connectStore(LitElement) {
        */
       _fetchingIsStarred: {type: Boolean},
       /**
-       * If the issue is currently being starred. This component handles the
-       * starring action up until the point when the action is dispatched to
-       * Redux.
+       * A Map of all issues currently being starred.
        */
-      _starringIssue: {type: Boolean},
+      _starringIssues: {type: Object},
       /**
        * The currently logged in user. Required to determine if the user can
        * star.
@@ -100,16 +98,23 @@ export class MrStarButton extends connectStore(LitElement) {
   stateChanged(state) {
     const currentUser = user.user(state);
     this._isLoggedIn = currentUser && currentUser.userId;
-    // TODO(zhangtiff): Rework Redux to store separate requests for different
-    // issues being starred.
-    this._starringIssue = issue.requests(state).star.requesting;
+
+    this._starringIssues = issue.starringIssues(state);
+
     this._starredIssues = issue.starredIssues(state);
     this._fetchingIsStarred = issue.requests(state).fetchIsStarred.requesting;
   }
 
+  get _isStarring() {
+    const requestKey = issueRefToString(this.issueRef);
+    if (this._starringIssues.has(requestKey)) {
+      return this._starringIssues.get(requestKey).requesting;
+    }
+    return false;
+  }
 
   get _canStar() {
-    return this._isLoggedIn && !this._fetchingIsStarred && !this._starringIssue;
+    return this._isLoggedIn && !this._fetchingIsStarred && !this._isStarring;
   }
 
   toggleStar() {

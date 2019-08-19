@@ -108,6 +108,7 @@ export class MrListPage extends connectStore(LitElement) {
       fetchingIssueList: {type: Boolean},
       selectedIssues: {type: Array},
       columns: {type: Array},
+      userDisplayName: {type: String},
     };
   };
 
@@ -160,6 +161,9 @@ export class MrListPage extends connectStore(LitElement) {
   }
 
   updated(changedProperties) {
+    if (changedProperties.has('userDisplayName')) {
+      store.dispatch(issue.fetchStarredIssues());
+    }
     if (changedProperties.has('projectName') ||
         changedProperties.has('queryParams')) {
       this.refresh();
