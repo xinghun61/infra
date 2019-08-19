@@ -168,7 +168,7 @@ class Repository(object):
     # to False.
     if not cipd_exists:
       if self._upload:
-        self._system.cipd.register_package(package_path, *package.tags)
+        self._system.cipd.register_package(package_path, package.tags)
         util.LOGGER.info('Uploaded CIPD source package')
       else:
         self._missing_sources = True

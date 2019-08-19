@@ -5,6 +5,8 @@
 import collections
 import re
 
+from . import util
+
 
 Package = collections.namedtuple('Package', (
     'name', 'tags', 'install_mode', 'compress_level'))
@@ -32,16 +34,23 @@ class Cipd(object):
     self._cache_dir = cache_dir
     self._exists_cache = set()
 
-  def _run_cipd(self, run_fn, args):
-    return run_fn(
-        [self._system.tools.cipd] + list(args),
-        env={'CIPD_CACHE_DIR': self._cache_dir})
+  def _run_cipd(self, run_fn, args, dryrun=False):
+    cmd = [self._system.tools.cipd] + list(args)
 
-  def run(self, *args):
-    return self._run_cipd(self._system.run, args)
+    if dryrun:
+      # While joining with ' ' here isn't fully correct, none of the commands
+      # we run seem to need quotes, so this is easy enough.  Plus this is only
+      # for debugging purposes, and devs are smrat.
+      util.LOGGER.info('[dryrun] would have run: %s', ' '.join(cmd))
+      return run_fn(['true'])
 
-  def check_run(self, *args):
-    return self._run_cipd(self._system.check_run, args)
+    return run_fn(cmd, env={'CIPD_CACHE_DIR': self._cache_dir})
+
+  def run(self, *args, **kwargs):
+    return self._run_cipd(self._system.run, args, **kwargs)
+
+  def check_run(self, *args, **kwargs):
+    return self._run_cipd(self._system.check_run, args, **kwargs)
 
   def exists(self, name, *versions):
     if any((name, v) in self._exists_cache for v in versions):
@@ -69,14 +78,14 @@ class Cipd(object):
   def install(self, name, version, root):
     self.check_run('install', '-root', root, name, version)
 
-  def register_package(self, path, *tags):
+  def register_package(self, path, tags, dryrun=False):
     cmd = [
         'pkg-register',
         path,
     ]
     for tag in tags:
       cmd += ['-tag', tag]
-    self.check_run(*cmd)
+    self.check_run(*cmd, dryrun=dryrun)
 
   def create_package(self, package, src_dir, pkg_path):
     self.check_run(

@@ -120,17 +120,14 @@ def _main_wheel_build(args, system):
         continue
       util.LOGGER.info('Finished wheel for package: %s', package.name)
 
-      if not args.upload:
-        util.LOGGER.info('Refraining from uploading package (use --upload).')
-        continue
-
+      dryrun = not args.upload or cipd_exists
       if cipd_exists:
         util.LOGGER.info('CIPD package already exists; ignoring --upload.')
-        continue
+      else:
+        util.LOGGER.info('Uploading CIPD package for: %s', package)
 
-      util.LOGGER.info('Uploading CIPD package for: %s', package)
       # But when we register it, we want to attach all tags.
-      system.cipd.register_package(pkg_path, *package.tags)
+      system.cipd.register_package(pkg_path, package.tags, dryrun=dryrun)
 
 
 def _main_wheel_dump(args, system):
