@@ -382,12 +382,24 @@ wheel: <
 
 * *universal*
 
-### 1.6.3
+### 1.5.3
 
 ```protobuf
 wheel: <
   name: "infra/python/wheels/astroid-py2_py3"
-  version: "version:1.6.3"
+  version: "version:1.5.3"
+>
+```
+
+
+* *universal*
+
+### 1.6.6
+
+```protobuf
+wheel: <
+  name: "infra/python/wheels/astroid-py2_py3"
+  version: "version:1.6.6"
 >
 ```
 
@@ -2653,12 +2665,48 @@ wheel: <
 * *universal*
 * custom patches: multiprocessing
 
+### 1.6.5
+
+```protobuf
+wheel: <
+  name: "infra/python/wheels/pylint-py2_py3"
+  version: "version:1.6.5"
+>
+```
+
+
+* *universal*
+
+### 1.7.6
+
+```protobuf
+wheel: <
+  name: "infra/python/wheels/pylint-py2_py3"
+  version: "version:1.7.6"
+>
+```
+
+
+* *universal*
+
 ### 1.8.4
 
 ```protobuf
 wheel: <
   name: "infra/python/wheels/pylint-py2_py3"
   version: "version:1.8.4"
+>
+```
+
+
+* *universal*
+
+### 1.9.5
+
+```protobuf
+wheel: <
+  name: "infra/python/wheels/pylint-py2_py3"
+  version: "version:1.9.5"
 >
 ```
 
