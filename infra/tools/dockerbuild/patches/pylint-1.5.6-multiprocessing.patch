@@ -1,0 +1,36 @@
+commit d61a4950b22c184eca541a4503625c8fd849e607
+Author: Robbie Iannucci <iannucci@chromium.org>
+Date:   Wed Jul 1 23:21:26 2015 +0000
+
+Changes to improve multiprocessing PRESUBMIT support in Windows
+  * fix bug in pylint which caused it to manipulate sys.path before
+    spawning its subprocesses, which caused multiprocessing to fail
+    on windows (DIFF1).
+    * Note: This may carry a slight semantic change. Before, pylint would
+      add all .py files' directories to sys.path while checking any of
+      them. Now in parallel mode, pylint will only add the path of the
+      single file to sys.path. This behavior actually mirrors Python's
+      own behavior, so the check should be more-correct than before (and
+      should cut down on pylint import scanning time with very large
+      sys.path's).
+    * If someone encounters an issue with this, please note that the
+      GetPylint check also includes an extra_paths_list which is
+      expressly for this purpose.
+
+R=dpranke@chromium.org, kbr@chromium.org, maruel@chromium.org
+BUG=501012
+
+Review URL: https://codereview.chromium.org/1208743002
+
+--- a/pylint/lint.py
++++ b/pylint/lint.py
+@@ -671,7 +671,8 @@ class PyLinter(configuration.OptionsManagerMixIn,
+             files_or_modules = (files_or_modules,)
+
+         if self.config.jobs == 1:
+-            self._do_check(files_or_modules)
++            with fix_import_path(files_or_modules):
++                self._do_check(files_or_modules)
+         else:
+             # Hack that permits running pylint, on Windows, with -m switch
+             # and with --jobs, as in 'python -2 -m pylint .. --jobs'.
