@@ -30,7 +30,7 @@ export class MrListPage extends connectStore(LitElement) {
       .container-no-issues {
         width: 100%;
         padding: 0 8px;
-        font-size: var(--chops-large-font-size);
+        font-size: var(--chops-main-font-size);
       }
       .list-controls {
         width: 100%;
@@ -49,6 +49,7 @@ export class MrListPage extends connectStore(LitElement) {
         justify-content: center;
         border: none;
         border-right: var(--chops-normal-border);
+        font-size: var(--chops-large-font-size);
         cursor: pointer;
         transition: 0.2s background ease-in-out;
         color: var(--chops-link-color);
@@ -161,12 +162,18 @@ export class MrListPage extends connectStore(LitElement) {
   }
 
   updated(changedProperties) {
+    if (changedProperties.has('projectName')) {
+      this.refresh();
+    } else if (changedProperties.has('queryParams')) {
+      const oldParams = changedProperties.get('queryParams');
+      const oldQ = oldParams ? oldParams.q : '';
+      const newQ = this.queryParams.q;
+      if (oldQ !== newQ) {
+        this.refresh();
+      }
+    }
     if (changedProperties.has('userDisplayName')) {
       store.dispatch(issue.fetchStarredIssues());
-    }
-    if (changedProperties.has('projectName') ||
-        changedProperties.has('queryParams')) {
-      this.refresh();
     }
   }
 

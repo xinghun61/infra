@@ -184,6 +184,9 @@ defaultIssueFields.forEach((field) => {
   defaultIssueFieldMap.set(field.fieldName.toLowerCase(), field);
 });
 
+export const DEFAULT_ISSUE_FIELD_LIST = defaultIssueFields.map(
+    (field) => field.fieldName);
+
 // TODO(zhangtiff): Integrate this logic with Redux selectors.
 export const stringValuesForIssueField = (issue, fieldName, projectName,
     fieldDefMap = new Map(), labelPrefixFields = new Set()) => {

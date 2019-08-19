@@ -19,6 +19,13 @@ export class MrDropdown extends LitElement {
         display: inline-block;
         height: 100%;
         font-size: inherit;
+        --mr-dropdown-icon-color: var(--chops-primary-icon-color);
+        --mr-dropdown-anchor-font-weight: initial;
+        --mr-dropdown-anchor-padding: 4px 0.25em;
+        --mr-dropdown-menu-max-height: initial;
+        --mr-dropdown-menu-min-width: 120%;
+        --mr-dropdown-menu-font-size: var(--chops-large-font-size);
+        --mr-dropdown-menu-icon-size: var(--chops-icon-font-size);
       }
       :host([hidden]) {
         display: none;
@@ -34,9 +41,19 @@ export class MrDropdown extends LitElement {
       i.material-icons {
         font-size: var(--chops-icon-font-size);
         display: inline-block;
-        color: var(--chops-primary-icon-color);
+        color: var(--mr-dropdown-icon-color);
         padding: 0 2px;
         box-sizing: border-box;
+      }
+      i.material-icons[hidden] {
+        display: none;
+      }
+      .menu-item > i.material-icons {
+        display: block;
+        font-size: var(--mr-dropdown-menu-icon-size);
+        width: var(--mr-dropdown-menu-icon-size);
+        height: var(--mr-dropdown-menu-icon-size);
+        margin-right: 8px;
       }
       .anchor:disabled {
         color: var(--chops-button-disabled-color);
@@ -52,7 +69,9 @@ export class MrDropdown extends LitElement {
         align-items: center;
         justify-content: center;
         cursor: pointer;
+        padding: var(--mr-dropdown-anchor-padding);
         color: var(--chops-link-color);
+        font-weight: var(--mr-dropdown-anchor-font-weight);
       }
       .menu.right {
         right: 0px;
@@ -61,21 +80,25 @@ export class MrDropdown extends LitElement {
         left: 0px;
       }
       .menu {
-        font-size: var(--chops-large-font-size);
+        font-size: var(--mr-dropdown-menu-font-size);
         position: absolute;
-        min-width: 120%;
+        min-width: var(--mr-dropdown-menu-min-width);
         top: 90%;
         display: block;
         background: white;
         border: var(--chops-accessible-border);
         z-index: 990;
         box-shadow: 2px 3px 8px 0px hsla(0, 0%, 0%, 0.3);
+        overflow: auto;
+        max-height: var(--mr-dropdown-menu-max-height);
       }
       .menu-item {
         box-sizing: border-box;
         text-decoration: none;
         white-space: nowrap;
-        display: block;
+        display: flex;
+        align-items: center;
+        justify-content: left;
         width: 100%;
         padding: 0.25em 8px;
         transition: 0.2s background ease-in-out;
@@ -106,7 +129,7 @@ export class MrDropdown extends LitElement {
       <button class="anchor" @click=${this.toggle}
         ?disabled=${this.disabled} aria-expanded=${this.opened}>
         ${this.text}
-        <i class="material-icons expand-icon">${this.icon}</i>
+        <i class="material-icons">${this.icon}</i>
       </button>
       <div class="menu ${this.menuAlignment}">
         ${this.items.map((item, index) => html`
@@ -124,6 +147,10 @@ export class MrDropdown extends LitElement {
               tabindex="0"
               class="menu-item"
             >
+              <i
+                class="material-icons"
+                ?hidden=${item.icon === undefined}
+              >${item.icon}</i>
               ${item.text}
             </a>
           `}
@@ -187,6 +214,16 @@ export class MrDropdown extends LitElement {
 
   close() {
     this.opened = false;
+  }
+
+  /**
+   * Click a specific item in mr-dropdown, using JavaScript. Useful for testing.
+   *
+   * @param {int} i index of the item to click.
+   */
+  clickItem(i) {
+    const items = this.shadowRoot.querySelectorAll('.menu-item');
+    items[i].click();
   }
 
   _closeOnOutsideClick(evt) {

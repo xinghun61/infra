@@ -3,16 +3,22 @@
 // found in the LICENSE file.
 
 import {LitElement, html, css} from 'lit-element';
+import qs from 'qs';
 import page from 'page';
 import {connectStore} from 'elements/reducers/base.js';
 import * as project from 'elements/reducers/project.js';
 import 'elements/framework/links/mr-issue-link/mr-issue-link.js';
+import 'elements/framework/links/mr-crbug-link/mr-crbug-link.js';
+import 'elements/framework/mr-dropdown/mr-dropdown.js';
 import 'elements/framework/mr-star-button/mr-star-button.js';
 import {issueRefToUrl, issueToIssueRef} from 'elements/shared/converters.js';
 import {isTextInput} from 'elements/shared/dom-helpers';
-import {stringValuesForIssueField,
+import {stringValuesForIssueField, DEFAULT_ISSUE_FIELD_LIST,
   EMPTY_FIELD_VALUE} from 'elements/shared/issue-fields.js';
 
+const COLUMN_DISPLAY_NAMES = {
+  'summary': 'Summary + Labels',
+};
 
 export class MrIssueList extends connectStore(LitElement) {
   static get styles() {
@@ -46,13 +52,18 @@ export class MrIssueList extends connectStore(LitElement) {
         cursor: default;
       }
       th {
-        padding: 3px 8px;
         background: var(--chops-table-header-bg);
-        font-weight: bold;
-        text-decoration: none;
         white-space: nowrap;
-        color: var(--chops-link-color);
         text-align: left;
+      }
+      th > mr-dropdown {
+        font-weight: normal;
+        color: var(--chops-link-color);
+        opacity: 0.99;
+        --mr-dropdown-icon-color: var(--chops-link-color);
+        --mr-dropdown-anchor-padding: 3px 8px;
+        --mr-dropdown-anchor-font-weight: bold;
+        --mr-dropdown-menu-min-width: 150px;
       }
       tr {
         padding: 0 8px;
@@ -60,12 +71,30 @@ export class MrIssueList extends connectStore(LitElement) {
       tr[selected] {
         background: var(--chops-selected-bg);
       }
+      mr-crbug-link {
+        display: none;
+      }
+      td:hover > mr-crbug-link {
+        display: block;
+      }
+      .col-summary {
+        /* Setting a table cell to 100% width makes it take up
+         * all remaining space in the table, not the full width of
+         * the table. */
+        width: 100%;
+      }
+      mr-dropdown.show-columns {
+        --mr-dropdown-menu-font-size: var(--chops-main-font-size);
+        /* Because we're using a sticky header, we need to make sure the
+         * dropdown cannot be taller than the screen. */
+        --mr-dropdown-menu-max-height: 80vh;
+        --mr-dropdown-menu-icon-size: var(--chops-main-font-size);
+      }
 
       @media (min-width: 1024px) {
         .first-row th {
           position: sticky;
           top: var(--monorail-header-height);
-          z-index: 5;
         }
       }
     `;
@@ -77,13 +106,50 @@ export class MrIssueList extends connectStore(LitElement) {
       <tbody>
         <tr class="first-row">
           <th></th>
-          ${this.columns.map((column) => html`
-            <th>${column}</th>
-          `)}
+          ${this.columns.map((column, i) => this._renderHeader(column, i))}
+          <th style="z-index: ${this.highestZIndex};">
+            <mr-dropdown
+              class="show-columns"
+              icon="more_horiz"
+              title="Show columns"
+              menuAlignment="right"
+              .items=${this.issueOptions}
+            ></mr-dropdown>
+          </th>
         </tr>
         ${this.issues.map((issue, i) => this._renderRow(issue, i))}
       </tbody>
     `;
+  }
+
+  _renderHeader(column, i) {
+    // zIndex is used to render the z-index property in descending order
+    const zIndex = this.highestZIndex - i;
+
+    const colKey = column.toLowerCase();
+    const name = colKey in COLUMN_DISPLAY_NAMES ? COLUMN_DISPLAY_NAMES[colKey]
+      : column;
+    return html`
+      <th style="z-index: ${zIndex};">
+        <mr-dropdown
+          class="dropdown-${column.toLowerCase()}"
+          .text=${name}
+          .items=${this._headerActions(i)}
+          menuAlignment="left"
+        ></mr-dropdown>
+      </th>`;
+  }
+
+  _headerActions(i) {
+    return [
+      // TODO(zhangtiff): Add "Sort up" and "Sort down" features.
+      // TODO(zhangtiff): Add "Show only" feature.
+      {
+        text: 'Hide column',
+        handler: () => this.removeColumn(i),
+      },
+      // TODO(zhangtiff): Add "Group rows" feature.
+    ];
   }
 
   _renderRow(issue, i) {
@@ -130,6 +196,10 @@ export class MrIssueList extends connectStore(LitElement) {
             ${this._renderCell(column, issue) || EMPTY_FIELD_VALUE}
           </td>
         `)}
+
+        <td>
+          <mr-crbug-link .issue=${issue}></mr-crbug-link>
+        </td>
       </tr>
     `;
   }
@@ -147,6 +217,7 @@ export class MrIssueList extends connectStore(LitElement) {
           ></mr-issue-link>
         `;
       case 'summary':
+        // TODO(zhangtiff): Add labels.
         return issue.summary;
     }
     const values = stringValuesForIssueField(issue, column, this.projectName,
@@ -160,6 +231,11 @@ export class MrIssueList extends connectStore(LitElement) {
        * Array of columns to display.
        */
       columns: {type: Array},
+      /**
+       * Array of built in fields that are available outside of project
+       * configuration.
+       */
+      defaultIssueFields: {type: Array},
       /**
        * List of issues to display.
        */
@@ -211,8 +287,13 @@ export class MrIssueList extends connectStore(LitElement) {
 
     this.columns = ['ID', 'Summary'];
 
+    // TODO(zhangtiff): Make this use more fields for hotlists.
+    this.defaultIssueFields = DEFAULT_ISSUE_FIELD_LIST;
+
     this._boundRunNavigationHotKeys = this._runNavigationHotKeys.bind(this);
 
+    this._fieldDefs = [];
+    this._labelPrefixFields = [];
     this._fieldDefMap = new Map();
     this._labelPrefixSet = new Set();
     // Expose page.js for stubbing.
@@ -220,6 +301,11 @@ export class MrIssueList extends connectStore(LitElement) {
   };
 
   stateChanged(state) {
+    // The keys in the Set and Map objects for these values don't preserve
+    // casing, so we want the original field lists as well.
+    this._fieldDefs = project.fieldDefs(state) || [];
+    this._labelPrefixFields = project.labelPrefixFields(state) || [];
+
     this._fieldDefMap = project.fieldDefMap(state);
     this._labelPrefixSet = project.labelPrefixSet(state);
   }
@@ -246,10 +332,104 @@ export class MrIssueList extends connectStore(LitElement) {
   }
 
   /**
+   * Compute all columns available for a given issue list.
+   */
+  get issueOptions() {
+    const selectedOptions = new Set(
+        this.columns.map((col) => col.toLowerCase()));
+
+    const availableFields = new Set();
+
+    this.defaultIssueFields.forEach((field) => this._addAvailableField(
+        availableFields, field, selectedOptions));
+
+    this._fieldDefs.forEach((fd) => {
+      const field = fd.fieldRef.fieldName;
+      this._addAvailableField(
+          availableFields, field, selectedOptions);
+    });
+
+    this._labelPrefixFields.forEach((field) => this._addAvailableField(
+        availableFields, field, selectedOptions));
+
+    const sortedFields = [...availableFields];
+    sortedFields.sort();
+
+    return [
+      ...this.columns.map((field, i) => ({
+        icon: 'check',
+        text: field,
+        handler: () => this.removeColumn(i),
+      })),
+      ...sortedFields.map((field) => ({
+        icon: '',
+        text: field,
+        handler: () => this.addColumn(field),
+      })),
+    ];
+  }
+
+  _addAvailableField(availableFields, field, selectedOptions) {
+    if (!selectedOptions.has(field.toLowerCase())) {
+      availableFields.add(field);
+    }
+  }
+
+  /**
+   * Used for dynamically computing z-index to ensure column dropdowns overlap
+   * properly.
+   */
+  get highestZIndex() {
+    return this.columns.length + 10;
+  }
+
+  /**
    * Return an Array of selected issues in the order they appear in the list.
    */
   get selectedIssues() {
     return this.issues.filter((_, i) => this._selectedIssues[i]);
+  }
+
+  /**
+   * Removes the column at a particular index.
+   *
+   * @param {int} i the issue column to be removed.
+   */
+  removeColumn(i) {
+    const columns = [...this.columns];
+    columns.splice(i, 1);
+    this.reloadColspec(columns);
+  }
+
+  /**
+   * Adds a new column to a particular index.
+   *
+   * @param {string} name of the new column added.
+   */
+  addColumn(name) {
+    this.reloadColspec([...this.columns, name]);
+  }
+
+  /**
+   * Reflects changes to the columns of an issue list to the URL, through
+   * frontend routing.
+   *
+   * @param {Array} newColumns the new colspec to set in the URL.
+   */
+  reloadColspec(newColumns) {
+    const params = {...this.queryParams};
+    params.colspec = newColumns.join('+');
+    this._page(`${this._baseUrl()}?${qs.stringify(params)}`);
+  }
+
+  /**
+   * Get the current URL of the page, without query params. Useful for
+   * test stubbing.
+   *
+   * @return {string} the URL of the list page, without params.
+   */
+  _baseUrl() {
+    return window.location.pathname;
   }
 
   // Navigate between issues in the list by focusing them. These keys
@@ -366,13 +546,7 @@ export class MrIssueList extends connectStore(LitElement) {
   }
 
   _navigateToIssue(issue, newTab) {
-    const url = issueRefToUrl(issue);
-
-    // TODO(zhangtiff): Find a better way to handle carrying
-    // over query params.
-    let query = window.location.search;
-    query = query ? query.replace('?', '&') : '';
-    const link = `${url}${query}`;
+    const link = issueRefToUrl(issue, this.queryParams);
 
     if (newTab) {
       // Whether the link opens in a new tab or window is based on the

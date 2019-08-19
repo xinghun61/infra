@@ -46,6 +46,23 @@ describe('mr-list-page', () => {
     assert.isNotNull(issueList);
   });
 
+  it('refreshes when queryParams.q changes', async () => {
+    element.queryParams = {};
+    await element.updateComplete;
+
+    sinon.stub(element, 'refresh');
+
+    element.queryParams = {colspec: 'Summary+ID'};
+
+    await element.updateComplete;
+    sinon.assert.notCalled(element.refresh);
+
+    element.queryParams = {q: 'owner:me'};
+
+    await element.updateComplete;
+    sinon.assert.calledOnce(element.refresh);
+  });
+
   it('parses colspec parameter correctly', async () => {
     element.queryParams = {colspec: 'ID+Summary+AllLabels+Priority'};
 
