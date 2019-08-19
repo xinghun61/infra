@@ -1,6 +1,6 @@
 {
   "name": "@chopsui/batch-iterator",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "A class that batches async iterators.",
   "author": "The Chromium Authors",
   "license": "BSD-3-Clause",
@@ -9,6 +9,5 @@
   "repository": {
     "type": "git",
     "url": "https://chromium.googlesource.com/infra/infra/crdx/chopsui-npm.git"
-  },
-  "dependencies": {}
+  }
 }

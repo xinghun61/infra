@@ -1,12 +1,11 @@
 {
   "name": "@chopsui/result-channel",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "A sender/receiver pair to transfer data over a BroadcastChannel.",
   "author": "The Chromium Authors",
   "license": "BSD-3-Clause",
   "repository": {
     "type": "git",
     "url": "https://chromium.googlesource.com/infra/infra/crdx/chopsui-npm.git"
-  },
-  "dependencies": {}
+  }
 }

@@ -1,6 +1,6 @@
 {
   "name": "@chopsui/chops-button",
-  "version": "0.1.11",
+  "version": "0.2.0",
   "description": "A shared raised button element for Chops.",
   "author": "The Chromium Authors",
   "license": "BSD-3-Clause",

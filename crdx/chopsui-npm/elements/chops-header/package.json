@@ -1,6 +1,6 @@
 {
   "name": "@chopsui/chops-header",
-  "version": "0.1.11",
+  "version": "0.2.0",
   "description": "A shared header element for Chops.",
   "author": "The Chromium Authors",
   "license": "BSD-3-Clause",
