@@ -41,8 +41,12 @@ class Spec(_Spec):
 
 
 _Wheel = collections.namedtuple('_Wheel', (
-    'spec', 'plat', 'pyversion', 'filename'))
+    'spec', 'plat', 'pyversion', 'filename', 'md_lines'))
 class Wheel(_Wheel):
+
+  def __new__(cls, *args, **kwargs):
+    kwargs.setdefault('md_lines', [])
+    return super(Wheel, cls).__new__(cls, *args, **kwargs)
 
   @property
   def pyversion_str(self):

@@ -152,3 +152,9 @@ class UniversalSource(Builder):
 
   def version_fn(self, _system):
     return self._pypi_src.buildid
+
+  def md_data_fn(self):
+    if not self._pypi_src.patches:
+      return []
+
+    return ['\n* custom patches: %s' % (', '.join(self._pypi_src.patches),)]

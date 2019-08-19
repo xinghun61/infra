@@ -51,7 +51,7 @@ wheel: <
 >
 ```
 
-%(supported)s
+%(supported)s%(extra_data)s
 
 """
 
@@ -99,6 +99,7 @@ contact Chrome Operations:
         fd.write(self._WHEEL_TEMPLATE % dict(
             version=version,
             supported=supported,
+            extra_data='\n'.join(whl.md_lines),
             package_name=package.name,
             package_tag=package.tags[0],
         ))

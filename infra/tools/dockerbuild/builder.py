@@ -72,6 +72,13 @@ class Builder(object):
     """
     return self._spec.version
 
+  def md_data_fn(self):
+    """Optionally overridden by the subclass.
+
+    Returns:
+      list[str] - Extra details to include in generated markdown files.
+    """
+    return []
 
   @property
   def spec(self):
@@ -83,7 +90,8 @@ class Builder(object):
         plat=plat,
         # Only support Python 2.7 for now, can augment later.
         pyversion='27',
-        filename=None)
+        filename=None,
+        md_lines=self.md_data_fn())
 
     # Determine our package's wheel filename. This incorporates "abi" and "arch"
     # override maps, which are a priori knowledge of the package repository's
