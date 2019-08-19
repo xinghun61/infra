@@ -234,6 +234,8 @@ class ServletRegistry(object):
         urls.ISSUE_DETAIL_FLIPPER_PREV: issuedetailezt.FlipperPrev,
         urls.ISSUE_DETAIL_FLIPPER_LIST: issuedetailezt.FlipperList,
         urls.ISSUE_DETAIL_FLIPPER_INDEX: issuedetailezt.FlipperIndex,
+        urls.ISSUE_DETAIL_LEGACY: registerpages_helpers.MakeRedirectInScope(
+            urls.ISSUE_DETAIL, 'p', keep_qs=True),
         urls.ISSUE_ENTRY: issueentry.IssueEntry,
         urls.ISSUE_ENTRY_AFTER_LOGIN: issueentryafterlogin.IssueEntryAfterLogin,
         urls.ISSUE_TIPS: issuetips.IssueSearchTips,
@@ -262,16 +264,12 @@ class ServletRegistry(object):
         urls.SPAM_MODERATION_QUEUE: spam.ModerationQueue,
         })
 
-    # GETs for /issues/detail are now handled by the polymer page.
-    # Whereas GETs and POSTs to /issues/detail.do and /issues/detail_ezt.*
-    # are handled by the EZT servlet.
+    # GETs for /issues/detail are now handled by the web components page.
     base = '/p/<project_name:%s>' % self._PROJECT_NAME_REGEX
     self._AddRoute(base + urls.ISSUE_DETAIL,
                    webcomponentspage.WebComponentsPage, 'GET')
-    self._AddRoute(base + urls.ISSUE_DETAIL + '.do',
-                   issuedetailezt.IssueDetailEzt, 'POST')
-    self._AddRoute(base + urls.ISSUE_DETAIL_LEGACY,
-                   issuedetailezt.IssueDetailEzt, 'GET')
+    # TODO(jrobbins): Leave this for now so that users can submit forms that
+    # are already open in a browser.  Delete this line next week.
     self._AddRoute(base + urls.ISSUE_DETAIL_LEGACY + '.do',
                    issuedetailezt.IssueDetailEzt, 'POST')
 

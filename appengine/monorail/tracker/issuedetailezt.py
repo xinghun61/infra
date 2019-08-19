@@ -55,7 +55,7 @@ from tracker import tracker_views
 
 from google.protobuf import json_format
 
-
+# TODO(jrobbins): Delete this class next week.
 class IssueDetailEzt(issuepeek.IssuePeek):
   """IssueDetailEzt is a page that shows the details of one issue."""
 
