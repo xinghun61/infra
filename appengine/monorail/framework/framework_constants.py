@@ -102,9 +102,10 @@ INITIAL_COMMENTS_TO_INDEX = 100
 FINAL_COMMENTS_TO_INDEX = 500
 
 # This is the longest string that GAE search will accept in one field.
-# The entire serach document is also limited to 1M, so our limit is 800
-# so that the comments leave room for metadata.
-MAX_FTS_FIELD_SIZE = 800 * 1024
+# The entire search document is also limited to 1MB, so our limit is 200 * 1024
+# chars so that each can be 4 bytes and the comments leave room for metadata.
+# https://cloud.google.com/appengine/docs/standard/python/search/#documents
+MAX_FTS_FIELD_SIZE = 200 * 1024
 
 # Base path to EZT templates.
 this_dir = os.path.dirname(__file__)
