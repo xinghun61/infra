@@ -27,8 +27,9 @@ func GetForTests(metadata *api.AutotestTestMetadata, tests []*test_platform.Requ
 		h := tr.Harness.(*test_platform.Request_Test_Autotest_)
 		if t, ok := ts[h.Autotest.Name]; ok {
 			invs = append(invs, &steps.EnumerationResponse_AutotestInvocation{
-				Test:     t,
-				TestArgs: h.Autotest.TestArgs,
+				Test:        t,
+				TestArgs:    h.Autotest.TestArgs,
+				DisplayName: h.Autotest.DisplayName,
 			})
 		}
 	}

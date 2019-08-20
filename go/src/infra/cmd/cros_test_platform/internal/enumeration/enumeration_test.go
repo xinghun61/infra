@@ -70,6 +70,31 @@ func TestGetForTestsWithArgs(t *testing.T) {
 
 }
 
+func TestGetForTestsWithDisplayName(t *testing.T) {
+	wantName := "some_other_name"
+	m := &api.AutotestTestMetadata{}
+	addTestMetadata(m, "a_test")
+	tests, err := enumeration.GetForTests(m, []*test_platform.Request_Test{
+		{
+			Harness: &test_platform.Request_Test_Autotest_{
+				Autotest: &test_platform.Request_Test_Autotest{
+					Name:        "a_test",
+					DisplayName: wantName,
+				},
+			},
+		},
+	})
+	if err != nil {
+		t.Fatalf("unexpected error %s", err.Error())
+	}
+	if len(tests) != 1 {
+		t.Fatalf("expected 1 result, got %d", len(tests))
+	}
+	if tests[0].DisplayName != wantName {
+		t.Errorf("display name differs, want %s, got %s", wantName, tests[0].DisplayName)
+	}
+}
+
 // addTestMetadata adds tests to m with given names.
 func addTestMetadata(m *api.AutotestTestMetadata, tNames ...string) {
 	for _, t := range tNames {
