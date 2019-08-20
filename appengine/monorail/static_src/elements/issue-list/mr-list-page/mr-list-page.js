@@ -12,6 +12,7 @@ import 'elements/framework/mr-dropdown/mr-dropdown.js';
 import 'elements/framework/mr-issue-list/mr-issue-list.js';
 // eslint-disable-next-line max-len
 import 'elements/issue-detail/dialogs/mr-update-issue-hotlists/mr-update-issue-hotlists.js';
+import '../mr-mode-selector/mr-mode-selector.js';
 
 const COLSPEC_DELIMITER_REGEX = /[\s\+]+/;
 const SITEWIDE_DEFAULT_COLUMNS = ['ID', 'Type', 'Status',
@@ -25,7 +26,6 @@ export class MrListPage extends connectStore(LitElement) {
         box-sizing: border-box;
         width: 100%;
         padding: 0.5em 8px;
-        --monorail-action-bar-height: 24px;
       }
       .container-no-issues {
         width: 100%;
@@ -33,15 +33,19 @@ export class MrListPage extends connectStore(LitElement) {
         font-size: var(--chops-main-font-size);
       }
       .list-controls {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
         width: 100%;
+        padding: 0.5em 0;
+      }
+      .edit-actions {
+        flex-grow: 0;
         box-sizing: border-box;
         display: flex;
         align-items: center;
-        height: var(--monorail-action-bar-height);
-        padding: 0 8px;
-        margin-bottom: 0.5em;
       }
-      .list-controls button {
+      .edit-actions button {
         height: 100%;
         background: none;
         display: flex;
@@ -49,14 +53,18 @@ export class MrListPage extends connectStore(LitElement) {
         justify-content: center;
         border: none;
         border-right: var(--chops-normal-border);
-        font-size: var(--chops-large-font-size);
+        font-size: var(--chops-normal-font-size);
         cursor: pointer;
         transition: 0.2s background ease-in-out;
         color: var(--chops-link-color);
-        padding: 0.1em 8px;
+        line-height: 160%;
+        padding: 0.25em 8px;
       }
-      .list-controls button:hover {
+      .edit-actions button:hover {
         background: var(--chops-blue-50);
+      }
+      .right-controls {
+        flex-grow: 0;
       }
     `;
   }
@@ -74,18 +82,28 @@ export class MrListPage extends connectStore(LitElement) {
         ({localId, projectName}) => ({localId, projectName}));
     return html`
       <div class="list-controls">
-        <button @click=${this.bulkEdit}>
-          Bulk edit
-        </button>
-        <button @click=${this.addToHotlist}>
-          Add to hotlist
-        </button>
-        <mr-dropdown
-          icon="more_vert"
-          menuAlignment="left"
-          title="More actions..."
-          .items=${this._moreActions}
-        ></mr-dropdown>
+        <div class="edit-actions">
+          <button @click=${this.bulkEdit}>
+            Bulk edit
+          </button>
+          <button @click=${this.addToHotlist}>
+            Add to hotlist
+          </button>
+          <mr-dropdown
+            icon="more_vert"
+            menuAlignment="left"
+            title="More actions..."
+            .items=${this._moreActions}
+          ></mr-dropdown>
+        </div>
+
+        <div class="right-controls">
+          <mr-mode-selector
+            .projectName=${this.projectName}
+            .queryParams=${this.queryParams}
+            value="list"
+          ></mr-mode-selector>
+        </div>
       </div>
       <mr-issue-list
         .issues=${this.issues}

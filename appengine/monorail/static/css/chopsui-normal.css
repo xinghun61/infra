@@ -8,6 +8,7 @@
   --chops-blue-100: #bbdefb;
   --chops-blue-300: #64b5f6;
   --chops-blue-700: #1976d2;
+  --chops-blue-900: #01579b;
   --chops-green-50: #e8f5e9;
   --chops-light-green-50: #f1f8e9;
   --chops-yellow-50: #fffde7;
@@ -19,6 +20,7 @@
   --chops-gray-400: #bdbdbd;
   --chops-gray-500: #9e9e9e;
   --chops-gray-600: #757575;
+  --chops-gray-700: #616161;
   --chops-gray-800: #424242;
   --chops-blue-gray-50: #eceff1;  /* Similar to grimoire. */
 

@@ -4,7 +4,7 @@
 
 import sinon from 'sinon';
 import {assert} from 'chai';
-import {MrGridControls} from './mr-grid-controls';
+import {MrGridControls} from './mr-grid-controls.js';
 
 let element;
 
@@ -30,31 +30,25 @@ describe('mr-grid-controls', () => {
 
     const stub = sinon.stub(element, '_changeUrlParams');
 
-    const event = document.createEvent('Event');
-    event.initEvent('change');
-
     dropdownRows.selection = 'Status';
-    dropdownRows.dispatchEvent(event);
-    sinon.assert.calledWith(stub, sinon.match({y: 'Status'}));
+    dropdownRows.dispatchEvent(new Event('change'));
+    sinon.assert.calledWith(stub, {x: 'None', y: 'Status'});
 
     dropdownCols.selection = 'Blocking';
-    dropdownCols.dispatchEvent(event);
-    sinon.assert.calledWith(stub, sinon.match({x: 'Blocking', y: 'Status'}));
+    dropdownCols.dispatchEvent(new Event('change'));
+    sinon.assert.calledWith(stub, {x: 'Blocking', y: 'Status'});
   });
 
   it('button selection creates url params', async () => {
     await element.updateComplete;
 
-    const cellsToggle = element.shadowRoot.querySelector('.cells');
+    const cellsToggle = element.shadowRoot.querySelector('.cell-selector');
 
     const stub = sinon.stub(element, '_changeUrlParams');
 
-    const event = document.createEvent('Event');
-    event.initEvent('change');
-
     cellsToggle.value = 'ids';
-    cellsToggle.dispatchEvent(event);
-    sinon.assert.calledWith(stub, sinon.match(
-        {cells: 'ids', x: 'None', y: 'None'}));
+    cellsToggle.dispatchEvent(new Event('change'));
+    sinon.assert.calledWith(stub,
+        {cells: 'ids', x: 'None', y: 'None'});
   });
 });

@@ -8,16 +8,46 @@ import qs from 'qs';
 import {connectStore} from 'reducers/base.js';
 import * as issue from 'reducers/issue.js';
 import * as project from 'reducers/project.js';
-import './mr-grid-dropdown';
-import './mr-choice-buttons';
+import 'elements/chops/chops-choice-buttons/chops-choice-buttons.js';
+import '../mr-mode-selector/mr-mode-selector.js';
+import './mr-grid-dropdown.js';
 import {getAvailableGridFields} from './extract-grid-data.js';
 
 export class MrGridControls extends connectStore(LitElement) {
+  static get styles() {
+    return css`
+      :host {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 20px;
+        box-sizing: border-box;
+        padding: 0 20px;
+      }
+      .rows, .cols {
+        padding-right: 20px;
+      }
+      .left-controls {
+        display: flex;
+        align-items: center;
+        justify-content: flex-start;
+        flex-grow: 0;
+      }
+      .right-controls {
+        display: flex;
+        align-items: center;
+        flex-grow: 0;
+      }
+      .issue-count {
+        display: inline-block;
+        padding-right: 20px;
+      }
+    `;
+  };
+
   render() {
     const hideCounts = this.totalIssues === 0;
     return html`
-    <div>
-      <div class="rowscols">
+      <div class="left-controls">
         <mr-grid-dropdown
           class="rows"
           .text=${'Rows'}
@@ -32,35 +62,31 @@ export class MrGridControls extends connectStore(LitElement) {
           .selection=${this.queryParams.x}
           @change=${this._colChanged}>
         </mr-grid-dropdown>
-      </div>
-      <div class="cell-selector">
-        <mr-choice-buttons
-          class='cells'
+        <chops-choice-buttons
+          class="cell-selector"
           .options=${this.cells}
-          @change=${this._cellSelected}
+          @change=${this._selectCell}
           .value=${this.cellType}>
-        </mr-choice-buttons>
+        </chops-choice-buttons>
       </div>
-    </div>
-    <div class="right-controls">
-      ${hideCounts ? html`` : html`
-        <div class="issue-count">
-          ${this.issueCount}
-          of
-          ${this.totalIssues}
-          ${this.totalIssues === 1 ? html`
-            issue `: html`
-            issues `} shown
-        </div> `}
-      <div class="view-selector">
-        <mr-choice-buttons
-          .options=${this.viewSelector}
-          @change=${this._viewSelected}
-          .value=${'grid'}>
-        </mr-choice-buttons>
+      <div class="right-controls">
+        ${hideCounts ? '' : html`
+          <div class="issue-count">
+            ${this.issueCount}
+            of
+            ${this.totalIssues}
+            ${this.totalIssues === 1 ? html`
+              issue `: html`
+              issues `} shown
+          </div>
+        `}
+        <mr-mode-selector
+          .projectName=${this.projectName}
+          .queryParams=${this.queryParams}
+          value="grid"
+        ></mr-mode-selector>
       </div>
-    </div>
-      `;
+    `;
   }
 
   constructor() {
@@ -71,7 +97,7 @@ export class MrGridControls extends connectStore(LitElement) {
       {text: 'IDs', value: 'ids'},
       {text: 'Counts', value: 'counts'},
     ];
-    this.viewSelector = [
+    this.modeOptions = [
       {text: 'List', value: 'list'},
       {text: 'Grid', value: 'grid'},
       {text: 'Chart', value: 'chart'},
@@ -89,7 +115,8 @@ export class MrGridControls extends connectStore(LitElement) {
       gridOptions: {type: Array},
       cells: {type: Array},
       cellType: {type: String},
-      viewSelector: {type: Array},
+      modeOptions: {type: Array},
+      projectName: {tupe: String},
       queryParams: {type: Object},
       issueCount: {type: Number},
       totalIssues: {type: Number},
@@ -116,43 +143,6 @@ export class MrGridControls extends connectStore(LitElement) {
     super.update(changedProperties);
   }
 
-  static get styles() {
-    return css`
-      :host {
-        display: flex;
-        justify-content: space-between;
-        margin-top: 20px;
-        aign-items: center;
-        margin-right: 20px;
-      }
-      .rows {
-        display: inline-block;
-        padding-left: 20px;
-      }
-      .cols {
-        display: inline-block;
-        padding-left: 20px;
-      }
-      .rowscols {
-        display: inline-block;
-      }
-      .cell-selector {
-        padding-left: 20px;
-        display: inline-block;
-      }
-      .right-controls {
-        display: inline-block;
-      }
-      .issue-count {
-        display: inline-block;
-        padding-right: 20px;
-      }
-      .view-selector {
-        display: inline-block;
-      }
-    `;
-  };
-
   _rowChanged(e) {
     this.queryParams.y = e.target.selection;
     const params = Object.assign({}, this.queryParams);
@@ -177,24 +167,9 @@ export class MrGridControls extends connectStore(LitElement) {
     page(newUrl);
   }
 
-  _cellSelected(e) {
+  _selectCell(e) {
     this.queryParams.cells = e.target.value;
     this._changeUrlParams(this.queryParams);
-  }
-
-  _viewSelected(e) {
-    const value = e.target.value.toLowerCase();
-    if (value !== 'grid') {
-      if (value === 'chart') {
-        this.queryParams.mode = 'chart';
-      } else {
-        delete this.queryParams.mode;
-      }
-      const params = qs.stringify(this.queryParams);
-      const newURL =
-        `${location.pathname.replace('list_new', 'list')}?${params}`;
-      page(newURL);
-    }
   }
 };
 

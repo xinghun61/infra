@@ -5,7 +5,7 @@
 import {LitElement, html, css} from 'lit-element';
 import 'elements/chops/chops-button/chops-button.js';
 
-export class MrChoiceButtons extends LitElement {
+export class ChopsChoiceButtons extends LitElement {
   render() {
     return html`
       ${(this.options).map((option) => html`
@@ -20,6 +20,10 @@ export class MrChoiceButtons extends LitElement {
 
   static get properties() {
     return {
+      /**
+       * Array of options where each option is an Object with keys:
+       * {value, text}
+       */
       options: {type: Array},
       value: {type: String},
     };
@@ -36,11 +40,10 @@ export class MrChoiceButtons extends LitElement {
         display: grid;
         grid-auto-flow: column;
         grid-template-columns: auto;
-        grid-gap: 2px;
       }
       chops-button {
-        color: var(--chops-gray-600);
-        font-size: var(--chops-large-font-size);
+        color: var(--chops-gray-700);
+        font-size: var(--chops-normal-font-size);
         padding: 4px 10px;
         background: var(--chops-choice-bg);
         text-decoration: none;
@@ -49,19 +52,22 @@ export class MrChoiceButtons extends LitElement {
       }
       chops-button[selected] {
         background: var(--chops-blue-50);
-        color: var(--chops-primary-accent-color);
+        color: var(--chops-blue-900);
         border-radius: 16px;
       }
     `;
   };
 
-  _setValue(e) {
-    const oldValue = this.value;
-    this.value = e.target.getAttribute('value');
-    if (oldValue != this.value) {
+  setValue(newValue) {
+    if (newValue !== this.value) {
+      this.value = newValue;
       this.dispatchEvent(new CustomEvent('change'));
     }
   }
+
+  _setValue(e) {
+    this.setValue(e.target.getAttribute('value'));
+  }
 };
 
-customElements.define('mr-choice-buttons', MrChoiceButtons);
+customElements.define('chops-choice-buttons', ChopsChoiceButtons);

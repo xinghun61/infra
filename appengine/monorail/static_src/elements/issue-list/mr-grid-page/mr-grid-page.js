@@ -19,6 +19,7 @@ export class MrGridPage extends connectStore(LitElement) {
     return html`
       <div id="grid-area">
         <mr-grid-controls
+          .projectName=${this.projectName}
           .queryParams=${this.queryParams}
           .issueCount=${this.issues.length}>
         </mr-grid-controls>
