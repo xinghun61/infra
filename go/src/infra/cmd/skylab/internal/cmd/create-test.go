@@ -36,81 +36,44 @@ This command does not wait for the task to start running.`,
 		c := &createTestRun{}
 		c.authFlags.Register(&c.Flags, site.DefaultAuthOptions)
 		c.envFlags.Register(&c.Flags)
+		c.createRunCommon.Register(&c.Flags)
 		// TODO(akeshet): Deprecate this argument once recipe migration is complete;
 		// the recipe ignores this argument, and determines it independently during
 		// test enumeration.
 		c.Flags.BoolVar(&c.client, "client-test", false, "Task is a client-side test.")
-		c.Flags.StringVar(&c.image, "image", "",
-			`Fully specified image name to run test against,
-e.g., reef-canary/R73-11580.0.0.`)
-		c.Flags.StringVar(&c.board, "board", "", "Board to run test on.")
-		c.Flags.StringVar(&c.model, "model", "", "Model to run test on.")
-		// TODO(akeshet): Decide on whether these should be specified in their proto
-		// format (e.g. DUT_POOL_BVT) or in a human readable format, e.g. bvt. Provide a
-		// list of common choices.
-		c.Flags.StringVar(&c.pool, "pool", "", "Device pool to run test on.")
-		c.Flags.IntVar(&c.priority, "priority", defaultTaskPriority,
-			`Specify the priority of the test.  A high value means this test
-will be executed in a low priority. If the tasks runs in a quotascheduler controlled pool, this value will be ignored.`)
-		c.Flags.IntVar(&c.timeoutMins, "timeout-mins", 30, "Task runtime timeout.")
-		c.Flags.Var(flag.StringSlice(&c.tags), "tag", "Swarming tag for test; may be specified multiple times.")
-		c.Flags.Var(flag.StringSlice(&c.keyvals), "keyval",
-			`Autotest keyval for test.  May be specified multiple times.`)
 		c.Flags.StringVar(&c.testArgs, "test-args", "", "Test arguments string (meaning depends on test).")
-		c.Flags.StringVar(&c.qsAccount, "qs-account", "", "Quota Scheduler account to use for this task.  Optional.")
 		c.Flags.Var(flag.StringSlice(&c.provisionLabels), "provision-label",
 			`Additional provisionable labels to use for the test
 (e.g. cheets-version:git_pi-arc/cheets_x86_64).  May be specified
 multiple times.  Optional.`)
 		c.Flags.StringVar(&c.parentTaskID, "parent-task-run-id", "", "For internal use only. Task run ID of the parent (suite) task to this test. Note that this must be a run ID (i.e. not ending in 0).")
 		c.Flags.Var(flag.StringSlice(&c.dimensions), "dim", "Additional scheduling dimension to apply to tests, as a KEY:VALUE string; may be specified multiple times.")
-		c.Flags.BoolVar(&c.buildBucket, "bb", false, "Use buildbucket recipe backend.")
 		return c
 	},
 }
 
 type createTestRun struct {
 	subcommands.CommandRunBase
+	createRunCommon
 	authFlags       authcli.Flags
 	envFlags        envFlags
 	client          bool
-	image           string
-	board           string
-	model           string
-	pool            string
-	priority        int
-	timeoutMins     int
-	tags            []string
-	keyvals         []string
 	testArgs        string
-	qsAccount       string
 	provisionLabels []string
 	parentTaskID    string
-	buildBucket     bool
 	dimensions      []string
 }
 
 // validateArgs ensures that the command line arguments are
 func (c *createTestRun) validateArgs() error {
+	if err := c.createRunCommon.ValidateArgs(c.Flags); err != nil {
+		return err
+	}
+
 	if c.Flags.NArg() == 0 {
 		return NewUsageError(c.Flags, "missing test name")
 	}
 
-	if c.board == "" && c.model == "" {
-		return NewUsageError(c.Flags, "missing -board or a -model")
-	}
-
-	if c.pool == "" {
-		return NewUsageError(c.Flags, "missing -pool")
-	}
-
-	if c.image == "" {
-		return NewUsageError(c.Flags, "missing -image")
-	}
-
-	if c.priority < 50 || c.priority > 255 {
-		return NewUsageError(c.Flags, "priority should in [50,255]")
-	}
 	return nil
 }
 

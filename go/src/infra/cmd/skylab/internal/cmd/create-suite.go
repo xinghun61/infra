@@ -16,7 +16,6 @@ import (
 	swarming_api "go.chromium.org/luci/common/api/swarming/swarming/v1"
 	"go.chromium.org/luci/common/cli"
 	"go.chromium.org/luci/common/errors"
-	"go.chromium.org/luci/common/flag"
 
 	"infra/cmd/skylab/internal/cmd/recipe"
 	"infra/cmd/skylab/internal/site"
@@ -32,25 +31,10 @@ var CreateSuite = &subcommands.Command{
 		c := &createSuiteRun{}
 		c.authFlags.Register(&c.Flags, site.DefaultAuthOptions)
 		c.envFlags.Register(&c.Flags)
-
-		c.Flags.StringVar(&c.board, "board", "", "Board to run suite on.")
-		c.Flags.StringVar(&c.model, "model", "", "Model to run suite on.")
-		c.Flags.StringVar(&c.pool, "pool", "", "Device pool to run suite on.")
-		c.Flags.StringVar(&c.image, "image", "", "Fully specified image name to run suite against, e.g. reef-canary/R73-11580.0.0")
-		c.Flags.IntVar(&c.priority, "priority", defaultTaskPriority,
-			`Specify the priority of the suite.  A high value means this suite
-will be executed in a low priority.`)
-		c.Flags.IntVar(&c.timeoutMins, "timeout-mins", 20,
-			`Time (counting from when the task starts) after which task will be
-killed if it hasn't completed.`)
+		c.createRunCommon.Register(&c.Flags)
 		c.Flags.IntVar(&c.maxRetries, "max-retries", 0,
 			`Maximum retries allowed in total for all child tests of this
 suite. No retry if it is 0.`)
-		c.Flags.Var(flag.StringSlice(&c.tags), "tag", "Swarming tag for suite; may be specified multiple times.")
-		c.Flags.Var(flag.StringSlice(&c.keyvals), "keyval",
-			`Autotest keyval for test. Key may not contain : character. May be
-specified multiple times.`)
-		c.Flags.StringVar(&c.qsAccount, "qs-account", "", "Quotascheduler account for test jobs.")
 		// TODO(akeshet): Deprecate this arg; it will be irrelevant in the cros_test_platform
 		// recipe, and is problematic even in the swarming suite bot implementation
 		// (because of a latent swarming feature that cancels child tasks once
@@ -58,29 +42,19 @@ specified multiple times.`)
 		c.Flags.BoolVar(&c.orphan, "orphan", false, "Create a suite that doesn't wait for its child tests to finish. Internal or expert use ONLY!")
 		c.Flags.BoolVar(&c.json, "json", false, "Format output as JSON")
 		c.Flags.StringVar(&c.taskName, "task-name", "", "Optional name to be used for the Swarming task.")
-		c.Flags.BoolVar(&c.buildBucket, "bb", false, "Use buildbucket recipe backend.")
 		return c
 	},
 }
 
 type createSuiteRun struct {
 	subcommands.CommandRunBase
-	authFlags   authcli.Flags
-	envFlags    envFlags
-	board       string
-	model       string
-	pool        string
-	image       string
-	priority    int
-	timeoutMins int
-	maxRetries  int
-	tags        []string
-	keyvals     []string
-	qsAccount   string
-	orphan      bool
-	json        bool
-	taskName    string
-	buildBucket bool
+	createRunCommon
+	authFlags  authcli.Flags
+	envFlags   envFlags
+	maxRetries int
+	orphan     bool
+	json       bool
+	taskName   string
 }
 
 func (c *createSuiteRun) Run(a subcommands.Application, args []string, env subcommands.Env) int {
@@ -175,24 +149,12 @@ func (c *createSuiteRun) innerRun(a subcommands.Application, args []string, env 
 }
 
 func (c *createSuiteRun) validateArgs() error {
+	if err := c.createRunCommon.ValidateArgs(c.Flags); err != nil {
+		return err
+	}
+
 	if c.Flags.NArg() == 0 {
 		return NewUsageError(c.Flags, "missing suite name")
-	}
-
-	if c.board == "" {
-		return NewUsageError(c.Flags, "missing -board")
-	}
-
-	if c.pool == "" {
-		return NewUsageError(c.Flags, "missing -pool")
-	}
-
-	if c.image == "" {
-		return NewUsageError(c.Flags, "missing -image")
-	}
-
-	if c.priority < 50 || c.priority > 255 {
-		return NewUsageError(c.Flags, "priority should in [50,255]")
 	}
 
 	return nil
