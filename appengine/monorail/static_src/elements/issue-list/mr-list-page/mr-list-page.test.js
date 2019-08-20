@@ -170,6 +170,17 @@ describe('mr-list-page', () => {
           });
     });
 
+    it('clicking change columns opens dialog', async () => {
+      await element.updateComplete;
+      const button = element.shadowRoot.querySelector('.change-columns-button');
+      const dialog = element.shadowRoot.querySelector('mr-change-columns');
+      sinon.stub(dialog, 'open');
+
+      button.click();
+
+      sinon.assert.calledOnce(dialog.open);
+    });
+
     it('add to hotlist stops when no issues selected', () => {
       element.selectedIssues = [];
       element.projectName = 'test';

@@ -8,15 +8,15 @@ import qs from 'qs';
 import {store, connectStore} from 'reducers/base.js';
 import * as issue from 'reducers/issue.js';
 import {prpcClient} from 'prpc-client-instance.js';
+import {COLSPEC_DELIMITER_REGEX, SITEWIDE_DEFAULT_COLUMNS}
+  from 'shared/issue-fields.js';
 import 'elements/framework/mr-dropdown/mr-dropdown.js';
 import 'elements/framework/mr-issue-list/mr-issue-list.js';
 // eslint-disable-next-line max-len
 import 'elements/issue-detail/dialogs/mr-update-issue-hotlists/mr-update-issue-hotlists.js';
+import '../dialogs/mr-change-columns/mr-change-columns.js';
 import '../mr-mode-selector/mr-mode-selector.js';
 
-const COLSPEC_DELIMITER_REGEX = /[\s\+]+/;
-const SITEWIDE_DEFAULT_COLUMNS = ['ID', 'Type', 'Status',
-  'Priority', 'Milestone', 'Owner', 'Summary'];
 
 export class MrListPage extends connectStore(LitElement) {
   static get styles() {
@@ -83,11 +83,23 @@ export class MrListPage extends connectStore(LitElement) {
     return html`
       <div class="list-controls">
         <div class="edit-actions">
-          <button @click=${this.bulkEdit}>
+          <button
+            class="bulk-edit-button"
+            @click=${this.bulkEdit}
+          >
             Bulk edit
           </button>
-          <button @click=${this.addToHotlist}>
+          <button
+            class="add-to-hotlist-button"
+            @click=${this.addToHotlist}
+          >
             Add to hotlist
+          </button>
+          <button
+            class="change-columns-button"
+            @click=${this.changeColumns}
+          >
+            Change columns
           </button>
           <mr-dropdown
             icon="more_vert"
@@ -116,6 +128,10 @@ export class MrListPage extends connectStore(LitElement) {
       <mr-update-issue-hotlists
         .issueRefs=${selectedRefs}
       ></mr-update-issue-hotlists>
+      <mr-change-columns
+        .columns=${this.columns}
+        .queryParams=${this.queryParams}
+      ></mr-change-columns>
     `;
   }
 
@@ -208,6 +224,10 @@ export class MrListPage extends connectStore(LitElement) {
   noneSelectedAlert(action) {
     // TODO(zhangtiff): Replace this with a modal for a more modern feel.
     alert(`Please select some issues to ${action}.`);
+  }
+
+  changeColumns() {
+    this.shadowRoot.querySelector('mr-change-columns').open();
   }
 
   addToHotlist() {

@@ -81,7 +81,7 @@ export const SHARED_STYLES = css`
     display: grid;
     max-width: 100%;
     grid-gap: var(--mr-input-grid-gap);
-    grid-template-columns: 120px auto;
+    grid-template-columns: minmax(120px, max-content) 1fr;
     align-items: flex-start;
   }
   .input-grid label {

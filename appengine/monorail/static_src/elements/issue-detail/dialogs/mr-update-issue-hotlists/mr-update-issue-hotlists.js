@@ -64,6 +64,13 @@ export class MrUpdateIssueHotlists extends connectStore(LitElement) {
           margin: 0.5em 0;
           text-align: right;
         }
+        .input-grid {
+          align-items: center;
+        }
+        .input-grid > input {
+          width: 200px;
+          max-width: 100%;
+        }
         .error {
           max-width: 100%;
           color: red;
