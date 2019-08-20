@@ -757,7 +757,8 @@ class AnalysisAPI(object):
     }
     return [
         f for f in failure_entities
-        if f.GetFailureIdentifier() in first_failures.get(f.step_ui_name, [])
+        if f.GetFailureIdentifier() in first_failures.get(
+            f.step_ui_name, [frozenset([])])
     ]
 
   def SaveFailureAnalysis(self, project_api, context, build,
