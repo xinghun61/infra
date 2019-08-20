@@ -6,8 +6,13 @@ package cmd
 
 import (
 	"flag"
+	"fmt"
+	"time"
 
+	"go.chromium.org/luci/common/data/strpair"
 	flagx "go.chromium.org/luci/common/flag"
+
+	"infra/cmd/skylab/internal/cmd/recipe"
 )
 
 // createRunCommon encapsulates parameters that are common to
@@ -58,4 +63,36 @@ func (c *createRunCommon) ValidateArgs(fl flag.FlagSet) error {
 		return NewUsageError(fl, "priority should in [50,255]")
 	}
 	return nil
+}
+
+func (c *createRunCommon) RecipeArgs() (recipe.Args, error) {
+	keyvalMap, err := toKeyvalMap(c.keyvals)
+	if err != nil {
+		return recipe.Args{}, err
+	}
+
+	return recipe.Args{
+		Board:        c.board,
+		Image:        c.image,
+		Model:        c.model,
+		Pool:         c.pool,
+		QuotaAccount: c.qsAccount,
+		Timeout:      time.Duration(c.timeoutMins) * time.Minute,
+		Keyvals:      keyvalMap,
+	}, nil
+}
+
+func toKeyvalMap(keyvals []string) (map[string]string, error) {
+	m := make(map[string]string, len(keyvals))
+	for _, s := range keyvals {
+		k, v := strpair.Parse(s)
+		if v == "" {
+			return nil, fmt.Errorf("malformed keyval with key '%s' has no value", k)
+		}
+		if _, ok := m[k]; ok {
+			return nil, fmt.Errorf("keyval with key %s specified more than once", k)
+		}
+		m[k] = v
+	}
+	return m, nil
 }

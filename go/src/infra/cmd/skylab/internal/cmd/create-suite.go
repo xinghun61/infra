@@ -17,7 +17,6 @@ import (
 	"go.chromium.org/luci/common/cli"
 	"go.chromium.org/luci/common/errors"
 
-	"infra/cmd/skylab/internal/cmd/recipe"
 	"infra/cmd/skylab/internal/site"
 	"infra/libs/skylab/swarming"
 )
@@ -79,23 +78,14 @@ func (c *createSuiteRun) innerRun(a subcommands.Application, args []string, env 
 			return err
 		}
 
-		keyvalMap, err := toKeyvalMap(c.keyvals)
+		recipeArg, err := c.RecipeArgs()
 		if err != nil {
 			return err
 		}
 
-		args := recipe.Args{
-			Board:        c.board,
-			Image:        c.image,
-			Model:        c.model,
-			Pool:         c.pool,
-			QuotaAccount: c.qsAccount,
-			SuiteNames:   []string{suiteName},
-			Timeout:      time.Duration(c.timeoutMins) * time.Minute,
-			Keyvals:      keyvalMap,
-		}
+		recipeArg.SuiteNames = []string{suiteName}
 
-		return buildbucketRun(ctx, args, e, c.authFlags, c.json, a.GetOut())
+		return buildbucketRun(ctx, recipeArg, e, c.authFlags, c.json, a.GetOut())
 	}
 
 	dimensions := []string{"pool:ChromeOSSkylab-suite"}

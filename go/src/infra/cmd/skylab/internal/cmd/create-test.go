@@ -15,7 +15,6 @@ import (
 	"go.chromium.org/luci/common/errors"
 	"go.chromium.org/luci/common/flag"
 
-	"infra/cmd/skylab/internal/cmd/recipe"
 	"infra/cmd/skylab/internal/site"
 	"infra/libs/skylab/inventory"
 	"infra/libs/skylab/request"
@@ -104,23 +103,14 @@ func (c *createTestRun) innerRunBB(a subcommands.Application, args []string, env
 	ctx := cli.GetContext(a, c, env)
 	e := c.envFlags.Env()
 
-	keyvalMap, err := toKeyvalMap(c.keyvals)
+	recipeArg, err := c.RecipeArgs()
 	if err != nil {
 		return err
 	}
+	recipeArg.TestNames = args
+	recipeArg.FreeformSwarmingDimensions = c.dimensions
+	recipeArg.AutotestTestArgs = c.testArgs
 
-	recipeArg := recipe.Args{
-		Board:                      c.board,
-		Image:                      c.image,
-		Model:                      c.model,
-		Pool:                       c.pool,
-		QuotaAccount:               c.qsAccount,
-		TestNames:                  args,
-		Timeout:                    time.Duration(c.timeoutMins) * time.Minute,
-		Keyvals:                    keyvalMap,
-		FreeformSwarmingDimensions: c.dimensions,
-		AutotestTestArgs:           c.testArgs,
-	}
 	return buildbucketRun(ctx, recipeArg, e, c.authFlags, false, a.GetOut())
 }
 
