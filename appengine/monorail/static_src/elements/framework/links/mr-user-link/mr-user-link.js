@@ -4,9 +4,9 @@
 
 import {LitElement, html, css} from 'lit-element';
 
-import {connectStore} from 'elements/reducers/base.js';
-import * as issue from 'elements/reducers/issue.js';
-import {EMPTY_FIELD_VALUE} from 'elements/shared/issue-fields.js';
+import {connectStore} from 'reducers/base.js';
+import * as issue from 'reducers/issue.js';
+import {EMPTY_FIELD_VALUE} from 'shared/issue-fields.js';
 
 
 const NULL_DISPLAY_NAME_VALUES = [EMPTY_FIELD_VALUE, 'a_deleted_user'];

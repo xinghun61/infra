@@ -4,7 +4,7 @@
 
 import {LitElement, html, css} from 'lit-element';
 import {prpcClient} from 'prpc-client-instance.js';
-import {linearRegression} from './../../shared/math.js';
+import {linearRegression} from 'shared/math.js';
 import './chops-chart.js';
 
 const DEFAULT_NUM_DAYS = 90;

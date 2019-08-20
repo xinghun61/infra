@@ -5,15 +5,14 @@
 import {LitElement, html, css} from 'lit-element';
 
 import 'elements/chops/chops-dialog/chops-dialog.js';
-import {store, connectStore} from 'elements/reducers/base.js';
-import * as issue from 'elements/reducers/issue.js';
-import * as project from 'elements/reducers/project.js';
+import {store, connectStore} from 'reducers/base.js';
+import * as issue from 'reducers/issue.js';
+import * as project from 'reducers/project.js';
 import '../mr-approval-card/mr-approval-card.js';
-import {valuesForField} from
-  'elements/issue-detail/metadata/shared/metadata-helpers.js';
+import {valuesForField} from 'shared/metadata-helpers.js';
 import 'elements/issue-detail/metadata/mr-edit-metadata/mr-edit-metadata.js';
 import 'elements/issue-detail/metadata/mr-metadata/mr-field-values.js';
-import {SHARED_STYLES} from 'elements/shared/shared-styles.js';
+import {SHARED_STYLES} from 'shared/shared-styles.js';
 
 const TARGET_PHASE_MILESTONE_MAP = {
   'Beta': 'feature_freeze',

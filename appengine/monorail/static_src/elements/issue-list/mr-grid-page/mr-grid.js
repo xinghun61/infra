@@ -3,11 +3,11 @@
 // found in the LICENSE file.
 
 import {LitElement, html, css} from 'lit-element';
-import {connectStore} from 'elements/reducers/base.js';
-import * as project from 'elements/reducers/project.js';
+import {connectStore} from 'reducers/base.js';
+import * as project from 'reducers/project.js';
 import {extractGridData, makeGridCellKey} from './extract-grid-data.js';
-import {EMPTY_FIELD_VALUE} from 'elements/shared/issue-fields.js';
-import {issueRefToUrl} from '../../shared/converters.js';
+import {EMPTY_FIELD_VALUE} from 'shared/issue-fields.js';
+import {issueRefToUrl} from 'shared/converters.js';
 import './mr-grid-tile.js';
 import qs from 'qs';
 

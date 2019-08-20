@@ -3,10 +3,10 @@
 // found in the LICENSE file.
 
 import {LitElement, html, css} from 'lit-element';
-import {connectStore, store} from 'elements/reducers/base.js';
-import * as user from 'elements/reducers/user.js';
-import * as issue from 'elements/reducers/issue.js';
-import {issueRefToString} from '../../shared/converters';
+import {connectStore, store} from 'reducers/base.js';
+import * as user from 'reducers/user.js';
+import * as issue from 'reducers/issue.js';
+import {issueRefToString} from 'shared/converters';
 
 /**
  * `<mr-star-button>`

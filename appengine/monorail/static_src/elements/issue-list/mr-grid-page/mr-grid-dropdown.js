@@ -3,7 +3,7 @@
 // found in the LICENSE file.
 
 import {LitElement, html, css} from 'lit-element';
-import {equalsIgnoreCase} from 'elements/shared/helpers.js';
+import {equalsIgnoreCase} from 'shared/helpers.js';
 
 export class MrGridDropdown extends LitElement {
   render() {

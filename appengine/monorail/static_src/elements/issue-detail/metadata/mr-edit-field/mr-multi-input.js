@@ -6,7 +6,7 @@ import {LitElement, html, css} from 'lit-element';
 import deepEqual from 'deep-equal';
 
 import 'elements/chops/chops-button/chops-button.js';
-import {SHARED_STYLES} from 'elements/shared/shared-styles';
+import {SHARED_STYLES} from 'shared/shared-styles';
 
 /**
  * `<mr-multi-input>`

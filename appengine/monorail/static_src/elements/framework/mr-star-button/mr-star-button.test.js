@@ -4,7 +4,7 @@
 
 import {assert} from 'chai';
 import {MrStarButton} from './mr-star-button.js';
-import {issueRefToString} from '../../shared/converters.js';
+import {issueRefToString} from 'shared/converters.js';
 import sinon from 'sinon';
 
 

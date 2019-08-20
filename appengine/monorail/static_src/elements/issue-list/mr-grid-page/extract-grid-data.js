@@ -3,8 +3,8 @@
 // found in the LICENSE file.
 
 import {EMPTY_FIELD_VALUE,
-  stringValuesForIssueField} from 'elements/shared/issue-fields.js';
-import {getTypeForFieldName, fieldTypes} from '../../shared/issue-fields';
+  stringValuesForIssueField} from 'shared/issue-fields.js';
+import {getTypeForFieldName, fieldTypes} from 'shared/issue-fields';
 
 
 const DEFAULT_HEADER_VALUE = 'All';

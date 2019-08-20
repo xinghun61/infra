@@ -4,13 +4,13 @@
 
 import {LitElement, html, css} from 'lit-element';
 
-import {store, connectStore} from 'elements/reducers/base.js';
-import * as issue from 'elements/reducers/issue.js';
-import * as project from 'elements/reducers/project.js';
+import {store, connectStore} from 'reducers/base.js';
+import * as issue from 'reducers/issue.js';
+import * as project from 'reducers/project.js';
 import 'elements/chops/chops-button/chops-button.js';
 import 'elements/chops/chops-dialog/chops-dialog.js';
 import 'elements/framework/mr-error/mr-error.js';
-import {SHARED_STYLES} from 'elements/shared/shared-styles.js';
+import {SHARED_STYLES} from 'shared/shared-styles.js';
 
 // TODO(zhangtiff): Make dialog components subclass chops-dialog instead of
 // using slots/containment once we switch to LitElement.

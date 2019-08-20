@@ -6,7 +6,7 @@ import {assert} from 'chai';
 import sinon from 'sinon';
 
 import {MrSearchBar} from './mr-search-bar.js';
-import {clientLoggerFake} from 'elements/shared/test-fakes.js';
+import {clientLoggerFake} from 'shared/test-fakes.js';
 
 
 window.CS_env = {

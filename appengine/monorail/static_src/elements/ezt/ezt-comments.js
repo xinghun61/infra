@@ -4,11 +4,11 @@
 
 import {LitElement, html, css} from 'lit-element';
 import qs from 'qs';
-import {store, connectStore} from 'elements/reducers/base.js';
-import * as issue from 'elements/reducers/issue.js';
-import * as ui from 'elements/reducers/ui.js';
-import * as user from 'elements/reducers/user.js';
-import * as sitewide from 'elements/reducers/sitewide.js';
+import {store, connectStore} from 'reducers/base.js';
+import * as issue from 'reducers/issue.js';
+import * as ui from 'reducers/ui.js';
+import * as user from 'reducers/user.js';
+import * as sitewide from 'reducers/sitewide.js';
 import AutoRefreshPrpcClient from 'prpc.js';
 import 'elements/issue-detail/mr-comment-list/mr-comment-list.js';
 import 'elements/framework/mr-comment-content/mr-description.js';

@@ -5,10 +5,10 @@
 import {LitElement, html, css} from 'lit-element';
 
 import 'elements/chops/chops-dialog/chops-dialog.js';
-import {store, connectStore} from 'elements/reducers/base.js';
-import * as issue from 'elements/reducers/issue.js';
-import * as user from 'elements/reducers/user.js';
-import {SHARED_STYLES} from 'elements/shared/shared-styles.js';
+import {store, connectStore} from 'reducers/base.js';
+import * as issue from 'reducers/issue.js';
+import * as user from 'reducers/user.js';
+import {SHARED_STYLES} from 'shared/shared-styles.js';
 import {prpcClient} from 'prpc-client-instance.js';
 
 export class MrUpdateIssueHotlists extends connectStore(LitElement) {

@@ -5,12 +5,12 @@
 import {LitElement, html, css} from 'lit-element';
 
 import 'elements/chops/chops-snackbar/chops-snackbar.js';
-import {store, connectStore} from 'elements/reducers/base.js';
-import * as issue from 'elements/reducers/issue.js';
-import * as project from 'elements/reducers/project.js';
-import * as ui from 'elements/reducers/ui.js';
-import {arrayToEnglish} from 'elements/shared/helpers.js';
-import {SHARED_STYLES} from 'elements/shared/shared-styles.js';
+import {store, connectStore} from 'reducers/base.js';
+import * as issue from 'reducers/issue.js';
+import * as project from 'reducers/project.js';
+import * as ui from 'reducers/ui.js';
+import {arrayToEnglish} from 'shared/helpers.js';
+import {SHARED_STYLES} from 'shared/shared-styles.js';
 import './mr-edit-metadata.js';
 
 /**

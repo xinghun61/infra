@@ -4,10 +4,10 @@
 
 import {assert} from 'chai';
 import {MrIssueHeader} from './mr-issue-header.js';
-import {store} from 'elements/reducers/base.js';
-import * as issue from 'elements/reducers/issue.js';
+import {store} from 'reducers/base.js';
+import * as issue from 'reducers/issue.js';
 import {ISSUE_EDIT_PERMISSION, ISSUE_DELETE_PERMISSION,
-  ISSUE_FLAGSPAM_PERMISSION} from 'elements/shared/permissions.js';
+  ISSUE_FLAGSPAM_PERMISSION} from 'shared/permissions.js';
 
 let element;
 

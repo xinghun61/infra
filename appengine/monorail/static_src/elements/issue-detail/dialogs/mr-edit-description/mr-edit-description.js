@@ -6,13 +6,13 @@ import {LitElement, html, css} from 'lit-element';
 
 import 'elements/framework/mr-upload/mr-upload.js';
 import 'elements/framework/mr-error/mr-error.js';
-import {fieldTypes} from 'elements/shared/issue-fields.js';
-import {store, connectStore} from 'elements/reducers/base.js';
-import * as issue from 'elements/reducers/issue.js';
+import {fieldTypes} from 'shared/issue-fields.js';
+import {store, connectStore} from 'reducers/base.js';
+import * as issue from 'reducers/issue.js';
 import 'elements/chops/chops-checkbox/chops-checkbox.js';
 import 'elements/chops/chops-dialog/chops-dialog.js';
-import {SHARED_STYLES} from 'elements/shared/shared-styles.js';
-import {commentListToDescriptionList} from 'elements/shared/converters.js';
+import {SHARED_STYLES} from 'shared/shared-styles.js';
+import {commentListToDescriptionList} from 'shared/converters.js';
 
 
 /**

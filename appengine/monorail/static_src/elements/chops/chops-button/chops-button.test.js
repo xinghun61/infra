@@ -4,7 +4,7 @@
 
 import {assert} from 'chai';
 import {ChopsButton} from './chops-button.js';
-import {auditA11y} from 'elements/shared/test-helpers';
+import {auditA11y} from 'shared/test-helpers';
 
 let element;
 

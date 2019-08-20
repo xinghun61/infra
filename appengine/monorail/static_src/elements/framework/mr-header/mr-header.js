@@ -9,7 +9,7 @@ import '../mr-dropdown/mr-dropdown.js';
 import '../mr-dropdown/mr-account-dropdown.js';
 import './mr-search-bar.js';
 
-import {SHARED_STYLES} from 'elements/shared/shared-styles.js';
+import {SHARED_STYLES} from 'shared/shared-styles.js';
 import {prpcClient} from 'prpc-client-instance.js';
 
 import ClientLogger from 'monitoring/client-logger';

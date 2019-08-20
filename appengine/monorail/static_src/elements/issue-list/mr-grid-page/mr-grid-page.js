@@ -5,8 +5,8 @@
 // TODO(juliacordero): Handle pRPC errors with a FE page
 
 import {LitElement, html, css} from 'lit-element';
-import {store, connectStore} from 'elements/reducers/base.js';
-import * as issue from 'elements/reducers/issue.js';
+import {store, connectStore} from 'reducers/base.js';
+import * as issue from 'reducers/issue.js';
 import 'elements/framework/links/mr-issue-link/mr-issue-link.js';
 import './mr-grid-controls.js';
 import './mr-grid.js';

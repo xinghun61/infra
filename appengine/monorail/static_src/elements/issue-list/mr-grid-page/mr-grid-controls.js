@@ -5,9 +5,9 @@
 import {LitElement, html, css} from 'lit-element';
 import page from 'page';
 import qs from 'qs';
-import {connectStore} from 'elements/reducers/base.js';
-import * as issue from 'elements/reducers/issue.js';
-import * as project from 'elements/reducers/project.js';
+import {connectStore} from 'reducers/base.js';
+import * as issue from 'reducers/issue.js';
+import * as project from 'reducers/project.js';
 import './mr-grid-dropdown';
 import './mr-choice-buttons';
 import {getAvailableGridFields} from './extract-grid-data.js';

@@ -4,8 +4,8 @@
 
 import {LitElement, html, css} from 'lit-element';
 import qs from 'qs';
-import {connectStore} from 'elements/reducers/base.js';
-import * as sitewide from 'elements/reducers/sitewide.js';
+import {connectStore} from 'reducers/base.js';
+import * as sitewide from 'reducers/sitewide.js';
 
 export default class MrFlipper extends connectStore(LitElement) {
   static get properties() {

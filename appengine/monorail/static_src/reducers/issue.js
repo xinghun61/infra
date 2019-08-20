@@ -6,14 +6,13 @@ import {combineReducers} from 'redux';
 import {createSelector} from 'reselect';
 import {autolink} from 'autolink.js';
 import {fieldTypes, extractTypeForIssue,
-  fieldValuesToMap} from 'elements/shared/issue-fields.js';
-import {removePrefix, objectToMap} from 'elements/shared/helpers.js';
-import {issueRefToString} from 'elements/shared/converters.js';
+  fieldValuesToMap} from 'shared/issue-fields.js';
+import {removePrefix, objectToMap} from 'shared/helpers.js';
+import {issueRefToString} from 'shared/converters.js';
 import {createReducer, createRequestReducer,
   createKeyedRequestReducer} from './redux-helpers.js';
 import * as project from './project.js';
-import {fieldValueMapKey} from
-  '../issue-detail/metadata/shared/metadata-helpers.js';
+import {fieldValueMapKey} from 'shared/metadata-helpers.js';
 import {prpcClient} from 'prpc-client-instance.js';
 
 // Actions

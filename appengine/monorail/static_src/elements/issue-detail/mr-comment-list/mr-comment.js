@@ -3,8 +3,8 @@
 // found in the LICENSE file.
 
 import {LitElement, html, css} from 'lit-element';
-import {store} from 'elements/reducers/base.js';
-import * as issue from 'elements/reducers/issue.js';
+import {store} from 'reducers/base.js';
+import * as issue from 'reducers/issue.js';
 
 import 'elements/chops/chops-button/chops-button.js';
 import 'elements/chops/chops-timestamp/chops-timestamp.js';
@@ -13,7 +13,7 @@ import 'elements/framework/mr-comment-content/mr-attachment.js';
 import 'elements/framework/mr-dropdown/mr-dropdown.js';
 import 'elements/framework/links/mr-issue-link/mr-issue-link.js';
 import 'elements/framework/links/mr-user-link/mr-user-link.js';
-import {isShortlinkValid} from 'elements/shared/federated.js';
+import {isShortlinkValid} from 'shared/federated.js';
 import {prpcClient} from 'prpc-client-instance.js';
 
 // Match: projectName:localIdFormat

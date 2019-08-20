@@ -11,12 +11,12 @@ import './mr-restriction-indicator';
 import '../mr-issue-details/mr-issue-details.js';
 import '../metadata/mr-metadata/mr-issue-metadata.js';
 import '../mr-launch-overview/mr-launch-overview.js';
-import {store, connectStore} from 'elements/reducers/base.js';
-import * as issue from 'elements/reducers/issue.js';
-import * as project from 'elements/reducers/project.js';
-import * as user from 'elements/reducers/user.js';
-import {SHARED_STYLES} from 'elements/shared/shared-styles.js';
-import {ISSUE_DELETE_PERMISSION} from 'elements/shared/permissions.js';
+import {store, connectStore} from 'reducers/base.js';
+import * as issue from 'reducers/issue.js';
+import * as project from 'reducers/project.js';
+import * as user from 'reducers/user.js';
+import {SHARED_STYLES} from 'shared/shared-styles.js';
+import {ISSUE_DELETE_PERMISSION} from 'shared/permissions.js';
 
 import '../dialogs/mr-edit-description/mr-edit-description.js';
 import '../dialogs/mr-move-copy-issue/mr-move-copy-issue.js';

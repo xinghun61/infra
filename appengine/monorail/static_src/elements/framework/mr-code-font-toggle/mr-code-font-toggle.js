@@ -4,8 +4,8 @@
 
 import {LitElement, html} from 'lit-element';
 
-import {store, connectStore} from 'elements/reducers/base.js';
-import * as user from 'elements/reducers/user.js';
+import {store, connectStore} from 'reducers/base.js';
+import * as user from 'reducers/user.js';
 import 'elements/chops/chops-toggle/chops-toggle.js';
 
 /**

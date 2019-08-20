@@ -6,7 +6,7 @@ import {combineReducers} from 'redux';
 import {createSelector} from 'reselect';
 import {createReducer, createRequestReducer} from './redux-helpers.js';
 import {prpcClient} from 'prpc-client-instance.js';
-import {objectToMap} from 'elements/shared/helpers.js';
+import {objectToMap} from 'shared/helpers.js';
 
 // Actions
 const FETCH_START = 'user/FETCH_START';

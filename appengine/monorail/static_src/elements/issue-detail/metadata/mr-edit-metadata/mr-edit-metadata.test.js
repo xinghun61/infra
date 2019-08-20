@@ -8,8 +8,8 @@ import {MrEditMetadata} from './mr-edit-metadata.js';
 import {ISSUE_EDIT_PERMISSION, ISSUE_EDIT_SUMMARY_PERMISSION,
   ISSUE_EDIT_STATUS_PERMISSION, ISSUE_EDIT_OWNER_PERMISSION,
   ISSUE_EDIT_CC_PERMISSION,
-} from 'elements/shared/permissions.js';
-import {store} from 'elements/reducers/base.js';
+} from 'shared/permissions.js';
+import {store} from 'reducers/base.js';
 
 let element;
 let clock;

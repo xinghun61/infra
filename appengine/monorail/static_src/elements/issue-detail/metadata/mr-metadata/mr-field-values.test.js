@@ -5,7 +5,7 @@
 import {assert} from 'chai';
 import {MrFieldValues} from './mr-field-values.js';
 
-import {fieldTypes} from 'elements/shared/issue-fields.js';
+import {fieldTypes} from 'shared/issue-fields.js';
 
 
 let element;

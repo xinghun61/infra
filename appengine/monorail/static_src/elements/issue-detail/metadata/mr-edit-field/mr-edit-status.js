@@ -4,7 +4,7 @@
 
 import {LitElement, html, css} from 'lit-element';
 
-import {SHARED_STYLES} from 'elements/shared/shared-styles';
+import {SHARED_STYLES} from 'shared/shared-styles';
 import './mr-edit-field.js';
 
 /**

@@ -5,8 +5,8 @@
 import qs from 'qs';
 
 import {equalsIgnoreCase} from './helpers';
-import {fromShortlink} from 'elements/shared/federated.js';
-import {UserInputError} from 'elements/shared/errors.js';
+import {fromShortlink} from 'shared/federated.js';
+import {UserInputError} from 'shared/errors.js';
 
 // Match: projectName:localIdFormat
 const ISSUE_ID_REGEX = /(?:([a-z0-9-]+):)?(\d+)/i;

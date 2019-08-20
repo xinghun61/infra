@@ -8,8 +8,7 @@ import {labelRefsToStrings, issueRefsToStrings, componentRefsToStrings,
   userRefsToDisplayNames, statusRefsToStrings, labelNameToLabelPrefix,
 } from './converters.js';
 import {removePrefix} from './helpers.js';
-import {fieldValueMapKey} from
-  'elements/issue-detail/metadata/shared/metadata-helpers.js';
+import {fieldValueMapKey} from 'shared/metadata-helpers.js';
 
 // TODO(zhangtiff): Merge this field with metadata-helpers.js.
 

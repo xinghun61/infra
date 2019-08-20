@@ -5,16 +5,16 @@
 import {LitElement, html, css} from 'lit-element';
 import qs from 'qs';
 import page from 'page';
-import {connectStore} from 'elements/reducers/base.js';
-import * as project from 'elements/reducers/project.js';
+import {connectStore} from 'reducers/base.js';
+import * as project from 'reducers/project.js';
 import 'elements/framework/links/mr-issue-link/mr-issue-link.js';
 import 'elements/framework/links/mr-crbug-link/mr-crbug-link.js';
 import 'elements/framework/mr-dropdown/mr-dropdown.js';
 import 'elements/framework/mr-star-button/mr-star-button.js';
-import {issueRefToUrl, issueToIssueRef} from 'elements/shared/converters.js';
-import {isTextInput} from 'elements/shared/dom-helpers';
+import {issueRefToUrl, issueToIssueRef} from 'shared/converters.js';
+import {isTextInput} from 'shared/dom-helpers';
 import {stringValuesForIssueField, DEFAULT_ISSUE_FIELD_LIST,
-  EMPTY_FIELD_VALUE} from 'elements/shared/issue-fields.js';
+  EMPTY_FIELD_VALUE} from 'shared/issue-fields.js';
 
 const COLUMN_DISPLAY_NAMES = {
   'summary': 'Summary + Labels',

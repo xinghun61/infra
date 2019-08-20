@@ -4,7 +4,7 @@
 
 import {LitElement, html, css} from 'lit-element';
 import {ifDefined} from 'lit-html/directives/if-defined';
-import {issueRefToString, issueRefToUrl} from 'elements/shared/converters.js';
+import {issueRefToString, issueRefToUrl} from 'shared/converters.js';
 
 /**
  * `<mr-issue-link>`

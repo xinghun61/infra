@@ -5,7 +5,7 @@
 import {LitElement, html, css} from 'lit-element';
 import deepEqual from 'deep-equal';
 import 'elements/chops/chops-chip/chops-chip.js';
-import {immutableSplice} from 'elements/shared/helpers.js';
+import {immutableSplice} from 'shared/helpers.js';
 
 const DELIMITER_REGEX = /[,;\s]+/;
 

@@ -6,21 +6,21 @@ import {LitElement, html, css} from 'lit-element';
 
 import 'elements/chops/chops-dialog/chops-dialog.js';
 import 'elements/chops/chops-collapse/chops-collapse.js';
-import {store, connectStore} from 'elements/reducers/base.js';
-import * as issue from 'elements/reducers/issue.js';
-import * as project from 'elements/reducers/project.js';
-import * as user from 'elements/reducers/user.js';
-import * as ui from 'elements/reducers/ui.js';
-import {fieldTypes} from 'elements/shared/issue-fields.js';
+import {store, connectStore} from 'reducers/base.js';
+import * as issue from 'reducers/issue.js';
+import * as project from 'reducers/project.js';
+import * as user from 'reducers/user.js';
+import * as ui from 'reducers/ui.js';
+import {fieldTypes} from 'shared/issue-fields.js';
 import 'elements/framework/mr-comment-content/mr-description.js';
 import '../mr-comment-list/mr-comment-list.js';
 import 'elements/issue-detail/metadata/mr-edit-metadata/mr-edit-metadata.js';
 import 'elements/issue-detail/metadata/mr-metadata/mr-metadata.js';
-import {SHARED_STYLES} from 'elements/shared/shared-styles.js';
+import {SHARED_STYLES} from 'shared/shared-styles.js';
 import {APPROVER_RESTRICTED_STATUSES, STATUS_ENUM_TO_TEXT, TEXT_TO_STATUS_ENUM,
   STATUS_CLASS_MAP, CLASS_ICON_MAP, APPROVAL_STATUSES,
-} from 'elements/shared/approval-consts.js';
-import {commentListToDescriptionList} from 'elements/shared/converters.js';
+} from 'shared/approval-consts.js';
+import {commentListToDescriptionList} from 'shared/converters.js';
 
 
 /**

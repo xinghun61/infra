@@ -4,10 +4,10 @@
 
 import {LitElement, html, css} from 'lit-element';
 
-import {connectStore} from 'elements/reducers/base.js';
-import * as issue from 'elements/reducers/issue.js';
-import * as user from 'elements/reducers/user.js';
-import {arrayToEnglish} from 'elements/shared/helpers.js';
+import {connectStore} from 'reducers/base.js';
+import * as issue from 'reducers/issue.js';
+import * as user from 'reducers/user.js';
+import {arrayToEnglish} from 'shared/helpers.js';
 
 
 /**

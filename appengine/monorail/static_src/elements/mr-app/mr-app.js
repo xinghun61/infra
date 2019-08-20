@@ -6,19 +6,19 @@ import {LitElement, html, css} from 'lit-element';
 import page from 'page';
 import qs from 'qs';
 
-import {getServerStatusCron} from 'elements/shared/cron.js';
+import {getServerStatusCron} from 'shared/cron.js';
 import 'elements/framework/mr-site-banner/mr-site-banner.js';
-import {store, connectStore} from 'elements/reducers/base.js';
-import * as project from 'elements/reducers/project.js';
-import * as issue from 'elements/reducers/issue.js';
-import * as user from 'elements/reducers/user.js';
-import * as ui from 'elements/reducers/ui.js';
-import * as sitewide from 'elements/reducers/sitewide.js';
-import {arrayToEnglish} from 'elements/shared/helpers.js';
+import {store, connectStore} from 'reducers/base.js';
+import * as project from 'reducers/project.js';
+import * as issue from 'reducers/issue.js';
+import * as user from 'reducers/user.js';
+import * as ui from 'reducers/ui.js';
+import * as sitewide from 'reducers/sitewide.js';
+import {arrayToEnglish} from 'shared/helpers.js';
 import 'elements/framework/mr-header/mr-header.js';
 import 'elements/framework/mr-keystrokes/mr-keystrokes.js';
 
-import {SHARED_STYLES} from 'elements/shared/shared-styles.js';
+import {SHARED_STYLES} from 'shared/shared-styles.js';
 
 /**
  * `<mr-app>`

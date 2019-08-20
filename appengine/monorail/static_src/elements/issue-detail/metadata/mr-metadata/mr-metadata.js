@@ -4,15 +4,15 @@
 
 import {LitElement, html, css} from 'lit-element';
 
-import {connectStore} from 'elements/reducers/base.js';
+import {connectStore} from 'reducers/base.js';
 import 'elements/chops/chops-timestamp/chops-timestamp.js';
 import 'elements/framework/links/mr-issue-link/mr-issue-link.js';
 import 'elements/framework/links/mr-user-link/mr-user-link.js';
 
-import * as issue from 'elements/reducers/issue.js';
+import * as issue from 'reducers/issue.js';
 import './mr-field-values.js';
 import {HARDCODED_FIELD_GROUPS, valuesForField, fieldDefsWithGroup,
-  fieldDefsWithoutGroup} from '../shared/metadata-helpers.js';
+  fieldDefsWithoutGroup} from 'shared/metadata-helpers.js';
 
 /**
  * `<mr-metadata>`

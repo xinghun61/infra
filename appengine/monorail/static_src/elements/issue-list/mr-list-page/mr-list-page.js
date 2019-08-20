@@ -5,8 +5,8 @@
 import {LitElement, html, css} from 'lit-element';
 import page from 'page';
 import qs from 'qs';
-import {store, connectStore} from 'elements/reducers/base.js';
-import * as issue from 'elements/reducers/issue.js';
+import {store, connectStore} from 'reducers/base.js';
+import * as issue from 'reducers/issue.js';
 import {prpcClient} from 'prpc-client-instance.js';
 import 'elements/framework/mr-dropdown/mr-dropdown.js';
 import 'elements/framework/mr-issue-list/mr-issue-list.js';

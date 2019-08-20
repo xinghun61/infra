@@ -7,17 +7,17 @@ import {LitElement, html, css} from 'lit-element';
 import 'elements/issue-detail/mr-flipper/mr-flipper.js';
 import 'elements/chops/chops-dialog/chops-dialog.js';
 import 'elements/chops/chops-timestamp/chops-timestamp.js';
-import {store, connectStore} from 'elements/reducers/base.js';
-import * as issue from 'elements/reducers/issue.js';
-import * as project from 'elements/reducers/project.js';
-import {userIsMember} from 'elements/shared/helpers.js';
-import {SHARED_STYLES} from 'elements/shared/shared-styles.js';
+import {store, connectStore} from 'reducers/base.js';
+import * as issue from 'reducers/issue.js';
+import * as project from 'reducers/project.js';
+import {userIsMember} from 'shared/helpers.js';
+import {SHARED_STYLES} from 'shared/shared-styles.js';
 import 'elements/framework/links/mr-user-link/mr-user-link.js';
 import 'elements/framework/links/mr-crbug-link/mr-crbug-link.js';
 import 'elements/framework/mr-code-font-toggle/mr-code-font-toggle.js';
 import 'elements/framework/mr-dropdown/mr-dropdown.js';
 import {ISSUE_EDIT_PERMISSION, ISSUE_DELETE_PERMISSION,
-  ISSUE_FLAGSPAM_PERMISSION} from 'elements/shared/permissions.js';
+  ISSUE_FLAGSPAM_PERMISSION} from 'shared/permissions.js';
 import {prpcClient} from 'prpc-client-instance.js';
 
 const DELETE_ISSUE_CONFIRMATION_NOTICE = `\

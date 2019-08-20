@@ -5,8 +5,8 @@
 import {assert} from 'chai';
 import sinon from 'sinon';
 import {MrIssuePage} from './mr-issue-page.js';
-import {store} from 'elements/reducers/base.js';
-import * as issue from 'elements/reducers/issue.js';
+import {store} from 'reducers/base.js';
+import * as issue from 'reducers/issue.js';
 import {prpcClient} from 'prpc-client-instance.js';
 
 let element;

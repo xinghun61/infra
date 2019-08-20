@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import {resetState, store} from 'elements/reducers/base.js';
+import {resetState, store} from 'reducers/base.js';
 
 Mocha.beforeEach(() => {
   store.dispatch(resetState());

@@ -3,11 +3,11 @@
 // found in the LICENSE file.
 
 import {LitElement, html, css} from 'lit-element';
-import {store, connectStore} from 'elements/reducers/base.js';
-import * as user from 'elements/reducers/user.js';
+import {store, connectStore} from 'reducers/base.js';
+import * as user from 'reducers/user.js';
 import 'elements/chops/chops-button/chops-button.js';
 import 'elements/chops/chops-dialog/chops-dialog.js';
-import {SHARED_STYLES} from 'elements/shared/shared-styles.js';
+import {SHARED_STYLES} from 'shared/shared-styles.js';
 import {prpcClient} from 'prpc-client-instance.js';
 
 /**

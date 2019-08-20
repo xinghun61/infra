@@ -4,8 +4,8 @@
 
 import {LitElement, html, css} from 'lit-element';
 
-import {connectStore} from 'elements/reducers/base.js';
-import * as issue from 'elements/reducers/issue.js';
+import {connectStore} from 'reducers/base.js';
+import * as issue from 'reducers/issue.js';
 import './mr-phase.js';
 
 /**

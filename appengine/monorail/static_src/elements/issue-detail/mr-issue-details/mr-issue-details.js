@@ -4,13 +4,13 @@
 
 import {LitElement, html, css} from 'lit-element';
 
-import {store, connectStore} from 'elements/reducers/base.js';
-import * as issue from 'elements/reducers/issue.js';
-import * as ui from 'elements/reducers/ui.js';
+import {store, connectStore} from 'reducers/base.js';
+import * as issue from 'reducers/issue.js';
+import * as ui from 'reducers/ui.js';
 import 'elements/framework/mr-comment-content/mr-description.js';
 import '../mr-comment-list/mr-comment-list.js';
 import '../metadata/mr-edit-metadata/mr-edit-issue.js';
-import {commentListToDescriptionList} from 'elements/shared/converters.js';
+import {commentListToDescriptionList} from 'shared/converters.js';
 
 /**
  * `<mr-issue-details>`

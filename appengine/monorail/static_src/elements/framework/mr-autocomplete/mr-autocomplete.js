@@ -4,8 +4,8 @@
 
 import {ChopsAutocomplete} from
   'elements/chops/chops-autocomplete/chops-autocomplete';
-import {connectStore} from 'elements/reducers/base.js';
-import * as user from 'elements/reducers/user.js';
+import {connectStore} from 'reducers/base.js';
+import * as user from 'reducers/user.js';
 
 /**
  * `<mr-autocomplete>` displays a single chip.

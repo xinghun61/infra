@@ -4,15 +4,15 @@
 
 import {LitElement, html, css} from 'lit-element';
 
-import {connectStore} from 'elements/reducers/base.js';
-import * as issue from 'elements/reducers/issue.js';
-import * as project from 'elements/reducers/project.js';
-import * as user from 'elements/reducers/user.js';
+import {connectStore} from 'reducers/base.js';
+import * as issue from 'reducers/issue.js';
+import * as project from 'reducers/project.js';
+import * as user from 'reducers/user.js';
 import 'elements/framework/mr-star-button/mr-star-button.js';
 import 'elements/framework/links/mr-user-link/mr-user-link.js';
 import 'elements/framework/links/mr-hotlist-link/mr-hotlist-link.js';
-import {SHARED_STYLES} from 'elements/shared/shared-styles.js';
-import {pluralize} from 'elements/shared/helpers.js';
+import {SHARED_STYLES} from 'shared/shared-styles.js';
+import {pluralize} from 'shared/helpers.js';
 import './mr-metadata.js';
 
 

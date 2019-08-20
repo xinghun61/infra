@@ -5,9 +5,9 @@
 import {LitElement, html, css} from 'lit-element';
 import {ifDefined} from 'lit-html/directives/if-defined';
 import {autolink} from 'autolink.js';
-import {connectStore} from 'elements/reducers/base.js';
-import * as issue from 'elements/reducers/issue.js';
-import * as project from 'elements/reducers/project.js';
+import {connectStore} from 'reducers/base.js';
+import * as issue from 'reducers/issue.js';
+import * as project from 'reducers/project.js';
 
 /**
  * `<mr-comment-content>`

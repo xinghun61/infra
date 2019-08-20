@@ -6,10 +6,10 @@ import {LitElement, html, css} from 'lit-element';
 
 import 'elements/chops/chops-dialog/chops-dialog.js';
 import 'elements/framework/links/mr-issue-link/mr-issue-link.js';
-import {store, connectStore} from 'elements/reducers/base.js';
-import * as issue from 'elements/reducers/issue.js';
-import {SHARED_STYLES} from 'elements/shared/shared-styles.js';
-import {ISSUE_EDIT_PERMISSION} from 'elements/shared/permissions';
+import {store, connectStore} from 'reducers/base.js';
+import * as issue from 'reducers/issue.js';
+import {SHARED_STYLES} from 'shared/shared-styles.js';
+import {ISSUE_EDIT_PERMISSION} from 'shared/permissions';
 import {prpcClient} from 'prpc-client-instance.js';
 
 export class MrRelatedIssues extends connectStore(LitElement) {

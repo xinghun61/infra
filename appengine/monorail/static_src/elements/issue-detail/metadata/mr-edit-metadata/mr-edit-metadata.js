@@ -14,27 +14,27 @@ import 'elements/chops/chops-chip/chops-chip.js';
 import 'elements/framework/mr-error/mr-error.js';
 import 'elements/framework/mr-warning/mr-warning.js';
 import 'elements/help/mr-cue/mr-cue.js';
-import {store, connectStore} from 'elements/reducers/base.js';
-import {UserInputError} from 'elements/shared/errors.js';
-import {fieldTypes} from 'elements/shared/issue-fields.js';
+import {store, connectStore} from 'reducers/base.js';
+import {UserInputError} from 'shared/errors.js';
+import {fieldTypes} from 'shared/issue-fields.js';
 import {displayNameToUserRef, labelStringToRef, componentStringToRef,
   componentRefsToStrings, issueStringToRef, issueStringToBlockingRef,
   issueRefToString, issueRefsToStrings, filteredUserDisplayNames,
   valueToFieldValue,
-} from 'elements/shared/converters.js';
-import {isEmptyObject, equalsIgnoreCase} from 'elements/shared/helpers.js';
-import {SHARED_STYLES} from 'elements/shared/shared-styles.js';
-import * as issue from 'elements/reducers/issue.js';
-import * as project from 'elements/reducers/project.js';
-import * as ui from 'elements/reducers/ui.js';
+} from 'shared/converters.js';
+import {isEmptyObject, equalsIgnoreCase} from 'shared/helpers.js';
+import {SHARED_STYLES} from 'shared/shared-styles.js';
+import * as issue from 'reducers/issue.js';
+import * as project from 'reducers/project.js';
+import * as ui from 'reducers/ui.js';
 import '../mr-edit-field/mr-edit-field.js';
 import '../mr-edit-field/mr-edit-status.js';
 import {ISSUE_EDIT_PERMISSION, ISSUE_EDIT_SUMMARY_PERMISSION,
   ISSUE_EDIT_STATUS_PERMISSION, ISSUE_EDIT_OWNER_PERMISSION,
   ISSUE_EDIT_CC_PERMISSION,
-} from 'elements/shared/permissions.js';
+} from 'shared/permissions.js';
 import {fieldDefsWithGroup, fieldDefsWithoutGroup, valuesForField,
-  HARDCODED_FIELD_GROUPS} from '../shared/metadata-helpers.js';
+  HARDCODED_FIELD_GROUPS} from 'shared/metadata-helpers.js';
 
 
 const DEBOUNCED_PRESUBMIT_TIME_OUT = 400;

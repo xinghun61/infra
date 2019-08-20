@@ -5,7 +5,7 @@
 import sinon from 'sinon';
 import {assert} from 'chai';
 
-import {store, stateUpdated} from 'elements/reducers/base.js';
+import {store, stateUpdated} from 'reducers/base.js';
 import {prpcClient} from 'prpc-client-instance.js';
 import * as sitewide from './sitewide.js';
 

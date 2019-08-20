@@ -5,10 +5,10 @@
 import {combineReducers} from 'redux';
 import {createSelector} from 'reselect';
 import {createReducer, createRequestReducer} from './redux-helpers.js';
-import {fieldTypes} from 'elements/shared/issue-fields.js';
-import {hasPrefix, removePrefix} from 'elements/shared/helpers.js';
+import {fieldTypes} from 'shared/issue-fields.js';
+import {hasPrefix, removePrefix} from 'shared/helpers.js';
 import {fieldNameToLabelPrefix,
-  labelNameToLabelPrefix} from 'elements/shared/converters.js';
+  labelNameToLabelPrefix} from 'shared/converters.js';
 import {prpcClient} from 'prpc-client-instance.js';
 
 // Actions

@@ -5,8 +5,8 @@
 import {LitElement, html, css} from 'lit-element';
 
 import 'elements/chops/chops-timestamp/chops-timestamp.js';
-import {connectStore} from 'elements/reducers/base.js';
-import * as sitewide from 'elements/reducers/sitewide.js';
+import {connectStore} from 'reducers/base.js';
+import * as sitewide from 'reducers/sitewide.js';
 
 export class MrSiteBanner extends connectStore(LitElement) {
   static get styles() {

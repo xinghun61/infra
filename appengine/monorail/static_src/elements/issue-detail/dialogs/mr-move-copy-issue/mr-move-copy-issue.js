@@ -5,12 +5,12 @@
 import page from 'page';
 import {LitElement, html, css} from 'lit-element';
 
-import {connectStore} from 'elements/reducers/base.js';
-import * as issue from 'elements/reducers/issue.js';
+import {connectStore} from 'reducers/base.js';
+import * as issue from 'reducers/issue.js';
 import 'elements/framework/mr-autocomplete/mr-autocomplete.js';
 import 'elements/chops/chops-button/chops-button.js';
 import 'elements/chops/chops-dialog/chops-dialog.js';
-import {SHARED_STYLES} from 'elements/shared/shared-styles.js';
+import {SHARED_STYLES} from 'shared/shared-styles.js';
 import {prpcClient} from 'prpc-client-instance.js';
 
 export class MrMoveCopyIssue extends connectStore(LitElement) {

@@ -4,7 +4,7 @@
 
 import {assert} from 'chai';
 import {MrEditField} from './mr-edit-field.js';
-import {fieldTypes} from 'elements/shared/issue-fields.js';
+import {fieldTypes} from 'shared/issue-fields.js';
 
 
 let element;

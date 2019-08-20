@@ -4,10 +4,10 @@
 
 import {LitElement, html, css} from 'lit-element';
 
-import {SHARED_STYLES} from 'elements/shared/shared-styles.js';
+import {SHARED_STYLES} from 'shared/shared-styles.js';
 import 'elements/chops/chops-button/chops-button.js';
-import {store, connectStore} from 'elements/reducers/base.js';
-import * as issue from 'elements/reducers/issue.js';
+import {store, connectStore} from 'reducers/base.js';
+import * as issue from 'reducers/issue.js';
 import {prpcClient} from 'prpc-client-instance.js';
 
 /**

@@ -5,8 +5,8 @@
 import {LitElement, html} from 'lit-element';
 
 import 'elements/framework/links/mr-user-link/mr-user-link.js';
-import {fieldTypes, EMPTY_FIELD_VALUE} from 'elements/shared/issue-fields.js';
-import {displayNameToUserRef} from 'elements/shared/converters.js';
+import {fieldTypes, EMPTY_FIELD_VALUE} from 'shared/issue-fields.js';
+import {displayNameToUserRef} from 'shared/converters.js';
 
 /**
  * `<mr-field-values>`

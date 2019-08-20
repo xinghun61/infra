@@ -5,10 +5,10 @@
 import {LitElement, html, css} from 'lit-element';
 
 import deepEqual from 'deep-equal';
-import {fieldTypes, EMPTY_FIELD_VALUE} from 'elements/shared/issue-fields.js';
-import {arrayDifference, equalsIgnoreCase} from 'elements/shared/helpers.js';
+import {fieldTypes, EMPTY_FIELD_VALUE} from 'shared/issue-fields.js';
+import {arrayDifference, equalsIgnoreCase} from 'shared/helpers.js';
 
-import {SHARED_STYLES} from 'elements/shared/shared-styles';
+import {SHARED_STYLES} from 'shared/shared-styles';
 import 'elements/chops/chops-chip-input/chops-chip-input.js';
 import './mr-multi-input.js';
 import './mr-multi-checkbox.js';
