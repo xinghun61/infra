@@ -57,12 +57,11 @@ func TestGetForTestsWithArgs(t *testing.T) {
 		t.Run(c.testArgs, func(t *testing.T) {
 			tests, err := enumeration.GetForTests(m, []*test_platform.Request_Test{
 				{Harness: &test_platform.Request_Test_Autotest_{Autotest: &test_platform.Request_Test_Autotest{Name: "foo-test", TestArgs: c.testArgs}}}})
-			if len(tests) != 1 {
-				t.Errorf("expected 1 result, got %d", len(tests))
-				t.FailNow()
-			}
 			if err != nil {
 				t.Errorf("unexpected error %s", err.Error())
+			}
+			if len(tests) != 1 {
+				t.Fatalf("expected 1 result, got %d", len(tests))
 			}
 			if tests[0].TestArgs != c.expectArgs {
 				t.Errorf("expected test args %s, got %s", c.expectArgs, tests[0].TestArgs)
@@ -87,7 +86,7 @@ func TestGetForTestsWithDisplayName(t *testing.T) {
 		},
 	})
 	if err != nil {
-		t.Fatalf("unexpected error %s", err.Error())
+		t.Errorf("unexpected error %s", err.Error())
 	}
 	if len(tests) != 1 {
 		t.Fatalf("expected 1 result, got %d", len(tests))
