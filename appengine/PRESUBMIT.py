@@ -153,14 +153,11 @@ def PylintFiles(input_api, output_api, files, pylint_root, disabled_warnings,
   canned_checks_path = input_api.os_path.abspath(canned_checks_path)
   depot_tools_path = input_api.os_path.dirname(canned_checks_path)
 
-  pylintrc_path = input_api.os_path.join(depot_tools_path, 'pylintrc')
-  pylint_args = ['--rcfile=%s' % pylintrc_path]
-  pylint_args.extend(['-d', ','.join(disabled_warnings)])
+  pylint_args = ['-d', ','.join(disabled_warnings)]
 
   env = EnvAddingPythonPath(input_api, extra_python_paths)
 
-  pylint_path = input_api.os_path.join(depot_tools_path,
-      'third_party', 'pylint.py')
+  pylint_path = input_api.os_path.join(depot_tools_path, 'pylint-1.5')
 
   # Make paths relative to pylint_root
   for filename in files:
@@ -176,7 +173,7 @@ def PylintFiles(input_api, output_api, files, pylint_root, disabled_warnings,
   return input_api.Command(
       name=('Pylint (%s files%s)' % (
             len(files), ' under %s' % pylint_root if pylint_root else '')),
-      cmd=[input_api.python_executable,
+      cmd=['vpython',
            pylint_path,
            '--args-on-stdin'],
       kwargs=kwargs,
@@ -223,8 +220,7 @@ def PylintChecks(input_api, output_api, only_changed):  # pragma: no cover
                              len(changed_py_files))
       return [PylintFiles(input_api, output_api, changed_py_files, None,
                           DISABLED_PYLINT_WARNINGS, extra_syspaths)]
-    else:
-      return []
+    return []
 
   all_python_files = FetchAllFiles(input_api, white_list, black_list)
   root_to_paths = GroupPythonFilesByRoot(input_api, all_python_files)
