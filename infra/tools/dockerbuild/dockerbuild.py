@@ -3,6 +3,7 @@
 # found in the LICENSE file.
 
 import argparse
+import distutils.version
 import logging
 import os
 import re
@@ -83,6 +84,10 @@ def _main_wheel_build(args, system):
       util.LOGGER.error("--wheel_re didn't match any wheels: %s", regex)
       return
 
+  # Packages that we've updated this run.  Used to determine which packages
+  # need their refs updated.
+  updated_packages = set()
+
   platforms, specs = _filter_platform_specs(args.platform, wheels)
 
   _, git_revision = system.check_run(
@@ -126,8 +131,77 @@ def _main_wheel_build(args, system):
       else:
         util.LOGGER.info('Uploading CIPD package for: %s', package)
 
-      # But when we register it, we want to attach all tags.
+      # When we register it, we want to attach all tags.
       system.cipd.register_package(pkg_path, package.tags, dryrun=dryrun)
+
+      # Note packages that we've updated so we can update all the refs.
+      updated_packages.add(package.name)
+
+  # Now that we've registered all our packages, update all the refs.
+  # We first create a reverse mapping for the cipd name to wheels.
+  # i.e. We map "pylint-py2_py3" cipd name to all known versions.
+  platforms, specs = _filter_platform_specs(args.platform, set())
+  package_map = {}
+  for spec_name in specs:
+    build = wheel.SPECS[spec_name]
+    seen = set()
+    for plat in platforms:
+      w = build.wheel(system, plat)
+      package = w.cipd_package(git_revision)
+      if package in seen:
+        continue
+      seen.add(package)
+
+      if package.name in updated_packages:
+        buildid = build.version_fn(system)
+        package_map.setdefault(package.name, []).append((package, buildid))
+
+  # Now walk the cipd packages to figure refs<->version bindings.
+  for package_name, packages in package_map.items():
+    util.LOGGER.info('Updating refs for %s', package_name)
+
+    # First build the map of all versions that could satisfy a ref.
+    # e.g. This creates {'latest': ['1.0', '2.0'],
+    #                    '1.x': ['1.0'],
+    #                    '2.x': ['2.0']}.
+    ref_candidates = {'latest': []}
+    for package, buildid in packages:
+      version = distutils.version.LooseVersion(buildid)
+      ref_candidates['latest'].append(version)
+
+      # Create some ".x" refs for version series that are generally considered
+      # "compatible".  We leave it to the end user to determine when using these
+      # make sense as not all upstream packages have good practices (although
+      # many do follow semver policies).
+      # e.g. This creates:
+      #   224     -> <none>
+      #   1.9     -> 1.x
+      #   1.5.6   -> 1.x 1.5.x
+      #   1.8.7.3 -> 1.x 1.8.x 1.8.7.x
+      parts = version.version
+      for i in range(1, len(parts)):
+        # Stop parsing if we hit non-numeric component.
+        # e.g. 1.3.0rc1 -> [1, 3, 0, 'rc', 1].
+        if not isinstance(parts[i], int):
+          break
+        series = '.'.join(str(x) for x in parts[0:i] + ['x'])
+        ref_candidates.setdefault(series, []).append(version)
+
+    # Then figure out which tags get which refs.  Basically we sort the
+    # candidates to find the newest version and then point the ref to it.
+    # e.g. This creates {'version:1.2.3': ['1.2.x'],
+    #                    'version:1.3.1': ['latest', '1.3.x', '1.x']}.
+    version_refs = {}
+    for ref, versions in ref_candidates.items():
+      version = sorted(versions)[-1]
+      version_tag = 'version:%s' % (version.vstring,)
+      version_refs.setdefault(version_tag, []).append(ref)
+
+    # Finally set the refs!
+    for version_tag, refs in version_refs.items():
+      util.LOGGER.info('Setting %s refs %s to point to tag %s',
+          package_name, refs, version_tag)
+      system.cipd.set_refs(package_name, version_tag, refs, dryrun=dryrun)
 
 
 def _main_wheel_dump(args, system):

@@ -107,3 +107,9 @@ class Cipd(object):
 
   def deploy_package(self, path, root):
     self.check_run('pkg-deploy', '-root', root, path)
+
+  def set_refs(self, package, version, refs, dryrun=False):
+    cmd = ['set-ref', package, '-version', version]
+    for ref in refs:
+      cmd += ['-ref', ref]
+    self.check_run(*cmd, dryrun=dryrun)
