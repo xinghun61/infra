@@ -68,12 +68,15 @@ func (t *testRun) RequestArgs(params *test_platform.Request_Params, workerConfig
 		return request.Args{}, errors.Annotate(err, "create request args").Err()
 	}
 
+	kv := getKeyvals(params, parentTaskID)
+	t.addKeyvalsForDisplayName(kv)
+
 	cmd := &worker.Command{
 		TaskName:        t.invocation.Test.Name,
 		ClientTest:      isClient,
 		OutputToIsolate: true,
 		TestArgs:        t.invocation.TestArgs,
-		Keyvals:         getKeyvals(params, parentTaskID),
+		Keyvals:         kv,
 	}
 	cmd.Config(wrap(workerConfig))
 
@@ -95,6 +98,16 @@ func (t *testRun) RequestArgs(params *test_platform.Request_Params, workerConfig
 	}
 
 	return args, nil
+}
+
+func (t *testRun) addKeyvalsForDisplayName(kv map[string]string) {
+	const displayNameKey = "label"
+	switch {
+	case t.invocation.DisplayName != "":
+		kv[displayNameKey] = t.invocation.DisplayName
+	default:
+		kv[displayNameKey] = t.invocation.GetTest().GetName()
+	}
 }
 
 func getKeyvals(params *test_platform.Request_Params, parentTaskID string) map[string]string {

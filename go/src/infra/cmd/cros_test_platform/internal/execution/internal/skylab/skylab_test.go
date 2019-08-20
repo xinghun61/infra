@@ -7,6 +7,7 @@ package skylab_test
 import (
 	"context"
 	"fmt"
+	"regexp"
 	"strings"
 	"sync"
 	"testing"
@@ -401,9 +402,9 @@ func TestRequestArguments(t *testing.T) {
 		getter := newFakeGetter()
 		gf := fakeGetterFactory(getter)
 
-		invs := []*steps.EnumerationResponse_AutotestInvocation{
-			invocation("name1", "foo-arg1 foo-arg2", false, &build_api.AutotestTaskDependency{Label: "cr50:pvt"}),
-		}
+		inv := invocation("name1", "foo-arg1 foo-arg2", false, &build_api.AutotestTaskDependency{Label: "cr50:pvt"})
+		inv.DisplayName = "given_name"
+		invs := []*steps.EnumerationResponse_AutotestInvocation{inv}
 
 		run := skylab.NewTaskSet(invs, basicParams(), basicConfig(), "foo-parent-task-id")
 		run.LaunchAndWait(ctx, swarming, gf)
@@ -444,7 +445,11 @@ func TestRequestArguments(t *testing.T) {
 				So(slice.Properties.Command, ShouldContain, "-test-args")
 				So(slice.Properties.Command, ShouldContain, "foo-arg1 foo-arg2")
 
-				So(flatCommand, ShouldContainSubstring, `-keyvals {"k1":"v1","parent_job_id":"foo-parent-task-id"}`)
+				keyvals := extractKeyvalsArgument(flatCommand)
+				So(keyvals, ShouldNotBeEmpty)
+				So(keyvals, ShouldContainSubstring, `"k1":"v1"`)
+				So(keyvals, ShouldContainSubstring, `"parent_job_id":"foo-parent-task-id"`)
+				So(keyvals, ShouldContainSubstring, `"label":"given_name"`)
 
 				provisionArg := "-provision-labels cros-version:foo-build,fwro-version:foo-ro-firmware,fwrw-version:foo-rw-firmware"
 
@@ -466,6 +471,19 @@ func TestRequestArguments(t *testing.T) {
 			}
 		})
 	})
+}
+
+var keyvalsPattern = regexp.MustCompile(`\-keyvals\s*\{([\w\s":,-]+)\}`)
+
+func extractKeyvalsArgument(cmd string) string {
+	ms := keyvalsPattern.FindAllStringSubmatch(cmd, -1)
+	So(ms, ShouldHaveLength, 1)
+	m := ms[0]
+	// Guaranteed by the constant regexp definition.
+	if len(m) != 2 {
+		panic(fmt.Sprintf("Match %s of regexp %s has length %d, want 2", m, keyvalsPattern, len(m)))
+	}
+	return m[1]
 }
 
 func passingResult() *skylab_test_runner.Result_Autotest {
