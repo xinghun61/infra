@@ -122,9 +122,6 @@ func (c *createTestRun) validateForBB() error {
 	if c.parentTaskID != "" {
 		return errors.Reason("parent task id not yet supported in -bb mode").Err()
 	}
-	if c.priority != defaultTaskPriority {
-		return errors.Reason("nondefault priority not yet supported in -bb mode").Err()
-	}
 	if len(c.provisionLabels) != 0 {
 		return errors.Reason("freeform provisionable labels not yet supported in -bb mode").Err()
 	}

@@ -79,6 +79,7 @@ func (c *createRunCommon) RecipeArgs() (recipe.Args, error) {
 		QuotaAccount: c.qsAccount,
 		Timeout:      time.Duration(c.timeoutMins) * time.Minute,
 		Keyvals:      keyvalMap,
+		Priority:     int64(c.priority),
 	}, nil
 }
 

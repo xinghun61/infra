@@ -37,6 +37,7 @@ type Args struct {
 	FreeformSwarmingDimensions []string
 	AutotestTestArgs           string
 	MaxRetries                 int
+	Priority                   int64
 }
 
 // Request constructs a cros_test_platform request from the given arguments.
@@ -71,7 +72,7 @@ func Request(a Args) (*test_platform.Request, error) {
 		Model: a.Model,
 	}
 
-	params.Scheduling = toScheduling(a.Pool, a.QuotaAccount)
+	params.Scheduling = toScheduling(a.Pool, a.QuotaAccount, a.Priority)
 
 	params.SoftwareAttributes = &test_platform.Request_Params_SoftwareAttributes{
 		BuildTarget: &chromiumos.BuildTarget{Name: a.Board},
@@ -114,8 +115,8 @@ func Request(a Args) (*test_platform.Request, error) {
 	return req, nil
 }
 
-func toScheduling(pool string, quotaAccount string) *test_platform.Request_Params_Scheduling {
-	s := test_platform.Request_Params_Scheduling{}
+func toScheduling(pool string, quotaAccount string, priority int64) *test_platform.Request_Params_Scheduling {
+	s := test_platform.Request_Params_Scheduling{Priority: priority}
 	switch {
 	case quotaAccount != "":
 		s.Pool = &test_platform.Request_Params_Scheduling_QuotaAccount{QuotaAccount: quotaAccount}

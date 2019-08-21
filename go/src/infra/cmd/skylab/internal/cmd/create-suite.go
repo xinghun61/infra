@@ -155,9 +155,6 @@ func (c *createSuiteRun) validateForBB() error {
 	if len(c.tags) > 0 {
 		return errors.Reason("tags not yet supported in -bb mode").Err()
 	}
-	if c.priority != defaultTaskPriority {
-		return errors.Reason("nondefault priority not yet supported in -bb mode").Err()
-	}
 	if c.orphan {
 		return errors.Reason("orphan not supported in -bb mode").Err()
 	}

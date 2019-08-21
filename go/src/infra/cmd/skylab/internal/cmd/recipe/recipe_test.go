@@ -158,11 +158,12 @@ func TestSchedulingParam(t *testing.T) {
 		}
 		for _, c := range cases {
 			Convey(c.name, func() {
-				s := toScheduling(c.inputPool, c.inputAccount)
+				s := toScheduling(c.inputPool, c.inputAccount, 42)
 				Convey("then scheduling parameters are correct.", func() {
 					So(s.GetManagedPool(), ShouldResemble, c.expectedManagedPool)
 					So(s.GetQuotaAccount(), ShouldResemble, c.expectedAccount)
 					So(s.GetUnmanagedPool(), ShouldResemble, c.expectedUnmanagedPool)
+					So(s.Priority, ShouldEqual, 42)
 				})
 			})
 		}
