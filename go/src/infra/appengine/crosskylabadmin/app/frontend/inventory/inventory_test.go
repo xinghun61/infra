@@ -71,7 +71,7 @@ func fakeDeviceConfig(ctx context.Context, ids []DeviceConfigID) map[string]*dev
 					Value: id.VariantID,
 				},
 				BrandId: &device.BrandId{
-					Value: id.BrandID,
+					Value: "",
 				},
 			},
 			GpuFamily: gpu,
@@ -108,7 +108,6 @@ func TestUpdateDeviceConfig(t *testing.T) {
 			PlatformID: "",
 			ModelID:    "link",
 			VariantID:  "",
-			BrandID:    "",
 		}
 		deviceConfigs := fakeDeviceConfig(ctx, []DeviceConfigID{id})
 
@@ -133,7 +132,6 @@ func TestUpdateDeviceConfig(t *testing.T) {
 			PlatformID: "",
 			ModelID:    "non-link",
 			VariantID:  "",
-			BrandID:    "",
 		}
 		deviceConfigs := fakeDeviceConfig(ctx, []DeviceConfigID{id})
 		err := tf.FakeGitiles.SetInventory(config.Get(ctx).Inventory, fakes.InventoryData{
@@ -158,7 +156,6 @@ func TestUpdateDeviceConfig(t *testing.T) {
 			PlatformID: "",
 			ModelID:    "link",
 			VariantID:  "",
-			BrandID:    "",
 		}
 		deviceConfigs := fakeDeviceConfig(ctx, []DeviceConfigID{id})
 		err := tf.FakeGitiles.SetInventory(

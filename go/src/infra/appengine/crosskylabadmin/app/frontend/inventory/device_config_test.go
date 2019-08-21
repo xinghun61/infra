@@ -34,13 +34,11 @@ func TestGetDeviceConfig(t *testing.T) {
 		platformID := "coral"
 		modelID := "mmm"
 		variantID := "vvv"
-		brandID := "bbb"
 		gpuFamily := "GGG"
 		id := DeviceConfigID{
 			PlatformID: platformID,
 			ModelID:    modelID,
 			VariantID:  variantID,
-			BrandID:    brandID,
 		}
 		configs := []testDeviceConfig{
 			{
@@ -67,7 +65,7 @@ func TestGetDeviceConfig(t *testing.T) {
 						Value: variantID,
 					},
 					BrandId: &device.BrandId{
-						Value: brandID,
+						Value: "",
 					},
 				},
 				GpuFamily: gpuFamily,
@@ -86,13 +84,11 @@ func TestSaveDeviceConfig(t *testing.T) {
 			PlatformID: "board1",
 			ModelID:    "model1",
 			VariantID:  "variant1",
-			BrandID:    "brand1",
 		}
 		id2 := DeviceConfigID{
 			PlatformID: "board2",
 			ModelID:    "model2",
 			VariantID:  "variant2",
-			BrandID:    "brand2",
 		}
 		deviceConfigs := fakeDeviceConfig(ctx, []DeviceConfigID{id1, id2})
 		dcID1 := getDeviceConfigIDStr(ctx, id1)
@@ -138,13 +134,11 @@ func TestUpdateLabelsWithDeviceConfig(t *testing.T) {
 			PlatformID: "board1",
 			ModelID:    "model1",
 			VariantID:  "variant1",
-			BrandID:    "brand1",
 		}
 		id2 := DeviceConfigID{
 			PlatformID: "board2",
 			ModelID:    "model2",
 			VariantID:  "variant2",
-			BrandID:    "brand2",
 		}
 		deviceConfigs := fakeDeviceConfig(ctx, []DeviceConfigID{id1, id2})
 		dcID1 := getDeviceConfigIDStr(ctx, id1)
@@ -154,7 +148,7 @@ func TestUpdateLabelsWithDeviceConfig(t *testing.T) {
 		err := SaveDeviceConfig(ctx, deviceConfigs)
 		So(err, ShouldBeNil)
 
-		l := newSchedulableLabels(id1.PlatformID, id1.ModelID, id1.VariantID, id1.BrandID)
+		l := newSchedulableLabels(id1.PlatformID, id1.ModelID, id1.VariantID)
 		err = UpdateLabelsWithDeviceConfig(ctx, l)
 		So(err, ShouldBeNil)
 		So(l.GetCapabilities().GetGpuFamily(), ShouldEqual, "gpu1")
@@ -165,13 +159,11 @@ func TestUpdateLabelsWithDeviceConfig(t *testing.T) {
 			PlatformID: "board1",
 			ModelID:    "model1",
 			VariantID:  "variant1",
-			BrandID:    "brand1",
 		}
 		id2 := DeviceConfigID{
 			PlatformID: "board2",
 			ModelID:    "model2",
 			VariantID:  "variant2",
-			BrandID:    "brand2",
 		}
 		deviceConfigs := fakeDeviceConfig(ctx, []DeviceConfigID{id1, id2})
 		dcID1 := getDeviceConfigIDStr(ctx, id1)
@@ -181,7 +173,7 @@ func TestUpdateLabelsWithDeviceConfig(t *testing.T) {
 		err := SaveDeviceConfig(ctx, deviceConfigs)
 		So(err, ShouldBeNil)
 
-		l := newSchedulableLabels(id1.PlatformID, id2.ModelID, id1.VariantID, id2.BrandID)
+		l := newSchedulableLabels(id1.PlatformID, id2.ModelID, id1.VariantID)
 		err = UpdateLabelsWithDeviceConfig(ctx, l)
 		So(err, ShouldBeNil)
 	})
@@ -195,12 +187,12 @@ func getGpuFromDeviceConfigEntity(dce *deviceConfigEntity) (string, error) {
 	return dc.GetGpuFamily(), nil
 }
 
-func newSchedulableLabels(board, model, variant, brand string) *inventory.SchedulableLabels {
+func newSchedulableLabels(board, model, variant string) *inventory.SchedulableLabels {
 	return &inventory.SchedulableLabels{
 		Board: &board,
 		Model: &model,
 		Sku:   &variant,
-		Brand: &brand,
+		Brand: new(string),
 		Capabilities: &inventory.HardwareCapabilities{
 			Atrus:           new(bool),
 			Bluetooth:       new(bool),

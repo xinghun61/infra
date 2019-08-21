@@ -38,12 +38,11 @@ type DeviceConfigID struct {
 	PlatformID string
 	ModelID    string
 	VariantID  string
-	BrandID    string
 }
 
 // getDeviceConfigIDStr generates device id for a DUT.
 func getDeviceConfigIDStr(ctx context.Context, dcID DeviceConfigID) string {
-	return strings.Join([]string{dcID.PlatformID, dcID.ModelID, dcID.VariantID, dcID.BrandID}, ".")
+	return strings.Join([]string{dcID.PlatformID, dcID.ModelID, dcID.VariantID}, ".")
 }
 
 func getIDForDeviceConfig(ctx context.Context, dc *device.Config) string {
@@ -51,7 +50,6 @@ func getIDForDeviceConfig(ctx context.Context, dc *device.Config) string {
 		PlatformID: dc.Id.PlatformId.Value,
 		ModelID:    dc.Id.ModelId.Value,
 		VariantID:  dc.Id.VariantId.Value,
-		BrandID:    dc.Id.BrandId.Value,
 	})
 }
 
@@ -60,7 +58,6 @@ func getIDForInventoryLabels(ctx context.Context, sl *inventory.SchedulableLabel
 		PlatformID: sl.GetBoard(),
 		ModelID:    sl.GetModel(),
 		VariantID:  sl.GetSku(),
-		BrandID:    sl.GetBrand(),
 	})
 }
 
@@ -68,7 +65,7 @@ func getIDForInventoryLabels(ctx context.Context, sl *inventory.SchedulableLabel
 func UpdateLabelsWithDeviceConfig(ctx context.Context, sl *inventory.SchedulableLabels) error {
 	dcID := getIDForInventoryLabels(ctx, sl)
 	if dcID == getDeviceConfigIDStr(ctx, DeviceConfigID{}) {
-		return errors.Reason("no platform, model, variant, brand are specified in inventory labels").Err()
+		return errors.Reason("no platform, model, variant are specified in inventory labels").Err()
 	}
 	dce := &deviceConfigEntity{
 		ID: dcID,

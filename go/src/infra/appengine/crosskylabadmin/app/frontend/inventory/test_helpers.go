@@ -191,7 +191,7 @@ func deviceConfigBytes(configs []testDeviceConfig) []byte {
 					Value: dc.dcID.VariantID,
 				},
 				BrandId: &device.BrandId{
-					Value: dc.dcID.BrandID,
+					Value: "",
 				},
 			},
 			GpuFamily: dc.gpuFamily,
