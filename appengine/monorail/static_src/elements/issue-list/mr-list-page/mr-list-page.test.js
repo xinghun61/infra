@@ -4,7 +4,7 @@
 import sinon from 'sinon';
 import {assert} from 'chai';
 import {prpcClient} from 'prpc-client-instance.js';
-import {MrListPage} from './mr-list-page.js';
+import {MrListPage, DEFAULT_ISSUES_PER_PAGE} from './mr-list-page.js';
 
 let element;
 
@@ -63,22 +63,161 @@ describe('mr-list-page', () => {
     sinon.assert.calledOnce(element.refresh);
   });
 
-  it('parses colspec parameter correctly', async () => {
-    element.queryParams = {colspec: 'ID+Summary+AllLabels+Priority'};
+  it('startIndex parses queryParams for value', () => {
+    // Default value.
+    element.queryParams = {};
+    assert.equal(element.startIndex, 0);
 
-    await element.updateComplete;
+    // Int.
+    element.queryParams = {start: 2};
+    assert.equal(element.startIndex, 2);
+
+    // String.
+    element.queryParams = {start: '5'};
+    assert.equal(element.startIndex, 5);
+
+    // Negative value.
+    element.queryParams = {start: -5};
+    assert.equal(element.startIndex, 0);
+
+    // NaN
+    element.queryParams = {start: 'lol'};
+    assert.equal(element.startIndex, 0);
+  });
+
+  it('maxItems parses queryParams for value', () => {
+    // Default value.
+    element.queryParams = {};
+    assert.equal(element.maxItems, DEFAULT_ISSUES_PER_PAGE);
+
+    // Int.
+    element.queryParams = {num: 50};
+    assert.equal(element.maxItems, 50);
+
+    // String.
+    element.queryParams = {num: '33'};
+    assert.equal(element.maxItems, 33);
+
+    // NaN
+    element.queryParams = {num: 'lol'};
+    assert.equal(element.maxItems, DEFAULT_ISSUES_PER_PAGE);
+  });
+
+  it('parses colspec parameter correctly', () => {
+    element.queryParams = {colspec: 'ID+Summary+AllLabels+Priority'};
 
     assert.deepEqual(element.columns,
         ['ID', 'Summary', 'AllLabels', 'Priority']);
   });
 
-  it('colspec parsing preserves dashed parameters', async () => {
+  it('colspec parsing preserves dashed parameters', () => {
     element.queryParams = {colspec: 'ID+Summary+Test-Label+Another-Label'};
-
-    await element.updateComplete;
 
     assert.deepEqual(element.columns,
         ['ID', 'Summary', 'Test-Label', 'Another-Label']);
+  });
+
+  describe('pagination', () => {
+    beforeEach(() => {
+      // Stop Redux from overriding values being tested.
+      sinon.stub(element, 'stateChanged');
+    });
+
+    it('issue count renders on first page', async () => {
+      element.queryParams = {num: 10, start: 0};
+      element.totalIssues = 100;
+
+      await element.updateComplete;
+
+      const count = element.shadowRoot.querySelector('.issue-count');
+
+      assert.equal(count.textContent.trim(), '1 - 10 of 100');
+    });
+
+    it('issue count renders on middle page', async () => {
+      element.queryParams = {num: 10, start: 50};
+      element.totalIssues = 100;
+
+      await element.updateComplete;
+
+      const count = element.shadowRoot.querySelector('.issue-count');
+
+      assert.equal(count.textContent.trim(), '51 - 60 of 100');
+    });
+
+    it('issue count renders on last page', async () => {
+      element.queryParams = {num: 10, start: 95};
+      element.totalIssues = 100;
+
+      await element.updateComplete;
+
+      const count = element.shadowRoot.querySelector('.issue-count');
+
+      assert.equal(count.textContent.trim(), '96 - 100 of 100');
+    });
+
+    it('issue count renders on single page', async () => {
+      element.queryParams = {num: 100, start: 0};
+      element.totalIssues = 33;
+
+      await element.updateComplete;
+
+      const count = element.shadowRoot.querySelector('.issue-count');
+
+      assert.equal(count.textContent.trim(), '1 - 33 of 33');
+    });
+
+    it('next and prev hidden on single page', async () => {
+      element.queryParams = {num: 500, start: 0};
+      element.totalIssues = 10;
+
+      await element.updateComplete;
+
+      const next = element.shadowRoot.querySelector('.next-link');
+      const prev = element.shadowRoot.querySelector('.prev-link');
+
+      assert.isNull(next);
+      assert.isNull(prev);
+    });
+
+    it('prev hidden on first page', async () => {
+      element.queryParams = {num: 10, start: 0};
+      element.totalIssues = 30;
+
+      await element.updateComplete;
+
+      const next = element.shadowRoot.querySelector('.next-link');
+      const prev = element.shadowRoot.querySelector('.prev-link');
+
+      assert.isNotNull(next);
+      assert.isNull(prev);
+    });
+
+    it('next hidden on last page', async () => {
+      element.queryParams = {num: 10, start: 9};
+      element.totalIssues = 5;
+
+      await element.updateComplete;
+
+      const next = element.shadowRoot.querySelector('.next-link');
+      const prev = element.shadowRoot.querySelector('.prev-link');
+
+      assert.isNull(next);
+      assert.isNotNull(prev);
+    });
+
+    it('next and prev shown on middle page', async () => {
+      element.queryParams = {num: 10, start: 50};
+      element.totalIssues = 100;
+
+      await element.updateComplete;
+
+      const next = element.shadowRoot.querySelector('.next-link');
+      const prev = element.shadowRoot.querySelector('.prev-link');
+
+      assert.isNotNull(next);
+      assert.isNotNull(prev);
+    });
   });
 
   describe('edit actions', () => {
@@ -202,6 +341,7 @@ describe('mr-list-page', () => {
 
       const dialog = element.shadowRoot.querySelector(
           'mr-update-issue-hotlists');
+
       sinon.stub(dialog, 'open');
 
       element.addToHotlist();

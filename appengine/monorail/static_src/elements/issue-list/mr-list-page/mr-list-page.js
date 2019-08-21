@@ -17,6 +17,8 @@ import 'elements/issue-detail/dialogs/mr-update-issue-hotlists/mr-update-issue-h
 import '../dialogs/mr-change-columns/mr-change-columns.js';
 import '../mr-mode-selector/mr-mode-selector.js';
 
+export const DEFAULT_ISSUES_PER_PAGE = 100;
+const PARAMS_THAT_TRIGGER_REFRESH = ['q', 'sort', 'num', 'start'];
 
 export class MrListPage extends connectStore(LitElement) {
   static get styles() {
@@ -65,11 +67,37 @@ export class MrListPage extends connectStore(LitElement) {
       }
       .right-controls {
         flex-grow: 0;
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+      }
+      .next-link, .prev-link {
+        display: inline-block;
+        margin: 0 8px;
+      }
+      mr-mode-selector {
+        margin-left: 8px;
       }
     `;
   }
 
   render() {
+    const selectedRefs = this.selectedIssues.map(
+        ({localId, projectName}) => ({localId, projectName}));
+    return html`
+      ${this._renderControls()}
+      ${this._renderListBody()}
+      <mr-update-issue-hotlists
+        .issueRefs=${selectedRefs}
+      ></mr-update-issue-hotlists>
+      <mr-change-columns
+        .columns=${this.columns}
+        .queryParams=${this.queryParams}
+      ></mr-change-columns>
+    `;
+  }
+
+  _renderListBody() {
     if (this.fetchingIssueList) {
       return html`
         <div class="container-no-issues">
@@ -78,8 +106,25 @@ export class MrListPage extends connectStore(LitElement) {
       `;
     }
 
-    const selectedRefs = this.selectedIssues.map(
-        ({localId, projectName}) => ({localId, projectName}));
+    return html`
+      <mr-issue-list
+        .issues=${this.issues}
+        .projectName=${this.projectName}
+        .queryParams=${this.queryParams}
+        .columns=${this.columns}
+        selectionEnabled
+        @selectionChange=${this._setSelectedIssues}
+      ></mr-issue-list>
+    `;
+  }
+
+  _renderControls() {
+    const maxItems = this.maxItems;
+    const startIndex = this.startIndex;
+    const end = Math.min(startIndex + maxItems, this.totalIssues);
+    const hasNext = end < this.totalIssues;
+    const hasPrev = startIndex > 0;
+
     return html`
       <div class="list-controls">
         <div class="edit-actions">
@@ -110,6 +155,25 @@ export class MrListPage extends connectStore(LitElement) {
         </div>
 
         <div class="right-controls">
+          ${hasPrev ? html`
+            <a
+              href=${this._urlWithNewParams({start: startIndex - maxItems})}
+              class="prev-link"
+            >
+              &lsaquo; Prev
+            </a>
+          ` : ''}
+          <div class="issue-count">
+            ${startIndex + 1} - ${end} of ${this.totalIssues}
+          </div>
+          ${hasNext ? html`
+            <a
+              href=${this._urlWithNewParams({start: startIndex + maxItems})}
+              class="next-link"
+            >
+              Next &rsaquo;
+            </a>
+          ` : ''}
           <mr-mode-selector
             .projectName=${this.projectName}
             .queryParams=${this.queryParams}
@@ -117,27 +181,13 @@ export class MrListPage extends connectStore(LitElement) {
           ></mr-mode-selector>
         </div>
       </div>
-      <mr-issue-list
-        .issues=${this.issues}
-        .projectName=${this.projectName}
-        .queryParams=${this.queryParams}
-        .columns=${this.columns}
-        selectionEnabled
-        @selectionChange=${this._setSelectedIssues}
-      ></mr-issue-list>
-      <mr-update-issue-hotlists
-        .issueRefs=${selectedRefs}
-      ></mr-update-issue-hotlists>
-      <mr-change-columns
-        .columns=${this.columns}
-        .queryParams=${this.queryParams}
-      ></mr-change-columns>
     `;
   }
 
   static get properties() {
     return {
       issues: {type: Array},
+      totalIssues: {type: Number},
       queryParams: {type: Object},
       projectName: {type: String},
       fetchingIssueList: {type: Boolean},
@@ -152,6 +202,7 @@ export class MrListPage extends connectStore(LitElement) {
     this.issues = [];
     this.fetchingIssueList = false;
     this.selectedIssues = [];
+    this.queryParams = {};
 
     this._boundRefresh = this.refresh.bind(this);
 
@@ -182,27 +233,19 @@ export class MrListPage extends connectStore(LitElement) {
     window.removeEventListener('refreshList', this._boundRefresh);
   }
 
-  update(changedProperties) {
-    if (changedProperties.has('queryParams')) {
-      if (this.queryParams && this.queryParams.colspec) {
-        this.columns = this.queryParams.colspec.split(COLSPEC_DELIMITER_REGEX);
-      } else {
-        // TODO(zhangtiff): Change to project default columns.
-        this.columns = SITEWIDE_DEFAULT_COLUMNS;
-      }
-    }
-
-    super.update(changedProperties);
-  }
-
   updated(changedProperties) {
     if (changedProperties.has('projectName')) {
       this.refresh();
     } else if (changedProperties.has('queryParams')) {
-      const oldParams = changedProperties.get('queryParams');
-      const oldQ = oldParams ? oldParams.q : '';
-      const newQ = this.queryParams.q;
-      if (oldQ !== newQ) {
+      const oldParams = changedProperties.get('queryParams') || {};
+
+      const shouldRefresh = PARAMS_THAT_TRIGGER_REFRESH.some((param) => {
+        const oldValue = oldParams[param];
+        const newValue = this.queryParams[param];
+        return oldValue !== newValue;
+      });
+
+      if (shouldRefresh) {
         this.refresh();
       }
     }
@@ -213,12 +256,43 @@ export class MrListPage extends connectStore(LitElement) {
 
   refresh() {
     store.dispatch(issue.fetchIssueList(this.queryParams, this.projectName,
-        {maxItems: 100, start: 0}));
+        {maxItems: this.maxItems, start: this.startIndex}));
   }
 
   stateChanged(state) {
     this.issues = (issue.issueList(state) || []);
+    this.totalIssues = (issue.totalIssues(state) || 0);
     this.fetchingIssueList = issue.requests(state).fetchIssueList.requesting;
+  }
+
+  get columns() {
+    // TODO(zhangtiff): Add project default columns.
+    const colspec = this.queryParams.colspec;
+    return colspec ? colspec.split(COLSPEC_DELIMITER_REGEX)
+      : SITEWIDE_DEFAULT_COLUMNS;
+  }
+
+  get maxItems() {
+    return Number.parseInt(this.queryParams.num) || DEFAULT_ISSUES_PER_PAGE;
+  }
+
+  get startIndex() {
+    const num = Number.parseInt(this.queryParams.start) || 0;
+    return Math.max(0, num);
+  }
+
+  /**
+   * Computes the current URL of the page with updated queryParams.
+   *
+   * @param {Object} newParams keys and values to override existing parameters.
+   * @return {string} the new URL.
+   */
+  _urlWithNewParams(newParams) {
+    // TODO(zhangtiff): Create more general helpers for this case.
+    const params = {...this.queryParams, ...newParams};
+    // TODO(zhangtiff): replace list_new with list when switching over.
+    const baseUrl = `/p/${this.projectName}/issues/list_new`;
+    return `${baseUrl}?${qs.stringify(params)}`;
   }
 
   noneSelectedAlert(action) {
