@@ -208,7 +208,7 @@ func generateBigQueryAlerts(c context.Context, a *analyzer.Analyzer, tree string
 }
 
 func attachFindItResults(ctx context.Context, failures []messages.BuildFailure, finditClient client.FindIt) []messages.BuildFailure {
-	for _, bf := range failures {
+	for i, bf := range failures {
 		stepName := bf.StepAtFault.Step.Name
 		for _, someBuilder := range bf.Builders {
 			buildAlternativeID := messages.BuildIdentifierByNumber{
@@ -228,12 +228,16 @@ func attachFindItResults(ctx context.Context, failures []messages.BuildFailure, 
 				}
 
 				bf.Culprits = append(bf.Culprits, result.Culprits...)
-				bf.HasFindings = len(result.Culprits) > 0
-				bf.IsFinished = result.IsFinished
-				bf.IsSupported = result.IsSupported
+				bf.HasFindings = bf.HasFindings || len(result.Culprits) > 0
+				bf.IsFinished = bf.IsFinished || result.IsFinished
+				bf.IsSupported = bf.IsSupported || result.IsSupported
 			}
 		}
+		// TODO(seanmccullough): Clean up the messages package structs so they all
+		// have pointer fields.
+		failures[i] = bf
 	}
+
 	return failures
 }
 

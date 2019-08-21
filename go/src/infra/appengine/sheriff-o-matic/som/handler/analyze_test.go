@@ -169,6 +169,75 @@ func (b *mockBuildBucket) LatestBuilds(ctx context.Context, builderIDs []*bbpb.B
 	return b.builds, b.err
 }
 
+type mockFindit struct {
+	res []*messages.FinditResultV2
+	err error
+}
+
+func (mf *mockFindit) FinditBuildbucket(ctx context.Context, id *messages.BuildIdentifierByNumber, stepNames []string) ([]*messages.FinditResultV2, error) {
+	return mf.res, mf.err
+}
+
+func (mf *mockFindit) Findit(ctx context.Context, master *messages.MasterLocation, builder string, buildNum int64, failedSteps []string) ([]*messages.FinditResult, error) {
+	return nil, fmt.Errorf("don't call this in tests")
+}
+
+func TestAttachFinditResults(t *testing.T) {
+	Convey("smoke", t, func() {
+		c := gaetesting.TestingContext()
+		bf := []messages.BuildFailure{
+			{
+				StepAtFault: &messages.BuildStep{
+					Step: &messages.Step{
+						Name: "some step",
+					},
+				},
+			},
+		}
+		fc := &mockFindit{}
+		res := attachFindItResults(c, bf, fc)
+		So(len(res), ShouldEqual, 1)
+	})
+	Convey("some results", t, func() {
+		c := newTestContext()
+		bf := []messages.BuildFailure{
+			{
+				Builders: []messages.AlertedBuilder{
+					{
+						Name: "some builder",
+					},
+				},
+				StepAtFault: &messages.BuildStep{
+					Step: &messages.Step{
+						Name: "some step",
+					},
+				},
+			},
+		}
+		fc := &mockFindit{
+			res: []*messages.FinditResultV2{{
+				StepName: "some step",
+				Culprits: []messages.Culprit{
+					{
+						Commit: messages.GitilesCommit{
+							Host:           "githost",
+							Project:        "proj",
+							ID:             "0xdeadbeef",
+							CommitPosition: 1234,
+						},
+					},
+				},
+				IsFinished:  true,
+				IsSupported: true,
+			}},
+		}
+		res := attachFindItResults(c, bf, fc)
+		So(len(res), ShouldEqual, 1)
+		So(len(res[0].Culprits), ShouldEqual, 1)
+		So(res[0].HasFindings, ShouldEqual, true)
+	})
+}
+
 func TestGenerateAlerts(t *testing.T) {
 	Convey("bad request", t, func() {
 		c := gaetesting.TestingContext()
