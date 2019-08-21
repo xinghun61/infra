@@ -28,7 +28,7 @@ class GitCookieDaemon(app.BaseApplication):
   def add_argparse_options(self, parser):
     super(GitCookieDaemon, self).add_argparse_options(parser)
 
-  def main(self, opts):
+  def main(self, _opts):
     git_cookie_daemon.ensure_git_cookie_daemon()
 
 
