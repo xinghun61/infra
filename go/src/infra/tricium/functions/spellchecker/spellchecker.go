@@ -74,8 +74,9 @@ var (
 	// TODO(qyearsley): Pass around a dict instead of using a global variable.
 	dict map[string][]string
 
-	// Selects words i.e. consecutive letters and numbers
-	justWord = regexp.MustCompile(`[a-zA-Z0-9'-]+`)
+	// Selects non-punctuation characters. This is used to split strings that
+	// may contain comment start or end patterns.
+	nonPunct = regexp.MustCompile(`[^[:punct:]]+`)
 
 	// Patterns that indicate we don't want to flag misspellings. To prevent
 	// false positives, we also match when there are prefixes or suffixes.
@@ -469,7 +470,7 @@ func inSlice(word string, arr []string) bool {
 // into individual words.
 func splitComment(commentWord string) []wordSegment {
 	var segments []wordSegment
-	for _, wordIndex := range justWord.FindAllStringIndex(commentWord, -1) {
+	for _, wordIndex := range nonPunct.FindAllStringIndex(commentWord, -1) {
 		segments = append(segments,
 			wordSegment{commentWord[wordIndex[0]:wordIndex[1]], wordIndex[0]})
 	}
