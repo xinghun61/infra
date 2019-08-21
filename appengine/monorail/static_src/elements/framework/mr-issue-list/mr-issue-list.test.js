@@ -17,6 +17,8 @@ describe('mr-issue-list', () => {
   beforeEach(() => {
     element = document.createElement('mr-issue-list');
     document.body.appendChild(element);
+
+    sinon.stub(element, '_baseUrl').returns('/p/chromium/issues/list');
     sinon.stub(element, '_page');
     sinon.stub(window, 'open');
   });
@@ -167,12 +169,46 @@ describe('mr-issue-list', () => {
     element.columns = ['ID', 'Summary'];
     element.queryParams = {};
 
-    sinon.stub(element, '_baseUrl').returns('/p/chromium/issues/list');
-
     element.reloadColspec(['Summary', 'AllLabels']);
 
     sinon.assert.calledWith(element._page,
         '/p/chromium/issues/list?colspec=Summary%2BAllLabels');
+  });
+
+  it('updateSortSpec navigates to page with new sort option', async () => {
+    element.columns = ['ID', 'Summary'];
+    element.queryParams = {};
+
+    await element.updateComplete;
+
+    element.updateSortSpec('Summary', true);
+
+    sinon.assert.calledWith(element._page,
+        '/p/chromium/issues/list?sort=-summary');
+  });
+
+  it('updateSortSpec prepends new option to existing sort', async () => {
+    element.columns = ['ID', 'Summary', 'Owner'];
+    element.queryParams = {sort: '-summary+owner'};
+
+    await element.updateComplete;
+
+    element.updateSortSpec('ID');
+
+    sinon.assert.calledWith(element._page,
+        '/p/chromium/issues/list?sort=id%20-summary%20owner');
+  });
+
+  it('updateSortSpec removes existing instances of sorted column', async () => {
+    element.columns = ['ID', 'Summary', 'Owner'];
+    element.queryParams = {sort: '-summary+owner+owner'};
+
+    await element.updateComplete;
+
+    element.updateSortSpec('Owner', true);
+
+    sinon.assert.calledWith(element._page,
+        '/p/chromium/issues/list?sort=-owner%20-summary');
   });
 
   it('addColumn adds a column', () => {
@@ -196,6 +232,34 @@ describe('mr-issue-list', () => {
     sinon.assert.calledWith(element.reloadColspec, ['Summary']);
   });
 
+  it('clicking sort up column header sets sort spec', async () => {
+    element.columns = ['ID', 'Summary'];
+
+    sinon.stub(element, 'updateSortSpec');
+
+    await element.updateComplete;
+
+    const dropdown = element.shadowRoot.querySelector('.dropdown-summary');
+
+    dropdown.clickItem(0); // Sort up.
+
+    sinon.assert.calledWith(element.updateSortSpec, 'Summary');
+  });
+
+  it('clicking sort down column header sets sort spec', async () => {
+    element.columns = ['ID', 'Summary'];
+
+    sinon.stub(element, 'updateSortSpec');
+
+    await element.updateComplete;
+
+    const dropdown = element.shadowRoot.querySelector('.dropdown-summary');
+
+    dropdown.clickItem(1); // Sort down.
+
+    sinon.assert.calledWith(element.updateSortSpec, 'Summary', true);
+  });
+
   it('clicking hide column in column header removes column', async () => {
     element.columns = ['ID', 'Summary'];
 
@@ -205,7 +269,7 @@ describe('mr-issue-list', () => {
 
     const dropdown = element.shadowRoot.querySelector('.dropdown-summary');
 
-    dropdown.clickItem(0);
+    dropdown.clickItem(2); // Hide column.
 
     sinon.assert.calledWith(element.removeColumn, 1);
   });

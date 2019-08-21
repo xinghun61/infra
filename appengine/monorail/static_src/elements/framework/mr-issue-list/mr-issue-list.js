@@ -14,7 +14,7 @@ import 'elements/framework/mr-star-button/mr-star-button.js';
 import {issueRefToUrl, issueToIssueRef} from 'shared/converters.js';
 import {isTextInput} from 'shared/dom-helpers';
 import {stringValuesForIssueField, DEFAULT_ISSUE_FIELD_LIST,
-  EMPTY_FIELD_VALUE} from 'shared/issue-fields.js';
+  EMPTY_FIELD_VALUE, COLSPEC_DELIMITER_REGEX} from 'shared/issue-fields.js';
 
 const COLUMN_DISPLAY_NAMES = {
   'summary': 'Summary + Labels',
@@ -178,15 +178,22 @@ export class MrIssueList extends connectStore(LitElement) {
         <mr-dropdown
           class="dropdown-${column.toLowerCase()}"
           .text=${name}
-          .items=${this._headerActions(i)}
+          .items=${this._headerActions(column, i)}
           menuAlignment="left"
         ></mr-dropdown>
       </th>`;
   }
 
-  _headerActions(i) {
+  _headerActions(column, i) {
     return [
-      // TODO(zhangtiff): Add "Sort up" and "Sort down" features.
+      {
+        text: 'Sort up',
+        handler: () => this.updateSortSpec(column),
+      },
+      {
+        text: 'Sort down',
+        handler: () => this.updateSortSpec(column, true),
+      },
       // TODO(zhangtiff): Add "Show only" feature.
       {
         text: 'Hide column',
@@ -435,6 +442,26 @@ export class MrIssueList extends connectStore(LitElement) {
   }
 
   /**
+   * Update sort parameter in the URL based on user input.
+   *
+   * @param {string} column name of the column to be sorted.
+   * @param {Boolean} descending descending or ascending order.
+   */
+  updateSortSpec(column, descending = false) {
+    column = column.toLowerCase();
+    const oldSpec = this.queryParams.sort || '';
+    const columns = oldSpec.toLowerCase().split(COLSPEC_DELIMITER_REGEX);
+
+    // Remove any old instances of the same sort spec.
+    const newSpec = columns.filter(
+        (c) => c && c !== column && c !== `-${column}`);
+
+    newSpec.unshift(`${descending ? '-' : ''}${column}`);
+
+    this._updateQueryParams({sort: newSpec.join(' ')});
+  }
+
+  /**
    * Removes the column at a particular index.
    *
    * @param {int} i the issue column to be removed.
@@ -461,8 +488,18 @@ export class MrIssueList extends connectStore(LitElement) {
    * @param {Array} newColumns the new colspec to set in the URL.
    */
   reloadColspec(newColumns) {
-    const params = {...this.queryParams};
-    params.colspec = newColumns.join('+');
+    this._updateQueryParams({colspec: newColumns.join('+')});
+  }
+
+  /**
+   * Navigates to the same URL as the current page, but with query
+   * params updated.
+   *
+   * @param {Object} newParams keys and values of the queryParams
+   * Object to be updated.
+   */
+  _updateQueryParams(newParams) {
+    const params = {...this.queryParams, ...newParams};
     this._page(`${this._baseUrl()}?${qs.stringify(params)}`);
   }
 
