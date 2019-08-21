@@ -10,7 +10,7 @@ import Mousetrap from 'mousetrap';
 import {store, connectStore} from 'reducers/base.js';
 import * as issue from 'reducers/issue.js';
 import 'elements/chops/chops-dialog/chops-dialog.js';
-import {issueRefToString} from 'shared/converters';
+import {issueRefToString} from 'shared/converters.js';
 
 
 const SHORTCUT_DOC_GROUPS = [

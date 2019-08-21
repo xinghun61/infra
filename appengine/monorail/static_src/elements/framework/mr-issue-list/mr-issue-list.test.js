@@ -488,9 +488,9 @@ describe('mr-issue-list', () => {
   describe('hot keys', () => {
     beforeEach(() => {
       element.issues = [
-        {localId: 1},
-        {localId: 2},
-        {localId: 3},
+        {localId: 1, projectName: 'chromium'},
+        {localId: 2, projectName: 'chromium'},
+        {localId: 3, projectName: 'chromium'},
       ];
 
       element.selectionEnabled = true;
@@ -600,7 +600,7 @@ describe('mr-issue-list', () => {
     });
 
     it('j and k keys stay on one element when one issue', async () => {
-      element.issues = [{localId: 2}];
+      element.issues = [{localId: 2, projectName: 'chromium'}];
       await element.updateComplete;
 
       window.dispatchEvent(new KeyboardEvent('keydown', {key: 'k'}));
@@ -651,6 +651,55 @@ describe('mr-issue-list', () => {
       document.body.removeChild(root);
     });
 
+    it('pressing s stars focused issue', async () => {
+      sinon.stub(element, 'starIssue');
+      await element.updateComplete;
+
+      const row = element.shadowRoot.querySelector('.row-1');
+      row.dispatchEvent(new KeyboardEvent('keydown', {key: 's'}));
+
+      sinon.assert.calledWith(element.starIssue,
+          {localId: 2, projectName: 'chromium'});
+    });
+
+    it('starIssue does not star issue while stars are fetched', () => {
+      sinon.stub(element, '_starIssue');
+      element._fetchingStarredIssues = true;
+
+      element.starIssue({localId: 2, projectName: 'chromium'});
+
+      sinon.assert.notCalled(element._starIssue);
+    });
+
+    it('starIssue does not star when issue is being starred', () => {
+      sinon.stub(element, '_starIssue');
+      element._starringIssues = new Map([['chromium:2', {requesting: true}]]);
+
+      element.starIssue({localId: 2, projectName: 'chromium'});
+
+      sinon.assert.notCalled(element._starIssue);
+    });
+
+    it('starIssue stars issue when issue is not being starred', () => {
+      sinon.stub(element, '_starIssue');
+      element._starringIssues = new Map([['chromium:2', {requesting: false}]]);
+
+      element.starIssue({localId: 2, projectName: 'chromium'});
+
+      sinon.assert.calledWith(element._starIssue,
+          {localId: 2, projectName: 'chromium'}, true);
+    });
+
+    it('starIssue unstars issue when issue is already starred', () => {
+      sinon.stub(element, '_starIssue');
+      element._starredIssues = new Set(['chromium:2']);
+
+      element.starIssue({localId: 2, projectName: 'chromium'});
+
+      sinon.assert.calledWith(element._starIssue,
+          {localId: 2, projectName: 'chromium'}, false);
+    });
+
     it('pressing x selects focused issue', async () => {
       await element.updateComplete;
 
@@ -660,7 +709,7 @@ describe('mr-issue-list', () => {
       await element.updateComplete;
 
       assert.deepEqual(element.selectedIssues, [
-        {localId: 2},
+        {localId: 2, projectName: 'chromium'},
       ]);
     });
 
@@ -673,7 +722,8 @@ describe('mr-issue-list', () => {
       await element.updateComplete;
 
       sinon.assert.calledOnce(element._navigateToIssue);
-      sinon.assert.calledWith(element._navigateToIssue, {localId: 2}, false);
+      sinon.assert.calledWith(element._navigateToIssue,
+          {localId: 2, projectName: 'chromium'}, false);
     });
 
     it('pressing shift+o opens focused issue in new tab', async () => {
@@ -686,7 +736,8 @@ describe('mr-issue-list', () => {
       await element.updateComplete;
 
       sinon.assert.calledOnce(element._navigateToIssue);
-      sinon.assert.calledWith(element._navigateToIssue, {localId: 2}, true);
+      sinon.assert.calledWith(element._navigateToIssue,
+          {localId: 2, projectName: 'chromium'}, true);
     });
   });
 });

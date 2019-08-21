@@ -5,13 +5,15 @@
 import {LitElement, html, css} from 'lit-element';
 import qs from 'qs';
 import page from 'page';
-import {connectStore} from 'reducers/base.js';
+import {connectStore, store} from 'reducers/base.js';
 import * as project from 'reducers/project.js';
+import * as issue from 'reducers/issue.js';
 import 'elements/framework/links/mr-issue-link/mr-issue-link.js';
 import 'elements/framework/links/mr-crbug-link/mr-crbug-link.js';
 import 'elements/framework/mr-dropdown/mr-dropdown.js';
 import 'elements/framework/mr-star-button/mr-star-button.js';
-import {issueRefToUrl, issueToIssueRef} from 'shared/converters.js';
+import {issueRefToUrl, issueToIssueRef,
+  issueRefToString} from 'shared/converters.js';
 import {isTextInput} from 'shared/dom-helpers';
 import {stringValuesForIssueField, DEFAULT_ISSUE_FIELD_LIST,
   EMPTY_FIELD_VALUE, COLSPEC_DELIMITER_REGEX} from 'shared/issue-fields.js';
@@ -347,6 +349,11 @@ export class MrIssueList extends connectStore(LitElement) {
     this._labelPrefixFields = [];
     this._fieldDefMap = new Map();
     this._labelPrefixSet = new Set();
+
+    this._starredIssues = new Set();
+    this._fetchingStarredIssues = false;
+    this._starringIssues = new Map();
+
     // Expose page.js for stubbing.
     this._page = page;
   };
@@ -359,6 +366,11 @@ export class MrIssueList extends connectStore(LitElement) {
 
     this._fieldDefMap = project.fieldDefMap(state);
     this._labelPrefixSet = project.labelPrefixSet(state);
+
+    this._starredIssues = issue.starredIssues(state);
+    this._fetchingStarredIssues =
+        issue.requests(state).fetchStarredIssues.requesting;
+    this._starringIssues = issue.starringIssues(state);
   }
 
   firstUpdated() {
@@ -570,7 +582,7 @@ export class MrIssueList extends connectStore(LitElement) {
 
     switch (e.key) {
       case 's': // Star focused issue.
-        // TODO(zhangtiff): Add this hot key when adding issue starring.
+        this.starIssue(issueToIssueRef(issue));
         break;
       case 'x': // Toggle selection of focused issue.
         this._updateSelectedIssue(i, !this._selectedIssues[i]);
@@ -580,6 +592,29 @@ export class MrIssueList extends connectStore(LitElement) {
         this._navigateToIssue(issue, e.shiftKey);
         break;
     }
+  }
+
+  starIssue(issueRef) {
+    const issueKey = issueRefToString(issueRef);
+
+    // TODO(zhangtiff): Find way to share star disabling logic more.
+    const isStarring = this._starringIssues.has(issueKey)
+      && this._starringIssues.get(issueKey).requesting;
+    const starEnabled = !this._fetchingStarredIssues && !isStarring;
+    if (starEnabled) {
+      const newIsStarred = !this._starredIssues.has(issueKey);
+      this._starIssue(issueRef, newIsStarred);
+    }
+  }
+
+  /**
+   * Wrap store.dispatch and issue.star, for testing.
+   *
+   * @param {Object} issueRef the issue being starred.
+   * @param {Boolean} newIsStarred whether to star or unstar the issue.
+   */
+  _starIssue(issueRef, newIsStarred) {
+    store.dispatch(issue.star(issueRef, newIsStarred));
   }
 
   _selectAll(e) {
