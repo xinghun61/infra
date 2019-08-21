@@ -6,6 +6,7 @@ package autotest_test
 
 import (
 	"context"
+	"strings"
 	"sync"
 	"testing"
 
@@ -130,6 +131,60 @@ func TestLaunch(t *testing.T) {
 				}
 				So(cmd, ShouldResemble, expected)
 			})
+		})
+	})
+}
+
+func TestLaunchWithDisplayName(t *testing.T) {
+	Convey("Given one enumerated test", t, func() {
+		ctx := context.Background()
+		swarming := NewFakeSwarming()
+		setupFakeSwarmingToPassAllTasks(swarming)
+		invs := []*steps.EnumerationResponse_AutotestInvocation{
+			{
+				Test:        &build_api.AutotestTest{Name: "testName"},
+				DisplayName: "displayName",
+				TestArgs:    "-ignored -args",
+			},
+		}
+
+		Convey("when running an autotest execution", func() {
+			run := autotest.New(invs, basicParams(), basicConfig())
+			err := run.LaunchAndWait(ctx, swarming, nil)
+			So(err, ShouldBeNil)
+			Convey("then autotest invocation uses display name for the control file name.", func() {
+				So(swarming.createCalls, ShouldHaveLength, 1)
+				So(swarming.createCalls[0].TaskSlices, ShouldHaveLength, 1)
+				cmd := strings.Join(swarming.createCalls[0].TaskSlices[0].Properties.Command, " ")
+				So(cmd, ShouldContainSubstring, `\"test_names\":[\"displayName\"]`)
+			})
+		})
+	})
+}
+
+// setupFakeSwarmingToPassAllTasks sets up fakeSwarming such that all future
+// tasks are marked as completing successfully immediately.
+func setupFakeSwarmingToPassAllTasks(s *fakeSwarming) {
+	s.SetResult(&swarming_api.SwarmingRpcsTaskResult{State: "COMPLETED"})
+	s.SetOutput(`#JSON_START#{"return_code": 0}#JSON_END#`)
+}
+
+func TestLaunchWithTestArgsReturnsError(t *testing.T) {
+	Convey("Given one enumerated test", t, func() {
+		ctx := context.Background()
+		swarming := NewFakeSwarming()
+		setupFakeSwarmingToPassAllTasks(swarming)
+		invs := []*steps.EnumerationResponse_AutotestInvocation{
+			{
+				Test:     &build_api.AutotestTest{Name: "testName"},
+				TestArgs: "-disallowed -args",
+			},
+		}
+
+		Convey("running an autotest execution with test args should return error", func() {
+			run := autotest.New(invs, basicParams(), basicConfig())
+			err := run.LaunchAndWait(ctx, swarming, nil)
+			So(err, ShouldNotBeNil)
 		})
 	})
 }
