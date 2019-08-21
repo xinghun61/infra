@@ -140,6 +140,9 @@ func swarmingTags(cmd *worker.Command, conf *config.Config_SkylabWorker, params 
 	if qa := params.GetScheduling().GetQuotaAccount(); qa != "" {
 		tags = append(tags, "qs_account:"+qa)
 	}
+	// TODO(akeshet): Consider whether to ban qs_account, luci_project, log_location,
+	// and other "special tags" from being client-specified here.
+	tags = append(tags, params.GetDecorations().GetTags()...)
 	return tags
 }
 

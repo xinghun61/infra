@@ -198,6 +198,7 @@ func basicParams() *test_platform.Request_Params {
 		},
 		Decorations: &test_platform.Request_Params_Decorations{
 			AutotestKeyvals: map[string]string{"k1": "v1"},
+			Tags:            []string{"foo-tag1", "foo-tag2"},
 		},
 	}
 }
@@ -416,6 +417,8 @@ func TestRequestArguments(t *testing.T) {
 			So(create.TaskSlices, ShouldHaveLength, 2)
 
 			So(create.Tags, ShouldContain, "luci_project:foo-luci-project")
+			So(create.Tags, ShouldContain, "foo-tag1")
+			So(create.Tags, ShouldContain, "foo-tag2")
 			So(create.ParentTaskId, ShouldEqual, "foo-parent-task-id")
 
 			So(create.Priority, ShouldEqual, 79)

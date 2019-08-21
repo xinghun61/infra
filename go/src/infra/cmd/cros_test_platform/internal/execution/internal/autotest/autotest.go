@@ -50,6 +50,9 @@ func (r *Runner) LaunchAndWait(ctx context.Context, client swarming.Client, _ is
 		// TODO(crbug.com/996301): Support priority in autotest backend.
 		logging.Warningf(ctx, "request specifed a nondefault priority %d; this is unsupported in autotest backend, and ignored", p)
 	}
+	if len(r.requestParams.GetDecorations().GetTags()) != 0 {
+		logging.Warningf(ctx, "request specified tags %s; this is unsupported in autotest backend, and ignored")
+	}
 
 	taskID, err := r.launch(ctx, client)
 	if err != nil {
