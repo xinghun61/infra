@@ -59,6 +59,9 @@ func InstallHandlers(r *router.Router, mwBase router.MiddlewareChain) {
 	// Update device config asynchronously.
 	r.GET("/internal/cron/update-device-configs", mwCron, logAndSetHTTPErr(updateDeviceConfigCronHandler))
 
+	// Report Bot metrics.
+	r.GET("/internal/cron/report-bots", mwCron, logAndSetHTTPErr(reportBotsCronHandler))
+
 	r.GET("/internal/cron/push-inventory-to-queen", mwCron, logAndSetHTTPErr(pushInventoryToQueenCronHandler))
 }
 
@@ -92,6 +95,19 @@ func pushBotsForAdminTasksCronHandler(c *router.Context) (err error) {
 		return err
 	}
 	logging.Infof(c.Context, "Successfully finished")
+	return nil
+}
+
+func reportBotsCronHandler(c *router.Context) (err error) {
+	defer func() {
+		reportBotsCronHandlerTick.Add(c.Context, 1, err == nil)
+	}()
+
+	tsi := frontend.TrackerServerImpl{}
+	if _, err := tsi.ReportBots(c.Context, &fleet.ReportBotsRequest{}); err != nil {
+		return err
+	}
+	logging.Infof(c.Context, "Successfully report bot metrics")
 	return nil
 }
 

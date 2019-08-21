@@ -33,12 +33,21 @@ service Tracker {
 
   // Filter out and queue the bots that require admin tasks Repair and Reset.
   rpc PushBotsForAdminTasks(PushBotsForAdminTasksRequest) returns (PushBotsForAdminTasksResponse);
+
+  // Report bots metrics.
+  rpc ReportBots(ReportBotsRequest) returns (ReportBotsResponse);
 }
 
 message PushBotsForAdminTasksRequest {
 }
 
 message PushBotsForAdminTasksResponse {
+}
+
+message ReportBotsRequest {
+}
+
+message ReportBotsResponse {
 }
 
 // RefreshBotsRequest can be used to restrict the Swarming bots to refresh via

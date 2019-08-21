@@ -81,6 +81,22 @@ func (tsi *TrackerServerImpl) PushBotsForAdminTasks(ctx context.Context, req *fl
 	return &fleet.PushBotsForAdminTasksResponse{}, nil
 }
 
+// ReportBots reports metrics of swarming bots.
+func (tsi *TrackerServerImpl) ReportBots(ctx context.Context, req *fleet.ReportBotsRequest) (res *fleet.ReportBotsResponse, err error) {
+	defer func() {
+		err = grpcutil.GRPCifyAndLogErr(ctx, err)
+	}()
+	cfg := config.Get(ctx)
+	sc, err := tsi.newSwarmingClient(ctx, cfg.Swarming.Host)
+	if err != nil {
+		return nil, errors.Annotate(err, "failed to obtain Swarming client").Err()
+	}
+
+	bots, err := sc.ListAliveBotsInPool(ctx, cfg.Swarming.BotPool, strpair.Map{})
+	utilization.ReportMetrics(ctx, flattenAndDedpulicateBots([][]*swarming.SwarmingRpcsBotInfo{bots}))
+	return &fleet.ReportBotsResponse{}, nil
+}
+
 // RefreshBots implements the fleet.Tracker.RefreshBots() method.
 func (tsi *TrackerServerImpl) RefreshBots(ctx context.Context, req *fleet.RefreshBotsRequest) (res *fleet.RefreshBotsResponse, err error) {
 	defer func() {

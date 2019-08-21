@@ -94,6 +94,26 @@ func (mr *MockTrackerClientMockRecorder) PushBotsForAdminTasks(ctx, in interface
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PushBotsForAdminTasks", reflect.TypeOf((*MockTrackerClient)(nil).PushBotsForAdminTasks), varargs...)
 }
 
+// ReportBots mocks base method
+func (m *MockTrackerClient) ReportBots(ctx context.Context, in *ReportBotsRequest, opts ...grpc.CallOption) (*ReportBotsResponse, error) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "ReportBots", varargs...)
+	ret0, _ := ret[0].(*ReportBotsResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ReportBots indicates an expected call of ReportBots
+func (mr *MockTrackerClientMockRecorder) ReportBots(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReportBots", reflect.TypeOf((*MockTrackerClient)(nil).ReportBots), varargs...)
+}
+
 // MockTrackerServer is a mock of TrackerServer interface
 type MockTrackerServer struct {
 	ctrl     *gomock.Controller
@@ -160,4 +180,19 @@ func (m *MockTrackerServer) PushBotsForAdminTasks(arg0 context.Context, arg1 *Pu
 func (mr *MockTrackerServerMockRecorder) PushBotsForAdminTasks(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PushBotsForAdminTasks", reflect.TypeOf((*MockTrackerServer)(nil).PushBotsForAdminTasks), arg0, arg1)
+}
+
+// ReportBots mocks base method
+func (m *MockTrackerServer) ReportBots(arg0 context.Context, arg1 *ReportBotsRequest) (*ReportBotsResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ReportBots", arg0, arg1)
+	ret0, _ := ret[0].(*ReportBotsResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ReportBots indicates an expected call of ReportBots
+func (mr *MockTrackerServerMockRecorder) ReportBots(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReportBots", reflect.TypeOf((*MockTrackerServer)(nil).ReportBots), arg0, arg1)
 }

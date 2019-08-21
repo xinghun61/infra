@@ -23,6 +23,7 @@ import (
 	. "github.com/smartystreets/goconvey/convey"
 	"go.chromium.org/gae/service/taskqueue"
 	swarming "go.chromium.org/luci/common/api/swarming/swarming/v1"
+	"go.chromium.org/luci/common/data/strpair"
 
 	fleet "infra/appengine/crosskylabadmin/api/fleet/v1"
 	"infra/appengine/crosskylabadmin/app/clients"
@@ -32,6 +33,57 @@ import (
 const repairQ = "repair-bots"
 const resetQ = "reset-bots"
 
+func TestFlattenAndDuplicateBots(t *testing.T) {
+	Convey("zero bots", t, func() {
+		tf, validate := newTestFixture(t)
+		defer validate()
+
+		tf.MockSwarming.EXPECT().ListAliveBotsInPool(
+			gomock.Any(), gomock.Eq(config.Get(tf.C).Swarming.BotPool), gomock.Any(),
+		).AnyTimes().Return([]*swarming.SwarmingRpcsBotInfo{}, nil)
+
+		bots, err := tf.MockSwarming.ListAliveBotsInPool(tf.C, config.Get(tf.C).Swarming.BotPool, strpair.Map{})
+		So(err, ShouldBeNil)
+		bots = flattenAndDedpulicateBots([][]*swarming.SwarmingRpcsBotInfo{bots})
+		So(bots, ShouldBeEmpty)
+	})
+
+	Convey("multiple bots", t, func() {
+		tf, validate := newTestFixture(t)
+		defer validate()
+
+		sbots := []*swarming.SwarmingRpcsBotInfo{
+			botForDUT("dut_1", "ready", ""),
+			botForDUT("dut_2", "repair_failed", ""),
+		}
+		tf.MockSwarming.EXPECT().ListAliveBotsInPool(
+			gomock.Any(), gomock.Eq(config.Get(tf.C).Swarming.BotPool), gomock.Any(),
+		).AnyTimes().Return(sbots, nil)
+
+		bots, err := tf.MockSwarming.ListAliveBotsInPool(tf.C, config.Get(tf.C).Swarming.BotPool, strpair.Map{})
+		So(err, ShouldBeNil)
+		bots = flattenAndDedpulicateBots([][]*swarming.SwarmingRpcsBotInfo{bots})
+		So(bots, ShouldHaveLength, 2)
+	})
+
+	Convey("duplicated bots", t, func() {
+		tf, validate := newTestFixture(t)
+		defer validate()
+
+		sbots := []*swarming.SwarmingRpcsBotInfo{
+			botForDUT("dut_1", "ready", ""),
+			botForDUT("dut_1", "repair_failed", ""),
+		}
+		tf.MockSwarming.EXPECT().ListAliveBotsInPool(
+			gomock.Any(), gomock.Eq(config.Get(tf.C).Swarming.BotPool), gomock.Any(),
+		).AnyTimes().Return(sbots, nil)
+
+		bots, err := tf.MockSwarming.ListAliveBotsInPool(tf.C, config.Get(tf.C).Swarming.BotPool, strpair.Map{})
+		So(err, ShouldBeNil)
+		bots = flattenAndDedpulicateBots([][]*swarming.SwarmingRpcsBotInfo{bots})
+		So(bots, ShouldHaveLength, 1)
+	})
+}
 func TestPushBotsForAdminTasks(t *testing.T) {
 	Convey("Handling 4 different state of bots", t, func() {
 		tf, validate := newTestFixture(t)
