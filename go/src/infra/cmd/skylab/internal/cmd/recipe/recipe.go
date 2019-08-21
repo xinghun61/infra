@@ -15,16 +15,40 @@ import (
 
 	"go.chromium.org/chromiumos/infra/proto/go/chromiumos"
 	"go.chromium.org/chromiumos/infra/proto/go/test_platform"
-	"go.chromium.org/luci/common/errors"
 )
+
+// NewTestPlanForSuites returns a test plan consisting of the given named suites.
+func NewTestPlanForSuites(suiteNames ...string) *test_platform.Request_TestPlan {
+	p := test_platform.Request_TestPlan{}
+	for _, s := range suiteNames {
+		p.Suite = append(p.Suite, &test_platform.Request_Suite{Name: s})
+	}
+	return &p
+}
+
+// NewTestPlanForAutotestTests returns a test plan consisting of the given named autotest tests.
+func NewTestPlanForAutotestTests(autotestArgs string, testNames ...string) *test_platform.Request_TestPlan {
+	p := test_platform.Request_TestPlan{}
+	for _, t := range testNames {
+		p.Test = append(p.Test, &test_platform.Request_Test{
+			Harness: &test_platform.Request_Test_Autotest_{
+				Autotest: &test_platform.Request_Test_Autotest{
+					Name:     t,
+					TestArgs: autotestArgs,
+				},
+			},
+		})
+	}
+	return &p
+}
 
 // Args defines the arguments used to construct a cros_test_platform request.
 type Args struct {
-	SuiteNames []string
-	TestNames  []string
-	Model      string
-	Image      string
-	Board      string
+	TestPlan *test_platform.Request_TestPlan
+
+	Model string
+	Image string
+	Board string
 	// Pool specifies the device pool to use. For managed pools, it can be
 	// specified as a fully qualified name (e.g. "MANAGED_POOL_CQ"), a skylab
 	// pool label value (e.g. "DUT_POOL_CQ"), or an autotest-style short name
@@ -43,27 +67,8 @@ type Args struct {
 
 // Request constructs a cros_test_platform request from the given arguments.
 func Request(a Args) (*test_platform.Request, error) {
-	req := &test_platform.Request{}
-
-	req.TestPlan = &test_platform.Request_TestPlan{}
-	for _, suiteName := range a.SuiteNames {
-		if a.AutotestTestArgs != "" {
-			return nil, errors.Reason("cannot specify both autotest test args and suite").Err()
-		}
-		req.TestPlan.Suite = append(
-			req.TestPlan.Suite,
-			&test_platform.Request_Suite{Name: suiteName},
-		)
-	}
-	for _, testName := range a.TestNames {
-		ts := &test_platform.Request_Test{}
-		ts.Harness = &test_platform.Request_Test_Autotest_{
-			Autotest: &test_platform.Request_Test_Autotest{
-				Name:     testName,
-				TestArgs: a.AutotestTestArgs,
-			},
-		}
-		req.TestPlan.Test = append(req.TestPlan.Test, ts)
+	req := &test_platform.Request{
+		TestPlan: a.TestPlan,
 	}
 
 	req.Params = &test_platform.Request_Params{}

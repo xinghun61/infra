@@ -22,8 +22,7 @@ func TestRequest(t *testing.T) {
 		Image:                      "foo-image",
 		Model:                      "foo-model",
 		Pool:                       "foo-pool",
-		SuiteNames:                 []string{"foo-suite-1", "foo-suite-2"},
-		TestNames:                  []string{"foo-test-1", "foo-test-2"},
+		TestPlan:                   NewTestPlanForAutotestTests("foo-args", "foo-test-1", "foo-test-2"),
 		Timeout:                    30 * time.Minute,
 		Keyvals:                    map[string]string{"k1": "v1"},
 		FreeformSwarmingDimensions: []string{"freeform-key:freeform-value"},
@@ -71,47 +70,12 @@ func TestRequest(t *testing.T) {
 			},
 		},
 		TestPlan: &test_platform.Request_TestPlan{
-			Suite: []*test_platform.Request_Suite{
-				{Name: "foo-suite-1"},
-				{Name: "foo-suite-2"},
-			},
 			Test: []*test_platform.Request_Test{
-				{Harness: &test_platform.Request_Test_Autotest_{Autotest: &test_platform.Request_Test_Autotest{Name: "foo-test-1"}}},
-				{Harness: &test_platform.Request_Test_Autotest_{Autotest: &test_platform.Request_Test_Autotest{Name: "foo-test-2"}}},
+				{Harness: &test_platform.Request_Test_Autotest_{Autotest: &test_platform.Request_Test_Autotest{Name: "foo-test-1", TestArgs: "foo-args"}}},
+				{Harness: &test_platform.Request_Test_Autotest_{Autotest: &test_platform.Request_Test_Autotest{Name: "foo-test-2", TestArgs: "foo-args"}}},
 			},
 		},
 	}
-	if err != nil {
-		t.Errorf("Unexpected error")
-	}
-	if diff := pretty.Compare(got, want); diff != "" {
-		t.Errorf("Unexpected diff (-got +want): %s", diff)
-	}
-}
-
-func TestRequestWithAutotestArgs(t *testing.T) {
-	a := Args{
-		TestNames:        []string{"foo-test-1", "foo-test-2"},
-		AutotestTestArgs: "foo test args",
-	}
-	got, err := Request(a)
-	want := &test_platform.Request{
-		TestPlan: &test_platform.Request_TestPlan{
-			Test: []*test_platform.Request_Test{
-				{Harness: &test_platform.Request_Test_Autotest_{Autotest: &test_platform.Request_Test_Autotest{
-					Name:     "foo-test-1",
-					TestArgs: "foo test args",
-				}}},
-				{Harness: &test_platform.Request_Test_Autotest_{Autotest: &test_platform.Request_Test_Autotest{
-					Name:     "foo-test-2",
-					TestArgs: "foo test args",
-				}}},
-			},
-		},
-	}
-	// Null out irrelevant fields.
-	got.Params = nil
-
 	if err != nil {
 		t.Errorf("Unexpected error")
 	}

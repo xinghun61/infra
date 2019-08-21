@@ -17,6 +17,7 @@ import (
 	"go.chromium.org/luci/common/cli"
 	"go.chromium.org/luci/common/errors"
 
+	"infra/cmd/skylab/internal/cmd/recipe"
 	"infra/cmd/skylab/internal/site"
 	"infra/libs/skylab/swarming"
 )
@@ -83,7 +84,7 @@ func (c *createSuiteRun) innerRun(a subcommands.Application, args []string, env 
 			return err
 		}
 
-		recipeArg.SuiteNames = []string{suiteName}
+		recipeArg.TestPlan = recipe.NewTestPlanForSuites(suiteName)
 
 		return buildbucketRun(ctx, recipeArg, e, c.authFlags, c.json, a.GetOut())
 	}

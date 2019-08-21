@@ -41,6 +41,10 @@ var jsonPBMarshaller = &jsonpb.Marshaler{
 	EmitDefaults: true,
 }
 
+var jsonPBUnmarshaller = jsonpb.Unmarshaler{
+	AllowUnknownFields: true,
+}
+
 type commonFlags struct {
 	debug bool
 }
