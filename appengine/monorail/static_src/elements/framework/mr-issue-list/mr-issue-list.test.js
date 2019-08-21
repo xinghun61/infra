@@ -341,6 +341,50 @@ describe('mr-issue-list', () => {
     assert.include(issues[0].textContent, 'issue 1');
   });
 
+  it('clicking select all selects all issues', async () => {
+    element.selectionEnabled = true;
+    element.issues = [
+      {summary: 'issue 1'},
+      {summary: 'issue 2'},
+    ];
+
+    await element.updateComplete;
+
+    assert.deepEqual(element.selectedIssues, []);
+
+    const selectAll = element.shadowRoot.querySelector('.select-all');
+    selectAll.click();
+
+    assert.deepEqual(element.selectedIssues, [
+      {summary: 'issue 1'},
+      {summary: 'issue 2'},
+    ]);
+  });
+
+  it('when checked select all deselects all issues', async () => {
+    element.selectionEnabled = true;
+    element.issues = [
+      {summary: 'issue 1'},
+      {summary: 'issue 2'},
+    ];
+
+    await element.updateComplete;
+
+    element._selectedIssues = [true, true];
+
+    await element.updateComplete;
+
+    assert.deepEqual(element.selectedIssues, [
+      {summary: 'issue 1'},
+      {summary: 'issue 2'},
+    ]);
+
+    const selectAll = element.shadowRoot.querySelector('.select-all');
+    selectAll.click();
+
+    assert.deepEqual(element.selectedIssues, []);
+  });
+
   it('selected issues added when issues checked', async () => {
     element.selectionEnabled = true;
     element.issues = [

@@ -38,9 +38,37 @@ export class MrIssueList extends connectStore(LitElement) {
         margin-bottom: 1px;
         margin-left: 4px;
       }
-      input {
+      input[type="checkbox"] {
         cursor: pointer;
         margin: 0 4px;
+        width: 16px;
+        height: 16px;
+        border-radius: 2px;
+        box-sizing: border-box;
+        appearance: none;
+        -webkit-appearance: none;
+        border: 2px solid var(--chops-gray-400);
+        position: relative;
+        background: white;
+      }
+      th input[type="checkbox"] {
+        border-color: var(--chops-gray-500);
+      }
+      input[type="checkbox"]:checked {
+        background: var(--chops-primary-accent-color);
+        border-color: var(--chops-primary-accent-color);
+      }
+      input[type="checkbox"]:checked::after {
+        left: 1px;
+        top: 2px;
+        position: absolute;
+        content: "";
+        width: 8px;
+        height: 4px;
+        border: 2px solid white;
+        border-right: none;
+        border-top: none;
+        transform: rotate(-45deg);
       }
       td {
         padding: 4px 8px;
@@ -55,11 +83,14 @@ export class MrIssueList extends connectStore(LitElement) {
         background: var(--chops-table-header-bg);
         white-space: nowrap;
         text-align: left;
+        z-index: 10;
+      }
+      th.first-column {
+        padding: 3px 8px;
       }
       th > mr-dropdown {
         font-weight: normal;
         color: var(--chops-link-color);
-        opacity: 0.99;
         --mr-dropdown-icon-color: var(--chops-link-color);
         --mr-dropdown-anchor-padding: 3px 8px;
         --mr-dropdown-anchor-font-weight: bold;
@@ -101,11 +132,24 @@ export class MrIssueList extends connectStore(LitElement) {
   }
 
   render() {
+    const selectAllChecked = this._selectedIssues.some(Boolean);
     return html`
       <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
       <tbody>
         <tr class="first-row">
-          <th></th>
+          <th class="first-column">
+            <div class="edit-widget-container">
+              ${this.selectionEnabled ? html`
+                <input
+                  class="select-all"
+                  .checked=${selectAllChecked}
+                  type="checkbox"
+                  aria-label="Select ${selectAllChecked ? 'All' : 'None'}"
+                  @change=${this._selectAll}
+                />
+              ` : ''}
+            </div>
+          </th>
           ${this.columns.map((column, i) => this._renderHeader(column, i))}
           <th style="z-index: ${this.highestZIndex};">
             <mr-dropdown
@@ -179,7 +223,7 @@ export class MrIssueList extends connectStore(LitElement) {
               <input
                 class="issue-checkbox"
                 .value=${i}
-                ?checked=${rowSelected}
+                .checked=${rowSelected}
                 type="checkbox"
                 aria-label="Select Issue ${issue.localId}"
                 @change=${this._selectIssue}
@@ -498,6 +542,16 @@ export class MrIssueList extends connectStore(LitElement) {
       case 'O': // Open current issue in new tab.
         this._navigateToIssue(issue, e.shiftKey);
         break;
+    }
+  }
+
+  _selectAll(e) {
+    const checkbox = e.target;
+
+    if (checkbox.checked) {
+      this._selectedIssues = this.issues.map(() => true);
+    } else {
+      this._selectedIssues = this.issues.map(() => false);
     }
   }
 
