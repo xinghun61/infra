@@ -672,6 +672,15 @@ class UserService(object):
     prefs_dict = self.GetUsersPrefs(cnxn, [user_id], use_cache=use_cache)
     return prefs_dict[user_id]
 
+  def GetUserPrefsByEmail(self, cnxn, email, use_cache=True):
+    """Return a UserPrefs PB for the requested email, or an empty UserPrefs."""
+    try:
+      user_id = self.LookupUserID(cnxn, email)
+      user_prefs = self.GetUserPrefs(cnxn, user_id, use_cache=use_cache)
+    except exceptions.NoSuchUserException:
+      user_prefs = user_pb2.UserPrefs()
+    return user_prefs
+
   def SetUserPrefs(self, cnxn, user_id, pref_values):
     """Store the given list of UserPrefValues."""
     userprefs_rows = [(user_id, upv.name, upv.value) for upv in pref_values]

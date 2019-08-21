@@ -66,15 +66,20 @@ class MergeLinkedAccountReasonsTest(unittest.TestCase):
     user_4 = user_pb2.User(
         user_id=444, email='user4@example.org')
     self.addr_perm_parent = notify_reasons.AddrPerm(
-        False, parent.email, parent, notify_reasons.REPLY_NOT_ALLOWED)
+        False, parent.email, parent, notify_reasons.REPLY_NOT_ALLOWED,
+        user_pb2.UserPrefs())
     self.addr_perm_child = notify_reasons.AddrPerm(
-        False, child.email, child, notify_reasons.REPLY_NOT_ALLOWED)
+        False, child.email, child, notify_reasons.REPLY_NOT_ALLOWED,
+        user_pb2.UserPrefs())
     self.addr_perm_3 = notify_reasons.AddrPerm(
-        False, user_3.email, user_3, notify_reasons.REPLY_NOT_ALLOWED)
+        False, user_3.email, user_3, notify_reasons.REPLY_NOT_ALLOWED,
+        user_pb2.UserPrefs())
     self.addr_perm_4 = notify_reasons.AddrPerm(
-        False, user_4.email, user_4, notify_reasons.REPLY_NOT_ALLOWED)
+        False, user_4.email, user_4, notify_reasons.REPLY_NOT_ALLOWED,
+        user_pb2.UserPrefs())
     self.addr_perm_5 = notify_reasons.AddrPerm(
-        False, 'alias@example.com', None, notify_reasons.REPLY_NOT_ALLOWED)
+        False, 'alias@example.com', None, notify_reasons.REPLY_NOT_ALLOWED,
+        user_pb2.UserPrefs())
 
   def testEmptyDict(self):
     """Zero users to notify."""
@@ -157,7 +162,8 @@ class MakeEmailWorkItemTest(unittest.TestCase):
     """We send non-members the email body that is indented for non-members."""
     email_task = notify_helpers._MakeEmailWorkItem(
         notify_reasons.AddrPerm(
-            False, 'a@a.com', self.member, REPLY_NOT_ALLOWED),
+            False, 'a@a.com', self.member, REPLY_NOT_ALLOWED,
+            user_pb2.UserPrefs()),
         ['reason'], self.issue, 'body non', 'body mem', self.project,
         'example.com', self.commenter_view, self.detail_url)
 
@@ -172,7 +178,8 @@ class MakeEmailWorkItemTest(unittest.TestCase):
 
     email_task = notify_helpers._MakeEmailWorkItem(
         notify_reasons.AddrPerm(
-            True, 'a@a.com', self.member, REPLY_NOT_ALLOWED),
+            True, 'a@a.com', self.member, REPLY_NOT_ALLOWED,
+            user_pb2.UserPrefs()),
         ['reason'], self.issue, 'body mem', 'body mem', self.project,
         'example.com', self.commenter_view, self.detail_url)
     self.assertIn('body mem', email_task['body'])
@@ -181,7 +188,8 @@ class MakeEmailWorkItemTest(unittest.TestCase):
     """"An html body is sent if a detail_url is specified."""
     email_task = notify_helpers._MakeEmailWorkItem(
         notify_reasons.AddrPerm(
-            False, 'a@a.com', self.member, REPLY_NOT_ALLOWED),
+            False, 'a@a.com', self.member, REPLY_NOT_ALLOWED,
+            user_pb2.UserPrefs()),
         ['reason'], self.issue, 'body non', 'body mem', self.project,
         'example.com', self.commenter_view, self.detail_url)
 
@@ -196,7 +204,8 @@ class MakeEmailWorkItemTest(unittest.TestCase):
     unicode_content = '\xe2\x9d\xa4     â    â'
     email_task = notify_helpers._MakeEmailWorkItem(
         notify_reasons.AddrPerm(
-            False, 'a@a.com', self.member, REPLY_NOT_ALLOWED),
+            False, 'a@a.com', self.member, REPLY_NOT_ALLOWED,
+            user_pb2.UserPrefs()),
         ['reason'], self.issue, unicode_content, 'unused body mem',
         self.project, 'example.com', self.commenter_view, self.detail_url)
 
@@ -211,7 +220,8 @@ class MakeEmailWorkItemTest(unittest.TestCase):
     """"An html body is sent if a detail_url is specified."""
     email_task = notify_helpers._MakeEmailWorkItem(
         notify_reasons.AddrPerm(
-            False, 'a@a.com', self.member, REPLY_NOT_ALLOWED),
+            False, 'a@a.com', self.member, REPLY_NOT_ALLOWED,
+            user_pb2.UserPrefs()),
         ['reason'], self.issue, 'test google.com test', 'unused body mem',
         self.project, 'example.com', self.commenter_view, self.detail_url)
 
@@ -227,7 +237,8 @@ class MakeEmailWorkItemTest(unittest.TestCase):
     """"An html body is sent with correct <a href>s."""
     email_task = notify_helpers._MakeEmailWorkItem(
         notify_reasons.AddrPerm(
-            False, 'a@a.com', self.member, REPLY_NOT_ALLOWED),
+            False, 'a@a.com', self.member, REPLY_NOT_ALLOWED,
+            user_pb2.UserPrefs()),
         ['reason'], self.issue, 'a <http://google.com> z', 'unused body',
         self.project, 'example.com', self.commenter_view, self.detail_url)
 
@@ -243,7 +254,8 @@ class MakeEmailWorkItemTest(unittest.TestCase):
     """"An html body is sent with correct <a href>s."""
     email_task = notify_helpers._MakeEmailWorkItem(
         notify_reasons.AddrPerm(
-            False, 'a@a.com', self.member, REPLY_NOT_ALLOWED),
+            False, 'a@a.com', self.member, REPLY_NOT_ALLOWED,
+            user_pb2.UserPrefs()),
         ['reason'], self.issue, 'a <tt@chromium.org> <aa@chromium.org> z',
         'unused body mem', self.project, 'example.com', self.commenter_view,
         self.detail_url)
@@ -263,7 +275,8 @@ class MakeEmailWorkItemTest(unittest.TestCase):
         '<a href="http://www.google.com">test</a> \'something\'')
     email_task = notify_helpers._MakeEmailWorkItem(
         notify_reasons.AddrPerm(
-            False, 'a@a.com', self.member, REPLY_NOT_ALLOWED),
+            False, 'a@a.com', self.member, REPLY_NOT_ALLOWED,
+            user_pb2.UserPrefs()),
         ['reason'], self.issue, body_with_html_content, 'unused body mem',
         self.project, 'example.com', self.commenter_view, self.detail_url)
 
@@ -329,7 +342,8 @@ class MakeEmailWorkItemTest(unittest.TestCase):
     """We include a footer about replying that is appropriate for that user."""
     email_task = notify_helpers._MakeEmailWorkItem(
         notify_reasons.AddrPerm(
-            True, 'a@a.com', self.member, REPLY_NOT_ALLOWED),
+            True, 'a@a.com', self.member, REPLY_NOT_ALLOWED,
+            user_pb2.UserPrefs()),
         ['reason'], self.issue, 'body non', 'body mem', self.project,
         'example.com', self.commenter_view, self.detail_url)
     self.assertEqual(emailfmt.NoReplyAddress(), email_task['reply_to'])
@@ -337,7 +351,8 @@ class MakeEmailWorkItemTest(unittest.TestCase):
 
     email_task = notify_helpers._MakeEmailWorkItem(
         notify_reasons.AddrPerm(
-            True, 'a@a.com', self.member, REPLY_MAY_COMMENT),
+            True, 'a@a.com', self.member, REPLY_MAY_COMMENT,
+            user_pb2.UserPrefs()),
         ['reason'], self.issue, 'body non', 'body mem', self.project,
         'example.com', self.commenter_view, self.detail_url)
     self.assertEqual(
@@ -348,7 +363,8 @@ class MakeEmailWorkItemTest(unittest.TestCase):
 
     email_task = notify_helpers._MakeEmailWorkItem(
         notify_reasons.AddrPerm(
-            True, 'a@a.com', self.member, REPLY_MAY_UPDATE),
+            True, 'a@a.com', self.member, REPLY_MAY_UPDATE,
+            user_pb2.UserPrefs()),
         ['reason'], self.issue, 'body non', 'body mem', self.project,
         'example.com', self.commenter_view, self.detail_url)
     self.assertEqual(
@@ -362,7 +378,8 @@ class MakeEmailWorkItemTest(unittest.TestCase):
     self.project.process_inbound_email = False
     email_task = notify_helpers._MakeEmailWorkItem(
         notify_reasons.AddrPerm(
-            True, 'a@a.com', self.member, REPLY_MAY_UPDATE),
+            True, 'a@a.com', self.member, REPLY_MAY_UPDATE,
+            user_pb2.UserPrefs()),
         ['reason'], self.issue, 'body non', 'body mem', self.project,
         'example.com', self.commenter_view, self.detail_url)
     self.assertEqual(emailfmt.NoReplyAddress(), email_task['reply_to'])
@@ -371,7 +388,8 @@ class MakeEmailWorkItemTest(unittest.TestCase):
     """The footer lists reasons why that email was sent to that user."""
     email_task = notify_helpers._MakeEmailWorkItem(
         notify_reasons.AddrPerm(
-            True, 'a@a.com', self.member, REPLY_MAY_UPDATE),
+            True, 'a@a.com', self.member, REPLY_MAY_UPDATE,
+            user_pb2.UserPrefs()),
         ['Funny', 'Caring', 'Near'], self.issue, 'body', 'body', self.project,
         'example.com', self.commenter_view, self.detail_url)
     self.assertIn('because:', email_task['body'])
@@ -381,7 +399,8 @@ class MakeEmailWorkItemTest(unittest.TestCase):
 
     email_task = notify_helpers._MakeEmailWorkItem(
         notify_reasons.AddrPerm(
-            True, 'a@a.com', self.member, REPLY_MAY_UPDATE),
+            True, 'a@a.com', self.member, REPLY_MAY_UPDATE,
+            user_pb2.UserPrefs()),
         [], self.issue, 'body', 'body', self.project,
         'example.com', self.commenter_view, self.detail_url)
     self.assertNotIn('because', email_task['body'])

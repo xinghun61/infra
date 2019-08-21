@@ -54,11 +54,12 @@ REASON_LINKED_ACCOUNT = 'Your linked account would have been notified'
 # of the functions in this file pass around AddrPerm lists (an "APL").
 # is_member is a boolean
 # address is a string email address
-# user is a User PB, including user preference fields.
+# user is a User PB, including built-in user preference fields.
 # reply_perm is one of REPLY_NOT_ALLOWED, REPLY_MAY_COMMENT,
 # REPLY_MAY_UPDATE.
+# user_prefs is a UserPrefs object with string->string user prefs.
 AddrPerm = collections.namedtuple(
-    'AddrPerm', 'is_member, address, user, reply_perm')
+    'AddrPerm', 'is_member, address, user, reply_perm, user_prefs')
 
 
 
@@ -89,6 +90,7 @@ def ComputeIssueChangeAddressPermList(
   """
   memb_addr_perm_list = []
   logging.info('Considering %r ', ids_to_consider)
+  all_user_prefs = services.user.GetUsersPrefs(cnxn, ids_to_consider)
   for user_id in ids_to_consider:
     if user_id == framework_constants.NO_USER_SPECIFIED:
       continue
@@ -128,7 +130,8 @@ def ComputeIssueChangeAddressPermList(
         reply_perm = REPLY_MAY_COMMENT
 
     memb_addr_perm_list.append(
-      AddrPerm(recipient_is_member, addr, user, reply_perm))
+      AddrPerm(recipient_is_member, addr, user, reply_perm,
+               all_user_prefs[user_id]))
 
   logging.info('For %s %s, will notify: %r',
                project.project_name, issue.local_id,
@@ -138,7 +141,7 @@ def ComputeIssueChangeAddressPermList(
 
 
 def ComputeProjectNotificationAddrList(
-    project, contributor_could_view, omit_addrs):
+    cnxn, services, project, contributor_could_view, omit_addrs):
   """Return a list of non-user addresses to notify of an issue change.
 
   The non-user addresses are specified by email address strings, not
@@ -146,6 +149,8 @@ def ComputeProjectNotificationAddrList(
   It is not assumed to have permission to see all issues.
 
   Args:
+    cnxn: connection to SQL database.
+    services: A Services object.
     project: Project PB containing the issue that was updated.
     contributor_could_view: True if any project contributor should be able to
         see the notification email, e.g., in a mailing list archive or feed.
@@ -159,14 +164,16 @@ def ComputeProjectNotificationAddrList(
   memb_addr_perm_list = []
   if contributor_could_view:
     ml_addr = project.issue_notify_address
+    ml_user_prefs = services.user.GetUserPrefsByEmail(cnxn, ml_addr)
+
     if ml_addr and ml_addr not in omit_addrs:
       memb_addr_perm_list.append(
-          AddrPerm(False, ml_addr, None, REPLY_NOT_ALLOWED))
+          AddrPerm(False, ml_addr, None, REPLY_NOT_ALLOWED, ml_user_prefs))
 
   return memb_addr_perm_list
 
 
-def ComputeIssueNotificationAddrList(issue, omit_addrs):
+def ComputeIssueNotificationAddrList(cnxn, services, issue, omit_addrs):
   """Return a list of non-user addresses to notify of an issue change.
 
   The non-user addresses are specified by email address strings, not
@@ -175,6 +182,8 @@ def ComputeIssueNotificationAddrList(issue, omit_addrs):
   even a restricted one.
 
   Args:
+    cnxn: connection to SQL database.
+    services: A Services object.
     issue: Issue PB for the issue that was updated.
     omit_addrs: set of strings for email addresses to not notify because
         they already know.
@@ -186,8 +195,9 @@ def ComputeIssueNotificationAddrList(issue, omit_addrs):
   addr_perm_list = []
   for addr in issue.derived_notify_addrs:
     if addr not in omit_addrs:
+      notify_user_prefs = services.user.GetUserPrefsByEmail(cnxn, addr)
       addr_perm_list.append(
-          AddrPerm(False, addr, None, REPLY_NOT_ALLOWED))
+          AddrPerm(False, addr, None, REPLY_NOT_ALLOWED, notify_user_prefs))
 
   return addr_perm_list
 
@@ -377,12 +387,12 @@ def ComputeGroupReasonList(
 
   # Get the list of addresses to notify based on filter rules.
   issue_notify_addr_list = ComputeIssueNotificationAddrList(
-      issue, omit_addrs)
+      cnxn, services, issue, omit_addrs)
   # Get the list of addresses to notify based on project settings.
   proj_notify_addr_list = []
   if include_notify_all:
     proj_notify_addr_list = ComputeProjectNotificationAddrList(
-        project, contributor_could_view, omit_addrs)
+        cnxn, services, project, contributor_could_view, omit_addrs)
 
   group_reason_list = [
     (reporter_addr_perm_list, REASON_REPORTER),

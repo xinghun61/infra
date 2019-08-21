@@ -18,6 +18,7 @@ from features import notify_reasons
 from framework import emailfmt
 from framework import framework_views
 from framework import urls
+from proto import user_pb2
 from services import service_manager
 from testing import fake
 from tracker import tracker_bizobj
@@ -65,17 +66,21 @@ class ComputeIssueChangeAddressPermListTest(unittest.TestCase):
         self.users_by_id, pref_check_function=lambda *args: True)
     self.assertEqual(
         [notify_reasons.AddrPerm(
-            True, 'owner@example.com', self.owner, REPLY_MAY_UPDATE),
+            True, 'owner@example.com', self.owner, REPLY_MAY_UPDATE,
+            user_pb2.UserPrefs(user_id=111)),
          notify_reasons.AddrPerm(
-            True, 'member@example.com', self.member, REPLY_MAY_UPDATE),
+            True, 'member@example.com', self.member, REPLY_MAY_UPDATE,
+            user_pb2.UserPrefs(user_id=222)),
          notify_reasons.AddrPerm(
-            False, 'visitor@example.com', self.visitor, REPLY_MAY_COMMENT)],
+            False, 'visitor@example.com', self.visitor, REPLY_MAY_COMMENT,
+            user_pb2.UserPrefs(user_id=999))],
         addr_perm_list)
 
 
 class ComputeProjectAndIssueNotificationAddrListTest(unittest.TestCase):
 
   def setUp(self):
+    self.cnxn = 'fake cnxn'
     self.services = service_manager.Services(
         project=fake.ProjectService(),
         user=fake.UserService())
@@ -87,27 +92,28 @@ class ComputeProjectAndIssueNotificationAddrListTest(unittest.TestCase):
   def testNotifyAddress(self):
     # No mailing list or filter rules are defined
     addr_perm_list = notify_reasons.ComputeProjectNotificationAddrList(
-        self.project, True, set())
+        self.cnxn, self.services, self.project, True, set())
     self.assertListEqual([], addr_perm_list)
 
     # Only mailing list is notified.
     self.project.issue_notify_address = 'mailing-list@domain.com'
     addr_perm_list = notify_reasons.ComputeProjectNotificationAddrList(
-        self.project, True, set())
+        self.cnxn, self.services, self.project, True, set())
     self.assertListEqual(
         [notify_reasons.AddrPerm(
-            False, 'mailing-list@domain.com', None, REPLY_NOT_ALLOWED)],
+            False, 'mailing-list@domain.com', None, REPLY_NOT_ALLOWED,
+            user_pb2.UserPrefs())],
         addr_perm_list)
 
     # No one is notified because mailing list was already notified.
     omit_addrs = {'mailing-list@domain.com'}
     addr_perm_list = notify_reasons.ComputeProjectNotificationAddrList(
-        self.project, False, omit_addrs)
+        self.cnxn, self.services, self.project, False, omit_addrs)
     self.assertListEqual([], addr_perm_list)
 
     # No one is notified because anon users cannot view.
     addr_perm_list = notify_reasons.ComputeProjectNotificationAddrList(
-        self.project, False, set())
+        self.cnxn, self.services, self.project, False, set())
     self.assertListEqual([], addr_perm_list)
 
   def testFilterRuleNotifyAddresses(self):
@@ -116,16 +122,17 @@ class ComputeProjectAndIssueNotificationAddrListTest(unittest.TestCase):
     issue.derived_notify_addrs.extend(['notify@domain.com'])
 
     addr_perm_list = notify_reasons.ComputeIssueNotificationAddrList(
-        issue, set())
+        self.cnxn, self.services, issue, set())
     self.assertListEqual(
         [notify_reasons.AddrPerm(
-            False, 'notify@domain.com', None, REPLY_NOT_ALLOWED)],
+            False, 'notify@domain.com', None, REPLY_NOT_ALLOWED,
+            user_pb2.UserPrefs())],
         addr_perm_list)
 
     # Also-notify addresses can be omitted (e.g., if it is the same as
     # the email address of the user who made the change).
     addr_perm_list = notify_reasons.ComputeIssueNotificationAddrList(
-        issue, {'notify@domain.com'})
+        self.cnxn, self.services, issue, {'notify@domain.com'})
     self.assertListEqual([], addr_perm_list)
 
 
@@ -198,9 +205,11 @@ class ComputeGroupReasonListTest(unittest.TestCase):
     self.CheckGroupReasonList(
         actual,
         owner_apl=[notify_reasons.AddrPerm(
-            False, self.fred.email, self.fred, REPLY_NOT_ALLOWED)],
+            False, self.fred.email, self.fred, REPLY_NOT_ALLOWED,
+            user_pb2.UserPrefs(user_id=self.fred.user_id))],
         ccd_apl=[notify_reasons.AddrPerm(
-            False, self.alice.email, self.alice, REPLY_NOT_ALLOWED)])
+            False, self.alice.email, self.alice, REPLY_NOT_ALLOWED,
+            user_pb2.UserPrefs(user_id=self.alice.user_id))])
 
   def testComputeGroupReasonList_Starrers(self):
     """Bob and Alice starred it, but Alice opts out of notifications."""
@@ -212,9 +221,11 @@ class ComputeGroupReasonListTest(unittest.TestCase):
     self.CheckGroupReasonList(
         actual,
         owner_apl=[notify_reasons.AddrPerm(
-            False, self.fred.email, self.fred, REPLY_NOT_ALLOWED)],
+            False, self.fred.email, self.fred, REPLY_NOT_ALLOWED,
+            user_pb2.UserPrefs(user_id=self.fred.user_id))],
         starrer_apl=[notify_reasons.AddrPerm(
-            False, self.bob.email, self.bob, REPLY_NOT_ALLOWED)])
+            False, self.bob.email, self.bob, REPLY_NOT_ALLOWED,
+            user_pb2.UserPrefs(user_id=self.bob.user_id))])
 
   def testComputeGroupReasonList_Subscribers(self):
     """Bob subscribed."""
@@ -229,9 +240,11 @@ class ComputeGroupReasonListTest(unittest.TestCase):
     self.CheckGroupReasonList(
         actual,
         owner_apl=[notify_reasons.AddrPerm(
-            False, self.fred.email, self.fred, REPLY_NOT_ALLOWED)],
+            False, self.fred.email, self.fred, REPLY_NOT_ALLOWED,
+            user_pb2.UserPrefs(user_id=self.fred.user_id))],
         subscriber_apl=[notify_reasons.AddrPerm(
-            False, self.bob.email, self.bob, REPLY_NOT_ALLOWED)])
+            False, self.bob.email, self.bob, REPLY_NOT_ALLOWED,
+            user_pb2.UserPrefs(user_id=self.bob.user_id))])
 
     # Now with subscriber notifications disabled.
     actual = notify_reasons.ComputeGroupReasonList(
@@ -240,7 +253,8 @@ class ComputeGroupReasonListTest(unittest.TestCase):
     self.CheckGroupReasonList(
         actual,
         owner_apl=[notify_reasons.AddrPerm(
-            False, self.fred.email, self.fred, REPLY_NOT_ALLOWED)])
+            False, self.fred.email, self.fred, REPLY_NOT_ALLOWED,
+            user_pb2.UserPrefs(user_id=self.fred.user_id))])
 
   def testComputeGroupReasonList_NotifyAll(self):
     """Project is configured to always notify issues@example.com."""
@@ -251,9 +265,11 @@ class ComputeGroupReasonListTest(unittest.TestCase):
     self.CheckGroupReasonList(
         actual,
         owner_apl=[notify_reasons.AddrPerm(
-            False, self.fred.email, self.fred, REPLY_NOT_ALLOWED)],
+            False, self.fred.email, self.fred, REPLY_NOT_ALLOWED,
+            user_pb2.UserPrefs(user_id=self.fred.user_id))],
         all_notifications_apl=[notify_reasons.AddrPerm(
-            False, 'issues@example.com', None, REPLY_NOT_ALLOWED)])
+            False, 'issues@example.com', None, REPLY_NOT_ALLOWED,
+            user_pb2.UserPrefs())])
 
     # We don't use the notify-all address when the issue is not public.
     actual = notify_reasons.ComputeGroupReasonList(
@@ -262,7 +278,8 @@ class ComputeGroupReasonListTest(unittest.TestCase):
     self.CheckGroupReasonList(
         actual,
         owner_apl=[notify_reasons.AddrPerm(
-            False, self.fred.email, self.fred, REPLY_NOT_ALLOWED)])
+            False, self.fred.email, self.fred, REPLY_NOT_ALLOWED,
+            user_pb2.UserPrefs(user_id=self.fred.user_id))])
 
     # Now with the notify-all address disabled.
     actual = notify_reasons.ComputeGroupReasonList(
@@ -271,4 +288,5 @@ class ComputeGroupReasonListTest(unittest.TestCase):
     self.CheckGroupReasonList(
         actual,
         owner_apl=[notify_reasons.AddrPerm(
-            False, self.fred.email, self.fred, REPLY_NOT_ALLOWED)])
+            False, self.fred.email, self.fred, REPLY_NOT_ALLOWED,
+            user_pb2.UserPrefs(user_id=self.fred.user_id))])

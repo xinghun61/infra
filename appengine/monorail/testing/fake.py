@@ -512,7 +512,9 @@ class UserService(object):
   def LookupUserID(self, cnxn, email, autocreate=False, allowgroups=False):
     email_dict = self.LookupUserIDs(
         cnxn, [email], autocreate=autocreate, allowgroups=allowgroups)
-    return email_dict[email]
+    if email in email_dict:
+      return email_dict[email]
+    raise exceptions.NoSuchUserException('%r not found' % email)
 
   def GetUsersByIDs(self, cnxn, user_ids, use_cache=True):
     user_dict = {}
@@ -665,6 +667,15 @@ class UserService(object):
     """Return a UserPrefs PB for the requested user ID."""
     prefs_dict = self.GetUsersPrefs(cnxn, [user_id], use_cache=use_cache)
     return prefs_dict[user_id]
+
+  def GetUserPrefsByEmail(self, cnxn, email, use_cache=True):
+    """Return a UserPrefs PB for the requested email, or an empty UserPrefs."""
+    try:
+      user_id = self.LookupUserID(cnxn, email)
+      user_prefs = self.GetUserPrefs(cnxn, user_id, use_cache=use_cache)
+    except exceptions.NoSuchUserException:
+      user_prefs = user_pb2.UserPrefs()
+    return user_prefs
 
   def SetUserPrefs(self, cnxn, user_id, pref_values):
     userprefs = self.GetUserPrefs(cnxn, user_id)
