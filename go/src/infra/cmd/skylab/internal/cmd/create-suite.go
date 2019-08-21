@@ -152,9 +152,6 @@ func (c *createSuiteRun) validateArgs() error {
 
 func (c *createSuiteRun) validateForBB() error {
 	// TODO(akeshet): support for all of these arguments, or deprecate them.
-	if len(c.tags) > 0 {
-		return errors.Reason("tags not yet supported in -bb mode").Err()
-	}
 	if c.orphan {
 		return errors.Reason("orphan not supported in -bb mode").Err()
 	}

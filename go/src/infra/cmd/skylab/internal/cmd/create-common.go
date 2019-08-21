@@ -80,6 +80,7 @@ func (c *createRunCommon) RecipeArgs() (recipe.Args, error) {
 		Timeout:      time.Duration(c.timeoutMins) * time.Minute,
 		Keyvals:      keyvalMap,
 		Priority:     int64(c.priority),
+		Tags:         c.tags,
 	}, nil
 }
 

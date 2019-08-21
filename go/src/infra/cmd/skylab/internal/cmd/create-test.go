@@ -116,9 +116,6 @@ func (c *createTestRun) innerRunBB(a subcommands.Application, args []string, env
 
 func (c *createTestRun) validateForBB() error {
 	// TODO(akeshet): support for all of these arguments, or deprecate them.
-	if len(c.tags) > 0 {
-		return errors.Reason("tags not yet supported in -bb mode").Err()
-	}
 	if c.parentTaskID != "" {
 		return errors.Reason("parent task id not yet supported in -bb mode").Err()
 	}

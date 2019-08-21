@@ -38,6 +38,7 @@ type Args struct {
 	AutotestTestArgs           string
 	MaxRetries                 int
 	Priority                   int64
+	Tags                       []string
 }
 
 // Request constructs a cros_test_platform request from the given arguments.
@@ -86,6 +87,7 @@ func Request(a Args) (*test_platform.Request, error) {
 
 	params.Decorations = &test_platform.Request_Params_Decorations{
 		AutotestKeyvals: a.Keyvals,
+		Tags:            a.Tags,
 	}
 
 	params.FreeformAttributes = &test_platform.Request_Params_FreeformAttributes{
