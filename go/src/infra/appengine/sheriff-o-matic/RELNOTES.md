@@ -1,3 +1,20 @@
+# Release Notes sheriff-o-matic 2019-08-21
+
+- 3 commits, 1 bugs affected since 7e122c6
+- 1 Authors:
+  - seanmccullough@chromium.org
+
+## Changes in this release
+
+- [[som] Fix missing findit results in alerts.](https://chromium-review.googlesource.com/c/infra/infra/+/1763148) (seanmccullough@chromium.org)
+- [[som] update RELNOTES.md for push](https://chromium-review.googlesource.com/c/infra/infra/+/1759013) (seanmccullough@chromium.org)
+- [[som] add helper script to compare local sql templates to bq view defs.](https://chromium-review.googlesource.com/c/infra/infra/+/1758496) (seanmccullough@chromium.org)
+
+
+## Bugs updated, by author
+- seanmccullough@chromium.org:
+  -  [https://crbug.com/996046](https://crbug.com/996046)
+
 # Release Notes sheriff-o-matic 2019-08-16
 
 - 13 commits, 4 bugs affected since c3446a6 ()
