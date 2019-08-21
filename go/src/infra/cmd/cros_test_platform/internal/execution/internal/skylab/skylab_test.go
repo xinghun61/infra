@@ -191,6 +191,7 @@ func basicParams() *test_platform.Request_Params {
 			Pool: &test_platform.Request_Params_Scheduling_ManagedPool_{
 				ManagedPool: test_platform.Request_Params_Scheduling_MANAGED_POOL_CQ,
 			},
+			Priority: 79,
 		},
 		Time: &test_platform.Request_Params_Time{
 			MaximumDuration: &duration.Duration{Seconds: 60},
@@ -416,6 +417,8 @@ func TestRequestArguments(t *testing.T) {
 
 			So(create.Tags, ShouldContain, "luci_project:foo-luci-project")
 			So(create.ParentTaskId, ShouldEqual, "foo-parent-task-id")
+
+			So(create.Priority, ShouldEqual, 79)
 
 			prefix := "log_location:"
 			var logdogURL string

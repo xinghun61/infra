@@ -46,6 +46,11 @@ func New(tests []*steps.EnumerationResponse_AutotestInvocation, params *test_pla
 
 // LaunchAndWait launches an autotest execution and waits for it to complete.
 func (r *Runner) LaunchAndWait(ctx context.Context, client swarming.Client, _ isolate.GetterFactory) error {
+	if p := r.requestParams.GetScheduling().GetPriority(); p != 0 && p != 140 {
+		// TODO(crbug.com/996301): Support priority in autotest backend.
+		logging.Warningf(ctx, "request specifed a nondefault priority %d; this is unsupported in autotest backend, and ignored", p)
+	}
+
 	taskID, err := r.launch(ctx, client)
 	if err != nil {
 		return err

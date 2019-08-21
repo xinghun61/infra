@@ -86,12 +86,11 @@ func (t *testRun) RequestArgs(params *test_platform.Request_Params, workerConfig
 	}
 
 	args := request.Args{
-		Cmd:               *cmd,
-		SchedulableLabels: *labels,
-		Dimensions:        params.GetFreeformAttributes().GetSwarmingDimensions(),
-		ParentTaskID:      parentTaskID,
-		// TODO(akeshet): Determine priority correctly.
-		Priority:                0,
+		Cmd:                     *cmd,
+		SchedulableLabels:       *labels,
+		Dimensions:              params.GetFreeformAttributes().GetSwarmingDimensions(),
+		ParentTaskID:            parentTaskID,
+		Priority:                params.GetScheduling().GetPriority(),
 		ProvisionableDimensions: provisionableDimensions,
 		SwarmingTags:            swarmingTags(cmd, workerConfig, params),
 		Timeout:                 timeout,
