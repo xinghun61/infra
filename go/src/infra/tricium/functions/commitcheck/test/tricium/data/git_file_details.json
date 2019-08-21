@@ -1,0 +1,11 @@
+{
+	"repository": "https://chromium.googlesource.com/chromiumos/third_party/linux-firmware",
+	"ref": "refs/changes/94/1494994/2",
+	"files": [
+		{ "path": "iwlwifi-8000C-36.ucode" },
+		{ "path": "iwlwifi-8265-36.ucode" },
+		{ "path": "iwlwifi-9000-pu-b0-jf-b0-46.ucode" },
+		{ "path": "iwlwifi-9000-pu-b0-jf-b0-46.ucode" }
+	],
+	"commit_message": "iwlwifi: add Core43 FWs for 9000 series and update 8000 series\n\nBuild number: Core_build_core43-55\n\nRevision numbers: 212c8d87 (8000C, 8265)\n\t\t  b20aefee (9000, 9260)\n\nUpdates for Core43.  The FWs for 8000 series (frozen on Core33) were\nalso updated, even though they are not used officially, just for\nconsistency.\n\nBUG=TBD\nTEST=build, boot and connect on device with 9000 NICs.\n\nChange-Id: I08b730bbc9fdfb9eeec57bdd429b6b1f5cfd684f\nSigned-off-by: Luca Coelho <luciano.coelho@intel.com>\nReviewed-on: https://chromium-review.googlesource.com/1494994\nCommit-Ready: Kirtika Ruchandani <kirtika@chromium.org>\nTested-by: Kirtika Ruchandani <kirtika@chromium.org>\nReviewed-by: Kirtika Ruchandani <kirtika@chromium.org>"
+}
