@@ -46,7 +46,7 @@ will be executed in a low priority. If the tasks runs in a quotascheduler contro
 specified multiple times.`)
 	fl.StringVar(&c.qsAccount, "qs-account", "", "Quota Scheduler account to use for this task.  Optional.")
 	fl.Var(flagx.StringSlice(&c.tags), "tag", "Swarming tag for test; may be specified multiple times.")
-	fl.BoolVar(&c.buildBucket, "bb", false, "Use buildbucket recipe backend.")
+	fl.BoolVar(&c.buildBucket, "bb", true, "(Default: True) Use buildbucket recipe backend.")
 }
 
 func (c *createRunCommon) ValidateArgs(fl flag.FlagSet) error {
