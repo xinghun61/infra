@@ -74,7 +74,7 @@ func (c *createTestPlanRun) innerRun(a subcommands.Application, args []string, e
 
 	ctx := cli.GetContext(a, c, env)
 	e := c.envFlags.Env()
-	client, err := bbClient(ctx, e, c.authFlags)
+	client, err := bbNewClient(ctx, e, c.authFlags)
 	if err != nil {
 		return err
 	}
@@ -91,7 +91,7 @@ func (c *createTestPlanRun) innerRun(a subcommands.Application, args []string, e
 
 	recipeArgs.TestPlan = testPlan
 
-	return buildbucketRun(ctx, client, recipeArgs, e, true, a.GetErr())
+	return client.buildbucketRun(ctx, recipeArgs, e, true, a.GetErr())
 }
 
 func (c *createTestPlanRun) readTestPlan(path string) (*test_platform.Request_TestPlan, error) {

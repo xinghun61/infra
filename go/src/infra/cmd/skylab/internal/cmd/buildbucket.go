@@ -25,7 +25,27 @@ import (
 	"infra/cmd/skylab/internal/site"
 )
 
-func buildbucketRun(ctx context.Context, client buildbucket_pb.BuildsClient, args recipe.Args, env site.Environment, jsonOut bool, w io.Writer) error {
+func bbNewClient(ctx context.Context, env site.Environment, authFlags authcli.Flags) (*bbClient, error) {
+	hClient, err := newHTTPClient(ctx, &authFlags)
+	if err != nil {
+		return nil, err
+	}
+
+	pClient := &prpc.Client{
+		C:    hClient,
+		Host: env.BuildbucketHost,
+	}
+
+	return &bbClient{
+		client: buildbucket_pb.NewBuildsPRPCClient(pClient),
+	}, nil
+}
+
+type bbClient struct {
+	client buildbucket_pb.BuildsClient
+}
+
+func (c *bbClient) buildbucketRun(ctx context.Context, args recipe.Args, env site.Environment, jsonOut bool, w io.Writer) error {
 	req, err := recipe.Request(args)
 	if err != nil {
 		return err
@@ -56,7 +76,7 @@ func buildbucketRun(ctx context.Context, client buildbucket_pb.BuildsClient, arg
 		Properties: recipeStruct,
 	}
 
-	build, err := client.ScheduleBuild(ctx, bbReq)
+	build, err := c.client.ScheduleBuild(ctx, bbReq)
 	if err != nil {
 		return err
 	}
@@ -65,28 +85,14 @@ func buildbucketRun(ctx context.Context, client buildbucket_pb.BuildsClient, arg
 		ti := &taskInfo{
 			Name: "cros_test_platform",
 			ID:   fmt.Sprintf("%d", build.Id),
-			URL:  fmt.Sprintf(bbURL(env, build.Id)),
+			URL:  fmt.Sprintf(c.bbURL(env, build.Id)),
 		}
 		return json.NewEncoder(w).Encode(ti)
 	}
 
-	fmt.Fprintf(w, "Created request at %s\n", bbURL(env, build.Id))
+	fmt.Fprintf(w, "Created request at %s\n", c.bbURL(env, build.Id))
 
 	return nil
-}
-
-func bbClient(ctx context.Context, env site.Environment, authFlags authcli.Flags) (buildbucket_pb.BuildsClient, error) {
-	hClient, err := newHTTPClient(ctx, &authFlags)
-	if err != nil {
-		return nil, err
-	}
-
-	pClient := &prpc.Client{
-		C:    hClient,
-		Host: env.BuildbucketHost,
-	}
-
-	return buildbucket_pb.NewBuildsPRPCClient(pClient), nil
 }
 
 // getBuildFields is the list of buildbucket fields that are needed.
@@ -97,8 +103,8 @@ var getBuildFields = []string{
 	"status",
 }
 
-func waitBuildbucketTask(ctx context.Context, ID int64, client buildbucket_pb.BuildsClient) (*steps.ExecuteResponse, error) {
-	build, err := bbWaitBuild(ctx, client, ID)
+func (c *bbClient) waitBuildbucketTask(ctx context.Context, ID int64) (*steps.ExecuteResponse, error) {
+	build, err := bbWaitBuild(ctx, c.client, ID)
 	if err != nil {
 		return nil, err
 	}
@@ -157,7 +163,7 @@ func isFinal(status buildbucket_pb.Status) bool {
 	return (status & buildbucket_pb.Status_ENDED_MASK) == buildbucket_pb.Status_ENDED_MASK
 }
 
-func bbURL(e site.Environment, buildID int64) string {
+func (c *bbClient) bbURL(e site.Environment, buildID int64) string {
 	return fmt.Sprintf("https://ci.chromium.org/p/%s/builders/%s/%s/b%d",
 		e.BuildbucketProject, e.BuildbucketBucket, e.BuildbucketBuilder, buildID)
 }

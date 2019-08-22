@@ -97,7 +97,7 @@ func (c *createSuiteRun) innerRunBB(ctx context.Context, a subcommands.Applicati
 		return err
 	}
 
-	client, err := bbClient(ctx, c.envFlags.Env(), c.authFlags)
+	client, err := bbNewClient(ctx, c.envFlags.Env(), c.authFlags)
 	if err != nil {
 		return err
 	}
@@ -107,7 +107,7 @@ func (c *createSuiteRun) innerRunBB(ctx context.Context, a subcommands.Applicati
 		return err
 	}
 	recipeArg.TestPlan = recipe.NewTestPlanForSuites(suiteName)
-	return buildbucketRun(ctx, client, recipeArg, c.envFlags.Env(), c.json, a.GetOut())
+	return client.buildbucketRun(ctx, recipeArg, c.envFlags.Env(), c.json, a.GetOut())
 }
 
 func (c *createSuiteRun) validateForBB() error {

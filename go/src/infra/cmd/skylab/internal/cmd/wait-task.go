@@ -108,16 +108,16 @@ func (c *waitTaskRun) innerRunBuildbucket(a subcommands.Application, env subcomm
 	ctx, cancel := maybeWithTimeout(ctx, c.timeoutMins)
 	defer cancel(context.Canceled)
 
-	bClient, err := bbClient(ctx, c.envFlags.Env(), c.authFlags)
+	bClient, err := bbNewClient(ctx, c.envFlags.Env(), c.authFlags)
 	if err != nil {
 		return nil, err
 	}
 
-	response, err := waitBuildbucketTask(ctx, taskID, bClient)
+	response, err := bClient.waitBuildbucketTask(ctx, taskID)
 	if err != nil {
 		return nil, err
 	}
-	return responseToTaskResult(c.envFlags.Env(), taskID, response), nil
+	return responseToTaskResult(bClient, c.envFlags.Env(), taskID, response), nil
 }
 
 func parseBBTaskID(arg string) (int64, error) {
@@ -131,8 +131,8 @@ func parseBBTaskID(arg string) (int64, error) {
 	return ID, nil
 }
 
-func responseToTaskResult(e site.Environment, buildID int64, response *steps.ExecuteResponse) *skylab_tool.WaitTaskResult {
-	u := bbURL(e, buildID)
+func responseToTaskResult(bClient *bbClient, e site.Environment, buildID int64, response *steps.ExecuteResponse) *skylab_tool.WaitTaskResult {
+	u := bClient.bbURL(e, buildID)
 	verdict := response.GetState().GetVerdict()
 	failure := verdict == test_platform.TaskState_VERDICT_FAILED
 	success := verdict == test_platform.TaskState_VERDICT_PASSED

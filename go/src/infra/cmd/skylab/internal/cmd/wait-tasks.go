@@ -199,7 +199,7 @@ func waitMultiBuildbucket(ctx context.Context, IDs stringset.Set, authFlags auth
 		return nil, err
 	}
 
-	client, err := bbClient(ctx, env, authFlags)
+	client, err := bbNewClient(ctx, env, authFlags)
 	if err != nil {
 		return nil, err
 	}
@@ -214,8 +214,8 @@ func waitMultiBuildbucket(ctx context.Context, IDs stringset.Set, authFlags auth
 
 		for ID, parsedID := range parsedIDs {
 			go func(ID string, parsedID int64) {
-				response, err := waitBuildbucketTask(ctx, parsedID, client)
-				result := responseToTaskResult(env, parsedID, response)
+				response, err := client.waitBuildbucketTask(ctx, parsedID)
+				result := responseToTaskResult(client, env, parsedID, response)
 				item := waitItem{result: result, err: err, ID: ID}
 				select {
 				case results <- item:
