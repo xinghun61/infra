@@ -48,10 +48,7 @@ type bbClient struct {
 }
 
 func (c *bbClient) ScheduleBuild(ctx context.Context, args recipe.Args, jsonOut bool, w io.Writer) error {
-	req, err := recipe.Request(args)
-	if err != nil {
-		return err
-	}
+	req := args.TestPlatformRequest()
 
 	// Do a JSON roundtrip to turn req (a proto) into a structpb.
 	m := jsonpb.Marshaler{}

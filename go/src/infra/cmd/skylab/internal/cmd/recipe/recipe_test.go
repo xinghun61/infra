@@ -28,7 +28,7 @@ func TestRequest(t *testing.T) {
 		FreeformSwarmingDimensions: []string{"freeform-key:freeform-value"},
 		MaxRetries:                 5,
 	}
-	got, err := Request(a)
+	got := a.TestPlatformRequest()
 	want := &test_platform.Request{
 		Params: &test_platform.Request_Params{
 			HardwareAttributes: &test_platform.Request_Params_HardwareAttributes{
@@ -75,9 +75,6 @@ func TestRequest(t *testing.T) {
 				{Harness: &test_platform.Request_Test_Autotest_{Autotest: &test_platform.Request_Test_Autotest{Name: "foo-test-2", TestArgs: "foo-args"}}},
 			},
 		},
-	}
-	if err != nil {
-		t.Errorf("Unexpected error")
 	}
 	if diff := pretty.Compare(got, want); diff != "" {
 		t.Errorf("Unexpected diff (-got +want): %s", diff)

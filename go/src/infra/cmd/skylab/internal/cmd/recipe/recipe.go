@@ -65,8 +65,8 @@ type Args struct {
 	Tags                       []string
 }
 
-// Request constructs a cros_test_platform request from the given arguments.
-func Request(a Args) (*test_platform.Request, error) {
+// TestPlatformRequest constructs a cros_test_platform.Request from Args.
+func (a *Args) TestPlatformRequest() *test_platform.Request {
 	req := &test_platform.Request{
 		TestPlan: a.TestPlan,
 	}
@@ -119,7 +119,7 @@ func Request(a Args) (*test_platform.Request, error) {
 		MaximumDuration: duration,
 	}
 
-	return req, nil
+	return req
 }
 
 func toScheduling(pool string, quotaAccount string, priority int64) *test_platform.Request_Params_Scheduling {
