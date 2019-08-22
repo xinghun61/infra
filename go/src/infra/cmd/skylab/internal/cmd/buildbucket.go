@@ -13,7 +13,6 @@ import (
 
 	"github.com/golang/protobuf/jsonpb"
 	structpb "github.com/golang/protobuf/ptypes/struct"
-	"go.chromium.org/chromiumos/infra/proto/go/test_platform/skylab_tool"
 	"go.chromium.org/chromiumos/infra/proto/go/test_platform/steps"
 	"go.chromium.org/luci/auth/client/authcli"
 	buildbucket_pb "go.chromium.org/luci/buildbucket/proto"
@@ -103,18 +102,12 @@ var getBuildFields = []string{
 	"status",
 }
 
-func waitBuildbucketTask(ctx context.Context, ID int64, client buildbucket_pb.BuildsClient, env site.Environment) (*skylab_tool.WaitTaskResult, error) {
+func waitBuildbucketTask(ctx context.Context, ID int64, client buildbucket_pb.BuildsClient, env site.Environment) (*steps.ExecuteResponse, error) {
 	build, err := bbWaitBuild(ctx, client, ID)
 	if err != nil {
 		return nil, err
 	}
-
-	response, err := bbExtractResponse(build)
-	if err != nil {
-		return nil, err
-	}
-
-	return responseToTaskResult(env, ID, response), nil
+	return bbExtractResponse(build)
 }
 
 func bbWaitBuild(ctx context.Context, client buildbucket_pb.BuildsClient, buildID int64) (*buildbucket_pb.Build, error) {
