@@ -9,7 +9,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"strconv"
 	"time"
 
 	"github.com/golang/protobuf/jsonpb"
@@ -104,13 +103,8 @@ var getBuildFields = []string{
 	"status",
 }
 
-func waitBuildbucketTask(ctx context.Context, ID string, client buildbucket_pb.BuildsClient, env site.Environment) (*skylab_tool.WaitTaskResult, error) {
-	buildID, err := strconv.ParseInt(ID, 10, 64)
-	if err != nil {
-		return nil, err
-	}
-
-	build, err := bbWaitBuild(ctx, client, buildID)
+func waitBuildbucketTask(ctx context.Context, ID int64, client buildbucket_pb.BuildsClient, env site.Environment) (*skylab_tool.WaitTaskResult, error) {
+	build, err := bbWaitBuild(ctx, client, ID)
 	if err != nil {
 		return nil, err
 	}
@@ -120,7 +114,7 @@ func waitBuildbucketTask(ctx context.Context, ID string, client buildbucket_pb.B
 		return nil, err
 	}
 
-	return responseToTaskResult(env, buildID, response), nil
+	return responseToTaskResult(env, ID, response), nil
 }
 
 func bbWaitBuild(ctx context.Context, client buildbucket_pb.BuildsClient, buildID int64) (*buildbucket_pb.Build, error) {

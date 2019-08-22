@@ -194,6 +194,11 @@ func waitMultiSwarming(ctx context.Context, IDs stringset.Set, authFlags authcli
 }
 
 func waitMultiBuildbucket(ctx context.Context, IDs stringset.Set, authFlags authcli.Flags, env site.Environment) (<-chan waitItem, error) {
+	parsedIDs, err := parseBBTaskIDs(IDs.ToSlice())
+	if err != nil {
+		return nil, err
+	}
+
 	client, err := bbClient(ctx, env, authFlags)
 	if err != nil {
 		return nil, err
@@ -205,10 +210,11 @@ func waitMultiBuildbucket(ctx context.Context, IDs stringset.Set, authFlags auth
 
 		// Wait for each task in separate goroutine.
 		wg := sync.WaitGroup{}
-		wg.Add(IDs.Len())
-		for _, ID := range IDs.ToSlice() {
-			go func(ID string) {
-				result, err := waitBuildbucketTask(ctx, ID, client, env)
+		wg.Add(len(parsedIDs))
+
+		for ID, parsedID := range parsedIDs {
+			go func(ID string, parsedID int64) {
+				result, err := waitBuildbucketTask(ctx, parsedID, client, env)
 				item := waitItem{result: result, err: err, ID: ID}
 				select {
 				case results <- item:
@@ -216,11 +222,23 @@ func waitMultiBuildbucket(ctx context.Context, IDs stringset.Set, authFlags auth
 				}
 
 				wg.Done()
-			}(ID)
+			}(ID, parsedID)
 		}
 		// Wait for all child routines terminate.
 		wg.Wait()
 	}()
 
 	return results, nil
+}
+
+func parseBBTaskIDs(args []string) (map[string]int64, error) {
+	IDs := make(map[string]int64)
+	for _, a := range args {
+		ID, err := parseBBTaskID(a)
+		if err != nil {
+			return nil, err
+		}
+		IDs[a] = ID
+	}
+	return IDs, nil
 }

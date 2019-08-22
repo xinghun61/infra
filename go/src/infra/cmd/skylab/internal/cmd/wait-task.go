@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"infra/cmd/skylab/internal/site"
 	"io"
+	"strconv"
 	"time"
 
 	"github.com/maruel/subcommands"
@@ -19,6 +20,7 @@ import (
 	"go.chromium.org/luci/auth/client/authcli"
 	swarming_api "go.chromium.org/luci/common/api/swarming/swarming/v1"
 	"go.chromium.org/luci/common/cli"
+	"go.chromium.org/luci/common/errors"
 	"go.chromium.org/luci/common/logging"
 
 	"infra/libs/skylab/swarming"
@@ -97,9 +99,9 @@ func (c *waitTaskRun) innerRunSwarming(a subcommands.Application, env subcommand
 }
 
 func (c *waitTaskRun) innerRunBuildbucket(a subcommands.Application, env subcommands.Env) (*skylab_tool.WaitTaskResult, error) {
-	taskIDString := c.Flags.Arg(0)
-	if taskIDString == "" {
-		return nil, NewUsageError(c.Flags, "missing buildbucket task id")
+	taskID, err := parseBBTaskID(c.Flags.Arg(0))
+	if err != nil {
+		return nil, NewUsageError(c.Flags, err.Error())
 	}
 
 	ctx := cli.GetContext(a, c, env)
@@ -111,7 +113,18 @@ func (c *waitTaskRun) innerRunBuildbucket(a subcommands.Application, env subcomm
 		return nil, err
 	}
 
-	return waitBuildbucketTask(ctx, taskIDString, bClient, c.envFlags.Env())
+	return waitBuildbucketTask(ctx, taskID, bClient, c.envFlags.Env())
+}
+
+func parseBBTaskID(arg string) (int64, error) {
+	if arg == "" {
+		return -1, errors.Reason("missing buildbucket task id").Err()
+	}
+	ID, err := strconv.ParseInt(arg, 10, 64)
+	if err != nil {
+		return -1, errors.Reason("malformed buildbucket id: %s", err).Err()
+	}
+	return ID, nil
 }
 
 func responseToTaskResult(e site.Environment, buildID int64, response *steps.ExecuteResponse) *skylab_tool.WaitTaskResult {
