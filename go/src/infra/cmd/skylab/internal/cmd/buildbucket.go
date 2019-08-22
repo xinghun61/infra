@@ -13,6 +13,7 @@ import (
 
 	"github.com/golang/protobuf/jsonpb"
 	structpb "github.com/golang/protobuf/ptypes/struct"
+	"go.chromium.org/chromiumos/infra/proto/go/test_platform"
 	"go.chromium.org/chromiumos/infra/proto/go/test_platform/steps"
 	"go.chromium.org/luci/auth/client/authcli"
 	buildbucket_pb "go.chromium.org/luci/buildbucket/proto"
@@ -21,7 +22,6 @@ import (
 	"go.chromium.org/luci/grpc/prpc"
 	"google.golang.org/genproto/protobuf/field_mask"
 
-	"infra/cmd/skylab/internal/cmd/recipe"
 	"infra/cmd/skylab/internal/site"
 )
 
@@ -47,12 +47,10 @@ type bbClient struct {
 	env    site.Environment
 }
 
-func (c *bbClient) ScheduleBuild(ctx context.Context, args recipe.Args, jsonOut bool, w io.Writer) error {
-	req := args.TestPlatformRequest()
-
+func (c *bbClient) ScheduleBuild(ctx context.Context, request *test_platform.Request, jsonOut bool, w io.Writer) error {
 	// Do a JSON roundtrip to turn req (a proto) into a structpb.
 	m := jsonpb.Marshaler{}
-	jsonStr, err := m.MarshalToString(req)
+	jsonStr, err := m.MarshalToString(request)
 	if err != nil {
 		return err
 	}
