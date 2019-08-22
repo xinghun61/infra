@@ -68,13 +68,12 @@ func (c *createTestPlanRun) Run(a subcommands.Application, args []string, env su
 }
 
 func (c *createTestPlanRun) innerRun(a subcommands.Application, args []string, env subcommands.Env) error {
-	ctx := cli.GetContext(a, c, env)
-	e := c.envFlags.Env()
-
 	if err := c.validateArgs(); err != nil {
 		return err
 	}
 
+	ctx := cli.GetContext(a, c, env)
+	e := c.envFlags.Env()
 	client, err := bbClient(ctx, e, c.authFlags)
 	if err != nil {
 		return err
