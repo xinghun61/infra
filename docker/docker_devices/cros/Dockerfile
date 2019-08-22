@@ -6,8 +6,9 @@ ENV CHROMIUM_REV e41aeaed051c8cc401e0bce2a6d57dcc330808e6
 
 RUN /usr/bin/apt-get update
 RUN /usr/bin/apt-get -y dist-upgrade
+# parted needed by cros' flashing tool. See crbug.com/996792.
 RUN /usr/bin/apt-get -y install lsb-release curl iputils-ping locales lsof \
-      sshpass sudo udev usbutils wget
+      parted sshpass sudo udev usbutils wget
 
 RUN echo 'ttf-mscorefonts-installer msttcorefonts/accepted-mscorefonts-eula select true' \
       | /usr/bin/debconf-set-selections
