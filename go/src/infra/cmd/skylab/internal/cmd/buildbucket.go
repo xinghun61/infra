@@ -102,7 +102,7 @@ var getBuildFields = []string{
 	"status",
 }
 
-func waitBuildbucketTask(ctx context.Context, ID int64, client buildbucket_pb.BuildsClient, env site.Environment) (*steps.ExecuteResponse, error) {
+func waitBuildbucketTask(ctx context.Context, ID int64, client buildbucket_pb.BuildsClient) (*steps.ExecuteResponse, error) {
 	build, err := bbWaitBuild(ctx, client, ID)
 	if err != nil {
 		return nil, err

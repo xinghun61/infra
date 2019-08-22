@@ -113,7 +113,7 @@ func (c *waitTaskRun) innerRunBuildbucket(a subcommands.Application, env subcomm
 		return nil, err
 	}
 
-	response, err := waitBuildbucketTask(ctx, taskID, bClient, c.envFlags.Env())
+	response, err := waitBuildbucketTask(ctx, taskID, bClient)
 	if err != nil {
 		return nil, err
 	}
