@@ -4,6 +4,7 @@
 import datetime
 import json
 import mock
+import time
 import unittest
 
 from parameterized import parameterized
@@ -297,37 +298,117 @@ class BigqueryHelperTest(unittest.TestCase):
 
   @parameterized.expand([
       # No page_token
-      (  # Job did not complete
+      (  # Success
           {
-              'response': {
-                  "totalRows": 0,
-                  "jobComplete": False,
-              },
+              'response': [{
+                  "totalRows": 1,
+                  "jobComplete": True,
+                  "schema": {
+                      "fields": 'mock_fields'
+                  },
+                  "rows": ["rows"]
+              },],
+              'return_value': (True, ["rows"], None),
+          },),
+      (  # Job did not complete, exceeds default polling retries
+          {
+              'response': [
+                  {
+                      "totalRows": 0,
+                      "jobComplete": False,
+                  },
+                  {
+                      "totalRows": 0,
+                      "jobComplete": False,
+                  },
+              ],
               'return_value': (False, [], None),
+          },),
+      (  # Job completes after 1 retry
+          {
+              'response': [
+                  {
+                      "totalRows": 0,
+                      "jobComplete": False,
+                  },
+                  {
+                      "totalRows": 1,
+                      "jobComplete": True,
+                      "schema": {
+                          "fields": 'mock_fields'
+                      },
+                      "rows": ["rows"]
+                  },
+              ],
+              'return_value': (True, ["rows"], None),
+          },),
+      (  # Job did not complete, exceeds custom polling retries
+          {
+              'polling_retries':
+                  2,
+              'response': [
+                  {
+                      "totalRows": 0,
+                      "jobComplete": False,
+                  },
+                  {
+                      "totalRows": 0,
+                      "jobComplete": False,
+                  },
+                  {
+                      "totalRows": 0,
+                      "jobComplete": False,
+                  },
+              ],
+              'return_value': (False, [], None),
+          },),
+      (  # Job succeeds after 2 retries
+          {
+              'polling_retries':
+                  2,
+              'response': [
+                  {
+                      "totalRows": 0,
+                      "jobComplete": False,
+                  },
+                  {
+                      "totalRows": 0,
+                      "jobComplete": False,
+                  },
+                  {
+                      "totalRows": 1,
+                      "jobComplete": True,
+                      "schema": {
+                          "fields": 'mock_fields'
+                      },
+                      "rows": ["rows"]
+                  },
+              ],
+              'return_value': (True, ["rows"], None),
           },),
       (  # No results
           {
-              'response': {
+              'response': [{
                   "totalRows": 0,
                   "jobComplete": True,
                   "schema": {
                       "fields": 'mock_fields'
                   },
                   "rows": ["rows"]
-              },
+              },],
               'return_value': (True, [], None),
           },),
       (  # Missing Fields in Response
           {
-              'response': {
+              'response': [{
                   "totalRows": 1,
                   "jobComplete": True,
-              },
+              },],
               'return_value': (False, [], None),
           },),
       (  # Errors in Response
           {
-              'response': {
+              'response': [{
                   "totalRows": 0,
                   "errors": ['error'],
                   "jobComplete": True,
@@ -335,26 +416,15 @@ class BigqueryHelperTest(unittest.TestCase):
                       "fields": 'mock_fields'
                   },
                   "rows": ["rows"]
-              },
+              },],
               'return_value': (False, [], None),
-          },),
-      (  # Success
-          {
-              'response': {
-                  "totalRows": 1,
-                  "jobComplete": True,
-                  "schema": {
-                      "fields": 'mock_fields'
-                  },
-                  "rows": ["rows"]
-              },
-              'return_value': (True, ["rows"], None),
           },),
       # Given page_token
       (  # Success
           {
-              'page_token': 'mock_page',
-              'response': {
+              'page_token':
+                  'mock_page',
+              'response': [{
                   "totalRows": 1,
                   "jobComplete": True,
                   "pageToken": 'mock_next_page',
@@ -362,13 +432,14 @@ class BigqueryHelperTest(unittest.TestCase):
                       "fields": 'mock_fields'
                   },
                   "rows": ["rows"]
-              },
+              },],
               'return_value': (True, ["rows"], 'mock_next_page'),
           },),
       (  # Errors in response, fails
           {
-              'page_token': 'page',
-              'response': {
+              'page_token':
+                  'page',
+              'response': [{
                   "totalRows": 0,
                   "errors": ['error'],
                   "jobComplete": True,
@@ -376,20 +447,25 @@ class BigqueryHelperTest(unittest.TestCase):
                       "fields": 'mock_fields'
                   },
                   "rows": ["rows"]
-              },
+              },],
               'return_value': (False, [], None),
           },),
   ])
   @mock.patch.object(
       bigquery_helper, '_RowsResponseToDicts', return_value=["rows"])
-  def testReadQueryResultsPage(self, cases, _):
+  @mock.patch.object(time, 'sleep')
+  def testReadQueryResultsPage(self, cases, *_):
     mock_client = mock.Mock()
-    mock_client.jobs().getQueryResults(
-    ).execute.return_value = cases['response']
+    mock_client.jobs().getQueryResults().execute.side_effect = cases['response']
     self.assertEqual(
         cases['return_value'],
-        bigquery_helper._ReadQueryResultsPage(mock_client, 'project', 'job_id',
-                                              cases.get('page_token')))
+        bigquery_helper._ReadQueryResultsPage(
+            mock_client,
+            'project',
+            'job_id',
+            cases.get('page_token'),
+            polling_retries=cases.get('polling_retries',
+                                      bigquery_helper._POLLING_RETRIES)))
 
   @parameterized.expand([
       (  # Success, 1 page
@@ -434,6 +510,7 @@ class BigqueryHelperTest(unittest.TestCase):
       '_ReadQueryResultsPage',
       side_effect=[(True, [], 'page'), (True, [], None)])
   def testQueryRequestOptionalArgs(self, mock_read_results, mock_run_query):
+    # Using default values.
     mock_client = mock.Mock()
     bigquery_helper.QueryRequest(mock_client, 'project', 'query')
     mock_run_query.assert_called_with(
@@ -443,18 +520,32 @@ class BigqueryHelperTest(unittest.TestCase):
         parameters=None,
         timeout=bigquery_helper._TIMEOUT_MS)
     mock_read_results.assert_has_calls([
-        mock.call(mock_client, 'project', 'job_id'),
+        mock.call(
+            mock_client,
+            'project',
+            'job_id',
+            polling_retries=bigquery_helper._POLLING_RETRIES),
         mock.call(mock_client, 'project', 'job_id', page_token='page')
     ])
 
+    # Using input values.
     mock_read_results.reset_mock()
     mock_read_results.side_effect = [(True, [], 'page'), (True, [], None)]
     bigquery_helper.QueryRequest(
-        mock_client, 'project', 'query', parameters='params', timeout=1)
+        mock_client,
+        'project',
+        'query',
+        parameters='params',
+        polling_retries=bigquery_helper._POLLING_RETRIES + 1,
+        timeout=1)
     mock_run_query.assert_called_with(
         mock_client, 'project', 'query', parameters='params', timeout=1)
     mock_read_results.assert_has_calls([
-        mock.call(mock_client, 'project', 'job_id'),
+        mock.call(
+            mock_client,
+            'project',
+            'job_id',
+            polling_retries=bigquery_helper._POLLING_RETRIES + 1),
         mock.call(mock_client, 'project', 'job_id', page_token='page')
     ])
 
@@ -539,6 +630,7 @@ class BigqueryHelperTest(unittest.TestCase):
         query='query',
         parameters='params',
         max_results=1,
+        polling_retries=bigquery_helper._POLLING_RETRIES + 1,
         timeout=1)
 
     mock_run_query.assert_has_calls([
@@ -559,8 +651,18 @@ class BigqueryHelperTest(unittest.TestCase):
     ])
 
     mock_read_results.assert_has_calls([
-        mock.call(mock_client, 'project', job_id='job_id', page_token=None),
-        mock.call(mock_client, 'project', job_id='job_id', page_token=None)
+        mock.call(
+            mock_client,
+            'project',
+            job_id='job_id',
+            page_token=None,
+            polling_retries=bigquery_helper._POLLING_RETRIES),
+        mock.call(
+            mock_client,
+            'project',
+            job_id='job_id',
+            page_token=None,
+            polling_retries=bigquery_helper._POLLING_RETRIES + 1)
     ])
 
   @mock.patch.object(
@@ -570,13 +672,26 @@ class BigqueryHelperTest(unittest.TestCase):
     mock_client = mock.Mock()
     bigquery_helper.QueryRequestPaging(mock_client, 'project', job_id='job_id')
     mock_read_results.assert_called_once_with(
-        mock_client, 'project', job_id='job_id', page_token=None)
+        mock_client,
+        'project',
+        job_id='job_id',
+        page_token=None,
+        polling_retries=bigquery_helper._POLLING_RETRIES)
 
+    # Using input values.
     mock_read_results.reset_mock()
     bigquery_helper.QueryRequestPaging(
-        mock_client, 'project', job_id='job_id', page_token='page')
+        mock_client,
+        'project',
+        job_id='job_id',
+        page_token='page',
+        polling_retries=bigquery_helper._POLLING_RETRIES + 1)
     mock_read_results.assert_called_once_with(
-        mock_client, 'project', job_id='job_id', page_token='page')
+        mock_client,
+        'project',
+        job_id='job_id',
+        page_token='page',
+        polling_retries=bigquery_helper._POLLING_RETRIES + 1)
 
   @mock.patch.object(
       bigquery_helper, '_GetBigqueryClient', return_value='client')
@@ -584,7 +699,12 @@ class BigqueryHelperTest(unittest.TestCase):
   def testExecuteQueryNoPaging(self, mock_query_request, _):
     bigquery_helper.ExecuteQuery('project', 'query')
     bigquery_helper.ExecuteQuery(
-        'project', query='query', parameters='params', max_results=1, timeout=1)
+        'project',
+        query='query',
+        parameters='params',
+        max_results=1,
+        polling_retries=bigquery_helper._POLLING_RETRIES + 1,
+        timeout=1)
 
     mock_query_request.assert_has_calls([
         mock.call(
@@ -592,8 +712,15 @@ class BigqueryHelperTest(unittest.TestCase):
             'project',
             'query',
             parameters=None,
+            polling_retries=bigquery_helper._POLLING_RETRIES,
             timeout=bigquery_helper._TIMEOUT_MS),
-        mock.call('client', 'project', 'query', parameters='params', timeout=1)
+        mock.call(
+            'client',
+            'project',
+            'query',
+            parameters='params',
+            polling_retries=bigquery_helper._POLLING_RETRIES + 1,
+            timeout=1)
     ])
 
   @parameterized.expand([
@@ -606,6 +733,7 @@ class BigqueryHelperTest(unittest.TestCase):
                   'project',
                   query='query',
                   parameters=None,
+                  polling_retries=bigquery_helper._POLLING_RETRIES,
                   max_results=None,
                   timeout=bigquery_helper._TIMEOUT_MS)
       },),
@@ -669,6 +797,7 @@ class BigqueryHelperTest(unittest.TestCase):
         query='query',
         paging=True,
         parameters='params',
+        polling_retries=bigquery_helper._POLLING_RETRIES + 1,
         max_results=1,
         timeout=1)
     mock_query_request_paging.assert_called_once_with(
@@ -676,6 +805,7 @@ class BigqueryHelperTest(unittest.TestCase):
         'project',
         query='query',
         parameters='params',
+        polling_retries=bigquery_helper._POLLING_RETRIES + 1,
         max_results=1,
         timeout=1)
 

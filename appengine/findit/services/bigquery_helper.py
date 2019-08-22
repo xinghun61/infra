@@ -7,6 +7,7 @@ import datetime
 import httplib2
 import json
 import logging
+import time
 
 from apiclient import discovery
 from google.protobuf import json_format
@@ -15,7 +16,13 @@ from oauth2client import appengine as gae_oauth2client
 # Bigquery authentication endpoint.
 _AUTH_ENDPOINT = 'https://www.googleapis.com/auth/bigquery'
 
-# Number of retries before giving up.
+# Number of bigquery polling retries before giving up.
+_POLLING_RETRIES = 1
+
+# Time to wait between bigquery polls, 60 seconds.
+_POLLING_SECOND_INTERVAL = 60
+
+# Number of bigquery request retries before giving up.
 _REQUEST_RETRIES = 3
 
 # Timeout for query requests, 60 seconds.
@@ -221,6 +228,7 @@ def ExecuteQuery(project_id,
                  paging=False,
                  job_id=None,
                  page_token=None,
+                 polling_retries=_POLLING_RETRIES,
                  max_results=None,
                  timeout=_TIMEOUT_MS):  # pragma: no cover
 
@@ -230,6 +238,7 @@ def ExecuteQuery(project_id,
         project_id,
         query,
         parameters=parameters,
+        polling_retries=polling_retries,
         timeout=timeout)
 
   # Return first page when paging is True.
@@ -240,7 +249,8 @@ def ExecuteQuery(project_id,
         query=query,
         parameters=parameters,
         max_results=max_results,
-        timeout=timeout)
+        timeout=timeout,
+        polling_retries=polling_retries)
 
   # Return specified page of results when paging is True.
   return QueryRequestPaging(
@@ -255,6 +265,7 @@ def QueryRequest(client,
                  project_id,
                  query,
                  parameters=None,
+                 polling_retries=_POLLING_RETRIES,
                  timeout=_TIMEOUT_MS):
   """Runs a BigQuery SQL Query and returns all query result rows.
 
@@ -263,6 +274,8 @@ def QueryRequest(client,
     project_id (str): Project Id in google cloud.
     query (str): query to run.
     parameters ([tuple]): Parameters to be used in parameterized queries.
+    polling_retries (int): Number of times to re-poll the bigquery job for
+      results if the job has not yet completed.
     timeout (int): How long to wait for the query to complete, in milliseconds,
       before the request times out and returns. Note that this is only a timeout
       for the request, not the query. If the query takes longer to run than the
@@ -275,7 +288,8 @@ def QueryRequest(client,
   """
   job_id = _RunBigQuery(
       client, project_id, query, parameters=parameters, timeout=timeout)
-  success, rows, page_token = _ReadQueryResultsPage(client, project_id, job_id)
+  success, rows, page_token = _ReadQueryResultsPage(
+      client, project_id, job_id, polling_retries=polling_retries)
   while page_token:
     success, next_page_rows, page_token = _ReadQueryResultsPage(
         client, project_id, job_id, page_token=page_token)
@@ -292,6 +306,7 @@ def QueryRequestPaging(client,
                        job_id=None,
                        page_token=None,
                        parameters=None,
+                       polling_retries=_POLLING_RETRIES,
                        max_results=None,
                        timeout=_TIMEOUT_MS):
   """Runs a BigQuery SQL Query and returns one page of the query results rows.
@@ -304,6 +319,8 @@ def QueryRequestPaging(client,
     page_token (str): Page token, returned by a previous call, to request the
       next page of results. Can only be used if a job_id is also given.
     parameters ([tuple]): Parameters to be used in parameterized queries.
+    polling_retries (int): Number of times to re-poll the bigquery job for
+      results if the job has not yet completed.
     max_results (int): The maximum number of rows of data to return per page of
       results. In addition to this limit, responses are also limited to 10 MB.
       By default, there is no maximum row count, and only the byte limit
@@ -337,7 +354,11 @@ def QueryRequestPaging(client,
         timeout=timeout)
 
   success, rows, page_token = _ReadQueryResultsPage(
-      client, project_id, job_id=job_id, page_token=page_token)
+      client,
+      project_id,
+      job_id=job_id,
+      page_token=page_token,
+      polling_retries=polling_retries)
   return success, rows, job_id, page_token
 
 
@@ -379,7 +400,11 @@ def _RunBigQuery(client,
   return response.get('jobReference').get('jobId')
 
 
-def _ReadQueryResultsPage(client, project_id, job_id, page_token=None):
+def _ReadQueryResultsPage(client,
+                          project_id,
+                          job_id,
+                          page_token=None,
+                          polling_retries=_POLLING_RETRIES):
   """Gets the results of a query job by page.
 
   Args:
@@ -388,6 +413,8 @@ def _ReadQueryResultsPage(client, project_id, job_id, page_token=None):
     job_id (str): Job ID of the query job.
     page_token (str): Page token, returned by a previous call, to request the
       next page of results.
+    polling_retries (int): Number of times to re-poll the bigquery job for
+      results if the job has not yet completed.
 
   Returns:
     success (boolean): Boolean to indicate success/failure of the request.
@@ -405,6 +432,12 @@ def _ReadQueryResultsPage(client, project_id, job_id, page_token=None):
   # First results page specific errors
   if not page_token:
     if not response.get('jobComplete'):
+      if polling_retries:
+        logging.info('Query is still running... (Job ID: %s)', job_id)
+        time.sleep(_POLLING_SECOND_INTERVAL)
+        return _ReadQueryResultsPage(
+            client, project_id, job_id, polling_retries=polling_retries - 1)
+
       logging.error('QueryRequest didn\'t finish, possibly due to timeout.')
       return False, [], None
 
