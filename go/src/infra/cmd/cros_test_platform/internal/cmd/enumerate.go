@@ -159,6 +159,7 @@ func (c *enumerateRun) enumerate(tm *api.TestMetadataResponse, request *steps.En
 	ts = append(ts, g...)
 
 	ts = append(ts, enumeration.GetForSuites(tm.Autotest, request.TestPlan.Suite)...)
+	ts = append(ts, enumeration.GetForEnumeration(request.TestPlan.GetEnumeration())...)
 	return ts, nil
 }
 

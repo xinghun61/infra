@@ -193,3 +193,44 @@ func addSuiteMetadata(m *api.AutotestTestMetadata, sName string, tNames ...strin
 	}
 	m.Suites = append(m.Suites, suite)
 }
+
+func TestGetForEnumeration(t *testing.T) {
+	var cases = []struct {
+		Tag     string
+		Request *test_platform.Request_Enumeration
+		Want    stringset.Set
+	}{
+		{
+			Tag:     "nil input",
+			Request: nil,
+			Want:    stringset.New(0),
+		},
+		{
+			Tag:     "some input",
+			Request: enumerationRequest("some_test"),
+			Want:    stringset.NewFromSlice("some_test"),
+		},
+	}
+
+	for _, c := range cases {
+		t.Run(c.Tag, func(t *testing.T) {
+			tests := enumeration.GetForEnumeration(c.Request)
+			got := extractTestNames(tests)
+			if diff := pretty.Compare(c.Want, got); diff != "" {
+				t.Errorf("enumerated tests differ, -want +got: %s", diff)
+			}
+		})
+	}
+}
+
+func enumerationRequest(ns ...string) *test_platform.Request_Enumeration {
+	inv := make([]*test_platform.Request_Enumeration_AutotestInvocation, 0, len(ns))
+	for _, n := range ns {
+		inv = append(inv, &test_platform.Request_Enumeration_AutotestInvocation{
+			Test: &api.AutotestTest{Name: n},
+		})
+	}
+	return &test_platform.Request_Enumeration{
+		AutotestInvocations: inv,
+	}
+}

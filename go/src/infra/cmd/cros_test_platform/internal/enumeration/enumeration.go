@@ -44,6 +44,20 @@ func GetForSuites(metadata *api.AutotestTestMetadata, suites []*test_platform.Re
 	return wrapInAutotestInvocation(tests)
 }
 
+// GetForEnumeration marshals the provided pre-enumerated tests into standard
+// enumeration response format.
+func GetForEnumeration(enumeration *test_platform.Request_Enumeration) []*steps.EnumerationResponse_AutotestInvocation {
+	ret := make([]*steps.EnumerationResponse_AutotestInvocation, 0, len(enumeration.GetAutotestInvocations()))
+	for _, t := range enumeration.GetAutotestInvocations() {
+		ret = append(ret, &steps.EnumerationResponse_AutotestInvocation{
+			Test:        t.GetTest(),
+			TestArgs:    t.GetTestArgs(),
+			DisplayName: t.GetDisplayName(),
+		})
+	}
+	return ret
+}
+
 func filterTests(tests []*api.AutotestTest, keep stringset.Set) []*api.AutotestTest {
 	ret := make([]*api.AutotestTest, 0, len(keep))
 	for _, t := range tests {
