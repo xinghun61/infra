@@ -436,3 +436,11 @@ trace_fraction = 0.1
 
 # The maximum number of rows chart queries can scan.
 chart_query_max_rows = 10000
+
+# Client ID to use for loading the Google API client, gapi.js.
+if app_identity.get_application_id() == 'monorail-prod':
+  gapi_client_id = (
+    '679746765624-tqaakho939p2mc7eb65t4ecrj3gj08rt.apps.googleusercontent.com')
+else:
+  gapi_client_id = (
+    '52759169022-6918fl1hd1qoul985cs1ohgedeb8c9a0.apps.googleusercontent.com')

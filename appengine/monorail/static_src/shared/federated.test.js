@@ -63,4 +63,12 @@ describe('GoogleIssueTrackerIssue', () => {
       assert.equal(issue.toURL(), 'https://issuetracker.google.com/issues/1234');
     });
   });
+
+  describe('fetchIssueData', () => {
+    it('Returns a Promise', () => {
+      const issue = new GoogleIssueTrackerIssue('b/1234');
+      const actual = issue.fetchIssueData();
+      assert.instanceOf(actual, Promise);
+    });
+  });
 });

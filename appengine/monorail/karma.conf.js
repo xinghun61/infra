@@ -34,6 +34,22 @@ module.exports = function(config) {
           // TODO(ehmaldonado): Remove once the old autocomplete code is
           // deprecated.
           'TKR_fetchOptions',
+          // All of the below are necessary for loading gapi.js.
+          'gapi',
+          '__gapiLoadStarted',
+          '___jsl',
+          'osapi',
+          'gadgets',
+          'shindig',
+          'googleapis',
+          'iframer',
+          'ToolbarApi',
+          'iframes',
+          'IframeBase',
+          'Iframe',
+          'IframeProxy',
+          'IframeWindow',
+          '__gapi_jstiming__',
         ],
       },
     },

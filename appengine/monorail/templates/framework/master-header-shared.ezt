@@ -33,6 +33,7 @@
      'projectName': '[format "js"][projectname][end]',
      'projectIsRestricted': [if-any project_is_restricted]true[else]false[end],
      'is_member': '[format "js"][is_member][end]',
+     'gapi_client_id': '[format "js"][gapi_client_id][end]',
    };
   </script>
 

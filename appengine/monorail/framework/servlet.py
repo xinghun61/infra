@@ -315,7 +315,7 @@ class Servlet(webapp2.RequestHandler):
             " %(version_base)s/static/dist/"
             " 'self' 'nonce-%(nonce)s'; "
             "child-src 'none'; "
-            "frame-src 'none'; "
+            "frame-src accounts.google.com; " # Used by gapi.js auth.
             "img-src %(scheme)s data: blob: ; "
             "style-src %(scheme)s 'unsafe-inline'; "
             "object-src 'none'; "
@@ -752,6 +752,7 @@ class Servlet(webapp2.RequestHandler):
 
         'version_base': version_base,
         'app_version': app_version,
+        'gapi_client_id': settings.gapi_client_id,
         'viewing_user_page': ezt.boolean(False),
         'other_ui_path': None,
 
