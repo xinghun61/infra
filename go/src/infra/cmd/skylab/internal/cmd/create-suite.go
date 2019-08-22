@@ -79,14 +79,17 @@ func (c *createSuiteRun) innerRun(a subcommands.Application, args []string, env 
 			return err
 		}
 
-		recipeArg, err := c.RecipeArgs()
+		client, err := bbClient(ctx, e, c.authFlags)
 		if err != nil {
 			return err
 		}
 
+		recipeArg, err := c.RecipeArgs()
+		if err != nil {
+			return err
+		}
 		recipeArg.TestPlan = recipe.NewTestPlanForSuites(suiteName)
-
-		return buildbucketRun(ctx, recipeArg, e, c.authFlags, c.json, a.GetOut())
+		return buildbucketRun(ctx, client, recipeArg, e, c.json, a.GetOut())
 	}
 
 	dimensions := []string{"pool:ChromeOSSkylab-suite"}

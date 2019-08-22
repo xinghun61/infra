@@ -25,7 +25,7 @@ import (
 	"infra/cmd/skylab/internal/site"
 )
 
-func buildbucketRun(ctx context.Context, args recipe.Args, env site.Environment, authFlags authcli.Flags, jsonOut bool, w io.Writer) error {
+func buildbucketRun(ctx context.Context, client buildbucket_pb.BuildsClient, args recipe.Args, env site.Environment, jsonOut bool, w io.Writer) error {
 	req, err := recipe.Request(args)
 	if err != nil {
 		return err
@@ -56,12 +56,7 @@ func buildbucketRun(ctx context.Context, args recipe.Args, env site.Environment,
 		Properties: recipeStruct,
 	}
 
-	bClient, err := bbClient(ctx, env, authFlags)
-	if err != nil {
-		return err
-	}
-
-	build, err := bClient.ScheduleBuild(ctx, bbReq)
+	build, err := client.ScheduleBuild(ctx, bbReq)
 	if err != nil {
 		return err
 	}

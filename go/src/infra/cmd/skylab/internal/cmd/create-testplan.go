@@ -75,6 +75,11 @@ func (c *createTestPlanRun) innerRun(a subcommands.Application, args []string, e
 		return err
 	}
 
+	client, err := bbClient(ctx, e, c.authFlags)
+	if err != nil {
+		return err
+	}
+
 	recipeArgs, err := c.RecipeArgs()
 	if err != nil {
 		return err
@@ -87,7 +92,7 @@ func (c *createTestPlanRun) innerRun(a subcommands.Application, args []string, e
 
 	recipeArgs.TestPlan = testPlan
 
-	return buildbucketRun(ctx, recipeArgs, e, c.authFlags, true, a.GetErr())
+	return buildbucketRun(ctx, client, recipeArgs, e, true, a.GetErr())
 }
 
 func (c *createTestPlanRun) readTestPlan(path string) (*test_platform.Request_TestPlan, error) {

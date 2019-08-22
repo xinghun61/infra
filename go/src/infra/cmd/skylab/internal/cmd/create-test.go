@@ -104,6 +104,10 @@ func (c *createTestRun) innerRunBB(a subcommands.Application, args []string, env
 
 	ctx := cli.GetContext(a, c, env)
 	e := c.envFlags.Env()
+	client, err := bbClient(ctx, e, c.authFlags)
+	if err != nil {
+		return err
+	}
 
 	recipeArg, err := c.RecipeArgs()
 	if err != nil {
@@ -112,7 +116,7 @@ func (c *createTestRun) innerRunBB(a subcommands.Application, args []string, env
 	recipeArg.TestPlan = recipe.NewTestPlanForAutotestTests(c.testArgs, args...)
 	recipeArg.FreeformSwarmingDimensions = c.dimensions
 
-	return buildbucketRun(ctx, recipeArg, e, c.authFlags, false, a.GetOut())
+	return buildbucketRun(ctx, client, recipeArg, e, false, a.GetOut())
 }
 
 func (c *createTestRun) validateForBB() error {
