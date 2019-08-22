@@ -71,27 +71,55 @@ func (c *createSuiteRun) innerRun(a subcommands.Application, args []string, env 
 	}
 
 	ctx := cli.GetContext(a, c, env)
-	e := c.envFlags.Env()
 	suiteName := c.Flags.Arg(0)
 
 	if c.buildBucket {
-		if err := c.validateForBB(); err != nil {
-			return err
-		}
+		return c.innerRunBB(ctx, a, suiteName)
+	}
+	return c.innerRunSwarming(ctx, a, suiteName)
 
-		client, err := bbClient(ctx, e, c.authFlags)
-		if err != nil {
-			return err
-		}
+}
 
-		recipeArg, err := c.RecipeArgs()
-		if err != nil {
-			return err
-		}
-		recipeArg.TestPlan = recipe.NewTestPlanForSuites(suiteName)
-		return buildbucketRun(ctx, client, recipeArg, e, c.json, a.GetOut())
+func (c *createSuiteRun) validateArgs() error {
+	if err := c.createRunCommon.ValidateArgs(c.Flags); err != nil {
+		return err
 	}
 
+	if c.Flags.NArg() == 0 {
+		return NewUsageError(c.Flags, "missing suite name")
+	}
+
+	return nil
+}
+
+func (c *createSuiteRun) innerRunBB(ctx context.Context, a subcommands.Application, suiteName string) error {
+	if err := c.validateForBB(); err != nil {
+		return err
+	}
+
+	client, err := bbClient(ctx, c.envFlags.Env(), c.authFlags)
+	if err != nil {
+		return err
+	}
+
+	recipeArg, err := c.RecipeArgs()
+	if err != nil {
+		return err
+	}
+	recipeArg.TestPlan = recipe.NewTestPlanForSuites(suiteName)
+	return buildbucketRun(ctx, client, recipeArg, c.envFlags.Env(), c.json, a.GetOut())
+}
+
+func (c *createSuiteRun) validateForBB() error {
+	// TODO(akeshet): support for all of these arguments, or deprecate them.
+	if c.orphan {
+		return errors.Reason("orphan not supported in -bb mode").Err()
+	}
+	return nil
+}
+
+func (c *createSuiteRun) innerRunSwarming(ctx context.Context, a subcommands.Application, suiteName string) error {
+	e := c.envFlags.Env()
 	dimensions := []string{"pool:ChromeOSSkylab-suite"}
 	keyvals, err := toKeyvalMap(c.keyvals)
 	if err != nil {
@@ -139,26 +167,6 @@ func (c *createSuiteRun) innerRun(a subcommands.Application, args []string, env 
 	}
 
 	fmt.Fprintf(a.GetOut(), "Created Swarming Suite task %s\n", task.URL)
-	return nil
-}
-
-func (c *createSuiteRun) validateArgs() error {
-	if err := c.createRunCommon.ValidateArgs(c.Flags); err != nil {
-		return err
-	}
-
-	if c.Flags.NArg() == 0 {
-		return NewUsageError(c.Flags, "missing suite name")
-	}
-
-	return nil
-}
-
-func (c *createSuiteRun) validateForBB() error {
-	// TODO(akeshet): support for all of these arguments, or deprecate them.
-	if c.orphan {
-		return errors.Reason("orphan not supported in -bb mode").Err()
-	}
 	return nil
 }
 
