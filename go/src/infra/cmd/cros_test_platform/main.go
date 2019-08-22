@@ -43,6 +43,7 @@ func getApplication() *cli.Application {
 			// two subcommands:
 			cmd.AutotestExecute,
 			cmd.SkylabExecute,
+			cmd.Summarize,
 		},
 		EnvVars: map[string]subcommands.EnvVarDefinition{
 			"SWARMING_TASK_ID": {
