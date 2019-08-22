@@ -117,7 +117,7 @@ func (c *waitTaskRun) innerRunBuildbucket(a subcommands.Application, env subcomm
 	if err != nil {
 		return nil, err
 	}
-	return responseToTaskResult(bClient, c.envFlags.Env(), taskID, response), nil
+	return responseToTaskResult(bClient, taskID, response), nil
 }
 
 func parseBBTaskID(arg string) (int64, error) {
@@ -131,8 +131,8 @@ func parseBBTaskID(arg string) (int64, error) {
 	return ID, nil
 }
 
-func responseToTaskResult(bClient *bbClient, e site.Environment, buildID int64, response *steps.ExecuteResponse) *skylab_tool.WaitTaskResult {
-	u := bClient.bbURL(e, buildID)
+func responseToTaskResult(bClient *bbClient, buildID int64, response *steps.ExecuteResponse) *skylab_tool.WaitTaskResult {
+	u := bClient.bbURL(buildID)
 	verdict := response.GetState().GetVerdict()
 	failure := verdict == test_platform.TaskState_VERDICT_FAILED
 	success := verdict == test_platform.TaskState_VERDICT_PASSED

@@ -215,7 +215,7 @@ func waitMultiBuildbucket(ctx context.Context, IDs stringset.Set, authFlags auth
 		for ID, parsedID := range parsedIDs {
 			go func(ID string, parsedID int64) {
 				response, err := client.waitBuildbucketTask(ctx, parsedID)
-				result := responseToTaskResult(client, env, parsedID, response)
+				result := responseToTaskResult(client, parsedID, response)
 				item := waitItem{result: result, err: err, ID: ID}
 				select {
 				case results <- item:

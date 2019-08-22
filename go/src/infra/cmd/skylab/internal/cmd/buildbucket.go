@@ -38,14 +38,16 @@ func bbNewClient(ctx context.Context, env site.Environment, authFlags authcli.Fl
 
 	return &bbClient{
 		client: buildbucket_pb.NewBuildsPRPCClient(pClient),
+		env:    env,
 	}, nil
 }
 
 type bbClient struct {
 	client buildbucket_pb.BuildsClient
+	env    site.Environment
 }
 
-func (c *bbClient) buildbucketRun(ctx context.Context, args recipe.Args, env site.Environment, jsonOut bool, w io.Writer) error {
+func (c *bbClient) buildbucketRun(ctx context.Context, args recipe.Args, jsonOut bool, w io.Writer) error {
 	req, err := recipe.Request(args)
 	if err != nil {
 		return err
@@ -69,9 +71,9 @@ func (c *bbClient) buildbucketRun(ctx context.Context, args recipe.Args, env sit
 
 	bbReq := &buildbucket_pb.ScheduleBuildRequest{
 		Builder: &buildbucket_pb.BuilderID{
-			Project: env.BuildbucketProject,
-			Bucket:  env.BuildbucketBucket,
-			Builder: env.BuildbucketBuilder,
+			Project: c.env.BuildbucketProject,
+			Bucket:  c.env.BuildbucketBucket,
+			Builder: c.env.BuildbucketBuilder,
 		},
 		Properties: recipeStruct,
 	}
@@ -85,12 +87,12 @@ func (c *bbClient) buildbucketRun(ctx context.Context, args recipe.Args, env sit
 		ti := &taskInfo{
 			Name: "cros_test_platform",
 			ID:   fmt.Sprintf("%d", build.Id),
-			URL:  fmt.Sprintf(c.bbURL(env, build.Id)),
+			URL:  fmt.Sprintf(c.bbURL(build.Id)),
 		}
 		return json.NewEncoder(w).Encode(ti)
 	}
 
-	fmt.Fprintf(w, "Created request at %s\n", c.bbURL(env, build.Id))
+	fmt.Fprintf(w, "Created request at %s\n", c.bbURL(build.Id))
 
 	return nil
 }
@@ -163,7 +165,7 @@ func isFinal(status buildbucket_pb.Status) bool {
 	return (status & buildbucket_pb.Status_ENDED_MASK) == buildbucket_pb.Status_ENDED_MASK
 }
 
-func (c *bbClient) bbURL(e site.Environment, buildID int64) string {
+func (c *bbClient) bbURL(buildID int64) string {
 	return fmt.Sprintf("https://ci.chromium.org/p/%s/builders/%s/%s/b%d",
-		e.BuildbucketProject, e.BuildbucketBucket, e.BuildbucketBuilder, buildID)
+		c.env.BuildbucketProject, c.env.BuildbucketBucket, c.env.BuildbucketBuilder, buildID)
 }

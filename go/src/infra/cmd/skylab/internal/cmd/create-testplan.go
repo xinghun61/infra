@@ -91,7 +91,7 @@ func (c *createTestPlanRun) innerRun(a subcommands.Application, args []string, e
 
 	recipeArgs.TestPlan = testPlan
 
-	return client.buildbucketRun(ctx, recipeArgs, e, true, a.GetErr())
+	return client.buildbucketRun(ctx, recipeArgs, true, a.GetErr())
 }
 
 func (c *createTestPlanRun) readTestPlan(path string) (*test_platform.Request_TestPlan, error) {
