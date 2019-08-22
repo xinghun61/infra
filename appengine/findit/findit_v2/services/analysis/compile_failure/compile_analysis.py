@@ -49,6 +49,11 @@ def AnalyzeCompileFailure(context, build, compile_steps):
   should_group_failures = projects.PROJECT_CFG.get(
       luci_project, {}).get('should_group_failures')
 
+  # Project setting for attempting to get suspects before performing rerun-based
+  # analysis.
+  should_get_suspects = projects.PROJECT_CFG.get(
+      luci_project, {}).get('should_get_compile_suspects')
+
   detailed_compile_failures = project_api.GetCompileFailures(
       build, compile_steps)
   # Checks previous builds to look for first time failures for all the failures
@@ -82,9 +87,17 @@ def AnalyzeCompileFailure(context, build, compile_steps):
     return False
 
   # Start a new analysis to analyze the first time failures.
-  analysis_api.SaveFailureAnalysis(project_api, context, build,
-                                   failures_without_existing_group,
-                                   should_group_failures)
+  analysis = analysis_api.SaveFailureAnalysis(project_api, context, build,
+                                              failures_without_existing_group,
+                                              should_group_failures)
+
+  # Attempt finding suspected culprits.
+  if should_get_suspects:
+    suspects = analysis_api.GetSuspectedCulprits(
+        context, build, first_failures_in_current_build)
+    if suspects:
+      analysis_api.SaveSuspectsToFailures(context, analysis, suspects)
+
   analysis_api.RerunBasedAnalysis(context, build.id)
   return True
 

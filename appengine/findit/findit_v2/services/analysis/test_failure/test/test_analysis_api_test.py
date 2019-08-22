@@ -1004,23 +1004,9 @@ class TestAnalysisAPITest(wf_testcase.TestCase):
             first_failures_in_current_build))
 
   def testBisectGitilesCommitGetCulpritCommit(self):
-    gitiles_host = 'gitiles.host.com'
-    gitiles_project = 'project/name'
-    gitiles_ref = 'ref/heads/master'
+    culprit_commit = self.analysis_api._GetCulpritCommit(
+        self.commits[9], self.commits[10])
 
-    context = Context(
-        luci_project_name='chromium',
-        gitiles_project=gitiles_project,
-        gitiles_host=gitiles_host,
-        gitiles_ref=gitiles_ref,
-        gitiles_id=self.commits[10].gitiles_id)
-
-    revisions = {n: str(n) for n in xrange(100, 110)}
-
-    bisect_commit, culprit_commit = self.analysis_api._BisectGitilesCommit(
-        context, self.commits[9], self.commits[10], revisions)
-
-    self.assertIsNone(bisect_commit)
     self.assertEqual(6000010, culprit_commit.commit_position)
 
   def testBisectGitilesCommitFailedToGetGitilesId(self):
@@ -1035,11 +1021,10 @@ class TestAnalysisAPITest(wf_testcase.TestCase):
         gitiles_ref=gitiles_ref,
         gitiles_id=self.commits[10].gitiles_id)
 
-    bisect_commit, culprit_commit = self.analysis_api._BisectGitilesCommit(
+    bisect_commit = self.analysis_api._BisectGitilesCommit(
         context, self.commits[0], self.commits[10], {})
 
     self.assertIsNone(bisect_commit)
-    self.assertIsNone(culprit_commit)
 
   def testUpdateFailureRegressionRanges(self):
     rerun_builds_info = [(self.commits[5], {}),

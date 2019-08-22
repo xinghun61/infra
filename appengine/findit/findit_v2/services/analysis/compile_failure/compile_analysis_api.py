@@ -149,3 +149,9 @@ class CompileAnalysisAPI(AnalysisAPI):
 
   def _GetRerunBuildInputProperties(self, project_api, rerun_failures):
     return project_api.GetCompileRerunBuildInputProperties(rerun_failures)
+
+  def GetSuspectedCulprits(self, context, build,
+                           first_failures_in_current_build):
+    """Placeholder"""
+    # pylint: disable=unused-argument
+    return {}

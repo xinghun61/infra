@@ -5,6 +5,7 @@
 from google.appengine.ext import ndb
 
 from findit_v2.model.gitiles_commit import Culprit
+from findit_v2.model.gitiles_commit import Suspect
 from findit_v2.model.luci_build import LuciFailedBuild
 
 
@@ -54,7 +55,7 @@ class AtomicFailure(ndb.Model):
   culprit_commit_key = ndb.KeyProperty(Culprit)
   # Key to the suspected commit found by heuristic analysis.
   # There could be multiple suspects found for each failure.
-  suspect_commit_key = ndb.KeyProperty(Culprit, repeated=True)
+  suspect_commit_key = ndb.KeyProperty(Suspect, repeated=True)
 
   # Optional information for heuristic analysis.
   # Mentioned files in failure log for the failure.

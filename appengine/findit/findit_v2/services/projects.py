@@ -68,10 +68,13 @@ PROJECT_CFG = {
     'chromium': {
         'project_api': ChromiumProjectAPI(),
         'should_group_failures': False,
+        # Heurisitic analysis.
+        'should_get_compile_suspects': True,
     },
     'chromeos': {
         'project_api': ChromeOSProjectAPI(),
         'should_group_failures': True,
+        'should_get_compile_suspects': False,
     }
 }
 

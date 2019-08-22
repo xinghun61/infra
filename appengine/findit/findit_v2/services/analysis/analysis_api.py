@@ -14,6 +14,7 @@ from common.waterfall import buildbucket_client
 from findit_v2.model import luci_build
 from findit_v2.model.gitiles_commit import GitilesCommit
 from findit_v2.model.gitiles_commit import Culprit
+from findit_v2.model.gitiles_commit import Suspect
 from findit_v2.model.messages.findit_result import Culprit as CulpritPb
 from findit_v2.model.messages.findit_result import (GitilesCommit as
                                                     GitilesCommitPb)
@@ -824,6 +825,22 @@ class AnalysisAPI(object):
     analysis.Save()
     return analysis
 
+  def _GetCulpritCommit(self, left_bound_commit, right_bound_commit):
+    assert left_bound_commit and right_bound_commit, (
+        'Requiring two bounds to determine a bisecting commit')
+
+    left_commit_position = left_bound_commit.commit_position
+    right_commit_position = right_bound_commit.commit_position
+    assert left_commit_position <= right_commit_position, (
+        'left bound commit is after right.')
+
+    if right_commit_position == left_commit_position + 1:
+      # Cannot further divide the regression range, culprit is the
+      # right_bound_commit.
+      return right_bound_commit
+
+    return None
+
   def _BisectGitilesCommit(self, context, left_bound_commit, right_bound_commit,
                            commit_position_to_git_hash_map):
     """ Gets the culprit commit, otherwise next commit to check using bisection.
@@ -838,22 +855,10 @@ class AnalysisAPI(object):
         git_hashes.
 
     Return:
-      (GitilesCommit, GitilesCommit): Commit to bisect next, or the culprit
-        commit. If the next commit is identified, there will be no culprit
-        commit and vice versa.
+      GitilesCommit: Commit to bisect next.
     """
-    assert left_bound_commit and right_bound_commit, (
-        'Requiring two bounds to determine a bisecting commit')
-
     left_commit_position = left_bound_commit.commit_position
     right_commit_position = right_bound_commit.commit_position
-    assert left_commit_position <= right_commit_position, (
-        'left bound commit is after right.')
-
-    if right_commit_position == left_commit_position + 1:
-      # Cannot further divide the regression range, culprit is the
-      # right_bound_commit.
-      return None, right_bound_commit
 
     bisect_commit_position = left_commit_position + (
         right_commit_position - left_commit_position) / 2
@@ -865,14 +870,14 @@ class AnalysisAPI(object):
       logging.error('Failed to get git_hash for change %s/%s/%s/%d',
                     context.gitiles_host, context.gitiles_project,
                     context.gitiles_ref, bisect_commit_position)
-      return None, None
+      return None
 
     return GitilesCommit(
         gitiles_host=context.gitiles_host,
         gitiles_project=context.gitiles_project,
         gitiles_ref=context.gitiles_ref,
         gitiles_id=bisect_commit_gitiles_id,
-        commit_position=bisect_commit_position), None
+        commit_position=bisect_commit_position)
 
   def _UpdateFailureRegressionRanges(self, rerun_builds_info, failure_ranges):
     """Updates regression ranges for each failure based on rerun build results.
@@ -1148,6 +1153,42 @@ class AnalysisAPI(object):
     rerun_build.put()
     return None
 
+  def SaveSuspectsToFailures(self, context, analysis, suspects):
+    """Saves suspected commits to the failures they are suspected to cause.
+
+    The heuristic analysis identifies commits in the regression range that may
+    be associated with specific failed tests or targets and tags them with hints
+    about why those commits may be culprits.
+
+    This method tries to match the suspects to the specific failures in this
+    analysis and creates/updates appropriate records in datastore.
+
+    Args:
+        context (findit_v2.services.context.Context): Scope of the analysis.
+        analysis (findit_v2.model.BaseFailureAnalysis): analysis entity.
+        suspects (dict): Result of GetSuspectedCulprits, mapping
+        (step, frozenset([test]) or (step, frozenset([target1, target2, ...]) to
+        a list of suspected commit: a dict with 'revision', 'commit_position',
+        and 'hints' keys. The 'hints' value is a dict that maps a string
+        describing the hint to an integer score.
+    """
+    failures = self._GetFailuresInAnalysis(analysis)
+    for f in failures:
+      suspects_for_failure = suspects.get((f.step_ui_name,
+                                           f.GetFailureIdentifier()))
+
+      if not suspects_for_failure:
+        continue
+
+      for suspect in suspects_for_failure:
+        suspect_instance = Suspect.GetOrCreate(
+            context.gitiles_host, context.gitiles_project,
+            context.gitiles_ref, suspect['revision'],
+            suspect.get('commit_position'), suspect['hints'])
+        if suspect_instance.key not in f.suspect_commit_key:
+          f.suspect_commit_key.append(suspect_instance.key)
+      f.put()
+
   def _SaveCulpritInFailures(self, failure_entities, culprit_commit):
     """Saves the culprit to failure entities.
 
@@ -1167,6 +1208,69 @@ class AnalysisAPI(object):
     for failure in failure_entities:
       failure.culprit_commit_key = culprit_entity.key
     ndb.put_multi(failure_entities)
+
+  def _GetSuspectToRerun(self, context, failures, last_passed_commit,
+                         first_failed_commit, commit_position_to_git_hash_map):
+    """Tries to get a commit to rerun next based on the failures' suspects.
+
+    If suspects exist in the commit range, find the latest one (the one with the
+    highest commit position) and choose the commit immediately previous to it.
+    If the most recent suspect is at the beginning of the regression range,
+    (directly after last_passed_commit) choose _it_ for rerunning.
+
+    Args:
+      context (findit_v2.services.context.Context): Scope of the analysis.
+      failures: Failure entities associated with Suspects via their
+        suspect_commit_key property.
+      last_passed_commit, first_failed_commit (GitilesCommit): define the range
+        to search for suspects.
+      commit_position_to_git_hash_map (dict): A map of commit_positions to
+        git_hashes.
+    """
+    rerun_commit = None
+    most_recent_suspect = None
+
+    def previous_commit(child_commit):
+      """This is for finding the previous commit via the mapping above."""
+      previous_cp = child_commit.commit_position - 1
+      previous_hash = (commit_position_to_git_hash_map or {}).get(previous_cp)
+      if previous_hash:
+        return GitilesCommit(
+            gitiles_host=context.gitiles_host,
+            gitiles_project=context.gitiles_project,
+            gitiles_ref=context.gitiles_ref,
+            gitiles_id=previous_hash,
+            commit_position=previous_cp)
+      return None
+
+    # Gather all suspect keys and deduplicate.
+    all_suspect_keys_in_failures = set(
+        sum((failure.suspect_commit_key for failure in failures), []))
+
+    # Find the most recent suspect.
+    for suspect in (s_key.get() for s_key in all_suspect_keys_in_failures):
+      if (
+          # Suspect is in range.
+          last_passed_commit.commit_position < suspect.commit_position and
+          suspect.commit_position <= first_failed_commit.commit_position) and (
+              # It is the most recent suspect in the range so far.
+              not most_recent_suspect or
+              suspect.commit_position > most_recent_suspect.commit_position):
+        most_recent_suspect = suspect
+
+    if most_recent_suspect:
+      if (most_recent_suspect.commit_position ==
+          last_passed_commit.commit_position + 1):
+        # This means that the previous commit of this suspect is known to be
+        # good. To confirm that this suspect is indeed the culprit, trigger a
+        # re-run at its revision.
+        rerun_commit = most_recent_suspect
+      else:
+        # Before testing the suspect, we should test its previous commit,
+        # because getting a failure at the suspect doesn't tell us much if its
+        # parent is not determined to be passing.
+        rerun_commit = previous_commit(most_recent_suspect)
+    return rerun_commit
 
   def RerunBasedAnalysis(self, context, analyzed_build_id):
     """
@@ -1222,14 +1326,22 @@ class AnalysisAPI(object):
       first_failed_commit = failure_ranges['first_failed_commit']
       failures = failure_ranges['failures']
 
-      rerun_commit, culprit_commit = self._BisectGitilesCommit(
-          context, last_passed_commit, first_failed_commit,
-          commit_position_to_git_hash_map)
+      culprit_commit = self._GetCulpritCommit(last_passed_commit,
+                                              first_failed_commit)
       if culprit_commit:
         # Analysis for these failures has run to the end.
         self._SaveCulpritInFailures(failures, culprit_commit)
         analysis_errors.append(None)
         continue
+
+      rerun_commit = self._GetSuspectToRerun(
+          context, failures, last_passed_commit, first_failed_commit,
+          commit_position_to_git_hash_map)
+      if not rerun_commit:
+        # In the absence of suspects, perform regular bisection
+        rerun_commit = self._BisectGitilesCommit(
+            context, last_passed_commit, first_failed_commit,
+            commit_position_to_git_hash_map)
 
       # No culprit found for these failures, analysis continues.
       all_culprits_found = False
@@ -1284,3 +1396,57 @@ class AnalysisAPI(object):
               commit_position=culprit_entity.commit_position))
       culprits.append(culprit_message)
     return culprits
+
+  def GetSuspectedCulprits(self, context, build,
+                           first_failures_in_current_build):
+    """Finds suspected CLs in the build's changelog by analyzing failure logs.
+
+    Projects can use this method to perform analysis of the failure in a
+    static manner, i.e. without actually compiling or executing code. e.g by
+    comparing the paths affected by the changes in the changelog against the
+    output generated by the failed steps in the build.
+
+    Args:
+      context (findit_v2.services.context.Context): Scope of the analysis.
+      build (buildbucket build.proto): ALL info about the build.
+      first_failures_in_current_build (dict): A dict for failures that happened
+        the first time in current build.
+        {
+          'failures': {
+            'step': {
+              'atomic_failures': ['test1', 'test2', ...],
+              'last_passed_build': {
+                'id': 8765432109,
+                'number': 122,
+                'commit_id': 'git_sha1'
+              },
+            },
+          },
+          'last_passed_build': {
+            # In this build all the failures that happened in the build being
+            # analyzed passed.
+            'id': 8765432108,
+            'number': 121,
+            'commit_id': 'git_sha0'
+          }
+        }
+      }
+    Returns:
+      A map from (step, target/test) name to a list of suspected commits in the
+      following format:
+      NB: Repo details (host, project, ref) are assumed from the context.
+      {
+        ('compile', frozenset(['base_unittests'])): [
+          {
+            'revision': 'abcdef',
+            'commit_position': 213021,
+            'hints': {
+              'add a/b/x.cc': 5,
+              'delete a/b/y.cc': 5,
+              'modify c/z.cc': 1,
+            }
+          }
+        ]
+      }
+    """
+    raise NotImplementedError()

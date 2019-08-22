@@ -21,6 +21,8 @@ from findit_v2.model.compile_failure import CompileFailureGroup
 from findit_v2.model.compile_failure import CompileFailureInRerunBuild
 from findit_v2.model.compile_failure import CompileRerunBuild
 from findit_v2.model.gitiles_commit import Culprit as CulpritNdb
+from findit_v2.model.gitiles_commit import Hint
+from findit_v2.model.gitiles_commit import Suspect
 from findit_v2.model.gitiles_commit import GitilesCommit
 from findit_v2.model.luci_build import LuciFailedBuild
 from findit_v2.services.analysis.compile_failure.compile_analysis_api import (
@@ -1110,23 +1112,9 @@ class AnalysisAPITest(wf_testcase.TestCase):
             first_failures_in_current_build))
 
   def testBisectGitilesCommitGetCulpritCommit(self):
-    gitiles_host = 'gitiles.host.com'
-    gitiles_project = 'project/name'
-    gitiles_ref = 'ref/heads/master'
+    culprit_commit = self.analysis_api._GetCulpritCommit(
+        self.commits[9], self.commits[10])
 
-    context = Context(
-        luci_project_name='chromium',
-        gitiles_project=gitiles_project,
-        gitiles_host=gitiles_host,
-        gitiles_ref=gitiles_ref,
-        gitiles_id=self.commits[10].gitiles_id)
-
-    revisions = {n: str(n) for n in xrange(100, 110)}
-
-    bisect_commit, culprit_commit = self.analysis_api._BisectGitilesCommit(
-        context, self.commits[9], self.commits[10], revisions)
-
-    self.assertIsNone(bisect_commit)
     self.assertEqual(6000010, culprit_commit.commit_position)
 
   def testBisectGitilesCommitFailedToGetGitilesId(self):
@@ -1141,11 +1129,10 @@ class AnalysisAPITest(wf_testcase.TestCase):
         gitiles_ref=gitiles_ref,
         gitiles_id=self.commits[10].gitiles_id)
 
-    bisect_commit, culprit_commit = self.analysis_api._BisectGitilesCommit(
+    bisect_commit = self.analysis_api._BisectGitilesCommit(
         context, self.commits[0], self.commits[10], {})
 
     self.assertIsNone(bisect_commit)
-    self.assertIsNone(culprit_commit)
 
   def testUpdateFailureRegressionRanges(self):
     rerun_builds_info = [
@@ -1538,6 +1525,74 @@ class AnalysisAPITest(wf_testcase.TestCase):
     self.assertEqual(6000001, culprit.commit_position)
 
   @mock.patch.object(
+      CompileAnalysisAPI,
+      '_GetRerunBuildInputProperties',
+      return_value={'recipe': 'compile'})
+  @mock.patch.object(buildbucket_client, 'TriggerV2Build')
+  @mock.patch.object(git, 'MapCommitPositionsToGitHashes')
+  def testRerunBasedAnalysisTriggersSuspectsParent(self, mock_revisions,
+                                                   mock_trigger_build, _):
+    # Trigger the suspect's parent.
+    mock_revisions.return_value = {n: str(n) for n in xrange(6000000, 6000005)}
+    mock_suspect = Suspect.Create(
+        self.gitiles_host,
+        self.gitiles_project,
+        self.gitiles_ref,
+        'git_sha_121',
+        commit_position=6000004)
+    mock_suspect.put()
+    self.compile_failure_2.suspect_commit_key.append(mock_suspect.key)
+    self.compile_failure_2.put()
+    mock_rerun_build = Build(id=8000055000123, number=78990)
+    mock_rerun_build.create_time.FromDatetime(datetime(2019, 4, 30))
+    mock_trigger_build.return_value = mock_rerun_build
+
+    self.analysis_api.RerunBasedAnalysis(self.context, self.build_id)
+    self.assertTrue(mock_trigger_build.called)
+
+    analysis = CompileFailureAnalysis.GetVersion(self.build_id)
+    self.assertEqual(analysis_status.RUNNING, analysis.status)
+    self.assertIsNone(analysis.end_time)
+
+    rerun_builds = CompileRerunBuild.query(ancestor=analysis.key).fetch()
+    self.assertEqual(1, len(rerun_builds))
+    self.assertEqual(6000003, rerun_builds[0].gitiles_commit.commit_position)
+
+  @mock.patch.object(
+      CompileAnalysisAPI,
+      '_GetRerunBuildInputProperties',
+      return_value={'recipe': 'compile'})
+  @mock.patch.object(buildbucket_client, 'TriggerV2Build')
+  @mock.patch.object(git, 'MapCommitPositionsToGitHashes')
+  def testRerunBasedAnalysisTriggersSuspect(self, mock_revisions,
+                                            mock_trigger_build, _):
+    # Trigger the suspect itself if its parent passed.
+    mock_revisions.return_value = {n: str(n) for n in xrange(6000000, 6000005)}
+    mock_suspect = Suspect.Create(
+        self.gitiles_host,
+        self.gitiles_project,
+        self.gitiles_ref,
+        'git_sha_121',
+        commit_position=6000001)
+    mock_suspect.put()
+    self.compile_failure_2.suspect_commit_key.append(mock_suspect.key)
+    self.compile_failure_2.put()
+    mock_rerun_build = Build(id=8000055000123, number=78990)
+    mock_rerun_build.create_time.FromDatetime(datetime(2019, 4, 30))
+    mock_trigger_build.return_value = mock_rerun_build
+
+    self.analysis_api.RerunBasedAnalysis(self.context, self.build_id)
+    self.assertTrue(mock_trigger_build.called)
+
+    analysis = CompileFailureAnalysis.GetVersion(self.build_id)
+    self.assertEqual(analysis_status.RUNNING, analysis.status)
+    self.assertIsNone(analysis.end_time)
+
+    rerun_builds = CompileRerunBuild.query(ancestor=analysis.key).fetch()
+    self.assertEqual(1, len(rerun_builds))
+    self.assertEqual(6000001, rerun_builds[0].gitiles_commit.commit_position)
+
+  @mock.patch.object(
       CompileAnalysisAPI, 'TriggerRerunBuild', return_value='error')
   @mock.patch.object(git, 'MapCommitPositionsToGitHashes')
   def testRerunBasedAnalysisAborted(self, mock_revisions, _):
@@ -1547,3 +1602,81 @@ class AnalysisAPITest(wf_testcase.TestCase):
 
     analysis = CompileFailureAnalysis.GetVersion(self.build_id)
     self.assertEqual(analysis_status.ERROR, analysis.status)
+
+  class _counter(object):
+    """A callable that returns a monotonically increasing number."""
+
+    def __init__(self, start=0, increment=1):
+      self.counter = start
+      self.increment = increment
+
+    def __call__(self, *_args, **_kwargs):
+      self.counter += self.increment
+      return self.counter
+
+  @mock.patch.object(
+      ChromiumProjectAPI,
+      'GetRerunBuilderId',
+      return_value='chromium/findit/findit_variables')
+  @mock.patch.object(
+      git, 'GetCommitPositionFromRevision', side_effect=[66680, 66666, 66680])
+  def testSaveSuspects(self, *_):
+    build_120_info = self._GetBuildInfo(120)
+
+    detailed_compile_failures = {
+        'compile': {
+            'failures': {
+                frozenset(['target1', 'target2']): {
+                    'properties': {
+                        'properties': {
+                            'rule': 'CXX',
+                        },
+                    },
+                    'first_failed_build': self.build_info,
+                    'last_passed_build': build_120_info,
+                },
+                frozenset(['target3']): {
+                    'properties': {
+                        'properties': {
+                            'rule': 'ACTION',
+                        },
+                    },
+                    'first_failed_build': self.build_info,
+                    'last_passed_build': None,
+                },
+            },
+            'first_failed_build': self.build_info,
+            'last_passed_build': build_120_info,
+        },
+    }
+
+    self.analysis_api.SaveFailures(self.context, self.build,
+                                   detailed_compile_failures)
+
+    first_failures_in_current_build = {
+        'failures': {
+            'compile': {
+                'atomic_failures': [{'target1', 'target2'}],
+                'last_passed_build': build_120_info,
+            },
+        },
+        'last_passed_build': build_120_info
+    }
+    analysis = self.analysis_api.SaveFailureAnalysis(
+        ChromiumProjectAPI(), self.context, self.build,
+        first_failures_in_current_build, False)
+    suspects = {
+        ('compile', frozenset(['target2', 'target1'])): [{
+            'revision': 'git_sha_suspect',
+            'commit_position': 123,
+            'hints': {
+                'mock hint': 9000
+            },
+        }],
+    }
+    self.analysis_api.SaveSuspectsToFailures(self.context, analysis, suspects)
+
+    reloaded_analysis = CompileFailureAnalysis.GetVersion(self.build_id)
+    self.assertEqual(
+        reloaded_analysis.compile_failure_keys[0].get().suspect_commit_key[0]
+        .get().hints, [Hint(content='mock hint', score=9000)])

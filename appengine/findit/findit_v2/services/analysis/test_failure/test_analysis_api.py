@@ -167,3 +167,8 @@ class TestAnalysisAPI(AnalysisAPI):
     grouping for ChromeOS test failure analysis.
     """
     return project_api.GetFailureKeysToAnalyzeTestFailures(failure_entities)
+
+  def GetSuspectedCulprits(self, context, build,
+                           first_failures_in_current_build):
+    # TODO(crbug.com/993073): Implement this method.
+    return {}
