@@ -70,6 +70,11 @@ const chromiumGPUFYIFailuresQuery = selectFromWhere + `
   MasterName = "chromium.gpu.fyi"
 `
 
+const crosFailuresQuery = selectFromWhere + `
+	project = "chromeos"
+	AND bucket IN ("postsubmit", "annealing")
+`
+
 type failureRow struct {
 	StepName            string
 	MasterName          bigquery.NullString
@@ -151,6 +156,9 @@ func GetBigQueryAlerts(ctx context.Context, tree string) ([]messages.BuildFailur
 		break
 	case "chromium.gpu.fyi":
 		queryStr = fmt.Sprintf(chromiumGPUFYIFailuresQuery, appID)
+		break
+	case "chromeos":
+		queryStr = fmt.Sprintf(crosFailuresQuery, appID)
 		break
 	default:
 		queryStr = fmt.Sprintf(failuresQuery, appID, tree, tree)
