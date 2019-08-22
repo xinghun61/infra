@@ -47,7 +47,7 @@ type bbClient struct {
 	env    site.Environment
 }
 
-func (c *bbClient) buildbucketRun(ctx context.Context, args recipe.Args, jsonOut bool, w io.Writer) error {
+func (c *bbClient) ScheduleBuild(ctx context.Context, args recipe.Args, jsonOut bool, w io.Writer) error {
 	req, err := recipe.Request(args)
 	if err != nil {
 		return err
@@ -105,7 +105,7 @@ var getBuildFields = []string{
 	"status",
 }
 
-func (c *bbClient) waitBuildbucketTask(ctx context.Context, ID int64) (*steps.ExecuteResponse, error) {
+func (c *bbClient) WaitForBuild(ctx context.Context, ID int64) (*steps.ExecuteResponse, error) {
 	build, err := bbWaitBuild(ctx, c.client, ID)
 	if err != nil {
 		return nil, err
