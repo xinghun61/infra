@@ -7,6 +7,7 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"infra/cmd/skylab/internal/bb"
 	"infra/cmd/skylab/internal/logutils"
 	"infra/cmd/skylab/internal/site"
 	"io"
@@ -109,7 +110,7 @@ func (c *waitTaskRun) innerRunBuildbucket(a subcommands.Application, env subcomm
 	ctx, cancel := maybeWithTimeout(ctx, c.timeoutMins)
 	defer cancel(context.Canceled)
 
-	bClient, err := bbNewClient(ctx, c.envFlags.Env(), c.authFlags)
+	bClient, err := bb.NewClient(ctx, c.envFlags.Env(), c.authFlags)
 	if err != nil {
 		return nil, err
 	}
@@ -132,7 +133,7 @@ func parseBBTaskID(arg string) (int64, error) {
 	return ID, nil
 }
 
-func responseToTaskResult(bClient *bbClient, buildID int64, response *steps.ExecuteResponse) *skylab_tool.WaitTaskResult {
+func responseToTaskResult(bClient *bb.Client, buildID int64, response *steps.ExecuteResponse) *skylab_tool.WaitTaskResult {
 	u := bClient.BuildURL(buildID)
 	verdict := response.GetState().GetVerdict()
 	failure := verdict == test_platform.TaskState_VERDICT_FAILED

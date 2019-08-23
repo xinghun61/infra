@@ -17,6 +17,7 @@ import (
 	"go.chromium.org/luci/common/data/stringset"
 	"go.chromium.org/luci/common/errors"
 
+	"infra/cmd/skylab/internal/bb"
 	"infra/cmd/skylab/internal/site"
 )
 
@@ -199,7 +200,7 @@ func waitMultiBuildbucket(ctx context.Context, IDs stringset.Set, authFlags auth
 		return nil, err
 	}
 
-	client, err := bbNewClient(ctx, env, authFlags)
+	client, err := bb.NewClient(ctx, env, authFlags)
 	if err != nil {
 		return nil, err
 	}

@@ -2,17 +2,21 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-package cmd
+// Package bb provides a buildbucket Client with helper methods for interacting
+// with builds.
+package bb
 
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"time"
 
 	"github.com/golang/protobuf/jsonpb"
 	structpb "github.com/golang/protobuf/ptypes/struct"
 	"go.chromium.org/chromiumos/infra/proto/go/test_platform"
 	"go.chromium.org/chromiumos/infra/proto/go/test_platform/steps"
+	"go.chromium.org/luci/auth"
 	"go.chromium.org/luci/auth/client/authcli"
 	buildbucket_pb "go.chromium.org/luci/buildbucket/proto"
 	"go.chromium.org/luci/common/errors"
@@ -24,7 +28,8 @@ import (
 	"infra/cmd/skylab/internal/site"
 )
 
-func bbNewClient(ctx context.Context, env site.Environment, authFlags authcli.Flags) (*bbClient, error) {
+// NewClient returns a new client to interact with buildbucket builds.
+func NewClient(ctx context.Context, env site.Environment, authFlags authcli.Flags) (*Client, error) {
 	hClient, err := newHTTPClient(ctx, &authFlags)
 	if err != nil {
 		return nil, err
@@ -35,15 +40,32 @@ func bbNewClient(ctx context.Context, env site.Environment, authFlags authcli.Fl
 		Host: env.BuildbucketHost,
 	}
 
-	return &bbClient{
+	return &Client{
 		client: buildbucket_pb.NewBuildsPRPCClient(pClient),
 		env:    env,
 	}, nil
 }
 
-type bbClient struct {
+// Client provides helper methods to interact with buildbucket builds.
+type Client struct {
 	client buildbucket_pb.BuildsClient
 	env    site.Environment
+}
+
+// newHTTPClient returns an HTTP client with authentication set up.
+//
+// TODO(pprabhu) dedup with internal/cmd/common.go:newHTTPClient
+func newHTTPClient(ctx context.Context, f *authcli.Flags) (*http.Client, error) {
+	o, err := f.Options()
+	if err != nil {
+		return nil, errors.Annotate(err, "failed to get auth options").Err()
+	}
+	a := auth.NewAuthenticator(ctx, auth.OptionalLogin, o)
+	c, err := a.Client()
+	if err != nil {
+		return nil, errors.Annotate(err, "failed to create HTTP client").Err()
+	}
+	return c, nil
 }
 
 // ScheduleBuild schedules a new cros_test_platform build.
@@ -51,7 +73,7 @@ type bbClient struct {
 // ScheduleBuild returns the buildbucket build ID for the scheduled build on
 // success.
 // ScheduleBuild does not wait for the scheduled build to start.
-func (c *bbClient) ScheduleBuild(ctx context.Context, request *test_platform.Request) (int64, error) {
+func (c *Client) ScheduleBuild(ctx context.Context, request *test_platform.Request) (int64, error) {
 	// Do a JSON roundtrip to turn req (a proto) into a structpb.
 	m := jsonpb.Marshaler{}
 	jsonStr, err := m.MarshalToString(request)
@@ -84,20 +106,31 @@ func (c *bbClient) ScheduleBuild(ctx context.Context, request *test_platform.Req
 	return build.Id, nil
 }
 
+// WaitForBuild waits for a buildbucket build and returns the response on build
+// completion.
+//
+// WaitForBuild regularly logs output to stdout to pacify the logdog silence
+// checker.
+func (c *Client) WaitForBuild(ctx context.Context, ID int64) (*steps.ExecuteResponse, error) {
+	build, err := bbWaitBuild(ctx, c.client, ID)
+	if err != nil {
+		return nil, err
+	}
+	return bbExtractResponse(build)
+}
+
+// BuildURL constructs the URL to a build with the given ID.
+func (c *Client) BuildURL(buildID int64) string {
+	return fmt.Sprintf("https://ci.chromium.org/p/%s/builders/%s/%s/b%d",
+		c.env.BuildbucketProject, c.env.BuildbucketBucket, c.env.BuildbucketBuilder, buildID)
+}
+
 // getBuildFields is the list of buildbucket fields that are needed.
 var getBuildFields = []string{
 	// Build details are parsed from the build's output properties.
 	"output.properties",
 	// Build status is used to determine whether the build is complete.
 	"status",
-}
-
-func (c *bbClient) WaitForBuild(ctx context.Context, ID int64) (*steps.ExecuteResponse, error) {
-	build, err := bbWaitBuild(ctx, c.client, ID)
-	if err != nil {
-		return nil, err
-	}
-	return bbExtractResponse(build)
 }
 
 func bbWaitBuild(ctx context.Context, client buildbucket_pb.BuildsClient, buildID int64) (*buildbucket_pb.Build, error) {
@@ -150,10 +183,4 @@ func bbExtractResponse(build *buildbucket_pb.Build) (*steps.ExecuteResponse, err
 
 func isFinal(status buildbucket_pb.Status) bool {
 	return (status & buildbucket_pb.Status_ENDED_MASK) == buildbucket_pb.Status_ENDED_MASK
-}
-
-// BuildURL constructs the URL to a build with the given ID.
-func (c *bbClient) BuildURL(buildID int64) string {
-	return fmt.Sprintf("https://ci.chromium.org/p/%s/builders/%s/%s/b%d",
-		c.env.BuildbucketProject, c.env.BuildbucketBucket, c.env.BuildbucketBuilder, buildID)
 }

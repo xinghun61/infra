@@ -15,6 +15,7 @@ import (
 	"go.chromium.org/luci/common/errors"
 	"go.chromium.org/luci/common/flag"
 
+	"infra/cmd/skylab/internal/bb"
 	"infra/cmd/skylab/internal/cmd/recipe"
 	"infra/cmd/skylab/internal/site"
 	"infra/libs/skylab/inventory"
@@ -104,7 +105,7 @@ func (c *createTestRun) innerRunBB(a subcommands.Application, args []string, env
 
 	ctx := cli.GetContext(a, c, env)
 	e := c.envFlags.Env()
-	client, err := bbNewClient(ctx, e, c.authFlags)
+	client, err := bb.NewClient(ctx, e, c.authFlags)
 	if err != nil {
 		return err
 	}

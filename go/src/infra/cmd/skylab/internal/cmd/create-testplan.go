@@ -14,6 +14,7 @@ import (
 	"go.chromium.org/luci/common/cli"
 	"go.chromium.org/luci/common/errors"
 
+	"infra/cmd/skylab/internal/bb"
 	"infra/cmd/skylab/internal/site"
 )
 
@@ -75,7 +76,7 @@ func (c *createTestPlanRun) innerRun(a subcommands.Application, args []string, e
 
 	ctx := cli.GetContext(a, c, env)
 	e := c.envFlags.Env()
-	client, err := bbNewClient(ctx, e, c.authFlags)
+	client, err := bb.NewClient(ctx, e, c.authFlags)
 	if err != nil {
 		return err
 	}

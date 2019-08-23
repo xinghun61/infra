@@ -18,6 +18,7 @@ import (
 	"go.chromium.org/luci/common/cli"
 	"go.chromium.org/luci/common/errors"
 
+	"infra/cmd/skylab/internal/bb"
 	"infra/cmd/skylab/internal/cmd/recipe"
 	"infra/cmd/skylab/internal/site"
 	"infra/libs/skylab/swarming"
@@ -98,7 +99,7 @@ func (c *createSuiteRun) innerRunBB(ctx context.Context, a subcommands.Applicati
 		return err
 	}
 
-	client, err := bbNewClient(ctx, c.envFlags.Env(), c.authFlags)
+	client, err := bb.NewClient(ctx, c.envFlags.Env(), c.authFlags)
 	if err != nil {
 		return err
 	}
