@@ -6,7 +6,6 @@ package cmd
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"io"
 	"time"
@@ -79,16 +78,9 @@ func (c *bbClient) ScheduleBuild(ctx context.Context, request *test_platform.Req
 	}
 
 	if jsonOut {
-		ti := &taskInfo{
-			Name: "cros_test_platform",
-			ID:   fmt.Sprintf("%d", build.Id),
-			URL:  fmt.Sprintf(c.bbURL(build.Id)),
-		}
-		return json.NewEncoder(w).Encode(ti)
+		return printScheduledTaskJSON(w, "cros_test_platform", fmt.Sprintf("%d", build.Id), c.bbURL(build.Id))
 	}
-
 	fmt.Fprintf(w, "Created request at %s\n", c.bbURL(build.Id))
-
 	return nil
 }
 

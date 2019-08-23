@@ -115,12 +115,6 @@ func newSwarmingClient(ctx context.Context, authFlags authcli.Flags, env site.En
 	return client, nil
 }
 
-type taskInfo struct {
-	Name string `json:"task_name"`
-	ID   string `json:"task_id"`
-	URL  string `json:"task_url"`
-}
-
 // UserErrorReporter reports a detailed error message to the user.
 //
 // PrintError() uses a UserErrorReporter to print multi-line user error details

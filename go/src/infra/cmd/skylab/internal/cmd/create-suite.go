@@ -8,6 +8,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"strconv"
 	"time"
 
@@ -149,24 +150,19 @@ func (c *createSuiteRun) innerRunSwarming(ctx context.Context, a subcommands.App
 		return errors.Annotate(err, "failed to create client").Err()
 	}
 
-	task := taskInfo{
-		Name: c.image + "-" + suiteName,
+	taskName := c.taskName
+	if taskName == "" {
+		taskName = c.image + "-" + suiteName
 	}
-	if c.taskName != "" {
-		task.Name = c.taskName
-	}
-
-	task.ID, err = createSuiteTask(ctx, client, task.Name, c.priority, slices, tags)
+	taskID, err := createSuiteTask(ctx, client, taskName, c.priority, slices, tags)
 	if err != nil {
 		return errors.Annotate(err, "create suite").Err()
 	}
-
-	task.URL = swarming.TaskURL(e.SwarmingService, task.ID)
+	taskURL := swarming.TaskURL(e.SwarmingService, taskID)
 	if c.json {
-		return json.NewEncoder(a.GetOut()).Encode(task)
+		_ = printScheduledTaskJSON(a.GetOut(), taskName, taskID, taskURL)
 	}
-
-	fmt.Fprintf(a.GetOut(), "Created Swarming Suite task %s\n", task.URL)
+	fmt.Fprintf(a.GetOut(), "Created Swarming Suite task %s\n", taskURL)
 	return nil
 }
 
@@ -240,4 +236,17 @@ func createSuiteTask(ctx context.Context, t *swarming.Client, taskName string, p
 	}
 
 	return resp.TaskId, nil
+}
+
+func printScheduledTaskJSON(w io.Writer, name string, ID string, URL string) error {
+	t := struct {
+		Name string `json:"task_name"`
+		ID   string `json:"task_id"`
+		URL  string `json:"task_url"`
+	}{
+		Name: name,
+		ID:   ID,
+		URL:  URL,
+	}
+	return json.NewEncoder(w).Encode(t)
 }
