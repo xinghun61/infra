@@ -104,7 +104,7 @@ func (c *createSuiteRun) innerRunBB(ctx context.Context, a subcommands.Applicati
 		return err
 	}
 
-	recipeArg, err := c.RecipeArgs()
+	recipeArg, err := c.RecipeArgs(c.buildTags(suiteName))
 	if err != nil {
 		return err
 	}

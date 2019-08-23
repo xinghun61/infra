@@ -110,7 +110,7 @@ func (c *createTestRun) innerRunBB(a subcommands.Application, args []string, env
 		return err
 	}
 
-	recipeArg, err := c.RecipeArgs()
+	recipeArg, err := c.RecipeArgs(c.buildTags())
 	if err != nil {
 		return err
 	}

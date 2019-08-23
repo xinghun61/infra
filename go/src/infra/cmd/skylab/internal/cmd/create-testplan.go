@@ -81,7 +81,7 @@ func (c *createTestPlanRun) innerRun(a subcommands.Application, args []string, e
 		return err
 	}
 
-	recipeArgs, err := c.RecipeArgs()
+	recipeArgs, err := c.RecipeArgs(c.buildTags())
 	if err != nil {
 		return err
 	}

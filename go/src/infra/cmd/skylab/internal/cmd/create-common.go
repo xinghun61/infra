@@ -65,7 +65,7 @@ func (c *createRunCommon) ValidateArgs(fl flag.FlagSet) error {
 	return nil
 }
 
-func (c *createRunCommon) RecipeArgs() (recipe.Args, error) {
+func (c *createRunCommon) RecipeArgs(tags []string) (recipe.Args, error) {
 	keyvalMap, err := toKeyvalMap(c.keyvals)
 	if err != nil {
 		return recipe.Args{}, err
@@ -80,7 +80,7 @@ func (c *createRunCommon) RecipeArgs() (recipe.Args, error) {
 		Timeout:      time.Duration(c.timeoutMins) * time.Minute,
 		Keyvals:      keyvalMap,
 		Priority:     int64(c.priority),
-		Tags:         c.tags,
+		Tags:         tags,
 	}, nil
 }
 
