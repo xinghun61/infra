@@ -19,7 +19,7 @@ cron:
   url: /waterfall/cron/obscure-emails
   schedule: every day 00:00
 
-- description: Query and store flakes on cq.
+- description: Query and store flakes.
   url: /flake/detection/cron/detect-flakes
   schedule: every 30 minutes
   retry_parameters:
@@ -39,3 +39,9 @@ cron:
 - description: Update open FlakeIssue entities to reflect on what's in Monorail.
   url: /auto-action/cron/update-open-flake-issues
   schedule: every 2 hours
+
+- description: File bugs and trigger analyses on selected flakes.
+  url: /flake/detection/cron/process-flakes
+  schedule: every 30 minutes
+  retry_parameters:
+    job_retry_limit: 0

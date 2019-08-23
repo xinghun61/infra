@@ -17,6 +17,7 @@ from handlers import process_failure_analysis_requests
 from handlers import process_flake_analysis_request
 from handlers.flake import update_open_flake_issues
 from handlers.flake.detection import detect_flakes
+from handlers.flake.detection import process_flakes
 from handlers.flake.detection import update_flake_counts
 from handlers.flake.reporting import generate_report
 
@@ -49,12 +50,14 @@ flake_detection_backend_web_pages_handler_mappings = [
     ('/flake/detection/cron/detect-flakes', detect_flakes.DetectFlakesCronJob),
     ('/flake/detection/cron/generate-flakiness-report',
      generate_report.PrepareFlakinessReport),
+    ('/flake/detection/cron/process-flakes',
+     process_flakes.ProcessFlakesCronJob),
     ('/flake/detection/cron/update-flake-counts',
      update_flake_counts.UpdateFlakeCountsCron),
-    ('/flake/detection/task/detect-flakes',
-     detect_flakes.FlakeDetectionAndAutoAction),
+    ('/flake/detection/task/detect-flakes', detect_flakes.FlakeDetection),
     ('/flake/detection/task/detect-flakes-from-build',
      detect_flakes.DetectFlakesFromFlakyCQBuild),
+    ('/flake/detection/task/process-flakes', process_flakes.FlakeAutoAction),
     ('/flake/detection/task/update-flake-counts',
      update_flake_counts.UpdateFlakeCountsTask),
 ]
