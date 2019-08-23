@@ -152,7 +152,8 @@ func isFinal(status buildbucket_pb.Status) bool {
 	return (status & buildbucket_pb.Status_ENDED_MASK) == buildbucket_pb.Status_ENDED_MASK
 }
 
-func (c *bbClient) bbURL(buildID int64) string {
+// BuildURL constructs the URL to a build with the given ID.
+func (c *bbClient) BuildURL(buildID int64) string {
 	return fmt.Sprintf("https://ci.chromium.org/p/%s/builders/%s/%s/b%d",
 		c.env.BuildbucketProject, c.env.BuildbucketBucket, c.env.BuildbucketBuilder, buildID)
 }

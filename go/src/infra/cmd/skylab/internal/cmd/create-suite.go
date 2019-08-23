@@ -112,7 +112,7 @@ func (c *createSuiteRun) innerRunBB(ctx context.Context, a subcommands.Applicati
 	if err != nil {
 		return err
 	}
-	buildURL := client.bbURL(buildID)
+	buildURL := client.BuildURL(buildID)
 	if c.json {
 		return printScheduledTaskJSON(a.GetOut(), "cros_test_platform", fmt.Sprintf("%d", buildID), buildURL)
 	}

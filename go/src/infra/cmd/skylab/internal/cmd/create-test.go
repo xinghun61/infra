@@ -120,7 +120,7 @@ func (c *createTestRun) innerRunBB(a subcommands.Application, args []string, env
 	if err != nil {
 		return err
 	}
-	fmt.Fprintf(a.GetOut(), "Created request at %s\n", client.bbURL(buildID))
+	fmt.Fprintf(a.GetOut(), "Created request at %s\n", client.BuildURL(buildID))
 	return nil
 }
 

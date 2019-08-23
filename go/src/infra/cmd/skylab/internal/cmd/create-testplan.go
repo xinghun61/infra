@@ -96,7 +96,7 @@ func (c *createTestPlanRun) innerRun(a subcommands.Application, args []string, e
 	if err != nil {
 		return err
 	}
-	return printScheduledTaskJSON(a.GetOut(), "cros_test_platform", fmt.Sprintf("%d", buildID), client.bbURL(buildID))
+	return printScheduledTaskJSON(a.GetOut(), "cros_test_platform", fmt.Sprintf("%d", buildID), client.BuildURL(buildID))
 }
 
 func (c *createTestPlanRun) readTestPlan(path string) (*test_platform.Request_TestPlan, error) {

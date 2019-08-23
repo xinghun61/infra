@@ -133,7 +133,7 @@ func parseBBTaskID(arg string) (int64, error) {
 }
 
 func responseToTaskResult(bClient *bbClient, buildID int64, response *steps.ExecuteResponse) *skylab_tool.WaitTaskResult {
-	u := bClient.bbURL(buildID)
+	u := bClient.BuildURL(buildID)
 	verdict := response.GetState().GetVerdict()
 	failure := verdict == test_platform.TaskState_VERDICT_FAILED
 	success := verdict == test_platform.TaskState_VERDICT_PASSED
