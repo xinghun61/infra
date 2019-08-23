@@ -21,6 +21,7 @@ import (
 
 	"github.com/google/uuid"
 	. "github.com/smartystreets/goconvey/convey"
+	"go.chromium.org/gae/service/datastore"
 	"go.chromium.org/luci/appengine/gaetesting"
 
 	"infra/appengine/qscheduler-swarming/app/state/nodestore"
@@ -43,6 +44,15 @@ func (n createUniqueAccount) Commit(_ context.Context) error {
 }
 
 func (n createUniqueAccount) Finish(_ context.Context) {}
+
+func addDatastoreIndexes(ctx context.Context) error {
+	defs, err := datastore.FindAndParseIndexYAML(".")
+	if err != nil {
+		return err
+	}
+	datastore.GetTestable(ctx).AddIndexes(defs...)
+	return nil
+}
 
 func TestBasicRun(t *testing.T) {
 	Convey("Given a testing context with a created entity", t, func() {
@@ -102,6 +112,52 @@ func TestConflictingRun(t *testing.T) {
 			s, err := storeA.Get(ctx)
 			So(err, ShouldBeNil)
 			So(len(s.Scheduler.Config().AccountConfigs), ShouldEqual, 4)
+		})
+	})
+}
+
+func TestClean(t *testing.T) {
+	Convey("Given a testing context with a created entity", t, func() {
+		ctx := gaetesting.TestingContext()
+		datastore.GetTestable(ctx).Consistent(true)
+		err := addDatastoreIndexes(ctx)
+		So(err, ShouldBeNil)
+
+		store := nodestore.New("foo-pool")
+		err = store.Create(ctx, time.Now())
+		So(err, ShouldBeNil)
+
+		Convey("an immediate clean should run without error.", func() {
+			count, err := store.Clean(ctx)
+			So(count, ShouldEqual, 0)
+			So(err, ShouldBeNil)
+		})
+
+		Convey("a clean after some operations runs without error, removes stale entities, and does not affect state.", func() {
+			for i := 0; i < 200; i++ {
+				store.Run(ctx, createUniqueAccount{})
+				if err != nil {
+					// This assert is guarded because we don't want to goconvey
+					// to think we did 200 real asserts; that would pollute the UI.
+					So(err, ShouldBeNil)
+				}
+			}
+
+			beforeClean, err := store.Get(ctx)
+			So(err, ShouldBeNil)
+
+			count, err := datastore.Count(ctx, datastore.NewQuery("stateNode"))
+			So(count, ShouldEqual, 201)
+
+			delCount, err := store.Clean(ctx)
+			So(err, ShouldBeNil)
+			So(delCount, ShouldEqual, 100)
+			afterClean, err := store.Get(ctx)
+			So(err, ShouldBeNil)
+			So(afterClean, ShouldResemble, beforeClean)
+
+			count, err = datastore.Count(ctx, datastore.NewQuery("stateNode"))
+			So(count, ShouldEqual, 101)
 		})
 	})
 }

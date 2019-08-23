@@ -1,0 +1,7 @@
+indexes:
+
+- kind: stateNode
+  properties:
+  - name: PoolID
+  - name: Generation
+    direction: asc
