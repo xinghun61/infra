@@ -15,7 +15,6 @@ import (
 
 	qscheduler "infra/appengine/qscheduler-swarming/api/qscheduler/v1"
 	"infra/cmd/qscheduler/internal/site"
-	"infra/qscheduler/qslib/protos"
 )
 
 // Create subcommand: Create a qscheduler pool.
@@ -68,7 +67,6 @@ func (c *createRun) Run(a subcommands.Application, args []string, env subcommand
 
 	req := &qscheduler.CreateSchedulerPoolRequest{
 		PoolId: poolID,
-		Config: &protos.SchedulerConfig{DisablePreemption: !c.allowPreemption},
 	}
 	if c.botExpiry != nil {
 		req.Config.BotExpiration = ptypes.DurationProto(time.Duration(*c.botExpiry) * time.Second)
