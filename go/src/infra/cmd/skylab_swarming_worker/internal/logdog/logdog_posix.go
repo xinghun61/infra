@@ -20,7 +20,7 @@ import (
 	"go.chromium.org/luci/logdog/client/butler"
 	"go.chromium.org/luci/logdog/client/butler/output"
 	"go.chromium.org/luci/logdog/client/butler/output/logdog"
-	"go.chromium.org/luci/logdog/client/butler/streamserver/localclient"
+	"go.chromium.org/luci/logdog/client/butlerlib/streamclient"
 	"go.chromium.org/luci/logdog/common/types"
 	"go.chromium.org/luci/lucictx"
 )
@@ -122,7 +122,7 @@ func newButler(ctx context.Context, o *Options, out output.Output) (*butler.Butl
 func newProcessor(ctx context.Context, b *butler.Butler, basePath string) *annotee.Processor {
 	o := annotee.Options{
 		Base:                   types.StreamName(basePath),
-		Client:                 localclient.New(b),
+		Client:                 streamclient.NewLoopback(b, ""),
 		Execution:              annotation.ProbeExecution(os.Args, nil, ""),
 		MetadataUpdateInterval: 30 * time.Second,
 		Offline:                false,

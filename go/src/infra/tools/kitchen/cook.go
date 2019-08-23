@@ -42,7 +42,7 @@ import (
 	fileOut "go.chromium.org/luci/logdog/client/butler/output/file"
 	out "go.chromium.org/luci/logdog/client/butler/output/logdog"
 	"go.chromium.org/luci/logdog/client/butler/streamserver"
-	"go.chromium.org/luci/logdog/client/butler/streamserver/localclient"
+	"go.chromium.org/luci/logdog/client/butlerlib/streamclient"
 	"go.chromium.org/luci/logdog/common/types"
 	"go.chromium.org/luci/lucictx"
 
@@ -861,7 +861,7 @@ func (c *cookRun) watchSubprocessOutput(ctx context.Context, annStreamName types
 	annoteeOpts := annotee.Options{
 		Base:                   basePath,
 		AnnotationSubpath:      annoSubpath,
-		Client:                 localclient.New(b),
+		Client:                 streamclient.NewLoopback(b, ""),
 		Execution:              execMetadata,
 		MetadataUpdateInterval: 30 * time.Second,
 		Offline:                false,
