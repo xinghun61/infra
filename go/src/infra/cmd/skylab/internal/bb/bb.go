@@ -10,6 +10,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/golang/protobuf/jsonpb"
@@ -73,7 +74,7 @@ func newHTTPClient(ctx context.Context, f *authcli.Flags) (*http.Client, error) 
 // ScheduleBuild returns the buildbucket build ID for the scheduled build on
 // success.
 // ScheduleBuild does not wait for the scheduled build to start.
-func (c *Client) ScheduleBuild(ctx context.Context, request *test_platform.Request) (int64, error) {
+func (c *Client) ScheduleBuild(ctx context.Context, request *test_platform.Request, tags []string) (int64, error) {
 	// Do a JSON roundtrip to turn req (a proto) into a structpb.
 	m := jsonpb.Marshaler{}
 	jsonStr, err := m.MarshalToString(request)
@@ -89,6 +90,10 @@ func (c *Client) ScheduleBuild(ctx context.Context, request *test_platform.Reque
 	recipeStruct.Fields = map[string]*structpb.Value{
 		"request": {Kind: &structpb.Value_StructValue{StructValue: reqStruct}},
 	}
+	tagPairs, err := splitTagPairs(tags)
+	if err != nil {
+		return -1, err
+	}
 
 	bbReq := &buildbucket_pb.ScheduleBuildRequest{
 		Builder: &buildbucket_pb.BuilderID{
@@ -97,6 +102,7 @@ func (c *Client) ScheduleBuild(ctx context.Context, request *test_platform.Reque
 			Builder: c.env.BuildbucketBuilder,
 		},
 		Properties: recipeStruct,
+		Tags:       tagPairs,
 	}
 
 	build, err := c.client.ScheduleBuild(ctx, bbReq)
@@ -123,6 +129,21 @@ func (c *Client) WaitForBuild(ctx context.Context, ID int64) (*steps.ExecuteResp
 func (c *Client) BuildURL(buildID int64) string {
 	return fmt.Sprintf("https://ci.chromium.org/p/%s/builders/%s/%s/b%d",
 		c.env.BuildbucketProject, c.env.BuildbucketBucket, c.env.BuildbucketBuilder, buildID)
+}
+
+func splitTagPairs(tags []string) ([]*buildbucket_pb.StringPair, error) {
+	ret := make([]*buildbucket_pb.StringPair, 0, len(tags))
+	for _, t := range tags {
+		p := strings.Split(t, ":")
+		if len(p) != 2 {
+			return nil, errors.Reason("malformed tag %s", t).Err()
+		}
+		ret = append(ret, &buildbucket_pb.StringPair{
+			Key:   strings.Trim(p[0], " "),
+			Value: strings.Trim(p[1], " "),
+		})
+	}
+	return ret, nil
 }
 
 // getBuildFields is the list of buildbucket fields that are needed.

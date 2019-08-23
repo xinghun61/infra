@@ -109,7 +109,7 @@ func (c *createSuiteRun) innerRunBB(ctx context.Context, a subcommands.Applicati
 		return err
 	}
 	recipeArg.TestPlan = recipe.NewTestPlanForSuites(suiteName)
-	buildID, err := client.ScheduleBuild(ctx, recipeArg.TestPlatformRequest())
+	buildID, err := client.ScheduleBuild(ctx, recipeArg.TestPlatformRequest(), c.buildTags(suiteName))
 	if err != nil {
 		return err
 	}
@@ -141,16 +141,6 @@ func (c *createSuiteRun) innerRunSwarming(ctx context.Context, a subcommands.App
 		return errors.Annotate(err, "create suite").Err()
 	}
 
-	tags := append(c.tags,
-		"skylab-tool:create-suite",
-		"luci_project:"+e.LUCIProject,
-		"build:"+c.image,
-		"suite:"+suiteName,
-		"label-board:"+c.board,
-		"label-model:"+c.model,
-		"label-pool:"+c.pool,
-		"priority:"+strconv.Itoa(c.priority))
-
 	h, err := newHTTPClient(ctx, &c.authFlags)
 	if err != nil {
 		return errors.Annotate(err, "failed to create http client").Err()
@@ -164,6 +154,7 @@ func (c *createSuiteRun) innerRunSwarming(ctx context.Context, a subcommands.App
 	if taskName == "" {
 		taskName = c.image + "-" + suiteName
 	}
+	tags := append(c.buildTags(suiteName), "luci_project:"+e.LUCIProject)
 	taskID, err := createSuiteTask(ctx, client, taskName, c.priority, slices, tags)
 	if err != nil {
 		return errors.Annotate(err, "create suite").Err()
@@ -174,6 +165,10 @@ func (c *createSuiteRun) innerRunSwarming(ctx context.Context, a subcommands.App
 	}
 	fmt.Fprintf(a.GetOut(), "Created Swarming Suite task %s\n", taskURL)
 	return nil
+}
+
+func (c *createSuiteRun) buildTags(suiteName string) []string {
+	return append(c.createRunCommon.BuildTags(), "skylab-tool:create-suite", fmt.Sprintf("suite:%s", suiteName))
 }
 
 func newTaskSlice(command []string, dimensions []*swarming_api.SwarmingRpcsStringPair, timeoutMins int) *swarming_api.SwarmingRpcsTaskSlice {

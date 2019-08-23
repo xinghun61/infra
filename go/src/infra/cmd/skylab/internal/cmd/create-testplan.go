@@ -93,7 +93,7 @@ func (c *createTestPlanRun) innerRun(a subcommands.Application, args []string, e
 
 	recipeArgs.TestPlan = testPlan
 
-	buildID, err := client.ScheduleBuild(ctx, recipeArgs.TestPlatformRequest())
+	buildID, err := client.ScheduleBuild(ctx, recipeArgs.TestPlatformRequest(), c.buildTags())
 	if err != nil {
 		return err
 	}
@@ -113,4 +113,8 @@ func (c *createTestPlanRun) readTestPlan(path string) (*test_platform.Request_Te
 	}
 
 	return &testPlan, nil
+}
+
+func (c *createTestPlanRun) buildTags() []string {
+	return append(c.createRunCommon.BuildTags(), "skylab-tool:create-testplan")
 }

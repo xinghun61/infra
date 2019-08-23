@@ -117,7 +117,7 @@ func (c *createTestRun) innerRunBB(a subcommands.Application, args []string, env
 	recipeArg.TestPlan = recipe.NewTestPlanForAutotestTests(c.testArgs, args...)
 	recipeArg.FreeformSwarmingDimensions = c.dimensions
 
-	buildID, err := client.ScheduleBuild(ctx, recipeArg.TestPlatformRequest())
+	buildID, err := client.ScheduleBuild(ctx, recipeArg.TestPlatformRequest(), c.buildTags())
 	if err != nil {
 		return err
 	}
@@ -159,7 +159,7 @@ func (c *createTestRun) innerRunSwarming(a subcommands.Application, args []strin
 	}
 	cmd.Config(e.Wrapped())
 
-	tags := append(c.tags, "skylab-tool:create-test", "log_location:"+cmd.LogDogAnnotationURL, "luci_project:"+e.LUCIProject)
+	tags := append(c.buildTags(), "log_location:"+cmd.LogDogAnnotationURL, "luci_project:"+e.LUCIProject)
 	if c.qsAccount != "" {
 		tags = append(tags, "qs_account:"+c.qsAccount)
 	}
@@ -197,6 +197,10 @@ func (c *createTestRun) innerRunSwarming(a subcommands.Application, args []strin
 
 	fmt.Fprintf(a.GetOut(), "Created Swarming task %s\n", swarming.TaskURL(e.SwarmingService, resp.TaskId))
 	return nil
+}
+
+func (c *createTestRun) buildTags() []string {
+	return append(c.createRunCommon.BuildTags(), "skylab-tool:create-test")
 }
 
 func (c *createTestRun) getLabels() inventory.SchedulableLabels {

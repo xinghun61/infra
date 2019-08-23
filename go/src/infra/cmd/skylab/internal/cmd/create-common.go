@@ -84,6 +84,24 @@ func (c *createRunCommon) RecipeArgs() (recipe.Args, error) {
 	}, nil
 }
 
+func (c *createRunCommon) BuildTags() []string {
+	ts := c.tags
+	ts = append(ts, fmt.Sprintf("priority:%d", c.priority))
+	if c.image != "" {
+		ts = append(ts, fmt.Sprintf("build:%s", c.image))
+	}
+	if c.board != "" {
+		ts = append(ts, fmt.Sprintf("label-board:%s", c.board))
+	}
+	if c.model != "" {
+		ts = append(ts, fmt.Sprintf("label-model:%s", c.model))
+	}
+	if c.pool != "" {
+		ts = append(ts, fmt.Sprintf("label-pool:%s", c.pool))
+	}
+	return ts
+}
+
 func toKeyvalMap(keyvals []string) (map[string]string, error) {
 	m := make(map[string]string, len(keyvals))
 	for _, s := range keyvals {
