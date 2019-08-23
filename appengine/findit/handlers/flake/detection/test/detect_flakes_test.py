@@ -4,6 +4,7 @@
 
 import json
 import mock
+import urllib2
 import webapp2
 
 from gae_libs.handlers.base_handler import BaseHandler
@@ -34,7 +35,7 @@ class DetectFlakesCronJobTest(WaterfallTestCase):
 
     tasks = self.taskqueue_stub.get_filtered_tasks(
         queue_names='flake-detection-queue')
-    self.assertEqual(2, len(tasks))
+    self.assertEqual(6, len(tasks))
     self.assertTrue(mocked_is_request_from_appself.called)
 
 
@@ -49,17 +50,40 @@ class FlakeDetectionTest(WaterfallTestCase):
   @mock.patch.object(BaseHandler, 'IsRequestFromAppSelf', return_value=True)
   @mock.patch.object(detect_flake_occurrences, 'QueryAndStoreHiddenFlakes')
   @mock.patch.object(detect_flake_occurrences, 'QueryAndStoreFlakes')
-  def testFlakesDetected(self, mock_detect, mock_get_flakes,
-                         mock_detect_hidden):
-    mock_get_flakes.return_value = []
+  def testFlakesDetectionNoType(self, mock_detect, mock_detect_hidden, _):
     response = self.test_app.get(
-        '/flake/detection/task/detect-flakes', status=200)
+        '/flake/detection/task/detect-flakes', status=404)
+    self.assertEqual(404, response.status_int)
+    self.assertFalse(mock_detect.called)
+    self.assertFalse(mock_detect_hidden.called)
+
+  @mock.patch.object(BaseHandler, 'IsRequestFromAppSelf', return_value=True)
+  @mock.patch.object(detect_flake_occurrences, 'QueryAndStoreHiddenFlakes')
+  @mock.patch.object(detect_flake_occurrences, 'QueryAndStoreFlakes')
+  def testFlakesDetectionNonHidden(self, mock_detect, mock_detect_hidden, _):
+    response = self.test_app.get(
+        '/flake/detection/task/detect-flakes?flake_type={}'.format(
+            urllib2.quote(
+                FLAKE_TYPE_DESCRIPTIONS[FlakeType.CQ_FALSE_REJECTION])),
+        status=200)
     self.assertEqual(200, response.status_int)
 
-    mock_detect.assert_has_calls([
-        mock.call(FlakeType.CQ_FALSE_REJECTION),
-        mock.call(FlakeType.RETRY_WITH_PATCH)
-    ])
+    mock_detect.assert_called_once_with(FlakeType.CQ_FALSE_REJECTION)
+    self.assertFalse(mock_detect_hidden.called)
+
+  @mock.patch.object(BaseHandler, 'IsRequestFromAppSelf', return_value=True)
+  @mock.patch.object(
+      detect_flake_occurrences, 'QueryAndStoreHiddenFlakes', return_value=[])
+  @mock.patch.object(detect_flake_occurrences, 'QueryAndStoreFlakes')
+  def testFlakesDetectionHidden(self, mock_detect_non_hidden,
+                                mock_detect_hidden, _):
+    response = self.test_app.get(
+        '/flake/detection/task/detect-flakes?flake_type={}'.format(
+            urllib2.quote(FLAKE_TYPE_DESCRIPTIONS[FlakeType.CQ_HIDDEN_FLAKE])),
+        status=200)
+    self.assertEqual(200, response.status_int)
+
+    self.assertFalse(mock_detect_non_hidden.called)
     self.assertTrue(mock_detect_hidden.called)
 
 
