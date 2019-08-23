@@ -1,3 +1,19 @@
+# Release Notes sheriff-o-matic 2019-08-23
+
+- 2 commits, 1 bugs affected since 318ba4f (2019-08-21T17:32:38Z)
+- 1 Authors:
+  - seanmccullough@chromium.org
+
+## Changes in this release
+
+- [[som] Add custom WHERE clause for ChromeOS analyzer.](https://chromium-review.googlesource.com/c/infra/infra/+/1766370) (seanmccullough@chromium.org)
+- [[som] Update RELNOTES.md](https://chromium-review.googlesource.com/c/infra/infra/+/1764348) (seanmccullough@chromium.org)
+
+## Bugs updated, by author
+- seanmccullough@chromium.org:
+  -  [https://crbug.com/996884](https://crbug.com/996884)
+
+
 # Release Notes sheriff-o-matic 2019-08-21
 
 - 3 commits, 1 bugs affected since 7e122c6
