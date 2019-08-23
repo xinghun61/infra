@@ -58,6 +58,7 @@ func (r *Runner) LaunchAndWait(ctx context.Context, client swarming.Client, _ is
 	if err != nil {
 		return err
 	}
+	logging.Infof(ctx, "launched task with ID %s", taskID)
 
 	r.response = &steps.ExecuteResponse{State: &test_platform.TaskState{LifeCycle: test_platform.TaskState_LIFE_CYCLE_RUNNING}}
 
