@@ -108,7 +108,8 @@ func (c *createSuiteRun) innerRunBB(ctx context.Context, a subcommands.Applicati
 		return err
 	}
 	recipeArg.TestPlan = recipe.NewTestPlanForSuites(suiteName)
-	return client.ScheduleBuild(ctx, recipeArg.TestPlatformRequest(), c.json, a.GetOut())
+	_, err = client.ScheduleBuild(ctx, recipeArg.TestPlatformRequest(), c.json, a.GetOut())
+	return err
 }
 
 func (c *createSuiteRun) validateForBB() error {

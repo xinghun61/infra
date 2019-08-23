@@ -91,7 +91,8 @@ func (c *createTestPlanRun) innerRun(a subcommands.Application, args []string, e
 
 	recipeArgs.TestPlan = testPlan
 
-	return client.ScheduleBuild(ctx, recipeArgs.TestPlatformRequest(), true, a.GetErr())
+	_, err = client.ScheduleBuild(ctx, recipeArgs.TestPlatformRequest(), true, a.GetErr())
+	return err
 }
 
 func (c *createTestPlanRun) readTestPlan(path string) (*test_platform.Request_TestPlan, error) {

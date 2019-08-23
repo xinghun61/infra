@@ -46,16 +46,21 @@ type bbClient struct {
 	env    site.Environment
 }
 
-func (c *bbClient) ScheduleBuild(ctx context.Context, request *test_platform.Request, jsonOut bool, w io.Writer) error {
+// ScheduleBuild schedules a new cros_test_platform build.
+//
+// ScheduleBuild returns the buildbucket build ID for the scheduled build on
+// success.
+// ScheduleBuild does not wait for the scheduled build to start.
+func (c *bbClient) ScheduleBuild(ctx context.Context, request *test_platform.Request, jsonOut bool, w io.Writer) (int64, error) {
 	// Do a JSON roundtrip to turn req (a proto) into a structpb.
 	m := jsonpb.Marshaler{}
 	jsonStr, err := m.MarshalToString(request)
 	if err != nil {
-		return err
+		return -1, err
 	}
 	reqStruct := &structpb.Struct{}
 	if err := jsonpb.UnmarshalString(jsonStr, reqStruct); err != nil {
-		return err
+		return -1, err
 	}
 
 	recipeStruct := &structpb.Struct{}
@@ -74,14 +79,14 @@ func (c *bbClient) ScheduleBuild(ctx context.Context, request *test_platform.Req
 
 	build, err := c.client.ScheduleBuild(ctx, bbReq)
 	if err != nil {
-		return err
+		return -1, err
 	}
 
 	if jsonOut {
-		return printScheduledTaskJSON(w, "cros_test_platform", fmt.Sprintf("%d", build.Id), c.bbURL(build.Id))
+		return build.Id, printScheduledTaskJSON(w, "cros_test_platform", fmt.Sprintf("%d", build.Id), c.bbURL(build.Id))
 	}
 	fmt.Fprintf(w, "Created request at %s\n", c.bbURL(build.Id))
-	return nil
+	return build.Id, nil
 }
 
 // getBuildFields is the list of buildbucket fields that are needed.

@@ -116,7 +116,8 @@ func (c *createTestRun) innerRunBB(a subcommands.Application, args []string, env
 	recipeArg.TestPlan = recipe.NewTestPlanForAutotestTests(c.testArgs, args...)
 	recipeArg.FreeformSwarmingDimensions = c.dimensions
 
-	return client.ScheduleBuild(ctx, recipeArg.TestPlatformRequest(), false, a.GetOut())
+	_, err = client.ScheduleBuild(ctx, recipeArg.TestPlatformRequest(), false, a.GetOut())
+	return err
 }
 
 func (c *createTestRun) validateForBB() error {
