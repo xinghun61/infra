@@ -5,6 +5,11 @@
 package cmd
 
 import (
+	"context"
+	"fmt"
+	"io/ioutil"
+
+	"cloud.google.com/go/pubsub"
 	"go.chromium.org/luci/common/flag"
 
 	"github.com/maruel/subcommands"
@@ -13,9 +18,8 @@ import (
 
 type publishRun struct {
 	baseRun
-	messageString string
-	messageFile   string
-	attributes    map[string]string
+	messageFile string
+	attributes  map[string]string
 }
 
 // CmdPublish describes the subcommand flags for publishing messages
@@ -32,6 +36,44 @@ var CmdPublish = &subcommands.Command{
 }
 
 func (c *publishRun) Run(a subcommands.Application, args []string, env subcommands.Env) int {
-	_ = cli.GetContext(a, c, env)
+	ctx := cli.GetContext(a, c, env)
+	client, err := c.createClient(ctx)
+	if err != nil {
+		fmt.Fprintln(a.GetErr(), err)
+		return 1
+	}
+
+	t := client.Topic(c.topic)
+	defer t.Stop()
+
+	message, err := c.getMessageBody()
+	if err != nil {
+		fmt.Fprintln(a.GetErr(), err)
+		return 1
+	}
+	if err := Publish(ctx, t, message, c.attributes); err != nil {
+		fmt.Fprintln(a.GetErr(), err)
+		return 1
+	}
 	return 0
+}
+
+func (c *publishRun) getMessageBody() ([]byte, error) {
+	message, err := ioutil.ReadFile(c.messageFile)
+	if err != nil {
+		return nil, err
+	}
+	return message, nil
+}
+
+// Publish publishes a bytestream message to a topic with specified attributes
+func Publish(ctx context.Context, topic *pubsub.Topic, msg []byte, attrs map[string]string) error {
+	result := topic.Publish(ctx, &pubsub.Message{
+		Data:       msg,
+		Attributes: attrs,
+	})
+	// Block until the result is returned and a server-generated
+	// ID is returned for the published message. Discard the ID.
+	_, err := result.Get(ctx)
+	return err
 }
