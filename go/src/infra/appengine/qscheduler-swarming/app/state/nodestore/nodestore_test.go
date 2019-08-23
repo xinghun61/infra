@@ -16,6 +16,9 @@ package nodestore_test
 
 import (
 	"context"
+	"math/rand"
+	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -30,24 +33,32 @@ import (
 )
 
 type createUniqueAccounts struct {
-	count int
+	nAccounts int
+
+	created int32
 }
 
 // createUniqueAccount implements nodestore.Operator
-var _ nodestore.Operator = createUniqueAccounts{}
+var _ nodestore.Operator = &createUniqueAccounts{}
 
-func (n createUniqueAccounts) Modify(ctx context.Context, s *types.QScheduler) error {
-	for i := 0; i < n.count; i++ {
+func (n *createUniqueAccounts) Modify(ctx context.Context, s *types.QScheduler) error {
+	for i := 0; i < n.nAccounts; i++ {
 		s.Scheduler.AddAccount(ctx, scheduler.AccountID(uuid.New().String()), scheduler.NewAccountConfig(0, 0, nil, false), nil)
 	}
 	return nil
 }
 
-func (n createUniqueAccounts) Commit(_ context.Context) error {
+func (n *createUniqueAccounts) Commit(_ context.Context) error {
 	return nil
 }
 
-func (n createUniqueAccounts) Finish(_ context.Context) {}
+func (n *createUniqueAccounts) Finish(_ context.Context) {
+	atomic.AddInt32(&n.created, 1)
+}
+
+func (n *createUniqueAccounts) Created() int {
+	return int(n.created)
+}
 
 func addDatastoreIndexes(ctx context.Context) error {
 	defs, err := datastore.FindAndParseIndexYAML(".")
@@ -72,13 +83,13 @@ func TestBasicRun(t *testing.T) {
 		})
 
 		Convey("operations run without error.", func() {
-			err = store.Run(ctx, createUniqueAccounts{1})
+			err = store.Run(ctx, &createUniqueAccounts{nAccounts: 1})
 			So(err, ShouldBeNil)
 
-			err = store.Run(ctx, createUniqueAccounts{1})
+			err = store.Run(ctx, &createUniqueAccounts{nAccounts: 1})
 			So(err, ShouldBeNil)
 
-			err = store.Run(ctx, createUniqueAccounts{1})
+			err = store.Run(ctx, &createUniqueAccounts{nAccounts: 1})
 			So(err, ShouldBeNil)
 
 			s, err := store.Get(ctx)
@@ -101,16 +112,16 @@ func TestConflictingRun(t *testing.T) {
 		storeB := nodestore.New("foo-pool")
 
 		Convey("alternating null operations between both stores run without error.", func() {
-			err = storeA.Run(ctx, createUniqueAccounts{1})
+			err = storeA.Run(ctx, &createUniqueAccounts{nAccounts: 1})
 			So(err, ShouldBeNil)
 
-			err = storeB.Run(ctx, createUniqueAccounts{1})
+			err = storeB.Run(ctx, &createUniqueAccounts{nAccounts: 1})
 			So(err, ShouldBeNil)
 
-			err = storeA.Run(ctx, createUniqueAccounts{1})
+			err = storeA.Run(ctx, &createUniqueAccounts{nAccounts: 1})
 			So(err, ShouldBeNil)
 
-			err = storeB.Run(ctx, createUniqueAccounts{1})
+			err = storeB.Run(ctx, &createUniqueAccounts{nAccounts: 1})
 			So(err, ShouldBeNil)
 
 			s, err := storeA.Get(ctx)
@@ -139,7 +150,7 @@ func TestClean(t *testing.T) {
 
 		Convey("a clean after some operations runs without error, removes stale entities, and does not affect state.", func() {
 			for i := 0; i < 200; i++ {
-				store.Run(ctx, createUniqueAccounts{1})
+				store.Run(ctx, &createUniqueAccounts{nAccounts: 1})
 				if err != nil {
 					// This assert is guarded because we don't want to goconvey
 					// to think we did 200 real asserts; that would pollute the UI.
@@ -179,7 +190,7 @@ func TestLargeState(t *testing.T) {
 			// Given uuid size, 70k accounts causes state to be large enough to
 			// be spread over 10 nodes.
 			nAccounts := 70 * 1000
-			err := store.Run(ctx, createUniqueAccounts{nAccounts})
+			err := store.Run(ctx, &createUniqueAccounts{nAccounts: nAccounts})
 			So(err, ShouldBeNil)
 
 			state, err := store.Get(ctx)
@@ -226,5 +237,49 @@ func TestCreateListDelete(t *testing.T) {
 		IDs, err = nodestore.List(ctx)
 		So(err, ShouldBeNil)
 		So(IDs, ShouldBeEmpty)
+	})
+}
+
+func TestConcurrentRuns(t *testing.T) {
+	Convey("Given a testing context with a created entity", t, func() {
+		ctx := gaetesting.TestingContext()
+
+		store := nodestore.New("foo-pool")
+		store.Create(ctx, time.Now())
+
+		Convey("and 10 concurrent stores, with 10 concurrent operations each", func() {
+			nStores := 10
+			opsPerStore := 10
+
+			wg := sync.WaitGroup{}
+			wg.Add(nStores * opsPerStore)
+
+			operator := &createUniqueAccounts{nAccounts: 1}
+
+			for i := 0; i < nStores; i++ {
+				store := nodestore.New("foo-pool")
+				go func(store *nodestore.NodeStore) {
+					for j := 0; j < opsPerStore; j++ {
+						go func() {
+							// Add jitter to run attempts, for an acceptable level
+							// of contention.
+							time.Sleep(time.Duration(rand.Intn(200)) * time.Millisecond)
+							store.Run(ctx, operator)
+							wg.Done()
+						}()
+					}
+				}(store)
+			}
+			wg.Wait()
+
+			Convey("the number of Finish calls matches the number of successful operations", func() {
+				state, err := store.Get(ctx)
+				So(err, ShouldBeNil)
+				// The number of created accounts should match the number of Finish() calls.
+				// With current parameters, this typically means ~50-75 successful calls,
+				// out of 100 attempts, but the precise number is nondeterministic.
+				So(len(state.Scheduler.Config().AccountConfigs), ShouldEqual, operator.Created())
+			})
+		})
 	})
 }
