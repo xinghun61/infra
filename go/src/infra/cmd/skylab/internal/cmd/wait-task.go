@@ -7,6 +7,7 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"infra/cmd/skylab/internal/logutils"
 	"infra/cmd/skylab/internal/site"
 	"io"
 	"strconv"
@@ -172,7 +173,7 @@ func responseToTaskResult(bClient *bbClient, buildID int64, response *steps.Exec
 // rpc failures (after transient retry).
 func waitSwarmingTask(ctx context.Context, taskID string, t *swarming.Client) error {
 	sleepInterval := time.Duration(15 * time.Second)
-	throttledLogger := newThrottledInfoLogger(logging.Get(ctx), 5*time.Minute)
+	throttledLogger := logutils.NewThrottledInfoLogger(logging.Get(ctx), 5*time.Minute)
 	progressMessage := fmt.Sprintf("Still waiting for result from task ID %s", taskID)
 	for {
 		results, err := t.GetResults(ctx, []string{taskID})

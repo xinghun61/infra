@@ -20,6 +20,7 @@ import (
 	"go.chromium.org/luci/grpc/prpc"
 	"google.golang.org/genproto/protobuf/field_mask"
 
+	"infra/cmd/skylab/internal/logutils"
 	"infra/cmd/skylab/internal/site"
 )
 
@@ -100,7 +101,7 @@ func (c *bbClient) WaitForBuild(ctx context.Context, ID int64) (*steps.ExecuteRe
 }
 
 func bbWaitBuild(ctx context.Context, client buildbucket_pb.BuildsClient, buildID int64) (*buildbucket_pb.Build, error) {
-	throttledLogger := newThrottledInfoLogger(logging.Get(ctx), 5*time.Minute)
+	throttledLogger := logutils.NewThrottledInfoLogger(logging.Get(ctx), 5*time.Minute)
 	progressMessage := fmt.Sprintf("Still waiting for result from testplatform build ID %d", buildID)
 
 	fields := &field_mask.FieldMask{Paths: getBuildFields}
