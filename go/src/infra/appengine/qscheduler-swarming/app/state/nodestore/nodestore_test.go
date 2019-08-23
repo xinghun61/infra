@@ -29,21 +29,25 @@ import (
 	"infra/qscheduler/qslib/scheduler"
 )
 
-type createUniqueAccount struct{}
+type createUniqueAccounts struct {
+	count int
+}
 
 // createUniqueAccount implements nodestore.Operator
-var _ nodestore.Operator = createUniqueAccount{}
+var _ nodestore.Operator = createUniqueAccounts{}
 
-func (n createUniqueAccount) Modify(ctx context.Context, s *types.QScheduler) error {
-	s.Scheduler.AddAccount(ctx, scheduler.AccountID(uuid.New().String()), scheduler.NewAccountConfig(0, 0, nil, false), nil)
+func (n createUniqueAccounts) Modify(ctx context.Context, s *types.QScheduler) error {
+	for i := 0; i < n.count; i++ {
+		s.Scheduler.AddAccount(ctx, scheduler.AccountID(uuid.New().String()), scheduler.NewAccountConfig(0, 0, nil, false), nil)
+	}
 	return nil
 }
 
-func (n createUniqueAccount) Commit(_ context.Context) error {
+func (n createUniqueAccounts) Commit(_ context.Context) error {
 	return nil
 }
 
-func (n createUniqueAccount) Finish(_ context.Context) {}
+func (n createUniqueAccounts) Finish(_ context.Context) {}
 
 func addDatastoreIndexes(ctx context.Context) error {
 	defs, err := datastore.FindAndParseIndexYAML(".")
@@ -68,13 +72,13 @@ func TestBasicRun(t *testing.T) {
 		})
 
 		Convey("operations run without error.", func() {
-			err = store.Run(ctx, createUniqueAccount{})
+			err = store.Run(ctx, createUniqueAccounts{1})
 			So(err, ShouldBeNil)
 
-			err = store.Run(ctx, createUniqueAccount{})
+			err = store.Run(ctx, createUniqueAccounts{1})
 			So(err, ShouldBeNil)
 
-			err = store.Run(ctx, createUniqueAccount{})
+			err = store.Run(ctx, createUniqueAccounts{1})
 			So(err, ShouldBeNil)
 
 			s, err := store.Get(ctx)
@@ -97,16 +101,16 @@ func TestConflictingRun(t *testing.T) {
 		storeB := nodestore.New("foo-pool")
 
 		Convey("alternating null operations between both stores run without error.", func() {
-			err = storeA.Run(ctx, createUniqueAccount{})
+			err = storeA.Run(ctx, createUniqueAccounts{1})
 			So(err, ShouldBeNil)
 
-			err = storeB.Run(ctx, createUniqueAccount{})
+			err = storeB.Run(ctx, createUniqueAccounts{1})
 			So(err, ShouldBeNil)
 
-			err = storeA.Run(ctx, createUniqueAccount{})
+			err = storeA.Run(ctx, createUniqueAccounts{1})
 			So(err, ShouldBeNil)
 
-			err = storeB.Run(ctx, createUniqueAccount{})
+			err = storeB.Run(ctx, createUniqueAccounts{1})
 			So(err, ShouldBeNil)
 
 			s, err := storeA.Get(ctx)
@@ -135,7 +139,7 @@ func TestClean(t *testing.T) {
 
 		Convey("a clean after some operations runs without error, removes stale entities, and does not affect state.", func() {
 			for i := 0; i < 200; i++ {
-				store.Run(ctx, createUniqueAccount{})
+				store.Run(ctx, createUniqueAccounts{1})
 				if err != nil {
 					// This assert is guarded because we don't want to goconvey
 					// to think we did 200 real asserts; that would pollute the UI.
@@ -158,6 +162,33 @@ func TestClean(t *testing.T) {
 
 			count, err = datastore.Count(ctx, datastore.NewQuery("stateNode"))
 			So(count, ShouldEqual, 101)
+		})
+	})
+}
+
+func TestLargeState(t *testing.T) {
+	Convey("Given a testing context with a created entity", t, func() {
+		ctx := gaetesting.TestingContext()
+		datastore.GetTestable(ctx).Consistent(true)
+
+		store := nodestore.New("foo-pool")
+		err := store.Create(ctx, time.Now())
+		So(err, ShouldBeNil)
+
+		Convey("a very large state spanning 10 child nodes can be stored.", func() {
+			// Given uuid size, 70k accounts causes state to be large enough to
+			// be spread over 10 nodes.
+			nAccounts := 70 * 1000
+			err := store.Run(ctx, createUniqueAccounts{nAccounts})
+			So(err, ShouldBeNil)
+
+			state, err := store.Get(ctx)
+			So(err, ShouldBeNil)
+			So(len(state.Scheduler.Config().AccountConfigs), ShouldEqual, nAccounts)
+
+			count, err := datastore.Count(ctx, datastore.NewQuery("stateNode"))
+			// 1 node for generation 0; 10 for generation 1.
+			So(count, ShouldEqual, 11)
 		})
 	})
 }
