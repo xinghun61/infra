@@ -118,7 +118,7 @@ func (c *Client) ScheduleBuild(ctx context.Context, request *test_platform.Reque
 // WaitForBuild regularly logs output to stdout to pacify the logdog silence
 // checker.
 func (c *Client) WaitForBuild(ctx context.Context, ID int64) (*steps.ExecuteResponse, error) {
-	build, err := waitForBuild(ctx, c.client, ID)
+	build, err := c.waitForBuild(ctx, ID)
 	if err != nil {
 		return nil, err
 	}
@@ -154,7 +154,7 @@ var getBuildFields = []string{
 	"status",
 }
 
-func waitForBuild(ctx context.Context, client buildbucket_pb.BuildsClient, buildID int64) (*buildbucket_pb.Build, error) {
+func (c *Client) waitForBuild(ctx context.Context, buildID int64) (*buildbucket_pb.Build, error) {
 	throttledLogger := logutils.NewThrottledInfoLogger(logging.Get(ctx), 5*time.Minute)
 	progressMessage := fmt.Sprintf("Still waiting for result from testplatform build ID %d", buildID)
 
@@ -165,7 +165,7 @@ func waitForBuild(ctx context.Context, client buildbucket_pb.BuildsClient, build
 	}
 
 	for {
-		build, err := client.GetBuild(ctx, req)
+		build, err := c.client.GetBuild(ctx, req)
 		if err != nil {
 			return nil, err
 		}
