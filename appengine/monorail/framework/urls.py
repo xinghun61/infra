@@ -104,7 +104,6 @@ ISSUE_DETAIL_FLIPPER_NEXT = '/issues/detail/next'
 ISSUE_DETAIL_FLIPPER_PREV = '/issues/detail/previous'
 ISSUE_DETAIL_FLIPPER_LIST = '/issues/detail/list'
 ISSUE_DETAIL_FLIPPER_INDEX = '/issues/detail/flipper'
-ISSUE_PEEK = '/issues/peek'  # not served, only used in issuepeek.py
 ISSUE_ENTRY = '/issues/entry'
 ISSUE_ENTRY_AFTER_LOGIN = '/issues/entryafterlogin'
 ISSUE_BULK_EDIT = '/issues/bulkedit'

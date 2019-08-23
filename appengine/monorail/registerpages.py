@@ -268,10 +268,6 @@ class ServletRegistry(object):
     base = '/p/<project_name:%s>' % self._PROJECT_NAME_REGEX
     self._AddRoute(base + urls.ISSUE_DETAIL,
                    webcomponentspage.WebComponentsPage, 'GET')
-    # TODO(jrobbins): Leave this for now so that users can submit forms that
-    # are already open in a browser.  Delete this line next week.
-    self._AddRoute(base + urls.ISSUE_DETAIL_LEGACY + '.do',
-                   issuedetailezt.IssueDetailEzt, 'POST')
 
     self._SetupUserServlets({
         urls.SAVED_QUERIES: savedqueries.SavedQueries,
