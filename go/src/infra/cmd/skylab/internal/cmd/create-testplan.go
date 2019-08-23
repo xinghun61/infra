@@ -5,6 +5,7 @@
 package cmd
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/maruel/subcommands"
@@ -91,8 +92,11 @@ func (c *createTestPlanRun) innerRun(a subcommands.Application, args []string, e
 
 	recipeArgs.TestPlan = testPlan
 
-	_, err = client.ScheduleBuild(ctx, recipeArgs.TestPlatformRequest(), true, a.GetErr())
-	return err
+	buildID, err := client.ScheduleBuild(ctx, recipeArgs.TestPlatformRequest())
+	if err != nil {
+		return err
+	}
+	return printScheduledTaskJSON(a.GetOut(), "cros_test_platform", fmt.Sprintf("%d", buildID), client.bbURL(buildID))
 }
 
 func (c *createTestPlanRun) readTestPlan(path string) (*test_platform.Request_TestPlan, error) {

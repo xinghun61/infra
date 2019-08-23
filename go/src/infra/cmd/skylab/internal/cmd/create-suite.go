@@ -108,8 +108,16 @@ func (c *createSuiteRun) innerRunBB(ctx context.Context, a subcommands.Applicati
 		return err
 	}
 	recipeArg.TestPlan = recipe.NewTestPlanForSuites(suiteName)
-	_, err = client.ScheduleBuild(ctx, recipeArg.TestPlatformRequest(), c.json, a.GetOut())
-	return err
+	buildID, err := client.ScheduleBuild(ctx, recipeArg.TestPlatformRequest())
+	if err != nil {
+		return err
+	}
+	buildURL := client.bbURL(buildID)
+	if c.json {
+		return printScheduledTaskJSON(a.GetOut(), "cros_test_platform", fmt.Sprintf("%d", buildID), buildURL)
+	}
+	fmt.Fprintf(a.GetOut(), "Created request at %s\n", buildURL)
+	return nil
 }
 
 func (c *createSuiteRun) validateForBB() error {

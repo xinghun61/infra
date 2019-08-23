@@ -7,7 +7,6 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"io"
 	"time"
 
 	"github.com/golang/protobuf/jsonpb"
@@ -51,7 +50,7 @@ type bbClient struct {
 // ScheduleBuild returns the buildbucket build ID for the scheduled build on
 // success.
 // ScheduleBuild does not wait for the scheduled build to start.
-func (c *bbClient) ScheduleBuild(ctx context.Context, request *test_platform.Request, jsonOut bool, w io.Writer) (int64, error) {
+func (c *bbClient) ScheduleBuild(ctx context.Context, request *test_platform.Request) (int64, error) {
 	// Do a JSON roundtrip to turn req (a proto) into a structpb.
 	m := jsonpb.Marshaler{}
 	jsonStr, err := m.MarshalToString(request)
@@ -81,11 +80,6 @@ func (c *bbClient) ScheduleBuild(ctx context.Context, request *test_platform.Req
 	if err != nil {
 		return -1, err
 	}
-
-	if jsonOut {
-		return build.Id, printScheduledTaskJSON(w, "cros_test_platform", fmt.Sprintf("%d", build.Id), c.bbURL(build.Id))
-	}
-	fmt.Fprintf(w, "Created request at %s\n", c.bbURL(build.Id))
 	return build.Id, nil
 }
 
