@@ -78,26 +78,7 @@ func (is *ServerImpl) DeployDut(ctx context.Context, req *fleet.DeployDutRequest
 	actions := req.GetActions()
 	options := req.GetOptions()
 
-	// TODO(gregorynisbet): Do we need to reject cases with
-	// nontrivial actions and multiple DUTs earlier than this?
-	isEmpty := func(actions proto.Message) bool {
-		var empty proto.Message
-		if actions == nil {
-			return true
-		}
-		empty = &fleet.DutDeploymentActions{}
-		return proto.Equal(actions, empty)
-	}
-
-	if len(allSpecs) > 1 && !isEmpty(actions) {
-		// TODO(gregorynisbet): This path might time out, potentially.
-		for _, specs := range allSpecs {
-			ds := deployDUT(ctx, s, sc, attemptID, specs, actions, options)
-			updateDeployStatusIgnoringErrors(ctx, attemptID, ds)
-		}
-		return &fleet.DeployDutResponse{DeploymentId: attemptID}, nil
-	}
-	ds := deployManyDUTs(ctx, s, sc, attemptID, allSpecs, options)
+	ds := deployManyDUTs(ctx, s, sc, attemptID, allSpecs, actions, options)
 	updateDeployStatusIgnoringErrors(ctx, attemptID, ds)
 	return &fleet.DeployDutResponse{DeploymentId: attemptID}, nil
 }
@@ -243,30 +224,13 @@ func initializeDeployAttempt(ctx context.Context) (string, error) {
 	return attemptID, nil
 }
 
-// deployDUT kicks off a new DUT deployment.
-//
-// Errors are communicated via returned deploy.Status
-func deployDUT(ctx context.Context, s *gitstore.InventoryStore, sc clients.SwarmingClient, attemptID string, nd *inventory.CommonDeviceSpecs, a *fleet.DutDeploymentActions, o *fleet.DutDeploymentOptions) *deploy.Status {
-	var err error
-	ds := &deploy.Status{Status: fleet.GetDeploymentStatusResponse_DUT_DEPLOYMENT_STATUS_IN_PROGRESS}
-	ds.ChangeURL, err = addDUTToFleet(ctx, s, nd, o.GetAssignServoPortIfMissing())
-	if err != nil {
-		failDeployStatus(ctx, ds, fmt.Sprintf("failed to add dut to fleet: %s", err))
-		return ds
-	}
-	ds.TaskID, err = scheduleDUTPreparationTask(ctx, sc, nd.GetId(), a)
-	if err != nil {
-		failDeployStatus(ctx, ds, fmt.Sprintf("failed to create deploy task: %s", err))
-		return ds
-	}
-	return ds
-}
-
 // deploy many DUTs simultaneously.
-func deployManyDUTs(ctx context.Context, s *gitstore.InventoryStore, sc clients.SwarmingClient, attemptID string, nds []*inventory.CommonDeviceSpecs, o *fleet.DutDeploymentOptions) *deploy.Status {
+func deployManyDUTs(ctx context.Context, s *gitstore.InventoryStore, sc clients.SwarmingClient, attemptID string, nds []*inventory.CommonDeviceSpecs, a *fleet.DutDeploymentActions, o *fleet.DutDeploymentOptions) *deploy.Status {
 	// TODO(gregorynisbet): consider policy for amalgamating many errors into a coherent description
 	// of how deployManyDUTs failed.
 	ds := &deploy.Status{Status: fleet.GetDeploymentStatusResponse_DUT_DEPLOYMENT_STATUS_IN_PROGRESS}
+	// Add DUTs to fleet first synchronously, don't proceed with scheduling tasks
+	// unless we've succeeded in adding the DUTs to the inventory.
 	url, err := addManyDUTsToFleet(ctx, s, nds, o.GetAssignServoPortIfMissing())
 	ds.ChangeURL = url
 	if err != nil {
@@ -274,64 +238,17 @@ func deployManyDUTs(ctx context.Context, s *gitstore.InventoryStore, sc clients.
 		return ds
 	}
 	for _, nd := range nds {
-		taskID, err := scheduleDUTPreparationTask(ctx, sc, nd.GetId(), &fleet.DutDeploymentActions{})
+		taskID, err := scheduleDUTPreparationTask(ctx, sc, nd.GetId(), a)
+		// TODO(gregorynisbet): this only records the last task ID
 		ds.TaskID = taskID
-		// TODO(gregorynisbet): Do we want to attempt everything before reporting failure?
+		// We deliberately keep going after encountering an error. We try to
+		// schedule a preparation for every DUT once regardless of whether an earlier
+		// DUT fails.
 		if err != nil {
 			failDeployStatus(ctx, ds, fmt.Sprintf("failed to create deploy task: %s", err))
 		}
 	}
 	return ds
-}
-
-// addDUTToFleet adds a new DUT with given specs to the inventory and assigns
-// it to a drone.
-//
-// This function returns the URL for the inventory update change.
-// This function updates nd.Id to a ID unique in the inventory.
-// TODO(pprabhu) Updating an arbitrary function argument is yucky. FixMe.
-func addDUTToFleet(ctx context.Context, s *gitstore.InventoryStore, nd *inventory.CommonDeviceSpecs, pickServoPort bool) (string, error) {
-	var respURL string
-	f := func() error {
-		// Clone device specs before modifications so that changes don't leak
-		// across retries.
-		d := proto.Clone(nd).(*inventory.CommonDeviceSpecs)
-
-		if err := s.Refresh(ctx); err != nil {
-			return errors.Annotate(err, "add dut to fleet").Err()
-		}
-
-		c := newGlobalInvCache(ctx, s)
-		hostname := d.GetHostname()
-		if _, ok := c.hostnameToID[hostname]; ok {
-			return errors.Reason("dut with hostname %s already exists", hostname).Err()
-		}
-
-		if pickServoPort && !hasServoPortAttribute(d) {
-			if err := assignNewServoPort(s.Lab.Duts, d); err != nil {
-				return errors.Annotate(err, "add dut to fleet").Err()
-			}
-		}
-
-		id := addDUTToStore(s, d)
-		// TODO(ayatane): Implement this better than just regenerating the cache.
-		c = newGlobalInvCache(ctx, s)
-		if _, err := assignDUT(ctx, c, id); err != nil {
-			return errors.Annotate(err, "add dut to fleet").Err()
-		}
-
-		url, err := s.Commit(ctx, fmt.Sprintf("Add new DUT %s", hostname))
-		if err != nil {
-			return errors.Annotate(err, "add dut to fleet").Err()
-		}
-
-		respURL = url
-		nd.Id = &id
-		return nil
-	}
-
-	err := retry.Retry(ctx, transientErrorRetries(), f, retry.LogCallback(ctx, "addDUTToFleet"))
-	return respURL, err
 }
 
 func addManyDUTsToFleet(ctx context.Context, s *gitstore.InventoryStore, nds []*inventory.CommonDeviceSpecs, pickServoPort bool) (string, error) {
