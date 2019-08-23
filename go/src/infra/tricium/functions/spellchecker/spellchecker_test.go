@@ -172,9 +172,17 @@ func TestSpellCheckerAnalyzeFiles(t *testing.T) {
 		So(results.Comments, ShouldBeEmpty)
 	})
 
-	Convey("Words with non-ASCII characters are not split on word characters", t, func() {
+	Convey("Words with non-ASCII characters are not split up", t, func() {
 		fileContent := "... François ..."
 		// Example from crbug.com/996242.
+		results := &tricium.Data_Results{}
+		analyzeFile(bufio.NewScanner(strings.NewReader(fileContent)), "test.txt", true, cp[".txt"], results)
+		So(results.Comments, ShouldBeEmpty)
+	})
+
+	Convey("Words with apostrophes are not split up", t, func() {
+		fileContent := "... wasn't ..."
+		// Example from crbug.com/996804.
 		results := &tricium.Data_Results{}
 		analyzeFile(bufio.NewScanner(strings.NewReader(fileContent)), "test.txt", true, cp[".txt"], results)
 		So(results.Comments, ShouldBeEmpty)

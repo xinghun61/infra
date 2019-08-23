@@ -74,9 +74,14 @@ var (
 	// TODO(qyearsley): Pass around a dict instead of using a global variable.
 	dict map[string][]string
 
-	// Selects non-punctuation characters. This is used to split strings that
-	// may contain comment start or end patterns.
-	nonPunct = regexp.MustCompile(`[^[:punct:]]+`)
+	// Selects word characters and other characters that shouldn't split words.
+	// Apostrophes and dashes can be considered part of words, as well as
+	// non-ASCII letters, e.g. é, ç, etc. and digits. Other non-letter Unicode
+	// characters don't need to be considered, as they won't appear mixed
+	// inside English words and also won't appear in the dictionary of English
+	// misspellings.
+	// See https://golang.org/s/re2syntax for the regexp syntax reference.
+	justWord = regexp.MustCompile(`[\p{L}\d'_-]+`)
 
 	// Patterns that indicate we don't want to flag misspellings. To prevent
 	// false positives, we also match when there are prefixes or suffixes.
@@ -470,7 +475,7 @@ func inSlice(word string, arr []string) bool {
 // into individual words.
 func splitComment(commentWord string) []wordSegment {
 	var segments []wordSegment
-	for _, wordIndex := range nonPunct.FindAllStringIndex(commentWord, -1) {
+	for _, wordIndex := range justWord.FindAllStringIndex(commentWord, -1) {
 		segments = append(segments,
 			wordSegment{commentWord[wordIndex[0]:wordIndex[1]], wordIndex[0]})
 	}
