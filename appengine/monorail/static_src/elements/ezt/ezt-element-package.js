@@ -18,6 +18,7 @@ import 'elements/issue-list/mr-chart/mr-chart.js';
 import 'elements/issue-detail/mr-flipper/mr-flipper.js';
 import 'elements/framework/mr-code-font-toggle/mr-code-font-toggle.js';
 import 'elements/ezt/ezt-comments.js';
+import 'elements/ezt/ezt-app-base.js';
 
 // Register an empty set of page.js routes to allow the page() navigation
 // function to work.

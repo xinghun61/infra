@@ -2,5 +2,9 @@
 
 [include "master-footer-shared.ezt"]
 
+<ezt-app-base [if-any logged_in_user]
+  userDisplayName="[logged_in_user.email]"[end]
+></ezt-app-base>
+
 </body>
 </html>
