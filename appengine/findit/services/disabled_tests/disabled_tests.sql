@@ -13,6 +13,9 @@ WITH
         LIMIT 1)[OFFSET(0)] AS latest_run
     FROM
       `test-results-hrd.events.test_results`
+    INNER JOIN
+      UNNEST(@supported_masters) AS supported_master
+    ON buildbot_info.master_name = supported_master
     WHERE
       # According to https://cloud.google.com/bigquery/docs/partitioned-tables,
       # _PARTITIONTIME is always the start of each day, so to make sure all data

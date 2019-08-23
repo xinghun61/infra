@@ -8,6 +8,7 @@ import re
 
 from google.appengine.ext import ndb
 
+from common.swarmbucket import swarmbucket
 from gae_libs import appengine_util
 from libs import time_util
 from model.flake.flake import Flake
@@ -24,6 +25,15 @@ _MEMORY_FLAGS_REGEX = [
     (re.compile('TSan', re.I), 'TSan:True'),
     (re.compile('UBSan', re.I), 'UBSan:True'),
 ]
+
+
+def _GetQueryParameters():
+  return [
+      bigquery_helper.GenerateArrayQueryParameter(
+          'supported_masters', 'STRING',
+          swarmbucket.GetMasters('luci.chromium.ci') +
+          swarmbucket.GetMasters('luci.chromium.try'))
+  ]
 
 
 def _ExecuteQuery(parameters=None):
@@ -169,7 +179,6 @@ def _UpdateCurrentlyDisabledTests(local_tests, query_time):
       updated_test_keys.append(local_test[0])
 
   for updated_test_key in updated_test_keys:
-    logging.info(updated_test_key)
     _UpdateDatastore(updated_test_key, local_tests[updated_test_key],
                      query_time)
 
@@ -197,6 +206,7 @@ def _UpdateNoLongerDisabledTests(currently_disabled_test_keys, query_time):
 def ProcessQueryForDisabledTests():
   query_time = time_util.GetUTCNow()
   # Stores disabled tests from latest test run locally
-  local_tests = _ExecuteQuery()  # {LuciTest.key: set of disabled test variants}
+  # {LuciTest.key: set of disabled test variants}
+  local_tests = _ExecuteQuery(parameters=_GetQueryParameters())
   _UpdateCurrentlyDisabledTests(local_tests, query_time)
   _UpdateNoLongerDisabledTests(local_tests.keys(), query_time)

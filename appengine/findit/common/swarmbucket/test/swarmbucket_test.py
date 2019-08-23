@@ -66,19 +66,56 @@ class SwarmbucketTest(testing.AppengineTestCase):
   def testGetBuilders(self, mock_fetch):
     mock_builders_response = json.dumps({
         'buckets': [{
-            'builders': [{
-                'name': 'findit_variable',
-            }, {
-                'name': 'linux_chromium_bot_db_exporter',
-            }],
+            'builders': [
+                {
+                    'name': 'findit_variable',
+                },
+                {
+                    'name': 'linux_chromium_bot_db_exporter',
+                },
+            ],
             'name':
                 'luci.chromium.findit'
-        }]
+        },]
     })
     mock_fetch.return_value = collections.namedtuple(
         'Result', ['content', 'status_code', 'headers'])(
             status_code=200, content=mock_builders_response, headers={})
     builders = swarmbucket.GetBuilders('luci.chromium.findit')
     self.assertIn('findit_variable', builders)
+    _args, kwargs = mock_fetch.call_args
+    self.assertEqual(http_client_appengine.urlfetch.GET, kwargs.get('method'))
+
+  @mock.patch.object(http_client_appengine.urlfetch, 'fetch')
+  def testGetMasters(self, mock_fetch):
+    mock_builders_response = json.dumps({
+        'buckets': [{
+            'builders': [
+                {
+                    'name':
+                        'Linux Tests',
+                    'properties_json':
+                        json.dumps({
+                            'mastername': 'chromium.linux'
+                        })
+                },
+                {
+                    'name':
+                        'Mac Tests',
+                    'properties_json':
+                        json.dumps({
+                            'mastername': 'chromium.mac'
+                        })
+                },
+            ],
+            'name':
+                'luci.chromium.ci'
+        },]
+    })
+    mock_fetch.return_value = collections.namedtuple(
+        'Result', ['content', 'status_code', 'headers'])(
+            status_code=200, content=mock_builders_response, headers={})
+    masters = swarmbucket.GetMasters('luci.chromium.ci')
+    self.assertItemsEqual(masters, ['chromium.mac', 'chromium.linux'])
     _args, kwargs = mock_fetch.call_args
     self.assertEqual(http_client_appengine.urlfetch.GET, kwargs.get('method'))

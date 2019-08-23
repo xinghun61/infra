@@ -111,23 +111,28 @@ class BigqueryHelperTest(unittest.TestCase):
         [_UTC_DATETIME_OF_START_TIME, _UTC_DATETIME_OF_START_TIME])
 
   def testAssignTypeToRow(self):
-    schema = bigquery_helper._SchemaResponseToDicts([{
-        'type': 'INTEGER',
-        'name': 'int_field_name',
-        'mode': 'NULLABLE'
-    }, {
-        'type': 'BOOLEAN',
-        'name': 'boolean_field_name',
-        'mode': 'NULLABLE'
-    }, {
-        'type': 'STRING',
-        'name': 'string_field_name',
-        'mode': 'NULLABLE'
-    }, {
-        'type': 'TIMESTAMP',
-        'name': 'timestamp_field_name',
-        'mode': 'NULLABLE'
-    }])
+    schema = bigquery_helper._SchemaResponseToDicts([
+        {
+            'type': 'INTEGER',
+            'name': 'int_field_name',
+            'mode': 'NULLABLE'
+        },
+        {
+            'type': 'BOOLEAN',
+            'name': 'boolean_field_name',
+            'mode': 'NULLABLE'
+        },
+        {
+            'type': 'STRING',
+            'name': 'string_field_name',
+            'mode': 'NULLABLE'
+        },
+        {
+            'type': 'TIMESTAMP',
+            'name': 'timestamp_field_name',
+            'mode': 'NULLABLE'
+        },
+    ])
     row = {
         'f': [{
             'v': '123'
@@ -147,23 +152,28 @@ class BigqueryHelperTest(unittest.TestCase):
     self.assertEqual(obj['timestamp_field_name'], _UTC_DATETIME_OF_START_TIME)
 
   def testAssignTypeToRowWithNullable(self):
-    schema = bigquery_helper._SchemaResponseToDicts([{
-        'type': 'INTEGER',
-        'name': 'int_field_name',
-        'mode': 'NULLABLE'
-    }, {
-        'type': 'BOOLEAN',
-        'name': 'boolean_field_name',
-        'mode': 'NULLABLE'
-    }, {
-        'type': 'STRING',
-        'name': 'string_field_name',
-        'mode': 'NULLABLE'
-    }, {
-        'type': 'TIMESTAMP',
-        'name': 'timestamp_field_name',
-        'mode': 'NULLABLE'
-    }])
+    schema = bigquery_helper._SchemaResponseToDicts([
+        {
+            'type': 'INTEGER',
+            'name': 'int_field_name',
+            'mode': 'NULLABLE'
+        },
+        {
+            'type': 'BOOLEAN',
+            'name': 'boolean_field_name',
+            'mode': 'NULLABLE'
+        },
+        {
+            'type': 'STRING',
+            'name': 'string_field_name',
+            'mode': 'NULLABLE'
+        },
+        {
+            'type': 'TIMESTAMP',
+            'name': 'timestamp_field_name',
+            'mode': 'NULLABLE'
+        },
+    ])
     row = {'f': [{'v': None}, {'v': None}, {'v': None}, {'v': None}]}
 
     obj = bigquery_helper._AssignTypeToRow(schema, row)
@@ -173,38 +183,46 @@ class BigqueryHelperTest(unittest.TestCase):
     self.assertEqual(obj['timestamp_field_name'], None)
 
   def testAssignTypeToRowWithUnknownSchema(self):
-    schema = bigquery_helper._SchemaResponseToDicts([{
-        'type': 'FOOBAR',
-        'name': 'field_name',
-        'mode': 'NULLABLE'
-    }])
+    schema = bigquery_helper._SchemaResponseToDicts([
+        {
+            'type': 'FOOBAR',
+            'name': 'field_name',
+            'mode': 'NULLABLE'
+        },
+    ])
     row = {'f': [{'v': '123'}]}
 
     obj = bigquery_helper._AssignTypeToRow(schema, row)
     self.assertEqual(obj, {'field_name': '123'})
 
   def testRowsResponseToDicts(self):
-    schema = [{
-        'type': 'FOOBAR',
-        'name': 'f1',
-        'mode': 'NULLABLE'
-    }, {
-        'type': 'INTEGER',
-        'name': 'f2',
-        'mode': 'NULLABLE'
-    }, {
-        'type': 'STRING',
-        'name': 'f3',
-        'mode': 'NULLABLE'
-    }, {
-        'type': 'BOOLEAN',
-        'name': 'f4',
-        'mode': 'NULLABLE'
-    }, {
-        'type': 'TIMESTAMP',
-        'name': 'f5',
-        'mode': 'NULLABLE'
-    }]
+    schema = [
+        {
+            'type': 'FOOBAR',
+            'name': 'f1',
+            'mode': 'NULLABLE'
+        },
+        {
+            'type': 'INTEGER',
+            'name': 'f2',
+            'mode': 'NULLABLE'
+        },
+        {
+            'type': 'STRING',
+            'name': 'f3',
+            'mode': 'NULLABLE'
+        },
+        {
+            'type': 'BOOLEAN',
+            'name': 'f4',
+            'mode': 'NULLABLE'
+        },
+        {
+            'type': 'TIMESTAMP',
+            'name': 'f5',
+            'mode': 'NULLABLE'
+        },
+    ]
 
     rows = [
         {
@@ -236,20 +254,22 @@ class BigqueryHelperTest(unittest.TestCase):
     ]
 
     result_rows = bigquery_helper._RowsResponseToDicts(schema, rows)
-    self.assertEqual(result_rows, [{
-        'f1': '123',
-        'f2': 100,
-        'f3': 'tryserver.chromium.mac',
-        'f4': False,
-        'f5': _UTC_DATETIME_OF_START_TIME
-    },
-                                   {
-                                       'f1': '321',
-                                       'f2': 200,
-                                       'f3': 'fryserver.chromium.mac',
-                                       'f4': True,
-                                       'f5': _UTC_DATETIME_OF_YEAR_TWO_THOUSAND
-                                   }])
+    self.assertEqual(result_rows, [
+        {
+            'f1': '123',
+            'f2': 100,
+            'f3': 'tryserver.chromium.mac',
+            'f4': False,
+            'f5': _UTC_DATETIME_OF_START_TIME
+        },
+        {
+            'f1': '321',
+            'f2': 200,
+            'f3': 'fryserver.chromium.mac',
+            'f4': True,
+            'f5': _UTC_DATETIME_OF_YEAR_TWO_THOUSAND
+        },
+    ])
 
   def testBigqueryInsertRequest(self):
     mock_client = mock.Mock()
@@ -269,22 +289,44 @@ class BigqueryHelperTest(unittest.TestCase):
     self.assertFalse(success)
     self.assertTrue(mock_client.tabledata().insertAll().execute.called)
 
-  @parameterized.expand([
-      (None, None),
-      ([('name', 'type', 'value')], [{
-          'name': 'name',
-          'parameterType': {
-              'type': 'type'
-          },
-          'parameterValue': {
-              'value': 'value'
-          }
-      }]),
-  ])
-  def testGenerateQueryParameters(self, input_parameters,
-                                  generated_query_parameters):
-    self.assertEqual(generated_query_parameters,
-                     bigquery_helper._GenerateQueryParameters(input_parameters))
+  def testGenerateSingleQueryParameter(self):
+    generated_query_parameters = {
+        'name': 'name',
+        'parameterType': {
+            'type': 'type'
+        },
+        'parameterValue': {
+            'value': 'value'
+        }
+    }
+    self.assertEqual(
+        generated_query_parameters,
+        bigquery_helper.GenerateSingleQueryParameter('name', 'type', 'value'))
+
+  def testGenerateArrayQueryParameter(self):
+    generated_query_parameters = {
+        'name': 'name',
+        'parameterType': {
+            'type': 'ARRAY',
+            'arrayType': {
+                'type': 'type',
+            }
+        },
+        'parameterValue': {
+            'arrayValues': [
+                {
+                    'value': 'value1'
+                },
+                {
+                    'value': 'value2'
+                },
+            ]
+        }
+    }
+    self.assertEqual(
+        generated_query_parameters,
+        bigquery_helper.GenerateArrayQueryParameter('name', 'type',
+                                                    ['value1', 'value2']))
 
   def testRunBigQuery(self):
     mock_client = mock.Mock()

@@ -11,6 +11,7 @@ from google.appengine.ext import ndb
 
 from waterfall.test.wf_testcase import WaterfallTestCase
 
+from common.swarmbucket import swarmbucket
 from libs import time_util
 from model.flake.flake import Flake
 from model.test_inventory import LuciTest
@@ -447,6 +448,7 @@ class DetectDisabledTestsTest(WaterfallTestCase):
                       last_updated_time=datetime(2019, 6, 28, 0, 0, 0))
           },),
   ])
+  @mock.patch.object(swarmbucket, 'GetMasters', return_value=['chromium.linux'])
   @mock.patch.object(step_util, 'GetOS', return_value='os1')
   @mock.patch.object(
       time_util, 'GetUTCNow', return_value=datetime(2019, 6, 29, 0, 0, 0))

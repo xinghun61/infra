@@ -193,33 +193,47 @@ def InsertRequest(client, project_id, dataset_id, table_id, rows):
   return True
 
 
-def _GenerateQueryParameters(parameters):
-  """Generates query parameters using parameters.
-
-  Reference: https://goo.gl/SyALkb.
-
-  Currently this function only supports parameters of a single value. To support
-  struct or array parameters, please refer to the link above.
+def GenerateSingleQueryParameter(name, param_type, param_value):
+  """Generates a single valued named parameter.
 
   Args:
-    parameters ([tuples]): A list of parameter tuples in the format:
-      [(name, type, value)]
+    name: name of the parameter.
+    param_type: Type of the parameter. E.g. STRING, INT64, TIMESTAMP, etc.
+    param_value: Value of this parameter.
   """
-  if not parameters:
-    return None
+  return {
+      'name': name,
+      'parameterType': {
+          'type': param_type
+      },
+      'parameterValue': {
+          'value': param_value
+      }
+  }
 
-  query_params = []
-  for name, p_type, value in parameters:
-    query_params.append({
-        'name': name,
-        'parameterType': {
-            'type': p_type
-        },
-        'parameterValue': {
-            'value': value
-        }
-    })
-  return query_params
+
+def GenerateArrayQueryParameter(name, element_type, elements):
+  """Generates a named parameter for an array.
+
+  Args:
+    name: name of the parameter.
+    element_type: Type of the elements in the array.
+    elements (list): Values of this array.
+  """
+  return {
+      'name': name,
+      'parameterType': {
+          'type': 'ARRAY',
+          'arrayType': {
+              'type': element_type
+          }
+      },
+      'parameterValue': {
+          'arrayValues': [{
+              'value': v
+          } for v in elements]
+      }
+  }
 
 
 def ExecuteQuery(project_id,
@@ -273,7 +287,9 @@ def QueryRequest(client,
     client (apiclient.discovery): Bigquery client.
     project_id (str): Project Id in google cloud.
     query (str): query to run.
-    parameters ([tuple]): Parameters to be used in parameterized queries.
+    parameters (list): Parameters to be used in parameterized queries. Each
+      element in the list should be a dict returned by
+      GenerateSingleQueryParameter or GenerateArrayQueryParameter.
     polling_retries (int): Number of times to re-poll the bigquery job for
       results if the job has not yet completed.
     timeout (int): How long to wait for the query to complete, in milliseconds,
@@ -318,7 +334,9 @@ def QueryRequestPaging(client,
     job_id (str): Job ID of the query job.
     page_token (str): Page token, returned by a previous call, to request the
       next page of results. Can only be used if a job_id is also given.
-    parameters ([tuple]): Parameters to be used in parameterized queries.
+    parameters (list): Parameters to be used in parameterized queries. Each
+      element in the list should be a dict returned by
+      GenerateSingleQueryParameter or GenerateArrayQueryParameter.
     polling_retries (int): Number of times to re-poll the bigquery job for
       results if the job has not yet completed.
     max_results (int): The maximum number of rows of data to return per page of
@@ -391,7 +409,7 @@ def _RunBigQuery(client,
       'timeoutMs': timeout,
       'useLegacySql': False,
       'parameterMode': 'NAMED',
-      'queryParameters': _GenerateQueryParameters(parameters) or []
+      'queryParameters': parameters or []
   }
   if max_results:
     body['maxResults'] = max_results

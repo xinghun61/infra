@@ -635,9 +635,12 @@ def QueryAndStoreHiddenFlakes(flake_type_enum=FlakeType.CQ_HIDDEN_FLAKE):
   if not start_time_string:
     # Only runs this query every 2 hours.
     return
-  parameters = [('hidden_flake_query_start_time', 'TIMESTAMP',
-                 start_time_string),
-                ('hidden_flake_query_end_time', 'TIMESTAMP', end_time_string)]
+  parameters = [
+      bigquery_helper.GenerateSingleQueryParameter(
+          'hidden_flake_query_start_time', 'TIMESTAMP', start_time_string),
+      bigquery_helper.GenerateSingleQueryParameter(
+          'hidden_flake_query_end_time', 'TIMESTAMP', end_time_string)
+  ]
 
   rows = _ExecuteQuery(flake_type_enum, parameters)
   if rows is None:

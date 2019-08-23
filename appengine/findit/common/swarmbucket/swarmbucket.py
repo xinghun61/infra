@@ -100,4 +100,29 @@ def GetBuilders(bucket, service_url=_DEFAULT_SWARMBUCKET_SERVICE_URL):
   request = {'bucket': bucket}
   response = _CallSwarmbucketAPI(service_url, 'builders', request, method='GET')
   assert response, 'Could not retrieve builders for %s via swarmbucket' % bucket
-  return {b.get('name'):b for b in response['buckets'][0]['builders']}
+  return {b.get('name'): b for b in response['buckets'][0]['builders']}
+
+
+# Cache responses for 1 hour.
+@Cached(
+    CompressedMemCache(), namespace='swarmbucket-get-masters', expire_time=3600)
+def GetMasters(bucket, service_url=_DEFAULT_SWARMBUCKET_SERVICE_URL):
+  """Get the list of master names for a given bucket.
+
+  Args:
+    bucket(str): The name of the bucket where the builders are configured.
+    service_url(str): The url for the swarmbucket service, defaults to the
+        production service url.
+
+  Returns:
+    A list of str where each value is the name of a builder in the given bucket.
+  """
+  request = {'bucket': bucket}
+  response = _CallSwarmbucketAPI(service_url, 'builders', request, method='GET')
+  assert response, 'Could not retrieve builders for %s via swarmbucket' % bucket
+  masters = set()
+  for b in response['buckets'][0]['builders']:
+    properties = json.loads(b.get('properties_json') or '{}')
+    if properties.get('mastername'):
+      masters.add(properties['mastername'])
+  return list(masters)
