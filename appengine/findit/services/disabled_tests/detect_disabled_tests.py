@@ -49,22 +49,20 @@ def _ExecuteQuery(parameters=None):
   local_tests = {}
 
   total_rows = 0
-  success, rows, job_id, page_token = bigquery_helper.ExecuteQuery(
+  success, rows, job_id, page_token = bigquery_helper.ExecuteQueryPaging(
       appengine_util.GetApplicationId(),
       query,
       parameters=parameters,
-      polling_retries=5,
-      paging=True)
+      polling_retries=5)
   if rows:
     total_rows += len(rows)
     for row in rows:
       _CreateLocalTests(row, local_tests)
 
   while page_token:
-    success, rows, job_id, page_token = bigquery_helper.ExecuteQuery(
+    success, rows, job_id, page_token = bigquery_helper.ExecuteQueryPaging(
         appengine_util.GetApplicationId(),
         parameters=parameters,
-        paging=True,
         job_id=job_id,
         page_token=page_token)
     total_rows += len(rows)

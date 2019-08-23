@@ -237,46 +237,6 @@ def GenerateArrayQueryParameter(name, element_type, elements):
 
 
 def ExecuteQuery(project_id,
-                 query=None,
-                 parameters=None,
-                 paging=False,
-                 job_id=None,
-                 page_token=None,
-                 polling_retries=_POLLING_RETRIES,
-                 max_results=None,
-                 timeout=_TIMEOUT_MS):  # pragma: no cover
-
-  if not paging:
-    return QueryRequest(
-        _GetBigqueryClient(),
-        project_id,
-        query,
-        parameters=parameters,
-        polling_retries=polling_retries,
-        timeout=timeout)
-
-  # Return first page when paging is True.
-  if job_id is None:
-    return QueryRequestPaging(
-        _GetBigqueryClient(),
-        project_id,
-        query=query,
-        parameters=parameters,
-        max_results=max_results,
-        timeout=timeout,
-        polling_retries=polling_retries)
-
-  # Return specified page of results when paging is True.
-  return QueryRequestPaging(
-      _GetBigqueryClient(),
-      project_id,
-      job_id=job_id,
-      page_token=page_token,
-      timeout=timeout)
-
-
-def QueryRequest(client,
-                 project_id,
                  query,
                  parameters=None,
                  polling_retries=_POLLING_RETRIES,
@@ -284,7 +244,6 @@ def QueryRequest(client,
   """Runs a BigQuery SQL Query and returns all query result rows.
 
   Args:
-    client (apiclient.discovery): Bigquery client.
     project_id (str): Project Id in google cloud.
     query (str): query to run.
     parameters (list): Parameters to be used in parameterized queries. Each
@@ -302,6 +261,7 @@ def QueryRequest(client,
     (boolean, [dict]) Boolean to indicate success/failure, and the rows that
         match the query.
   """
+  client = _GetBigqueryClient()
   job_id = _RunBigQuery(
       client, project_id, query, parameters=parameters, timeout=timeout)
   success, rows, page_token = _ReadQueryResultsPage(
@@ -316,8 +276,7 @@ def QueryRequest(client,
   return success, rows
 
 
-def QueryRequestPaging(client,
-                       project_id,
+def ExecuteQueryPaging(project_id,
                        query=None,
                        job_id=None,
                        page_token=None,
@@ -328,7 +287,6 @@ def QueryRequestPaging(client,
   """Runs a BigQuery SQL Query and returns one page of the query results rows.
 
   Args:
-    client (apiclient.discovery): Bigquery client.
     project_id (str): Project Id in google cloud.
     query (str): query to run.
     job_id (str): Job ID of the query job.
@@ -356,6 +314,8 @@ def QueryRequestPaging(client,
     page_token (str): Page token, returned by a previous call, to request the
       next page of results.
   """
+  client = _GetBigqueryClient()
+
   if job_id:
     assert query is None, 'Cannot specify the job id and give a query.'
 

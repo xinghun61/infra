@@ -490,7 +490,7 @@ class DetectDisabledTestsTest(WaterfallTestCase):
       time_util, 'GetUTCNow', return_value=datetime(2019, 6, 29, 0, 0, 0))
   @mock.patch.object(bigquery_helper, '_GetBigqueryClient')
   @mock.patch.object(detect_disabled_tests, '_CreateLocalTests')
-  @mock.patch.object(bigquery_helper, 'ExecuteQuery')
+  @mock.patch.object(bigquery_helper, 'ExecuteQueryPaging')
   def testExecuteQuery(self, local_tests, mock_local_call_count, paged_rows,
                        mock_execute_query, mock_create_local, *_):
     mock_execute_query.side_effect = paged_rows
@@ -512,7 +512,7 @@ class DetectDisabledTestsTest(WaterfallTestCase):
       time_util, 'GetUTCNow', return_value=datetime(2019, 6, 29, 0, 0, 0))
   @mock.patch.object(bigquery_helper, '_GetBigqueryClient')
   @mock.patch.object(detect_disabled_tests, '_CreateLocalTests')
-  @mock.patch.object(bigquery_helper, 'ExecuteQuery')
+  @mock.patch.object(bigquery_helper, 'ExecuteQueryPaging')
   def testExecuteQueryFails(self, mock_local_call_count, paged_rows,
                             mock_execute_query, mock_create_local, *_):
     mock_execute_query.side_effect = paged_rows

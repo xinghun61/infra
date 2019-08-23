@@ -537,58 +537,58 @@ class BigqueryHelperTest(unittest.TestCase):
               'expected_return': (False, [])
           },),
   ])
+  @mock.patch.object(
+      bigquery_helper, '_GetBigqueryClient', return_value='client')
   @mock.patch.object(bigquery_helper, '_RunBigQuery', return_value='job_id')
   @mock.patch.object(bigquery_helper, '_ReadQueryResultsPage')
-  def testQueryRequest(self, cases, mock_get_results, *_):
-    mock_client = mock.Mock()
+  def testExecuteQuery(self, cases, mock_get_results, *_):
     mock_get_results.side_effect = cases['query_results']
-    self.assertEqual(
-        cases['expected_return'],
-        bigquery_helper.QueryRequest(mock_client, 'project', 'query'))
+    self.assertEqual(cases['expected_return'],
+                     bigquery_helper.ExecuteQuery('project', 'query'))
 
+  @mock.patch.object(
+      bigquery_helper, '_GetBigqueryClient', return_value='client')
   @mock.patch.object(bigquery_helper, '_RunBigQuery', return_value='job_id')
   @mock.patch.object(
       bigquery_helper,
       '_ReadQueryResultsPage',
       side_effect=[(True, [], 'page'), (True, [], None)])
-  def testQueryRequestOptionalArgs(self, mock_read_results, mock_run_query):
+  def testExecuteQueryOptionalArgs(self, mock_read_results, mock_run_query, _):
     # Using default values.
-    mock_client = mock.Mock()
-    bigquery_helper.QueryRequest(mock_client, 'project', 'query')
+    bigquery_helper.ExecuteQuery('project', 'query')
     mock_run_query.assert_called_with(
-        mock_client,
+        'client',
         'project',
         'query',
         parameters=None,
         timeout=bigquery_helper._TIMEOUT_MS)
     mock_read_results.assert_has_calls([
         mock.call(
-            mock_client,
+            'client',
             'project',
             'job_id',
             polling_retries=bigquery_helper._POLLING_RETRIES),
-        mock.call(mock_client, 'project', 'job_id', page_token='page')
+        mock.call('client', 'project', 'job_id', page_token='page')
     ])
 
     # Using input values.
     mock_read_results.reset_mock()
     mock_read_results.side_effect = [(True, [], 'page'), (True, [], None)]
-    bigquery_helper.QueryRequest(
-        mock_client,
+    bigquery_helper.ExecuteQuery(
         'project',
         'query',
         parameters='params',
         polling_retries=bigquery_helper._POLLING_RETRIES + 1,
         timeout=1)
     mock_run_query.assert_called_with(
-        mock_client, 'project', 'query', parameters='params', timeout=1)
+        'client', 'project', 'query', parameters='params', timeout=1)
     mock_read_results.assert_has_calls([
         mock.call(
-            mock_client,
+            'client',
             'project',
             'job_id',
             polling_retries=bigquery_helper._POLLING_RETRIES + 1),
-        mock.call(mock_client, 'project', 'job_id', page_token='page')
+        mock.call('client', 'project', 'job_id', page_token='page')
     ])
 
   @parameterized.expand([
@@ -629,15 +629,15 @@ class BigqueryHelperTest(unittest.TestCase):
               'expected_return': (True, ['rows1'], 'mock_job', 'mock_next_page')
           },),
   ])
+  @mock.patch.object(
+      bigquery_helper, '_GetBigqueryClient', return_value='client')
   @mock.patch.object(bigquery_helper, '_RunBigQuery', return_value='mock_job')
   @mock.patch.object(bigquery_helper, '_ReadQueryResultsPage')
-  def testQueryRequestPaging(self, cases, mock_read_results, mock_run_query):
-    mock_client = mock.Mock()
+  def testExecuteQueryPaging(self, cases, mock_read_results, mock_run_query, _):
     mock_read_results.return_value = cases['query_results']
     self.assertEqual(
         cases['expected_return'],
-        bigquery_helper.QueryRequestPaging(
-            mock_client,
+        bigquery_helper.ExecuteQueryPaging(
             'project',
             query=cases.get('query'),
             job_id=cases.get('job_id'),
@@ -650,24 +650,21 @@ class BigqueryHelperTest(unittest.TestCase):
       ('query', 'job_id', 'page'),
       ('query', 'job_id', None),
   ])
-  def testQueryRequestPagingInvalidParameters(self, query, job_id, page_token):
+  @mock.patch.object(
+      bigquery_helper, '_GetBigqueryClient', return_value='client')
+  def testExecuteQueryPagingInvalidParameters(self, query, job_id, page_token,
+                                              _):
     with self.assertRaises(AssertionError):
-      bigquery_helper.QueryRequestPaging(
-          'client',
-          'project',
-          query=query,
-          job_id=job_id,
-          page_token=page_token)
+      bigquery_helper.ExecuteQueryPaging(
+          'project', query=query, job_id=job_id, page_token=page_token)
 
   @mock.patch.object(bigquery_helper, '_RunBigQuery', return_value='job_id')
   @mock.patch.object(
       bigquery_helper, '_ReadQueryResultsPage', return_value=(True, [], None))
-  def testQueryRequestPagingOptionalArgsWithQuery(self, mock_read_results,
+  def testExecuteQueryPagingOptionalArgsWithQuery(self, mock_read_results,
                                                   mock_run_query):
-    mock_client = mock.Mock()
-    bigquery_helper.QueryRequestPaging(mock_client, 'project', query='query')
-    bigquery_helper.QueryRequestPaging(
-        mock_client,
+    bigquery_helper.ExecuteQueryPaging('project', query='query')
+    bigquery_helper.ExecuteQueryPaging(
         'project',
         query='query',
         parameters='params',
@@ -677,30 +674,22 @@ class BigqueryHelperTest(unittest.TestCase):
 
     mock_run_query.assert_has_calls([
         mock.call(
-            mock_client,
             'project',
             'query',
             parameters=None,
             max_results=None,
             timeout=bigquery_helper._TIMEOUT_MS),
         mock.call(
-            mock_client,
-            'project',
-            'query',
-            parameters='params',
-            max_results=1,
-            timeout=1)
+            'project', 'query', parameters='params', max_results=1, timeout=1)
     ])
 
     mock_read_results.assert_has_calls([
         mock.call(
-            mock_client,
             'project',
             job_id='job_id',
             page_token=None,
             polling_retries=bigquery_helper._POLLING_RETRIES),
         mock.call(
-            mock_client,
             'project',
             job_id='job_id',
             page_token=None,
@@ -708,13 +697,13 @@ class BigqueryHelperTest(unittest.TestCase):
     ])
 
   @mock.patch.object(
+      bigquery_helper, '_GetBigqueryClient', return_value='client')
+  @mock.patch.object(
       bigquery_helper, '_ReadQueryResultsPage', return_value=(True, [], None))
-  def testQueryRequestPagingOptionalArgsWithJobId(self, mock_read_results):
+  def testExecuteQueryPagingOptionalArgsWithJobId(self, mock_read_results, _):
     # Using default values.
-    mock_client = mock.Mock()
-    bigquery_helper.QueryRequestPaging(mock_client, 'project', job_id='job_id')
+    bigquery_helper.ExecuteQueryPaging('project', job_id='job_id')
     mock_read_results.assert_called_once_with(
-        mock_client,
         'project',
         job_id='job_id',
         page_token=None,
@@ -722,14 +711,12 @@ class BigqueryHelperTest(unittest.TestCase):
 
     # Using input values.
     mock_read_results.reset_mock()
-    bigquery_helper.QueryRequestPaging(
-        mock_client,
+    bigquery_helper.ExecuteQueryPaging(
         'project',
         job_id='job_id',
         page_token='page',
         polling_retries=bigquery_helper._POLLING_RETRIES + 1)
     mock_read_results.assert_called_once_with(
-        mock_client,
         'project',
         job_id='job_id',
         page_token='page',
@@ -737,113 +724,17 @@ class BigqueryHelperTest(unittest.TestCase):
 
   @mock.patch.object(
       bigquery_helper, '_GetBigqueryClient', return_value='client')
-  @mock.patch.object(bigquery_helper, 'QueryRequest')
-  def testExecuteQueryNoPaging(self, mock_query_request, _):
-    bigquery_helper.ExecuteQuery('project', 'query')
-    bigquery_helper.ExecuteQuery(
-        'project',
-        query='query',
-        parameters='params',
-        max_results=1,
-        polling_retries=bigquery_helper._POLLING_RETRIES + 1,
-        timeout=1)
-
-    mock_query_request.assert_has_calls([
-        mock.call(
-            'client',
-            'project',
-            'query',
-            parameters=None,
-            polling_retries=bigquery_helper._POLLING_RETRIES,
-            timeout=bigquery_helper._TIMEOUT_MS),
-        mock.call(
-            'client',
-            'project',
-            'query',
-            parameters='params',
-            polling_retries=bigquery_helper._POLLING_RETRIES + 1,
-            timeout=1)
-    ])
-
-  @parameterized.expand([
-      ({
-          'query':
-              'query',
-          'call_args':
-              mock.call(
-                  'client',
-                  'project',
-                  query='query',
-                  parameters=None,
-                  polling_retries=bigquery_helper._POLLING_RETRIES,
-                  max_results=None,
-                  timeout=bigquery_helper._TIMEOUT_MS)
-      },),
-      ({
-          'job_id':
-              'job_id',
-          'call_args':
-              mock.call(
-                  'client',
-                  'project',
-                  job_id='job_id',
-                  page_token=None,
-                  timeout=bigquery_helper._TIMEOUT_MS)
-      },),
-      ({
-          'job_id':
-              'job_id',
-          'page_token':
-              'page_token',
-          'call_args':
-              mock.call(
-                  'client',
-                  'project',
-                  job_id='job_id',
-                  page_token='page_token',
-                  timeout=bigquery_helper._TIMEOUT_MS)
-      },),
-      ({
-          'job_id':
-              'job_id',
-          'query':
-              'query',
-          'call_args':
-              mock.call(
-                  'client',
-                  'project',
-                  job_id='job_id',
-                  page_token=None,
-                  timeout=bigquery_helper._TIMEOUT_MS)
-      },),
-  ])
-  @mock.patch.object(
-      bigquery_helper, '_GetBigqueryClient', return_value='client')
-  @mock.patch.object(bigquery_helper, 'QueryRequestPaging')
-  def testExecuteQueryPaging(self, cases, mock_query_request_paging, _):
-    bigquery_helper.ExecuteQuery(
-        'project',
-        query=cases.get('query'),
-        job_id=cases.get('job_id'),
-        page_token=cases.get('page_token'),
-        paging=True)
-    self.assertEqual(cases['call_args'], mock_query_request_paging.call_args)
-
-  @mock.patch.object(
-      bigquery_helper, '_GetBigqueryClient', return_value='client')
-  @mock.patch.object(bigquery_helper, 'QueryRequestPaging')
+  @mock.patch.object(bigquery_helper, 'ExecuteQueryPaging')
   def testExecuteQueryPagingOptionalArgsWithQuery(self,
                                                   mock_query_request_paging, _):
-    bigquery_helper.ExecuteQuery(
+    bigquery_helper.ExecuteQueryPaging(
         'project',
         query='query',
-        paging=True,
         parameters='params',
         polling_retries=bigquery_helper._POLLING_RETRIES + 1,
         max_results=1,
         timeout=1)
     mock_query_request_paging.assert_called_once_with(
-        'client',
         'project',
         query='query',
         parameters='params',
@@ -853,21 +744,13 @@ class BigqueryHelperTest(unittest.TestCase):
 
   @mock.patch.object(
       bigquery_helper, '_GetBigqueryClient', return_value='client')
-  @mock.patch.object(bigquery_helper, 'QueryRequestPaging')
+  @mock.patch.object(bigquery_helper, 'ExecuteQueryPaging')
   def testExecuteQueryPagingOptionalArgsWithJobId(self,
                                                   mock_query_request_paging, _):
-    bigquery_helper.ExecuteQuery(
-        'project',
-        job_id='job_id',
-        page_token='page_token',
-        paging=True,
-        timeout=1)
+    bigquery_helper.ExecuteQueryPaging(
+        'project', job_id='job_id', page_token='page_token', timeout=1)
     mock_query_request_paging.assert_called_once_with(
-        'client',
-        'project',
-        job_id='job_id',
-        page_token='page_token',
-        timeout=1)
+        'project', job_id='job_id', page_token='page_token', timeout=1)
 
   @mock.patch.object(bigquery_helper, '_GetBigqueryClient')
   @mock.patch.object(json_format, 'MessageToJson')
