@@ -757,9 +757,8 @@ class AnalysisAPI(object):
         failures_without_existing_group['failures'].iteritems()
     }
     return [
-        f for f in failure_entities
-        if f.GetFailureIdentifier() in first_failures.get(
-            f.step_ui_name, [frozenset([])])
+        f for f in failure_entities if f.GetFailureIdentifier() in (
+            first_failures.get(f.step_ui_name) or [frozenset([])])
     ]
 
   def SaveFailureAnalysis(self, project_api, context, build,

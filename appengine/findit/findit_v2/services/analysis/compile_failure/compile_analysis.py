@@ -103,7 +103,7 @@ def AnalyzeCompileFailure(context, build, compile_steps):
 
 
 def _SaveRerunBuildResults(rerun_build_entity, status,
-                           detailed_compile_failures):
+                           detailed_compile_failures, build_end_time):
   """Saves the results of the rerun build.
 
   Args:
@@ -135,8 +135,10 @@ def _SaveRerunBuildResults(rerun_build_entity, status,
         }
       },
     }
+    build_end_time (datetime): Time the build ends.
   """
   rerun_build_entity.status = status
+  rerun_build_entity.end_time = build_end_time
   rerun_build_entity.failures = []
   for step_ui_name, step_info in detailed_compile_failures.iteritems():
     for output_targets in step_info.get(
@@ -182,7 +184,8 @@ def _ProcessAndSaveRerunBuildResult(context, analyzed_build_id, rerun_build):
         rerun_build, compile_steps) if compile_steps else {}
 
   _SaveRerunBuildResults(rerun_build_entity, rerun_build.status,
-                         detailed_compile_failures)
+                         detailed_compile_failures,
+                         rerun_build.end_time.ToDatetime())
   rerun_build_entity.put()
   return True
 

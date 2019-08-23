@@ -88,7 +88,8 @@ def AnalyzeTestFailure(context, build, test_steps):
   return True
 
 
-def _SaveRerunBuildResults(rerun_build_entity, status, detailed_test_failures):
+def _SaveRerunBuildResults(rerun_build_entity, status, detailed_test_failures,
+                           build_end_time):
   """Saves the results of the rerun build.
 
   Args:
@@ -120,8 +121,10 @@ def _SaveRerunBuildResults(rerun_build_entity, status, detailed_test_failures):
         }
       },
     }
+    build_end_time (datetime): Time the build ends.
   """
   rerun_build_entity.status = status
+  rerun_build_entity.end_time = build_end_time
   rerun_build_entity.failures = []
   for step_ui_name, step_info in detailed_test_failures.iteritems():
     for test_set in step_info['failures'] or _TEST_FAILURE_PLACEHOLDER:
@@ -164,7 +167,8 @@ def _ProcessAndSaveRerunBuildResult(context, analyzed_build_id, rerun_build):
     detailed_test_failures = project_api.GetTestFailures(
         rerun_build, test_steps) if test_steps else {}
   _SaveRerunBuildResults(rerun_build_entity, rerun_build.status,
-                         detailed_test_failures)
+                         detailed_test_failures,
+                         rerun_build.end_time.ToDatetime())
   return True
 
 

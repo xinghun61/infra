@@ -156,6 +156,7 @@ class CompileAnalysisTest(wf_testcase.TestCase):
     build.input.gitiles_commit.ref = 'ref/heads/master'
     build.input.gitiles_commit.id = 'git_sha_6543221'
     build.create_time.FromDatetime(datetime(2019, 4, 9))
+    build.end_time.FromDatetime(datetime(2019, 4, 9, 0, 30))
     step1 = Step(name='s1', status=common_pb2.SUCCESS)
     step2 = Step(name=self.compile_step_name, status=common_pb2.FAILURE)
     build.steps.extend([step1, step2])
@@ -218,6 +219,7 @@ class CompileAnalysisTest(wf_testcase.TestCase):
     self.assertItemsEqual(
         ['target1.o', 'target2.o'],
         rerun_build.GetFailuresInBuild()[self.compile_step_name])
+    self.assertEqual(datetime(2019, 4, 9, 0, 30), rerun_build.end_time)
 
   def testProcessAndSaveRerunBuildResultAnalysisMissing(self):
     build_id = 8000000000123
