@@ -192,3 +192,39 @@ func TestLargeState(t *testing.T) {
 		})
 	})
 }
+
+func TestCreateListDelete(t *testing.T) {
+	Convey("Given a testing context with a two created entities, List and Delete should work as expected.", t, func() {
+		ctx := gaetesting.TestingContext()
+		datastore.GetTestable(ctx).Consistent(true)
+
+		storeA := nodestore.New("A")
+		err := storeA.Create(ctx, time.Now())
+		So(err, ShouldBeNil)
+
+		storeB := nodestore.New("B")
+		err = storeB.Create(ctx, time.Now())
+		So(err, ShouldBeNil)
+
+		IDs, err := nodestore.List(ctx)
+		So(err, ShouldBeNil)
+		So(IDs, ShouldHaveLength, 2)
+		So(IDs, ShouldContain, "A")
+		So(IDs, ShouldContain, "B")
+
+		err = storeB.Delete(ctx)
+		So(err, ShouldBeNil)
+
+		IDs, err = nodestore.List(ctx)
+		So(err, ShouldBeNil)
+		So(IDs, ShouldHaveLength, 1)
+		So(IDs, ShouldContain, "A")
+
+		err = storeA.Delete(ctx)
+		So(err, ShouldBeNil)
+
+		IDs, err = nodestore.List(ctx)
+		So(err, ShouldBeNil)
+		So(IDs, ShouldBeEmpty)
+	})
+}

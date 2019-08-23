@@ -75,6 +75,21 @@ func New(qsPoolID string) *NodeStore {
 	return &NodeStore{qsPoolID: qsPoolID}
 }
 
+// List returns the full list of scheduler ids.
+func List(ctx context.Context) ([]string, error) {
+	var keys []*datastore.Key
+	query := datastore.NewQuery("stateRecord")
+	if err := datastore.GetAll(ctx, query, &keys); err != nil {
+		return nil, errors.Annotate(err, "nodestore list").Err()
+	}
+
+	IDs := make([]string, len(keys))
+	for i, item := range keys {
+		IDs[i] = item.StringID()
+	}
+	return IDs, nil
+}
+
 // NodeStore is a persistent store for an individual quotascheduler state.
 //
 // All methods are concurrency-safe.
@@ -189,6 +204,36 @@ func (n *NodeStore) Clean(ctx context.Context) (int, error) {
 	}
 
 	return len(keys), nil
+}
+
+// Delete deletes all entities associated with a given pool.
+func (n *NodeStore) Delete(ctx context.Context) error {
+	record := &stateRecord{
+		PoolID: n.qsPoolID,
+	}
+
+	exists, err := datastore.Exists(ctx, record)
+	if err != nil {
+		return errors.Annotate(err, "nodestore delete").Err()
+	}
+	// Only try deleting top level record if it exists.
+	if exists.Any() {
+		if err := datastore.Delete(ctx, record); err != nil {
+			return errors.Annotate(err, "nodestore delete").Err()
+		}
+	}
+
+	query := datastore.NewQuery("stateNode").Eq("PoolID", n.qsPoolID)
+	var keys []*datastore.Key
+	if err := datastore.GetAll(ctx, query, &keys); err != nil {
+		return errors.Annotate(err, "nodestore delete").Err()
+	}
+
+	if err := datastore.Delete(ctx, keys); err != nil {
+		return errors.Annotate(err, "nodestore delete").Err()
+	}
+
+	return nil
 }
 
 // tryRun attempts to modify and commit the given state, using the given operator.
