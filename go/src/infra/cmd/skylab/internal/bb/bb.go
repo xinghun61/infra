@@ -112,11 +112,11 @@ func (c *Client) ScheduleBuild(ctx context.Context, request *test_platform.Reque
 // WaitForBuild regularly logs output to stdout to pacify the logdog silence
 // checker.
 func (c *Client) WaitForBuild(ctx context.Context, ID int64) (*steps.ExecuteResponse, error) {
-	build, err := bbWaitBuild(ctx, c.client, ID)
+	build, err := waitForBuild(ctx, c.client, ID)
 	if err != nil {
 		return nil, err
 	}
-	return bbExtractResponse(build)
+	return extractResponse(build)
 }
 
 // BuildURL constructs the URL to a build with the given ID.
@@ -133,7 +133,7 @@ var getBuildFields = []string{
 	"status",
 }
 
-func bbWaitBuild(ctx context.Context, client buildbucket_pb.BuildsClient, buildID int64) (*buildbucket_pb.Build, error) {
+func waitForBuild(ctx context.Context, client buildbucket_pb.BuildsClient, buildID int64) (*buildbucket_pb.Build, error) {
 	throttledLogger := logutils.NewThrottledInfoLogger(logging.Get(ctx), 5*time.Minute)
 	progressMessage := fmt.Sprintf("Still waiting for result from testplatform build ID %d", buildID)
 
@@ -160,7 +160,7 @@ func bbWaitBuild(ctx context.Context, client buildbucket_pb.BuildsClient, buildI
 	}
 }
 
-func bbExtractResponse(build *buildbucket_pb.Build) (*steps.ExecuteResponse, error) {
+func extractResponse(build *buildbucket_pb.Build) (*steps.ExecuteResponse, error) {
 	properties := build.GetOutput().GetProperties()
 	responseStruct, ok := properties.GetFields()["response"]
 	if !ok {
