@@ -70,6 +70,7 @@ func addDatastoreIndexes(ctx context.Context) error {
 }
 
 func TestBasicRun(t *testing.T) {
+	t.Parallel()
 	Convey("Given a testing context with a created entity", t, func() {
 		ctx := gaetesting.TestingContext()
 
@@ -102,6 +103,7 @@ func TestBasicRun(t *testing.T) {
 // TestConflictingRun tests that two stores being used concurrently for the same
 // qscheduler do not obliterate eachothers' writes.
 func TestConflictingRun(t *testing.T) {
+	t.Parallel()
 	Convey("Given a testing context with a created entity and two stores using it", t, func() {
 		ctx := gaetesting.TestingContext()
 
@@ -132,6 +134,7 @@ func TestConflictingRun(t *testing.T) {
 }
 
 func TestClean(t *testing.T) {
+	t.Parallel()
 	Convey("Given a testing context with a created entity", t, func() {
 		ctx := gaetesting.TestingContext()
 		datastore.GetTestable(ctx).Consistent(true)
@@ -178,6 +181,7 @@ func TestClean(t *testing.T) {
 }
 
 func TestLargeState(t *testing.T) {
+	t.Parallel()
 	Convey("Given a testing context with a created entity", t, func() {
 		ctx := gaetesting.TestingContext()
 		datastore.GetTestable(ctx).Consistent(true)
@@ -205,6 +209,7 @@ func TestLargeState(t *testing.T) {
 }
 
 func TestCreateListDelete(t *testing.T) {
+	t.Parallel()
 	Convey("Given a testing context with a two created entities, List and Delete should work as expected.", t, func() {
 		ctx := gaetesting.TestingContext()
 		datastore.GetTestable(ctx).Consistent(true)
@@ -241,6 +246,7 @@ func TestCreateListDelete(t *testing.T) {
 }
 
 func TestConcurrentRuns(t *testing.T) {
+	t.Parallel()
 	Convey("Given a testing context with a created entity", t, func() {
 		ctx := gaetesting.TestingContext()
 
