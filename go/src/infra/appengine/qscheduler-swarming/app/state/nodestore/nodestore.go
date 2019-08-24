@@ -49,7 +49,6 @@ type stateAndGeneration struct {
 type Operator interface {
 	// Modify is called to modify a quotascheduler state; it may be called
 	// more than once, therefore it should not have side effects besides:
-	// any side effects other than:
 	// - modifying the supplied *types.QScheduler,
 	// - side effects that are stored internally to the Operator (e.g. metrics
 	// to be used in the Commit or Finish calls).
