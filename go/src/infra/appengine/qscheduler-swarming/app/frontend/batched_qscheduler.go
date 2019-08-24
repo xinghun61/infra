@@ -16,6 +16,7 @@ package frontend
 
 import (
 	"context"
+	"math/rand"
 	"sync"
 
 	"infra/appengine/qscheduler-swarming/app/state"
@@ -117,10 +118,25 @@ func (s *BatchedQSchedulerServer) AssignTasks(ctx context.Context, r *swarming.A
 
 // GetCancellations implements QSchedulerServer.
 func (s *BatchedQSchedulerServer) GetCancellations(ctx context.Context, r *swarming.GetCancellationsRequest) (resp *swarming.GetCancellationsResponse, err error) {
-	// GetCancellations is a read-only RPC. There is no datastore contention
-	// concern, so it does not need to be batched. Use the basic implementation.
-	basic := BasicQSchedulerServer{}
-	return basic.GetCancellations(ctx, r)
+	defer func() {
+		err = grpcutil.GRPCifyAndLogErr(ctx, err)
+	}()
+	if err = r.Validate(); err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+
+	store := nodestore.New(r.SchedulerId)
+	sp, err := store.Get(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	c := sp.Reconciler.Cancellations(ctx)
+	rc := make([]*swarming.GetCancellationsResponse_Cancellation, len(c))
+	for i, v := range c {
+		rc[i] = &swarming.GetCancellationsResponse_Cancellation{BotId: v.WorkerID, TaskId: v.RequestID}
+	}
+	return &swarming.GetCancellationsResponse{Cancellations: rc}, nil
 }
 
 // NotifyTasks implements QSchedulerServer.
@@ -156,8 +172,36 @@ func (s *BatchedQSchedulerServer) NotifyTasks(ctx context.Context, r *swarming.N
 
 // GetCallbacks implements QSchedulerServer.
 func (s *BatchedQSchedulerServer) GetCallbacks(ctx context.Context, r *swarming.GetCallbacksRequest) (resp *swarming.GetCallbacksResponse, err error) {
-	// GetCancellations is a read-only RPC. There is no datastore contention
-	// concern, so it does not need to be batched. Use the basic implementation.
-	basic := BasicQSchedulerServer{}
-	return basic.GetCallbacks(ctx, r)
+	defer func() {
+		err = grpcutil.GRPCifyAndLogErr(ctx, err)
+	}()
+
+	store := nodestore.New(r.SchedulerId)
+	sp, err := store.Get(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	var requestIDs []string
+
+	// TODO(akeshet): Select the N% most stale items, rather than 5% of tasks
+	// with uniform randomness.
+	for rid := range sp.Scheduler.GetWaitingRequests() {
+		if rand.Int31n(100) == 0 {
+			requestIDs = append(requestIDs, string(rid))
+		}
+	}
+	for _, w := range sp.Scheduler.GetWorkers() {
+		if !w.IsIdle() {
+			if rand.Int31n(100) <= 4 {
+				requestIDs = append(requestIDs, string(w.RunningRequest().ID))
+			}
+		}
+	}
+
+	resp = &swarming.GetCallbacksResponse{
+		TaskIds: requestIDs,
+	}
+
+	return resp, nil
 }

@@ -17,19 +17,11 @@ package cron
 
 import (
 	"net/http"
-	"time"
-
-	"infra/appengine/qscheduler-swarming/app/frontend"
-	"infra/appengine/qscheduler-swarming/app/state/nodestore"
-	swarming "infra/swarming"
-
-	"github.com/pkg/errors"
 
 	"go.chromium.org/luci/appengine/bqlog"
 	"go.chromium.org/luci/appengine/gaemiddleware"
+	"go.chromium.org/luci/common/logging"
 	"go.chromium.org/luci/server/router"
-
-	"infra/qscheduler/qslib/tutils"
 )
 
 // InstallHandlers installs handlers for cron jobs that are part of this app.
@@ -55,22 +47,6 @@ func logAndSetHTTPError(f func(c *router.Context) error) func(*router.Context) {
 
 func refreshSchedulers(c *router.Context) error {
 	ctx := c.Context
-	IDs, err := nodestore.List(ctx)
-	if err != nil {
-		return err
-	}
-
-	ts := tutils.TimestampProto(time.Now())
-	for _, sid := range IDs {
-		// Refreshing a scheduler is equivalent to calling AssignTasks on it with no
-		// idle bots.
-		req := &swarming.AssignTasksRequest{SchedulerId: sid, Time: ts}
-
-		s := &frontend.BasicQSchedulerServer{}
-		if _, err := s.AssignTasks(ctx, req); err != nil {
-			return errors.Wrap(err, "unable to refresh scheduler via AssignTasks")
-		}
-	}
-
+	logging.Warningf(ctx, "refreshSchedulers is obsolete, no longer implemented")
 	return nil
 }

@@ -15,7 +15,6 @@
 package frontend_test
 
 import (
-	"fmt"
 	"testing"
 	"time"
 
@@ -30,79 +29,65 @@ import (
 )
 
 func TestAssignTasks(t *testing.T) {
-	cases := []struct {
-		name            string
-		schedulerServer swarming.ExternalSchedulerServer
-	}{
-		{
-			name:            "basic",
-			schedulerServer: &frontend.BasicQSchedulerServer{},
-		},
-		{
-			name:            "batched",
-			schedulerServer: frontend.NewBatchedServer(),
-		},
-	}
-	for _, testCase := range cases {
-		Convey(fmt.Sprintf("Given a %s scheduler server", testCase.name), t, func() {
+	sch := frontend.NewBatchedServer()
 
-			Convey("in a testing context with a scheduler pool", func() {
-				ctx := gaetesting.TestingContext()
-				ctx = eventlog.Use(ctx, &eventlog.NullBQInserter{})
+	Convey("Given a batched qscheduler server", t, func() {
 
-				poolID := "Pool1"
-				admin := &frontend.QSchedulerAdminServerImpl{}
-				sch := testCase.schedulerServer
-				view := &frontend.QSchedulerViewServerImpl{}
-				_, err := admin.CreateSchedulerPool(ctx, &qscheduler.CreateSchedulerPoolRequest{
-					PoolId: poolID,
-				})
-				So(err, ShouldBeNil)
+		Convey("in a testing context with a scheduler pool", func() {
+			ctx := gaetesting.TestingContext()
+			ctx = eventlog.Use(ctx, &eventlog.NullBQInserter{})
 
-				Convey("with an idle task that has been notified", func() {
-					taskID := "Task1"
-					req := swarming.NotifyTasksRequest{
-						SchedulerId: poolID,
-						Notifications: []*swarming.NotifyTasksItem{
-							{
-								Time: tutils.TimestampProto(time.Now()),
-								Task: &swarming.TaskSpec{
-									Id:    taskID,
-									State: swarming.TaskState_PENDING,
-									Slices: []*swarming.SliceSpec{
-										{Dimensions: []string{"label1"}},
-									},
-									EnqueuedTime: tutils.TimestampProto(time.Now()),
+			poolID := "Pool1"
+			admin := &frontend.QSchedulerAdminServerImpl{}
+			view := &frontend.QSchedulerViewServerImpl{}
+			_, err := admin.CreateSchedulerPool(ctx, &qscheduler.CreateSchedulerPoolRequest{
+				PoolId: poolID,
+			})
+			So(err, ShouldBeNil)
+
+			Convey("with an idle task that has been notified", func() {
+				taskID := "Task1"
+				req := swarming.NotifyTasksRequest{
+					SchedulerId: poolID,
+					Notifications: []*swarming.NotifyTasksItem{
+						{
+							Time: tutils.TimestampProto(time.Now()),
+							Task: &swarming.TaskSpec{
+								Id:    taskID,
+								State: swarming.TaskState_PENDING,
+								Slices: []*swarming.SliceSpec{
+									{Dimensions: []string{"label1"}},
 								},
+								EnqueuedTime: tutils.TimestampProto(time.Now()),
 							},
 						},
+					},
+				}
+				_, err := sch.NotifyTasks(ctx, &req)
+				So(err, ShouldBeNil)
+
+				resp, err := view.InspectPool(ctx, &qscheduler.InspectPoolRequest{PoolId: poolID})
+				So(err, ShouldBeNil)
+				So(resp.NumWaitingTasks, ShouldEqual, 1)
+
+				Convey("when AssignTasks is called with an idle bot", func() {
+					botID := "Bot1"
+					req := swarming.AssignTasksRequest{
+						SchedulerId: poolID,
+						Time:        tutils.TimestampProto(time.Now()),
+						IdleBots: []*swarming.IdleBot{
+							{BotId: botID, Dimensions: []string{"label1"}},
+						},
 					}
-					_, err := sch.NotifyTasks(ctx, &req)
-					So(err, ShouldBeNil)
-
-					resp, err := view.InspectPool(ctx, &qscheduler.InspectPoolRequest{PoolId: poolID})
-					So(err, ShouldBeNil)
-					So(resp.NumWaitingTasks, ShouldEqual, 1)
-
-					Convey("when AssignTasks is called with an idle bot", func() {
-						botID := "Bot1"
-						req := swarming.AssignTasksRequest{
-							SchedulerId: poolID,
-							Time:        tutils.TimestampProto(time.Now()),
-							IdleBots: []*swarming.IdleBot{
-								{BotId: botID, Dimensions: []string{"label1"}},
-							},
-						}
-						resp, err := sch.AssignTasks(ctx, &req)
-						Convey("then the task is assigned to the bot.", func() {
-							So(err, ShouldBeNil)
-							So(resp.Assignments, ShouldHaveLength, 1)
-							So(resp.Assignments[0].BotId, ShouldEqual, botID)
-							So(resp.Assignments[0].TaskId, ShouldEqual, taskID)
-						})
+					resp, err := sch.AssignTasks(ctx, &req)
+					Convey("then the task is assigned to the bot.", func() {
+						So(err, ShouldBeNil)
+						So(resp.Assignments, ShouldHaveLength, 1)
+						So(resp.Assignments[0].BotId, ShouldEqual, botID)
+						So(resp.Assignments[0].TaskId, ShouldEqual, taskID)
 					})
 				})
 			})
 		})
-	}
+	})
 }
