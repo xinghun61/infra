@@ -12,7 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package state
+// Package metrics provides functions to emit ts_mon and bq metrics.
+package metrics
 
 import (
 	"context"
@@ -140,39 +141,39 @@ var (
 	)
 )
 
-// metricsBuffer implements scheduler.EventSink.
+// Buffer implements scheduler.EventSink.
 //
 // Metrics are buffered so that they can be sent to bigquery and tsmon upon
 // successful datastore transaction.
-type metricsBuffer struct {
+type Buffer struct {
 	schedulerID string
 	taskEvents  *[]*metrics.TaskEvent
 	isCallback  *bool
 }
 
-// newMetricsBuffer creates a metrics sink for the given scheduler.
-func newMetricsBuffer(schedulerID string) *metricsBuffer {
-	return &metricsBuffer{
+// NewBuffer creates a metrics sink for the given scheduler.
+func NewBuffer(schedulerID string) *Buffer {
+	return &Buffer{
 		schedulerID: schedulerID,
 		taskEvents:  &[]*metrics.TaskEvent{},
 	}
 }
 
 // reset resets the given metrics sink, erasing any previously added entries.
-func (e *metricsBuffer) reset() {
+func (e *Buffer) reset() {
 	e.taskEvents = &[]*metrics.TaskEvent{}
 }
 
-// flushToBQ flushes events to bigquery.
+// FlushToBQ flushes events to bigquery.
 //
 // This can be called inside of a datastore transaction, in which case events
 // will only be flushed if the transaction succeeds.
-func (e *metricsBuffer) flushToBQ(ctx context.Context) error {
+func (e *Buffer) FlushToBQ(ctx context.Context) error {
 	return eventlog.TaskEvents(ctx, *e.taskEvents...)
 }
 
-// flushToTsMon flushes events to ts_mon.
-func (e *metricsBuffer) flushToTsMon(ctx context.Context) error {
+// FlushToTsMon flushes events to ts_mon.
+func (e *Buffer) FlushToTsMon(ctx context.Context) error {
 	for _, event := range *e.taskEvents {
 		switch event.EventType {
 		case metrics.TaskEvent_SWARMING_COMPLETED:
@@ -213,7 +214,7 @@ func flushAccountSpendToTsMon(ctx context.Context, event *metrics.TaskEvent) {
 }
 
 // AddEvent implements scheduler.EventSink.
-func (e *metricsBuffer) AddEvent(event *metrics.TaskEvent) {
+func (e *Buffer) AddEvent(event *metrics.TaskEvent) {
 	event.SchedulerId = e.schedulerID
 	if e.isCallback != nil {
 		event.IsCallback = *e.isCallback
@@ -222,21 +223,21 @@ func (e *metricsBuffer) AddEvent(event *metrics.TaskEvent) {
 }
 
 // WithFields implements scheduler.EventSink.
-func (e *metricsBuffer) WithFields(isCallback bool) scheduler.EventSink {
-	return &metricsBuffer{
+func (e *Buffer) WithFields(isCallback bool) scheduler.EventSink {
+	return &Buffer{
 		isCallback:  &isCallback,
 		schedulerID: e.schedulerID,
 		taskEvents:  e.taskEvents,
 	}
 }
 
-// recordStateGaugeMetrics records general gauge metrics about the given state.
+// RecordStateGaugeMetrics records general gauge metrics about the given state.
 //
 // As new metrics are added, gauge metrics about a state should be emitted here.
 // Because none of the metrics emitted herein are cumulative, it doesn't matter
 // if this is called within a datastore transaction or not, or whether the
 // transaction that called it succeeds.
-func recordStateGaugeMetrics(ctx context.Context, s *scheduler.Scheduler, schedulerID string) {
+func RecordStateGaugeMetrics(ctx context.Context, s *scheduler.Scheduler, schedulerID string) {
 	gaugeQueueSize.Set(ctx, int64(len(s.GetWaitingRequests())), schedulerID)
 
 	var runningPerPriority [scheduler.NumPriorities + 1]int64
@@ -270,12 +271,12 @@ func recordStateGaugeMetrics(ctx context.Context, s *scheduler.Scheduler, schedu
 	}
 }
 
-// recordProtoSize records a metric about a given proto's size.
-func recordProtoSize(ctx context.Context, bytes int, schedulerID string, protoType string) {
+// RecordProtoSize records a metric about a given proto's size.
+func RecordProtoSize(ctx context.Context, bytes int, schedulerID string, protoType string) {
 	gaugeProtoSize.Set(ctx, int64(bytes), schedulerID, protoType)
 }
 
-// recordBatchSize records a metric about the number of requests handled within a batch.
-func recordBatchSize(ctx context.Context, numRequests int, schedulerID string, success bool) {
+// RecordBatchSize records a metric about the number of requests handled within a batch.
+func RecordBatchSize(ctx context.Context, numRequests int, schedulerID string, success bool) {
 	distributionOperationsPerBatch.Add(ctx, float64(numRequests), schedulerID, success)
 }

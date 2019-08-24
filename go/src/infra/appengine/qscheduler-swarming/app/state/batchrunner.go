@@ -24,6 +24,7 @@ import (
 	"go.chromium.org/luci/common/logging"
 
 	"infra/appengine/qscheduler-swarming/app/config"
+	"infra/appengine/qscheduler-swarming/app/state/metrics"
 	"infra/appengine/qscheduler-swarming/app/state/nodestore"
 	"infra/appengine/qscheduler-swarming/app/state/types"
 	"infra/qscheduler/qslib/scheduler"
@@ -294,7 +295,7 @@ func (b *batch) executeAndClose(ctx context.Context, store *nodestore.NodeStore,
 		b.allResultsError(err)
 		success = false
 	}
-	recordBatchSize(ctx, b.numOperations(), poolID, success)
+	metrics.RecordBatchSize(ctx, b.numOperations(), poolID, success)
 
 	b.close()
 }

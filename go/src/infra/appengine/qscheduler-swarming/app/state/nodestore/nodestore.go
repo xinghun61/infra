@@ -29,6 +29,7 @@ import (
 	"go.chromium.org/gae/service/datastore"
 	"go.chromium.org/luci/common/errors"
 
+	"infra/appengine/qscheduler-swarming/app/state/metrics"
 	"infra/appengine/qscheduler-swarming/app/state/nodestore/internal/blob"
 	"infra/appengine/qscheduler-swarming/app/state/types"
 	"infra/qscheduler/qslib/reconciler"
@@ -137,7 +138,12 @@ func (n *NodeStore) Create(ctx context.Context, timestamp time.Time) error {
 		Scheduler:  s.ToProto(),
 		Reconciler: r.ToProto(),
 	}
-	nodeIDs, err := writeNodes(ctx, p, n.qsPoolID, 0)
+	bytes, err := proto.Marshal(p)
+	if err != nil {
+		return errors.Annotate(err, "nodestore create").Err()
+	}
+
+	nodeIDs, err := writeNodes(ctx, bytes, n.qsPoolID, 0)
 	if err != nil {
 		return errors.Annotate(err, "nodestore create").Err()
 	}
@@ -284,7 +290,12 @@ func (n *NodeStore) tryRun(ctx context.Context, o Operator, sg *stateAndGenerati
 		Reconciler: q.Reconciler.ToProto(),
 		Scheduler:  q.Scheduler.ToProto(),
 	}
-	IDs, err := writeNodes(ctx, p, n.qsPoolID, sg.generation+1)
+	bytes, err := proto.Marshal(p)
+	if err != nil {
+		return errors.Annotate(err, "nodestore try").Err()
+	}
+
+	IDs, err := writeNodes(ctx, bytes, n.qsPoolID, sg.generation+1)
 	if err != nil {
 		return errors.Annotate(err, "nodestore try").Err()
 	}
@@ -317,6 +328,8 @@ func (n *NodeStore) tryRun(ctx context.Context, o Operator, sg *stateAndGenerati
 	}
 
 	n.setCached(&stateAndGeneration{p, sg.generation + 1})
+	metrics.RecordStateGaugeMetrics(ctx, q.Scheduler, n.qsPoolID)
+	metrics.RecordProtoSize(ctx, len(bytes), n.qsPoolID, "QSchedulerPoolState")
 	return nil
 }
 
@@ -384,14 +397,9 @@ type stateNode struct {
 	QSchedulerPoolStateDataShard []byte `gae:",noindex"`
 }
 
-// writeNodes writes the given state to as many nodes as necessary, and returns
+// writeNodes writes the byte array to as many nodes as necessary, and returns
 // their IDs.
-func writeNodes(ctx context.Context, state *blob.QSchedulerPoolState, poolID string, generation int64) ([]string, error) {
-	bytes, err := proto.Marshal(state)
-	if err != nil {
-		return nil, errors.Annotate(err, "write nodes").Err()
-	}
-
+func writeNodes(ctx context.Context, bytes []byte, poolID string, generation int64) ([]string, error) {
 	// TODO(akeshet): Tune this for a good balance between staying safely below
 	// upper limit and using fewer shards.
 	maxBytes := 900000

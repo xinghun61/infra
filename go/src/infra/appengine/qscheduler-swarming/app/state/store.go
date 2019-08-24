@@ -17,6 +17,7 @@ package state
 import (
 	"context"
 
+	"infra/appengine/qscheduler-swarming/app/state/metrics"
 	"infra/appengine/qscheduler-swarming/app/state/nodestore"
 	"infra/appengine/qscheduler-swarming/app/state/types"
 )
@@ -25,7 +26,7 @@ import (
 // for state.Operation.
 type NodeStoreOperationRunner struct {
 	op     types.Operation
-	mb     *metricsBuffer
+	mb     *metrics.Buffer
 	poolID string
 }
 
@@ -33,7 +34,7 @@ var _ nodestore.Operator = &NodeStoreOperationRunner{}
 
 // Modify implements nodestore.Operator.
 func (n *NodeStoreOperationRunner) Modify(ctx context.Context, qs *types.QScheduler) error {
-	n.mb = newMetricsBuffer(n.poolID)
+	n.mb = metrics.NewBuffer(n.poolID)
 	return n.op(ctx, qs, n.mb)
 }
 
@@ -42,12 +43,12 @@ func (n *NodeStoreOperationRunner) Commit(ctx context.Context) error {
 	// TODO(akeshet): Move this to Finish() once BigQuery events are re-enabled
 	// for this app, because transactional emission of task queue items is
 	// not supported from GKE runtime.
-	return n.mb.flushToBQ(ctx)
+	return n.mb.FlushToBQ(ctx)
 }
 
 // Finish implements nodestore.Operator.
 func (n *NodeStoreOperationRunner) Finish(ctx context.Context) {
-	n.mb.flushToTsMon(ctx)
+	n.mb.FlushToTsMon(ctx)
 }
 
 // NewNodeStoreOperationRunner returns a new operation runner for the
