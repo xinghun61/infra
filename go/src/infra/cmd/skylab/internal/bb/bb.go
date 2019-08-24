@@ -155,8 +155,8 @@ var getBuildFields = []string{
 }
 
 func (c *Client) waitForBuild(ctx context.Context, buildID int64) (*buildbucket_pb.Build, error) {
-	throttledLogger := logutils.NewThrottledInfoLogger(logging.Get(ctx), 5*time.Minute)
-	progressMessage := fmt.Sprintf("Still waiting for result from testplatform build ID %d", buildID)
+	throttledLogger := logutils.NewThrottledInfoLogger(logging.Get(ctx), 10*time.Minute)
+	progressMessage := fmt.Sprintf("Still waiting for result from %s", c.BuildURL(buildID))
 
 	fields := &field_mask.FieldMask{Paths: getBuildFields}
 	req := &buildbucket_pb.GetBuildRequest{
