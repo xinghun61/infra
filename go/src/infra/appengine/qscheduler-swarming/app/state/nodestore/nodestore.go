@@ -123,7 +123,27 @@ type NodeStore struct {
 
 // Create creates a new persistent scheduler entity if one doesn't exist.
 func (n *NodeStore) Create(ctx context.Context, timestamp time.Time) error {
-	err := datastore.RunInTransaction(ctx, func(ctx context.Context) error {
+	record := &stateRecord{PoolID: n.qsPoolID}
+	exists, err := datastore.Exists(ctx, record)
+	if err != nil {
+		return err
+	}
+	if exists.Any() {
+		return errors.Reason("nodestore create: entity already exists").Err()
+	}
+
+	s := scheduler.New(timestamp)
+	r := reconciler.New()
+	p := &blob.QSchedulerPoolState{
+		Scheduler:  s.ToProto(),
+		Reconciler: r.ToProto(),
+	}
+	nodeIDs, err := writeNodes(ctx, p, n.qsPoolID, 0)
+	if err != nil {
+		return errors.Annotate(err, "nodestore create").Err()
+	}
+
+	err = datastore.RunInTransaction(ctx, func(ctx context.Context) error {
 		record := &stateRecord{PoolID: n.qsPoolID}
 		exists, err := datastore.Exists(ctx, record)
 		if err != nil {
@@ -133,19 +153,9 @@ func (n *NodeStore) Create(ctx context.Context, timestamp time.Time) error {
 			return errors.Reason("entity already exists").Err()
 		}
 
-		s := scheduler.New(timestamp)
-		r := reconciler.New()
-		p := &blob.QSchedulerPoolState{
-			Scheduler:  s.ToProto(),
-			Reconciler: r.ToProto(),
-		}
-		nodeIDs, err := writeNodes(ctx, p, n.qsPoolID, 0)
-		if err != nil {
-			return err
-		}
 		record.NodeIDs = nodeIDs
 		return datastore.Put(ctx, record)
-	}, &datastore.TransactionOptions{XG: true})
+	}, nil)
 	if err != nil {
 		return errors.Annotate(err, "nodestore create").Err()
 	}
