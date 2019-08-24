@@ -27,6 +27,7 @@ import (
 
 	"infra/appengine/qscheduler-swarming/app/eventlog"
 	"infra/appengine/qscheduler-swarming/app/state"
+	"infra/appengine/qscheduler-swarming/app/state/nodestore"
 	"infra/appengine/qscheduler-swarming/app/state/types"
 	"infra/qscheduler/qslib/scheduler"
 )
@@ -36,9 +37,8 @@ func TestBatcherErrors(t *testing.T) {
 		ctx := gaetesting.TestingContext()
 		ctx = eventlog.Use(ctx, &eventlog.NullBQInserter{})
 		poolID := "pool 1"
-		store := state.NewStore(poolID)
-		s := types.NewQScheduler(poolID, time.Now(), scheduler.NewConfig())
-		store.Save(ctx, s)
+		store := nodestore.New(poolID)
+		store.Create(ctx, time.Now())
 
 		batcher := state.NewBatchRunnerForTest()
 		batcher.Start(store)
@@ -87,9 +87,8 @@ func TestBatcherBehavior(t *testing.T) {
 		ctx := gaetesting.TestingContext()
 		ctx = eventlog.Use(ctx, &eventlog.NullBQInserter{})
 		poolID := "pool 1"
-		store := state.NewStore(poolID)
-		s := types.NewQScheduler(poolID, time.Now(), scheduler.NewConfig())
-		store.Save(ctx, s)
+		store := nodestore.New(poolID)
+		store.Create(ctx, time.Now())
 
 		batcher := state.NewBatchRunnerForTest()
 		batcher.Start(store)

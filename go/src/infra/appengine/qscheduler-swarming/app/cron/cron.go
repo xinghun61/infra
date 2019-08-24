@@ -20,7 +20,7 @@ import (
 	"time"
 
 	"infra/appengine/qscheduler-swarming/app/frontend"
-	"infra/appengine/qscheduler-swarming/app/state"
+	"infra/appengine/qscheduler-swarming/app/state/nodestore"
 	swarming "infra/swarming"
 
 	"github.com/pkg/errors"
@@ -55,7 +55,7 @@ func logAndSetHTTPError(f func(c *router.Context) error) func(*router.Context) {
 
 func refreshSchedulers(c *router.Context) error {
 	ctx := c.Context
-	IDs, err := state.List(ctx)
+	IDs, err := nodestore.List(ctx)
 	if err != nil {
 		return err
 	}

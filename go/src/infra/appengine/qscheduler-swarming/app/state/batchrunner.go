@@ -24,6 +24,7 @@ import (
 	"go.chromium.org/luci/common/logging"
 
 	"infra/appengine/qscheduler-swarming/app/config"
+	"infra/appengine/qscheduler-swarming/app/state/nodestore"
 	"infra/appengine/qscheduler-swarming/app/state/types"
 	"infra/qscheduler/qslib/scheduler"
 )
@@ -76,11 +77,15 @@ type BatchRunner struct {
 	//
 	// In tests, this is 0, to ensure that batcher is deadlock-free.
 	doneChannelSize int
+
+	poolID string
 }
 
 // NewBatcher creates a new BatchRunner.
-func NewBatcher() *BatchRunner {
+func NewBatcher(poolID string) *BatchRunner {
 	b := &BatchRunner{
+		poolID: poolID,
+
 		requests: make(chan *batchedOp, 100),
 		closed:   make(chan struct{}),
 
@@ -96,7 +101,7 @@ func NewBatcher() *BatchRunner {
 // Start starts a batcher (if it hasn't been started already).
 //
 // It returns immediately.
-func (b *BatchRunner) Start(store *Store) {
+func (b *BatchRunner) Start(store *nodestore.NodeStore) {
 	b.startOnce.Do(func() {
 		go b.runRequestsInBatches(store)
 	})
@@ -146,7 +151,7 @@ func (b *BatchRunner) Close() {
 
 // runRequestsInBatches creates new batches and runs them, until the requests
 // channel closes.
-func (b *BatchRunner) runRequestsInBatches(store *Store) {
+func (b *BatchRunner) runRequestsInBatches(store *nodestore.NodeStore) {
 	for r := range b.requests {
 		<-b.tBatchStart
 
@@ -166,7 +171,7 @@ func (b *BatchRunner) runRequestsInBatches(store *Store) {
 
 		b.collectForBatch(ctx, nb)
 		logging.Debugf(ctx, "batch of size %d collected, executing", nb.numOperations())
-		nb.executeAndClose(ctx, store)
+		nb.executeAndClose(ctx, store, b.poolID)
 		logging.Debugf(ctx, "batch executed")
 	}
 	// No more requests, close batches channel.
@@ -280,14 +285,16 @@ func (b *batch) numOperations() int {
 }
 
 // executeAndClose executes and closes the given batch.
-func (b *batch) executeAndClose(ctx context.Context, store *Store) {
+func (b *batch) executeAndClose(ctx context.Context, store *nodestore.NodeStore, poolID string) {
 	success := true
-	if err := store.RunOperationInTransaction(ctx, b.getRunner()); err != nil {
+	nodeRunner := NewNodeStoreOperationRunner(b.getRunner(), poolID)
+
+	if err := store.Run(ctx, nodeRunner); err != nil {
 		// A batch-wide error occurred. Store it on all results.
 		b.allResultsError(err)
 		success = false
 	}
-	recordBatchSize(ctx, b.numOperations(), store.entityID, success)
+	recordBatchSize(ctx, b.numOperations(), poolID, success)
 
 	b.close()
 }

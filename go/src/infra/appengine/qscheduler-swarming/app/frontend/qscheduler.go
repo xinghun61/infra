@@ -19,6 +19,7 @@ import (
 	"math/rand"
 
 	"infra/appengine/qscheduler-swarming/app/state"
+	"infra/appengine/qscheduler-swarming/app/state/nodestore"
 	"infra/appengine/qscheduler-swarming/app/state/operations"
 	swarming "infra/swarming"
 
@@ -52,8 +53,8 @@ func (s *BasicQSchedulerServer) AssignTasks(ctx context.Context, r *swarming.Ass
 
 	op, result := operations.AssignTasks(r)
 
-	store := state.NewStore(r.SchedulerId)
-	if err = store.RunOperationInTransaction(ctx, op); err != nil {
+	store := nodestore.New(r.SchedulerId)
+	if err = store.Run(ctx, state.NewNodeStoreOperationRunner(op, r.SchedulerId)); err != nil {
 		return nil, err
 	}
 
@@ -69,8 +70,8 @@ func (s *BasicQSchedulerServer) GetCancellations(ctx context.Context, r *swarmin
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 
-	store := state.NewStore(r.SchedulerId)
-	sp, err := store.Load(ctx)
+	store := nodestore.New(r.SchedulerId)
+	sp, err := store.Get(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -101,8 +102,8 @@ func (s *BasicQSchedulerServer) NotifyTasks(ctx context.Context, r *swarming.Not
 
 	op, result := operations.NotifyTasks(r)
 
-	store := state.NewStore(r.SchedulerId)
-	if err := store.RunOperationInTransaction(ctx, op); err != nil {
+	store := nodestore.New(r.SchedulerId)
+	if err = store.Run(ctx, state.NewNodeStoreOperationRunner(op, r.SchedulerId)); err != nil {
 		return nil, err
 	}
 	return result, nil
@@ -114,8 +115,8 @@ func (s *BasicQSchedulerServer) GetCallbacks(ctx context.Context, r *swarming.Ge
 		err = grpcutil.GRPCifyAndLogErr(ctx, err)
 	}()
 
-	store := state.NewStore(r.SchedulerId)
-	sp, err := store.Load(ctx)
+	store := nodestore.New(r.SchedulerId)
+	sp, err := store.Get(ctx)
 	if err != nil {
 		return nil, err
 	}

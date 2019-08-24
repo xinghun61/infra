@@ -22,7 +22,7 @@ import (
 	"go.chromium.org/luci/grpc/grpcutil"
 
 	qscheduler "infra/appengine/qscheduler-swarming/api/qscheduler/v1"
-	"infra/appengine/qscheduler-swarming/app/state"
+	"infra/appengine/qscheduler-swarming/app/state/nodestore"
 
 	"infra/qscheduler/qslib/protos"
 )
@@ -36,8 +36,8 @@ func (s *QSchedulerViewServerImpl) InspectPool(ctx context.Context, r *qschedule
 		err = grpcutil.GRPCifyAndLogErr(ctx, err)
 	}()
 
-	store := state.NewStore(r.PoolId)
-	sp, err := store.Load(ctx)
+	store := nodestore.New(r.PoolId)
+	sp, err := store.Get(ctx)
 	if err != nil {
 		return nil, err
 	}

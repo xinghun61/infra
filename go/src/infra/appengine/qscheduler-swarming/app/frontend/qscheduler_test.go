@@ -25,7 +25,6 @@ import (
 	qscheduler "infra/appengine/qscheduler-swarming/api/qscheduler/v1"
 	"infra/appengine/qscheduler-swarming/app/eventlog"
 	"infra/appengine/qscheduler-swarming/app/frontend"
-	"infra/qscheduler/qslib/protos"
 	"infra/qscheduler/qslib/tutils"
 	swarming "infra/swarming"
 )
@@ -57,7 +56,6 @@ func TestAssignTasks(t *testing.T) {
 				view := &frontend.QSchedulerViewServerImpl{}
 				_, err := admin.CreateSchedulerPool(ctx, &qscheduler.CreateSchedulerPoolRequest{
 					PoolId: poolID,
-					Config: &protos.SchedulerConfig{},
 				})
 				So(err, ShouldBeNil)
 

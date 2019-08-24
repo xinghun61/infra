@@ -18,11 +18,10 @@ import (
 	"context"
 	"time"
 
-	"go.chromium.org/gae/service/datastore"
 	"go.chromium.org/luci/grpc/grpcutil"
 
 	qscheduler "infra/appengine/qscheduler-swarming/api/qscheduler/v1"
-	"infra/appengine/qscheduler-swarming/app/state"
+	"infra/appengine/qscheduler-swarming/app/state/nodestore"
 	"infra/appengine/qscheduler-swarming/app/state/types"
 
 	"infra/qscheduler/qslib/reconciler"
@@ -41,16 +40,12 @@ func (s *QSchedulerAdminServerImpl) CreateSchedulerPool(ctx context.Context, r *
 		err = grpcutil.GRPCifyAndLogErr(ctx, err)
 	}()
 
-	if r.Config == nil {
-		return nil, status.Errorf(codes.InvalidArgument, "missing config")
+	if r.Config != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "Config argument deprecated")
 	}
-	sp := types.QScheduler{
-		SchedulerID: r.PoolId,
-		Reconciler:  reconciler.New(),
-		Scheduler:   scheduler.NewWithConfig(time.Now(), scheduler.NewConfigFromProto(r.Config)),
-	}
-	store := state.NewStore(r.PoolId)
-	if err := store.Save(ctx, &sp); err != nil {
+
+	store := nodestore.New(r.PoolId)
+	if err := store.Create(ctx, time.Now()); err != nil {
 		return nil, err
 	}
 	return &qscheduler.CreateSchedulerPoolResponse{}, nil
@@ -62,27 +57,22 @@ func (s *QSchedulerAdminServerImpl) CreateAccount(ctx context.Context, r *qsched
 		err = grpcutil.GRPCifyAndLogErr(ctx, err)
 	}()
 
-	do := func(ctx context.Context) error {
-		store := state.NewStore(r.PoolId)
-		sp, err := store.Load(ctx)
-		if err != nil {
-			return err
-		}
-
-		var ac *scheduler.AccountConfig
-		if r.Config != nil {
-			ac = scheduler.NewAccountConfigFromProto(r.Config)
-		} else {
-			ac = &scheduler.AccountConfig{}
-		}
-		sp.Scheduler.AddAccount(ctx, scheduler.AccountID(r.AccountId), ac, nil)
-
-		return store.Save(ctx, sp)
+	var ac *scheduler.AccountConfig
+	if r.Config != nil {
+		ac = scheduler.NewAccountConfigFromProto(r.Config)
+	} else {
+		ac = &scheduler.AccountConfig{}
 	}
 
-	if err := datastore.RunInTransaction(ctx, do, nil); err != nil {
+	store := nodestore.New(r.PoolId)
+	op := nodestore.NewModOnlyOperator(func(ctx context.Context, state *types.QScheduler) error {
+		state.Scheduler.AddAccount(ctx, scheduler.AccountID(r.AccountId), ac, nil)
+		return nil
+	})
+	if err := store.Run(ctx, op); err != nil {
 		return nil, err
 	}
+
 	return &qscheduler.CreateAccountResponse{}, nil
 }
 
@@ -92,21 +82,17 @@ func (s *QSchedulerAdminServerImpl) Wipe(ctx context.Context, r *qscheduler.Wipe
 		err = grpcutil.GRPCifyAndLogErr(ctx, err)
 	}()
 
-	do := func(ctx context.Context) error {
-		store := state.NewStore(r.PoolId)
-		sp, err := store.Load(ctx)
-		if err != nil {
-			return err
-		}
+	store := nodestore.New(r.PoolId)
+	op := nodestore.NewModOnlyOperator(func(ctx context.Context, sp *types.QScheduler) error {
 		config := sp.Scheduler.Config()
 		sp.Scheduler = scheduler.NewWithConfig(time.Now(), config)
 		sp.Reconciler = reconciler.New()
-		return store.Save(ctx, sp)
-	}
-
-	if err := datastore.RunInTransaction(ctx, do, nil); err != nil {
+		return nil
+	})
+	if err := store.Run(ctx, op); err != nil {
 		return nil, err
 	}
+
 	return &qscheduler.WipeResponse{}, nil
 }
 
@@ -116,12 +102,8 @@ func (s *QSchedulerAdminServerImpl) ModAccount(ctx context.Context, r *qschedule
 		err = grpcutil.GRPCifyAndLogErr(ctx, err)
 	}()
 
-	do := func(ctx context.Context) error {
-		store := state.NewStore(r.PoolId)
-		sp, err := store.Load(ctx)
-		if err != nil {
-			return err
-		}
+	store := nodestore.New(r.PoolId)
+	op := nodestore.NewModOnlyOperator(func(ctx context.Context, sp *types.QScheduler) error {
 		config := sp.Scheduler.Config()
 		accountConfig, ok := config.AccountConfigs[scheduler.AccountID(r.AccountId)]
 		if !ok {
@@ -142,12 +124,12 @@ func (s *QSchedulerAdminServerImpl) ModAccount(ctx context.Context, r *qschedule
 			copy(bal[:], r.ChargeRate)
 			accountConfig.ChargeRate = bal
 		}
-		return store.Save(ctx, sp)
-	}
-
-	if err := datastore.RunInTransaction(ctx, do, nil); err != nil {
+		return nil
+	})
+	if err := store.Run(ctx, op); err != nil {
 		return nil, err
 	}
+
 	return &qscheduler.ModAccountResponse{}, nil
 }
 
@@ -157,12 +139,8 @@ func (s *QSchedulerAdminServerImpl) ModSchedulerPool(ctx context.Context, r *qsc
 		err = grpcutil.GRPCifyAndLogErr(ctx, err)
 	}()
 
-	do := func(ctx context.Context) error {
-		store := state.NewStore(r.PoolId)
-		sp, err := store.Load(ctx)
-		if err != nil {
-			return err
-		}
+	store := nodestore.New(r.PoolId)
+	op := nodestore.NewModOnlyOperator(func(ctx context.Context, sp *types.QScheduler) error {
 		config := sp.Scheduler.Config()
 		if r.DisablePreemption != nil {
 			config.DisablePreemption = r.DisablePreemption.Value
@@ -171,12 +149,13 @@ func (s *QSchedulerAdminServerImpl) ModSchedulerPool(ctx context.Context, r *qsc
 			config.BotExpiration = time.Duration(r.BotExpirationSeconds.Value) * time.Second
 		}
 
-		return store.Save(ctx, sp)
-	}
+		return nil
+	})
 
-	if err := datastore.RunInTransaction(ctx, do, nil); err != nil {
+	if err := store.Run(ctx, op); err != nil {
 		return nil, err
 	}
+
 	return &qscheduler.ModSchedulerPoolResponse{}, nil
 }
 
@@ -186,18 +165,13 @@ func (s *QSchedulerAdminServerImpl) DeleteAccount(ctx context.Context, r *qsched
 		err = grpcutil.GRPCifyAndLogErr(ctx, err)
 	}()
 
-	do := func(ctx context.Context) error {
-		store := state.NewStore(r.PoolId)
-		sp, err := store.Load(ctx)
-		if err != nil {
-			return err
-		}
-
+	store := nodestore.New(r.PoolId)
+	op := nodestore.NewModOnlyOperator(func(ctx context.Context, sp *types.QScheduler) error {
 		sp.Scheduler.DeleteAccount(scheduler.AccountID(r.AccountId))
-		return store.Save(ctx, sp)
-	}
+		return nil
+	})
 
-	if err := datastore.RunInTransaction(ctx, do, nil); err != nil {
+	if err := store.Run(ctx, op); err != nil {
 		return nil, err
 	}
 
@@ -210,9 +184,11 @@ func (s *QSchedulerAdminServerImpl) DeleteSchedulerPool(ctx context.Context, r *
 		err = grpcutil.GRPCifyAndLogErr(ctx, err)
 	}()
 
-	if err := state.Delete(ctx, r.PoolId); err != nil {
+	store := nodestore.New(r.PoolId)
+	if err := store.Delete(ctx); err != nil {
 		return nil, err
 	}
+
 	return &qscheduler.DeleteSchedulerPoolResponse{}, nil
 }
 
@@ -222,8 +198,8 @@ func (s *QSchedulerViewServerImpl) ListAccounts(ctx context.Context, r *qschedul
 		err = grpcutil.GRPCifyAndLogErr(ctx, err)
 	}()
 
-	store := state.NewStore(r.PoolId)
-	sp, err := store.Load(ctx)
+	store := nodestore.New(r.PoolId)
+	sp, err := store.Get(ctx)
 	if err != nil {
 		return nil, err
 	}

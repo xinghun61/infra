@@ -56,7 +56,7 @@ type Operator interface {
 	//
 	// If there are any side effects stored internally to the Operator, they
 	// should be reset on each call to Modify.
-	Modify(context.Context, *types.QScheduler) error
+	Modify(ctx context.Context, state *types.QScheduler) error
 
 	// Commit will be called within a datastore transaction, after a successful
 	// call to Modify. Commit should be used to persist any transactional
@@ -68,6 +68,27 @@ type Operator interface {
 	// for non-transactional at-most-once side effects, such as incrementing
 	// ts_mon counters.
 	Finish(context.Context)
+}
+
+type modOnlyOperator struct {
+	mod func(ctx context.Context, state *types.QScheduler) error
+}
+
+var _ Operator = modOnlyOperator{}
+
+func (m modOnlyOperator) Modify(ctx context.Context, state *types.QScheduler) error {
+	return m.mod(ctx, state)
+}
+
+func (m modOnlyOperator) Commit(ctx context.Context) error { return nil }
+
+func (m modOnlyOperator) Finish(ctx context.Context) {}
+
+// NewModOnlyOperator returns an Operator that simply applies the given state-modification
+// function. This is a convenience method for callers that don't need to handle
+// the Commit or Finish phases of an Operator.
+func NewModOnlyOperator(f func(ctx context.Context, state *types.QScheduler) error) Operator {
+	return modOnlyOperator{f}
 }
 
 // New returns a new NodeStore.
@@ -113,7 +134,11 @@ func (n *NodeStore) Create(ctx context.Context, timestamp time.Time) error {
 		}
 
 		s := scheduler.New(timestamp)
-		p := &blob.QSchedulerPoolState{Scheduler: s.ToProto()}
+		r := reconciler.New()
+		p := &blob.QSchedulerPoolState{
+			Scheduler:  s.ToProto(),
+			Reconciler: r.ToProto(),
+		}
 		nodeIDs, err := writeNodes(ctx, p, n.qsPoolID, 0)
 		if err != nil {
 			return err

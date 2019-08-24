@@ -43,13 +43,15 @@ service QSchedulerAdmin {
     rpc DeleteSchedulerPool(DeleteSchedulerPoolRequest) returns (DeleteSchedulerPoolResponse);
 }
 
+
 // TODO(akeshet): Rename to CreatePoolScheduler CreateScheduler.
 message CreateSchedulerPoolRequest {
     // PoolId is the unique id of this scheduler pool.
     string pool_id = 1;
 
-    // Config is the scheduler configuration for the scheduler to create.
-    protos.SchedulerConfig config = 2;
+    // Deprecated, calls will fail if this is specified. Instead, create a pool
+    // and then modify its config with later calls.
+    protos.SchedulerConfig config = 2 [deprecated = true];
 }
 
 message CreateSchedulerPoolResponse {}

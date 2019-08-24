@@ -19,6 +19,7 @@ import (
 	"sync"
 
 	"infra/appengine/qscheduler-swarming/app/state"
+	"infra/appengine/qscheduler-swarming/app/state/nodestore"
 	"infra/appengine/qscheduler-swarming/app/state/operations"
 	swarming "infra/swarming"
 
@@ -64,8 +65,8 @@ func (s *BatchedQSchedulerServer) getOrCreateBatcher(schedulerID string) *state.
 	if ok {
 		return batcher
 	}
-	batcher = state.NewBatcher()
-	store := state.NewStore(schedulerID)
+	batcher = state.NewBatcher(schedulerID)
+	store := nodestore.New(schedulerID)
 	// TODO(akeshet): close all started batchers in the server's close handler.
 	batcher.Start(store)
 	s.batchers[schedulerID] = batcher

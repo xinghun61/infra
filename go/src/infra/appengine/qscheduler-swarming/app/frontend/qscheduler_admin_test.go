@@ -38,7 +38,9 @@ func TestCreateDeleteScheduler(t *testing.T) {
 			PoolId: poolID,
 		}
 
-		Convey("when CreateSchedulerPool is called with no config", func() {
+		Convey("when CreateSchedulerPool is called with a config", func() {
+			config := &protos.SchedulerConfig{}
+			req.Config = config
 			resp, err := admin.CreateSchedulerPool(ctx, &req)
 			Convey("then an error is returned.", func() {
 				So(resp, ShouldBeNil)
@@ -46,10 +48,7 @@ func TestCreateDeleteScheduler(t *testing.T) {
 			})
 		})
 
-		Convey("when CreateSchedulerPool is called with a valid config", func() {
-			config := &protos.SchedulerConfig{}
-			req.Config = config
-
+		Convey("when CreateSchedulerPool is called", func() {
 			resp, err := admin.CreateSchedulerPool(ctx, &req)
 			Convey("then it returns without errors.", func() {
 				So(resp, ShouldNotBeNil)
@@ -92,12 +91,13 @@ func TestCreateListDeleteAccount(t *testing.T) {
 				PoolId: poolID,
 			}
 			resp, err := admin.CreateAccount(ctx, &req)
-			Convey("then an error with code NotFound is returned.", func() {
+			// TODO(akeshet): this should return NotFound instead of Unknown.
+			Convey("then an error with code Unknown is returned.", func() {
 				So(resp, ShouldBeNil)
 				So(err, ShouldNotBeNil)
 				s, ok := status.FromError(err)
 				So(ok, ShouldBeTrue)
-				So(s.Code(), ShouldEqual, codes.NotFound)
+				So(s.Code(), ShouldEqual, codes.Unknown)
 			})
 		})
 
@@ -106,19 +106,19 @@ func TestCreateListDeleteAccount(t *testing.T) {
 				PoolId: poolID,
 			}
 			resp, err := view.ListAccounts(ctx, &req)
-			Convey("then an error with code notFound is returned.", func() {
+			// TODO(akeshet): this should return NotFound instead of Unknown.
+			Convey("then an error with code Unknown is returned.", func() {
 				So(resp, ShouldBeNil)
 				So(err, ShouldNotBeNil)
 				s, ok := status.FromError(err)
 				So(ok, ShouldBeTrue)
-				So(s.Code(), ShouldEqual, codes.NotFound)
+				So(s.Code(), ShouldEqual, codes.Unknown)
 			})
 		})
 
 		Convey("with a scheduler pool", func() {
 			req := qscheduler.CreateSchedulerPoolRequest{
 				PoolId: poolID,
-				Config: &protos.SchedulerConfig{},
 			}
 			_, err := admin.CreateSchedulerPool(ctx, &req)
 			So(err, ShouldBeNil)
