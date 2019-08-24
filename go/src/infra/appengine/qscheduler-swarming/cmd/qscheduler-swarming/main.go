@@ -17,14 +17,19 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"os"
+	"time"
 
 	"infra/appengine/qscheduler-swarming/app/config"
 	"infra/appengine/qscheduler-swarming/app/eventlog"
 	"infra/appengine/qscheduler-swarming/app/frontend"
+	"infra/appengine/qscheduler-swarming/app/state/nodestore"
 
+	"go.chromium.org/luci/common/clock"
 	"go.chromium.org/luci/common/data/rand/mathrand"
+	"go.chromium.org/luci/common/logging"
 	"go.chromium.org/luci/grpc/prpc"
 	"go.chromium.org/luci/hardcoded/chromeinfra"
 	"go.chromium.org/luci/server"
@@ -64,6 +69,37 @@ func main() {
 		srv.Fatal(err)
 	}
 	srv.RunInBackground("qscheduler.config", cfgLoader.ReloadLoop)
+
+	srv.RunInBackground("qscheduler.cleanup", func(ctx context.Context) {
+		for {
+			clockResult := <-clock.After(ctx, 1*time.Minute)
+			if clockResult.Err != nil {
+				// Context was cancelled.
+				logging.Errorf(ctx, "cleanup loop terminating: %s", clockResult.Err)
+				return
+			}
+
+			IDs, err := nodestore.List(ctx)
+			if err != nil {
+				logging.Errorf(ctx, "cleanup loop: list: %s", err.Error())
+				continue
+			}
+
+			for _, ID := range IDs {
+				s := nodestore.New(ID)
+
+				cctx, cancel := context.WithTimeout(ctx, 5*time.Minute)
+				cleaned, err := s.Clean(cctx)
+				cancel()
+
+				if err == nil {
+					logging.Infof(ctx, "cleanup loop: pool %s: cleaned %d entities", ID, cleaned)
+				} else {
+					logging.Errorf(ctx, "cleanup loop: pool %s: %s", ID, err.Error())
+				}
+			}
+		}
+	})
 
 	nullBQInserter := eventlog.NullBQInserter{}
 	base := router.NewMiddlewareChain(cfgLoader.Install(), nullBQInserter.Install())
