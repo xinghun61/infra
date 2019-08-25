@@ -1,0 +1,27 @@
+The 1.8 release included a log line to stderr about what config file is used
+in every invocation.  There is no way to disable this.
+
+The 2.0 release inverted this behavior and added a --verbose flag so users can
+opt-in to showing it (with the default changed back to not displaying).
+
+Hack out the log line in these older versions as it's much simpler than trying
+to backport the entire new command line framework.
+
+--- a/pylint/config.py
++++ b/pylint/config.py
+@@ -658,15 +658,6 @@ class OptionsManagerMixIn(object):
+                 if not sect.isupper() and values:
+                     parser._sections[sect.upper()] = values
+ 
+-        if self.quiet:
+-            return
+-
+-        if use_config_file:
+-            msg = 'Using config file {0}'.format(os.path.abspath(config_file))
+-        else:
+-            msg = 'No config file found, using default configuration'
+-        print(msg, file=sys.stderr)
+-
+     def load_config_file(self):
+         """dispatch values previously read from a configuration file to each
+         options provider)
