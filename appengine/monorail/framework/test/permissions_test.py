@@ -1133,26 +1133,46 @@ class RestrictionLabelsTest(unittest.TestCase):
   def testGetRestrictions_NoIssue(self):
     self.assertEqual([], permissions.GetRestrictions(None))
 
-  def testGetRestrictions(self):
+  def testGetRestrictions_PermSpecified(self):
+    """We can return restiction labels related to the given perm."""
     art = fake.MakeTestIssue(
         789, 1, self.ORIG_SUMMARY, 'New', 0, labels=self.ORIG_LABELS)
-    self.assertEquals([], permissions.GetRestrictions(art))
+    self.assertEqual([], permissions.GetRestrictions(art, perm='view'))
+
+    art = fake.MakeTestIssue(
+        789, 1, self.ORIG_SUMMARY, 'New', 0,
+        labels=['Restrict-View-Core', 'Hot',
+                'Restrict-EditIssue-Commit', 'Restrict-EditIssue-Core'])
+    self.assertEqual(
+        ['restrict-view-core'],
+        permissions.GetRestrictions(art, perm='view'))
+    self.assertEqual(
+        ['restrict-view-core'],
+        permissions.GetRestrictions(art, perm='View'))
+    self.assertEqual(
+        ['restrict-editissue-commit', 'restrict-editissue-core'],
+        permissions.GetRestrictions(art, perm='EditIssue'))
+
+  def testGetRestrictions_NoPerm(self):
+    art = fake.MakeTestIssue(
+        789, 1, self.ORIG_SUMMARY, 'New', 0, labels=self.ORIG_LABELS)
+    self.assertEqual([], permissions.GetRestrictions(art))
 
     art = fake.MakeTestIssue(
         789, 1, self.ORIG_SUMMARY, 'New', 0,
         labels=['Restrict-MissingThirdPart', 'Hot'])
-    self.assertEquals([], permissions.GetRestrictions(art))
+    self.assertEqual([], permissions.GetRestrictions(art))
 
     art = fake.MakeTestIssue(
         789, 1, self.ORIG_SUMMARY, 'New', 0,
         labels=['Restrict-View-Core', 'Hot'])
-    self.assertEquals(['restrict-view-core'], permissions.GetRestrictions(art))
+    self.assertEqual(['restrict-view-core'], permissions.GetRestrictions(art))
 
     art = fake.MakeTestIssue(
         789, 1, self.ORIG_SUMMARY, 'New', 0,
         labels=['Restrict-View-Core', 'Hot'],
         derived_labels=['Color-Red', 'Restrict-EditIssue-GoldMembers'])
-    self.assertEquals(
+    self.assertEqual(
         ['restrict-view-core', 'restrict-editissue-goldmembers'],
         permissions.GetRestrictions(art))
 
@@ -1160,7 +1180,7 @@ class RestrictionLabelsTest(unittest.TestCase):
         789, 1, self.ORIG_SUMMARY, 'New', 0,
         labels=['restrict-view-core', 'hot'],
         derived_labels=['Color-Red', 'RESTRICT-EDITISSUE-GOLDMEMBERS'])
-    self.assertEquals(
+    self.assertEqual(
         ['restrict-view-core', 'restrict-editissue-goldmembers'],
         permissions.GetRestrictions(art))
 

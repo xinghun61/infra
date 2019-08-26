@@ -1017,13 +1017,13 @@ def HasRestrictions(issue, perm=''):
       any(IsRestrictLabel(lab, perm=perm) for lab in issue.derived_labels))
 
 
-def GetRestrictions(issue):
+def GetRestrictions(issue, perm=''):
   """Return a list of restriction labels on the given issue."""
   if not issue:
     return []
 
   return [lab.lower() for lab in tracker_bizobj.GetLabels(issue)
-          if IsRestrictLabel(lab)]
+          if IsRestrictLabel(lab, perm=perm)]
 
 
 def CanViewIssue(

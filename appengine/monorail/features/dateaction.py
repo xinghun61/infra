@@ -17,6 +17,8 @@ from __future__ import absolute_import
 import logging
 import time
 
+from third_party import ezt
+
 from google.appengine.api import taskqueue
 
 import settings
@@ -96,6 +98,8 @@ class IssueDateActionTask(notify_helpers.NotifyTaskBase):
   """JSON servlet that notifies appropriate users after an issue change."""
 
   _EMAIL_TEMPLATE = 'features/auto-ping-email.ezt'
+  _LINK_ONLY_EMAIL_TEMPLATE = (
+      'tracker/issue-change-notification-email-link-only.ezt')
 
   def HandleRequest(self, mr):
     """Process the task to process an issue date action.
@@ -161,8 +165,9 @@ class IssueDateActionTask(notify_helpers.NotifyTaskBase):
         'fields': fields,
         }
 
-    # Generate two versions of email body: members version has all
-    # full email addresses exposed.
+    # Generate three versions of email body with progressively more info.
+    body_link_only = self.link_only_email_template.GetResponse(
+      {'detail_url': detail_url, 'was_created': ezt.boolean(False)})
     body_for_non_members = self.email_template.GetResponse(email_data)
     framework_views.RevealAllEmails(users_by_id)
     body_for_members = self.email_template.GetResponse(email_data)
@@ -182,9 +187,9 @@ class IssueDateActionTask(notify_helpers.NotifyTaskBase):
 
     commenter_view = users_by_id[comment.user_id]
     email_tasks = notify_helpers.MakeBulletedEmailWorkItems(
-        group_reason_list, issue, body_for_non_members, body_for_members,
-        project, hostport, commenter_view, detail_url, seq_num=comment.sequence,
-        subject_prefix='Follow up on issue ',
+        group_reason_list, issue, body_link_only, body_for_non_members,
+        body_for_members, project, hostport, commenter_view, detail_url,
+        seq_num=comment.sequence, subject_prefix='Follow up on issue ',
         compact_subject_prefix='Follow up ')
 
     return email_tasks

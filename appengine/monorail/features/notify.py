@@ -52,6 +52,8 @@ class NotifyIssueChangeTask(notify_helpers.NotifyTaskBase):
   """JSON servlet that notifies appropriate users after an issue change."""
 
   _EMAIL_TEMPLATE = 'tracker/issue-change-notification-email.ezt'
+  _LINK_ONLY_EMAIL_TEMPLATE = (
+      'tracker/issue-change-notification-email-link-only.ezt')
 
   def HandleRequest(self, mr):
     """Process the task to notify users after an issue change.
@@ -156,6 +158,7 @@ class NotifyIssueChangeTask(notify_helpers.NotifyTaskBase):
     # registry of autolink rules.
     # TODO(jrobbins): offer users an HTML email option w/ autolinks.
     autolinker = autolink.Autolink()
+    was_created = ezt.boolean(comment.sequence == 0)
 
     email_data = {
         # Pass open_related and closed_related into this method and to
@@ -167,10 +170,14 @@ class NotifyIssueChangeTask(notify_helpers.NotifyTaskBase):
             autolinker, {}, mr, issue),
         'comment_text': comment.content,
         'detail_url': detail_url,
+        'was_created': was_created,
         }
 
-    # Generate two versions of email body: members version has all
-    # full email addresses exposed.
+    # Generate three versions of email body: link-only is just the link,
+    # non-members see some obscured email addresses, and members version has
+    # all full email addresses exposed.
+    body_link_only = self.link_only_email_template.GetResponse(
+      {'detail_url': detail_url, 'was_created': was_created})
     body_for_non_members = self.email_template.GetResponse(email_data)
     framework_views.RevealAllEmails(users_by_id)
     email_data['comment'] = tracker_views.IssueCommentView(
@@ -178,6 +185,7 @@ class NotifyIssueChangeTask(notify_helpers.NotifyTaskBase):
         autolinker, {}, mr, issue)
     body_for_members = self.email_template.GetResponse(email_data)
 
+    logging.info('link-only body is:\n%r' % body_link_only)
     logging.info('body for non-members is:\n%r' % body_for_non_members)
     logging.info('body for members is:\n%r' % body_for_members)
 
@@ -203,8 +211,9 @@ class NotifyIssueChangeTask(notify_helpers.NotifyTaskBase):
         hostport, issue.project_name, urls.ISSUE_DETAIL,
         id=issue.local_id)
     email_tasks = notify_helpers.MakeBulletedEmailWorkItems(
-        group_reason_list, issue, body_for_non_members, body_for_members,
-        project, hostport, commenter_view, detail_url, seq_num=comment.sequence)
+        group_reason_list, issue, body_link_only, body_for_non_members,
+        body_for_members, project, hostport, commenter_view, detail_url,
+        seq_num=comment.sequence)
 
     return email_tasks
 
@@ -319,6 +328,8 @@ class NotifyBlockingChangeTask(notify_helpers.NotifyTaskBase):
     # TODO(jrobbins): Generate two versions of email body: members
     # vesion has other member full email addresses exposed.  But, don't
     # expose too many as we iterate through upstream projects.
+    body_link_only = self.link_only_email_template.GetResponse(
+        {'detail_url': upstream_detail_url, 'was_created': ezt.boolean(False)})
     body = self.email_template.GetResponse(email_data)
 
     omit_addrs = {users_by_id[omit_id].email for omit_id in omit_ids}
@@ -330,8 +341,8 @@ class NotifyBlockingChangeTask(notify_helpers.NotifyTaskBase):
         cnxn, self.services, upstream_project, upstream_issue,
         upstream_config, users_by_id, omit_addrs, contributor_could_view)
     one_issue_email_tasks = notify_helpers.MakeBulletedEmailWorkItems(
-        group_reason_list, upstream_issue, body, body, upstream_project,
-        hostport, commenter_view, detail_url)
+        group_reason_list, upstream_issue, body_link_only, body, body,
+        upstream_project, hostport, commenter_view, detail_url)
 
     return one_issue_email_tasks
 

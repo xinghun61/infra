@@ -9,6 +9,7 @@ from __future__ import print_function
 from __future__ import division
 from __future__ import absolute_import
 
+import mock
 import unittest
 import os
 
@@ -129,13 +130,84 @@ class MakeBulletedEmailWorkItemsTest(unittest.TestCase):
   def testEmptyAddrs(self):
     """Test the case where we found zero users to notify."""
     email_tasks = notify_helpers.MakeBulletedEmailWorkItems(
-        [], self.issue, 'body', 'body', self.project, 'example.com',
+        [], self.issue, 'link only body', 'non-member body', 'member body',
+        self.project, 'example.com',
         self.commenter_view, self.detail_url)
     self.assertEqual([], email_tasks)
     email_tasks = notify_helpers.MakeBulletedEmailWorkItems(
-        [([], 'reason')], self.issue, 'body', 'body', self.project,
+        [([], 'reason')], self.issue, 'link only body', 'non-member body',
+        'member body', self.project,
         'example.com', self.commenter_view, self.detail_url)
     self.assertEqual([], email_tasks)
+
+
+class LinkOnlyLogicTest(unittest.TestCase):
+
+  def setUp(self):
+    self.user_prefs = user_pb2.UserPrefs()
+    self.user = user_pb2.User()
+    self.issue = fake.MakeTestIssue(
+        789, 1, 'summary one', 'New', 111)
+    self.rvg_issue = fake.MakeTestIssue(
+        789, 2, 'summary two', 'New', 111, labels=['Restrict-View-Google'])
+    self.more_restricted_issue = fake.MakeTestIssue(
+        789, 3, 'summary three', 'New', 111, labels=['Restrict-View-Core'])
+    self.both_restricted_issue = fake.MakeTestIssue(
+        789, 4, 'summary four', 'New', 111,
+        labels=['Restrict-View-Google', 'Restrict-View-Core'])
+    self.addr_perm = notify_reasons.AddrPerm(
+        False, 'user@example.com', self.user, notify_reasons.REPLY_MAY_COMMENT,
+        self.user_prefs)
+
+  def testGetNotifyRestrictedIssues_PrefIsSet(self):
+    """When the notify_restricted_issues pref is set, we use it."""
+    self.user_prefs.prefs.extend([
+        user_pb2.UserPrefValue(name='x', value='y'),
+        user_pb2.UserPrefValue(name='notify_restricted_issues', value='z'),
+        ])
+    actual = notify_helpers._GetNotifyRestrictedIssues(
+        self.user_prefs, 'user@example.com', self.user)
+    self.assertEqual('z', actual)
+
+  def testGetNotifyRestrictedIssues_UserHasVisited(self):
+    """If user has ever visited, we know that they are not a mailing list."""
+    self.user.last_visit_timestamp = 123456789
+    actual = notify_helpers._GetNotifyRestrictedIssues(
+        self.user_prefs, 'user@example.com', self.user)
+    self.assertEqual('notify with details', actual)
+
+  def testGetNotifyRestrictedIssues_GooglerNeverVisited(self):
+    """It could be a noogler or google mailing list."""
+    actual = notify_helpers._GetNotifyRestrictedIssues(
+        self.user_prefs, 'user@google.com', self.user)
+    self.assertEqual('notify with details: Google', actual)
+
+  def testGetNotifyRestrictedIssues_NonGooglerNeverVisited(self):
+    """It could be a new non-noogler or public mailing list."""
+    actual = notify_helpers._GetNotifyRestrictedIssues(
+        self.user_prefs, 'user@example.com', self.user)
+    self.assertEqual('notify with link only', actual)
+
+    # If email does not match any known user, user object will be None.
+    actual = notify_helpers._GetNotifyRestrictedIssues(
+        self.user_prefs, 'user@example.com', None)
+    self.assertEqual('notify with link only', actual)
+
+  def testShouldUseLinkOnly_UnrestrictedIssue(self):
+    """Issue is not restricted, so go ahead and send comment details."""
+    self.assertFalse(notify_helpers._ShouldUseLinkOnly(
+        self.addr_perm, self.issue))
+
+  @mock.patch('features.notify_helpers._GetNotifyRestrictedIssues')
+  def testShouldUseLinkOnly_NotifyWithDetails(self, fake_gnri):
+    """Issue is restricted, and user is allowed to get full comment details."""
+    fake_gnri.return_value = notify_helpers.NOTIFY_WITH_DETAILS
+    self.assertFalse(notify_helpers._ShouldUseLinkOnly(
+        self.addr_perm, self.rvg_issue))
+    self.assertFalse(notify_helpers._ShouldUseLinkOnly(
+        self.addr_perm, self.more_restricted_issue))
+    self.assertFalse(notify_helpers._ShouldUseLinkOnly(
+        self.addr_perm, self.both_restricted_issue))
 
 
 class MakeEmailWorkItemTest(unittest.TestCase):
@@ -158,13 +230,38 @@ class MakeEmailWorkItemTest(unittest.TestCase):
         project_name='proj1')
     self.detail_url = 'http://test-detail-url.com/id=1234'
 
-  def testBodySelection(self):
+  @mock.patch('features.notify_helpers._ShouldUseLinkOnly')
+  def testBodySelection_LinkOnly(self, mock_sulo):
+    """We send a link-only body when _ShouldUseLinkOnly() is true."""
+    mock_sulo.return_value = True
+    email_task = notify_helpers._MakeEmailWorkItem(
+        notify_reasons.AddrPerm(
+            True, 'a@a.com', self.member, REPLY_NOT_ALLOWED,
+            user_pb2.UserPrefs()),
+        ['reason'], self.issue,
+        'body link-only', 'body mem', 'body mem', self.project,
+        'example.com', self.commenter_view, self.detail_url)
+    self.assertIn('body link-only', email_task['body'])
+
+  def testBodySelection_Member(self):
+    """We send members the email body that is indented for members."""
+    email_task = notify_helpers._MakeEmailWorkItem(
+        notify_reasons.AddrPerm(
+            True, 'a@a.com', self.member, REPLY_NOT_ALLOWED,
+            user_pb2.UserPrefs()),
+        ['reason'], self.issue,
+        'body link-only', 'body mem', 'body mem', self.project,
+        'example.com', self.commenter_view, self.detail_url)
+    self.assertIn('body mem', email_task['body'])
+
+  def testBodySelection_NonMember(self):
     """We send non-members the email body that is indented for non-members."""
     email_task = notify_helpers._MakeEmailWorkItem(
         notify_reasons.AddrPerm(
             False, 'a@a.com', self.member, REPLY_NOT_ALLOWED,
             user_pb2.UserPrefs()),
-        ['reason'], self.issue, 'body non', 'body mem', self.project,
+        ['reason'], self.issue,
+        'body link-only', 'body non', 'body mem', self.project,
         'example.com', self.commenter_view, self.detail_url)
 
     self.assertEqual('a@a.com', email_task['to'])
@@ -176,21 +273,14 @@ class MakeEmailWorkItemTest(unittest.TestCase):
       email_task['from_addr'])
     self.assertEqual(emailfmt.NoReplyAddress(), email_task['reply_to'])
 
-    email_task = notify_helpers._MakeEmailWorkItem(
-        notify_reasons.AddrPerm(
-            True, 'a@a.com', self.member, REPLY_NOT_ALLOWED,
-            user_pb2.UserPrefs()),
-        ['reason'], self.issue, 'body mem', 'body mem', self.project,
-        'example.com', self.commenter_view, self.detail_url)
-    self.assertIn('body mem', email_task['body'])
-
   def testHtmlBody(self):
     """"An html body is sent if a detail_url is specified."""
     email_task = notify_helpers._MakeEmailWorkItem(
         notify_reasons.AddrPerm(
             False, 'a@a.com', self.member, REPLY_NOT_ALLOWED,
             user_pb2.UserPrefs()),
-        ['reason'], self.issue, 'body non', 'body mem', self.project,
+        ['reason'], self.issue,
+        'body link-only', 'body non', 'body mem', self.project,
         'example.com', self.commenter_view, self.detail_url)
 
     expected_html_body = (
@@ -206,7 +296,8 @@ class MakeEmailWorkItemTest(unittest.TestCase):
         notify_reasons.AddrPerm(
             False, 'a@a.com', self.member, REPLY_NOT_ALLOWED,
             user_pb2.UserPrefs()),
-        ['reason'], self.issue, unicode_content, 'unused body mem',
+        ['reason'], self.issue,
+        'body link-only', unicode_content, 'unused body mem',
         self.project, 'example.com', self.commenter_view, self.detail_url)
 
     expected_html_body = (
@@ -222,7 +313,8 @@ class MakeEmailWorkItemTest(unittest.TestCase):
         notify_reasons.AddrPerm(
             False, 'a@a.com', self.member, REPLY_NOT_ALLOWED,
             user_pb2.UserPrefs()),
-        ['reason'], self.issue, 'test google.com test', 'unused body mem',
+        ['reason'], self.issue,
+        'body link-only', 'test google.com test', 'unused body mem',
         self.project, 'example.com', self.commenter_view, self.detail_url)
 
     expected_html_body = (
@@ -239,8 +331,10 @@ class MakeEmailWorkItemTest(unittest.TestCase):
         notify_reasons.AddrPerm(
             False, 'a@a.com', self.member, REPLY_NOT_ALLOWED,
             user_pb2.UserPrefs()),
-        ['reason'], self.issue, 'a <http://google.com> z', 'unused body',
-        self.project, 'example.com', self.commenter_view, self.detail_url)
+        ['reason'], self.issue,
+        'body link-only', 'a <http://google.com> z', 'unused body',
+        self.project, 'example.com', self.commenter_view,
+        self.detail_url)
 
     expected_html_body = (
         notify_helpers.HTML_BODY_WITH_GMAIL_ACTION_TEMPLATE % {
@@ -256,7 +350,8 @@ class MakeEmailWorkItemTest(unittest.TestCase):
         notify_reasons.AddrPerm(
             False, 'a@a.com', self.member, REPLY_NOT_ALLOWED,
             user_pb2.UserPrefs()),
-        ['reason'], self.issue, 'a <tt@chromium.org> <aa@chromium.org> z',
+        ['reason'], self.issue,
+        'body link-only', 'a <tt@chromium.org> <aa@chromium.org> z',
         'unused body mem', self.project, 'example.com', self.commenter_view,
         self.detail_url)
 
@@ -277,7 +372,8 @@ class MakeEmailWorkItemTest(unittest.TestCase):
         notify_reasons.AddrPerm(
             False, 'a@a.com', self.member, REPLY_NOT_ALLOWED,
             user_pb2.UserPrefs()),
-        ['reason'], self.issue, body_with_html_content, 'unused body mem',
+        ['reason'], self.issue,
+        'body link-only', body_with_html_content, 'unused body mem',
         self.project, 'example.com', self.commenter_view, self.detail_url)
 
     escaped_body_with_html_content = (
@@ -344,7 +440,8 @@ class MakeEmailWorkItemTest(unittest.TestCase):
         notify_reasons.AddrPerm(
             True, 'a@a.com', self.member, REPLY_NOT_ALLOWED,
             user_pb2.UserPrefs()),
-        ['reason'], self.issue, 'body non', 'body mem', self.project,
+        ['reason'], self.issue,
+        'body link-only', 'body non', 'body mem', self.project,
         'example.com', self.commenter_view, self.detail_url)
     self.assertEqual(emailfmt.NoReplyAddress(), email_task['reply_to'])
     self.assertNotIn('Reply to this email', email_task['body'])
@@ -353,7 +450,8 @@ class MakeEmailWorkItemTest(unittest.TestCase):
         notify_reasons.AddrPerm(
             True, 'a@a.com', self.member, REPLY_MAY_COMMENT,
             user_pb2.UserPrefs()),
-        ['reason'], self.issue, 'body non', 'body mem', self.project,
+        ['reason'], self.issue,
+        'body link-only', 'body non', 'body mem', self.project,
         'example.com', self.commenter_view, self.detail_url)
     self.assertEqual(
       '%s@%s' % (self.project.project_name, emailfmt.MailDomain()),
@@ -365,7 +463,8 @@ class MakeEmailWorkItemTest(unittest.TestCase):
         notify_reasons.AddrPerm(
             True, 'a@a.com', self.member, REPLY_MAY_UPDATE,
             user_pb2.UserPrefs()),
-        ['reason'], self.issue, 'body non', 'body mem', self.project,
+        ['reason'], self.issue,
+        'body link-only', 'body non', 'body mem', self.project,
         'example.com', self.commenter_view, self.detail_url)
     self.assertEqual(
       '%s@%s' % (self.project.project_name, emailfmt.MailDomain()),
@@ -380,8 +479,9 @@ class MakeEmailWorkItemTest(unittest.TestCase):
         notify_reasons.AddrPerm(
             True, 'a@a.com', self.member, REPLY_MAY_UPDATE,
             user_pb2.UserPrefs()),
-        ['reason'], self.issue, 'body non', 'body mem', self.project,
-        'example.com', self.commenter_view, self.detail_url)
+        ['reason'], self.issue,
+        'body link-only', 'body non', 'body mem',
+        self.project, 'example.com', self.commenter_view, self.detail_url)
     self.assertEqual(emailfmt.NoReplyAddress(), email_task['reply_to'])
 
   def testReasons(self):
@@ -390,8 +490,9 @@ class MakeEmailWorkItemTest(unittest.TestCase):
         notify_reasons.AddrPerm(
             True, 'a@a.com', self.member, REPLY_MAY_UPDATE,
             user_pb2.UserPrefs()),
-        ['Funny', 'Caring', 'Near'], self.issue, 'body', 'body', self.project,
-        'example.com', self.commenter_view, self.detail_url)
+        ['Funny', 'Caring', 'Near'], self.issue,
+        'body link-only', 'body non', 'body mem',
+        self.project, 'example.com', self.commenter_view, self.detail_url)
     self.assertIn('because:', email_task['body'])
     self.assertIn('1. Funny', email_task['body'])
     self.assertIn('2. Caring', email_task['body'])
@@ -401,8 +502,9 @@ class MakeEmailWorkItemTest(unittest.TestCase):
         notify_reasons.AddrPerm(
             True, 'a@a.com', self.member, REPLY_MAY_UPDATE,
             user_pb2.UserPrefs()),
-        [], self.issue, 'body', 'body', self.project,
-        'example.com', self.commenter_view, self.detail_url)
+        [], self.issue,
+        'body link-only', 'body non', 'body mem',
+        self.project, 'example.com', self.commenter_view, self.detail_url)
     self.assertNotIn('because', email_task['body'])
 
 

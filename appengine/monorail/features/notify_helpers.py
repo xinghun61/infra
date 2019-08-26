@@ -81,6 +81,12 @@ HTML_BODY_WITHOUT_GMAIL_ACTION_TEMPLATE = """
 """
 
 
+NOTIFY_RESTRICTED_ISSUES_PREF_NAME = 'notify_restricted_issues'
+NOTIFY_WITH_DETAILS = 'notify with details'
+NOTIFY_WITH_DETAILS_GOOGLE = 'notify with details: Google'
+NOTIFY_WITH_LINK_ONLY = 'notify with link only'
+
+
 def _EnqueueOutboundEmail(message_dict):
   """Create a task to send one email message, all fields are in the dict.
 
@@ -113,6 +119,7 @@ class NotifyTaskBase(jsonfeed.InternalTask):
   """Abstract base class for notification task handler."""
 
   _EMAIL_TEMPLATE = None  # Subclasses must override this.
+  _LINK_ONLY_EMAIL_TEMPLATE = None  # Subclasses may override this.
 
   CHECK_SECURITY_TOKEN = False
 
@@ -127,6 +134,11 @@ class NotifyTaskBase(jsonfeed.InternalTask):
     self.email_template = template_helpers.MonorailTemplate(
         framework_constants.TEMPLATE_PATH + self._EMAIL_TEMPLATE,
         compress_whitespace=False, base_format=ezt.FORMAT_RAW)
+
+    if self._LINK_ONLY_EMAIL_TEMPLATE:
+      self.link_only_email_template = template_helpers.MonorailTemplate(
+          framework_constants.TEMPLATE_PATH + self._LINK_ONLY_EMAIL_TEMPLATE,
+          compress_whitespace=False, base_format=ezt.FORMAT_RAW)
 
 
 def _MergeLinkedAccountReasons(addr_reasons_dict):
@@ -154,14 +166,15 @@ def _MergeLinkedAccountReasons(addr_reasons_dict):
 
 
 def MakeBulletedEmailWorkItems(
-    group_reason_list, issue, body_for_non_members, body_for_members,
-    project, hostport, commenter_view, detail_url, seq_num=None,
-    subject_prefix=None, compact_subject_prefix=None):
+    group_reason_list, issue, body_link_only, body_for_non_members,
+    body_for_members, project, hostport, commenter_view, detail_url,
+    seq_num=None, subject_prefix=None, compact_subject_prefix=None):
   """Make a list of dicts describing email-sending tasks to notify users.
 
   Args:
     group_reason_list: list of (addr_perm_list, reason) tuples.
     issue: Issue that was updated.
+    body_link_only: string body of email with minimal information.
     body_for_non_members: string body of email to send to non-members.
     body_for_members: string body of email to send to members.
     project: Project that contains the issue.
@@ -188,7 +201,7 @@ def MakeBulletedEmailWorkItems(
   email_tasks = []
   for memb_addr_perm, reasons in addr_reasons_dict.items():
     email_tasks.append(_MakeEmailWorkItem(
-        memb_addr_perm, reasons, issue, body_for_non_members,
+        memb_addr_perm, reasons, issue, body_link_only, body_for_non_members,
         body_for_members, project, hostport, commenter_view, detail_url,
         seq_num=seq_num, subject_prefix=subject_prefix,
         compact_subject_prefix=compact_subject_prefix))
@@ -204,29 +217,78 @@ def _TruncateBody(body):
   return body
 
 
+def _GetNotifyRestrictedIssues(user_prefs, email, user):
+  """Return the notify_restricted_issues pref or a calculated default value."""
+  # If we explicitly set a pref for this address, use it.
+  for pref in user_prefs.prefs:
+    if pref.name == NOTIFY_RESTRICTED_ISSUES_PREF_NAME:
+      return pref.value
+
+  # Mailing lists cannot visit the site, so if it visited, it is a person.
+  if user and user.last_visit_timestamp:
+    return NOTIFY_WITH_DETAILS
+
+  # If it is a google.com mailing list, allow details for R-V-G issues.
+  if email.endswith('@google.com'):
+    return NOTIFY_WITH_DETAILS_GOOGLE
+
+  # It might be a public mailing list, so don't risk leaking any details.
+  return NOTIFY_WITH_LINK_ONLY
+
+
+def _ShouldUseLinkOnly(addr_perm, issue):
+  """Return true when there is a risk of leaking a restricted issue.
+
+  We send notifications that contain only a link to the issue with no other
+  details about the change when:
+  - The issue is R-V-G and the address may be a non-google.com mailing list, or
+  - The issue is restricted with something other than R-V-G, and the user
+     may be a mailing list, or
+  - The user has a preference set.
+  """
+  restrictions = permissions.GetRestrictions(issue, perm=permissions.VIEW)
+  if not restrictions:
+    return False
+
+  pref = _GetNotifyRestrictedIssues(
+      addr_perm.user_prefs, addr_perm.address, addr_perm.user)
+  if pref == NOTIFY_WITH_DETAILS:
+    return False
+  if (pref == NOTIFY_WITH_DETAILS_GOOGLE and
+      restrictions == ['restrict-view-google']):
+    return False
+
+  # If NOTIFY_WITH_LINK_ONLY or any unexpected value:
+  return True
+
+
 def _MakeEmailWorkItem(
-    addr_perm, reasons, issue,
+    addr_perm, reasons, issue, body_link_only,
     body_for_non_members, body_for_members, project, hostport, commenter_view,
     detail_url, seq_num=None, subject_prefix=None, compact_subject_prefix=None):
   """Make one email task dict for one user, includes a detailed reason."""
+  should_use_link_only = _ShouldUseLinkOnly(addr_perm, issue)
   subject_format = (
       (subject_prefix or 'Issue ') +
-      '%(local_id)d in %(project_name)s: %(summary)s')
+      '%(local_id)d in %(project_name)s')
   if addr_perm.user and addr_perm.user.email_compact_subject:
     subject_format = (
         (compact_subject_prefix or '') +
-        '%(project_name)s:%(local_id)d: %(summary)s')
+        '%(project_name)s:%(local_id)d')
 
   subject = subject_format % {
     'local_id': issue.local_id,
     'project_name': issue.project_name,
-    'summary': issue.summary,
     }
+  if not should_use_link_only:
+    subject += ': ' + issue.summary
 
   footer = _MakeNotificationFooter(reasons, addr_perm.reply_perm, hostport)
   if isinstance(footer, six.text_type):
     footer = footer.encode('utf-8')
-  if addr_perm.is_member:
+  if should_use_link_only:
+    body = _TruncateBody(body_link_only) + footer
+  elif addr_perm.is_member:
     logging.info('got member %r, sending body for members', addr_perm.address)
     body = _TruncateBody(body_for_members) + footer
   else:
