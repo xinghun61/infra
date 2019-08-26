@@ -30,7 +30,7 @@ def RunSteps(api):
       co.run_presubmit_in_go_env()
   else:
     co.go_env_step('go', 'build', 'go.chromium.org/gae/...')
-    co.go_env_step('go', 'test', 'go.chromium.org/gae/...')
+    co.go_env_step('go', 'test', '-cover', 'go.chromium.org/gae/...')
     if not api.platform.is_win:
       # Windows bots do not have gcc installed at the moment.
       co.go_env_step('go', 'test', '-race', 'go.chromium.org/gae/...',
