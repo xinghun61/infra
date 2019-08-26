@@ -11,6 +11,7 @@ import collections
 import json
 import logging
 import re
+import time
 import urlparse
 import zlib
 
@@ -618,6 +619,21 @@ class ProcessCodeCoverageData(BaseHandler):
           'builder':
               '%s/%s/%s' % (builder.project, builder.bucket, builder.builder),
       })
+
+    monitoring.code_coverage_report_timestamp.set(
+        int(time.time()),
+        fields={
+            'host':
+                commit.host,
+            'project':
+                commit.project,
+            'ref':
+                commit.ref or 'refs/heads/master',
+            'builder':
+                '%s/%s/%s' % (builder.project, builder.bucket, builder.builder),
+            'is_success':
+                report.visible,
+        })
 
   def _FetchAndSaveFileIfNecessary(self, report, path, revision):
     """Fetches the file from gitiles and store to cloud storage if not exist.

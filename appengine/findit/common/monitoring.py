@@ -157,3 +157,14 @@ code_coverage_full_reports = gae_ts_mon.CounterMetric(
         gae_ts_mon.StringField('ref'),
         gae_ts_mon.StringField('builder'),  # <luci_project>/<bucket>/<builder>
     ])
+
+code_coverage_report_timestamp = gae_ts_mon.GaugeMetric(
+    'code-coverage/report_timestamp',
+    'Timestamp of the completion of the last report',
+    [
+        gae_ts_mon.StringField('host'),
+        gae_ts_mon.StringField('project'),  # Gerrit project.
+        gae_ts_mon.StringField('ref'),
+        gae_ts_mon.StringField('builder'),  # <luci_project>/<bucket>/<builder>
+        gae_ts_mon.BooleanField('is_success'),
+    ])
