@@ -967,6 +967,24 @@ wheel: <
 
 * *universal*
 
+## **freetype-py**
+
+### 2.1.0.post1
+
+```protobuf
+wheel: <
+  name: "infra/python/wheels/freetype-py/${vpython_platform}"
+  version: "version:2.1.0.post1"
+>
+```
+
+
+* *mac-x64*
+* *manylinux-x64*
+* *manylinux-x86*
+* *windows-x64*
+* *windows-x86*
+
 ## **funcsigs**
 
 ### 1.0.2
@@ -2689,29 +2707,31 @@ wheel: <
 
 * *universal*
 
-### 1.8.4
+### 1.8.4-45a720817e4de1df2f173c7e4029e176
 
 ```protobuf
 wheel: <
   name: "infra/python/wheels/pylint-py2_py3"
-  version: "version:1.8.4"
+  version: "version:1.8.4-45a720817e4de1df2f173c7e4029e176"
 >
 ```
 
 
 * *universal*
+* custom patches: disable-log-spam
 
-### 1.9.5
+### 1.9.5-45a720817e4de1df2f173c7e4029e176
 
 ```protobuf
 wheel: <
   name: "infra/python/wheels/pylint-py2_py3"
-  version: "version:1.9.5"
+  version: "version:1.9.5-45a720817e4de1df2f173c7e4029e176"
 >
 ```
 
 
 * *universal*
+* custom patches: disable-log-spam
 
 ## **pynacl**
 

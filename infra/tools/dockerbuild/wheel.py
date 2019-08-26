@@ -317,6 +317,11 @@ SPECS.update({s.spec.tag: s for s in assert_sorted('SourceOrPrebuilt',
 # practice.
 from .wheel_wheel import Prebuilt
 SPECS.update({s.spec.tag: s for s in assert_sorted('Prebuilt',
+  Prebuilt('freetype-py', '2.1.0.post1',
+      ['mac-x64',
+       'manylinux-x86', 'manylinux-x64',
+       'windows-x86', 'windows-x64'],
+  ),
   Prebuilt('lxml', '4.2.5',
       ['mac-x64',
        'manylinux-x86', 'manylinux-x64',
