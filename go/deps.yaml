@@ -197,12 +197,6 @@ import:
   repo: https://chromium.googlesource.com/external/github.com/maruel/panicparse.git
   subpackages:
   - cmd/pp
-- package: github.com/maruel/pre-commit-go
-  version: master
-  repo: https://chromium.googlesource.com/external/github.com/maruel/pre-commit-go.git
-  subpackages:
-  - cmd/covg
-  - cmd/pcg
 - package: golang.org/x/tools
   version: master
   repo: https://go.googlesource.com/tools.git

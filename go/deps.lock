@@ -249,12 +249,6 @@ imports:
   repo: https://chromium.googlesource.com/external/github.com/maruel/panicparse.git
   subpackages:
   - cmd/pp
-- name: github.com/maruel/pre-commit-go
-  version: 4633c1c6e792d3a18a4ce563cb5e66f5da8ef63a
-  repo: https://chromium.googlesource.com/external/github.com/maruel/pre-commit-go.git
-  subpackages:
-  - cmd/covg
-  - cmd/pcg
 - name: github.com/maruel/subcommands
   version: 967e945be48bc4df686f64d0ff2aac67e9d1b6ec
   repo: https://chromium.googlesource.com/external/github.com/maruel/subcommands.git

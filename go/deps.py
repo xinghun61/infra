@@ -53,8 +53,6 @@ VENDORED_TOOLS = [
   'github.com/golang/protobuf/protoc-gen-go',
   'github.com/kisielk/errcheck',
   'github.com/maruel/panicparse/cmd/pp',
-  'github.com/maruel/pre-commit-go/cmd/covg',
-  'github.com/maruel/pre-commit-go/cmd/pcg',
   'github.com/smartystreets/goconvey',
   'golang.org/x/lint/golint',
   'golang.org/x/mobile/cmd/gomobile',
