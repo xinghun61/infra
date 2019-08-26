@@ -246,8 +246,11 @@ const (
 	// ApacRegion identifies Asia and the Pacific.
 	ApacRegion = "APAC"
 
-	// AmerRegion identifies the Americas.
-	AmerRegion = "AMER"
+	// AmerWestRegion identifies the west coast of America.
+	AmerWestRegion = "AMER-WEST"
+
+	// AmerEastRegion identifies the east coast of America.
+	AmerEastRegion = "AMER-EAST"
 )
 
 // TimezoneGroup returns the name of the business region for the given timezone.
@@ -257,7 +260,9 @@ func TimezoneGroup(loc time.Location) string {
 		return EmeaRegion
 	} else if offsetHrs < 16 {
 		return ApacRegion
+	} else if offsetHrs < 18 {
+		return AmerWestRegion
 	} else {
-		return AmerRegion
+		return AmerEastRegion
 	}
 }

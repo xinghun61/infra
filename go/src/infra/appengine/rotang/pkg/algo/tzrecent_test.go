@@ -10,13 +10,17 @@ import (
 
 func TestGenerateTZRecent(t *testing.T) {
 
-	amerLocation, err := time.LoadLocation(amerTZ)
+	pacificLocation, err := time.LoadLocation(pacificTZ)
 	if err != nil {
-		t.Fatalf("time.LoadLocation(%q) failed: %v", amerTZ, err)
+		t.Fatalf("time.LoadLocation(%q) failed: %v", pacificTZ, err)
 	}
-	emeaLocation, err := time.LoadLocation(emeaTZ)
+	euLocation, err := time.LoadLocation(euTZ)
 	if err != nil {
-		t.Fatalf("time.LoadLocation(%q) failed: %v", emeaTZ, err)
+		t.Fatalf("time.LoadLocation(%q) failed: %v", euTZ, err)
+	}
+	estLocation, err := time.LoadLocation(estTZ)
+	if err != nil {
+		t.Fatalf("time.LoadLocation(%q) failed: %v", estTZ, err)
 	}
 	apacLocation, err := time.LoadLocation(apacTZ)
 	if err != nil {
@@ -193,13 +197,16 @@ func TestGenerateTZRecent(t *testing.T) {
 			numShifts: 9,
 			members: []memberTZ{{
 				members: "ABC",
-				TZ:      apacLocation,
+				TZ:      estLocation,
+			}, {
+				members: "DEF",
+				TZ:      pacificLocation,
 			}, {
 				members: "GHI",
-				TZ:      amerLocation,
+				TZ:      apacLocation,
 			}, {
 				members: "JKL",
-				TZ:      emeaLocation,
+				TZ:      euLocation,
 			},
 			},
 			previous: "ABCDEFGHIJKL",
@@ -208,10 +215,13 @@ func TestGenerateTZRecent(t *testing.T) {
 					Name: "Test Shift",
 					OnCall: []rotang.ShiftMember{
 						{
-							Email:     "G@G.com",
+							Email:     "A@A.com",
 							ShiftName: "Test Shift",
 						}, {
-							Email:     "A@A.com",
+							Email:     "D@D.com",
+							ShiftName: "Test Shift",
+						}, {
+							Email:     "G@G.com",
 							ShiftName: "Test Shift",
 						}, {
 							Email:     "J@J.com",
@@ -224,10 +234,13 @@ func TestGenerateTZRecent(t *testing.T) {
 					Name: "Test Shift",
 					OnCall: []rotang.ShiftMember{
 						{
-							Email:     "H@H.com",
+							Email:     "B@B.com",
 							ShiftName: "Test Shift",
 						}, {
-							Email:     "B@B.com",
+							Email:     "E@E.com",
+							ShiftName: "Test Shift",
+						}, {
+							Email:     "H@H.com",
 							ShiftName: "Test Shift",
 						}, {
 							Email:     "K@K.com",
@@ -240,10 +253,13 @@ func TestGenerateTZRecent(t *testing.T) {
 					Name: "Test Shift",
 					OnCall: []rotang.ShiftMember{
 						{
-							Email:     "I@I.com",
+							Email:     "C@C.com",
 							ShiftName: "Test Shift",
 						}, {
-							Email:     "C@C.com",
+							Email:     "F@F.com",
+							ShiftName: "Test Shift",
+						}, {
+							Email:     "I@I.com",
 							ShiftName: "Test Shift",
 						}, {
 							Email:     "L@L.com",
@@ -256,10 +272,13 @@ func TestGenerateTZRecent(t *testing.T) {
 					Name: "Test Shift",
 					OnCall: []rotang.ShiftMember{
 						{
-							Email:     "G@G.com",
+							Email:     "A@A.com",
 							ShiftName: "Test Shift",
 						}, {
-							Email:     "A@A.com",
+							Email:     "D@D.com",
+							ShiftName: "Test Shift",
+						}, {
+							Email:     "G@G.com",
 							ShiftName: "Test Shift",
 						}, {
 							Email:     "J@J.com",
@@ -272,10 +291,13 @@ func TestGenerateTZRecent(t *testing.T) {
 					Name: "Test Shift",
 					OnCall: []rotang.ShiftMember{
 						{
-							Email:     "H@H.com",
+							Email:     "B@B.com",
 							ShiftName: "Test Shift",
 						}, {
-							Email:     "B@B.com",
+							Email:     "E@E.com",
+							ShiftName: "Test Shift",
+						}, {
+							Email:     "H@H.com",
 							ShiftName: "Test Shift",
 						}, {
 							Email:     "K@K.com",
@@ -288,10 +310,13 @@ func TestGenerateTZRecent(t *testing.T) {
 					Name: "Test Shift",
 					OnCall: []rotang.ShiftMember{
 						{
-							Email:     "I@I.com",
+							Email:     "C@C.com",
 							ShiftName: "Test Shift",
 						}, {
-							Email:     "C@C.com",
+							Email:     "F@F.com",
+							ShiftName: "Test Shift",
+						}, {
+							Email:     "I@I.com",
 							ShiftName: "Test Shift",
 						}, {
 							Email:     "L@L.com",
@@ -304,10 +329,13 @@ func TestGenerateTZRecent(t *testing.T) {
 					Name: "Test Shift",
 					OnCall: []rotang.ShiftMember{
 						{
-							Email:     "G@G.com",
+							Email:     "A@A.com",
 							ShiftName: "Test Shift",
 						}, {
-							Email:     "A@A.com",
+							Email:     "D@D.com",
+							ShiftName: "Test Shift",
+						}, {
+							Email:     "G@G.com",
 							ShiftName: "Test Shift",
 						}, {
 							Email:     "J@J.com",
@@ -320,10 +348,13 @@ func TestGenerateTZRecent(t *testing.T) {
 					Name: "Test Shift",
 					OnCall: []rotang.ShiftMember{
 						{
-							Email:     "H@H.com",
+							Email:     "B@B.com",
 							ShiftName: "Test Shift",
 						}, {
-							Email:     "B@B.com",
+							Email:     "E@E.com",
+							ShiftName: "Test Shift",
+						}, {
+							Email:     "H@H.com",
 							ShiftName: "Test Shift",
 						}, {
 							Email:     "K@K.com",
@@ -336,10 +367,13 @@ func TestGenerateTZRecent(t *testing.T) {
 					Name: "Test Shift",
 					OnCall: []rotang.ShiftMember{
 						{
-							Email:     "I@I.com",
+							Email:     "C@C.com",
 							ShiftName: "Test Shift",
 						}, {
-							Email:     "C@C.com",
+							Email:     "F@F.com",
+							ShiftName: "Test Shift",
+						}, {
+							Email:     "I@I.com",
 							ShiftName: "Test Shift",
 						}, {
 							Email:     "L@L.com",
