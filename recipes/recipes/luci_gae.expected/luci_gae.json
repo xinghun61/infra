@@ -154,19 +154,6 @@
     "name": "go test"
   },
   {
-    "cmd": [
-      "vpython",
-      "-u",
-      "[CACHE]/infra_gclient_with_go/infra/go/env.py",
-      "go",
-      "test",
-      "-race",
-      "go.chromium.org/gae/..."
-    ],
-    "cwd": "[CACHE]/infra_gclient_with_go",
-    "name": "go test -race"
-  },
-  {
     "name": "$result"
   }
 ]
