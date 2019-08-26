@@ -284,9 +284,9 @@ import:
   repo: https://chromium.googlesource.com/external/github.com/google/go-querystring.git
   subpackages:
   - query
-- package: github.com/Microsoft/go-winio
+- package: github.com/microsoft/go-winio
   version: master
-  repo: https://chromium.googlesource.com/external/github.com/Microsoft/go-winio.git
+  repo: https://chromium.googlesource.com/external/github.com/microsoft/go-winio.git
 - package: github.com/docker/docker
   version: tags/v1.13.0
   repo: https://chromium.googlesource.com/external/github.com/docker/docker.git
