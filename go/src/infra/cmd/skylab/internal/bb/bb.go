@@ -120,9 +120,13 @@ func (c *Client) ScheduleBuild(ctx context.Context, request *test_platform.Reque
 func (c *Client) WaitForBuild(ctx context.Context, ID int64) (*steps.ExecuteResponse, error) {
 	build, err := c.waitForBuild(ctx, ID)
 	if err != nil {
-		return nil, err
+		return nil, errors.Annotate(err, "wait for build %d", ID).Err()
 	}
-	return extractResponse(build)
+	ret, err := extractResponse(build)
+	if err != nil {
+		return nil, errors.Annotate(err, "wait for build %d", ID).Err()
+	}
+	return ret, nil
 }
 
 // BuildURL constructs the URL to a build with the given ID.
