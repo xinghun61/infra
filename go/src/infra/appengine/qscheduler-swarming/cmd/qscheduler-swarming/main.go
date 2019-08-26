@@ -19,7 +19,6 @@ package main
 import (
 	"context"
 	"flag"
-	"os"
 	"time"
 
 	"infra/appengine/qscheduler-swarming/app/config"
@@ -28,87 +27,66 @@ import (
 	"infra/appengine/qscheduler-swarming/app/state/nodestore"
 
 	"go.chromium.org/luci/common/clock"
-	"go.chromium.org/luci/common/data/rand/mathrand"
 	"go.chromium.org/luci/common/logging"
-	"go.chromium.org/luci/grpc/prpc"
-	"go.chromium.org/luci/hardcoded/chromeinfra"
 	"go.chromium.org/luci/server"
-	"go.chromium.org/luci/server/auth"
-	"go.chromium.org/luci/server/router"
 )
 
 func main() {
-	mathrand.SeedRandomly()
-
-	// Use OAuth2 as default authentication method for incoming pRPC calls.
-	prpc.RegisterDefaultAuth(&auth.Authenticator{
-		Methods: []auth.Method{
-			&auth.GoogleOAuth2Method{
-				Scopes: []string{"https://www.googleapis.com/auth/userinfo.email"},
-			},
-		},
-	})
-
 	cfgLoader := config.Loader{}
 	cfgLoader.RegisterFlags(flag.CommandLine)
 
-	// Instantiate the LUCI server instance based on CLI flags.
-	opts := server.Options{
-		ClientAuth: chromeinfra.DefaultAuthOptions(),
-	}
-	opts.Register(flag.CommandLine)
-	flag.Parse()
-	srv := server.New(opts)
+	server.Main(nil, func(srv *server.Server) error {
+		// Don't check groups when running in dev mode, for simplicity.
+		frontend.SkipAuthorization = !srv.Options.Prod
 
-	// Don't check groups when running in dev mode, for simplicity.
-	frontend.SkipAuthorization = !opts.Prod
+		// Load qscheduler service config form a local file (deployed via GKE),
+		// periodically reread it to pick up changes without full restart.
+		if _, err := cfgLoader.Load(); err != nil {
+			return err
+		}
+		srv.RunInBackground("qscheduler.config", cfgLoader.ReloadLoop)
 
-	// Load qscheduler service config form a local file (deployed via GKE),
-	// periodically reread it to pick up changes without full restart.
-	if _, err := cfgLoader.Load(); err != nil {
-		srv.Fatal(err)
-	}
-	srv.RunInBackground("qscheduler.config", cfgLoader.ReloadLoop)
+		// Periodically cleanup old nodestore entities.
+		srv.RunInBackground("qscheduler.cleanup", cleanupNodestore)
 
-	srv.RunInBackground("qscheduler.cleanup", func(ctx context.Context) {
-		for {
-			clockResult := <-clock.After(ctx, 1*time.Minute)
-			if clockResult.Err != nil {
-				// Context was cancelled.
-				logging.Errorf(ctx, "cleanup loop terminating: %s", clockResult.Err)
-				return
-			}
+		// Make config and eventlog implementations available to all handlers.
+		srv.Context = config.Use(srv.Context, cfgLoader.Config)
+		srv.Context = eventlog.Use(srv.Context, &eventlog.NullBQInserter{})
 
-			IDs, err := nodestore.List(ctx)
-			if err != nil {
-				logging.Errorf(ctx, "cleanup loop: list: %s", err.Error())
-				continue
-			}
+		// Install main API services.
+		frontend.InstallServices(srv.PRPC)
+		return nil
+	})
+}
 
-			for _, ID := range IDs {
-				s := nodestore.New(ID)
+// cleanupNodestore runs as a background goroutine to cleanup old entities.
+func cleanupNodestore(ctx context.Context) {
+	for {
+		clockResult := <-clock.After(ctx, 1*time.Minute)
+		if clockResult.Err != nil {
+			// Context was cancelled.
+			logging.Errorf(ctx, "cleanup loop terminating: %s", clockResult.Err)
+			return
+		}
 
-				cctx, cancel := context.WithTimeout(ctx, 5*time.Minute)
-				cleaned, err := s.Clean(cctx)
-				cancel()
+		IDs, err := nodestore.List(ctx)
+		if err != nil {
+			logging.Errorf(ctx, "cleanup loop: list: %s", err.Error())
+			continue
+		}
 
-				if err == nil {
-					logging.Infof(ctx, "cleanup loop: pool %s: cleaned %d entities", ID, cleaned)
-				} else {
-					logging.Errorf(ctx, "cleanup loop: pool %s: %s", ID, err.Error())
-				}
+		for _, ID := range IDs {
+			s := nodestore.New(ID)
+
+			cctx, cancel := context.WithTimeout(ctx, 5*time.Minute)
+			cleaned, err := s.Clean(cctx)
+			cancel()
+
+			if err == nil {
+				logging.Infof(ctx, "cleanup loop: pool %s: cleaned %d entities", ID, cleaned)
+			} else {
+				logging.Errorf(ctx, "cleanup loop: pool %s: %s", ID, err.Error())
 			}
 		}
-	})
-
-	nullBQInserter := eventlog.NullBQInserter{}
-	base := router.NewMiddlewareChain(cfgLoader.Install(), nullBQInserter.Install())
-
-	// Install qscheduler HTTP routes.
-	frontend.InstallHandlers(srv.Routes, base)
-
-	// Start the serving loop.
-	if err := srv.ListenAndServe(); err != nil {
-		os.Exit(1)
 	}
 }

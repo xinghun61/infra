@@ -20,7 +20,6 @@ import (
 	"cloud.google.com/go/bigquery"
 	"go.chromium.org/luci/common/bq"
 	"go.chromium.org/luci/common/logging"
-	"go.chromium.org/luci/server/router"
 
 	"infra/qscheduler/qslib/protos/metrics"
 )
@@ -57,15 +56,6 @@ func (n *NullBQInserter) Insert(ctx context.Context, rows ...bigquery.ValueSaver
 		logging.Debugf(ctx, "nullBQInserter is ignoring row %s", row)
 	}
 	return nil
-}
-
-// Install returns a middleware that injects BQ inserter that just
-// dismisses incoming events.
-func (n *NullBQInserter) Install() router.Middleware {
-	return func(c *router.Context, next router.Handler) {
-		c.Context = Use(c.Context, n)
-		next(c)
-	}
 }
 
 var contextKey = "eventlog"

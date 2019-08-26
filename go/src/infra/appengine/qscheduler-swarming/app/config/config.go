@@ -31,11 +31,16 @@ const configFile = "config.cfg"
 // unique key used to store and retrieve context.
 var contextKey = "qscheduler-swarming luci-config key"
 
+// Provider returns the current non-nil config when called.
+type Provider func() *Config
+
 // Get returns the config in c if it exists, or nil.
 // See also Use and MiddlewareForGAE.
 func Get(c context.Context) *Config {
-	config, _ := c.Value(&contextKey).(*Config)
-	return config
+	if p, _ := c.Value(&contextKey).(Provider); p != nil {
+		return p()
+	}
+	return nil
 }
 
 // MiddlewareForGAE loads the service config and installs it into the context.
@@ -58,13 +63,13 @@ func MiddlewareForGAE(c *router.Context, next router.Handler) {
 		return
 	}
 
-	c.Context = Use(c.Context, &cfg)
+	c.Context = Use(c.Context, func() *Config { return &cfg })
 	next(c)
 }
 
-// Use installs cfg into c.
-func Use(c context.Context, cfg *Config) context.Context {
-	return context.WithValue(c, &contextKey, cfg)
+// Use installs a config provider into c.
+func Use(c context.Context, p Provider) context.Context {
+	return context.WithValue(c, &contextKey, p)
 }
 
 // SetupValidation adds validation rules for configuration data pushed via luci-config.

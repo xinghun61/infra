@@ -29,6 +29,10 @@ import (
 	"go.chromium.org/luci/appengine/bqlog"
 	"go.chromium.org/luci/appengine/gaemiddleware/standard"
 	"go.chromium.org/luci/common/data/rand/mathrand"
+	"go.chromium.org/luci/grpc/discovery"
+	"go.chromium.org/luci/grpc/grpcmon"
+	"go.chromium.org/luci/grpc/grpcutil"
+	"go.chromium.org/luci/grpc/prpc"
 	"go.chromium.org/luci/server/router"
 )
 
@@ -56,8 +60,15 @@ func init() {
 
 	// Install auth, config and tsmon handlers.
 	standard.InstallHandlers(r)
-	frontend.InstallHandlers(r, mwBase)
 	cron.InstallHandlers(r, mwBase, bqlogTasks)
+
+	// Install main API handlers.
+	apiServer := prpc.Server{
+		UnaryServerInterceptor: grpcmon.NewUnaryServerInterceptor(grpcutil.NewUnaryServerPanicCatcher(nil)),
+	}
+	frontend.InstallServices(&apiServer)
+	discovery.Enable(&apiServer)
+	apiServer.InstallHandlers(r, mwBase)
 
 	config.SetupValidation()
 

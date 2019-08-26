@@ -21,12 +21,8 @@ import (
 	swarming "infra/swarming"
 
 	"github.com/golang/protobuf/proto"
-	"go.chromium.org/luci/grpc/discovery"
-	"go.chromium.org/luci/grpc/grpcmon"
-	"go.chromium.org/luci/grpc/grpcutil"
 	"go.chromium.org/luci/grpc/prpc"
 	"go.chromium.org/luci/server/auth"
-	"go.chromium.org/luci/server/router"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -43,26 +39,20 @@ const (
 	roleView
 )
 
-// InstallHandlers installs the handlers implemented by the frontend package.
-func InstallHandlers(r *router.Router, mwBase router.MiddlewareChain) {
-	apiServer := prpc.Server{
-		UnaryServerInterceptor: grpcmon.NewUnaryServerInterceptor(grpcutil.NewUnaryServerPanicCatcher(nil)),
-	}
-	swarming.RegisterExternalSchedulerServer(&apiServer, &swarming.DecoratedExternalScheduler{
+// InstallServices installs the services implemented by the frontend package.
+func InstallServices(apiServer *prpc.Server) {
+	swarming.RegisterExternalSchedulerServer(apiServer, &swarming.DecoratedExternalScheduler{
 		Service: NewBatchedServer(),
 		Prelude: accessChecker(roleSwarming),
 	})
-	qscheduler.RegisterQSchedulerAdminServer(&apiServer, &qscheduler.DecoratedQSchedulerAdmin{
+	qscheduler.RegisterQSchedulerAdminServer(apiServer, &qscheduler.DecoratedQSchedulerAdmin{
 		Service: &QSchedulerAdminServerImpl{},
 		Prelude: accessChecker(roleAdmin),
 	})
-	qscheduler.RegisterQSchedulerViewServer(&apiServer, &qscheduler.DecoratedQSchedulerView{
+	qscheduler.RegisterQSchedulerViewServer(apiServer, &qscheduler.DecoratedQSchedulerView{
 		Service: &QSchedulerViewServerImpl{},
 		Prelude: accessChecker(roleView, roleAdmin),
 	})
-
-	discovery.Enable(&apiServer)
-	apiServer.InstallHandlers(r, mwBase)
 }
 
 // groupFor determines the configured group name for a given role.

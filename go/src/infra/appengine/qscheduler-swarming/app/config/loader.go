@@ -18,7 +18,6 @@ import (
 	"context"
 	"flag"
 	"io/ioutil"
-	"net/http"
 	"sync/atomic"
 	"time"
 
@@ -27,7 +26,6 @@ import (
 	"go.chromium.org/luci/common/clock"
 	"go.chromium.org/luci/common/errors"
 	"go.chromium.org/luci/common/logging"
-	"go.chromium.org/luci/server/router"
 )
 
 // Loader periodically rereads qscheduler config file from disk and injects
@@ -88,22 +86,6 @@ func (l *Loader) ReloadLoop(c context.Context) {
 			logging.WithError(err).Errorf(c, "Failed to reload the config, using the cached one")
 		} else if prevCfg != nil && !proto.Equal(prevCfg, newCfg) {
 			logging.Infof(c, "Reloaded the config")
-		}
-	}
-}
-
-// Install returns a middleware that injects the latest good config into
-// the request context.
-//
-// Fails requests with internal error if there's no config available.
-func (l *Loader) Install() router.Middleware {
-	return func(c *router.Context, next router.Handler) {
-		if cfg := l.Config(); cfg != nil {
-			c.Context = Use(c.Context, cfg)
-			next(c)
-		} else {
-			logging.Errorf(c.Context, "Application config not loaded yet")
-			http.Error(c.Writer, "Internal server error", http.StatusInternalServerError)
 		}
 	}
 }
