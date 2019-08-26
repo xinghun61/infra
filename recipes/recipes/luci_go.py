@@ -45,8 +45,6 @@ def RunSteps(api, GOARCH):
     else:
       co.go_env_step('go', 'build', 'go.chromium.org/luci/...')
       co.go_env_step('go', 'test', 'go.chromium.org/luci/...')
-      co.go_env_step('go', 'test', '-race', 'go.chromium.org/luci/...',
-                     name='go test -race')
 
 
 def GenTests(api):
