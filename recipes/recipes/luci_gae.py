@@ -8,8 +8,9 @@ DEPS = [
   'recipe_engine/buildbucket',
   'recipe_engine/context',
   'recipe_engine/json',
-  'recipe_engine/runtime',
+  'recipe_engine/platform',
   'recipe_engine/properties',
+  'recipe_engine/runtime',
 ]
 
 LUCI_GAE_PATH_IN_INFRA = 'infra/go/src/go.chromium.org/gae'
@@ -30,6 +31,10 @@ def RunSteps(api):
   else:
     co.go_env_step('go', 'build', 'go.chromium.org/gae/...')
     co.go_env_step('go', 'test', 'go.chromium.org/gae/...')
+    if not api.platform.is_win:
+      # Windows bots do not have gcc installed at the moment.
+      co.go_env_step('go', 'test', '-race', 'go.chromium.org/gae/...',
+                     name='go test -race')
 
 
 def GenTests(api):
