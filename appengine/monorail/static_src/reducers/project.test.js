@@ -3,10 +3,51 @@
 // found in the LICENSE file.
 
 import {assert} from 'chai';
+import sinon from 'sinon';
+import {prpcClient} from 'prpc-client-instance.js';
 import * as project from './project.js';
 import {fieldTypes} from 'shared/issue-fields.js';
 
-describe('project', () => {
+describe('project reducers', () => {
+  it('visibleMembersReducer', () => {
+    assert.deepEqual(project.visibleMembersReducer({}, {
+      type: project.FETCH_VISIBLE_MEMBERS_SUCCESS,
+      visibleMembers: {userRefs: [{userId: '123'}]},
+    }), {userRefs: [{userId: '123'}]});
+
+    const initialState = {
+      groupRefs: [{userId: '543'}],
+    };
+
+    // Overrides existing state.
+    assert.deepEqual(project.visibleMembersReducer(initialState, {
+      type: project.FETCH_VISIBLE_MEMBERS_SUCCESS,
+      visibleMembers: {userRefs: [{userId: '123'}]},
+    }), {userRefs: [{userId: '123'}]});
+
+    // Unrelated action does not affect state.
+    assert.deepEqual(project.visibleMembersReducer(initialState, {
+      type: 'no-op',
+      visibleMembers: {userRefs: [{userId: '123'}]},
+    }), initialState);
+  });
+});
+
+describe('project selectors', () => {
+  it('visibleMembers', () => {
+    assert.deepEqual(project.visibleMembers({}), {});
+    assert.deepEqual(project.visibleMembers({project: {}}), {});
+    assert.deepEqual(project.visibleMembers({project: {
+      visibleMembers: {
+        userRefs: [{displayName: 'test@example.com', userId: '123'}],
+        groupRefs: [],
+      },
+    }}), {
+      userRefs: [{displayName: 'test@example.com', userId: '123'}],
+      groupRefs: [],
+    });
+  });
+
   it('fieldDefs', () => {
     assert.deepEqual(project.fieldDefs({project: {}}), []);
     assert.deepEqual(project.fieldDefs({project: {config: {}}}), []);
@@ -35,7 +76,8 @@ describe('project', () => {
 
   it('labelPrefixOptions', () => {
     assert.deepEqual(project.labelPrefixOptions({project: {}}), new Map());
-    assert.deepEqual(project.labelPrefixOptions({project: {config: {}}}), new Map());
+    assert.deepEqual(project.labelPrefixOptions({project: {config: {}}}),
+        new Map());
     assert.deepEqual(project.labelPrefixOptions({
       project: {config: {
         labelDefs: [
@@ -122,5 +164,41 @@ describe('project', () => {
         {fieldRef: {fieldName: 'TalkToALawyer', approvalName: 'Legal'}},
       ]],
     ]));
+  });
+});
+
+let dispatch;
+
+describe('project action creators', () => {
+  beforeEach(() => {
+    sinon.stub(prpcClient, 'call');
+
+    dispatch = sinon.stub();
+  });
+
+  afterEach(() => {
+    prpcClient.call.restore();
+  });
+
+  it('fetchVisibleMembers', async () => {
+    const action = project.fetchVisibleMembers('chromium');
+
+    prpcClient.call.returns(Promise.resolve({userRefs: [{userId: '123'}]}));
+
+    await action(dispatch);
+
+    sinon.assert.calledWith(dispatch,
+        {type: project.FETCH_VISIBLE_MEMBERS_START});
+
+    sinon.assert.calledWith(
+        prpcClient.call,
+        'monorail.Projects',
+        'GetVisibleMembers',
+        {projectName: 'chromium'});
+
+    sinon.assert.calledWith(dispatch, {
+      type: project.FETCH_VISIBLE_MEMBERS_SUCCESS,
+      visibleMembers: {userRefs: [{userId: '123'}]},
+    });
   });
 });

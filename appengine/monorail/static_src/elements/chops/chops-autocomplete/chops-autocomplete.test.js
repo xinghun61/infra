@@ -195,6 +195,39 @@ describe('chops-autocomplete', () => {
     assert.equal(input.value, 'click me!');
   });
 
+  it('completion is scrolled into view when outside viewport', async () => {
+    element.completions = [
+      'i',
+      'am',
+      'an option',
+    ];
+    element._selectedIndex = 0;
+    element.id = 'chops-autocomplete-1';
+
+    await element.updateComplete;
+
+    const container = element.querySelector('tbody');
+    const completion = container.querySelector('tr');
+    const completionHeight = completion.offsetHeight;
+    // Make the table one row tall.
+    container.style.height = `${completionHeight}px`;
+
+    element._selectedIndex = 1;
+    await element.updateComplete;
+
+    assert.equal(container.scrollTop, completionHeight);
+
+    element._selectedIndex = 2;
+    await element.updateComplete;
+
+    assert.equal(container.scrollTop, completionHeight * 2);
+
+    element._selectedIndex = 0;
+    await element.updateComplete;
+
+    assert.equal(container.scrollTop, 0);
+  });
+
   it('aria-activedescendant set based on selected option', async () => {
     element.completions = [
       'i',

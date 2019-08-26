@@ -60,7 +60,6 @@ export class MrIssuePage extends connectStore(LitElement) {
         }
         .container-issue-content {
           padding: 0;
-          overflow: hidden;
           flex-grow: 1;
           display: flex;
           align-items: stretch;
@@ -319,16 +318,16 @@ export class MrIssuePage extends connectStore(LitElement) {
         store.dispatch(issue.fetchIssuePageData({issueRef: this.issueRef}));
       }
 
-      // TODO(ehmaldonado): Remove once the old autocomplete code is deprecated.
-      if (this.issueRef.projectName !== changedProperties.projectName) {
-        window.TKR_fetchOptions(this.issueRef.projectName);
-      }
-
       const oldRef = changedProperties.get('issueRef');
       const oldProjectName = oldRef && oldRef.projectName;
       if (this.issueRef.projectName && oldProjectName
-          !== this.issueRef.projectName && !this.fetchingProjectConfig) {
+          !== this.issueRef.projectName) {
         store.dispatch(project.fetch(this.issueRef.projectName));
+
+        // TODO(ehmaldonado): Remove once the old autocomplete code is
+        // deprecated.
+        // eslint-disable-next-line new-cap
+        window.TKR_fetchOptions(this.issueRef.projectName);
       }
     }
 

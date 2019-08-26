@@ -7,6 +7,7 @@ import {LitElement, html, css} from 'lit-element';
 import deepEqual from 'deep-equal';
 import {fieldTypes, EMPTY_FIELD_VALUE} from 'shared/issue-fields.js';
 import {arrayDifference, equalsIgnoreCase} from 'shared/helpers.js';
+import {NON_EDITING_KEY_EVENTS} from 'shared/dom-helpers.js';
 
 import {SHARED_STYLES} from 'shared/shared-styles';
 import 'elements/chops/chops-chip-input/chops-chip-input.js';
@@ -119,14 +120,18 @@ export class MrEditField extends LitElement {
             id="editInput"
             type=${this._html5InputType}
             .value=${this.value}
-            data-ac-type=${this.acType}
             autocomplete=${this._domAutocomplete}
             placeholder=${this.placeholder}
-            @keyup=${this._changeHandler}
             @change=${this._changeHandler}
-            @focus=${this._runLegacyAcFocus}
+            @keyup=${this._changeHandler}
             aria-label=${this.name}
           />
+          ${this.acType ? html`
+            <mr-autocomplete
+              .vocabularyName=${this.acType}
+              for="editInput"
+            ></mr-autocomplete>
+          ` : ''}
         `;
       default:
         return '';
@@ -293,6 +298,9 @@ export class MrEditField extends LitElement {
   }
 
   _changeHandler(e) {
+    if (e instanceof KeyboardEvent) {
+      if (NON_EDITING_KEY_EVENTS.has(e.key)) return;
+    }
     const input = e.target;
     if (input.getValues) {
       // Our custom input widgets all have a "getValues" function.
@@ -308,14 +316,6 @@ export class MrEditField extends LitElement {
 
   _getSingleValue(arr) {
     return (arr && arr.length) ? arr[0] : '';
-  }
-
-  // TODO(zhangtiff): Delete this code once deprecating legacy autocomplete.
-  // See: http://crbug.com/monorail/5301
-  _runLegacyAcFocus(e) {
-    if (window._ac_onfocus) {
-      _ac_onfocus(e);
-    }
   }
 }
 

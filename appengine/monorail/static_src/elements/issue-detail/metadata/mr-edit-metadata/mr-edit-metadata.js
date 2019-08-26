@@ -23,6 +23,7 @@ import {displayNameToUserRef, labelStringToRef, componentStringToRef,
   valueToFieldValue,
 } from 'shared/converters.js';
 import {isEmptyObject, equalsIgnoreCase} from 'shared/helpers.js';
+import {NON_EDITING_KEY_EVENTS} from 'shared/dom-helpers.js';
 import {SHARED_STYLES} from 'shared/shared-styles.js';
 import * as issue from 'reducers/issue.js';
 import * as project from 'reducers/project.js';
@@ -38,6 +39,7 @@ import {fieldDefsWithGroup, fieldDefsWithoutGroup, valuesForField,
 
 
 const DEBOUNCED_PRESUBMIT_TIME_OUT = 400;
+
 
 /**
  * `<mr-edit-metadata>`
@@ -385,7 +387,10 @@ export class MrEditMetadata extends connectStore(LitElement) {
 
   _renderComponents() {
     return html`
-      <label for="componentsInput" @click=${this._clickLabelForCustomInput}>Components:</label>
+      <label
+        for="componentsInput"
+        @click=${this._clickLabelForCustomInput}
+      >Components:</label>
       <mr-edit-field
         id="componentsInput"
         .name=${'component'}
@@ -891,7 +896,10 @@ export class MrEditMetadata extends connectStore(LitElement) {
     }
   }
 
-  _processChanges() {
+  _processChanges(e) {
+    if (e instanceof KeyboardEvent) {
+      if (NON_EDITING_KEY_EVENTS.has(e.key)) return;
+    }
     this._updateIsDirty();
 
     if (!this._debouncedProcessChanges) {

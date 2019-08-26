@@ -3,6 +3,7 @@
 // found in the LICENSE file.
 
 import {LitElement, html} from 'lit-element';
+import {NON_EDITING_KEY_EVENTS} from 'shared/dom-helpers.js';
 
 const DELIMITER_REGEX = /[^a-z0-9]+/i;
 const DEFAULT_REPLACER = (input, value) => input.value = value;
@@ -30,14 +31,15 @@ export class ChopsAutocomplete extends LitElement {
 
     return html`
       <style>
+        /*
+         * Really specific class names are necessary because ShadowDOM
+         * is disabled for this component.
+         */
         .chops-autocomplete-container {
           position: relative;
         }
         .chops-autocomplete-container table {
           padding: 0;
-          min-width: 100px;
-          max-height: 300px;
-          overflow: auto;
           font-size: var(--chops-main-font-size);
           color: var(--chops-link-color);
           position: absolute;
@@ -47,6 +49,16 @@ export class ChopsAutocomplete extends LitElement {
           box-shadow: 2px 3px 8px 0px hsla(0, 0%, 0%, 0.3);
           border-spacing: 0;
           border-collapse: collapse;
+          /* In the case when the autocomplete extends the
+           * height of the viewport, we want to make sure
+           * there's spacing. */
+          margin-bottom: 1em;
+        }
+        .chops-autocomplete-container tbody {
+          display: block;
+          min-width: 100px;
+          max-height: 500px;
+          overflow: auto;
         }
         .chops-autocomplete-container tr {
           cursor: pointer;
@@ -244,18 +256,56 @@ export class ChopsAutocomplete extends LitElement {
         this._forRef.setAttribute('aria-owns', this.id);
       }
       if (changedProperties.has('completions')) {
+        // a11y. Tell screenreaders whether the autocomplete is expanded.
         this._forRef.setAttribute('aria-expanded',
           this.completions.length ? 'true' : 'false');
       }
 
       if (changedProperties.has('_selectedIndex')
           || changedProperties.has('completions')) {
-        const i = this._selectedIndex;
+        this._updateAriaActiveDescendant(this._forRef);
 
-        this._forRef.setAttribute('aria-activedescendant',
-          i >= 0 && i < this.completions.length ?
-            completionId(this.id, i) : '');
+        this._scrollCompletionIntoView(this._selectedIndex);
       }
+    }
+  }
+
+  _updateAriaActiveDescendant(element) {
+    const i = this._selectedIndex;
+
+    if (i >= 0 && i < this.completions.length) {
+      const selectedId = completionId(this.id, i);
+
+      // a11y. Set the ID of the currently selected element.
+      element.setAttribute('aria-activedescendant', selectedId);
+
+      // Scroll the container to make sure the selected element is in view.
+    } else {
+      element.setAttribute('aria-activedescendant', '');
+    }
+  }
+
+  _scrollCompletionIntoView(i) {
+    const selectedId = completionId(this.id, i);
+
+    const container = this.querySelector('tbody');
+    const completion = this.querySelector(`#${selectedId}`);
+
+    if (!completion) return;
+
+    const distanceFromTop = completion.offsetTop - container.scrollTop;
+
+    // If the completion is above the viewport for the container.
+    if (distanceFromTop < 0) {
+      // Position the completion at the top of the container.
+      container.scrollTop = completion.offsetTop;
+    }
+
+    // If the compltion is below the viewport for the container.
+    if (distanceFromTop > (container.offsetHeight - completion.offsetHeight)) {
+      // Position the compltion at the bottom of the container.
+      container.scrollTop = completion.offsetTop - (container.offsetHeight
+        - completion.offsetHeight);
     }
   }
 
@@ -368,19 +418,15 @@ export class ChopsAutocomplete extends LitElement {
     if (!completions.length) return;
 
     switch (e.key) {
+      // TODO(zhangtiff): Throttle or control keyboard navigation so the user
+      // can't navigate faster than they can can perceive.
       case 'ArrowUp':
         e.preventDefault();
-        this._selectedIndex -= 1;
-        if (this._selectedIndex < 0) {
-          this._selectedIndex = completions.length - 1;
-        }
+        this._navigateUp();
         break;
       case 'ArrowDown':
         e.preventDefault();
-        this._selectedIndex += 1;
-        if (this._selectedIndex >= completions.length) {
-          this._selectedIndex = 0;
-        }
+        this._navigateDown();
         break;
       case 'Enter':
       // TODO(zhangtiff): Add Tab to this case as well once all issue detail
@@ -398,9 +444,24 @@ export class ChopsAutocomplete extends LitElement {
     }
   }
 
+  _navigateUp() {
+    const completions = this.completions;
+    this._selectedIndex -= 1;
+    if (this._selectedIndex < 0) {
+      this._selectedIndex = completions.length - 1;
+    }
+  }
+
+  _navigateDown() {
+    const completions = this.completions;
+    this._selectedIndex += 1;
+    if (this._selectedIndex >= completions.length) {
+      this._selectedIndex = 0;
+    }
+  }
+
   _keyInputHandler(e) {
-    if (['Enter', 'Tab', 'ArrowUp', 'ArrowDown', 'Escape'].includes(
-        e.key)) return;
+    if (NON_EDITING_KEY_EVENTS.has(e.key)) return;
     this.showCompletions();
   }
 

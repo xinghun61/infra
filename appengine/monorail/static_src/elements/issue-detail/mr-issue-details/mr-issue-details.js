@@ -30,7 +30,6 @@ export class MrIssueDetails extends connectStore(LitElement) {
         align-items: stretch;
         justify-content: flex-start;
         flex-direction: column;
-        z-index: 1;
         margin: 0;
         box-sizing: border-box;
       }

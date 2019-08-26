@@ -2,6 +2,11 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+
+// Prevent triggering input change handlers on key events that don't
+// edit forms.
+export const NON_EDITING_KEY_EVENTS = new Set(['Enter', 'Tab', 'Escape',
+  'ArrowUp', 'ArrowLeft', 'ArrowRight', 'ArrowDown']);
 const INPUT_TYPES_WITHOUT_TEXT_INPUT = [
   'checkbox',
   'radio',
@@ -10,7 +15,6 @@ const INPUT_TYPES_WITHOUT_TEXT_INPUT = [
   'button',
   'image',
 ];
-
 /**
  * Function to check if a keyboard event should be disabled if
  * the user is typing.

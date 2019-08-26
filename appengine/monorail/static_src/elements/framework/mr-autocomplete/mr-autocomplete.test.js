@@ -39,4 +39,48 @@ describe('mr-autocomplete', () => {
     assert.deepEqual(element.strings, ['chromium', 'v8']);
     assert.deepEqual(element.docDict, {'chromium': 'move the web forward'});
   });
+
+  it('_setupProjectVocabulary', () => {
+    assert.deepEqual(element._setupProjectVocabulary({}), {strings: []});
+
+    assert.deepEqual(element._setupProjectVocabulary({
+      ownerOf: ['chromium'],
+      memberOf: ['skia'],
+      contributorTo: ['v8'],
+    }), {strings: ['chromium', 'skia', 'v8']});
+  });
+
+  it('_setupMemberVocabulary', () => {
+    assert.deepEqual(element._setupMemberVocabulary({}), {strings: []});
+
+    assert.deepEqual(element._setupMemberVocabulary({
+      userRefs: [
+        {displayName: 'group@example.com', userId: '100'},
+        {displayName: 'test@example.com', userId: '123'},
+        {displayName: 'test2@example.com', userId: '543'},
+      ],
+      groupRefs: [
+        {displayName: 'group@example.com', userId: '100'},
+      ],
+    }), {strings:
+      ['group@example.com', 'test@example.com', 'test2@example.com'],
+    });
+  });
+
+  it('_setupOwnerVocabulary', () => {
+    assert.deepEqual(element._setupOwnerVocabulary({}), {strings: []});
+
+    assert.deepEqual(element._setupOwnerVocabulary({
+      userRefs: [
+        {displayName: 'group@example.com', userId: '100'},
+        {displayName: 'test@example.com', userId: '123'},
+        {displayName: 'test2@example.com', userId: '543'},
+      ],
+      groupRefs: [
+        {displayName: 'group@example.com', userId: '100'},
+      ],
+    }), {strings:
+      ['test@example.com', 'test2@example.com'],
+    });
+  });
 });

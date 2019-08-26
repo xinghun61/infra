@@ -23,6 +23,14 @@ const FETCH_PRESENTATION_CONFIG_SUCCESS =
 const FETCH_PRESENTATION_CONFIG_FAILURE =
   'project/FETCH_PRESENTATION_CONFIG_FAILURE';
 
+export const FETCH_VISIBLE_MEMBERS_START =
+  'project/FETCH_VISIBLE_MEMBERS_START';
+export const FETCH_VISIBLE_MEMBERS_SUCCESS =
+  'project/FETCH_VISIBLE_MEMBERS_SUCCESS';
+export const FETCH_VISIBLE_MEMBERS_FAILURE =
+  'project/FETCH_VISIBLE_MEMBERS_FAILURE';
+
+
 const FETCH_TEMPLATES_START = 'project/FETCH_TEMPLATES_START';
 const FETCH_TEMPLATES_SUCCESS = 'project/FETCH_TEMPLATES_SUCCESS';
 const FETCH_TEMPLATES_FAILURE = 'project/FETCH_TEMPLATES_FAILURE';
@@ -63,6 +71,12 @@ const presentationConfigReducer = createReducer({}, {
   },
 });
 
+export const visibleMembersReducer = createReducer({}, {
+  [FETCH_VISIBLE_MEMBERS_SUCCESS]: (_state, action) => {
+    return action.visibleMembers;
+  },
+});
+
 const templatesReducer = createReducer([], {
   [FETCH_TEMPLATES_SUCCESS]: (_state, action) => {
     return action.projectTemplates.templates;
@@ -72,6 +86,10 @@ const templatesReducer = createReducer([], {
 const requestsReducer = combineReducers({
   fetchConfig: createRequestReducer(
       FETCH_CONFIG_START, FETCH_CONFIG_SUCCESS, FETCH_CONFIG_FAILURE),
+  fetchMembers: createRequestReducer(
+      FETCH_VISIBLE_MEMBERS_START,
+      FETCH_VISIBLE_MEMBERS_SUCCESS,
+      FETCH_VISIBLE_MEMBERS_FAILURE),
   fetchTemplates: createRequestReducer(
       FETCH_TEMPLATES_START, FETCH_TEMPLATES_SUCCESS, FETCH_TEMPLATES_FAILURE),
   fetchFields: createRequestReducer(
@@ -83,14 +101,19 @@ const requestsReducer = combineReducers({
 export const reducer = combineReducers({
   config: configReducer,
   presentationConfig: presentationConfigReducer,
+  visibleMembers: visibleMembersReducer,
   templates: templatesReducer,
   requests: requestsReducer,
 });
 
 // Selectors
-export const project = (state) => state.project;
-export const config = createSelector(project, (project) => project.config);
-export const presentationConfig = (state) => state.project.presentationConfig;
+export const project = (state) => state.project || {};
+export const config = createSelector(project,
+    (project) => project.config || {});
+export const presentationConfig = createSelector(project,
+    (project) => project.presentationConfig || {});
+export const visibleMembers = createSelector(project,
+    (project) => project.visibleMembers || {});
 
 // Look up components by path.
 export const componentsMap = createSelector(
@@ -247,6 +270,7 @@ export const fetch = (projectName) => async (dispatch) => {
   // GetLabelOptions, ListComponents, etc.
   // dispatch(fetchFields(projectName));
   dispatch(fetchPresentationConfig(projectName));
+  dispatch(fetchVisibleMembers(projectName));
   dispatch(fetchTemplates(projectName));
 };
 
@@ -273,6 +297,18 @@ export const fetchPresentationConfig = (projectName) => async (dispatch) => {
     dispatch({type: FETCH_PRESENTATION_CONFIG_SUCCESS, presentationConfig});
   } catch (error) {
     dispatch({type: FETCH_PRESENTATION_CONFIG_FAILURE, error});
+  }
+};
+
+export const fetchVisibleMembers = (projectName) => async (dispatch) => {
+  dispatch({type: FETCH_VISIBLE_MEMBERS_START});
+
+  try {
+    const visibleMembers = await prpcClient.call(
+        'monorail.Projects', 'GetVisibleMembers', {projectName});
+    dispatch({type: FETCH_VISIBLE_MEMBERS_SUCCESS, visibleMembers});
+  } catch (error) {
+    dispatch({type: FETCH_VISIBLE_MEMBERS_FAILURE, error});
   }
 };
 

@@ -3,8 +3,44 @@
 // found in the LICENSE file.
 
 import {assert} from 'chai';
-import {hasPrefix, objectToMap, immutableSplice,
-  userIsMember} from './helpers.js';
+import {arrayDifference, hasPrefix, objectToMap, equalsIgnoreCase,
+  immutableSplice, userIsMember} from './helpers.js';
+
+
+describe('arrayDifference', () => {
+  it('empty array stays empty', () => {
+    assert.deepEqual(arrayDifference([], []), []);
+    assert.deepEqual(arrayDifference([], undefined), []);
+    assert.deepEqual(arrayDifference([], ['a']), []);
+  });
+
+  it('subtracting empty array does nothing', () => {
+    assert.deepEqual(arrayDifference(['a'], []), ['a']);
+    assert.deepEqual(arrayDifference([1, 2, 3], []), [1, 2, 3]);
+    assert.deepEqual(arrayDifference([1, 2, 'test'], []), [1, 2, 'test']);
+    assert.deepEqual(arrayDifference([1, 2, 'test'], undefined),
+        [1, 2, 'test']);
+  });
+
+  it('subtracts elements from array', () => {
+    assert.deepEqual(arrayDifference(['a', 'b', 'c'], ['b', 'c']), ['a']);
+    assert.deepEqual(arrayDifference(['a', 'b', 'c'], ['a']), ['b', 'c']);
+    assert.deepEqual(arrayDifference(['a', 'b', 'c'], ['b']), ['a', 'c']);
+    assert.deepEqual(arrayDifference([1, 2, 3], [2]), [1, 3]);
+  });
+
+  it('does not subtract missing elements from array', () => {
+    assert.deepEqual(arrayDifference(['a', 'b', 'c'], ['d']), ['a', 'b', 'c']);
+    assert.deepEqual(arrayDifference([1, 2, 3], [5]), [1, 2, 3]);
+    assert.deepEqual(arrayDifference([1, 2, 3], [-1, 2]), [1, 3]);
+  });
+
+  it('custom equals function', () => {
+    assert.deepEqual(arrayDifference(['a', 'b'], ['A']), ['a', 'b']);
+    assert.deepEqual(arrayDifference(['a', 'b'], ['A'], equalsIgnoreCase),
+        ['b']);
+  });
+});
 
 describe('hasPrefix', () => {
   it('only true when has prefix', () => {
@@ -30,6 +66,28 @@ describe('objectToMap', () => {
     assert.deepEqual(objectToMap({['weird:key']: 'value',
       ['what is this key']: 'v2'}), new Map([['weird:key', 'value'],
       ['what is this key', 'v2']]));
+  });
+});
+
+describe('equalsIgnoreCase', () => {
+  it('matches same case strings', () => {
+    assert.isTrue(equalsIgnoreCase('', ''));
+    assert.isTrue(equalsIgnoreCase('HelloWorld', 'HelloWorld'));
+    assert.isTrue(equalsIgnoreCase('hmm', 'hmm'));
+    assert.isTrue(equalsIgnoreCase('TEST', 'TEST'));
+  });
+
+  it('matches different case strings', () => {
+    assert.isTrue(equalsIgnoreCase('a', 'A'));
+    assert.isTrue(equalsIgnoreCase('HelloWorld', 'helloworld'));
+    assert.isTrue(equalsIgnoreCase('hmm', 'HMM'));
+    assert.isTrue(equalsIgnoreCase('TEST', 'teSt'));
+  });
+
+  it('does not match different strings', () => {
+    assert.isFalse(equalsIgnoreCase('hello', 'hello '));
+    assert.isFalse(equalsIgnoreCase('superstring', 'string'));
+    assert.isFalse(equalsIgnoreCase('aaa', 'aa'));
   });
 });
 
