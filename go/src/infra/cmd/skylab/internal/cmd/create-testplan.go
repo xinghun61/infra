@@ -93,7 +93,11 @@ func (c *createTestPlanRun) innerRun(a subcommands.Application, args []string, e
 
 	recipeArgs.TestPlan = testPlan
 
-	buildID, err := client.ScheduleBuild(ctx, recipeArgs.TestPlatformRequest(), c.buildTags())
+	req, err := recipeArgs.TestPlatformRequest()
+	if err != nil {
+		return err
+	}
+	buildID, err := client.ScheduleBuild(ctx, req, c.buildTags())
 	if err != nil {
 		return err
 	}

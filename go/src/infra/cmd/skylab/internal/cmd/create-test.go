@@ -117,7 +117,11 @@ func (c *createTestRun) innerRunBB(a subcommands.Application, args []string, env
 	recipeArg.TestPlan = recipe.NewTestPlanForAutotestTests(c.testArgs, args...)
 	recipeArg.FreeformSwarmingDimensions = c.dimensions
 
-	buildID, err := client.ScheduleBuild(ctx, recipeArg.TestPlatformRequest(), c.buildTags())
+	req, err := recipeArg.TestPlatformRequest()
+	if err != nil {
+		return err
+	}
+	buildID, err := client.ScheduleBuild(ctx, req, c.buildTags())
 	if err != nil {
 		return err
 	}

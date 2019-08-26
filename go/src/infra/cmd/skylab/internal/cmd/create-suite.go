@@ -109,7 +109,11 @@ func (c *createSuiteRun) innerRunBB(ctx context.Context, a subcommands.Applicati
 		return err
 	}
 	recipeArg.TestPlan = recipe.NewTestPlanForSuites(suiteName)
-	buildID, err := client.ScheduleBuild(ctx, recipeArg.TestPlatformRequest(), c.buildTags(suiteName))
+	req, err := recipeArg.TestPlatformRequest()
+	if err != nil {
+		return err
+	}
+	buildID, err := client.ScheduleBuild(ctx, req, c.buildTags(suiteName))
 	if err != nil {
 		return err
 	}

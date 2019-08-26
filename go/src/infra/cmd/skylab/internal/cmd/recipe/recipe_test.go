@@ -27,8 +27,9 @@ func TestRequest(t *testing.T) {
 		Keyvals:                    map[string]string{"k1": "v1"},
 		FreeformSwarmingDimensions: []string{"freeform-key:freeform-value"},
 		MaxRetries:                 5,
+		ProvisionLabels:            []string{"fwrw-version:foo-firmware"},
 	}
-	got := a.TestPlatformRequest()
+	got, err := a.TestPlatformRequest()
 	want := &test_platform.Request{
 		Params: &test_platform.Request_Params{
 			HardwareAttributes: &test_platform.Request_Params_HardwareAttributes{
@@ -45,6 +46,9 @@ func TestRequest(t *testing.T) {
 			SoftwareDependencies: []*test_platform.Request_Params_SoftwareDependency{
 				{
 					Dep: &test_platform.Request_Params_SoftwareDependency_ChromeosBuild{ChromeosBuild: "foo-image"},
+				},
+				{
+					Dep: &test_platform.Request_Params_SoftwareDependency_RwFirmwareBuild{RwFirmwareBuild: "foo-firmware"},
 				},
 			},
 			Scheduling: &test_platform.Request_Params_Scheduling{
@@ -78,6 +82,9 @@ func TestRequest(t *testing.T) {
 	}
 	if diff := pretty.Compare(got, want); diff != "" {
 		t.Errorf("Unexpected diff (-got +want): %s", diff)
+	}
+	if err != nil {
+		t.Errorf("Unexpected error %s", err)
 	}
 }
 

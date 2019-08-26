@@ -15,6 +15,7 @@ import (
 
 	"go.chromium.org/chromiumos/infra/proto/go/chromiumos"
 	"go.chromium.org/chromiumos/infra/proto/go/test_platform"
+	"go.chromium.org/luci/common/errors"
 )
 
 // NewTestPlanForSuites returns a test plan consisting of the given named suites.
@@ -47,6 +48,8 @@ type Args struct {
 	TestPlan *test_platform.Request_TestPlan
 
 	Model string
+	// This Image argument is interpreted as a ChromeOS image version, and used
+	// to construct both a provisionable dimension and test metadata url.
 	Image string
 	Board string
 	// Pool specifies the device pool to use. For managed pools, it can be
@@ -63,10 +66,11 @@ type Args struct {
 	MaxRetries                 int
 	Priority                   int64
 	Tags                       []string
+	ProvisionLabels            []string
 }
 
 // TestPlatformRequest constructs a cros_test_platform.Request from Args.
-func (a *Args) TestPlatformRequest() *test_platform.Request {
+func (a *Args) TestPlatformRequest() (*test_platform.Request, error) {
 	req := &test_platform.Request{
 		TestPlan: a.TestPlan,
 	}
@@ -84,11 +88,20 @@ func (a *Args) TestPlatformRequest() *test_platform.Request {
 		BuildTarget: &chromiumos.BuildTarget{Name: a.Board},
 	}
 
-	params.SoftwareDependencies = []*test_platform.Request_Params_SoftwareDependency{
-		{
+	var deps []*test_platform.Request_Params_SoftwareDependency
+	if a.Image != "" {
+		deps = append(deps, &test_platform.Request_Params_SoftwareDependency{
 			Dep: &test_platform.Request_Params_SoftwareDependency_ChromeosBuild{ChromeosBuild: a.Image},
-		},
+		})
 	}
+	for _, label := range a.ProvisionLabels {
+		dep, err := toSoftwareDependency(label)
+		if err != nil {
+			return nil, err
+		}
+		deps = append(deps, dep)
+	}
+	params.SoftwareDependencies = deps
 
 	params.Decorations = &test_platform.Request_Params_Decorations{
 		AutotestKeyvals: a.Keyvals,
@@ -119,7 +132,7 @@ func (a *Args) TestPlatformRequest() *test_platform.Request {
 		MaximumDuration: duration,
 	}
 
-	return req
+	return req, nil
 }
 
 func toScheduling(pool string, quotaAccount string, priority int64) *test_platform.Request_Params_Scheduling {
@@ -160,4 +173,33 @@ var nonstandardPoolNames = map[string]test_platform.Request_Params_Scheduling_Ma
 	"continuous":    test_platform.Request_Params_Scheduling_MANAGED_POOL_CONTINUOUS,
 	"arc-presubmit": test_platform.Request_Params_Scheduling_MANAGED_POOL_ARC_PRESUBMIT,
 	"quota":         test_platform.Request_Params_Scheduling_MANAGED_POOL_QUOTA,
+}
+
+func toSoftwareDependency(provisionableLabel string) (*test_platform.Request_Params_SoftwareDependency, error) {
+	parts := strings.Split(provisionableLabel, ":")
+	if len(parts) != 2 {
+		return nil, errors.Reason("invalid provisionable label %s", provisionableLabel).Err()
+	}
+	prefix := parts[0]
+	value := parts[1]
+	dep := &test_platform.Request_Params_SoftwareDependency{}
+	switch prefix {
+	// These prefixes are interpreted by autotest's provisioning behavior;
+	// they are defined in the autotest repo, at utils/labellib.py
+	case "cros-version":
+		dep.Dep = &test_platform.Request_Params_SoftwareDependency_ChromeosBuild{
+			ChromeosBuild: value,
+		}
+	case "fwro-version":
+		dep.Dep = &test_platform.Request_Params_SoftwareDependency_RoFirmwareBuild{
+			RoFirmwareBuild: value,
+		}
+	case "fwrw-version":
+		dep.Dep = &test_platform.Request_Params_SoftwareDependency_RwFirmwareBuild{
+			RwFirmwareBuild: value,
+		}
+	default:
+		return nil, errors.Reason("invalid provisionable label prefix %s", prefix).Err()
+	}
+	return dep, nil
 }
