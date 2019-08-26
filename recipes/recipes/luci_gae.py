@@ -30,6 +30,8 @@ def RunSteps(api):
   else:
     co.go_env_step('go', 'build', 'go.chromium.org/gae/...')
     co.go_env_step('go', 'test', 'go.chromium.org/gae/...')
+    co.go_env_step('go', 'test', '-race', 'go.chromium.org/gae/...',
+                   name='go test -race')
 
 
 def GenTests(api):
