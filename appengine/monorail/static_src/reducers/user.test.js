@@ -32,6 +32,94 @@ describe('user', () => {
         newPref: 'test-me',
       }});
     });
+
+    it('FETCH_PROJECTS_SUCCESS overrides existing entry in usersById', () => {
+      const state = {
+        ['123']: {
+          projects: {
+            ownerOf: [],
+            memberOf: [],
+            contributorTo: [],
+            starredProjects: [],
+          },
+        },
+      };
+
+      const usersProjects = [
+        {
+          userRef: {userId: '123'},
+          ownerOf: ['chromium'],
+        },
+      ];
+
+      const newState = user.usersByIdReducer(state,
+          {type: user.FETCH_PROJECTS_SUCCESS, usersProjects});
+
+      assert.deepEqual(newState, {
+        ['123']: {
+          projects: {
+            ownerOf: ['chromium'],
+            memberOf: [],
+            contributorTo: [],
+            starredProjects: [],
+          },
+        },
+      });
+    });
+
+    it('FETCH_PROJECTS_SUCCESS adds new entry to usersById', () => {
+      const state = {
+        ['123']: {
+          projects: {
+            ownerOf: [],
+            memberOf: [],
+            contributorTo: [],
+            starredProjects: [],
+          },
+        },
+      };
+
+      const usersProjects = [
+        {
+          userRef: {userId: '543'},
+          ownerOf: ['chromium'],
+        },
+        {
+          userRef: {userId: '789'},
+          memberOf: ['v8'],
+        },
+      ];
+
+      const newState = user.usersByIdReducer(state,
+          {type: user.FETCH_PROJECTS_SUCCESS, usersProjects});
+
+      assert.deepEqual(newState, {
+        ['123']: {
+          projects: {
+            ownerOf: [],
+            memberOf: [],
+            contributorTo: [],
+            starredProjects: [],
+          },
+        },
+        ['543']: {
+          projects: {
+            ownerOf: ['chromium'],
+            memberOf: [],
+            contributorTo: [],
+            starredProjects: [],
+          },
+        },
+        ['789']: {
+          projects: {
+            ownerOf: [],
+            memberOf: ['v8'],
+            contributorTo: [],
+            starredProjects: [],
+          },
+        },
+      });
+    });
   });
 
   describe('selectors', () => {
@@ -46,6 +134,57 @@ describe('user', () => {
         ['anotherPref', 'hello-world'],
       ]));
     });
+
+    it('projects', () => {
+      assert.deepEqual(user.projects(wrapUser({})), {});
+
+      const state = wrapUser({
+        currentUser: {userId: '123'},
+        usersById: {
+          ['123']: {
+            projects: {
+              ownerOf: ['chromium'],
+              memberOf: ['v8'],
+              contributorTo: [],
+              starredProjects: [],
+            },
+          },
+        },
+      });
+
+      assert.deepEqual(user.projects(state), {
+        ownerOf: ['chromium'],
+        memberOf: ['v8'],
+        contributorTo: [],
+        starredProjects: [],
+      });
+    });
+
+    it('projectPerUser', () => {
+      assert.deepEqual(user.projectsPerUser(wrapUser({})), new Map());
+
+      const state = wrapUser({
+        usersById: {
+          ['123']: {
+            projects: {
+              ownerOf: ['chromium'],
+              memberOf: ['v8'],
+              contributorTo: [],
+              starredProjects: [],
+            },
+          },
+        },
+      });
+
+      assert.deepEqual(user.projects(state), new Map([
+        ['123', {
+          ownerOf: ['chromium'],
+          memberOf: ['v8'],
+          contributorTo: [],
+          starredProjects: [],
+        }],
+      ]));
+    });
   });
 
   describe('action creators', () => {
@@ -57,6 +196,65 @@ describe('user', () => {
 
     afterEach(() => {
       prpcClient.call.restore();
+    });
+
+    it('fetchProjects succeeds', async () => {
+      const action = user.fetchProjects([{userId: '123'}]);
+
+      prpcClient.call.returns(Promise.resolve({
+        usersProjects: [
+          {
+            userRef: {
+              userId: '123',
+            },
+            ownerOf: ['chromium'],
+          },
+        ],
+      }));
+
+      await action(dispatch);
+
+      sinon.assert.calledWith(dispatch, {type: user.FETCH_PROJECTS_START});
+
+      sinon.assert.calledWith(
+          prpcClient.call,
+          'monorail.Users',
+          'GetUsersProjects',
+          {userRefs: [{userId: '123'}]});
+
+      sinon.assert.calledWith(dispatch, {
+        type: user.FETCH_PROJECTS_SUCCESS,
+        usersProjects: [
+          {
+            userRef: {
+              userId: '123',
+            },
+            ownerOf: ['chromium'],
+          },
+        ],
+      });
+    });
+
+    it('fetchProjects fails', async () => {
+      const action = user.fetchProjects([{userId: '123'}]);
+
+      const error = new Error('mistakes were made');
+      prpcClient.call.returns(Promise.reject(error));
+
+      await action(dispatch);
+
+      sinon.assert.calledWith(dispatch, {type: user.FETCH_PROJECTS_START});
+
+      sinon.assert.calledWith(
+          prpcClient.call,
+          'monorail.Users',
+          'GetUsersProjects',
+          {userRefs: [{userId: '123'}]});
+
+      sinon.assert.calledWith(dispatch, {
+        type: user.FETCH_PROJECTS_FAILURE,
+        error,
+      });
     });
 
     it('setPrefs', async () => {
@@ -83,3 +281,4 @@ describe('user', () => {
 });
 
 const wrapCurrentUser = (currentUser = {}) => ({user: {currentUser}});
+const wrapUser = (user) => ({user});

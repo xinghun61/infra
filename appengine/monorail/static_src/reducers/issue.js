@@ -12,6 +12,7 @@ import {issueRefToString} from 'shared/converters.js';
 import {createReducer, createRequestReducer,
   createKeyedRequestReducer} from './redux-helpers.js';
 import * as project from './project.js';
+import * as user from './user.js';
 import {fieldValueMapKey} from 'shared/metadata-helpers.js';
 import {prpcClient} from 'prpc-client-instance.js';
 
@@ -67,10 +68,6 @@ const FETCH_REFERENCED_USERS_START = 'FETCH_REFERENCED_USERS_START';
 const FETCH_REFERENCED_USERS_SUCCESS = 'FETCH_REFERENCED_USERS_SUCCESS';
 const FETCH_REFERENCED_USERS_FAILURE = 'FETCH_REFERENCED_USERS_FAILURE';
 
-const FETCH_USERS_PROJECTS_START = 'FETCH_USERS_PROJECTS_START';
-const FETCH_USERS_PROJECTS_SUCCESS = 'FETCH_USERS_PROJECTS_SUCCESS';
-const FETCH_USERS_PROJECTS_FAILURE = 'FETCH_USERS_PROJECTS_FAILURE';
-
 const FETCH_RELATED_ISSUES_START = 'FETCH_RELATED_ISSUES_START';
 const FETCH_RELATED_ISSUES_SUCCESS = 'FETCH_RELATED_ISSUES_SUCCESS';
 const FETCH_RELATED_ISSUES_FAILURE = 'FETCH_RELATED_ISSUES_FAILURE';
@@ -106,7 +103,6 @@ const UPDATE_APPROVAL_FAILURE = 'UPDATE_APPROVAL_FAILURE';
   commentReferences: Object,
   relatedIssues: Object,
   referencedUsers: Array,
-  usersProjects: Object,
   starredIssues: Object,
   permissions: Array,
   presubmitResponse: Object,
@@ -195,22 +191,6 @@ const referencedUsersReducer = createReducer({}, {
   [FETCH_REFERENCED_USERS_SUCCESS]: (_state, action) => action.referencedUsers,
 });
 
-const usersProjectsReducer = createReducer({}, {
-  [FETCH_USERS_PROJECTS_SUCCESS]: (state, action) => {
-    const newState = {};
-    const updateNewState = (userProjects, displayName) => {
-      newState.set(displayName, {
-        ownerOf: [...(userProjects.ownerOf || [])],
-        memberOf: [...(userProjects.memberOf || [])],
-        contributorTo: [...(userProjects.contributorTo || [])],
-      });
-    };
-    state.forEach(updateNewState);
-    action.usersProjects.forEach(updateNewState);
-    return newState;
-  },
-});
-
 export const starredIssuesReducer = createReducer({}, {
   [STAR_SUCCESS]: (state, action) => {
     return {...state, [action.ref]: action.starred};
@@ -272,10 +252,6 @@ const requestsReducer = combineReducers({
       FETCH_REFERENCED_USERS_START,
       FETCH_REFERENCED_USERS_SUCCESS,
       FETCH_REFERENCED_USERS_FAILURE),
-  fetchUsersProjects: createRequestReducer(
-      FETCH_USERS_PROJECTS_START,
-      FETCH_USERS_PROJECTS_SUCCESS,
-      FETCH_USERS_PROJECTS_FAILURE),
   fetchIsStarred: createRequestReducer(
       FETCH_IS_STARRED_START, FETCH_IS_STARRED_SUCCESS,
       FETCH_IS_STARRED_FAILURE),
@@ -307,7 +283,6 @@ export const reducer = combineReducers({
   commentReferences: commentReferencesReducer,
   relatedIssues: relatedIssuesReducer,
   referencedUsers: referencedUsersReducer,
-  usersProjects: usersProjectsReducer,
   starredIssues: starredIssuesReducer,
   permissions: permissionsReducer,
   presubmitResponse: presubmitResponseReducer,
@@ -351,10 +326,6 @@ export const relatedIssues = createSelector(_relatedIssues,
 const _referencedUsers = (state) => state.issue.referencedUsers || {};
 export const referencedUsers = createSelector(_referencedUsers,
     (referencedUsers) => objectToMap(referencedUsers));
-
-const _usersProjects = (state) => state.issue.usersProjects || {};
-export const usersProjects = createSelector(_usersProjects,
-    (usersProjects) => objectToMap(usersProjects));
 
 export const isStarred = (state) => state.issue.isStarred;
 export const _starredIssues = (state) => state.issue.starredIssues;
@@ -629,24 +600,6 @@ export const fetchReferencedUsers = (issue) => async (dispatch) => {
   }
 };
 
-// TODO(zhangtiff): Combine this user project code in user.js.
-export const fetchUsersProjects = (userRefs) => async (dispatch) => {
-  if (!userRefs || !userRefs.length) return;
-  dispatch({type: FETCH_USERS_PROJECTS_START});
-
-  try {
-    const resp = await prpcClient.call(
-        'monorail.Users', 'GetUsersProjects', {userRefs});
-    const usersProjects = {};
-    (resp.usersProjects || []).forEach((userProjects) => {
-      usersProjects[userProjects.userRef.displayName] = userProjects;
-    });
-    dispatch({type: FETCH_USERS_PROJECTS_SUCCESS, usersProjects});
-  } catch (error) {
-    dispatch({type: FETCH_USERS_PROJECTS_FAILURE, error});
-  }
-};
-
 // TODO(zhangtiff): Figure out if we can reduce request/response sizes by
 // diffing issues to fetch against issues we already know about to avoid
 // fetching duplicate info.
@@ -714,7 +667,7 @@ export const fetch = (message) => async (dispatch) => {
       dispatch(fetchRelatedIssues(issue));
       dispatch(fetchHotlists(message.issueRef));
       dispatch(fetchReferencedUsers(issue));
-      dispatch(fetchUsersProjects([issue.reporterRef]));
+      dispatch(user.fetchProjects([issue.reporterRef]));
     }
   } catch (error) {
     dispatch({type: FETCH_FAILURE, error});
@@ -848,7 +801,7 @@ export const fetchComments = (message) => async (dispatch) => {
 
     const commenterRefs = (resp.comments || []).map(
         (comment) => comment.commenter);
-    dispatch(fetchUsersProjects(commenterRefs));
+    dispatch(user.fetchProjects(commenterRefs));
   } catch (error) {
     dispatch({type: FETCH_COMMENTS_FAILURE, error});
   };

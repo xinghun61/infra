@@ -5,6 +5,9 @@
 import {LitElement, html, css} from 'lit-element';
 import qs from 'qs';
 
+import {connectStore} from 'reducers/base.js';
+import * as user from 'reducers/user.js';
+
 import '../mr-dropdown/mr-dropdown.js';
 import '../mr-dropdown/mr-account-dropdown.js';
 import './mr-search-bar.js';
@@ -12,7 +15,7 @@ import './mr-search-bar.js';
 import {SHARED_STYLES} from 'shared/shared-styles.js';
 import {prpcClient} from 'prpc-client-instance.js';
 
-import ClientLogger from 'monitoring/client-logger';
+import ClientLogger from 'monitoring/client-logger.js';
 
 
 /**
@@ -21,7 +24,7 @@ import ClientLogger from 'monitoring/client-logger';
  * The header for Monorail.
  *
  */
-export class MrHeader extends LitElement {
+export class MrHeader extends connectStore(LitElement) {
   static get styles() {
     return [
       SHARED_STYLES,
@@ -185,6 +188,8 @@ export class MrHeader extends LitElement {
     this.canAdministerProject = true;
 
     this.presentationConfig = {};
+    this.userProjects = {};
+
     this.clientLogger = new ClientLogger('mr-header');
   }
 
@@ -200,12 +205,13 @@ export class MrHeader extends LitElement {
     this.queryParams = qs.parse(queryString);
   }
 
+  stateChanged(state) {
+    this.userProjects = user.projects(state);
+  }
+
   updated(changedProperties) {
     if (changedProperties.has('projectName')) {
       this._fetchPresentationConfig(this.projectName);
-    }
-    if (changedProperties.has('userDisplayName')) {
-      this._fetchUserProjects(this.userDisplayName);
     }
   }
 
@@ -218,23 +224,12 @@ export class MrHeader extends LitElement {
     this.projectThumbnailUrl = presentationConfig.projectThumbnailUrl;
   }
 
-  async _fetchUserProjects(displayName) {
-    // Only fetch projects for logged in users.
-    if (!displayName) return;
-    // TODO(zhangtiff): Add this state to Redux. This is left out from
-    //   Redux for now because this code is meant to run on non-SPA pages
-    //   as well.
-    const userRefs = [{displayName}];
-    const response = await prpcClient.call(
-        'monorail.Users', 'GetUsersProjects', {userRefs});
-    this.userProjects = response.usersProjects[0];
-  }
-
   get _projectDropdownItems() {
     const {userProjects, loginUrl} = this;
-    if (!userProjects) {
+    if (!this.userDisplayName) {
       return [{text: 'Sign in to see your projects', url: loginUrl}];
     }
+
     const items = [];
     const starredProjects = userProjects.starredProjects || [];
     const projects = (userProjects.ownerOf || [])

@@ -217,7 +217,7 @@ export class MrUpdateIssueHotlists extends connectStore(LitElement) {
           store.dispatch(issue.fetchHotlists(viewedRef));
         }
       }
-      store.dispatch(user.fetchHotlists(this.user.email));
+      store.dispatch(user.fetchHotlists({userId: this.user.userId}));
       this.close();
     } catch (error) {
       this.error = error.description;

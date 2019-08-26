@@ -60,11 +60,24 @@ export function immutableSplice(arr, index, count, ...addedItems) {
   return [...arr.slice(0, index), ...addedItems, ...arr.slice(index + count)];
 }
 
-export function userIsMember(userRef, projectName, usersProjects) {
-  if (!userRef || !userRef.displayName || !projectName) return false;
-  const userProjects = usersProjects.get(userRef.displayName);
+/**
+ * Finds out whether a user is a member of a given project based on
+ * project membership info.
+ *
+ * @param {Object} userRef reference to a given user. Expects an id.
+ * @param {String} projectName name of the project being searched for.
+ * @param {Map} usersProjects all known user project memberships where
+ *  keys are userId and values are Objects with expected values
+ *  for {ownerOf, memberOf, contributorTo}.
+ * @return {Boolean} whether the user is a member of the project or not.
+ */
+// TODO(crbug.com/monorail/5968): Find a better place for this function to live.
+export function userIsMember(userRef, projectName, usersProjects = new Map()) {
+  if (!userRef || !userRef.userId || !projectName) return false;
+  const userProjects = usersProjects.get(userRef.userId);
   if (!userProjects) return false;
-  return userProjects.ownerOf.includes(projectName) ||
-    userProjects.memberOf.includes(projectName) ||
-    userProjects.contributorTo.includes(projectName);
+  const {ownerOf = [], memberOf = [], contributorTo = []} = userProjects;
+  return ownerOf.includes(projectName) ||
+    memberOf.includes(projectName) ||
+    contributorTo.includes(projectName);
 }

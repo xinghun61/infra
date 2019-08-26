@@ -35,7 +35,7 @@ export class MrAutocomplete extends connectStore(ChopsAutocomplete) {
   }
 
   stateChanged(state) {
-    const userProjects = user.user(state).projects;
+    const userProjects = user.projects(state);
     const {ownerOf = [], memberOf = [], contributorTo = []} = userProjects;
 
     const strings = [...ownerOf, ...memberOf, ...contributorTo];

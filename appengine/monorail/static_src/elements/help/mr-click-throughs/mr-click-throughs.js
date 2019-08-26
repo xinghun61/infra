@@ -8,7 +8,6 @@ import * as user from 'reducers/user.js';
 import 'elements/chops/chops-button/chops-button.js';
 import 'elements/chops/chops-dialog/chops-dialog.js';
 import {SHARED_STYLES} from 'shared/shared-styles.js';
-import {prpcClient} from 'prpc-client-instance.js';
 
 /**
  * `<mr-click-throughs>`

@@ -13,6 +13,7 @@ const ISSUE_ID_REGEX = /(?:([a-z0-9-]+):)?(\d+)/i;
 
 // RFC 2821-compliant email address regex used by the server when validating
 // email addresses.
+// eslint-disable-next-line max-len
 const RFC_2821_EMAIL_REGEX = /^[-a-zA-Z0-9!#$%&'*+\/=?^_`{|}~]+(?:[.][-a-zA-Z0-9!#$%&'*+\/=?^_`{|}~]+)*@(?:(?:[0-9a-zA-Z](?:[-]*[0-9a-zA-Z]+)*)(?:\.[0-9a-zA-Z](?:[-]*[0-9a-zA-Z]+)*)*)\.(?:[a-zA-Z]{2,9})$/;
 
 export function displayNameToUserRef(displayName) {
@@ -21,6 +22,18 @@ export function displayNameToUserRef(displayName) {
         `Invalid email address: ${displayName}`);
   }
   return {displayName};
+}
+
+export function userToUserRef(user) {
+  if (!user) return {};
+  // TODO(crbug.com/monorail/6224): Remove "email" condition after making
+  // the API more consistent.
+  const {userId, displayName, email} = user;
+  return {userId, displayName: (displayName || email)};
+}
+
+export function userRefToId(userRef) {
+  return userRef && userRef.userId;
 }
 
 export function userRefToDisplayName(userRef) {

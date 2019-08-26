@@ -7,15 +7,16 @@ import {createSelector} from 'reselect';
 import {createReducer, createRequestReducer} from './redux-helpers.js';
 import {prpcClient} from 'prpc-client-instance.js';
 import {objectToMap} from 'shared/helpers.js';
+import {userRefToId, userToUserRef} from 'shared/converters.js';
 
 // Actions
 const FETCH_START = 'user/FETCH_START';
 const FETCH_SUCCESS = 'user/FETCH_SUCCESS';
 const FETCH_FAILURE = 'user/FETCH_FAILURE';
 
-const FETCH_PROJECTS_START = 'user/FETCH_PROJECTS_START';
-const FETCH_PROJECTS_SUCCESS = 'user/FETCH_PROJECTS_SUCCESS';
-const FETCH_PROJECTS_FAILURE = 'user/FETCH_PROJECTS_FAILURE';
+export const FETCH_PROJECTS_START = 'user/FETCH_PROJECTS_START';
+export const FETCH_PROJECTS_SUCCESS = 'user/FETCH_PROJECTS_SUCCESS';
+export const FETCH_PROJECTS_FAILURE = 'user/FETCH_PROJECTS_FAILURE';
 
 const FETCH_HOTLISTS_START = 'user/FETCH_HOTLISTS_START';
 const FETCH_HOTLISTS_SUCCESS = 'user/FETCH_HOTLISTS_SUCCESS';
@@ -62,9 +63,6 @@ export const currentUserReducer = createReducer(USER_DEFAULT, {
       groups: action.groups,
     };
   },
-  [FETCH_PROJECTS_SUCCESS]: (user, action) => {
-    return {...user, projects: action.projects};
-  },
   [FETCH_HOTLISTS_SUCCESS]: (user, action) => {
     return {...user, hotlists: action.hotlists};
   },
@@ -88,6 +86,31 @@ export const currentUserReducer = createReducer(USER_DEFAULT, {
   },
 });
 
+export const usersByIdReducer = createReducer({}, {
+  [FETCH_PROJECTS_SUCCESS]: (state, action) => {
+    const newState = {...state};
+
+    action.usersProjects.forEach((userProjects) => {
+      const {userRef, ownerOf = [], memberOf = [], contributorTo = [],
+        starredProjects = []} = userProjects;
+
+      const userId = userRefToId(userRef);
+
+      newState[userId] = {
+        ...newState[userId],
+        projects: {
+          ownerOf,
+          memberOf,
+          contributorTo,
+          starredProjects,
+        },
+      };
+    });
+
+    return newState;
+  },
+});
+
 const requestsReducer = combineReducers({
   // Request for getting backend metadata related to a user, such as
   // which groups they belong to and whether they're a site admin.
@@ -108,13 +131,33 @@ const requestsReducer = combineReducers({
 
 export const reducer = combineReducers({
   currentUser: currentUserReducer,
+  usersById: usersByIdReducer,
   requests: requestsReducer,
 });
 
 // Selectors
 export const requests = (state) => state.user.requests;
 export const user = (state) => state.user.currentUser || {};
+export const userRef = createSelector(user, (user) => userToUserRef(user));
 export const prefs = createSelector(user, (user) => objectToMap(user.prefs));
+
+const _usersById = (state) => state.user.usersById || {};
+export const usersById = createSelector(_usersById,
+    (usersById) => objectToMap(usersById));
+
+export const projectsPerUser = createSelector(usersById, (usersById) => {
+  const map = new Map();
+  for (const [key, value] of usersById.entries()) {
+    if (value.projects) {
+      map.set(key, value.projects);
+    }
+  }
+  return map;
+});
+
+// Projects for just the current user.
+export const projects = createSelector(projectsPerUser, userRef,
+    (projectsMap, userRef) => projectsMap.get(userRefToId(userRef)) || {});
 
 // Action Creators
 export const fetch = (displayName) => async (dispatch) => {
@@ -132,13 +175,18 @@ export const fetch = (displayName) => async (dispatch) => {
           'monorail.Users', 'GetMemberships', message),
     ]);
 
+    const user = resp[0];
+
     dispatch({
       type: FETCH_SUCCESS,
-      user: resp[0],
+      user,
       groups: resp[1].groupRefs || [],
     });
-    dispatch(fetchProjects([{displayName}]));
-    dispatch(fetchHotlists(displayName));
+
+    const userRef = userToUserRef(user);
+
+    dispatch(fetchProjects([userRef]));
+    dispatch(fetchHotlists(userRef));
     dispatch(fetchPrefs());
   } catch (error) {
     dispatch({type: FETCH_FAILURE, error});
@@ -150,22 +198,18 @@ export const fetchProjects = (userRefs) => async (dispatch) => {
   try {
     const resp = await prpcClient.call(
         'monorail.Users', 'GetUsersProjects', {userRefs});
-
-    // TODO(zhangtiff): Generalize this to work for multiple users. This will
-    // require refactoring the reducer and store shape a bit.
-    resp.usersProjects.forEach((proj) => delete proj.userRef);
-    dispatch({type: FETCH_PROJECTS_SUCCESS, projects: resp.usersProjects[0]});
+    dispatch({type: FETCH_PROJECTS_SUCCESS, usersProjects: resp.usersProjects});
   } catch (error) {
     dispatch({type: FETCH_PROJECTS_FAILURE, error});
   }
 };
 
-export const fetchHotlists = (displayName) => async (dispatch) => {
+export const fetchHotlists = (userRef) => async (dispatch) => {
   dispatch({type: FETCH_HOTLISTS_START});
 
   try {
     const resp = await prpcClient.call(
-        'monorail.Features', 'ListHotlistsByUser', {user: {displayName}});
+        'monorail.Features', 'ListHotlistsByUser', {user: userRef});
 
     const hotlists = resp.hotlists || [];
     hotlists.sort((hotlistA, hotlistB) => {
