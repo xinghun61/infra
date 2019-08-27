@@ -25,13 +25,22 @@ import (
 
 const repairBotsQueue = "repair-bots"
 const resetBotsQueue = "reset-bots"
+const repairLabstationQueue = "repair-labstations"
 
-// PushRepairDUTs pushes duts for taskqueue repair-bots upcoming repair jobs.
+// PushRepairLabstations pushes duts to taskqueue repairLabstationQueue for
+// upcoming repair jobs.
+func PushRepairLabstations(ctx context.Context, dutNames []string) error {
+	return pushDUTs(ctx, dutNames, repairLabstationQueue, repairTask)
+}
+
+// PushRepairDUTs pushes duts to taskqueue repairBotsQueue for upcoming repair
+// jobs.
 func PushRepairDUTs(ctx context.Context, dutNames []string) error {
 	return pushDUTs(ctx, dutNames, repairBotsQueue, repairTask)
 }
 
-// PushResetDUTs pushes duts for taskqueue reset-bots upcoming reset jobs.
+// PushResetDUTs pushes duts to taskqueue resetBotsQueue for upcoming reset
+// jobs.
 func PushResetDUTs(ctx context.Context, dutNames []string) error {
 	return pushDUTs(ctx, dutNames, resetBotsQueue, resetTask)
 }

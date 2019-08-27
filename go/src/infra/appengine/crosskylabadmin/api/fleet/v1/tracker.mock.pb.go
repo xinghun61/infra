@@ -94,6 +94,26 @@ func (mr *MockTrackerClientMockRecorder) PushBotsForAdminTasks(ctx, in interface
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PushBotsForAdminTasks", reflect.TypeOf((*MockTrackerClient)(nil).PushBotsForAdminTasks), varargs...)
 }
 
+// PushRepairJobsForLabstations mocks base method
+func (m *MockTrackerClient) PushRepairJobsForLabstations(ctx context.Context, in *PushRepairJobsForLabstationsRequest, opts ...grpc.CallOption) (*PushRepairJobsForLabstationsResponse, error) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "PushRepairJobsForLabstations", varargs...)
+	ret0, _ := ret[0].(*PushRepairJobsForLabstationsResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// PushRepairJobsForLabstations indicates an expected call of PushRepairJobsForLabstations
+func (mr *MockTrackerClientMockRecorder) PushRepairJobsForLabstations(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PushRepairJobsForLabstations", reflect.TypeOf((*MockTrackerClient)(nil).PushRepairJobsForLabstations), varargs...)
+}
+
 // ReportBots mocks base method
 func (m *MockTrackerClient) ReportBots(ctx context.Context, in *ReportBotsRequest, opts ...grpc.CallOption) (*ReportBotsResponse, error) {
 	m.ctrl.T.Helper()
@@ -180,6 +200,21 @@ func (m *MockTrackerServer) PushBotsForAdminTasks(arg0 context.Context, arg1 *Pu
 func (mr *MockTrackerServerMockRecorder) PushBotsForAdminTasks(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PushBotsForAdminTasks", reflect.TypeOf((*MockTrackerServer)(nil).PushBotsForAdminTasks), arg0, arg1)
+}
+
+// PushRepairJobsForLabstations mocks base method
+func (m *MockTrackerServer) PushRepairJobsForLabstations(arg0 context.Context, arg1 *PushRepairJobsForLabstationsRequest) (*PushRepairJobsForLabstationsResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "PushRepairJobsForLabstations", arg0, arg1)
+	ret0, _ := ret[0].(*PushRepairJobsForLabstationsResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// PushRepairJobsForLabstations indicates an expected call of PushRepairJobsForLabstations
+func (mr *MockTrackerServerMockRecorder) PushRepairJobsForLabstations(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PushRepairJobsForLabstations", reflect.TypeOf((*MockTrackerServer)(nil).PushRepairJobsForLabstations), arg0, arg1)
 }
 
 // ReportBots mocks base method

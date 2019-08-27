@@ -1,4 +1,7 @@
 cron:
+- description: push labstations for repair tasks
+  url: /internal/cron/push-labstations-for-repair
+  schedule: every 60 minutes
 - description: push bots for admin tasks
   url: /internal/cron/push-bots-for-admin-tasks
   schedule: every 5 minutes

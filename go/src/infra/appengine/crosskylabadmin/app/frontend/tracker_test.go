@@ -32,6 +32,7 @@ import (
 
 const repairQ = "repair-bots"
 const resetQ = "reset-bots"
+const repairLabstationQ = "repair-labstations"
 
 func TestFlattenAndDuplicateBots(t *testing.T) {
 	Convey("zero bots", t, func() {
@@ -85,15 +86,15 @@ func TestFlattenAndDuplicateBots(t *testing.T) {
 	})
 }
 func TestPushBotsForAdminTasks(t *testing.T) {
-	Convey("Handling 4 different state of bots", t, func() {
+	Convey("Handling 4 different state of cros bots", t, func() {
 		tf, validate := newTestFixture(t)
 		defer validate()
 		tqt := taskqueue.GetTestable(tf.C)
 		tqt.CreateQueue(repairQ)
 		tqt.CreateQueue(resetQ)
-		bot1 := botForDUT("dut_1", "needs_repair", "")
-		bot2 := botForDUT("dut_2", "repair_failed", "")
-		bot3 := botForDUT("dut_3", "needs_reset", "")
+		bot1 := botForDUT("dut_1", "needs_repair", "label-os_type:OS_TYPE_CROS")
+		bot2 := botForDUT("dut_2", "repair_failed", "label-os_type:OS_TYPE_CROS")
+		bot3 := botForDUT("dut_3", "needs_reset", "label-os_type:OS_TYPE_CROS")
 		bots := []*swarming.SwarmingRpcsBotInfo{
 			botForDUT("dut_0", "ready", ""),
 			bot1,
@@ -118,6 +119,7 @@ func TestPushBotsForAdminTasks(t *testing.T) {
 		So(err, ShouldBeNil)
 
 		tasks := tqt.GetScheduledTasks()
+		fmt.Println(tasks)
 		repairTasks, ok := tasks[repairQ]
 		So(ok, ShouldBeTrue)
 		var repairPaths []string
@@ -142,6 +144,51 @@ func TestPushBotsForAdminTasks(t *testing.T) {
 			fmt.Sprintf("/internal/task/reset/%s", h3),
 		}
 		So(resetPaths, ShouldResemble, expectedPaths)
+	})
+}
+
+func TestPushLabstationsForRepair(t *testing.T) {
+	Convey("Handling labstation bots", t, func() {
+		tf, validate := newTestFixture(t)
+		defer validate()
+		tqt := taskqueue.GetTestable(tf.C)
+		tqt.CreateQueue(repairLabstationQ)
+		bot1 := botForDUT("dut_1", "needs_repair", "label-os_type:OS_TYPE_LABSTATION")
+		bot2 := botForDUT("dut_2", "ready", "label-os_type:OS_TYPE_LABSTATION")
+		bots := []*swarming.SwarmingRpcsBotInfo{
+			bot1,
+			bot2,
+		}
+		getDutName := func(bot *swarming.SwarmingRpcsBotInfo) string {
+			h, err := extractSingleValuedDimension(swarmingDimensionsMap(bot.Dimensions), clients.DutNameDimensionKey)
+			if err != nil {
+				t.Fatalf("fail to extract dut_name for bot %s", bot1.BotId)
+			}
+			return h
+		}
+		h1 := getDutName(bot1)
+		h2 := getDutName(bot2)
+		tf.MockSwarming.EXPECT().ListAliveIdleBotsInPool(
+			gomock.Any(), gomock.Eq(config.Get(tf.C).Swarming.BotPool), gomock.Any(),
+		).AnyTimes().Return(bots, nil)
+		expectDefaultPerBotRefresh(tf)
+		_, err := tf.Tracker.PushRepairJobsForLabstations(tf.C, &fleet.PushRepairJobsForLabstationsRequest{})
+		So(err, ShouldBeNil)
+
+		tasks := tqt.GetScheduledTasks()
+		repairTasks, ok := tasks[repairLabstationQ]
+		So(ok, ShouldBeTrue)
+		var repairPaths []string
+		for _, v := range repairTasks {
+			repairPaths = append(repairPaths, v.Path)
+		}
+		sort.Strings(repairPaths)
+		expectedPaths := []string{
+			fmt.Sprintf("/internal/task/repair/%s", h1),
+			fmt.Sprintf("/internal/task/repair/%s", h2),
+		}
+		sort.Strings(expectedPaths)
+		So(repairPaths, ShouldResemble, expectedPaths)
 	})
 }
 

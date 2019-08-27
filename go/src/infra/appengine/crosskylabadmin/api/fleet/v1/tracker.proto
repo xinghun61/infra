@@ -31,8 +31,11 @@ service Tracker {
   // SummarizeBots stops at the first error encountered and returns the error.
   rpc SummarizeBots(SummarizeBotsRequest) returns (SummarizeBotsResponse);
 
-  // Filter out and queue the bots that require admin tasks Repair and Reset.
+  // Filter out and queue the CrOS bots that require admin tasks Repair and Reset.
   rpc PushBotsForAdminTasks(PushBotsForAdminTasksRequest) returns (PushBotsForAdminTasksResponse);
+
+  // Filter out and queue the labstation bots that require admin tasks Repair.
+  rpc PushRepairJobsForLabstations(PushRepairJobsForLabstationsRequest) returns (PushRepairJobsForLabstationsResponse);
 
   // Report bots metrics.
   rpc ReportBots(ReportBotsRequest) returns (ReportBotsResponse);
@@ -42,6 +45,12 @@ message PushBotsForAdminTasksRequest {
 }
 
 message PushBotsForAdminTasksResponse {
+}
+
+message PushRepairJobsForLabstationsRequest {
+}
+
+message PushRepairJobsForLabstationsResponse {
 }
 
 message ReportBotsRequest {

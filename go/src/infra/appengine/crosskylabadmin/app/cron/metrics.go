@@ -32,6 +32,12 @@ var (
 		nil,
 		field.Bool("success"),
 	)
+	pushRepairJobsForLabstationsCronHandlerTick = metric.NewCounter(
+		"chromeos/crosskylabadmin/cron/push_repair_jobs_for_labstations",
+		"PushRepairJobsForLabstations cron attempt",
+		nil,
+		field.Bool("success"),
+	)
 	reportBotsCronHandlerTick = metric.NewCounter(
 		"chromeos/crosskylabadmin/cron/report_bots",
 		"ReportBots cron attempt",

@@ -8,3 +8,8 @@ queue:
   rate: 20/s
   retry_parameters:
     task_retry_limit: 0
+
+- name: repair-labstations
+  rate: 20/s
+  retry_parameters:
+    task_retry_limit: 0

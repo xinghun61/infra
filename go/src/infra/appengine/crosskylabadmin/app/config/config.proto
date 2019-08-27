@@ -108,6 +108,7 @@ message RPCControl {
   bool disable_refresh_inventory = 5;
   bool disable_trigger_repair_on_idle = 6;
   bool disable_trigger_repair_on_repair_failed = 7;
+  bool disable_push_labstations_for_repair = 8;
 }
 
 // Skylab inventory is stored in a git project. A Gitiles server as well as

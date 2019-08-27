@@ -33,7 +33,7 @@ import (
 func InstallHandlers(r *router.Router, mwBase router.MiddlewareChain) {
 	r.POST(
 		"/internal/task/repair/*ignored",
-		mwBase.Extend(gaemiddleware.RequireTaskQueue("repair-bots")),
+		mwBase.Extend(gaemiddleware.RequireTaskQueue("repair-bots"), gaemiddleware.RequireTaskQueue("repair-labstations")),
 		logAndSetHTTPErr(runRepairQueueHandler),
 	)
 	r.POST(

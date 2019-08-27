@@ -54,6 +54,9 @@ const (
 	// DutPoolDimensionKey identifies the swarming dimension containing the
 	// Autotest pool label for the DUT.
 	DutPoolDimensionKey = "label-pool"
+	// DutOSDimensionKey identifies the swarming dimension containing the
+	// OS label for the DUT.
+	DutOSDimensionKey = "label-os_type"
 	// DutNameDimensionKey identifies the swarming dimension
 	// containing the DUT name.
 	DutNameDimensionKey = "dut_name"

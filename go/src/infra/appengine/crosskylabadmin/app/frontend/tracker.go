@@ -62,12 +62,14 @@ func (tsi *TrackerServerImpl) PushBotsForAdminTasks(ctx context.Context, req *fl
 		return nil, errors.Annotate(err, "failed to obtain Swarming client").Err()
 	}
 
-	// Only schedule admin tasks to idle DUTs.
+	// Schedule admin tasks to idle DUTs.
+	dims := make(strpair.Map)
+	dims[clients.DutOSDimensionKey] = []string{"OS_TYPE_CROS"}
 	bots, err := sc.ListAliveIdleBotsInPool(ctx, cfg.Swarming.BotPool, strpair.Map{})
 	if err != nil {
-		return nil, errors.Annotate(err, "failed to list alive idle bots").Err()
+		return nil, errors.Annotate(err, "failed to list alive idle cros bots").Err()
 	}
-	logging.Infof(ctx, "successfully get %d alive idle bots.", len(bots))
+	logging.Infof(ctx, "successfully get %d alive idle cros bots.", len(bots))
 
 	// Parse DUT name to schedule tasks for readability.
 	repairDUTs, resetDUTs := identifyBots(ctx, bots)
@@ -79,6 +81,39 @@ func (tsi *TrackerServerImpl) PushBotsForAdminTasks(ctx context.Context, req *fl
 		return nil, errors.New("failed to push repair or reset duts")
 	}
 	return &fleet.PushBotsForAdminTasksResponse{}, nil
+}
+
+// PushRepairJobsForLabstations implements the fleet.Tracker.pushLabstationsForRepair() method.
+func (tsi *TrackerServerImpl) PushRepairJobsForLabstations(ctx context.Context, req *fleet.PushRepairJobsForLabstationsRequest) (res *fleet.PushRepairJobsForLabstationsResponse, err error) {
+	defer func() {
+		err = grpcutil.GRPCifyAndLogErr(ctx, err)
+	}()
+
+	cfg := config.Get(ctx)
+	sc, err := tsi.newSwarmingClient(ctx, cfg.Swarming.Host)
+	if err != nil {
+		return nil, errors.Annotate(err, "failed to obtain Swarming client").Err()
+	}
+
+	// Schedule repair jobs to idle labstations. It's for periodically checking
+	// and rebooting labstations to ensure they're in good state.
+	dims := make(strpair.Map)
+	dims[clients.DutOSDimensionKey] = []string{"OS_TYPE_LABSTATION"}
+	bots, err := sc.ListAliveIdleBotsInPool(ctx, cfg.Swarming.BotPool, dims)
+	if err != nil {
+		return nil, errors.Annotate(err, "failed to list alive idle labstation bots").Err()
+	}
+	logging.Infof(ctx, "successfully get %d alive idle labstation bots.", len(bots))
+
+	// Parse DUT name to schedule tasks for readability.
+	repairLabstations := identifyLabstationsForRepair(ctx, bots)
+
+	err = clients.PushRepairLabstations(ctx, repairLabstations)
+	if err != nil {
+		logging.Infof(ctx, "push repair labstations: %v", err)
+		return nil, errors.New("failed to push repair labstations")
+	}
+	return &fleet.PushRepairJobsForLabstationsResponse{}, nil
 }
 
 // ReportBots reports metrics of swarming bots.
@@ -373,17 +408,36 @@ func identifyBots(ctx context.Context, bots []*swarming.SwarmingRpcsBotInfo) (re
 	for _, b := range bots {
 		s := clients.GetStateDimension(b.Dimensions)
 		dims := swarmingDimensionsMap(b.Dimensions)
+		os, err := extractSingleValuedDimension(dims, clients.DutOSDimensionKey)
 		n, err := extractSingleValuedDimension(dims, clients.DutNameDimensionKey)
 		if err != nil {
 			logging.Warningf(ctx, "failed to obtain DUT name for bot %q", b.BotId)
 			continue
 		}
-		if s == fleet.DutState_NeedsRepair || s == fleet.DutState_RepairFailed {
+		if os == "OS_TYPE_CROS" && (s == fleet.DutState_NeedsRepair || s == fleet.DutState_RepairFailed) {
 			repairDUTs = append(repairDUTs, n)
 		}
-		if s == fleet.DutState_NeedsReset {
+		if os == "OS_TYPE_CROS" && s == fleet.DutState_NeedsReset {
 			resetDUTs = append(resetDUTs, n)
 		}
 	}
 	return repairDUTs, resetDUTs
+}
+
+// identifyLabstationsForRepair identifies labstations that need repair.
+func identifyLabstationsForRepair(ctx context.Context, bots []*swarming.SwarmingRpcsBotInfo) (repairLabstations []string) {
+	dutNames := make([]string, 0, len(bots))
+	for _, b := range bots {
+		dims := swarmingDimensionsMap(b.Dimensions)
+		os, err := extractSingleValuedDimension(dims, clients.DutOSDimensionKey)
+		n, err := extractSingleValuedDimension(dims, clients.DutNameDimensionKey)
+		if err != nil {
+			logging.Warningf(ctx, "failed to obtain DUT name for bot %q", b.BotId)
+			continue
+		}
+		if os == "OS_TYPE_LABSTATION" {
+			dutNames = append(dutNames, n)
+		}
+	}
+	return dutNames
 }

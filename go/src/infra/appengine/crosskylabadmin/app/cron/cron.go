@@ -53,8 +53,11 @@ func InstallHandlers(r *router.Router, mwBase router.MiddlewareChain) {
 	r.GET("/internal/cron/trigger-repair-on-repair-failed", mwCron, logAndSetHTTPErr(triggerRepairOnRepairFailedCronHandler))
 	r.GET("/internal/cron/ensure-critical-pools-healthy", mwCron, logAndSetHTTPErr(ensureCriticalPoolsHealthy))
 
-	// For Repair or Reset cron jobs.
+	// Generate repair or reset jobs for CrOS DUTs.
 	r.GET("/internal/cron/push-bots-for-admin-tasks", mwCron, logAndSetHTTPErr(pushBotsForAdminTasksCronHandler))
+
+	// for repair jobs of labstation.
+	r.GET("/internal/cron/push-repair-jobs-for-labstations", mwCron, logAndSetHTTPErr(pushRepairJobsForLabstationsCronHandler))
 
 	// Update device config asynchronously.
 	r.GET("/internal/cron/update-device-configs", mwCron, logAndSetHTTPErr(updateDeviceConfigCronHandler))
@@ -92,6 +95,26 @@ func pushBotsForAdminTasksCronHandler(c *router.Context) (err error) {
 
 	tsi := frontend.TrackerServerImpl{}
 	if _, err := tsi.PushBotsForAdminTasks(c.Context, &fleet.PushBotsForAdminTasksRequest{}); err != nil {
+		return err
+	}
+	logging.Infof(c.Context, "Successfully finished")
+	return nil
+}
+
+// pushLabstationsForRepairCronHandler pushes bots that require admin tasks to bot queue.
+func pushRepairJobsForLabstationsCronHandler(c *router.Context) (err error) {
+	defer func() {
+		pushRepairJobsForLabstationsCronHandlerTick.Add(c.Context, 1, err == nil)
+	}()
+
+	cfg := config.Get(c.Context)
+	if cfg.RpcControl != nil && cfg.RpcControl.GetDisablePushLabstationsForRepair() {
+		logging.Infof(c.Context, "PushLabstationsForRepair is disabled via config.")
+		return nil
+	}
+
+	tsi := frontend.TrackerServerImpl{}
+	if _, err := tsi.PushRepairJobsForLabstations(c.Context, &fleet.PushRepairJobsForLabstationsRequest{}); err != nil {
 		return err
 	}
 	logging.Infof(c.Context, "Successfully finished")
