@@ -24,26 +24,71 @@ describe('mr-list-page', () => {
     assert.instanceOf(element, MrListPage);
   });
 
-  it('shows loading only when issues loading', async () => {
+  it('shows loading when issues loading', async () => {
     element.fetchingIssueList = true;
 
     await element.updateComplete;
 
-    let loading = element.shadowRoot.querySelector('.container-no-issues');
-    let issueList = element.shadowRoot.querySelector('mr-issue-list');
+    const loading = element.shadowRoot.querySelector('.container-loading');
+    const noIssues = element.shadowRoot.querySelector('.container-no-issues');
+    const issueList = element.shadowRoot.querySelector('mr-issue-list');
 
     assert.equal(loading.textContent.trim(), 'Loading...');
+    assert.isNull(noIssues);
+    assert.isNull(issueList);
+  });
+
+  it('shows list when done loading', async () => {
+    element.fetchingIssueList = false;
+    element.totalIssues = 100;
+
+    await element.updateComplete;
+
+    const loading = element.shadowRoot.querySelector('.container-loading');
+    const noIssues = element.shadowRoot.querySelector('.container-no-issues');
+    const issueList = element.shadowRoot.querySelector('mr-issue-list');
+
+    assert.isNull(loading);
+    assert.isNull(noIssues);
+    assert.isNotNull(issueList);
+  });
+
+  it('shows no issues when no search results', async () => {
+    element.fetchingIssueList = false;
+    element.totalIssues = 0;
+    element.queryParams = {q: 'owner:me'};
+
+    await element.updateComplete;
+
+    const loading = element.shadowRoot.querySelector('.container-loading');
+    const noIssues = element.shadowRoot.querySelector('.container-no-issues');
+    const issueList = element.shadowRoot.querySelector('mr-issue-list');
+
+    assert.isNull(loading);
+    assert.isNotNull(noIssues);
     assert.isNull(issueList);
 
+    assert.equal(noIssues.querySelector('strong').textContent.trim(),
+        'owner:me');
+  });
+
+  it('offers consider closed issues when no open results', async () => {
+    element.fetchingIssueList = false;
+    element.totalIssues = 0;
+    element.queryParams = {q: 'owner:me', can: '2'};
+
+    await element.updateComplete;
+
+    const considerClosed = element.shadowRoot.querySelector('.consider-closed');
+
+    assert.isFalse(considerClosed.hidden);
+
+    element.queryParams = {q: 'owner:me', can: '1'};
     element.fetchingIssueList = false;
 
     await element.updateComplete;
 
-    loading = element.shadowRoot.querySelector('.container-no-issues');
-    issueList = element.shadowRoot.querySelector('mr-issue-list');
-
-    assert.isNull(loading);
-    assert.isNotNull(issueList);
+    assert.isTrue(considerClosed.hidden);
   });
 
   it('refreshes when queryParams.q changes', async () => {
@@ -121,6 +166,17 @@ describe('mr-list-page', () => {
     beforeEach(() => {
       // Stop Redux from overriding values being tested.
       sinon.stub(element, 'stateChanged');
+    });
+
+    it('issue count hidden when no issues', async () => {
+      element.queryParams = {num: 10, start: 0};
+      element.totalIssues = 0;
+
+      await element.updateComplete;
+
+      const count = element.shadowRoot.querySelector('.issue-count');
+
+      assert.isTrue(count.hidden);
     });
 
     it('issue count renders on first page', async () => {

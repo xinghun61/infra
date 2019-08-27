@@ -105,10 +105,10 @@ export class MrIssueList extends connectStore(LitElement) {
         background: var(--chops-selected-bg);
       }
       mr-crbug-link {
-        display: none;
+        visibility: hidden;
       }
       td:hover > mr-crbug-link {
-        display: block;
+        visibility: visible;
       }
       .col-summary {
         /* Setting a table cell to 100% width makes it take up

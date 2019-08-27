@@ -18,7 +18,7 @@ import '../dialogs/mr-change-columns/mr-change-columns.js';
 import '../mr-mode-selector/mr-mode-selector.js';
 
 export const DEFAULT_ISSUES_PER_PAGE = 100;
-const PARAMS_THAT_TRIGGER_REFRESH = ['q', 'sort', 'num', 'start'];
+const PARAMS_THAT_TRIGGER_REFRESH = ['q', 'can', 'sort', 'num', 'start'];
 
 export class MrListPage extends connectStore(LitElement) {
   static get styles() {
@@ -29,10 +29,35 @@ export class MrListPage extends connectStore(LitElement) {
         width: 100%;
         padding: 0.5em 8px;
       }
+      .container-loading,
       .container-no-issues {
         width: 100%;
         padding: 0 8px;
         font-size: var(--chops-main-font-size);
+      }
+      .container-no-issues {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+      }
+      .container-no-issues p {
+        margin: 0.5em;
+      }
+      .no-issues-block {
+        display: block;
+        padding: 1em 16px;
+        margin-top: 1em;
+        flex-grow: 1;
+        width: 300px;
+        max-width: 100%;
+        text-align: center;
+        background: var(--chops-blue-50);
+        border-radius: 8px;
+        border-bottom: var(--chops-normal-border);
+      }
+      .no-issues-block[hidden] {
+        display: none;
       }
       .list-controls {
         display: flex;
@@ -100,8 +125,36 @@ export class MrListPage extends connectStore(LitElement) {
   _renderListBody() {
     if (this.fetchingIssueList) {
       return html`
-        <div class="container-no-issues">
+        <div class="container-loading">
           Loading...
+        </div>
+      `;
+    } else if (!this.totalIssues) {
+      return html`
+        <div class="container-no-issues">
+          <p>
+            The search query:
+          </p>
+          <strong>${this.queryParams.q}</strong>
+          <p>
+            did not generate any results.
+          </p>
+          <div class="no-issues-block">
+            Type a new query in the search box above
+          </div>
+          <a
+            href=${this._urlWithNewParams({can: 2, q: ''})}
+            class="no-issues-block view-all-open"
+          >
+            View all open issues
+          </a>
+          <a
+            href=${this._urlWithNewParams({can: 1})}
+            class="no-issues-block consider-closed"
+            ?hidden=${this.queryParams.can === '1'}
+          >
+            Consider closed issues
+          </a>
         </div>
       `;
     }
@@ -163,7 +216,7 @@ export class MrListPage extends connectStore(LitElement) {
               &lsaquo; Prev
             </a>
           ` : ''}
-          <div class="issue-count">
+          <div class="issue-count" ?hidden=${!this.totalIssues}>
             ${startIndex + 1} - ${end} of ${this.totalIssues}
           </div>
           ${hasNext ? html`
