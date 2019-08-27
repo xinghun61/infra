@@ -24,7 +24,7 @@ github.com/GoogleCloudPlatform/
 github.com/pkg/errors
 
 # Microsoft related github packages
-github.com/Microsoft/go-winio
+github.com/microsoft/go-winio
 
 # gopkg.in
 gopkg.in/fsnotify.v1
