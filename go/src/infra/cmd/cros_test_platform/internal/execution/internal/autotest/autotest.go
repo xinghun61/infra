@@ -140,7 +140,7 @@ func (r *Runner) proxyRequest() (*swarming_api.SwarmingRpcsNewTaskRequest, error
 		Build:             builds.ChromeOS,
 		FirmwareRWBuild:   builds.FirmwareRW,
 		FirmwareROBuild:   builds.FirmwareRO,
-		Model:             r.requestParams.HardwareAttributes.Model,
+		Model:             r.requestParams.HardwareAttributes.GetModel(),
 		Timeout:           timeout,
 		Pool:              pool,
 		AfeHost:           afeHost,
@@ -195,9 +195,6 @@ func (r *Runner) validate() error {
 	}
 	if r.requestParams.SoftwareAttributes.BuildTarget == nil {
 		return errors.Reason("nil request_params.software_attributes.build_target").Err()
-	}
-	if r.requestParams.HardwareAttributes == nil {
-		return errors.Reason("nil request_params.hardware_attributes").Err()
 	}
 	if r.requestParams.Time == nil {
 		return errors.Reason("nil requests_params.time").Err()
