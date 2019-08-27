@@ -222,6 +222,8 @@ class NotifyBlockingChangeTask(notify_helpers.NotifyTaskBase):
   """JSON servlet that notifies appropriate users after a blocking change."""
 
   _EMAIL_TEMPLATE = 'tracker/issue-blocking-change-notification-email.ezt'
+  _LINK_ONLY_EMAIL_TEMPLATE = (
+      'tracker/issue-change-notification-email-link-only.ezt')
 
   def HandleRequest(self, mr):
     """Process the task to notify users after an issue blocking change.
