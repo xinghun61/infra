@@ -523,3 +523,8 @@ import:
 - package: github.com/jcgregorio/slog
   version: master
   repo: https://chromium.googlesource.com/external/github.com/jcgregorio/slog.git
+- package: github.com/gomodule/redigo
+  version: master
+  repo: https://chromium.googlesource.com/external/github.com/gomodule/redigo.git
+  subpackages:
+  - redis
