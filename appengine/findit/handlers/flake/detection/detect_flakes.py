@@ -61,7 +61,7 @@ class FlakeDetection(BaseHandler):
 
     flake_type = DESCRIPTION_TO_FLAKE_TYPE[flake_type_desc]
     if flake_type in _NON_HIDDEN_FLAKE_TYPES:
-      detect_flake_occurrences.QueryAndStoreFlakes(flake_type)
+      detect_flake_occurrences.QueryAndStoreNonHiddenFlakes(flake_type)
     else:
       detect_flake_occurrences.QueryAndStoreHiddenFlakes()
     return {'return_code': 200}

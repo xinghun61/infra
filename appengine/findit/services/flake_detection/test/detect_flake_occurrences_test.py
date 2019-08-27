@@ -27,7 +27,7 @@ from services import bigquery_helper
 from services import step_util
 from services.flake_detection import detect_flake_occurrences
 from services.flake_detection.detect_flake_occurrences import (
-    QueryAndStoreFlakes)
+    QueryAndStoreNonHiddenFlakes)
 from services.flake_detection.detect_flake_occurrences import (
     _UpdateFlakeMetadata)
 from waterfall import build_util
@@ -158,58 +158,63 @@ class DetectFlakesOccurrencesTest(WaterfallTestCase):
         'jobComplete': True,
         'totalRows': '0',
         'schema': {
-            'fields': [{
-                'type': 'STRING',
-                'name': 'gerrit_project',
-                'mode': 'NULLABLE'
-            }, {
-                'type': 'STRING',
-                'name': 'luci_project',
-                'mode': 'NULLABLE'
-            }, {
-                'type': 'STRING',
-                'name': 'luci_bucket',
-                'mode': 'NULLABLE'
-            }, {
-                'type': 'STRING',
-                'name': 'luci_builder',
-                'mode': 'NULLABLE'
-            },
-                       {
-                           'type': 'STRING',
-                           'name': 'legacy_master_name',
-                           'mode': 'NULLABLE'
-                       },
-                       {
-                           'type': 'INTEGER',
-                           'name': 'legacy_build_number',
-                           'mode': 'NULLABLE'
-                       },
-                       {
-                           'type': 'INTEGER',
-                           'name': 'build_id',
-                           'mode': 'NULLABLE'
-                       },
-                       {
-                           'type': 'STRING',
-                           'name': 'step_ui_name',
-                           'mode': 'NULLABLE'
-                       },
-                       {
-                           'type': 'STRING',
-                           'name': 'test_name',
-                           'mode': 'NULLABLE'
-                       },
-                       {
-                           'type': 'TIMESTAMP',
-                           'name': 'test_start_msec',
-                           'mode': 'NULLABLE'
-                       },
-                       {
-                           'type': 'INTEGER',
-                           'name': 'gerrit_cl_id',
-                           'mode': 'NULLABLE'
-                       }]
+            'fields': [
+                {
+                    'type': 'STRING',
+                    'name': 'gerrit_project',
+                    'mode': 'NULLABLE'
+                },
+                {
+                    'type': 'STRING',
+                    'name': 'luci_project',
+                    'mode': 'NULLABLE'
+                },
+                {
+                    'type': 'STRING',
+                    'name': 'luci_bucket',
+                    'mode': 'NULLABLE'
+                },
+                {
+                    'type': 'STRING',
+                    'name': 'luci_builder',
+                    'mode': 'NULLABLE'
+                },
+                {
+                    'type': 'STRING',
+                    'name': 'legacy_master_name',
+                    'mode': 'NULLABLE'
+                },
+                {
+                    'type': 'INTEGER',
+                    'name': 'legacy_build_number',
+                    'mode': 'NULLABLE'
+                },
+                {
+                    'type': 'INTEGER',
+                    'name': 'build_id',
+                    'mode': 'NULLABLE'
+                },
+                {
+                    'type': 'STRING',
+                    'name': 'step_ui_name',
+                    'mode': 'NULLABLE'
+                },
+                {
+                    'type': 'STRING',
+                    'name': 'test_name',
+                    'mode': 'NULLABLE'
+                },
+                {
+                    'type': 'TIMESTAMP',
+                    'name': 'test_start_msec',
+                    'mode': 'NULLABLE'
+                },
+                {
+                    'type': 'INTEGER',
+                    'name': 'gerrit_cl_id',
+                    'mode': 'NULLABLE'
+                },
+            ]
         }
     }
 
@@ -582,7 +587,7 @@ class DetectFlakesOccurrencesTest(WaterfallTestCase):
   @mock.patch.object(detect_flake_occurrences, '_UpdateFlakeMetadata')
   @mock.patch.object(
       time_util, 'GetUTCNow', return_value=datetime(2018, 12, 20))
-  @mock.patch.object(bigquery_helper, 'ExecuteQuery')
+  @mock.patch.object(bigquery_helper, 'ExecuteQueryPaging')
   def testDetectCQHiddenFlakesShouldSkip(self, mock_query, *_):
     flake = Flake.Create(
         luci_project='luci_project',
@@ -607,7 +612,7 @@ class DetectFlakesOccurrencesTest(WaterfallTestCase):
     existing_occurrence.time_detected = datetime(2018, 12, 19, 23, 30)
     existing_occurrence.put()
 
-    mock_query.side_effect = [(False, []), (True, [])]
+    mock_query.side_effect = [(False, [], None, None), (True, [], None, None)]
 
     detect_flake_occurrences.QueryAndStoreHiddenFlakes()
     self.assertIsNone(detect_flake_occurrences._GetLastCQHiddenFlakeQueryTime())
@@ -659,6 +664,7 @@ class DetectFlakesOccurrencesTest(WaterfallTestCase):
   @mock.patch.object(bigquery_helper, '_GetBigqueryClient')
   def testDetectCQHiddenFlakes(self, mocked_get_client, *_):
     query_response = self._GetEmptyFlakeQueryResponse()
+    query_response['pageToken'] = 'token'
     test_name1 = 'suite.test'
     test_name2 = 'suite.test_1'
 
@@ -692,7 +698,11 @@ class DetectFlakesOccurrencesTest(WaterfallTestCase):
     mocked_client = mock.Mock()
     mocked_get_client.return_value = mocked_client
     mocked_client.jobs().query().execute.return_value = query_response
-    mocked_client.jobs().getQueryResults().execute.return_value = query_response
+
+    query_response_2 = self._GetEmptyFlakeQueryResponse()
+    mocked_client.jobs().getQueryResults().execute.side_effect = [
+        query_response, query_response_2
+    ]
 
     detect_flake_occurrences.QueryAndStoreHiddenFlakes()
 
@@ -854,7 +864,7 @@ class DetectFlakesOccurrencesTest(WaterfallTestCase):
     mock_add_task.side_effect = _MockAddTask
 
     # First time query for build 123.
-    QueryAndStoreFlakes(flake_type)
+    QueryAndStoreNonHiddenFlakes(flake_type)
     self.assertEqual(['detect-flake-123-cq_false_rejection'],
                      taskqueue_task_names)
 
@@ -870,7 +880,7 @@ class DetectFlakesOccurrencesTest(WaterfallTestCase):
     mocked_client.jobs().query().execute.return_value = query_response
     taskqueue_task_names = []
     # Queries for build 123 - 125.
-    QueryAndStoreFlakes(flake_type)
+    QueryAndStoreNonHiddenFlakes(flake_type)
 
     self.assertItemsEqual([
         'detect-flake-124-cq_false_rejection',

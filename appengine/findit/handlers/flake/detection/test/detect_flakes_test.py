@@ -49,7 +49,7 @@ class FlakeDetectionTest(WaterfallTestCase):
 
   @mock.patch.object(BaseHandler, 'IsRequestFromAppSelf', return_value=True)
   @mock.patch.object(detect_flake_occurrences, 'QueryAndStoreHiddenFlakes')
-  @mock.patch.object(detect_flake_occurrences, 'QueryAndStoreFlakes')
+  @mock.patch.object(detect_flake_occurrences, 'QueryAndStoreNonHiddenFlakes')
   def testFlakesDetectionNoType(self, mock_detect, mock_detect_hidden, _):
     response = self.test_app.get(
         '/flake/detection/task/detect-flakes', status=404)
@@ -59,7 +59,7 @@ class FlakeDetectionTest(WaterfallTestCase):
 
   @mock.patch.object(BaseHandler, 'IsRequestFromAppSelf', return_value=True)
   @mock.patch.object(detect_flake_occurrences, 'QueryAndStoreHiddenFlakes')
-  @mock.patch.object(detect_flake_occurrences, 'QueryAndStoreFlakes')
+  @mock.patch.object(detect_flake_occurrences, 'QueryAndStoreNonHiddenFlakes')
   def testFlakesDetectionNonHidden(self, mock_detect, mock_detect_hidden, _):
     response = self.test_app.get(
         '/flake/detection/task/detect-flakes?flake_type={}'.format(
@@ -74,7 +74,7 @@ class FlakeDetectionTest(WaterfallTestCase):
   @mock.patch.object(BaseHandler, 'IsRequestFromAppSelf', return_value=True)
   @mock.patch.object(
       detect_flake_occurrences, 'QueryAndStoreHiddenFlakes', return_value=[])
-  @mock.patch.object(detect_flake_occurrences, 'QueryAndStoreFlakes')
+  @mock.patch.object(detect_flake_occurrences, 'QueryAndStoreNonHiddenFlakes')
   def testFlakesDetectionHidden(self, mock_detect_non_hidden,
                                 mock_detect_hidden, _):
     response = self.test_app.get(

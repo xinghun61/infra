@@ -243,7 +243,7 @@ def _StoreMultipleLocalEntities(local_entities):
   NOTE: This method doesn't overwrite existing entities.
 
   Args:
-    local_entities: A list of Model entities in local memory. It is OK for
+    local_entities: An iterator of Model entities in local memory. It is OK for
                     local_entities to have duplicates, this method will
                     automatically de-duplicate them.
 
@@ -547,11 +547,15 @@ def _GetCQHiddenFlakeQueryStartTime():
           last_query_time <= last_query_time_right_bourndary else (None, None))
 
 
-def _ExecuteQuery(flake_type_enum, parameters=None):
+def _GetQuery(flake_type_enum):
   path = _MAP_FLAKY_TESTS_QUERY_PATH[flake_type_enum]
-  flake_type_desc = FLAKE_TYPE_DESCRIPTIONS.get(flake_type_enum, 'N/A')
   with open(path) as f:
-    query = f.read()
+    return f.read()
+
+
+def _ExecuteQuery(flake_type_enum, parameters=None):
+  flake_type_desc = FLAKE_TYPE_DESCRIPTIONS.get(flake_type_enum, 'N/A')
+  query = _GetQuery(flake_type_enum)
   success, rows = bigquery_helper.ExecuteQuery(
       appengine_util.GetApplicationId(), query, parameters=parameters)
 
@@ -564,6 +568,29 @@ def _ExecuteQuery(flake_type_enum, parameters=None):
   logging.info('Fetched %d rows for %s from BigQuery.', len(rows),
                flake_type_desc)
   return rows
+
+
+def _ExecuteQueryPaging(flake_type_enum,
+                        parameters=None,
+                        job_id=None,
+                        page_token=None):
+  if job_id:
+    success, rows, job_id, page_token = bigquery_helper.ExecuteQueryPaging(
+        appengine_util.GetApplicationId(), job_id=job_id, page_token=page_token)
+  else:
+    query = _GetQuery(flake_type_enum)
+    success, rows, job_id, page_token = bigquery_helper.ExecuteQueryPaging(
+        appengine_util.GetApplicationId(), query=query, parameters=parameters)
+
+  flake_type_desc = FLAKE_TYPE_DESCRIPTIONS.get(flake_type_enum, 'N/A')
+  if not success:
+    logging.error('Failed executing the query to detect %s flakes.',
+                  flake_type_desc)
+    monitoring.OnFlakeDetectionQueryFailed(flake_type=flake_type_desc)
+    return None, None, None
+  logging.info('Fetched %d rows (in one page) for %s from BigQuery.', len(rows),
+               flake_type_desc)
+  return rows, job_id, page_token
 
 
 class DetectFlakesFromFlakyCQBuildParam(StructuredObject):
@@ -606,7 +633,7 @@ def _EnqueueDetectFlakeByBuildTasks(build_id, flake_type_desc):
                  build_id)
 
 
-def QueryAndStoreFlakes(flake_type_enum):
+def QueryAndStoreNonHiddenFlakes(flake_type_enum):
   """Runs the query to fetch flake related data and use it to detect flakes
      for cq false rejections and cq step level retries."""
   flake_type_desc = FLAKE_TYPE_DESCRIPTIONS.get(flake_type_enum)
@@ -642,17 +669,26 @@ def QueryAndStoreHiddenFlakes(flake_type_enum=FlakeType.CQ_HIDDEN_FLAKE):
           'hidden_flake_query_end_time', 'TIMESTAMP', end_time_string)
   ]
 
-  rows = _ExecuteQuery(flake_type_enum, parameters)
+  rows, job_id, page_token = _ExecuteQueryPaging(flake_type_enum, parameters)
   if rows is None:
     return
 
-  local_flakes = [_CreateFlakeFromRow(row) for row in rows]
-  _StoreMultipleLocalEntities(local_flakes)
+  new_occurrences = []
+  while True:
+    # Makes local_flakes a generator to reduce memory usage.
+    local_flakes = (_CreateFlakeFromRow(row) for row in rows)
+    _StoreMultipleLocalEntities(local_flakes)
 
-  local_flake_occurrences = [
-      _CreateFlakeOccurrenceFromRow(row, flake_type_enum) for row in rows
-  ]
-  new_occurrences = _StoreMultipleLocalEntities(local_flake_occurrences)
+    # local_flake_occurrences is another generator.
+    local_flake_occurrences = (
+        _CreateFlakeOccurrenceFromRow(row, flake_type_enum) for row in rows)
+    new_occurrences.extend(_StoreMultipleLocalEntities(local_flake_occurrences))
+
+    if not page_token:
+      break
+
+    rows, job_id, page_token = _ExecuteQueryPaging(
+        flake_type_enum, job_id=job_id, page_token=page_token)
   _UpdateFlakeMetadata(new_occurrences)
 
   if flake_type_enum == FlakeType.CQ_HIDDEN_FLAKE:
