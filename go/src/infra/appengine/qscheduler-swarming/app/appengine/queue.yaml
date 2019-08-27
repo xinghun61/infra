@@ -1,3 +1,0 @@
-queue:
-- name: flush-events
-  mode: pull

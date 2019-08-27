@@ -17,17 +17,6 @@ servercmd := $(bindir)/qscheduler-swarming
 # simpler.
 CLOUD_BUILD_PROJECT = qscheduler-swarming
 
-# GAE specific commands.
-
-dev:
-	gae.py devserver -A dev --app-dir $(projdir)/app/appengine -- --host 0.0.0.0 --port 8082 --admin_port 7999 --log_level debug
-
-up-dev:
-	gae.py upload -A qscheduler-swarming-dev --app-dir $(projdir)/app/appengine
-
-up-prod:
-	gae.py upload -A qscheduler-swarming --app-dir $(projdir)/app/appengine
-
 test:
 	go test ./...
 
@@ -38,7 +27,7 @@ gen:
 
 run-local:
 	go run $(projdir)/cmd/qscheduler-swarming/main.go \
-		-qscheduler-config $(projdir)/app/appengine/devcfg/services/dev/config.cfg \
+		-qscheduler-config $(projdir)/devcfg/services/dev/config.cfg \
 		-cloud-project qscheduler-swarming-dev \
 		-http-addr "0.0.0.0:8082" \
 		-admin-addr "0.0.0.0:8900"
