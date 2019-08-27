@@ -168,7 +168,7 @@ class TestAnalysisAPI(AnalysisAPI):
     """
     return project_api.GetFailureKeysToAnalyzeTestFailures(failure_entities)
 
-  def GetSuspectedCulprits(self, context, build,
+  def GetSuspectedCulprits(self, project_api, context, build,
                            first_failures_in_current_build):
     # TODO(crbug.com/993073): Implement this method.
     return {}

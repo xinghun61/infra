@@ -3,11 +3,23 @@
 # found in the LICENSE file.
 """Defines the chromium-specific APIs required by Findit."""
 
+from collections import defaultdict
+
 from findit_v2.services.failure_type import StepTypeEnum
 from findit_v2.services.project_api import ProjectAPI
 
+from common.findit_http_client import FinditHttpClient
+from services import git
+from services.compile_failure import extract_compile_signal
+from services.compile_failure import compile_failure_analysis
+from services.parameters import CompileFailureInfo
+
 
 class ChromiumProjectAPI(ProjectAPI):
+
+  def ExtractSignalsForCompileFailure(self, failure_info):
+    return extract_compile_signal.ExtractSignalsForCompileFailure(
+        failure_info, FinditHttpClient())
 
   def ClassifyStepType(self, _build, step):
     if step.name == 'compile':
@@ -30,3 +42,78 @@ class ChromiumProjectAPI(ProjectAPI):
 
   def GetTestRerunBuildInputProperties(self, tests):  # pragma: no cover.
     raise NotImplementedError
+
+  def GetCompileFailureInfo(self, context, build,
+                            first_failures_in_current_build):
+    """Creates structured object expected by heuristic analysis code."""
+    # As per common/waterfall/failure_type.py
+    LEGACY_COMPILE_TYPE = 0x08
+
+    return CompileFailureInfo.FromSerializable({
+        'failed_steps': {
+            'compile': {
+                'supported':
+                    True,
+                'last_pass':
+                    first_failures_in_current_build['last_passed_build']
+                    ['number'],
+                'current_failure':
+                    build.number,
+                'first_failure':
+                    build.number,
+            },
+        },
+        'master_name':
+            build.input.properties['mastername'],
+        'builder_name':
+            build.builder.builder,
+        'build_number':
+            build.number,
+        'parent_mastername':
+            None,  # These only apply to some testers.
+        'parent_buildername':
+            None,
+        'builds': {
+            build.number: {
+                # Construct a list of revisions since the last passing build.
+                'blame_list':
+                    git.GetCommitsBetweenRevisionsInOrder(
+                        first_failures_in_current_build['last_passed_build']
+                        ['commit_id'],
+                        context.gitiles_id,
+                        ascending=False),
+                'chromium_revision':
+                    context.gitiles_id,
+            },
+        },
+        'failure_type':
+            LEGACY_COMPILE_TYPE,
+        'failed':
+            True,
+        'chromium_revision':
+            context.gitiles_id,
+        'is_luci':
+            True,
+        'buildbucket_bucket':
+            'luci.%s.%s' % (build.builder.project, build.builder.bucket),
+        'buildbucket_id':
+            str(build.id),
+    })
+
+  def HeuristicAnalysisForCompile(self, failure_info, change_logs, deps_info,
+                                  signals):
+    failure_map, _ = compile_failure_analysis.AnalyzeCompileFailure(
+        failure_info, change_logs, deps_info, signals)
+    result = defaultdict(list)
+    for failure in failure_map['failures']:
+      # AnalyzeCompileFailure above does not associate suspects to specific
+      # targets, hence we use empty frozenset() in the failure key to match the
+      # suspect to all atom failures in the step.
+      failure_key = (failure['step_name'], frozenset())
+      for suspect in failure['suspected_cls']:
+        result[failure_key].append({
+            'revision': suspect['revision'],
+            'commit_position': suspect['commit_position'],
+            'hints': suspect['hints'],
+        })
+    return result

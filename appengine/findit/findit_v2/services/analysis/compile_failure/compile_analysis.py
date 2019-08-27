@@ -94,7 +94,7 @@ def AnalyzeCompileFailure(context, build, compile_steps):
   # Attempt finding suspected culprits.
   if should_get_suspects:
     suspects = analysis_api.GetSuspectedCulprits(
-        context, build, first_failures_in_current_build)
+        project_api, context, build, first_failures_in_current_build)
     if suspects:
       analysis_api.SaveSuspectsToFailures(context, analysis, suspects)
 

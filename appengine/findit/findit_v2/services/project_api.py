@@ -235,3 +235,9 @@ class ProjectAPI(object):  # pragma: no cover.
   def GetFailureKeysToAnalyzeTestFailures(self, failure_entities):
     """Gets failures that'll actually be analyzed in the analysis."""
     return [f.key for f in failure_entities]
+
+  def GetCompileFailureInfo(self, context, build,
+                            first_failures_in_current_build):
+    """Creates input object required by heuristic analysis for compile."""
+    # pylint: disable=unused-argument
+    return {}

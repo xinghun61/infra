@@ -9,6 +9,9 @@ analysis is needed or not.
 
 from google.appengine.ext import ndb
 
+from services import git
+from services import deps
+
 from findit_v2.model import luci_build
 from findit_v2.model import compile_failure
 from findit_v2.model.compile_failure import CompileFailure
@@ -150,8 +153,22 @@ class CompileAnalysisAPI(AnalysisAPI):
   def _GetRerunBuildInputProperties(self, project_api, rerun_failures):
     return project_api.GetCompileRerunBuildInputProperties(rerun_failures)
 
-  def GetSuspectedCulprits(self, context, build,
+  def GetSuspectedCulprits(self, project_api, context, build,
                            first_failures_in_current_build):
-    """Placeholder"""
-    # pylint: disable=unused-argument
-    return {}
+
+    failure_info = project_api.GetCompileFailureInfo(
+        context, build, first_failures_in_current_build)
+    # Projects that support heuristic analysis for compile must implement
+    # GetCompileFailureInfo.
+    if failure_info:
+      signals = project_api.ExtractSignalsForCompileFailure(failure_info)
+
+      change_logs = git.PullChangeLogs(
+          first_failures_in_current_build['last_passed_build']['commit_id'],
+          context.gitiles_id)
+
+      deps_info = deps.ExtractDepsInfo(failure_info, change_logs)
+
+      return project_api.HeuristicAnalysis(failure_info, change_logs, deps_info,
+                                           signals)
+    return None
