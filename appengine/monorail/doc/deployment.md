@@ -3,7 +3,8 @@
 ## Before your first deployment
 
 Spinnaker is a platform that helps teams configure and manage application
-deployment pipelines. We have a [ChromeOps Spinnaker](go/chrome-infra-spinnaker)
+deployment pipelines. We have a
+[ChromeOps Spinnaker](http://go/chrome-infra-spinnaker)
 instance that holds pipelines for several ChromeOps services, including
 Monorail.
 
