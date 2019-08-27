@@ -1,0 +1,10 @@
+package: chromiumos/infra/ipcpubsub/${platform}
+description: Binary impl. for inter-process communication via Cloud Pubsub.
+platforms:
+  - linux-amd64
+go_packages:
+  - infra/cmd/cros/ipcpubsub
+root: ../../go/bin
+data:
+  - file: ipcpubsub${exe_suffix}
+  - version_file: .versions/ipcpubsub${exe_suffix}.cipd_version
