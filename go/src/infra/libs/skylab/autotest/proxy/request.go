@@ -43,7 +43,7 @@ func NewRunSuite(args RunSuiteArgs) (*swarming.SwarmingRpcsNewTaskRequest, error
 		// TODO(akeshet): Match the current naming scheme e.g.
 		// coral-release/R75-12105.78.0-paygen_au_stable
 		Name:       args.SuiteName,
-		TaskSlices: asSlices(cmd),
+		TaskSlices: asSlices(cmd, args.Timeout),
 	}
 	return req, nil
 }
@@ -91,21 +91,20 @@ func runSuiteCmd(args RunSuiteArgs) ([]string, error) {
 	return cmd, nil
 }
 
-func asSlices(cmd []string) []*swarming.SwarmingRpcsTaskSlice {
+func asSlices(cmd []string, timeout time.Duration) []*swarming.SwarmingRpcsTaskSlice {
 	slices := make([]*swarming.SwarmingRpcsTaskSlice, 1)
+	timeoutSecs := int64(timeout.Seconds() + 10*60)
 	slices[0] = &swarming.SwarmingRpcsTaskSlice{
 		Properties: &swarming.SwarmingRpcsTaskProperties{
 			Command: cmd,
 			Dimensions: []*swarming.SwarmingRpcsStringPair{
 				{Key: "pool", Value: "default"},
 			},
-			// TODO(akeshet): determine this based on task parameters.
-			ExecutionTimeoutSecs: 60 * 60,
+			ExecutionTimeoutSecs: timeoutSecs,
 			// TODO(akeshet): Add additional necessary properties, such as
 			// priority etc.
 		},
-		// TODO(akeshet): determine this based on task parameters.
-		ExpirationSecs: 60 * 60,
+		ExpirationSecs: timeoutSecs,
 	}
 	return slices
 }

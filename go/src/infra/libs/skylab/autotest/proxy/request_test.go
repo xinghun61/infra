@@ -7,6 +7,7 @@ package proxy_test
 import (
 	"strings"
 	"testing"
+	"time"
 
 	. "github.com/smartystreets/goconvey/convey"
 
@@ -24,12 +25,13 @@ func TestRunSuite(t *testing.T) {
 			Pool:            "foo-pool",
 			SuiteName:       "foo-suite",
 			SuiteArgs:       map[string]int{"arg1": 1},
+			Timeout:         2 * time.Hour,
 		}
 		req, err := proxy.NewRunSuite(args)
 		So(err, ShouldBeNil)
 		So(req, ShouldNotBeNil)
 		So(req.TaskSlices, ShouldHaveLength, 1)
-		Convey("the correct commandline args are present.", func() {
+		Convey("the correct commandline args and slice properties are present.", func() {
 			slice := req.TaskSlices[0]
 			flatCmd := strings.Join(slice.Properties.Command, " ")
 			So(flatCmd, ShouldContainSubstring, "--board foo-board")
@@ -47,6 +49,9 @@ func TestRunSuite(t *testing.T) {
 					break
 				}
 			}
+
+			So(slice.ExpirationSecs, ShouldEqual, 7800)
+			So(slice.Properties.ExecutionTimeoutSecs, ShouldEqual, 7800)
 		})
 	})
 }
