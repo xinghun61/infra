@@ -22,6 +22,7 @@ type createRunCommon struct {
 	model       string
 	pool        string
 	image       string
+	dimensions  []string
 	priority    int
 	timeoutMins int
 	tags        []string
@@ -36,6 +37,7 @@ func (c *createRunCommon) Register(fl *flag.FlagSet) {
 e.g., reef-canary/R73-11580.0.0.`)
 	fl.StringVar(&c.board, "board", "", "Board to run test on.")
 	fl.StringVar(&c.model, "model", "", "Model to run test on.")
+	fl.Var(flagx.StringSlice(&c.dimensions), "dim", "Additional scheduling dimension to apply to tests, as a KEY:VALUE string; may be specified multiple times.")
 	fl.StringVar(&c.pool, "pool", "", "Device pool to run test on.")
 	fl.IntVar(&c.priority, "priority", defaultTaskPriority,
 		`Specify the priority of the test.  A high value means this test
@@ -72,15 +74,16 @@ func (c *createRunCommon) RecipeArgs(tags []string) (recipe.Args, error) {
 	}
 
 	return recipe.Args{
-		Board:        c.board,
-		Image:        c.image,
-		Model:        c.model,
-		Pool:         c.pool,
-		QuotaAccount: c.qsAccount,
-		Timeout:      time.Duration(c.timeoutMins) * time.Minute,
-		Keyvals:      keyvalMap,
-		Priority:     int64(c.priority),
-		Tags:         tags,
+		Board:                      c.board,
+		Image:                      c.image,
+		Model:                      c.model,
+		FreeformSwarmingDimensions: c.dimensions,
+		Pool:                       c.pool,
+		QuotaAccount:               c.qsAccount,
+		Timeout:                    time.Duration(c.timeoutMins) * time.Minute,
+		Keyvals:                    keyvalMap,
+		Priority:                   int64(c.priority),
+		Tags:                       tags,
 	}, nil
 }
 

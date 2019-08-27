@@ -134,6 +134,10 @@ func (c *createSuiteRun) validateForBB() error {
 }
 
 func (c *createSuiteRun) innerRunSwarming(ctx context.Context, a subcommands.Application, suiteName string) error {
+	if len(c.dimensions) > 0 {
+		return errors.Reason("-dim not supported in swarming mode (without -bb)").Err()
+	}
+
 	e := c.envFlags.Env()
 	dimensions := []string{"pool:ChromeOSSkylab-suite"}
 	keyvals, err := toKeyvalMap(c.keyvals)

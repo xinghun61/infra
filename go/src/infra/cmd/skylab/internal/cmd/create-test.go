@@ -49,7 +49,7 @@ This command does not wait for the task to start running.`,
 (e.g. cheets-version:git_pi-arc/cheets_x86_64).  May be specified
 multiple times.  Optional.`)
 		c.Flags.StringVar(&c.parentTaskID, "parent-task-run-id", "", "For internal use only. Task run ID of the parent (suite) task to this test. Note that this must be a run ID (i.e. not ending in 0).")
-		c.Flags.Var(flag.StringSlice(&c.dimensions), "dim", "Additional scheduling dimension to apply to tests, as a KEY:VALUE string; may be specified multiple times.")
+
 		return c
 	},
 }
@@ -63,7 +63,6 @@ type createTestRun struct {
 	testArgs        string
 	provisionLabels []string
 	parentTaskID    string
-	dimensions      []string
 }
 
 // validateArgs ensures that the command line arguments are
@@ -115,7 +114,6 @@ func (c *createTestRun) innerRunBB(a subcommands.Application, args []string, env
 		return err
 	}
 	recipeArg.TestPlan = recipe.NewTestPlanForAutotestTests(c.testArgs, args...)
-	recipeArg.FreeformSwarmingDimensions = c.dimensions
 
 	req, err := recipeArg.TestPlatformRequest()
 	if err != nil {
@@ -172,7 +170,7 @@ func (c *createTestRun) innerRunSwarming(a subcommands.Application, args []strin
 		Cmd:                     cmd,
 		SwarmingTags:            tags,
 		ProvisionableDimensions: c.getProvisionableDimensions(),
-		Dimensions:              c.getDimensions(),
+		Dimensions:              c.createRunCommon.dimensions,
 		SchedulableLabels:       c.getLabels(),
 		Timeout:                 time.Duration(c.timeoutMins) * time.Minute,
 		Priority:                int64(c.priority),
@@ -225,10 +223,6 @@ func (c *createTestRun) getLabels() inventory.SchedulableLabels {
 		}
 	}
 	return labels
-}
-
-func (c *createTestRun) getDimensions() []string {
-	return c.dimensions
 }
 
 func (c *createTestRun) getProvisionableDimensions() []string {
