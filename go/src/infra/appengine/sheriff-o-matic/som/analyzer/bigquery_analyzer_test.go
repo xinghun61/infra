@@ -1,12 +1,114 @@
 package analyzer
 
 import (
+	"cloud.google.com/go/bigquery"
+	"google.golang.org/api/iterator"
 	"testing"
 
 	"infra/monitoring/messages"
 
 	. "github.com/smartystreets/goconvey/convey"
 )
+
+type mockResults struct {
+	failures []failureRow
+	err      error
+	curr     int
+}
+
+func (m *mockResults) Next(dst interface{}) error {
+	if m.curr >= len(m.failures) {
+		return iterator.Done
+	}
+	fdst := dst.(*failureRow)
+	*fdst = m.failures[m.curr]
+	m.curr++
+	return m.err
+}
+
+func TestMockBQResults(t *testing.T) {
+	Convey("no results", t, func() {
+		mr := &mockResults{}
+		r := &failureRow{}
+		So(mr.Next(r), ShouldEqual, iterator.Done)
+	})
+	Convey("copy op works", t, func() {
+		mr := &mockResults{
+			failures: []failureRow{
+				{
+					StepName: "foo",
+				},
+			},
+		}
+		r := failureRow{}
+		err := mr.Next(&r)
+		So(err, ShouldBeNil)
+		So(r.StepName, ShouldEqual, "foo")
+		So(mr.Next(&r), ShouldEqual, iterator.Done)
+	})
+
+}
+
+func TestProcessBQResults(t *testing.T) {
+	Convey("smoke", t, func() {
+		mr := &mockResults{}
+		got, err := processBQResults(mr)
+		So(err, ShouldEqual, nil)
+		So(got, ShouldBeEmpty)
+	})
+
+	Convey("single result, only start/end build numbers", t, func() {
+		mr := &mockResults{
+			failures: []failureRow{
+				{
+					StepName: "some step",
+					MasterName: bigquery.NullString{
+						StringVal: "some master",
+						Valid:     true,
+					},
+					Builder: "some builder",
+					Project: "some project",
+					Bucket:  "some bucket",
+					BuildNumberBegin: bigquery.NullInt64{
+						Int64: 1,
+						Valid: true,
+					},
+					BuildNumberEnd: bigquery.NullInt64{
+						Int64: 10,
+						Valid: true,
+					},
+				},
+			},
+		}
+		got, err := processBQResults(mr)
+		So(err, ShouldEqual, nil)
+		So(len(got), ShouldEqual, 1)
+	})
+
+	Convey("single result, only end build number", t, func() {
+		mr := &mockResults{
+			failures: []failureRow{
+				{
+					StepName: "some step",
+					MasterName: bigquery.NullString{
+						StringVal: "some master",
+						Valid:     true,
+					},
+					Builder: "some builder",
+					Project: "some project",
+					Bucket:  "some bucket",
+					BuildNumberEnd: bigquery.NullInt64{
+						Int64: 10,
+						Valid: true,
+					},
+				},
+			},
+		}
+		got, err := processBQResults(mr)
+		So(err, ShouldEqual, nil)
+		So(len(got), ShouldEqual, 1)
+	})
+}
 
 func TestFilterHierarchicalSteps(t *testing.T) {
 	Convey("smoke", t, func() {

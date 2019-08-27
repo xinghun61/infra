@@ -170,7 +170,14 @@ func GetBigQueryAlerts(ctx context.Context, tree string) ([]messages.BuildFailur
 	if err != nil {
 		return nil, err
 	}
+	return processBQResults(it)
+}
 
+type nexter interface {
+	Next(interface{}) error
+}
+
+func processBQResults(it nexter) ([]messages.BuildFailure, error) {
 	alertedBuildersByStep := map[string][]messages.AlertedBuilder{}
 	for {
 		var r failureRow
@@ -182,11 +189,6 @@ func GetBigQueryAlerts(ctx context.Context, tree string) ([]messages.BuildFailur
 			return nil, err
 		}
 
-		// TODO: figure out how to better handle build steps that
-		// have never passed, ever.
-		if r.BuildNumberBegin.Int64 == 0 && r.CulpritIDRangeBegin.Int64 == 0 {
-			continue
-		}
 		gitBegin := r.CPRangeOutputBegin
 		if gitBegin == nil {
 			gitBegin = r.CPRangeInputBegin
@@ -219,7 +221,7 @@ func GetBigQueryAlerts(ctx context.Context, tree string) ([]messages.BuildFailur
 			Bucket:  r.Bucket,
 			Name:    r.Builder,
 			Master:  r.MasterName.StringVal,
-			// REplace these with build IDs.
+			// Replace these with build IDs.
 			FirstFailure:     r.BuildNumberBegin.Int64,
 			LatestFailure:    r.BuildNumberEnd.Int64,
 			URL:              fmt.Sprintf("https://ci.chromium.org/p/%s/builders/%s/%s", r.Project, r.Bucket, r.Builder),
