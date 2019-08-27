@@ -216,6 +216,20 @@ wheel: <
 
 * *universal*
 
+## **Phidgets**
+
+### 2.1.8
+
+```protobuf
+wheel: <
+  name: "infra/python/wheels/phidgets-py2_py3"
+  version: "version:2.1.8"
+>
+```
+
+
+* *universal*
+
 ## **PyYAML**
 
 ### 3.12
