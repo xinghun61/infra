@@ -101,7 +101,7 @@ func (s *BatchedQSchedulerServer) AssignTasks(ctx context.Context, r *swarming.A
 		defer cancel()
 	}
 
-	op, result := operations.AssignTasks(r)
+	op, result := operations.AssignTasks([]*swarming.AssignTasksRequest{r})
 
 	batcher := s.getOrCreateBatcher(r.SchedulerId)
 	wait := batcher.EnqueueOperation(ctx, op, state.BatchPriorityAssign)
@@ -110,7 +110,7 @@ func (s *BatchedQSchedulerServer) AssignTasks(ctx context.Context, r *swarming.A
 		if err != nil {
 			return nil, err
 		}
-		return result, nil
+		return result[0], nil
 	case <-ctx.Done():
 		return nil, ctx.Err()
 	}

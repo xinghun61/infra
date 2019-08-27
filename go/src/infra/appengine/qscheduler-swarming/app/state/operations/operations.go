@@ -16,6 +16,7 @@ package operations
 
 import (
 	"context"
+	"time"
 
 	swarming "infra/swarming"
 
@@ -35,39 +36,61 @@ import (
 // account the task should be charged to.
 const AccountIDTagKey = "qs_account"
 
-// AssignTasks returns an operation that will perform the given Assign request.
+// AssignTasks returns an operation that will perform the given Assign requests.
 //
-// The result object will have the operation response stored in it after
-// the operation has run.
-func AssignTasks(r *swarming.AssignTasksRequest) (types.Operation, *swarming.AssignTasksResponse) {
-	var response swarming.AssignTasksResponse
+// The results slice will have the operation responses stored in it after
+// the operation has run, as parallel entries to the slice of requests.
+func AssignTasks(r []*swarming.AssignTasksRequest) (types.Operation, []*swarming.AssignTasksResponse) {
+	response := make([]*swarming.AssignTasksResponse, len(r))
+	// Make a copy of input slice and use that below, in case the slice is
+	// mutated prior to callback of returned operation.
+	temp := make([]*swarming.AssignTasksRequest, len(r))
+	copy(temp, r)
+	r = temp
 	return func(ctx context.Context, state *types.QScheduler, events scheduler.EventSink) error {
-		idles := make([]*reconciler.IdleWorker, len(r.IdleBots))
-		for i, v := range r.IdleBots {
-			idles[i] = &reconciler.IdleWorker{
-				ID:     scheduler.WorkerID(v.BotId),
-				Labels: stringset.NewFromSlice(v.Dimensions...),
+		var idles []*reconciler.IdleWorker
+		timestamp := time.Unix(0, 0)
+		for _, req := range r {
+			for _, v := range req.IdleBots {
+				idles = append(idles, &reconciler.IdleWorker{
+					ID:     scheduler.WorkerID(v.BotId),
+					Labels: stringset.NewFromSlice(v.Dimensions...),
+				})
+			}
+			if t := tutils.Timestamp(req.Time); t.After(timestamp) {
+				timestamp = t
 			}
 		}
 
-		schedulerAssignments := state.Reconciler.AssignTasks(ctx, state.Scheduler, tutils.Timestamp(r.Time), events, idles...)
+		schedulerAssignments := state.Reconciler.AssignTasks(ctx, state.Scheduler, timestamp, events, idles...)
 
-		assignments := make([]*swarming.TaskAssignment, len(schedulerAssignments))
-		for i, v := range schedulerAssignments {
+		assignmentsByBot := make(map[scheduler.WorkerID]*swarming.TaskAssignment, len(schedulerAssignments))
+		for _, v := range schedulerAssignments {
 			slice := int32(0)
 			if v.ProvisionRequired {
 				slice = 1
 			}
-			assignments[i] = &swarming.TaskAssignment{
+			// Note: WorkerID is unique for every item in the schedulerAssignments
+			// list, so don't bother checking if we're overwriting an entry.
+			assignmentsByBot[v.WorkerID] = &swarming.TaskAssignment{
 				BotId:       string(v.WorkerID),
 				TaskId:      string(v.RequestID),
 				SliceNumber: slice,
 			}
 		}
 
-		response = swarming.AssignTasksResponse{Assignments: assignments}
+		for i, req := range r {
+			var assignments []*swarming.TaskAssignment
+			for _, idle := range req.IdleBots {
+				if a, ok := assignmentsByBot[scheduler.WorkerID(idle.BotId)]; ok {
+					assignments = append(assignments, a)
+				}
+			}
+			response[i] = &swarming.AssignTasksResponse{Assignments: assignments}
+		}
+
 		return nil
-	}, &response
+	}, response
 }
 
 // NotifyTasks returns an operation that will perform the given Notify request,
