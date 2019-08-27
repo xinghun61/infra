@@ -7,7 +7,6 @@
 package parse
 
 import (
-	"bufio"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -114,28 +113,27 @@ func RunSuite(output string) (*steps.ExecuteResponse, error) {
 }
 
 func findJSON(output string) (string, error) {
-	scanner := bufio.NewScanner(strings.NewReader(output))
-
-	for scanner.Scan() {
-		line := scanner.Text()
-		if strings.HasPrefix(line, startTag) && strings.HasSuffix(line, endTag) {
-			line = strings.TrimPrefix(line, startTag)
-			line = strings.TrimSuffix(line, endTag)
-			return line, nil
-		}
+	start := strings.Index(output, startTag)
+	if start == -1 {
+		return "", errors.Reason("no start tag in output").Err()
 	}
 
-	if err := scanner.Err(); err != nil {
-		return "", errors.Annotate(scanner.Err(), "find json line").Err()
+	end := strings.Index(output, endTag)
+	if end == -1 {
+		return "", errors.Reason("no end tag in output").Err()
 	}
 
-	return "", errors.Reason("no json output line").Err()
+	if end < start {
+		return "", errors.Reason("end tag before start tag in output").Err()
+	}
+
+	return output[start+len(startTag) : end], nil
 }
 
 func parseJSON(line string) (*report, error) {
 	bytes := []byte(line)
 	if !json.Valid(bytes) {
-		return nil, errors.Reason("invalid json").Err()
+		return nil, errors.Reason("invalid json: %s", line).Err()
 	}
 	resp := &report{}
 	err := json.Unmarshal(bytes, resp)

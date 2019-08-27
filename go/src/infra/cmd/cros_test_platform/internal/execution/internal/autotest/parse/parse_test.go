@@ -26,7 +26,12 @@ func TestFailures(t *testing.T) {
 			{
 				"no json line",
 				"Foo Bar",
-				"no json output line",
+				"no start tag in output",
+			},
+			{
+				"end tag before start tag",
+				"#JSON_END#this isn't json#JSON_START#",
+				"end tag before start",
 			},
 			{
 				"bad json",
