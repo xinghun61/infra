@@ -123,11 +123,7 @@ func (c *Client) WaitForBuild(ctx context.Context, ID int64) (*steps.ExecuteResp
 	if err != nil {
 		return nil, errors.Annotate(err, "wait for build %d", ID).Err()
 	}
-	ret, err := extractResponse(build)
-	if err != nil {
-		return nil, errors.Annotate(err, "wait for build %d", ID).Err()
-	}
-	return ret, nil
+	return build.Response, nil
 }
 
 // Build contains selected state information from a fetched buildbucket Build.
@@ -212,18 +208,11 @@ func clipToInt32(n int) int32 {
 	return math.MaxInt32
 }
 
-func (c *Client) waitForBuild(ctx context.Context, buildID int64) (*buildbucket_pb.Build, error) {
+func (c *Client) waitForBuild(ctx context.Context, buildID int64) (*Build, error) {
 	throttledLogger := logutils.NewThrottledInfoLogger(logging.Get(ctx), 10*time.Minute)
 	progressMessage := fmt.Sprintf("Still waiting for result from %s", c.BuildURL(buildID))
-
-	fields := &field_mask.FieldMask{Paths: getBuildFields}
-	req := &buildbucket_pb.GetBuildRequest{
-		Id:     buildID,
-		Fields: fields,
-	}
-
 	for {
-		build, err := c.client.GetBuild(ctx, req)
+		build, err := c.GetBuild(ctx, buildID)
 		if err != nil {
 			return nil, err
 		}
@@ -326,15 +315,6 @@ func structPBToExecuteResponse(from *structpb.Value) (*steps.ExecuteResponse, er
 		return nil, errors.Annotate(err, "structPBToExecuteResponse").Err()
 	}
 	return response, nil
-}
-
-func extractResponse(build *buildbucket_pb.Build) (*steps.ExecuteResponse, error) {
-	properties := build.GetOutput().GetProperties()
-	responseStruct, ok := properties.GetFields()["response"]
-	if !ok {
-		return nil, errors.Reason("build properties contained no `response` field").Err()
-	}
-	return structPBToExecuteResponse(responseStruct)
 }
 
 func isFinal(status buildbucket_pb.Status) bool {
