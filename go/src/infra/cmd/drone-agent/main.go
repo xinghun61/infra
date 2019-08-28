@@ -50,7 +50,8 @@ func main() {
 	ctx := context.Background()
 	ctx = notifySIGTERM(ctx)
 	ctx = notifyDraining(ctx, filepath.Join(workingDirPath, drainingFile))
-	h, err := httpClient(ctx, authOptions)
+	authn := auth.NewAuthenticator(ctx, auth.SilentLogin, authOptions)
+	h, err := httpClient(ctx, authn)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -71,8 +72,7 @@ func main() {
 }
 
 // httpClient returns an HTTP client with authentication set up.
-func httpClient(ctx context.Context, o auth.Options) (*http.Client, error) {
-	a := auth.NewAuthenticator(ctx, auth.SilentLogin, o)
+func httpClient(ctx context.Context, a *auth.Authenticator) (*http.Client, error) {
 	c, err := a.Client()
 	if err != nil {
 		return nil, errors.Annotate(err, "failed to create HTTP client").Err()
