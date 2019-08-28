@@ -45,6 +45,41 @@ describe('mr-header', () => {
         'The best project');
   });
 
+  it('canAdministerProject is false when user is not logged in', () => {
+    element.userDisplayName = '';
+
+    assert.isFalse(element.canAdministerProject);
+  });
+
+  it('canAdministerProject is true when user is site admin', () => {
+    element.userDisplayName = 'test@example.com';
+    element.isSiteAdmin = true;
+
+    assert.isTrue(element.canAdministerProject);
+
+    element.isSiteAdmin = false;
+
+    assert.isFalse(element.canAdministerProject);
+  });
+
+  it('canAdministerProject is true when user is owner', () => {
+    element.userDisplayName = 'test@example.com';
+    element.isSiteAdmin = false;
+
+    element.projectName = 'chromium';
+    element.userProjects = {ownerOf: ['chromium']};
+
+    assert.isTrue(element.canAdministerProject);
+
+    element.projectName = 'v8';
+
+    assert.isFalse(element.canAdministerProject);
+
+    element.userProjects = {memberOf: ['v8']};
+
+    assert.isFalse(element.canAdministerProject);
+  });
+
   it('_projectDropdownItems tells user to sign in if not logged in', () => {
     element.userDisplayName = '';
     element.loginUrl = 'http://login';

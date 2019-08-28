@@ -163,7 +163,6 @@ export class MrHeader extends connectStore(LitElement) {
 
   static get properties() {
     return {
-      canAdministerProject: {type: Boolean},
       loginUrl: {type: String},
       logoutUrl: {type: String},
       projectName: {type: String},
@@ -171,6 +170,7 @@ export class MrHeader extends connectStore(LitElement) {
       // "flashing" logo when navigating EZT pages.
       projectThumbnailUrl: {type: String},
       userDisplayName: {type: String},
+      isSiteAdmin: {type: Boolean},
       userProjects: {type: Object},
       presentationConfig: {type: Object},
       queryParams: {type: Object},
@@ -184,11 +184,9 @@ export class MrHeader extends connectStore(LitElement) {
   constructor() {
     super();
 
-    // TODO(zhangtiff): Make this use permissions from API.
-    this.canAdministerProject = true;
-
     this.presentationConfig = {};
     this.userProjects = {};
+    this.isSiteAdmin = false;
 
     this.clientLogger = new ClientLogger('mr-header');
   }
@@ -207,6 +205,9 @@ export class MrHeader extends connectStore(LitElement) {
 
   stateChanged(state) {
     this.userProjects = user.projects(state);
+
+    const currentUser = user.user(state);
+    this.isSiteAdmin = currentUser ? currentUser.isSiteAdmin : false;
   }
 
   updated(changedProperties) {
@@ -222,6 +223,13 @@ export class MrHeader extends connectStore(LitElement) {
 
     this.presentationConfig = presentationConfig;
     this.projectThumbnailUrl = presentationConfig.projectThumbnailUrl;
+  }
+
+  get canAdministerProject() {
+    if (!this.userDisplayName) return false; // Not logged in.
+    if (this.isSiteAdmin) return true;
+    if (!this.userProjects || !this.userProjects.ownerOf) return false;
+    return this.userProjects.ownerOf.includes(this.projectName);
   }
 
   get _projectDropdownItems() {
