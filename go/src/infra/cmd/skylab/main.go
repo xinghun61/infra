@@ -50,6 +50,7 @@ func getApplication() *cli.Application {
 			cmd.EnsurePoolHealthy,
 			cmd.ResizePool,
 			subcommands.Section("Tasks"),
+			cmd.BackfillRequest,
 			cmd.CreateTest,
 			cmd.CreateSuite,
 			cmd.CreateTestPlan,

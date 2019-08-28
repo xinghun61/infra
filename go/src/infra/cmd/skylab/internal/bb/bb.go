@@ -307,7 +307,7 @@ func extractBuildData(from *buildbucket_pb.Build) (*Build, error) {
 		return nil, errors.Annotate(err, "extractBuildData").Err()
 	}
 	return &Build{
-		ID:     from.GetId(),
+		ID:     from.Id,
 		Status: from.GetStatus(),
 		Tags:   tags,
 
