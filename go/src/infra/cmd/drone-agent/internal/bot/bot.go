@@ -55,17 +55,21 @@ func (b realBot) Drain() error {
 }
 
 // Starter has a Start method for starting Swarming bots.
-type Starter struct{}
+type Starter struct {
+	client *http.Client
+}
 
 // NewStarter returns a new Starter.
-func NewStarter() Starter {
-	return Starter{}
+func NewStarter(c *http.Client) Starter {
+	return Starter{
+		client: c,
+	}
 }
 
 // Start starts a Swarming bot.  The returned Bot object can be used
 // to interact with the bot.
 func (s Starter) Start(c Config) (Bot, error) {
-	if err := downloadBotCode(c); err != nil {
+	if err := s.downloadBotCode(c); err != nil {
 		return nil, errors.Annotate(err, "start bot with %+v", c).Err()
 	}
 	cmd := exec.Command("python2", c.botZipPath(), "start_bot")
@@ -81,15 +85,14 @@ func (s Starter) Start(c Config) (Bot, error) {
 	}, nil
 }
 
-func downloadBotCode(c Config) error {
+func (s Starter) downloadBotCode(c Config) error {
 	f, err := os.Create(c.botZipPath())
 	if err != nil {
 		return errors.Annotate(err, "download bot code for %+v", c).Err()
 	}
 	defer f.Close()
 
-	var h http.Client
-	resp, err := h.Get(c.botCodeURL())
+	resp, err := s.client.Get(c.botCodeURL())
 	if err != nil {
 		return errors.Annotate(err, "download bot code for %+v", c).Err()
 	}

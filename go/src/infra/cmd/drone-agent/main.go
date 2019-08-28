@@ -18,7 +18,6 @@ import (
 	"time"
 
 	"go.chromium.org/luci/auth"
-	"go.chromium.org/luci/common/errors"
 	"go.chromium.org/luci/grpc/prpc"
 
 	"infra/appengine/drone-queen/api"
@@ -50,34 +49,29 @@ func main() {
 	ctx := context.Background()
 	ctx = notifySIGTERM(ctx)
 	ctx = notifyDraining(ctx, filepath.Join(workingDirPath, drainingFile))
+
 	authn := auth.NewAuthenticator(ctx, auth.SilentLogin, authOptions)
-	if err := os.MkdirAll(workingDirPath, 0777); err != nil {
-		log.Fatal(err)
-	}
-	c, err := droneClient(ctx, authn, queenService)
+	h, err := authn.Client()
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	if err := os.MkdirAll(workingDirPath, 0777); err != nil {
+		log.Fatal(err)
+	}
+
 	a := agent.Agent{
-		Client:            c,
+		Client: api.NewDronePRPCClient(&prpc.Client{
+			C:    h,
+			Host: queenService,
+		}),
 		SwarmingURL:       swarmingURL,
 		WorkingDir:        workingDirPath,
 		ReportingInterval: reportingInterval,
 		DUTCapacity:       dutCapacity,
-		StartBotFunc:      bot.NewStarter().Start,
+		StartBotFunc:      bot.NewStarter(h).Start,
 	}
 	a.Run(ctx)
-}
-
-func droneClient(ctx context.Context, a *auth.Authenticator, queenService string) (api.DroneClient, error) {
-	h, err := a.Client()
-	if err != nil {
-		return nil, errors.Annotate(err, "failed to create HTTP client").Err()
-	}
-	return api.NewDronePRPCClient(&prpc.Client{
-		C:    h,
-		Host: queenService,
-	}), nil
 }
 
 const checkDrainingInterval = time.Minute
