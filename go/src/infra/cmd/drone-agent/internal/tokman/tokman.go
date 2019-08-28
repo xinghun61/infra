@@ -122,9 +122,12 @@ func newDelayer() *errDelayer {
 }
 
 func (d *errDelayer) Next() time.Duration {
-	if d.last > 0 {
+	switch {
+	case d.last > 5*time.Minute:
+		d.last = 5 * time.Minute
+	case d.last > 0:
 		d.last *= 2
-	} else {
+	default:
 		d.last = 20 * time.Millisecond
 	}
 	jitter := randRange(d.rander, float32(d.last/10))
