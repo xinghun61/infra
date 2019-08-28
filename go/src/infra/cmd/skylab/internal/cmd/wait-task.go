@@ -133,23 +133,22 @@ func parseBBTaskID(arg string) (int64, error) {
 }
 
 func responseToTaskResult(bClient *bb.Client, build *bb.Build) *skylab_tool.WaitTaskResult {
-	response := build.Response
 	buildID := build.ID
-
 	u := bClient.BuildURL(buildID)
-	verdict := response.GetState().GetVerdict()
-	failure := verdict == test_platform.TaskState_VERDICT_FAILED
-	success := verdict == test_platform.TaskState_VERDICT_PASSED
+	// TODO(pprabhu) Add verdict to WaitTaskResult_Task and deprecate Failure /
+	// Success fields.
+	// Currently, we merely leave both fields unset when no definite verdict can
+	// be returned.
 	tr := &skylab_tool.WaitTaskResult_Task{
 		Name:          "Test Platform Invocation",
 		TaskRunUrl:    u,
 		TaskRunId:     fmt.Sprintf("%d", buildID),
 		TaskRequestId: fmt.Sprintf("%d", buildID),
-		Failure:       failure,
-		Success:       success,
+		Failure:       isBuildFailed(build),
+		Success:       isBuildPassed(build),
 	}
 	var childResults []*skylab_tool.WaitTaskResult_Task
-	for _, child := range response.TaskResults {
+	for _, child := range build.Response.GetTaskResults() {
 		verdict := child.GetState().GetVerdict()
 		failure := verdict == test_platform.TaskState_VERDICT_FAILED
 		success := verdict == test_platform.TaskState_VERDICT_PASSED
@@ -168,6 +167,14 @@ func responseToTaskResult(bClient *bb.Client, build *bb.Build) *skylab_tool.Wait
 		Result:       tr,
 		// Note: Stdout it not set.
 	}
+}
+
+func isBuildFailed(build *bb.Build) bool {
+	return build.Response != nil && build.Response.GetState().GetVerdict() == test_platform.TaskState_VERDICT_FAILED
+}
+
+func isBuildPassed(build *bb.Build) bool {
+	return build.Response != nil && build.Response.GetState().GetVerdict() == test_platform.TaskState_VERDICT_PASSED
 }
 
 // waitSwarmingTask waits until the task with the given ID has completed.
