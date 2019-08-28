@@ -138,7 +138,10 @@ func (c *Client) WaitForBuild(ctx context.Context, ID int64) (*steps.ExecuteResp
 
 // Build contains selected state information from a fetched buildbucket Build.
 type Build struct {
-	Status   buildbucket_pb.Status
+	Status buildbucket_pb.Status
+	// Tags of the form "key:value".
+	Tags []string
+
 	Response *steps.ExecuteResponse
 	// RawRequest is the unmarshalled Request from the build.
 	// RawRequest is not interpreted as a test_platform.Request to avoid
@@ -259,6 +262,7 @@ var getBuildFields = []string{
 	"output.properties",
 	// Build status is used to determine whether the build is complete.
 	"status",
+	"tags",
 }
 
 func getSearchBuildsFields() []string {
@@ -291,12 +295,19 @@ func extractBuildData(from *buildbucket_pb.Build) (*Build, error) {
 		return nil, errors.Reason("output properties have malformed request %#v", reqValue).Err()
 	}
 
+	tags := make([]string, 0, len(from.GetTags()))
+	for _, t := range from.GetTags() {
+		tags = append(tags, fmt.Sprintf("%s:%s", t.Key, t.Value))
+	}
+
 	response, err := structPBToExecuteResponse(rawResponse)
 	if err != nil {
 		return nil, errors.Annotate(err, "extractBuildData").Err()
 	}
 	return &Build{
-		Status:     from.GetStatus(),
+		Status: from.GetStatus(),
+		Tags:   tags,
+
 		Response:   response,
 		RawRequest: rawRequest,
 	}, nil
