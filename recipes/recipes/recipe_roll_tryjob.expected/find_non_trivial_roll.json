@@ -326,7 +326,7 @@
     ],
     "name": "MISSING FOOTER IN CL MESSAGE",
     "~followup_annotations": [
-      "@@@STEP_TEXT@Add<br/><br/>    Recipe-Nontrivial-Roll: depot_tools<br/><br/>To your CL message.<br/>This means that your upstream CL (this one) will change the EXPECTATION FILES<br/>in the downstream repo 'depot_tools'.<br/><br/>The recipe roller will automatically prepare the non-trivial CL and will upload<br/>it with `git cl upload --r-owners` to the downstream repo. Best practice is to<br/>review this non-trivial roll CL to ensure that the expectations you see there<br/>are expected.<br/>@@@",
+      "@@@STEP_TEXT@<br/><br/>Add<br/><br/>    Recipe-Nontrivial-Roll: depot_tools<br/><br/>To your CL message.<br/><br/><br/>This means that your upstream CL (this one) will change the EXPECTATION FILES<br/>in the downstream repo 'depot_tools'.<br/><br/>The recipe roller will automatically prepare the non-trivial CL and will upload<br/>it with `git cl upload --r-owners` to the downstream repo. Best practice is to<br/>review this non-trivial roll CL to ensure that the expectations you see there<br/>are expected.<br/>@@@",
       "@@@STEP_FAILURE@@@"
     ]
   },

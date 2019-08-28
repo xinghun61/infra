@@ -47,12 +47,14 @@ BYPASS_FOOTER = 'Recipe-Tryjob-Bypass-Reason'
 KNOWN_FOOTERS = [NONTRIVIAL_ROLL_FOOTER, MANUAL_CHANGE_FOOTER, BYPASS_FOOTER]
 
 FOOTER_ADD_TEMPLATE = '''
+
 Add
 
     {footer}: {down_id}
 
 To your CL message.
-'''.strip()
+
+'''
 
 MANUAL_CHANGE_MSG = '''
 This means that your upstream CL (this one) will require MANUAL CODE CHANGES
