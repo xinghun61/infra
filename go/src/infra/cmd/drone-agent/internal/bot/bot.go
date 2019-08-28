@@ -97,6 +97,9 @@ func (s Starter) downloadBotCode(c Config) error {
 		return errors.Annotate(err, "download bot code for %+v", c).Err()
 	}
 	defer resp.Body.Close()
+	if resp.StatusCode != 200 {
+		return errors.Reason("download bot code for %+v: unexpected status %v", c, resp.StatusCode).Err()
+	}
 
 	if _, err := io.Copy(f, resp.Body); err != nil {
 		return errors.Annotate(err, "download bot code for %+v", c).Err()
