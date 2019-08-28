@@ -260,7 +260,7 @@ func TestAgent_draining_reports_lame_duck_mode(t *testing.T) {
 	c.res.AssignedDuts = []string{"ryza"}
 	b := newPersistentBot()
 	started := make(chan struct{}, 1)
-	a.startBotFunc = func(bot.Config) (bot.Bot, error) {
+	a.StartBotFunc = func(bot.Config) (bot.Bot, error) {
 		select {
 		case started <- struct{}{}:
 		default:
@@ -311,7 +311,7 @@ func TestAgent_keep_reporting_while_draining(t *testing.T) {
 	c.res.AssignedDuts = []string{"ryza"}
 	b := newPersistentBot()
 	started := make(chan struct{}, 1)
-	a.startBotFunc = func(bot.Config) (bot.Bot, error) {
+	a.StartBotFunc = func(bot.Config) (bot.Bot, error) {
 		select {
 		case started <- struct{}{}:
 		default:
@@ -353,7 +353,7 @@ func TestAgent_keep_reporting_while_terminating(t *testing.T) {
 	c.res.AssignedDuts = []string{"ryza"}
 	b := newPersistentBot()
 	started := make(chan struct{}, 1)
-	a.startBotFunc = func(bot.Config) (bot.Bot, error) {
+	a.StartBotFunc = func(bot.Config) (bot.Bot, error) {
 		select {
 		case started <- struct{}{}:
 		default:
@@ -437,7 +437,7 @@ func TestAgent_block_new_duts_when_draining(t *testing.T) {
 	f := injectStateSpyFactory(a)
 	b := newPersistentBot()
 	started := make(chan struct{}, 1)
-	a.startBotFunc = func(bot.Config) (bot.Bot, error) {
+	a.StartBotFunc = func(bot.Config) (bot.Bot, error) {
 		select {
 		case started <- struct{}{}:
 		default:
@@ -483,8 +483,8 @@ func newTestAgent(t *testing.T) (a *Agent, cleanup func()) {
 		WorkingDir:        workDir,
 		ReportingInterval: time.Nanosecond,
 		DUTCapacity:       99999,
+		StartBotFunc:      startFakeBot,
 		logger:            testLogger{t},
-		startBotFunc:      startFakeBot,
 	}
 	return a, cleanup
 }

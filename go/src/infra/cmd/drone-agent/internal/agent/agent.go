@@ -38,6 +38,9 @@ type Agent struct {
 	WorkingDir        string
 	ReportingInterval time.Duration
 	DUTCapacity       int
+	// StartBotFunc is used to start Swarming bots.
+	// This must be set.
+	StartBotFunc func(bot.Config) (bot.Bot, error)
 
 	// logger is used for Agent logging.  If nil, use the log package.
 	logger logger
@@ -45,9 +48,6 @@ type Agent struct {
 	// used for instrumenting the state for testing.  If nil, this
 	// is a no-op.
 	wrapStateFunc func(*state.State) stateInterface
-	// startBotFunc is used to start Swarming bots.  If nil, a
-	// real implementation is used.  This is set for testing.
-	startBotFunc func(bot.Config) (bot.Bot, error)
 }
 
 // logger defines the logging interface used by Agent.
@@ -271,13 +271,6 @@ func (a *Agent) wrapState(s *state.State) stateInterface {
 	return a.wrapStateFunc(s)
 }
 
-func (a *Agent) startBot(c bot.Config) (bot.Bot, error) {
-	if a.startBotFunc == nil {
-		return bot.NewStarter().Start(c)
-	}
-	return a.startBotFunc(c)
-}
-
 // hook implements state.ControllerHook.
 type hook struct {
 	a    *Agent
@@ -290,7 +283,7 @@ func (h hook) StartBot(dutID string) (bot.Bot, error) {
 	if err != nil {
 		return nil, errors.Annotate(err, "start bot %v", dutID).Err()
 	}
-	b, err := h.a.startBot(h.botConfig(dutID, dir))
+	b, err := h.a.StartBotFunc(h.botConfig(dutID, dir))
 	if err != nil {
 		_ = os.RemoveAll(dir)
 		return nil, errors.Annotate(err, "start bot %v", dutID).Err()

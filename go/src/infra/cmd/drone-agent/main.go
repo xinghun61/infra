@@ -23,6 +23,7 @@ import (
 
 	"infra/appengine/drone-queen/api"
 	"infra/cmd/drone-agent/internal/agent"
+	"infra/cmd/drone-agent/internal/bot"
 	"infra/cmd/drone-agent/internal/draining"
 )
 
@@ -63,6 +64,7 @@ func main() {
 		WorkingDir:        workingDirPath,
 		ReportingInterval: reportingInterval,
 		DUTCapacity:       dutCapacity,
+		StartBotFunc:      bot.NewStarter().Start,
 	}
 	a.Run(ctx)
 }
