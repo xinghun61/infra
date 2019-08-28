@@ -7,6 +7,8 @@ package bot
 
 import (
 	"fmt"
+	"io"
+	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -72,10 +74,23 @@ func Start(c Config) (Bot, error) {
 }
 
 func downloadBotCode(c Config) error {
-	cmd := exec.Command("curl", "-sSLf", "-o", c.botZipPath(), c.botCodeURL())
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	if err := cmd.Run(); err != nil {
+	f, err := os.Create(c.botZipPath())
+	if err != nil {
+		return errors.Annotate(err, "download bot code for %+v", c).Err()
+	}
+	defer f.Close()
+
+	var h http.Client
+	resp, err := h.Get(c.botCodeURL())
+	if err != nil {
+		return errors.Annotate(err, "download bot code for %+v", c).Err()
+	}
+	defer resp.Body.Close()
+
+	if _, err := io.Copy(f, resp.Body); err != nil {
+		return errors.Annotate(err, "download bot code for %+v", c).Err()
+	}
+	if err := f.Close(); err != nil {
 		return errors.Annotate(err, "download bot code for %+v", c).Err()
 	}
 	return nil
