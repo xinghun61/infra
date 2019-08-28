@@ -12,7 +12,6 @@ package main
 import (
 	"context"
 	"log"
-	"net/http"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -51,18 +50,15 @@ func main() {
 	ctx = notifySIGTERM(ctx)
 	ctx = notifyDraining(ctx, filepath.Join(workingDirPath, drainingFile))
 	authn := auth.NewAuthenticator(ctx, auth.SilentLogin, authOptions)
-	h, err := httpClient(ctx, authn)
-	if err != nil {
-		log.Fatal(err)
-	}
 	if err := os.MkdirAll(workingDirPath, 0777); err != nil {
 		log.Fatal(err)
 	}
+	c, err := droneClient(ctx, authn, queenService)
+	if err != nil {
+		log.Fatal(err)
+	}
 	a := agent.Agent{
-		Client: api.NewDronePRPCClient(&prpc.Client{
-			C:    h,
-			Host: queenService,
-		}),
+		Client:            c,
 		SwarmingURL:       swarmingURL,
 		WorkingDir:        workingDirPath,
 		ReportingInterval: reportingInterval,
@@ -71,13 +67,15 @@ func main() {
 	a.Run(ctx)
 }
 
-// httpClient returns an HTTP client with authentication set up.
-func httpClient(ctx context.Context, a *auth.Authenticator) (*http.Client, error) {
-	c, err := a.Client()
+func droneClient(ctx context.Context, a *auth.Authenticator, queenService string) (api.DroneClient, error) {
+	h, err := a.Client()
 	if err != nil {
 		return nil, errors.Annotate(err, "failed to create HTTP client").Err()
 	}
-	return c, nil
+	return api.NewDronePRPCClient(&prpc.Client{
+		C:    h,
+		Host: queenService,
+	}), nil
 }
 
 const checkDrainingInterval = time.Minute
