@@ -18,17 +18,18 @@ import (
 // createRunCommon encapsulates parameters that are common to
 // all of the create-* subcommands.
 type createRunCommon struct {
-	board       string
-	model       string
-	pool        string
-	image       string
-	dimensions  []string
-	priority    int
-	timeoutMins int
-	tags        []string
-	keyvals     []string
-	qsAccount   string
-	buildBucket bool
+	board           string
+	model           string
+	pool            string
+	image           string
+	dimensions      []string
+	provisionLabels []string
+	priority        int
+	timeoutMins     int
+	tags            []string
+	keyvals         []string
+	qsAccount       string
+	buildBucket     bool
 }
 
 func (c *createRunCommon) Register(fl *flag.FlagSet) {
@@ -39,6 +40,10 @@ e.g., reef-canary/R73-11580.0.0.`)
 	fl.StringVar(&c.model, "model", "", "Model to run test on.")
 	fl.Var(flagx.StringSlice(&c.dimensions), "dim", "Additional scheduling dimension to apply to tests, as a KEY:VALUE string; may be specified multiple times.")
 	fl.StringVar(&c.pool, "pool", "", "Device pool to run test on.")
+	fl.Var(flagx.StringSlice(&c.provisionLabels), "provision-label",
+		`Additional provisionable labels to use for the test
+(e.g. cheets-version:git_pi-arc/cheets_x86_64).  May be specified
+multiple times.  Optional.`)
 	fl.IntVar(&c.priority, "priority", defaultTaskPriority,
 		`Specify the priority of the test.  A high value means this test
 will be executed in a low priority. If the tasks runs in a quotascheduler controlled pool, this value will be ignored.`)
@@ -78,6 +83,7 @@ func (c *createRunCommon) RecipeArgs(tags []string) (recipe.Args, error) {
 		Image:                      c.image,
 		Model:                      c.model,
 		FreeformSwarmingDimensions: c.dimensions,
+		ProvisionLabels:            c.provisionLabels,
 		Pool:                       c.pool,
 		QuotaAccount:               c.qsAccount,
 		Timeout:                    time.Duration(c.timeoutMins) * time.Minute,

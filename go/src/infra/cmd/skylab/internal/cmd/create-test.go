@@ -13,7 +13,6 @@ import (
 	"go.chromium.org/luci/auth/client/authcli"
 	"go.chromium.org/luci/common/cli"
 	"go.chromium.org/luci/common/errors"
-	"go.chromium.org/luci/common/flag"
 
 	"infra/cmd/skylab/internal/bb"
 	"infra/cmd/skylab/internal/cmd/recipe"
@@ -43,11 +42,7 @@ This command does not wait for the task to start running.`,
 		// test enumeration.
 		c.Flags.BoolVar(&c.client, "client-test", false, "Task is a client-side test.")
 		c.Flags.StringVar(&c.testArgs, "test-args", "", "Test arguments string (meaning depends on test).")
-		// TODO(akeshet): Move this argument to createRunCommon, so it can be shared among create-* subcommands.
-		c.Flags.Var(flag.StringSlice(&c.provisionLabels), "provision-label",
-			`Additional provisionable labels to use for the test
-(e.g. cheets-version:git_pi-arc/cheets_x86_64).  May be specified
-multiple times.  Optional.`)
+
 		c.Flags.StringVar(&c.parentTaskID, "parent-task-run-id", "", "For internal use only. Task run ID of the parent (suite) task to this test. Note that this must be a run ID (i.e. not ending in 0).")
 
 		return c
@@ -57,12 +52,11 @@ multiple times.  Optional.`)
 type createTestRun struct {
 	subcommands.CommandRunBase
 	createRunCommon
-	authFlags       authcli.Flags
-	envFlags        envFlags
-	client          bool
-	testArgs        string
-	provisionLabels []string
-	parentTaskID    string
+	authFlags    authcli.Flags
+	envFlags     envFlags
+	client       bool
+	testArgs     string
+	parentTaskID string
 }
 
 // validateArgs ensures that the command line arguments are
@@ -230,7 +224,7 @@ func (c *createTestRun) getProvisionableDimensions() []string {
 	if c.image != "" {
 		provisionableDimensions = append(provisionableDimensions, "provisionable-cros-version:"+c.image)
 	}
-	for _, p := range c.provisionLabels {
+	for _, p := range c.createRunCommon.provisionLabels {
 		provisionableDimensions = append(provisionableDimensions, "provisionable-"+p)
 	}
 	return provisionableDimensions

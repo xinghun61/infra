@@ -137,6 +137,9 @@ func (c *createSuiteRun) innerRunSwarming(ctx context.Context, a subcommands.App
 	if len(c.dimensions) > 0 {
 		return errors.Reason("-dim not supported in swarming mode (without -bb)").Err()
 	}
+	if len(c.provisionLabels) > 0 {
+		return errors.Reason("-provisionable-label not supported in swarming mode (without -bb)").Err()
+	}
 
 	e := c.envFlags.Env()
 	dimensions := []string{"pool:ChromeOSSkylab-suite"}
