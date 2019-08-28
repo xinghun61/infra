@@ -39,6 +39,7 @@ github.com/VividCortex/mysqlerr
 github.com/andygrunwald/go-gerrit
 github.com/dustin/go-humanize
 github.com/go-sql-driver/mysql
+github.com/gomodule/redigo/redis
 github.com/google/go-cmp/cmp
 github.com/gorhill/cronexpr
 github.com/julienschmidt/httprouter
