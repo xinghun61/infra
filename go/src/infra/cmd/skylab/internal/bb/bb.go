@@ -275,42 +275,35 @@ func getSearchBuildsFields() []string {
 }
 
 func extractBuildData(from *buildbucket_pb.Build) (*Build, error) {
-	op := from.GetOutput().GetProperties().GetFields()
-	if op == nil {
-		return nil, errors.Reason("build %s has no output properties", from).Err()
-	}
-
-	var response *steps.ExecuteResponse
-	if rawResponse, ok := op["response"]; ok {
-		var err error
-		if response, err = structPBToExecuteResponse(rawResponse); err != nil {
-			return nil, errors.Annotate(err, "extractBuildData").Err()
-		}
-	}
-
-	var rawRequest *structpb.Struct
-	if reqValue, ok := op["request"]; ok {
-		switch r := reqValue.Kind.(type) {
-		case *structpb.Value_StructValue:
-			rawRequest = r.StructValue
-		default:
-			return nil, errors.Reason("output properties have malformed request %#v", reqValue).Err()
-		}
-	}
-
-	tags := make([]string, 0, len(from.GetTags()))
-	for _, t := range from.GetTags() {
-		tags = append(tags, fmt.Sprintf("%s:%s", t.Key, t.Value))
-	}
-
-	return &Build{
+	build := Build{
 		ID:     from.Id,
 		Status: from.GetStatus(),
-		Tags:   tags,
+	}
 
-		Response:   response,
-		RawRequest: rawRequest,
-	}, nil
+	build.Tags = make([]string, 0, len(from.GetTags()))
+	for _, t := range from.GetTags() {
+		build.Tags = append(build.Tags, fmt.Sprintf("%s:%s", t.Key, t.Value))
+	}
+
+	if op := from.GetOutput().GetProperties().GetFields(); op != nil {
+		if rawResponse, ok := op["response"]; ok {
+			response, err := structPBToExecuteResponse(rawResponse)
+			if err != nil {
+				return nil, errors.Annotate(err, "extractBuildData").Err()
+			}
+			build.Response = response
+		}
+
+		if reqValue, ok := op["request"]; ok {
+			switch r := reqValue.Kind.(type) {
+			case *structpb.Value_StructValue:
+				build.RawRequest = r.StructValue
+			default:
+				return nil, errors.Reason("output properties have malformed request %#v", reqValue).Err()
+			}
+		}
+	}
+	return &build, nil
 }
 
 func extractBuildDataAll(from []*buildbucket_pb.Build) ([]*Build, error) {
