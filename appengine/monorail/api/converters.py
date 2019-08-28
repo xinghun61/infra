@@ -167,7 +167,8 @@ def ConvertUsers(users, users_by_id):
         user.linked_child_ids, [], users_by_id, False)
     converted_user = user_objects_pb2.User(
         user_id=user.user_id,
-        email=user.email,
+        email=user.email, #TODO(crbug.com/monorail/6224): Delete this line.
+        display_name=user.email,
         is_site_admin=user.is_site_admin,
         availability=framework_helpers.GetUserAvailability(user)[0],
         linked_parent_ref=linked_parent_ref,

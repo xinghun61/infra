@@ -20,7 +20,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   package='monorail',
   syntax='proto3',
   serialized_options=None,
-  serialized_pb=_b('\n api/api_proto/user_objects.proto\x12\x08monorail\x1a\x1a\x61pi/api_proto/common.proto\"\xaf\x01\n\x04User\x12\r\n\x05\x65mail\x18\x01 \x01(\t\x12\x0f\n\x07user_id\x18\x02 \x01(\x03\x12\x15\n\ris_site_admin\x18\x03 \x01(\x08\x12\x14\n\x0c\x61vailability\x18\x04 \x01(\t\x12,\n\x11linked_parent_ref\x18\x05 \x01(\x0b\x32\x11.monorail.UserRef\x12,\n\x11linked_child_refs\x18\x06 \x03(\x0b\x32\x11.monorail.UserRef\",\n\rUserPrefValue\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t\"\x8a\x01\n\x0cUserProjects\x12#\n\x08user_ref\x18\x01 \x01(\x0b\x32\x11.monorail.UserRef\x12\x10\n\x08owner_of\x18\x02 \x03(\t\x12\x11\n\tmember_of\x18\x03 \x03(\t\x12\x16\n\x0e\x63ontributor_to\x18\x04 \x03(\t\x12\x18\n\x10starred_projects\x18\x05 \x03(\tb\x06proto3')
+  serialized_pb=_b('\n api/api_proto/user_objects.proto\x12\x08monorail\x1a\x1a\x61pi/api_proto/common.proto\"\xc5\x01\n\x04User\x12\x14\n\x0c\x64isplay_name\x18\x01 \x01(\t\x12\x0f\n\x07user_id\x18\x02 \x01(\x03\x12\x15\n\ris_site_admin\x18\x03 \x01(\x08\x12\x14\n\x0c\x61vailability\x18\x04 \x01(\t\x12,\n\x11linked_parent_ref\x18\x05 \x01(\x0b\x32\x11.monorail.UserRef\x12,\n\x11linked_child_refs\x18\x06 \x03(\x0b\x32\x11.monorail.UserRef\x12\r\n\x05\x65mail\x18\x07 \x01(\t\",\n\rUserPrefValue\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t\"\x8a\x01\n\x0cUserProjects\x12#\n\x08user_ref\x18\x01 \x01(\x0b\x32\x11.monorail.UserRef\x12\x10\n\x08owner_of\x18\x02 \x03(\t\x12\x11\n\tmember_of\x18\x03 \x03(\t\x12\x16\n\x0e\x63ontributor_to\x18\x04 \x03(\t\x12\x18\n\x10starred_projects\x18\x05 \x03(\tb\x06proto3')
   ,
   dependencies=[api_dot_api__proto_dot_common__pb2.DESCRIPTOR,])
 
@@ -35,7 +35,7 @@ _USER = _descriptor.Descriptor(
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='email', full_name='monorail.User.email', index=0,
+      name='display_name', full_name='monorail.User.display_name', index=0,
       number=1, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
@@ -76,6 +76,13 @@ _USER = _descriptor.Descriptor(
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='email', full_name='monorail.User.email', index=6,
+      number=7, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b("").decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
   ],
   extensions=[
   ],
@@ -89,7 +96,7 @@ _USER = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=75,
-  serialized_end=250,
+  serialized_end=272,
 )
 
 
@@ -126,8 +133,8 @@ _USERPREFVALUE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=252,
-  serialized_end=296,
+  serialized_start=274,
+  serialized_end=318,
 )
 
 
@@ -185,8 +192,8 @@ _USERPROJECTS = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=299,
-  serialized_end=437,
+  serialized_start=321,
+  serialized_end=459,
 )
 
 _USER.fields_by_name['linked_parent_ref'].message_type = api_dot_api__proto_dot_common__pb2._USERREF

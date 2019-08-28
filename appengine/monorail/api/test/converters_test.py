@@ -286,20 +286,26 @@ class ConverterFunctionsTest(unittest.TestCase):
         [user1, user2, user3, user4], users_by_id)
     self.assertItemsEqual(
         actual,
-        [user_objects_pb2.User(user_id=1, email='user1@example.com'),
+        [user_objects_pb2.User(
+            user_id=1,
+            email='user1@example.com',
+            display_name='user1@example.com'),
          user_objects_pb2.User(
             user_id=2,
             email='user2@example.com',
+            display_name='user2@example.com',
             is_site_admin=True),
          user_objects_pb2.User(
             user_id=3,
             email='user3@example.com',
+            display_name='user3@example.com',
             availability='User never visited',
             linked_child_refs=[common_pb2.UserRef(
               user_id=4, display_name='user4@example.com')]),
          user_objects_pb2.User(
             user_id=4,
             email='user4@example.com',
+            display_name='user4@example.com',
             availability='Last visit > 30 days ago',
             linked_parent_ref=common_pb2.UserRef(
               user_id=3, display_name='user3@example.com')),

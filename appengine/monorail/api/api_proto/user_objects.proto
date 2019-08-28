@@ -16,12 +16,13 @@ package monorail;
 // creating a user profile page.
 // Next available tag: 7
 message User {
-  string email = 1;
+  string display_name = 1;
   int64 user_id = 2;
   bool is_site_admin = 3;
   string availability = 4;
   UserRef linked_parent_ref = 5;
   repeated UserRef linked_child_refs = 6;
+  string email = 7; // TODO(crbug.com/monorail/6224): Delete this line.
 }
 
 
