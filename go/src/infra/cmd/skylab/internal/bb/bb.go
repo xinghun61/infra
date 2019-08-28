@@ -129,7 +129,23 @@ func (c *Client) ScheduleBuildRaw(ctx context.Context, request *structpb.Struct,
 // WaitForBuild regularly logs output to stdout to pacify the logdog silence
 // checker.
 func (c *Client) WaitForBuild(ctx context.Context, ID int64) (*Build, error) {
-	return c.waitForBuild(ctx, ID)
+	throttledLogger := logutils.NewThrottledInfoLogger(logging.Get(ctx), 10*time.Minute)
+	progressMessage := fmt.Sprintf("Still waiting for result from %s", c.BuildURL(ID))
+	for {
+		build, err := c.GetBuild(ctx, ID)
+		if err != nil {
+			return nil, err
+		}
+		if isFinal(build.Status) {
+			return build, nil
+		}
+		select {
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		case <-time.After(15 * time.Second):
+		}
+		throttledLogger.MaybeLog(progressMessage)
+	}
 }
 
 // Build contains selected state information from a fetched buildbucket Build.
@@ -216,26 +232,6 @@ func clipToInt32(n int) int32 {
 		return int32(n)
 	}
 	return math.MaxInt32
-}
-
-func (c *Client) waitForBuild(ctx context.Context, buildID int64) (*Build, error) {
-	throttledLogger := logutils.NewThrottledInfoLogger(logging.Get(ctx), 10*time.Minute)
-	progressMessage := fmt.Sprintf("Still waiting for result from %s", c.BuildURL(buildID))
-	for {
-		build, err := c.GetBuild(ctx, buildID)
-		if err != nil {
-			return nil, err
-		}
-		if isFinal(build.Status) {
-			return build, nil
-		}
-		select {
-		case <-ctx.Done():
-			return nil, ctx.Err()
-		case <-time.After(15 * time.Second):
-		}
-		throttledLogger.MaybeLog(progressMessage)
-	}
 }
 
 func splitTagPairs(tags []string) ([]*buildbucket_pb.StringPair, error) {
