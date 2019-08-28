@@ -9,6 +9,10 @@ class SomApp extends Polymer.mixinBehaviors([TimeBehavior], Polymer.Element) {
   static get properties() {
     return {
       alertsTimes: Object,
+      _isPerfTree: {
+        type: Boolean,
+        computed: '_computeIsPerfTree(_tree)',
+      },
       _editedTestName: {
         type: String,
         computed: '_computeEditedTestName(_pathParts)',
@@ -110,6 +114,10 @@ class SomApp extends Polymer.mixinBehaviors([TimeBehavior], Polymer.Element) {
     if (alertView) {
       alertView.refresh();
     }
+  }
+
+  _computeIsPerfTree(tree) {
+    return tree && tree.name == 'chromium.perf';
   }
 
   _computeEditedTestName(pathParts) {

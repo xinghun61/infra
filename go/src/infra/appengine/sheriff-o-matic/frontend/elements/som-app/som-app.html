@@ -136,6 +136,13 @@
           display: none;
         }
       }
+      .perfWarningBanner {
+        background-color: #e75d54;
+        font-size: 16px;
+        padding: 0.5em;
+        margin: 0.5em;
+        text-align: center;
+      }
     </style>
     <iron-location id="url" path="{{_path}}" url-space-regex="^(?!(/_ah/|/auth/))"></iron-location>
     <chops-header logo-src="[[_treeLogo]]" app-title="Sheriff-o-Matic">
@@ -143,6 +150,11 @@
       <div slot="subheader" id="treeTitle">
         &gt; [[_pathIdentifier]]
       </div>
+      <template is="dom-if" if="[[_isPerfTree]]">
+        <div class="perfWarningBanner">
+          Perfbot sheriffs should also check <a target="_blank" href="https://ci.chromium.org/p/chrome/g/chrome.perf/console">the CI console</a> for issues not surfaced here.
+        </div>
+      </template>
       <div id="headerRightContent">
         <div id="lastUpdated" hidden$="[[!_showAlertView]]">
           Last updated: <span hidden$="[[!_lastUpdated]]" id="lastUpdatedTime">
