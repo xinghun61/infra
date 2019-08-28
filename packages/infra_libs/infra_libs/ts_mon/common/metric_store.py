@@ -4,10 +4,12 @@
 
 import collections
 import copy
+import inspect
 import itertools
 import threading
 import time
 
+from google.protobuf import message
 from infra_libs.ts_mon.common import errors
 
 
@@ -124,7 +126,18 @@ class _TargetFieldsValues(object):
     self._start_times = collections.defaultdict(dict)
 
   def gen_key(self, target_fields):
-    return tuple(sorted(target_fields.iteritems()))
+    if not isinstance(target_fields, message.Message):
+      # It's a dict. Canonicalise its items.
+      return tuple(sorted(target_fields.iteritems()))
+
+    # It's a protobuf. Serialise its values.
+    # The zeroth element is the target type.
+    values = [type(target_fields)]
+    for field in target_fields.DESCRIPTOR.fields:
+      name = field.name
+      value = getattr(target_fields, name)
+      values.append(value)
+    return tuple(values)
 
   def _get_target_values(self, target_fields):
     # Normalize the target fields by converting them into a hashable tuple.
@@ -155,8 +168,13 @@ class _TargetFieldsValues(object):
   def iter_targets_with_start_times(self, default_target):
     for target_fields, fields_values in self._values.iteritems():
       if target_fields:
-        target = copy.copy(default_target)
-        target.update({k: v for k, v in target_fields})
+        if inspect.isclass(target_fields[0]):
+          # It's a target type plus serialised values.
+          # Output the tuple as is.
+          target = target_fields
+        else:
+          target = copy.copy(default_target)
+          target.update({k: v for k, v in target_fields})
       else:
         target = default_target
       yield target, fields_values, self._start_times[target_fields]

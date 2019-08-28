@@ -16,6 +16,7 @@ from infra_libs.ts_mon.common import metric_store
 from infra_libs.ts_mon.common import metrics
 from infra_libs.ts_mon.common import monitors
 from infra_libs.ts_mon.common import targets
+from infra_libs.ts_mon.common.test import my_target_pb2
 from infra_libs.ts_mon.protos import metrics_pb2
 
 
@@ -35,6 +36,20 @@ class GlobalsTest(unittest.TestCase):
     # and needs to be stopped before running any other tests.
     interface.close()
     self.state_patcher.stop()
+
+  def test_target_context(self):
+    typ = my_target_pb2.MyTarget
+    stk = interface.state._thread_local.target_context[typ]
+    with interface.target_context(typ(s='x')):
+      self.assertEqual('x', stk[-1].s)
+      with interface.target_context(typ(s='y')):
+        self.assertEqual('y', stk[-1].s)
+      self.assertEqual('x', stk[-1].s)
+
+  def test_target_context_non_protobuf(self):
+    with self.assertRaises(AssertionError):
+      with interface.target_context({'abc': 123}):
+        pass  # pragma: no cover
 
   def test_flush(self):
     interface.state.global_monitor = mock.create_autospec(monitors.Monitor)
@@ -599,6 +614,21 @@ class GenerateNewProtoTest(unittest.TestCase):
 
     self.assertEqual('c', data_set.data[0].field[2].name)
     self.assertEqual('test', data_set.data[0].field[2].string_value)
+
+  def test_generate_with_target_type(self):
+    counter = metrics.CounterMetric('counter', 'desc', None,
+                                    target_type=my_target_pb2.MyTarget)
+    interface.register(counter)
+    with interface.target_context(my_target_pb2.MyTarget(s='x')):
+      counter.increment()
+    proto = next(interface._generate_proto())
+    root_labels = proto.metrics_collection[0].root_labels
+    self.assertEqual('b', root_labels[0].key)
+    self.assertEqual(False, root_labels[0].bool_value)
+    self.assertEqual('i', root_labels[1].key)
+    self.assertEqual(0, root_labels[1].int64_value)
+    self.assertEqual('s', root_labels[2].key)
+    self.assertEqual('x', root_labels[2].string_value)
 
   def test_generate_proto_with_dangerously_set_start_time(self):
     counter0 = metrics.CounterMetric('counter0', 'desc0',

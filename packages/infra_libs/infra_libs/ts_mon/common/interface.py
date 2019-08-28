@@ -31,6 +31,8 @@ Library usage:
     c.increment()
 """
 
+import collections
+import contextlib
 import datetime
 import logging
 import random
@@ -38,6 +40,7 @@ import threading
 import time
 import traceback
 
+from google.protobuf import message
 from infra_libs.ts_mon.common import errors
 from infra_libs.ts_mon.common import metric_store
 from infra_libs.ts_mon.protos import metrics_pb2
@@ -89,6 +92,13 @@ class State(object):
     # on Appengine because it does its own thing.
     self.invoke_global_callbacks_on_flush = True
 
+    # Thread-local state.
+    self._thread_local = threading.local()
+    # The target context. Keys are target types. Values are stacks of target
+    # fields. Metrics with target types use these to get their target fields
+    # rather than the dicts that are passed in when setting or incrementing.
+    self._thread_local.target_context = collections.defaultdict(list)
+
   def reset_for_unittest(self):
     self.metrics = {}
     self.global_metrics = {}
@@ -98,6 +108,20 @@ class State(object):
     self.store.reset_for_unittest()
 
 state = State()
+
+
+@contextlib.contextmanager
+def target_context(target_fields):
+  """Sets and unsets a target context."""
+  assert isinstance(target_fields, message.Message), (
+      'Cannot set non-protobuf target context %r' % (target_fields,))
+  typ = type(target_fields)
+  stk = state._thread_local.target_context[typ]
+  try:
+    stk.append(target_fields)
+    yield True  # dummy value, not used by the caller
+  finally:
+    stk.pop()
 
 
 def flush():
@@ -128,12 +152,25 @@ def flush():
   return True
 
 
+def _populate_root_labels(root_labels, target):
+  """Populate root_labels for the given target."""
+  for field, value in zip(target[0].DESCRIPTOR.fields, target[1:]):
+    if isinstance(value, bool):
+      root_labels.add(key=field.name, bool_value=value)
+    elif isinstance(value, (int, long)):
+      root_labels.add(key=field.name, int64_value=value)
+    elif isinstance(value, basestring):
+      root_labels.add(key=field.name, string_value=value)
+    else:
+      raise NotImplementedError()
+
+
 def _generate_proto():
   """Generate MetricsPayload for global_monitor.send()."""
   proto = metrics_pb2.MetricsPayload()
 
   # Key: Target, value: MetricsCollection.
-  collections = {}
+  collections = {}  # pylint: disable=redefined-outer-name
 
   # Key: (Target, metric name) tuple, value: MetricsDataSet.
   data_sets = {}
@@ -181,7 +218,10 @@ def _generate_proto():
 
       if target not in collections:
         collections[target] = proto.metrics_collection.add()
-        target.populate_target_pb(collections[target])
+        if isinstance(target, tuple):
+          _populate_root_labels(collections[target].root_labels, target)
+        else:
+          target.populate_target_pb(collections[target])
       collection = collections[target]
 
       key = (target, metric.name)

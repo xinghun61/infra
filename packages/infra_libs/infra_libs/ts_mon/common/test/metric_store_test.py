@@ -17,9 +17,11 @@ from infra_libs.ts_mon.common import errors
 from infra_libs.ts_mon.common import metric_store
 from infra_libs.ts_mon.common import metrics
 from infra_libs.ts_mon.common import targets
+from infra_libs.ts_mon.common.test import my_target_pb2
 
 
 class DefaultModifyFnTest(unittest.TestCase):
+
   def test_adds(self):
     fn = metric_store.default_modify_fn('foo')
     self.assertEquals(5, fn(2, 3))
@@ -176,19 +178,43 @@ class MetricStoreTestBase(object):
         (('value2',), 44),
     ], sorted(field_values))
 
+  def test_get_all(self):
+    typ = my_target_pb2.MyTarget
+    self.store.set('foo', ('bar',), typ(s='x'), 123)
+    self.store.set('foo', ('bar',), typ(s='y'), 456)
+    self.store.set('foo', ('qux',), typ(s='y'), 789)
+    self.assertDictEqual({
+        (my_target_pb2.MyTarget, False, 0, 'x'): {
+            ('bar',): 123,
+        },
+        (my_target_pb2.MyTarget, False, 0, 'y'): {
+            ('bar',): 456,
+            ('qux',): 789,
+        },
+    }, {t[0]: t[4] for t in self.store.get_all()})
+
+  def test_set(self):
+    typ = my_target_pb2.MyTarget
+    self.store.set('foo', ('value',), None, 12)
+    self.store.set('foo', ('value',), typ(s='x'), 34)
+    self.assertEqual(12, self.store.get('foo', ('value',), None))
+    self.assertEqual(34, self.store.get('foo', ('value',), typ(s='x')))
+
   def test_set_enforce_ge(self):
     self.store.set('foo', ('value',), None, 42, enforce_ge=True)
     self.store.set('foo', ('value',), None, 43, enforce_ge=True)
-
     with self.assertRaises(errors.MonitoringDecreasingValueError):
       self.store.set('foo', ('value',), None, 42, enforce_ge=True)
 
   def test_incr(self):
+    typ = my_target_pb2.MyTarget
     self.store.set('foo', ('value',), None, 42)
+    self.store.set('foo', ('value',), typ(s='x'), 42)
     self.store.incr('foo', ('value',), None, 4)
-
     self.assertEquals(46, self.store.get('foo', ('value',), None))
+    self.assertEquals(42, self.store.get('foo', ('value',), typ(s='x')))
 
+  def test_incr_enforce_ge(self):
     with self.assertRaises(errors.MonitoringDecreasingValueError):
       self.store.incr('foo', ('value',), None, -1)
 

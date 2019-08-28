@@ -13,10 +13,12 @@ from infra_libs.ts_mon.common import interface
 from infra_libs.ts_mon.common import metric_store
 from infra_libs.ts_mon.common import metrics
 from infra_libs.ts_mon.common import targets
+from infra_libs.ts_mon.common.test import my_target_pb2
 from infra_libs.ts_mon.protos import metrics_pb2
 
 
 class TestBase(unittest.TestCase):
+
   def setUp(self):
     super(TestBase, self).setUp()
     target = targets.TaskTarget('test_service', 'test_job',
@@ -61,22 +63,25 @@ class MetricTest(TestBase):
 
   def test_properties(self):
     field_spec = [metrics.StringField('string')]
-    m1 = metrics.Metric('/foo', 'foo', field_spec, 'us')
-    self.assertEquals(m1.name, 'foo')
-    self.assertEquals(m1.field_spec, field_spec)
-    self.assertEquals(m1.units, 'us')
+    m = metrics.Metric('/foo', 'foo', field_spec, units='us',
+                       target_type=my_target_pb2.MyTarget)
+    self.assertEqual(m.name, 'foo')
+    self.assertEqual(m.field_spec, field_spec)
+    self.assertEqual(m.units, 'us')
+    self.assertEqual(m.target_type, my_target_pb2.MyTarget)
 
   def test_equality(self):
     field_spec = [metrics.StringField('string')]
-    m = metrics.Metric('/foo', 'foo', field_spec, 'us')
-    self.assertEquals(m, m)
+    m = metrics.Metric('/foo', 'foo', field_spec, units='us',
+                       target_type=my_target_pb2.MyTarget)
+    self.assertEqual(m, m)
 
   def test_init_too_many_fields(self):
     fields = [metrics.StringField('field%d' % i) for i in xrange(13)]
     with self.assertRaises(errors.MonitoringTooManyFieldsError) as e:
       metrics.Metric('test', 'test', fields)
-    self.assertEquals(e.exception.metric, 'test')
-    self.assertEquals(len(e.exception.fields), 13)
+    self.assertEqual(e.exception.metric, 'test')
+    self.assertEqual(len(e.exception.fields), 13)
 
   def test_set_wrong_number_of_fields(self):
     m = metrics.StringMetric('foo', 'foo', [metrics.IntegerField('asdf')])
@@ -94,11 +99,11 @@ class MetricTest(TestBase):
       m.set('bar', object())
 
   def test_register_unregister(self):
-    self.assertEquals(0, len(self.mock_state.metrics))
+    self.assertEqual(0, len(self.mock_state.metrics))
     m = metrics.Metric('test', 'test', None)
-    self.assertEquals(1, len(self.mock_state.metrics))
+    self.assertEqual(1, len(self.mock_state.metrics))
     m.unregister()
-    self.assertEquals(0, len(self.mock_state.metrics))
+    self.assertEqual(0, len(self.mock_state.metrics))
 
   def test_reset(self):
     m = metrics.StringMetric('test', 'test', None)
@@ -132,7 +137,7 @@ class MetricTest(TestBase):
     self.assertEqual(100, data.start_timestamp.seconds)
     self.assertEqual(1000, data.end_timestamp.seconds)
 
-  def test_populate_field_descriptor(self):
+  def test_populate_field_descriptors(self):
     data_set_pb = metrics_pb2.MetricsDataSet()
     m = metrics.Metric('test', 'test', [
         metrics.IntegerField('a'),
@@ -194,8 +199,19 @@ class MetricTest(TestBase):
     with self.assertRaises(errors.MetricDefinitionError):
       metrics.Metric('test', 'desc', [None])
 
+  def test_bad_target_type(self):
+    with self.assertRaises(errors.MetricDefinitionError):
+      field_spec = [metrics.StringField('string')]
+      metrics.Metric('/foo', 'foo', field_spec, units='us',
+                     target_type=my_target_pb2.MyTarget())
+    with self.assertRaises(errors.MetricDefinitionError):
+      field_spec = [metrics.StringField('string')]
+      metrics.Metric('/foo', 'foo', field_spec, units='us',
+                     target_type=metrics.StringField)
+
 
 class FieldValidationTest(TestBase):
+
   def test_string_field(self):
     f = metrics.StringField('name')
     f.validate_value('', 'string')
@@ -253,7 +269,7 @@ class FieldValidationTest(TestBase):
 
   def test_equality(self):
     f = metrics.IntegerField('name')
-    self.assertEquals(f, f)
+    self.assertEqual(f, f)
 
 
 class StringMetricTest(TestBase):
@@ -267,7 +283,7 @@ class StringMetricTest(TestBase):
   def test_set(self):
     m = metrics.StringMetric('test', 'test', None)
     m.set('hello world')
-    self.assertEquals(m.get(), 'hello world')
+    self.assertEqual(m.get(), 'hello world')
 
   def test_non_string_raises(self):
     m = metrics.StringMetric('test', 'test', None)
@@ -291,7 +307,7 @@ class BooleanMetricTest(TestBase):
   def test_set(self):
     m = metrics.BooleanMetric('test', 'test', None)
     m.set(False)
-    self.assertEquals(m.get(), False)
+    self.assertEqual(m.get(), False)
 
   def test_non_bool_raises(self):
     m = metrics.BooleanMetric('test', 'test', None)
@@ -319,16 +335,16 @@ class CounterMetricTest(TestBase):
   def test_set(self):
     m = metrics.CounterMetric('test', 'test', None)
     m.set(10)
-    self.assertEquals(m.get(), 10)
+    self.assertEqual(m.get(), 10)
 
   def test_increment(self):
     m = metrics.CounterMetric('test', 'test', None)
     m.set(1)
-    self.assertEquals(m.get(), 1)
+    self.assertEqual(m.get(), 1)
     m.increment()
-    self.assertEquals(m.get(), 2)
+    self.assertEqual(m.get(), 2)
     m.increment_by(3)
-    self.assertAlmostEquals(m.get(), 5)
+    self.assertAlmostEqual(m.get(), 5)
 
   def test_decrement_raises(self):
     m = metrics.CounterMetric('test', 'test', None)
@@ -355,8 +371,8 @@ class CounterMetricTest(TestBase):
     with self.assertRaises(errors.WrongFieldsError):
       m.get()
     self.assertIsNone(m.get({'foo': ''}))
-    self.assertEquals(2, m.get({'foo': 'bar'}))
-    self.assertEquals(1, m.get({'foo': 'baz'}))
+    self.assertEqual(2, m.get({'foo': 'bar'}))
+    self.assertEqual(1, m.get({'foo': 'baz'}))
 
   def test_is_cumulative(self):
     m = metrics.CounterMetric('test', 'test', None)
@@ -383,9 +399,9 @@ class GaugeMetricTest(TestBase):
   def test_set(self):
     m = metrics.GaugeMetric('test', 'test', None)
     m.set(10)
-    self.assertEquals(m.get(), 10)
+    self.assertEqual(m.get(), 10)
     m.set(sys.maxint + 1)
-    self.assertEquals(m.get(), sys.maxint + 1)
+    self.assertEqual(m.get(), sys.maxint + 1)
 
   def test_non_int_raises(self):
     m = metrics.GaugeMetric('test', 'test', None)
@@ -409,7 +425,7 @@ class CumulativeMetricTest(TestBase):
   def test_set(self):
     m = metrics.CumulativeMetric('test', 'test', None)
     m.set(3.14)
-    self.assertAlmostEquals(m.get(), 3.14)
+    self.assertAlmostEqual(m.get(), 3.14)
 
   def test_decrement_raises(self):
     m = metrics.CumulativeMetric('test', 'test', None)
@@ -440,7 +456,7 @@ class FloatMetricTest(TestBase):
   def test_set(self):
     m = metrics.FloatMetric('test', 'test', None)
     m.set(3.14)
-    self.assertEquals(m.get(), 3.14)
+    self.assertEqual(m.get(), 3.14)
 
   def test_non_number_raises(self):
     m = metrics.FloatMetric('test', 'test', None)
@@ -552,9 +568,9 @@ class DistributionMetricTest(TestBase):
     m.add(1)
     m.add(10)
     m.add(100)
-    self.assertEquals({1: 1, 5: 1, 10: 1}, m.get().buckets)
-    self.assertEquals(111, m.get().sum)
-    self.assertEquals(3, m.get().count)
+    self.assertEqual({1: 1, 5: 1, 10: 1}, m.get().buckets)
+    self.assertEqual(111, m.get().sum)
+    self.assertEqual(3, m.get().count)
 
   def test_add_custom_bucketer(self):
     m = metrics.CumulativeDistributionMetric('test', 'test', None,
@@ -562,9 +578,9 @@ class DistributionMetricTest(TestBase):
     m.add(1)
     m.add(10)
     m.add(100)
-    self.assertEquals({1: 1, 2: 1, 11: 1}, m.get().buckets)
-    self.assertEquals(111, m.get().sum)
-    self.assertEquals(3, m.get().count)
+    self.assertEqual({1: 1, 2: 1, 11: 1}, m.get().buckets)
+    self.assertEqual(111, m.get().sum)
+    self.assertEqual(3, m.get().count)
 
   def test_set(self):
     d = distribution.Distribution(
@@ -579,7 +595,7 @@ class DistributionMetricTest(TestBase):
 
     m = metrics.NonCumulativeDistributionMetric('test2', 'test', None)
     m.set(d)
-    self.assertEquals(d, m.get())
+    self.assertEqual(d, m.get())
 
     with self.assertRaises(errors.MonitoringInvalidValueTypeError):
       m.set(1)
@@ -605,3 +621,20 @@ class DistributionMetricTest(TestBase):
     self.assertEqual(None, m.start_time)
     m.dangerously_set_start_time(102.5)
     self.assertEqual(102.5, m.start_time)
+
+
+class MetricTargetTypeTest(TestBase):
+
+  def test_without_target_type(self):
+    m = metrics.CounterMetric('test', 'test', None)
+    self.assertIsNone(m._get_target_context())
+    with interface.target_context(my_target_pb2.MyTarget(s='x')):
+      self.assertIsNone(m._get_target_context())
+
+  def test_with_target_type(self):
+    m = metrics.CounterMetric('test', 'test', None,
+                              target_type=my_target_pb2.MyTarget)
+    with self.assertRaises(AssertionError):
+      m._get_target_context()
+    with interface.target_context(my_target_pb2.MyTarget(s='x')):
+      self.assertEqual('x', m._get_target_context().s)
