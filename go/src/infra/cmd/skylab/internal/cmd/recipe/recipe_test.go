@@ -28,6 +28,7 @@ func TestRequest(t *testing.T) {
 		FreeformSwarmingDimensions: []string{"freeform-key:freeform-value"},
 		MaxRetries:                 5,
 		ProvisionLabels:            []string{"fwrw-version:foo-firmware"},
+		LegacySuite:                "legacy-suite",
 	}
 	got, err := a.TestPlatformRequest()
 	want := &test_platform.Request{
@@ -71,6 +72,9 @@ func TestRequest(t *testing.T) {
 			Retry: &test_platform.Request_Params_Retry{
 				Allow: true,
 				Max:   5,
+			},
+			Legacy: &test_platform.Request_Params_Legacy{
+				AutotestSuite: "legacy-suite",
 			},
 		},
 		TestPlan: &test_platform.Request_TestPlan{

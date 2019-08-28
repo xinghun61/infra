@@ -67,6 +67,7 @@ type Args struct {
 	Priority                   int64
 	Tags                       []string
 	ProvisionLabels            []string
+	LegacySuite                string
 }
 
 // TestPlatformRequest constructs a cros_test_platform.Request from Args.
@@ -130,6 +131,12 @@ func (a *Args) TestPlatformRequest() (*test_platform.Request, error) {
 	duration := ptypes.DurationProto(a.Timeout)
 	params.Time = &test_platform.Request_Params_Time{
 		MaximumDuration: duration,
+	}
+
+	if a.LegacySuite != "" {
+		params.Legacy = &test_platform.Request_Params_Legacy{
+			AutotestSuite: a.LegacySuite,
+		}
 	}
 
 	return req, nil
