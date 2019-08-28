@@ -9,6 +9,7 @@ package bb
 import (
 	"context"
 	"fmt"
+	"math"
 	"net/http"
 	"strings"
 	"time"
@@ -129,33 +130,86 @@ func (c *Client) WaitForBuild(ctx context.Context, ID int64) (*steps.ExecuteResp
 	return ret, nil
 }
 
+// Build contains selected state information from a fetched buildbucket Build.
+type Build struct {
+	Status   buildbucket_pb.Status
+	Response *steps.ExecuteResponse
+	// RawRequest is the unmarshalled Request from the build.
+	// RawRequest is not interpreted as a test_platform.Request to avoid
+	// compatibility issues arising from skylab tool's test_platform API
+	// version.
+	RawRequest *structpb.Struct
+}
+
+// GetBuild gets a buildbucket build by ID.
+func (c *Client) GetBuild(ctx context.Context, ID int64) (*Build, error) {
+	req := &buildbucket_pb.GetBuildRequest{
+		Id:     ID,
+		Fields: &field_mask.FieldMask{Paths: getBuildFields},
+	}
+	build, err := c.client.GetBuild(ctx, req)
+	if err != nil {
+		return nil, errors.Annotate(err, "get build").Err()
+	}
+	return extractBuildData(build)
+}
+
+// SearchBuildsByTags searches for all buildbucket builds with the given tags.
+//
+// SearchBuildsByTags returns at most limit results.
+func (c *Client) SearchBuildsByTags(ctx context.Context, limit int, tags ...string) ([]*Build, error) {
+	if len(tags) == 0 {
+		return nil, errors.Reason("must provide at least one tag").Err()
+	}
+	tps, err := splitTagPairs(tags)
+	if err != nil {
+		return nil, errors.Annotate(err, "search builds by tags").Err()
+	}
+	rawBuilds, err := c.searchRawBuilds(ctx, limit, &buildbucket_pb.BuildPredicate{Tags: tps})
+	if err != nil {
+		return nil, errors.Annotate(err, "search builds by tags").Err()
+	}
+	return extractBuildDataAll(rawBuilds)
+}
+
 // BuildURL constructs the URL to a build with the given ID.
 func (c *Client) BuildURL(buildID int64) string {
 	return fmt.Sprintf("https://ci.chromium.org/p/%s/builders/%s/%s/b%d",
 		c.env.BuildbucketProject, c.env.BuildbucketBucket, c.env.BuildbucketBuilder, buildID)
 }
 
-func splitTagPairs(tags []string) ([]*buildbucket_pb.StringPair, error) {
-	ret := make([]*buildbucket_pb.StringPair, 0, len(tags))
-	for _, t := range tags {
-		p := strings.Split(t, ":")
-		if len(p) != 2 {
-			return nil, errors.Reason("malformed tag %s", t).Err()
+func (c *Client) searchRawBuilds(ctx context.Context, limit int, predicate *buildbucket_pb.BuildPredicate) ([]*buildbucket_pb.Build, error) {
+	rawBuilds := make([]*buildbucket_pb.Build, 0, limit)
+	pageToken := ""
+	// Each page request sets the same PageSize (limit) the SearchBuilds() rpc
+	// requires the PageSize to be unchanged across page requests.
+	// We could obtain more than limit results in this process, so only the
+	// first limit results are returned at the end of this function.
+	for {
+		req := buildbucket_pb.SearchBuildsRequest{
+			Predicate: predicate,
+			Fields:    &field_mask.FieldMask{Paths: getSearchBuildsFields()},
+			PageToken: pageToken,
+			PageSize:  clipToInt32(limit),
 		}
-		ret = append(ret, &buildbucket_pb.StringPair{
-			Key:   strings.Trim(p[0], " "),
-			Value: strings.Trim(p[1], " "),
-		})
+		resp, err := c.client.SearchBuilds(ctx, &req)
+		if err != nil {
+			return nil, errors.Annotate(err, "search raw builds").Err()
+		}
+		rawBuilds = append(rawBuilds, resp.GetBuilds()...)
+		pageToken := resp.GetNextPageToken()
+		if pageToken == "" || len(rawBuilds) >= limit {
+			break
+		}
 	}
-	return ret, nil
+	return rawBuilds[:limit], nil
 }
 
-// getBuildFields is the list of buildbucket fields that are needed.
-var getBuildFields = []string{
-	// Build details are parsed from the build's output properties.
-	"output.properties",
-	// Build status is used to determine whether the build is complete.
-	"status",
+func clipToInt32(n int) int32 {
+	if n <= math.MaxInt32 {
+		return int32(n)
+	}
+	return math.MaxInt32
 }
 
 func (c *Client) waitForBuild(ctx context.Context, buildID int64) (*buildbucket_pb.Build, error) {
@@ -185,25 +239,102 @@ func (c *Client) waitForBuild(ctx context.Context, buildID int64) (*buildbucket_
 	}
 }
 
+func splitTagPairs(tags []string) ([]*buildbucket_pb.StringPair, error) {
+	ret := make([]*buildbucket_pb.StringPair, 0, len(tags))
+	for _, t := range tags {
+		p := strings.Split(t, ":")
+		if len(p) != 2 {
+			return nil, errors.Reason("malformed tag %s", t).Err()
+		}
+		ret = append(ret, &buildbucket_pb.StringPair{
+			Key:   strings.Trim(p[0], " "),
+			Value: strings.Trim(p[1], " "),
+		})
+	}
+	return ret, nil
+}
+
+// getBuildFields is the list of buildbucket fields that are needed.
+var getBuildFields = []string{
+	// Build details are parsed from the build's output properties.
+	"output.properties",
+	// Build status is used to determine whether the build is complete.
+	"status",
+}
+
+func getSearchBuildsFields() []string {
+	fs := make([]string, 0, len(getBuildFields))
+	for _, f := range getBuildFields {
+		fs = append(fs, fmt.Sprintf("builds.*.%s", f))
+	}
+	return fs
+}
+
+func extractBuildData(from *buildbucket_pb.Build) (*Build, error) {
+	op := from.GetOutput().GetProperties().GetFields()
+	if op == nil {
+		return nil, errors.Reason("build %s has no output properties", from).Err()
+	}
+	rawResponse, ok := op["response"]
+	if !ok {
+		return nil, errors.Reason("output properties for build %s has no response", from).Err()
+	}
+
+	reqValue, ok := op["request"]
+	if !ok {
+		return nil, errors.Reason("output properties for build %s has no request", from).Err()
+	}
+	var rawRequest *structpb.Struct
+	switch r := reqValue.Kind.(type) {
+	case *structpb.Value_StructValue:
+		rawRequest = r.StructValue
+	default:
+		return nil, errors.Reason("output properties have malformed request %#v", reqValue).Err()
+	}
+
+	response, err := structPBToExecuteResponse(rawResponse)
+	if err != nil {
+		return nil, errors.Annotate(err, "extractBuildData").Err()
+	}
+	return &Build{
+		Status:     from.GetStatus(),
+		Response:   response,
+		RawRequest: rawRequest,
+	}, nil
+}
+
+func extractBuildDataAll(from []*buildbucket_pb.Build) ([]*Build, error) {
+	builds := make([]*Build, len(from))
+	for i, rb := range from {
+		b, err := extractBuildData(rb)
+		if err != nil {
+			return nil, errors.Annotate(err, "search builds by tags").Err()
+		}
+		builds[i] = b
+	}
+	return builds, nil
+}
+
+func structPBToExecuteResponse(from *structpb.Value) (*steps.ExecuteResponse, error) {
+	m := jsonpb.Marshaler{}
+	json, err := m.MarshalToString(from)
+	if err != nil {
+		return nil, errors.Annotate(err, "structPBToExecuteResponse").Err()
+	}
+	response := &steps.ExecuteResponse{}
+	if err := jsonpb.UnmarshalString(json, response); err != nil {
+		return nil, errors.Annotate(err, "structPBToExecuteResponse").Err()
+	}
+	return response, nil
+}
+
 func extractResponse(build *buildbucket_pb.Build) (*steps.ExecuteResponse, error) {
 	properties := build.GetOutput().GetProperties()
 	responseStruct, ok := properties.GetFields()["response"]
 	if !ok {
 		return nil, errors.Reason("build properties contained no `response` field").Err()
 	}
-
-	// Do a JSON roundtrip to turn response (a structpb) into response proto.
-	m := jsonpb.Marshaler{}
-	json, err := m.MarshalToString(responseStruct)
-	if err != nil {
-		return nil, err
-	}
-	response := &steps.ExecuteResponse{}
-	if err := jsonpb.UnmarshalString(json, response); err != nil {
-		return nil, err
-	}
-
-	return response, nil
+	return structPBToExecuteResponse(responseStruct)
 }
 
 func isFinal(status buildbucket_pb.Status) bool {
