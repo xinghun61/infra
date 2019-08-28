@@ -192,7 +192,14 @@ func (c *backfillRequestRun) confirmMultileBuildsOK(a subcommands.Application, b
 }
 
 func (c *backfillRequestRun) scheduleBackfillBuild(ctx context.Context, original *bb.Build) (int64, error) {
-	return c.bbClient.ScheduleBuildRaw(ctx, original.RawRequest, backfillTags(original.Tags, original.ID))
+	if original.RawRequest == nil {
+		return -1, errors.Reason("schedule backfill: build %d has no request to clone", original.ID).Err()
+	}
+	ID, err := c.bbClient.ScheduleBuildRaw(ctx, original.RawRequest, backfillTags(original.Tags, original.ID))
+	if err != nil {
+		return -1, errors.Annotate(err, "schedule backfill").Err()
+	}
+	return ID, nil
 }
 
 func backfillTags(tags []string, originalID int64) []string {
