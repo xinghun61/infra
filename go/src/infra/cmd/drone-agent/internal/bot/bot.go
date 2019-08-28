@@ -55,13 +55,10 @@ func (b realBot) Drain() error {
 // Start starts a Swarming bot.  The returned Bot object can be used
 // to interact with the bot.
 func Start(c Config) (Bot, error) {
-	cmd := exec.Command("curl", "-sSLf", "-o", c.botZipPath(), c.botCodeURL())
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	if err := cmd.Run(); err != nil {
+	if err := downloadBotCode(c); err != nil {
 		return nil, errors.Annotate(err, "start bot with %+v", c).Err()
 	}
-	cmd = exec.Command("python2", c.botZipPath(), "start_bot")
+	cmd := exec.Command("python2", c.botZipPath(), "start_bot")
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	cmd.Env = append(c.env(), os.Environ()...)
@@ -72,6 +69,16 @@ func Start(c Config) (Bot, error) {
 		config: c,
 		cmd:    cmd,
 	}, nil
+}
+
+func downloadBotCode(c Config) error {
+	cmd := exec.Command("curl", "-sSLf", "-o", c.botZipPath(), c.botCodeURL())
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	if err := cmd.Run(); err != nil {
+		return errors.Annotate(err, "download bot code for %+v", c).Err()
+	}
+	return nil
 }
 
 // Config is the configuration needed for starting a generic Swarming bot.
