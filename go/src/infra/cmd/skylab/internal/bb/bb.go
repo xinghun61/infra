@@ -158,10 +158,15 @@ type Build struct {
 	// Response may be nil if the output properties of the build do not contain
 	// a response.
 	Response *steps.ExecuteResponse
+
 	// RawRequest is the unmarshalled Request from the build.
+	//
 	// RawRequest is not interpreted as a test_platform.Request to avoid
 	// compatibility issues arising from skylab tool's test_platform API
 	// version.
+	//
+	// RawRequest may be nil if the output properties of the build do not
+	// contain a request field.
 	RawRequest *structpb.Struct
 }
 
@@ -283,16 +288,14 @@ func extractBuildData(from *buildbucket_pb.Build) (*Build, error) {
 		}
 	}
 
-	reqValue, ok := op["request"]
-	if !ok {
-		return nil, errors.Reason("output properties for build %s has no request", from).Err()
-	}
 	var rawRequest *structpb.Struct
-	switch r := reqValue.Kind.(type) {
-	case *structpb.Value_StructValue:
-		rawRequest = r.StructValue
-	default:
-		return nil, errors.Reason("output properties have malformed request %#v", reqValue).Err()
+	if reqValue, ok := op["request"]; ok {
+		switch r := reqValue.Kind.(type) {
+		case *structpb.Value_StructValue:
+			rawRequest = r.StructValue
+		default:
+			return nil, errors.Reason("output properties have malformed request %#v", reqValue).Err()
+		}
 	}
 
 	tags := make([]string, 0, len(from.GetTags()))
