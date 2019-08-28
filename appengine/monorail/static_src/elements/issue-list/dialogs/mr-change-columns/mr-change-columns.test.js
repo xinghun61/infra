@@ -12,6 +12,9 @@ describe('mr-change-columns', () => {
   beforeEach(() => {
     element = document.createElement('mr-change-columns');
     document.body.appendChild(element);
+
+    element._page = sinon.stub();
+    sinon.stub(element, '_currentPage').get(() => '/test');
   });
 
   afterEach(() => {
@@ -39,15 +42,34 @@ describe('mr-change-columns', () => {
     await element.updateComplete;
 
     const input = element.shadowRoot.querySelector('#columnsInput');
-
     input.value = 'ID Summary Owner';
-
-    element._page = sinon.stub();
-    sinon.stub(element, '_currentPage').get(() => '/test');
 
     element.save();
 
     sinon.assert.calledWith(element._page,
         '/test?colspec=ID%2BSummary%2BOwner');
+  });
+
+  it('submitting form updates colspec', async () => {
+    element.columns = ['ID', 'Summary'];
+    element.queryParams = {};
+
+    await element.updateComplete;
+
+    const input = element.shadowRoot.querySelector('#columnsInput');
+    input.value = 'ID Summary Component';
+
+    // Note: HTMLFormElement.submit() does not fire event listeners.
+    const submitEvent = new Event('submit');
+    sinon.spy(submitEvent, 'preventDefault');
+    const form = element.shadowRoot.querySelector('form');
+    form.dispatchEvent(submitEvent);
+
+    // Preventing default is important to prevent native browser form submit
+    // from causing an additional navigation.
+    sinon.assert.calledOnce(submitEvent.preventDefault);
+
+    sinon.assert.calledWith(element._page,
+        '/test?colspec=ID%2BSummary%2BComponent');
   });
 });

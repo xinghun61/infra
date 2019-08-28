@@ -42,7 +42,7 @@ export class MrChangeColumns extends LitElement {
     return html`
       <chops-dialog closeOnOutsideClick>
         <h3 class="medium-heading">Change list columns</h3>
-        <form id="changeColumns">
+        <form id="changeColumns" @submit=${this._save}>
           <div class="input-grid">
             <label for="columnsInput">Columns: </label>
             <input
@@ -59,7 +59,7 @@ export class MrChangeColumns extends LitElement {
               Discard
             </chops-button>
             <chops-button
-              @click=${this.save}
+              @click=${this._save}
               class="emphasized"
             >
               Update columns
@@ -117,6 +117,11 @@ export class MrChangeColumns extends LitElement {
     this._page(`${this._currentPage}?${qs.stringify(params)}`);
 
     this.close();
+  }
+
+  _save(e) {
+    e.preventDefault();
+    this.save();
   }
 
   open() {
