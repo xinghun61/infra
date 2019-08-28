@@ -87,9 +87,19 @@ func (c *Client) ScheduleBuild(ctx context.Context, request *test_platform.Reque
 		return -1, err
 	}
 
+	return c.ScheduleBuildRaw(ctx, reqStruct, tags)
+}
+
+// ScheduleBuildRaw schedules a new cros_test_platform build.
+//
+// The request argument is a structpb Struct for a cros_test_platform.Request as
+// expected by the buildbucket API. ScheduledBuildRaw is useful in cases where
+// there is a need to avoid parsing a request Struct obtained from another
+// buildbucket build.
+func (c *Client) ScheduleBuildRaw(ctx context.Context, request *structpb.Struct, tags []string) (int64, error) {
 	recipeStruct := &structpb.Struct{}
 	recipeStruct.Fields = map[string]*structpb.Value{
-		"request": {Kind: &structpb.Value_StructValue{StructValue: reqStruct}},
+		"request": {Kind: &structpb.Value_StructValue{StructValue: request}},
 	}
 	tagPairs, err := splitTagPairs(tags)
 	if err != nil {
