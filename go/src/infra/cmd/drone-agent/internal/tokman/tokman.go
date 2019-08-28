@@ -16,6 +16,8 @@ import (
 	"go.chromium.org/luci/auth"
 	"go.chromium.org/luci/common/errors"
 	"golang.org/x/oauth2"
+
+	"infra/cmd/drone-agent/internal/draining"
 )
 
 const (
@@ -41,11 +43,11 @@ func Make(a *auth.Authenticator, path string, lifetime time.Duration) (Renewer, 
 	return r, nil
 }
 
-// KeepNew keeps the access token valid until the context is canceled.
-// This function blocks until canceled.
+// KeepNew keeps the access token valid until the context is canceled or drained.
+// This function blocks until canceled or drained.
 func (r Renewer) KeepNew(ctx context.Context) {
 	d := newDelayer()
-	for ctx.Err() == nil {
+	for ctx.Err() == nil && !draining.IsDraining(ctx) {
 		tok, err := r.RenewOnce(defaultLifetime)
 		if err != nil {
 			log.Printf("Error: %s", err)
@@ -61,6 +63,7 @@ func (r Renewer) KeepNew(ctx context.Context) {
 func sleep(ctx context.Context, d time.Duration) {
 	select {
 	case <-ctx.Done():
+	case <-draining.C(ctx):
 	case <-time.After(d):
 	}
 }
