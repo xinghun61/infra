@@ -27,6 +27,7 @@ import (
 	"go.chromium.org/luci/common/logging"
 	"go.chromium.org/luci/common/logging/gologger"
 	"go.chromium.org/luci/common/tsmon"
+	"go.chromium.org/luci/common/tsmon/target"
 
 	"infra/libs/infraenv"
 	"infra/tools/cloudtail"
@@ -86,7 +87,7 @@ func (opts *commonOptions) registerFlags(f *flag.FlagSet, defaultAuthOpts auth.O
 	f.StringVar(&opts.logID, "log-id", "default", "ID of the log")
 
 	opts.tsmonFlags = tsmon.NewFlags()
-	opts.tsmonFlags.Target.TargetType = "task"
+	opts.tsmonFlags.Target.TargetType = target.TaskType
 	opts.tsmonFlags.Target.TaskServiceName = "cloudtail"
 	if defaultAutoFlush {
 		opts.tsmonFlags.Flush = "auto"
