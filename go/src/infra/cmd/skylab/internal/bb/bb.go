@@ -155,6 +155,8 @@ type Build struct {
 	// Tags strings of the form "key:value"
 	Tags []string
 
+	// Response may be nil if the output properties of the build do not contain
+	// a response.
 	Response *steps.ExecuteResponse
 	// RawRequest is the unmarshalled Request from the build.
 	// RawRequest is not interpreted as a test_platform.Request to avoid
@@ -272,9 +274,13 @@ func extractBuildData(from *buildbucket_pb.Build) (*Build, error) {
 	if op == nil {
 		return nil, errors.Reason("build %s has no output properties", from).Err()
 	}
-	rawResponse, ok := op["response"]
-	if !ok {
-		return nil, errors.Reason("output properties for build %s has no response", from).Err()
+
+	var response *steps.ExecuteResponse
+	if rawResponse, ok := op["response"]; ok {
+		var err error
+		if response, err = structPBToExecuteResponse(rawResponse); err != nil {
+			return nil, errors.Annotate(err, "extractBuildData").Err()
+		}
 	}
 
 	reqValue, ok := op["request"]
@@ -294,10 +300,6 @@ func extractBuildData(from *buildbucket_pb.Build) (*Build, error) {
 		tags = append(tags, fmt.Sprintf("%s:%s", t.Key, t.Value))
 	}
 
-	response, err := structPBToExecuteResponse(rawResponse)
-	if err != nil {
-		return nil, errors.Annotate(err, "extractBuildData").Err()
-	}
 	return &Build{
 		ID:     from.Id,
 		Status: from.GetStatus(),
