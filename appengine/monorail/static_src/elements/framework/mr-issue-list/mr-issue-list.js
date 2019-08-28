@@ -16,8 +16,9 @@ import {issueRefToUrl, issueToIssueRef,
   issueRefToString} from 'shared/converters.js';
 import {isTextInput} from 'shared/dom-helpers.js';
 import {urlWithNewParams} from 'shared/helpers.js';
-import {stringValuesForIssueField, DEFAULT_ISSUE_FIELD_LIST,
-  EMPTY_FIELD_VALUE, COLSPEC_DELIMITER_REGEX} from 'shared/issue-fields.js';
+import {stringValuesForIssueField, EMPTY_FIELD_VALUE,
+  COLSPEC_DELIMITER_REGEX} from 'shared/issue-fields.js';
+import './mr-show-columns-dropdown.js';
 
 const COLUMN_DISPLAY_NAMES = {
   'summary': 'Summary + Labels',
@@ -91,7 +92,7 @@ export class MrIssueList extends connectStore(LitElement) {
       th.first-column {
         padding: 3px 8px;
       }
-      th > mr-dropdown {
+      th > mr-dropdown, th > mr-show-columns-dropdown {
         font-weight: normal;
         color: var(--chops-link-color);
         --mr-dropdown-icon-color: var(--chops-link-color);
@@ -117,7 +118,7 @@ export class MrIssueList extends connectStore(LitElement) {
          * the table. */
         width: 100%;
       }
-      mr-dropdown.show-columns {
+      mr-show-columns-dropdown {
         --mr-dropdown-menu-font-size: var(--chops-main-font-size);
         /* Because we're using a sticky header, we need to make sure the
          * dropdown cannot be taller than the screen. */
@@ -155,13 +156,11 @@ export class MrIssueList extends connectStore(LitElement) {
           </th>
           ${this.columns.map((column, i) => this._renderHeader(column, i))}
           <th style="z-index: ${this.highestZIndex};">
-            <mr-dropdown
-              class="show-columns"
-              icon="more_horiz"
+            <mr-show-columns-dropdown
               title="Show columns"
               menuAlignment="right"
-              .items=${this.issueOptions}
-            ></mr-dropdown>
+              .columns=${this.columns}
+            ></mr-show-columns-dropdown>
           </th>
         </tr>
         ${this.issues.map((issue, i) => this._renderRow(issue, i))}
@@ -286,11 +285,6 @@ export class MrIssueList extends connectStore(LitElement) {
        */
       columns: {type: Array},
       /**
-       * Array of built in fields that are available outside of project
-       * configuration.
-       */
-      defaultIssueFields: {type: Array},
-      /**
        * List of issues to display.
        */
       issues: {type: Array},
@@ -341,13 +335,9 @@ export class MrIssueList extends connectStore(LitElement) {
 
     this.columns = ['ID', 'Summary'];
 
-    // TODO(zhangtiff): Make this use more fields for hotlists.
-    this.defaultIssueFields = DEFAULT_ISSUE_FIELD_LIST;
-
     this._boundRunNavigationHotKeys = this._runNavigationHotKeys.bind(this);
 
-    this._fieldDefs = [];
-    this._labelPrefixFields = [];
+
     this._fieldDefMap = new Map();
     this._labelPrefixSet = new Set();
 
@@ -360,11 +350,6 @@ export class MrIssueList extends connectStore(LitElement) {
   };
 
   stateChanged(state) {
-    // The keys in the Set and Map objects for these values don't preserve
-    // casing, so we want the original field lists as well.
-    this._fieldDefs = project.fieldDefs(state) || [];
-    this._labelPrefixFields = project.labelPrefixFields(state) || [];
-
     this._fieldDefMap = project.fieldDefMap(state);
     this._labelPrefixSet = project.labelPrefixSet(state);
 
@@ -393,50 +378,6 @@ export class MrIssueList extends connectStore(LitElement) {
       this._selectedIssues = Array(this.issues.length).fill(false);
     }
     super.update(changedProperties);
-  }
-
-  /**
-   * Compute all columns available for a given issue list.
-   */
-  get issueOptions() {
-    const selectedOptions = new Set(
-        this.columns.map((col) => col.toLowerCase()));
-
-    const availableFields = new Set();
-
-    this.defaultIssueFields.forEach((field) => this._addAvailableField(
-        availableFields, field, selectedOptions));
-
-    this._fieldDefs.forEach((fd) => {
-      const field = fd.fieldRef.fieldName;
-      this._addAvailableField(
-          availableFields, field, selectedOptions);
-    });
-
-    this._labelPrefixFields.forEach((field) => this._addAvailableField(
-        availableFields, field, selectedOptions));
-
-    const sortedFields = [...availableFields];
-    sortedFields.sort();
-
-    return [
-      ...this.columns.map((field, i) => ({
-        icon: 'check',
-        text: field,
-        handler: () => this.removeColumn(i),
-      })),
-      ...sortedFields.map((field) => ({
-        icon: '',
-        text: field,
-        handler: () => this.addColumn(field),
-      })),
-    ];
-  }
-
-  _addAvailableField(availableFields, field, selectedOptions) {
-    if (!selectedOptions.has(field.toLowerCase())) {
-      availableFields.add(field);
-    }
   }
 
   /**
