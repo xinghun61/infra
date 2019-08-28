@@ -187,6 +187,18 @@ describe('mr-issue-list', () => {
         '/p/chromium/issues/list?sort=-summary');
   });
 
+  it('updateSortSpec navigates to first page when on later page', async () => {
+    element.columns = ['ID', 'Summary'];
+    element.queryParams = {start: '100', q: 'owner:me'};
+
+    await element.updateComplete;
+
+    element.updateSortSpec('Summary', true);
+
+    sinon.assert.calledWith(element._page,
+        '/p/chromium/issues/list?q=owner%3Ame&sort=-summary');
+  });
+
   it('updateSortSpec prepends new option to existing sort', async () => {
     element.columns = ['ID', 'Summary', 'Owner'];
     element.queryParams = {sort: '-summary+owner'};

@@ -2,6 +2,9 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+import qs from 'qs';
+
+
 // With lists a and b, get the elements that are in a but not in b.
 // result = a - b
 export function arrayDifference(listA, listB, equals) {
@@ -58,6 +61,28 @@ export function immutableSplice(arr, index, count, ...addedItems) {
   if (!arr) return '';
 
   return [...arr.slice(0, index), ...addedItems, ...arr.slice(index + count)];
+}
+
+/**
+ * Computes a new URL for a page based on an exiting path and set of query
+ * params.
+ *
+ * @param {String} baseUrl the base URL without query params.
+ * @param {Object} oldParams original query params before changes.
+ * @param {Object} newParams query parameters to override existing ones.
+ * @param {Array} deletedParams list of keys to be cleared.
+ * @return {String} the new URL with the updated params.
+ */
+export function urlWithNewParams(baseUrl = '',
+    oldParams = {}, newParams = {}, deletedParams = []) {
+  const params = {...oldParams, ...newParams};
+  deletedParams.forEach((name) => {
+    delete params[name];
+  });
+
+  const queryString = qs.stringify(params);
+
+  return `${baseUrl}${queryString ? '?' : ''}${queryString}`;
 }
 
 /**

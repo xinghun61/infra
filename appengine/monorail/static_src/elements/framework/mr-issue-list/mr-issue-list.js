@@ -3,7 +3,7 @@
 // found in the LICENSE file.
 
 import {LitElement, html, css} from 'lit-element';
-import qs from 'qs';
+
 import page from 'page';
 import {connectStore, store} from 'reducers/base.js';
 import * as project from 'reducers/project.js';
@@ -14,7 +14,8 @@ import 'elements/framework/mr-dropdown/mr-dropdown.js';
 import 'elements/framework/mr-star-button/mr-star-button.js';
 import {issueRefToUrl, issueToIssueRef,
   issueRefToString} from 'shared/converters.js';
-import {isTextInput} from 'shared/dom-helpers';
+import {isTextInput} from 'shared/dom-helpers.js';
+import {urlWithNewParams} from 'shared/helpers.js';
 import {stringValuesForIssueField, DEFAULT_ISSUE_FIELD_LIST,
   EMPTY_FIELD_VALUE, COLSPEC_DELIMITER_REGEX} from 'shared/issue-fields.js';
 
@@ -470,7 +471,7 @@ export class MrIssueList extends connectStore(LitElement) {
 
     newSpec.unshift(`${descending ? '-' : ''}${column}`);
 
-    this._updateQueryParams({sort: newSpec.join(' ')});
+    this._updateQueryParams({sort: newSpec.join(' ')}, ['start']);
   }
 
   /**
@@ -509,10 +510,12 @@ export class MrIssueList extends connectStore(LitElement) {
    *
    * @param {Object} newParams keys and values of the queryParams
    * Object to be updated.
+   * @param {Array} deletedParams keys to be cleared from queryParams.
    */
-  _updateQueryParams(newParams) {
-    const params = {...this.queryParams, ...newParams};
-    this._page(`${this._baseUrl()}?${qs.stringify(params)}`);
+  _updateQueryParams(newParams = {}, deletedParams = []) {
+    const url = urlWithNewParams(this._baseUrl(), this.queryParams, newParams,
+        deletedParams);
+    this._page(url);
   }
 
   /**

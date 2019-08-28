@@ -4,7 +4,7 @@
 
 import {assert} from 'chai';
 import {arrayDifference, hasPrefix, objectToMap, equalsIgnoreCase,
-  immutableSplice, userIsMember} from './helpers.js';
+  immutableSplice, userIsMember, urlWithNewParams} from './helpers.js';
 
 
 describe('arrayDifference', () => {
@@ -119,6 +119,55 @@ describe('immutableSplice', () => {
   });
 });
 
+describe('urlWithNewParams', () => {
+  it('empty', () => {
+    assert.equal(urlWithNewParams(), '');
+    assert.equal(urlWithNewParams(''), '');
+    assert.equal(urlWithNewParams('', {}), '');
+    assert.equal(urlWithNewParams('', {}, {}), '');
+    assert.equal(urlWithNewParams('', {}, {}, []), '');
+  });
+
+  it('preserves existing URL without changes', () => {
+    assert.equal(urlWithNewParams('/p/chromium/issues/list'),
+        '/p/chromium/issues/list');
+    assert.equal(urlWithNewParams('/p/chromium/issues/list', {q: 'owner:me'}),
+        '/p/chromium/issues/list?q=owner%3Ame');
+    assert.equal(
+        urlWithNewParams('/p/chromium/issues/list', {q: 'owner:me', can: '1'}),
+        '/p/chromium/issues/list?q=owner%3Ame&can=1');
+  });
+
+  it('adds new params', () => {
+    assert.equal(
+        urlWithNewParams('/p/chromium/issues/list', {}, {q: 'owner:me'}),
+        '/p/chromium/issues/list?q=owner%3Ame');
+    assert.equal(
+        urlWithNewParams('/p/chromium/issues/list',
+            {can: '1'}, {q: 'owner:me'}),
+        '/p/chromium/issues/list?can=1&q=owner%3Ame');
+
+    // Override existing params.
+    assert.equal(
+        urlWithNewParams('/p/chromium/issues/list',
+            {can: '1', q: 'owner:me'}, {q: 'test'}),
+        '/p/chromium/issues/list?can=1&q=test');
+  });
+
+  it('clears existing params', () => {
+    assert.equal(
+        urlWithNewParams('/p/chromium/issues/list', {q: 'owner:me'}, {}, ['q']),
+        '/p/chromium/issues/list');
+    assert.equal(
+        urlWithNewParams('/p/chromium/issues/list',
+            {can: '1'}, {q: 'owner:me'}, ['can']),
+        '/p/chromium/issues/list?q=owner%3Ame');
+    assert.equal(
+        urlWithNewParams('/p/chromium/issues/list', {q: 'owner:me'}, {can: '2'},
+            ['q', 'can', 'fakeparam']),
+        '/p/chromium/issues/list');
+  });
+});
 
 describe('userIsMember', () => {
   it('false when no user', () => {

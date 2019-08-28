@@ -10,6 +10,7 @@ import * as issue from 'reducers/issue.js';
 import {prpcClient} from 'prpc-client-instance.js';
 import {COLSPEC_DELIMITER_REGEX, SITEWIDE_DEFAULT_COLUMNS}
   from 'shared/issue-fields.js';
+import {urlWithNewParams} from 'shared/helpers.js';
 import 'elements/framework/mr-dropdown/mr-dropdown.js';
 import 'elements/framework/mr-issue-list/mr-issue-list.js';
 // eslint-disable-next-line max-len
@@ -341,11 +342,9 @@ export class MrListPage extends connectStore(LitElement) {
    * @return {string} the new URL.
    */
   _urlWithNewParams(newParams) {
-    // TODO(zhangtiff): Create more general helpers for this case.
-    const params = {...this.queryParams, ...newParams};
     // TODO(zhangtiff): replace list_new with list when switching over.
     const baseUrl = `/p/${this.projectName}/issues/list_new`;
-    return `${baseUrl}?${qs.stringify(params)}`;
+    return urlWithNewParams(baseUrl, this.queryParams, newParams);
   }
 
   noneSelectedAlert(action) {
