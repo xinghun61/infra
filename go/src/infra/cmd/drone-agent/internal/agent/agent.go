@@ -273,7 +273,7 @@ func (a *Agent) wrapState(s *state.State) stateInterface {
 
 func (a *Agent) startBot(c bot.Config) (bot.Bot, error) {
 	if a.startBotFunc == nil {
-		return bot.Start(c)
+		return bot.NewStarter().Start(c)
 	}
 	return a.startBotFunc(c)
 }

@@ -54,9 +54,17 @@ func (b realBot) Drain() error {
 	return nil
 }
 
+// Starter has a Start method for starting Swarming bots.
+type Starter struct{}
+
+// NewStarter returns a new Starter.
+func NewStarter() Starter {
+	return Starter{}
+}
+
 // Start starts a Swarming bot.  The returned Bot object can be used
 // to interact with the bot.
-func Start(c Config) (Bot, error) {
+func (s Starter) Start(c Config) (Bot, error) {
 	if err := downloadBotCode(c); err != nil {
 		return nil, errors.Annotate(err, "start bot with %+v", c).Err()
 	}
