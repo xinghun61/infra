@@ -34,6 +34,9 @@ type Args struct {
 	// autotest.dynamic_suite.reimage_and_run. This object must be
 	// json-encodable.
 	ReimageAndRunArgs interface{}
+	// If specified, ignore ReimageAndRunArgs and just run this named
+	// autotest suite.
+	LegacySuite string
 }
 
 // NewRequest creates a new swarming request for the given entry point
@@ -42,6 +45,14 @@ func NewRequest(args Args) (*swarming.SwarmingRpcsNewTaskRequest, error) {
 	encodedArgs, err := json.Marshal(args.ReimageAndRunArgs)
 	if err != nil {
 		return nil, errors.Annotate(err, "new dynamicsuite request").Err()
+	}
+	s := suiteName
+	suiteArgs := map[string]interface{}{
+		argsKey: string(encodedArgs),
+	}
+	if args.LegacySuite != "" {
+		suiteArgs = map[string]interface{}{}
+		s = args.LegacySuite
 	}
 
 	req, err := proxy.NewRunSuite(
@@ -54,10 +65,8 @@ func NewRequest(args Args) (*swarming.SwarmingRpcsNewTaskRequest, error) {
 			Pool:            args.Pool,
 			AfeHost:         args.AfeHost,
 			Timeout:         args.Timeout,
-			SuiteName:       suiteName,
-			SuiteArgs: map[string]interface{}{
-				argsKey: string(encodedArgs),
-			},
+			SuiteName:       s,
+			SuiteArgs:       suiteArgs,
 		})
 	if err != nil {
 		return nil, errors.Annotate(err, "new dynamicsuite request").Err()

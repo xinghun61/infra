@@ -145,6 +145,7 @@ func (r *Runner) proxyRequest() (*swarming_api.SwarmingRpcsNewTaskRequest, error
 		Pool:              pool,
 		AfeHost:           afeHost,
 		ReimageAndRunArgs: rArgs,
+		LegacySuite:       r.requestParams.GetLegacy().GetAutotestSuite(),
 	}
 
 	req, err := dynamicsuite.NewRequest(dsArgs)

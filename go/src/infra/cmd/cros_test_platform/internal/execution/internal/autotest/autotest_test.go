@@ -135,6 +135,48 @@ func TestLaunch(t *testing.T) {
 	})
 }
 
+func TestLaunchLegacy(t *testing.T) {
+	Convey("Given two enumerated test", t, func() {
+		ctx := context.Background()
+
+		swarming := NewFakeSwarming()
+		// Pretend to be immediately completed, so that LaunchAndWait returns
+		// immediately after launching.
+		swarming.SetResult(&swarming_api.SwarmingRpcsTaskResult{State: "COMPLETED"})
+
+		var invs []*steps.EnumerationResponse_AutotestInvocation
+		invs = append(invs, invocation("test1"), invocation("test2"))
+
+		Convey("when running a autotest execution with a legacy suite", func() {
+			p := basicParams()
+			p.Legacy = &test_platform.Request_Params_Legacy{
+				AutotestSuite: "legacy_suite",
+			}
+			run := autotest.New(invs, p, basicConfig())
+
+			run.LaunchAndWait(ctx, swarming, nil)
+			Convey("then a single run_suite proxy job is created, with correct arguments.", func() {
+				So(swarming.createCalls, ShouldHaveLength, 1)
+				So(swarming.createCalls[0].TaskSlices, ShouldHaveLength, 1)
+				cmd := swarming.createCalls[0].TaskSlices[0].Properties.Command
+				expected := []string{
+					"/usr/local/autotest/site_utils/run_suite.py",
+					"--json_dump_postfix",
+					"--build", "foo-build",
+					"--board", "foo-build-target",
+					"--model", "foo-model",
+					"--suite_name", "legacy_suite",
+					"--pool", "cq",
+					"-w", "foo-afe-host",
+					"--timeout_mins", "60",
+					"--suite_args_json", "{}",
+				}
+				So(cmd, ShouldResemble, expected)
+			})
+		})
+	})
+}
+
 func TestLaunchWithDisplayName(t *testing.T) {
 	Convey("Given one enumerated test", t, func() {
 		ctx := context.Background()

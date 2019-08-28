@@ -43,3 +43,36 @@ func TestRequest(t *testing.T) {
 		})
 	})
 }
+
+func TestLegacyRequest(t *testing.T) {
+	Convey("Given a set of arguments with a legacy suite", t, func() {
+		args := dynamicsuite.Args{
+			Board: "board",
+			Build: "build",
+			Model: "model",
+			Pool:  "pool",
+			ReimageAndRunArgs: map[string]interface{}{
+				"arg_1": 1,
+				"arg_2": []string{"v1", "v2"},
+			},
+			LegacySuite: "legacy_suite",
+		}
+		Convey("a new request has correct properties", func() {
+			req, err := dynamicsuite.NewRequest(args)
+			So(err, ShouldBeNil)
+			So(req, ShouldNotBeNil)
+			So(req.TaskSlices, ShouldHaveLength, 1)
+			expected := []string{
+				"/usr/local/autotest/site_utils/run_suite.py",
+				"--json_dump_postfix",
+				"--build", "build",
+				"--board", "board",
+				"--model", "model",
+				"--suite_name", "legacy_suite",
+				"--pool", "pool",
+				"--suite_args_json", "{}",
+			}
+			So(req.TaskSlices[0].Properties.Command, ShouldResemble, expected)
+		})
+	})
+}
