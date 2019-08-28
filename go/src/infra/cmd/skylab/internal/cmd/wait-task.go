@@ -18,7 +18,6 @@ import (
 
 	"go.chromium.org/chromiumos/infra/proto/go/test_platform"
 	"go.chromium.org/chromiumos/infra/proto/go/test_platform/skylab_tool"
-	"go.chromium.org/chromiumos/infra/proto/go/test_platform/steps"
 	"go.chromium.org/luci/auth/client/authcli"
 	swarming_api "go.chromium.org/luci/common/api/swarming/swarming/v1"
 	"go.chromium.org/luci/common/cli"
@@ -115,11 +114,11 @@ func (c *waitTaskRun) innerRunBuildbucket(a subcommands.Application, env subcomm
 		return nil, err
 	}
 
-	response, err := bClient.WaitForBuild(ctx, taskID)
+	build, err := bClient.WaitForBuild(ctx, taskID)
 	if err != nil {
 		return nil, err
 	}
-	return responseToTaskResult(bClient, taskID, response), nil
+	return responseToTaskResult(bClient, build), nil
 }
 
 func parseBBTaskID(arg string) (int64, error) {
@@ -133,7 +132,10 @@ func parseBBTaskID(arg string) (int64, error) {
 	return ID, nil
 }
 
-func responseToTaskResult(bClient *bb.Client, buildID int64, response *steps.ExecuteResponse) *skylab_tool.WaitTaskResult {
+func responseToTaskResult(bClient *bb.Client, build *bb.Build) *skylab_tool.WaitTaskResult {
+	response := build.Response
+	buildID := build.ID
+
 	u := bClient.BuildURL(buildID)
 	verdict := response.GetState().GetVerdict()
 	failure := verdict == test_platform.TaskState_VERDICT_FAILED

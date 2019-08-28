@@ -128,12 +128,8 @@ func (c *Client) ScheduleBuildRaw(ctx context.Context, request *structpb.Struct,
 //
 // WaitForBuild regularly logs output to stdout to pacify the logdog silence
 // checker.
-func (c *Client) WaitForBuild(ctx context.Context, ID int64) (*steps.ExecuteResponse, error) {
-	build, err := c.waitForBuild(ctx, ID)
-	if err != nil {
-		return nil, errors.Annotate(err, "wait for build %d", ID).Err()
-	}
-	return build.Response, nil
+func (c *Client) WaitForBuild(ctx context.Context, ID int64) (*Build, error) {
+	return c.waitForBuild(ctx, ID)
 }
 
 // Build contains selected state information from a fetched buildbucket Build.

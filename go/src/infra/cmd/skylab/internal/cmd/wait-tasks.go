@@ -215,10 +215,10 @@ func waitMultiBuildbucket(ctx context.Context, IDs stringset.Set, authFlags auth
 
 		for ID, parsedID := range parsedIDs {
 			go func(ID string, parsedID int64) {
-				response, err := client.WaitForBuild(ctx, parsedID)
+				build, err := client.WaitForBuild(ctx, parsedID)
 				var result *skylab_tool.WaitTaskResult
-				if response != nil {
-					result = responseToTaskResult(client, parsedID, response)
+				if build != nil {
+					result = responseToTaskResult(client, build)
 				}
 				item := waitItem{result: result, err: err, ID: ID}
 				select {
