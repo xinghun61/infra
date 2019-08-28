@@ -702,11 +702,8 @@ func (c *cookRun) butlerOutput(ctx context.Context) (output.Output, error) {
 }
 
 func (c *cookRun) newButler(ctx context.Context, out output.Output, env environ.Env) (*butler.Butler, error) {
-	prefix, _ := c.AnnotationURL.Path.Split()
 	cfg := butler.Config{
 		Output:       out,
-		Project:      c.AnnotationURL.Project,
-		Prefix:       prefix,
 		BufferLogs:   true,
 		MaxBufferAge: butler.DefaultMaxBufferAge,
 		GlobalTags:   c.globalTags(env),

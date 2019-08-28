@@ -105,11 +105,8 @@ func newOutput(ctx context.Context, o *Options, a *auth.Authenticator) (output.O
 }
 
 func newButler(ctx context.Context, o *Options, out output.Output) (*butler.Butler, error) {
-	prefix, _ := o.AnnotationStream.Path.Split()
 	c := butler.Config{
 		Output:     out,
-		Project:    o.AnnotationStream.Project,
-		Prefix:     prefix,
 		BufferLogs: true,
 	}
 	b, err := butler.New(ctx, c)
