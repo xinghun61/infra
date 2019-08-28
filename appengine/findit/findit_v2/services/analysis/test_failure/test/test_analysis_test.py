@@ -132,6 +132,33 @@ class TestAnalysisTest(wf_testcase.TestCase):
     }
     self.assertTrue(test_analysis.AnalyzeTestFailure(self.context, Build(), []))
 
+  @mock.patch.object(TestAnalysisAPI, 'RerunBasedAnalysis')
+  @mock.patch.object(TestAnalysisAPI, 'SaveFailureAnalysis', return_value=None)
+  @mock.patch.object(TestAnalysisAPI, 'SaveFailures')
+  @mock.patch.object(TestAnalysisAPI, 'UpdateFailuresWithFirstFailureInfo')
+  @mock.patch.object(ChromeOSProjectAPI, 'GetTestFailures', return_value={})
+  @mock.patch.object(TestAnalysisAPI,
+                     'GetFirstFailuresInCurrentBuildWithoutGroup')
+  @mock.patch.object(TestAnalysisAPI, 'GetFirstFailuresInCurrentBuild')
+  def testAnalyzeTestFailureAnalysisSkipped(self, mock_first_failure_in_build,
+                                            mock_no_group, *_):
+    mock_first_failure_in_build.return_value = {
+        'failures': {
+            self.test_step_name: {
+                'atomic_failures': ['test4', 'test1', 'test2']
+            }
+        }
+    }
+    mock_no_group.return_value = {
+        'failures': {
+            self.test_step_name: {
+                'atomic_failures': ['test4', 'test1', 'test2']
+            }
+        }
+    }
+    self.assertFalse(
+        test_analysis.AnalyzeTestFailure(self.context, Build(), []))
+
   @mock.patch.object(ChromeOSProjectAPI, 'GetTestFailures')
   def testProcessRerunBuildResult(self, mock_test_failures):
     build_id = 8000000000123

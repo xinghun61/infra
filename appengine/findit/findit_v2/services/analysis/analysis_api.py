@@ -817,6 +817,10 @@ class AnalysisAPI(object):
       group.put()
       failure_keys = self._GetFailureKeysToAnalyze(first_failures, project_api)
 
+    if not failure_keys:
+      # There could be no failures that actually need to be analyzed.
+      return None
+
     analysis = self._CreateFailureAnalysis(
         context.luci_project_name, context, build, last_passed_gitiles_id,
         last_passed_commit_position, first_failed_commit_position,

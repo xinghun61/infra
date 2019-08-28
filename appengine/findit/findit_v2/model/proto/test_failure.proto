@@ -42,4 +42,10 @@ message BuildRerunTestFailureInput {
 
   // Hardware test failures to rerun.
   repeated RerunTestFailure hw_test_failures = 1;
+
+  // Flag indicates if an analysis is needed for this build.
+  // If there are too many failures in one build, an analysis should not be
+  // triggered, because a. it's likely the failures are because of infra failure
+  // and b. the analysis will take too much resources.
+  bool needs_bisection = 2;
 }

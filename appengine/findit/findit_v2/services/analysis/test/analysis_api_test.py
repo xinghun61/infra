@@ -873,6 +873,61 @@ class AnalysisAPITest(wf_testcase.TestCase):
                           analysis.compile_failure_keys[0].get().output_targets)
 
   @mock.patch.object(
+      CompileAnalysisAPI, '_GetFailureKeysToAnalyze', return_value=[])
+  @mock.patch.object(
+      ChromiumProjectAPI,
+      'GetRerunBuilderId',
+      return_value='chromium/findit/findit_variables')
+  @mock.patch.object(
+      git, 'GetCommitPositionFromRevision', side_effect=[66680, 66666, 66680])
+  def testSaveFailureAnalysisNoFailures(self, *_):
+    build_120_info = self._GetBuildInfo(120)
+
+    detailed_compile_failures = {
+        'compile': {
+            'failures': {
+                frozenset(['target1', 'target2']): {
+                    'properties': {
+                        'properties': {
+                            'rule': 'CXX',
+                        },
+                    },
+                    'first_failed_build': self.build_info,
+                    'last_passed_build': build_120_info,
+                },
+                frozenset(['target3']): {
+                    'properties': {
+                        'properties': {
+                            'rule': 'ACTION',
+                        },
+                    },
+                    'first_failed_build': self.build_info,
+                    'last_passed_build': None,
+                },
+            },
+            'first_failed_build': self.build_info,
+            'last_passed_build': build_120_info,
+        },
+    }
+
+    self.analysis_api.SaveFailures(self.context, self.build,
+                                   detailed_compile_failures)
+
+    first_failures_in_current_build = {
+        'failures': {
+            'compile': {
+                'atomic_failures': [{'target1', 'target2'}],
+                'last_passed_build': build_120_info,
+            },
+        },
+        'last_passed_build': build_120_info
+    }
+    self.assertIsNone(
+        self.analysis_api.SaveFailureAnalysis(
+            ChromiumProjectAPI(), self.context, self.build,
+            first_failures_in_current_build, True))
+
+  @mock.patch.object(
       ChromiumProjectAPI,
       'GetRerunBuilderId',
       return_value='chromium/findit/findit_variables')

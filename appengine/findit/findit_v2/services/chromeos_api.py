@@ -25,6 +25,13 @@ class ChromeOSProjectAPI(ProjectAPI):
         build.output.properties).get(output_name)
     return build_failure_output
 
+  def _GetTestFailuresInOutput(self, test_failure_output):
+    return {
+        failure_type: failures
+        for failure_type, failures in test_failure_output.iteritems()
+        if failure_type.endswith('_test_failures')
+    }
+
   def ClassifyStepType(self, build, step):
     """Returns the failure type of the given build step.
 
@@ -72,7 +79,8 @@ class ChromeOSProjectAPI(ProjectAPI):
       #     }
       #   ]
       # }
-      for failures in test_failure_output.itervalues():
+      for failures in self._GetTestFailuresInOutput(
+          test_failure_output).itervalues():
         for failure in failures:
           if step.name == failure.get('failed_step'):
             return StepTypeEnum.TEST
@@ -169,6 +177,7 @@ class ChromeOSProjectAPI(ProjectAPI):
     #       'test_spec': 'json serialized proto for suite2'
     #     }
     #   ],
+    #   'needs_bisection' : True
     # }
     build_test_failure_output = self._GetFailureOutput(
         build, _TEST_FAILURE_OUTPUT_NAME)
@@ -178,8 +187,12 @@ class ChromeOSProjectAPI(ProjectAPI):
                     build.id)
       return {}
 
+    # Gets build level 'needs_bisection' flag.
+    needs_bisection = build_test_failure_output.get('needs_bisection', True)
+
     detailed_test_failures = {}
-    for failure_type, failures in build_test_failure_output.iteritems():
+    for failure_type, failures in self._GetTestFailuresInOutput(
+        build_test_failure_output).iteritems():
       for failure in failures:
         failed_step = failure.get('failed_step')
         test_spec = failure.get('test_spec')
@@ -199,6 +212,7 @@ class ChromeOSProjectAPI(ProjectAPI):
                 'failure_type': failure_type,
                 'test_spec': test_spec,
                 'suite': suite,
+                'needs_bisection': needs_bisection,
             }
         }
 
@@ -290,6 +304,9 @@ class ChromeOSProjectAPI(ProjectAPI):
     suite_to_failure_map = defaultdict(list)
     for failure in failure_entities:
       properties = failure.properties or {}
+      if not properties.get('needs_bisection', True):
+        # Should not include the failure if it doesn't need bisection.
+        continue
       suite_to_failure_map[properties.get('suite')].append(failure)
 
     analyzing_failure_keys = []

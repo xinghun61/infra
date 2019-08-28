@@ -80,10 +80,12 @@ def AnalyzeTestFailure(context, build, test_steps):
         ' no need to start a new analysis.', build.id)
     return False
 
-  # Start a new analysis to analyze the first time failures.
-  analysis_api.SaveFailureAnalysis(project_api, context, build,
-                                   failures_without_existing_group,
-                                   should_group_failures)
+  # Starts a new analysis to analyze the first time failures.
+  analysis = analysis_api.SaveFailureAnalysis(project_api, context, build,
+                                              failures_without_existing_group,
+                                              should_group_failures)
+  if not analysis:
+    return False
   analysis_api.RerunBasedAnalysis(context, build.id)
   return True
 

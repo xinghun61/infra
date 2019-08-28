@@ -111,6 +111,8 @@ class ChromeOSProjectAPITest(wf_testcase.TestCase):
               'test_spec': 'test_spec',
               'suite': 'suite'
           },],
+          'needs_bisection':
+              True
       }
     return build
 
@@ -443,6 +445,7 @@ class ChromeOSProjectAPITest(wf_testcase.TestCase):
                 'failure_type': 'xx_test_failures',
                 'test_spec': 'test_spec',
                 'suite': 'suite',
+                'needs_bisection': True,
             }
         },
     }
@@ -546,7 +549,7 @@ class ChromeOSProjectAPITest(wf_testcase.TestCase):
     self.assertEqual(analyzed_failure_keys[0],
                      deduped_failure_keys.pop().get().merged_failure_key)
 
-  def testGetFailureKeysToAnalyzeTestFailuresDidderentSuites(self):
+  def testGetFailureKeysToAnalyzeTestFailuresDifferentSuites(self):
     failure_entities = []
     for i in xrange(2):
       test_failure = TestFailure.Create(
@@ -559,3 +562,20 @@ class ChromeOSProjectAPITest(wf_testcase.TestCase):
     analyzed_failure_keys = ChromeOSProjectAPI(
     ).GetFailureKeysToAnalyzeTestFailures(failure_entities)
     self.assertEqual(2, len(analyzed_failure_keys))
+
+  def testGetFailureKeysToAnalyzeTestFailureNeedNoBisection(self):
+    failure_entities = []
+    for i in xrange(2):
+      test_failure = TestFailure.Create(
+          failed_build_key=ndb.Key(LuciFailedBuild, 8000000000123),
+          step_ui_name='step.suite%d' % i,
+          test=None,
+          properties={
+              'suite': 'suite%d' % i,
+              'needs_bisection': False,
+          })
+      failure_entities.append(test_failure)
+    ndb.put_multi(failure_entities)
+    analyzed_failure_keys = ChromeOSProjectAPI(
+    ).GetFailureKeysToAnalyzeTestFailures(failure_entities)
+    self.assertEqual([], analyzed_failure_keys)
