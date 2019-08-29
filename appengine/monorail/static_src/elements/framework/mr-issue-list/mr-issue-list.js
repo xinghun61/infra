@@ -118,13 +118,6 @@ export class MrIssueList extends connectStore(LitElement) {
          * the table. */
         width: 100%;
       }
-      mr-show-columns-dropdown {
-        --mr-dropdown-menu-font-size: var(--chops-main-font-size);
-        /* Because we're using a sticky header, we need to make sure the
-         * dropdown cannot be taller than the screen. */
-        --mr-dropdown-menu-max-height: 80vh;
-        --mr-dropdown-menu-icon-size: var(--chops-main-font-size);
-      }
 
       @media (min-width: 1024px) {
         .first-row th {

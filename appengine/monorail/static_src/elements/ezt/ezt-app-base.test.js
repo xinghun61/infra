@@ -33,4 +33,15 @@ describe('ezt-app-base', () => {
     sinon.assert.calledOnce(element.fetchUserData);
     sinon.assert.calledWith(element.fetchUserData, 'test@example.com');
   });
+
+  it('fetches project data when projectName set', async () => {
+    sinon.stub(element, 'fetchProjectData');
+
+    element.projectName = 'chromium';
+
+    await element.updateComplete;
+
+    sinon.assert.calledOnce(element.fetchProjectData);
+    sinon.assert.calledWith(element.fetchProjectData, 'chromium');
+  });
 });

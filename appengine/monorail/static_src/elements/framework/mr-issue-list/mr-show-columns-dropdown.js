@@ -1,6 +1,7 @@
 // Copyright 2019 The Chromium Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
+import {css} from 'lit-element';
 import {MrDropdown} from 'elements/framework/mr-dropdown/mr-dropdown.js';
 import page from 'page';
 import qs from 'qs';
@@ -16,6 +17,26 @@ import {DEFAULT_ISSUE_FIELD_LIST} from 'shared/issue-fields.js';
  *
  */
 export class MrShowColumnsDropdown extends connectStore(MrDropdown) {
+  static get styles() {
+    return [
+      ...MrDropdown.styles,
+      css`
+        :host {
+          font-weight: normal;
+          color: var(--chops-link-color);
+          --mr-dropdown-icon-color: var(--chops-link-color);
+          --mr-dropdown-anchor-padding: 3px 8px;
+          --mr-dropdown-anchor-font-weight: bold;
+          --mr-dropdown-menu-min-width: 150px;
+          --mr-dropdown-menu-font-size: var(--chops-main-font-size);
+          /* Because we're using a sticky header, we need to make sure the
+          * dropdown cannot be taller than the screen. */
+          --mr-dropdown-menu-max-height: 80vh;
+          --mr-dropdown-menu-icon-size: var(--chops-main-font-size);
+        }
+      `,
+    ];
+  }
   static get properties() {
     return {
       ...MrDropdown.properties,
@@ -30,6 +51,10 @@ export class MrShowColumnsDropdown extends connectStore(MrDropdown) {
       defaultIssueFields: {type: Array},
       _fieldDefs: {type: Array},
       _labelPrefixFields: {type: Array},
+      // TODO(zhangtiff): Delete this legacy integration after removing
+      // the list view.
+      onHideColumn: {type: Function},
+      onShowColumn: {type: Function},
     };
   }
 
@@ -106,6 +131,11 @@ export class MrShowColumnsDropdown extends connectStore(MrDropdown) {
    * @param {int} i the issue column to be removed.
    */
   removeColumn(i) {
+    if (this.onHideColumn) {
+      if (!this.onHideColumn(this.columns[i])) {
+        return;
+      }
+    }
     const columns = [...this.columns];
     columns.splice(i, 1);
     this.reloadColspec(columns);
@@ -117,6 +147,11 @@ export class MrShowColumnsDropdown extends connectStore(MrDropdown) {
    * @param {string} name of the new column added.
    */
   addColumn(name) {
+    if (this.onShowColumn) {
+      if (!this.onShowColumn(name)) {
+        return;
+      }
+    }
     this.reloadColspec([...this.columns, name]);
   }
 
@@ -127,7 +162,7 @@ export class MrShowColumnsDropdown extends connectStore(MrDropdown) {
    * @param {Array} newColumns the new colspec to set in the URL.
    */
   reloadColspec(newColumns) {
-    this._updateQueryParams({colspec: newColumns.join('+')});
+    this._updateQueryParams({colspec: newColumns.join(' ')});
   }
 
   /**

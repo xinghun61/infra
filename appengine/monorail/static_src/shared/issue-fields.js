@@ -133,7 +133,8 @@ const defaultIssueFields = Object.freeze([
     fieldName: 'Component',
     type: fieldTypes.COMPONENT_TYPE,
     extractor: (issue) => issue.componentRefs || [],
-  }, { // TODO(zhangtiff): Add "ComponentModified" to v2 API.
+  }, {
+    // TODO(zhangtiff): Add "ComponentModified" to v2 API.
     fieldName: 'ComponentModified',
     type: fieldTypes.TIME_TYPE,
     extractor: (issue) => [],
@@ -157,7 +158,8 @@ const defaultIssueFields = Object.freeze([
     fieldName: 'Status',
     type: fieldTypes.STATUS_TYPE,
     extractor: (issue) => wrapValueIfExists(issue.statusRef),
-  }, { // TODO(zhangtiff): Add "StatusModified" to v2 API.
+  }, {
+    // TODO(zhangtiff): Add "StatusModified" to v2 API.
     fieldName: 'StatusModified',
     type: fieldTypes.TIME_TYPE,
     extractor: (issue) => [],
@@ -174,6 +176,16 @@ const defaultIssueFields = Object.freeze([
     fieldName: 'Owner',
     type: fieldTypes.USER_TYPE,
     extractor: (issue) => wrapValueIfExists(issue.ownerRef),
+  }, {
+    // TODO(zhangtiff): Add "OwnerLastVisit" to v2 API.
+    fieldName: 'OwnerLastVisit',
+    type: fieldTypes.TIME_TYPE,
+    extractor: (issue) => [],
+  }, {
+    // TODO(zhangtiff): Add "OwnerModified" to v2 API.
+    fieldName: 'OwnerModified',
+    type: fieldTypes.TIME_TYPE,
+    extractor: (issue) => [],
   }, {
     fieldName: 'Opened',
     type: fieldTypes.TIME_TYPE,

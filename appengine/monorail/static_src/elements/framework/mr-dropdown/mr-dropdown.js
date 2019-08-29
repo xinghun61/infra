@@ -13,7 +13,7 @@ import {ifDefined} from 'lit-html/directives/if-defined';
  */
 export class MrDropdown extends LitElement {
   static get styles() {
-    return css`
+    return [css`
       :host {
         position: relative;
         display: inline-block;
@@ -121,7 +121,7 @@ export class MrDropdown extends LitElement {
       .menu a:hover {
         background: hsl(0, 0%, 90%);
       }
-    `;
+    `];
   }
 
   render() {

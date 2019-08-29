@@ -134,7 +134,7 @@ describe('mr-show-columns-dropdown', () => {
     element.reloadColspec(['Summary', 'AllLabels']);
 
     sinon.assert.calledWith(element._page,
-        '/p/chromium/issues/list?colspec=Summary%2BAllLabels');
+        '/p/chromium/issues/list?colspec=Summary%20AllLabels');
   });
 
   it('addColumn adds a column', () => {

@@ -140,10 +140,11 @@ function CS_toggleCollapse(el) {
 
 function CS_addClickListener(tableEl, handler) {
   function maybeClick(event) {
-    let target = event.target;
-    let inLink = target.tagName == 'A' || target.parentNode.tagName == 'A';
+    const target = getTargetFromEvent(event);
 
-    if (inLink && !target.classList.contains("computehref")) {
+    const inLink = target.tagName == 'A' || target.parentNode.tagName == 'A';
+
+    if (inLink && !target.classList.contains('computehref')) {
       // The <a> elements already have the correct hrefs.
       return;
     }
@@ -153,8 +154,10 @@ function CS_addClickListener(tableEl, handler) {
     }
 
     let td = target;
-    while (td && td.tagName != "TD") td = td.parentNode;
-    if (td.classList.contains("rowwidgets")) {
+    while (td && td.tagName != 'TD' && td.tagName != 'TH') {
+      td = td.parentNode;
+    }
+    if (td.classList.contains('rowwidgets')) {
       // User clicked on a checkbox.
       return;
     }
@@ -164,6 +167,16 @@ function CS_addClickListener(tableEl, handler) {
   }
   tableEl.addEventListener('click', maybeClick);
   tableEl.addEventListener('auxclick', maybeClick);
+}
+
+function getTargetFromEvent(event) {
+  let target = event.target || event.srcElement;
+  if (target.shadowRoot) {
+  // Find the element within the shadowDOM.
+    const path = event.path || event.composedPath();
+    target = path[0];
+  }
+  return target;
 }
 
 

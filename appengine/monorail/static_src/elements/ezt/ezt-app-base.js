@@ -5,6 +5,7 @@
 import {LitElement} from 'lit-element';
 import {store, connectStore} from 'reducers/base.js';
 import * as user from 'reducers/user.js';
+import * as project from 'reducers/project.js';
 
 /**
  * `<ezt-app-base>`
@@ -17,6 +18,7 @@ import * as user from 'reducers/user.js';
 export class EztAppBase extends connectStore(LitElement) {
   static get properties() {
     return {
+      projectName: {type: String},
       userDisplayName: {type: String},
     };
   }
@@ -25,10 +27,18 @@ export class EztAppBase extends connectStore(LitElement) {
     if (changedProperties.has('userDisplayName') && this.userDisplayName) {
       this.fetchUserData(this.userDisplayName);
     }
+
+    if (changedProperties.has('projectName')) {
+      this.fetchProjectData(this.projectName);
+    }
   }
 
   fetchUserData(displayName) {
     store.dispatch(user.fetch(displayName));
+  }
+
+  fetchProjectData(projectName) {
+    store.dispatch(project.fetch(projectName));
   }
 }
 customElements.define('ezt-app-base', EztAppBase);

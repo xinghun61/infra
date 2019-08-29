@@ -43,9 +43,11 @@ runOnLoad(function() {
     while (target && target.tagName != "TR") target = target.parentNode;
     event.preventDefault();
     if ('[is_hotlist]') {
+       if (!target.attributes[[]"issue-context-url"]) return;
        _go(target.attributes[[]"issue-context-url"].value, (event.metaKey || event.ctrlKey || event.button == 1));
        }
     else {
+       if (!target.attributes[[]"data-idx"]) return;
        _goIssue(target.attributes[[]"data-idx"].value,
        (event.metaKey || event.ctrlKey || event.button == 1));
          }
@@ -67,7 +69,9 @@ runOnLoad(function() {
     var target = event.target;
     while (target && target.tagName != "TH") target = target.parentNode;
     var colIndex = target.getAttribute("data-col-index");
-    _showBelow("pop_" + colIndex, target);
+    if (colIndex) {
+      _showBelow("pop_" + colIndex, target);
+    }
     event.preventDefault();
   }
   var resultsTableHead = $("resultstablehead");

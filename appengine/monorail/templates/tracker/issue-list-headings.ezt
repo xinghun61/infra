@@ -19,7 +19,13 @@
    [end]
   [end]
  [end]
+ [if-any is_hotlist]
  <th data-col-index="dot" style="width:3ex"><a href="#columnprefs"
      class="dotdotdot" aria-label="Column list">...</a></th>
+ [else]
+ <th style="padding: 0;">
+   <ezt-show-columns-connector colspec="[colspec]"></ezt-show-columns-connector>
+ </th>
+ [end]
 </tr>
 </thead>
