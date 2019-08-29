@@ -1034,15 +1034,6 @@ class ServeCodeCoverageData(BaseHandler):
       if path.startswith('//'):  # Check for safe. Old data don't have '//'.
         path = path[2:]
 
-      # TODO(crbug.com/967057): Due to that per-cl coverage bot runs with
-      # sandbox enabled and coverage build doesn't work with sandbox yet, the
-      # coverage data for blink code are wrong, so skip serving coverage data
-      # for those files. Remove this once the bug is fixed.
-      if project == 'chromium/src' and (path.startswith('third_party/blink') or
-                                        path.startswith('content/renderer') or
-                                        path.startswith('content/gpu')):
-        continue
-
       formatted_data['files'].append({
           'path': path,
           'lines': code_coverage_util.DecompressLineRanges(file_data['lines']),
