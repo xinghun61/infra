@@ -61,7 +61,7 @@ def FindAlertIssue(services, cnxn, project_id, incident_label):
 
 
 def GetAlertProperties(services, cnxn, project_id, incident_id, trooper_queue,
-                       body, msg):
+                       msg):
   """Create a dict of issue property values for the alert to be created with.
 
   Args:
@@ -71,7 +71,6 @@ def GetAlertProperties(services, cnxn, project_id, incident_id, trooper_queue,
     incident_id: string containing an optional unique incident used to
       de-dupe alert issues.
     trooper_queue: the label specifying the trooper queue to add an issue into.
-    body: the body text of the alert notification message.
     msg: the email.Message object containing the alert notification.
 
   Returns:
@@ -85,7 +84,7 @@ def GetAlertProperties(services, cnxn, project_id, incident_id, trooper_queue,
       owner_id=_GetOwnerID(user_svc, cnxn, msg.get(AlertEmailHeader.OWNER)),
       cc_ids=_GetCCIDs(user_svc, cnxn, msg.get(AlertEmailHeader.CC)),
       component_ids=_GetComponentIDs(
-          proj_config, body, msg.get(AlertEmailHeader.COMPONENT)),
+          proj_config, msg.get(AlertEmailHeader.COMPONENT)),
 
       # Props that are added as labels.
       trooper_queue=(trooper_queue or 'Infra-Troopers-Alerts'),
@@ -146,8 +145,7 @@ def ProcessEmailNotification(
   mc.LookupLoggedInUserPerms(project)
   with work_env.WorkEnv(mc, services) as we:
     alert_props = GetAlertProperties(
-        services, cnxn, project.project_id, incident_id, trooper_queue, body,
-        msg)
+        services, cnxn, project.project_id, incident_id, trooper_queue, msg)
     alert_issue = FindAlertIssue(
         services, cnxn, project.project_id, alert_props['incident_label'])
 
@@ -175,15 +173,8 @@ def ProcessEmailNotification(
       uia.Run(cnxn, services, allow_edit=True)
 
 
-def _GetComponentIDs(proj_config, body, components):
-  # TODO(crbug/807064): Remove this special casing once components can be set
-  # via the email header
-  comps = ['Infra']
-  if 'codesearch' in body:
-    comps = ['Infra>Codesearch']
-  elif components:
-    comps = components.split(',')
-
+def _GetComponentIDs(proj_config, components):
+  comps = components.split(',') if components else ['Infra']
   return tracker_helpers.LookupComponentIDs(comps, proj_config)
 
 

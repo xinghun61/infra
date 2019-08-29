@@ -173,7 +173,7 @@ class ProcessEmailNotificationTests(unittest.TestCase, TestData):
     self.mox.StubOutWithMock(alert2issue, 'GetAlertProperties')
     alert2issue.GetAlertProperties(
         self.services, self.cnxn, self.project_id, self.incident_id,
-        self.trooper_queue, self.msg_body, self.msg).AndReturn(self.alert_props)
+        self.trooper_queue, self.msg).AndReturn(self.alert_props)
 
     self.mox.ReplayAll()
     alert2issue.ProcessEmailNotification(
@@ -206,7 +206,7 @@ class ProcessEmailNotificationTests(unittest.TestCase, TestData):
     self.mox.StubOutWithMock(alert2issue, 'GetAlertProperties')
     alert2issue.GetAlertProperties(
         self.services, self.cnxn, self.project_id, self.incident_id,
-        self.trooper_queue, self.msg_body, self.msg).AndReturn(self.alert_props)
+        self.trooper_queue, self.msg).AndReturn(self.alert_props)
 
     self.mox.ReplayAll()
 
@@ -289,30 +289,6 @@ class GetAlertPropertiesTests(unittest.TestCase, TestData):
     self.mox = mox.Mox()
 
   @parameterized.expand([
-      ('',),
-      ('Infra,Project-Foo',),
-      ('Infra>Codesearch',),
-      ('Codesearch',),
-      ('Infra>Codesearch,Infra',),
-  ])
-  def testComponentWithCodesearch(self, header_value):
-    """Checks if the component is Infra>Codesearch, if the body with codesearch.
-    """
-    self.test_msg.replace_header(AlertEmailHeader.COMPONENT, header_value)
-    msg_body = self.msg_body + 'codesearch'
-    self.mox.StubOutWithMock(tracker_helpers, 'LookupComponentIDs')
-    tracker_helpers.LookupComponentIDs(
-        ['Infra>Codesearch'],
-        mox.IgnoreArg()).AndReturn([self.component_id])
-
-    self.mox.ReplayAll()
-    props = alert2issue.GetAlertProperties(
-        self.services, self.cnxn, self.project_id, self.incident_id,
-        self.trooper_queue, msg_body, self.test_msg)
-    self.assertEqual(props['component_ids'], [self.component_id])
-    self.mox.VerifyAll()
-
-  @parameterized.expand([
       (None,),
       ('',),
   ])
@@ -327,7 +303,7 @@ class GetAlertPropertiesTests(unittest.TestCase, TestData):
     self.mox.ReplayAll()
     props = alert2issue.GetAlertProperties(
         self.services, self.cnxn, self.project_id, self.incident_id,
-        self.trooper_queue, self.msg_body, self.test_msg)
+        self.trooper_queue, self.test_msg)
     self.assertEqual(props['component_ids'], [self.component_id])
     self.mox.VerifyAll()
 
@@ -359,7 +335,7 @@ class GetAlertPropertiesTests(unittest.TestCase, TestData):
     self.mox.ReplayAll()
     props = alert2issue.GetAlertProperties(
         self.services, self.cnxn, self.project_id, self.incident_id,
-        self.trooper_queue, self.msg_body, self.test_msg)
+        self.trooper_queue, self.test_msg)
     self.assertEqual(sorted(props['component_ids']),
                      sorted(expected_component_ids))
     self.mox.VerifyAll()
@@ -369,7 +345,7 @@ class GetAlertPropertiesTests(unittest.TestCase, TestData):
     """Checks if the labels contain all the necessary values."""
     props = alert2issue.GetAlertProperties(
         self.services, self.cnxn, self.project_id, self.incident_id,
-        self.trooper_queue, self.msg_body, self.test_msg)
+        self.trooper_queue, self.test_msg)
 
     # This test assumes that the test message contains non-empty values for
     # all the headers.
@@ -396,7 +372,7 @@ class GetAlertPropertiesTests(unittest.TestCase, TestData):
     self.test_msg.replace_header(AlertEmailHeader.OWNER, header_value)
     props = alert2issue.GetAlertProperties(
         self.services, self.cnxn, self.project_id, self.incident_id,
-        self.trooper_queue, self.msg_body, self.test_msg)
+        self.trooper_queue, self.test_msg)
     self.assertEqual(props['owner_id'], expected_owner_id)
 
   @parameterized.expand([
@@ -417,7 +393,7 @@ class GetAlertPropertiesTests(unittest.TestCase, TestData):
     self.mox.ReplayAll()
     props = alert2issue.GetAlertProperties(
         self.services, self.cnxn, self.project_id, self.incident_id,
-        self.trooper_queue, self.msg_body, self.test_msg)
+        self.trooper_queue, self.test_msg)
     self.mox.VerifyAll()
     self.assertEqual(props['owner_id'], expected_owner_id)
 
@@ -430,7 +406,7 @@ class GetAlertPropertiesTests(unittest.TestCase, TestData):
     self.test_msg.replace_header(AlertEmailHeader.OWNER, header_value)
     props = alert2issue.GetAlertProperties(
         self.services, self.cnxn, self.project_id, self.incident_id,
-        self.trooper_queue, self.msg_body, self.test_msg)
+        self.trooper_queue, self.test_msg)
     self.assertEqual(props['cc_ids'], expected_cc_ids)
 
   @parameterized.expand([
@@ -458,7 +434,7 @@ class GetAlertPropertiesTests(unittest.TestCase, TestData):
     self.mox.ReplayAll()
     props = alert2issue.GetAlertProperties(
         self.services, self.cnxn, self.project_id, self.incident_id,
-        self.trooper_queue, self.msg_body, self.test_msg)
+        self.trooper_queue, self.test_msg)
     self.mox.VerifyAll()
     self.assertEqual(sorted(props['cc_ids']), sorted(expected_cc_ids))
 
@@ -487,7 +463,7 @@ class GetAlertPropertiesTests(unittest.TestCase, TestData):
     self.test_msg.replace_header(AlertEmailHeader.PRIORITY, header_value)
     props = alert2issue.GetAlertProperties(
         self.services, self.cnxn, self.project_id, self.incident_id,
-        self.trooper_queue, self.msg_body, self.test_msg)
+        self.trooper_queue, self.test_msg)
     self.assertCaseInsensitiveEqual(props['priority'], expected_priority)
 
   @parameterized.expand([
@@ -499,7 +475,7 @@ class GetAlertPropertiesTests(unittest.TestCase, TestData):
     self.test_msg.replace_header(AlertEmailHeader.STATUS, header_value)
     props = alert2issue.GetAlertProperties(
         self.services, self.cnxn, self.project_id, self.incident_id,
-        self.trooper_queue, self.msg_body, self.test_msg)
+        self.trooper_queue, self.test_msg)
     self.assertCaseInsensitiveEqual(props['status'], expected_status)
 
   @parameterized.expand([
@@ -518,7 +494,7 @@ class GetAlertPropertiesTests(unittest.TestCase, TestData):
     self.mox.ReplayAll()
     props = alert2issue.GetAlertProperties(
         self.services, self.cnxn, self.project_id, self.incident_id,
-        self.trooper_queue, self.msg_body, self.test_msg)
+        self.trooper_queue, self.test_msg)
     self.assertCaseInsensitiveEqual(props['status'], expected_status)
     self.mox.VerifyAll()
 
@@ -542,7 +518,7 @@ class GetAlertPropertiesTests(unittest.TestCase, TestData):
     self.mox.ReplayAll()
     props = alert2issue.GetAlertProperties(
         self.services, self.cnxn, self.project_id, self.incident_id,
-        self.trooper_queue, self.msg_body, self.test_msg)
+        self.trooper_queue, self.test_msg)
     self.assertCaseInsensitiveEqual(props['status'], expected_status)
     self.mox.VerifyAll()
 
@@ -569,7 +545,7 @@ class GetAlertPropertiesTests(unittest.TestCase, TestData):
     self.test_msg.replace_header(AlertEmailHeader.TYPE, header_value)
     props = alert2issue.GetAlertProperties(
         self.services, self.cnxn, self.project_id, self.incident_id,
-        self.trooper_queue, self.msg_body, self.test_msg)
+        self.trooper_queue, self.test_msg)
     self.assertCaseInsensitiveEqual(props['issue_type'], expected_issue_type)
 
   @parameterized.expand([
@@ -598,7 +574,7 @@ class GetAlertPropertiesTests(unittest.TestCase, TestData):
     self.test_msg.replace_header(AlertEmailHeader.OS, header_value)
     props = alert2issue.GetAlertProperties(
         self.services, self.cnxn, self.project_id, self.incident_id,
-        self.trooper_queue, self.msg_body, self.test_msg)
+        self.trooper_queue, self.test_msg)
     self.assertEqual(sorted(os if os is None else os.lower()
                             for os in props['oses']),
                      sorted(os if os is None else os.lower()
