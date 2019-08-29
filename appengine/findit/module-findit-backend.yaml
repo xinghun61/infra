@@ -21,7 +21,6 @@ skip_files:
 - ^model/.*$  # Exclude all code in v1.
 - ^pipelines/.*$  # Exclude all code in v1.
 - ^third_party/pipeline/.*$  # Not to use pipeline anymore from v2.
-- ^waterfall/.*$  # Exclude all code in v1.
 - ^(.*/)?#.*#$
 - ^(.*/)?.*~$
 - ^(.*/)?.*\.py[co]$

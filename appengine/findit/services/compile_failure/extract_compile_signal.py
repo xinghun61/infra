@@ -9,11 +9,18 @@ It provides functions to:
 
 import logging
 
-from model.wf_step import WfStep
 from services import extract_signal
 from services import step_util
 from waterfall import extractors
 from waterfall import waterfall_config
+
+use_datastore = True
+try:
+  from model.wf_step import WfStep
+except ImportError:
+  # If the v1 models are not available, simply skip datastore operations (used
+  # to save failure logs between retries).
+  use_datastore = False
 
 
 def ExtractSignalsForCompileFailure(failure_info, http_client):
@@ -37,14 +44,14 @@ def ExtractSignalsForCompileFailure(failure_info, http_client):
     return signals
 
   failure_log = None
-
-  # 1. Tries to get stored failure log from step.
-  step = (
-      WfStep.Get(master_name, builder_name, build_number, step_name) or
-      WfStep.Create(master_name, builder_name, build_number, step_name))
-  if step.log_data:
-    failure_log = step.log_data
-  else:
+  if use_datastore:
+    # 1. Tries to get stored failure log from step.
+    step = (
+        WfStep.Get(master_name, builder_name, build_number, step_name) or
+        WfStep.Create(master_name, builder_name, build_number, step_name))
+    if step.log_data:
+      failure_log = step.log_data
+  if not failure_log:
     # 2. Tries to get ninja_output as failure log.
     from_ninja_output = False
     use_ninja_output_log = (
@@ -70,14 +77,15 @@ def ExtractSignalsForCompileFailure(failure_info, http_client):
     except extract_signal.FailedToGetFailureLogError:
       return {}
 
-    # Save step log in datastore and avoid downloading again during retry.
-    step.log_data = extract_signal.ExtractStorablePortionOfLog(
-        failure_log, from_ninja_output)
-    try:
-      step.put()
-    except Exception as e:  # pragma: no cover
-      # Sometimes, the step log is too large to save in datastore.
-      logging.exception(e)
+    if use_datastore:
+      # Save step log in datastore and avoid downloading again during retry.
+      step.log_data = extract_signal.ExtractStorablePortionOfLog(
+          failure_log, from_ninja_output)
+      try:
+        step.put()
+      except Exception as e:  # pragma: no cover
+        # Sometimes, the step log is too large to save in datastore.
+        logging.exception(e)
 
   signals[step_name] = extractors.ExtractSignal(
       master_name,
