@@ -475,22 +475,20 @@ class DetectDisabledTestsTest(WaterfallTestCase):
 
   @parameterized.expand([
       ({}, 2, [
-          (True, ['row1', 'row2'], 'job', None),
-      ]),
-      ({}, 0, [
-          (True, [], 'job', None),
+          (True, ['row1', 'row2'], None),
       ]),
       ({}, 6, [
-          (True, ['row1', 'row2'], 'job', 'page'),
-          (True, ['row1', 'row2'], 'job', 'next_page'),
-          (True, ['row1', 'row2'], 'job', None),
+          (True, ['row1', 'row2'], 'page'),
+          (True, ['row1', 'row2'], 'next_page'),
+          (True, ['row1', 'row2'], None),
       ]),
   ])
   @mock.patch.object(
       time_util, 'GetUTCNow', return_value=datetime(2019, 6, 29, 0, 0, 0))
   @mock.patch.object(bigquery_helper, '_GetBigqueryClient')
+  @mock.patch.object(bigquery_helper, '_RunBigQuery', return_value='job')
   @mock.patch.object(detect_disabled_tests, '_CreateLocalTests')
-  @mock.patch.object(bigquery_helper, 'ExecuteQueryPaging')
+  @mock.patch.object(bigquery_helper, '_ReadQueryResultsPage')
   def testExecuteQuery(self, local_tests, mock_local_call_count, paged_rows,
                        mock_execute_query, mock_create_local, *_):
     mock_execute_query.side_effect = paged_rows
@@ -498,24 +496,17 @@ class DetectDisabledTestsTest(WaterfallTestCase):
     self.assertEqual(local_tests, actual_local_tests)
     self.assertEqual(mock_local_call_count, mock_create_local.call_count)
 
-  @parameterized.expand([
-      (0, [
-          (False, [], 'job', None),
-      ]),
-      (4, [
-          (True, ['row1', 'row2'], 'job', 'page'),
-          (True, ['row1', 'row2'], 'job', 'next_page'),
-          (False, [], 'job', None),
-      ]),
-  ])
   @mock.patch.object(
       time_util, 'GetUTCNow', return_value=datetime(2019, 6, 29, 0, 0, 0))
   @mock.patch.object(bigquery_helper, '_GetBigqueryClient')
+  @mock.patch.object(bigquery_helper, '_RunBigQuery', return_value='job')
   @mock.patch.object(detect_disabled_tests, '_CreateLocalTests')
-  @mock.patch.object(bigquery_helper, 'ExecuteQueryPaging')
-  def testExecuteQueryFails(self, mock_local_call_count, paged_rows,
-                            mock_execute_query, mock_create_local, *_):
-    mock_execute_query.side_effect = paged_rows
-    with self.assertRaises(Exception):
+  @mock.patch.object(bigquery_helper, '_ReadQueryResultsPage')
+  def testExecuteQueryNoRows(self, mock_execute_query, mock_create_local, *_):
+    mock_execute_query.side_effect = [
+        (True, [], None),
+    ]
+    with self.assertRaises(AssertionError):
       detect_disabled_tests._ExecuteQuery()
-    self.assertEqual(mock_local_call_count, mock_create_local.call_count)
+
+    self.assertFalse(mock_create_local.called)

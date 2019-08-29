@@ -47,32 +47,16 @@ def _ExecuteQuery(parameters=None):
 
   query = GetQuery()
   local_tests = {}
-
   total_rows = 0
-  success, rows, job_id, page_token = bigquery_helper.ExecuteQueryPaging(
-      appengine_util.GetApplicationId(),
-      query,
-      parameters=parameters,
-      polling_retries=5)
-  if rows:
-    total_rows += len(rows)
-    for row in rows:
-      _CreateLocalTests(row, local_tests)
+  for row in bigquery_helper.QueryResultIterator(
+      appengine_util.GetApplicationId(), query, parameters=parameters):
+    total_rows += 1
+    _CreateLocalTests(row, local_tests)
 
-  while page_token:
-    success, rows, job_id, page_token = bigquery_helper.ExecuteQueryPaging(
-        appengine_util.GetApplicationId(),
-        parameters=parameters,
-        job_id=job_id,
-        page_token=page_token)
-    total_rows += len(rows)
-    for row in rows:
-      _CreateLocalTests(row, local_tests)
+  assert total_rows > 0, '0 rows fetched for disabled tests from BigQuery.'
 
-  if not success:
-    raise Exception('Failed executing the query to detect disabled tests.')
-
-  logging.info('Fetched %d rows for disabled tests from BigQuery.', total_rows)
+  logging.info('Total fetched %d rows for disabled tests from BigQuery.',
+               total_rows)
   return local_tests
 
 
@@ -122,6 +106,14 @@ def _CreateLocalTests(row, local_tests):
   builder_name = row['builder_name']
   step_name = row['step_name']
   test_name = row['test_name']
+
+  if int(build_id) == 1:
+    # To filter out tests results with invalid build_id.
+    # TODO (crbug.com/999215): Remove this check after test-results is fixed.
+    logging.info('Failed to define test variant for build_id: %s, row is %r',
+                 build_id, row)
+    return
+
   normalized_step_name = Flake.NormalizeStepName(build_id, step_name)
   normalized_test_name = Flake.NormalizeTestName(test_name, step_name)
 
@@ -133,10 +125,12 @@ def _CreateLocalTests(row, local_tests):
       local_tests[test_key] = set()
     local_tests[test_key].add(disabled_variant)
   else:
-    logging.info('Failed to define test variant for build_id: %s', build_id)
+    logging.info(
+        'Failed to define test variant for build_id: %s, step_name: %s',
+        build_id, step_name)
 
 
-@ndb.transactional_tasklet
+@ndb.tasklet
 def _UpdateDatastore(test_key, disabled_test_variants, query_time):
   """Updates disabled_test_variants for a LuciTest in the datastore.
 
@@ -176,6 +170,7 @@ def _UpdateCurrentlyDisabledTests(local_tests, query_time):
     elif local_test[1].symmetric_difference(remote_test.disabled_test_variants):
       updated_test_keys.append(local_test[0])
 
+  logging.info('Updating or Creating %d LuciTests: ', len(updated_test_keys))
   for updated_test_key in updated_test_keys:
     _UpdateDatastore(updated_test_key, local_tests[updated_test_key],
                      query_time)
@@ -197,6 +192,8 @@ def _UpdateNoLongerDisabledTests(currently_disabled_test_keys, query_time):
   no_longer_disabled_test_keys = set(disabled_test_keys) - set(
       currently_disabled_test_keys)
 
+  logging.info('%d tests are no longer disabled: ',
+               len(no_longer_disabled_test_keys))
   for no_longer_disabled_test_key in no_longer_disabled_test_keys:
     _UpdateDatastore(no_longer_disabled_test_key, set(), query_time)
 

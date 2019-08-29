@@ -779,3 +779,41 @@ class BigqueryHelperTest(unittest.TestCase):
                                                'datasetid', 'tableid'))
     args, _ = insert_fn.call_args
     self.assertEqual(args[-1], [{'json': request_dict, 'insertId': 'insertid'}])
+
+  @parameterized.expand([
+      (  # Success, 1 page
+          {
+              'query_results': [(True, ['rows1'], None),],
+              'expected_return': ['rows1']
+          },),
+      (  # Success, multiple pages
+          {
+              'query_results': [
+                  (True, ['rows1'], 'page'),
+                  (True, ['rows2'], None),
+              ],
+              'expected_return': ['rows1', 'rows2']
+          },),
+      (  # Fail, 1st page
+          {
+              'query_results': [(False, [], None),],
+              'expected_return': []
+          },),
+      (  # Fail, nth page
+          {
+              'query_results': [
+                  (True, ['rows1'], 'page'),
+                  (False, [], None),
+              ],
+              'expected_return': ['rows1']
+          },),
+  ])
+  @mock.patch.object(
+      bigquery_helper, '_GetBigqueryClient', return_value='client')
+  @mock.patch.object(bigquery_helper, '_RunBigQuery', return_value='job_id')
+  @mock.patch.object(bigquery_helper, '_ReadQueryResultsPage')
+  def testQueryResultIterator(self, cases, mock_get_results, *_):
+    mock_get_results.side_effect = cases['query_results']
+    for i, r in enumerate(
+        bigquery_helper.QueryResultIterator('project', 'query')):
+      self.assertEqual(cases['expected_return'][i], r)

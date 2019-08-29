@@ -276,6 +276,47 @@ def ExecuteQuery(project_id,
   return success, rows
 
 
+def QueryResultIterator(project_id,
+                        query,
+                        parameters=None,
+                        polling_retries=_POLLING_RETRIES,
+                        timeout=_TIMEOUT_MS):
+  """Runs a BigQuery SQL Query and yields one row at a time to caller.
+
+  Args:
+    project_id (str): Project Id in google cloud.
+    query (str): query to run.
+    parameters (list): Parameters to be used in parameterized queries. Each
+      element in the list should be a dict returned by
+      GenerateSingleQueryParameter or GenerateArrayQueryParameter.
+    polling_retries (int): Number of times to re-poll the bigquery job for
+      results if the job has not yet completed.
+    timeout (int): How long to wait for the query to complete, in milliseconds,
+      before the request times out and returns. Note that this is only a timeout
+      for the request, not the query. If the query takes longer to run than the
+      timeout value, the call returns without any results and with the
+      'jobComplete' flag set to false.
+  """
+  client = _GetBigqueryClient()
+  job_id = _RunBigQuery(
+      client, project_id, query, parameters=parameters, timeout=timeout)
+
+  success = True
+  page_token = None
+  while success:
+    success, rows, page_token = _ReadQueryResultsPage(
+        client,
+        project_id,
+        job_id,
+        page_token=page_token,
+        polling_retries=polling_retries)
+    logging.info('Fetched %d rows in one page', len(rows))
+    for r in rows:
+      yield r
+    if not page_token:
+      break
+
+
 def ExecuteQueryPaging(project_id,
                        query=None,
                        job_id=None,
