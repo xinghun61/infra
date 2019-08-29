@@ -8,6 +8,9 @@ cron:
 - description: sync device configs to inventory file and datastore
   url: /internal/cron/update-device-configs
   schedule: every 5 minutes
+- description: report metrics related to swarming bots.
+  url: /internal/cron/report-bots
+  schedule: every 5 minutes
 - description: refresh bots
   url: /internal/cron/refresh-bots
   schedule: every 5 minutes
