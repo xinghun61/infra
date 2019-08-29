@@ -35,27 +35,27 @@ MAX_HEADER_CHARS_CONSIDERED = 255
 
 
 def _checkEmailHeaderPrefix(key):
-  """Ensures that a given email header starts with Alert2Issue prefix."""
+  """Ensures that a given email header starts with X-Alert2Monorail prefix."""
   # this is to catch typos in the email header prefix and raises an exception
   # during package loading time.
-  assert key.startswith('X-Alert2Issue-')
+  assert key.startswith('X-Alert2Monorail')
   return key
 
 
 class AlertEmailHeader(object):
-  """A list of the email header keys supported by Alert2Issue."""
+  """A list of the email header keys supported by Alert2Monorail."""
   # pylint: disable=bad-whitespace
   #
   # The prefix has been hard-coded without string substitution to make them
   # searchable with the header keys.
   INCIDENT_ID = 'X-Incident-Id'
-  OWNER       = _checkEmailHeaderPrefix('X-Alert2Issue-owner')
-  CC          = _checkEmailHeaderPrefix('X-Alert2Issue-cc')
-  PRIORITY    = _checkEmailHeaderPrefix('X-Alert2Issue-priority')
-  STATUS      = _checkEmailHeaderPrefix('X-Alert2Issue-status')
-  COMPONENT   = _checkEmailHeaderPrefix('X-Alert2Issue-component')
-  OS          = _checkEmailHeaderPrefix('X-Alert2Issue-os')
-  TYPE        = _checkEmailHeaderPrefix('X-Alert2Issue-type')
+  OWNER       = _checkEmailHeaderPrefix('X-Alert2Monorail-owner')
+  CC          = _checkEmailHeaderPrefix('X-Alert2Monorail-cc')
+  PRIORITY    = _checkEmailHeaderPrefix('X-Alert2Monorail-priority')
+  STATUS      = _checkEmailHeaderPrefix('X-Alert2Monorail-status')
+  COMPONENT   = _checkEmailHeaderPrefix('X-Alert2Monorail-component')
+  OS          = _checkEmailHeaderPrefix('X-Alert2Monorail-os')
+  TYPE        = _checkEmailHeaderPrefix('X-Alert2Monorail-type')
 
 
 def IsBodyTooBigToParse(body):
