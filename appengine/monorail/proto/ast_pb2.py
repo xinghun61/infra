@@ -34,6 +34,10 @@ search API.  All conditions are passed to each module and it is up to
 the module to decide which conditions to handle and which to ignore.
 """
 
+from __future__ import print_function
+from __future__ import division
+from __future__ import absolute_import
+
 from protorpc import messages
 
 from proto import tracker_pb2

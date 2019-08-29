@@ -5,6 +5,10 @@
 
 """Protocol buffers for Monorail API."""
 
+from __future__ import print_function
+from __future__ import division
+from __future__ import absolute_import
+
 from endpoints import ResourceContainer
 from protorpc import messages
 from protorpc import message_types
