@@ -149,14 +149,6 @@ func (tsi *TrackerServerImpl) RefreshBots(ctx context.Context, req *fleet.Refres
 	if err != nil {
 		return nil, errors.Annotate(err, "failed to get bots from Swarming").Err()
 	}
-	if len(req.Selectors) == 0 {
-		// This is a somewhat hacky hook for reporting DUT utilization metrics. We
-		// only want to report metrics when the refreshed bots are not filtered, so
-		// that the metrics correspond to the whole DUT fleet.
-		// This endpoint is called regularly via AE cron without any filters, and
-		// will report metrics regularly as part of that cron.
-		utilization.ReportMetrics(ctx, bots)
-	}
 
 	bsm := botInfoToSummary(ctx, bots)
 	logging.Infof(ctx, "Adding task info to bot summaries")
