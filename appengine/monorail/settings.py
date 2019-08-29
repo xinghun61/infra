@@ -444,3 +444,7 @@ if app_identity.get_application_id() == 'monorail-prod':
 else:
   gapi_client_id = (
     '52759169022-6918fl1hd1qoul985cs1ohgedeb8c9a0.apps.googleusercontent.com')
+
+# All users in the following domains will have API access.
+# Important: the @ symbol must be included.
+api_allowed_email_domains = ('@google.com')
