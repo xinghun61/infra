@@ -97,6 +97,42 @@ describe('mr-issue-link', () => {
     assert.equal(link.title, '');
   });
 
+  it('displays an icon for federated references', async () => {
+    element.issue = {
+      extIdentifier: 'b/5678',
+    };
+
+    await element.updateComplete;
+
+    const dropdown = element.shadowRoot.querySelector('mr-dropdown');
+    assert.isNotNull(dropdown);
+    const anchor = dropdown.shadowRoot.querySelector('.anchor');
+    assert.isNotNull(anchor);
+    assert.include(anchor.innerText, 'info_outline');
+  });
+
+  it('displays an info popup for federated references', async () => {
+    element.issue = {
+      extIdentifier: 'b/5678',
+    };
+
+    await element.updateComplete;
+
+    const dropdown = element.shadowRoot.querySelector('mr-dropdown');
+    const anchor = dropdown.shadowRoot.querySelector('.anchor');
+    anchor.click();
+
+    await dropdown.updateComplete;
+
+    assert.isTrue(dropdown.opened);
+
+    const cue = dropdown.querySelector('mr-cue');
+    assert.isNotNull(cue);
+    const message = cue.shadowRoot.querySelector('#message');
+    assert.isNotNull(message);
+    assert.include(message.innerText, 'another tracker');
+  });
+
   it('shows title when summary is defined', async () => {
     element.issue = {
       projectName: 'test',

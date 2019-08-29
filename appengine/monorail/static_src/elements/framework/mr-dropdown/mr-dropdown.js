@@ -20,6 +20,7 @@ export class MrDropdown extends LitElement {
         height: 100%;
         font-size: inherit;
         --mr-dropdown-icon-color: var(--chops-primary-icon-color);
+        --mr-dropdown-icon-font-size: var(--chops-icon-font-size);
         --mr-dropdown-anchor-font-weight: initial;
         --mr-dropdown-anchor-padding: 4px 0.25em;
         --mr-dropdown-menu-max-height: initial;
@@ -39,7 +40,7 @@ export class MrDropdown extends LitElement {
         font-size: var(--chops-large-font-size);
       }
       i.material-icons {
-        font-size: var(--chops-icon-font-size);
+        font-size: var(--mr-dropdown-icon-font-size);
         display: inline-block;
         color: var(--mr-dropdown-icon-color);
         padding: 0 2px;

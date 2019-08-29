@@ -5,6 +5,8 @@
 import {LitElement, html, css} from 'lit-element';
 import {ifDefined} from 'lit-html/directives/if-defined';
 import {issueRefToString, issueRefToUrl} from 'shared/converters.js';
+import '../../mr-dropdown/mr-dropdown.js';
+import '../../../help/mr-cue/mr-cue.js';
 
 /**
  * `<mr-issue-link>`
@@ -18,10 +20,30 @@ export class MrIssueLink extends LitElement {
       a[is-closed] {
         text-decoration: line-through;
       }
+      mr-cue {
+        margin: 0;
+        font-size: var(--chops-main-font-size);
+      }
+      mr-dropdown {
+        width: var(--chops-main-font-size);
+        --mr-dropdown-icon-font-size: var(--chops-main-font-size);
+        --mr-dropdown-menu-min-width: 100px;
+      }
     `;
   }
 
   render() {
+    let fedRefInfo;
+    if (this.issue && this.issue.extIdentifier) {
+      fedRefInfo = html`
+        <mr-dropdown icon="info_outline" menuAlignment="left">
+          <mr-cue
+            cuePrefName="federated_reference"
+            nondismissible>
+          </mr-cue>
+        </mr-dropdown>
+      `;
+    }
     return html`
       <a
         id="bugLink"
@@ -29,6 +51,7 @@ export class MrIssueLink extends LitElement {
         title=${ifDefined(this.issue && this.issue.summary)}
         ?is-closed=${this.isClosed}
       >${this._linkText}</a>
+      ${fedRefInfo}
     `;
   }
 

@@ -15,6 +15,11 @@ const INPUT_TYPES_WITHOUT_TEXT_INPUT = [
   'button',
   'image',
 ];
+
+// TODO: Add a method to watch for property changes in one of a subset of
+// element properties.
+// Via: https://crrev.com/c/infra/infra/+/1762911/7/appengine/monorail/static_src/elements/help/mr-cue/mr-cue.js
+
 /**
  * Function to check if a keyboard event should be disabled if
  * the user is typing.

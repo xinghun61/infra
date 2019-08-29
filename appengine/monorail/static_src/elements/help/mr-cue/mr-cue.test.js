@@ -54,12 +54,13 @@ describe('mr-cue', () => {
     assert.isTrue(element.hidden);
   });
 
-  it('cue is shown if relevent message has not been dismissed', async () => {
+  it('cue is shown if relevant message has not been dismissed', async () => {
     element.prefsLoaded = true;
     element.cuePrefName = 'code_of_conduct';
-    assert.isFalse(element.hidden);
 
     await element.updateComplete;
+
+    assert.isFalse(element.hidden);
     const messageEl = element.shadowRoot.querySelector('#message');
     assert.include(messageEl.innerHTML, 'chromium.googlesource.com');
   });
@@ -68,9 +69,10 @@ describe('mr-cue', () => {
     element.prefsLoaded = true;
     element.cuePrefName = 'code_of_conduct';
     element.project.config.projectName = 'fuchsia';
-    assert.isFalse(element.hidden);
 
     await element.updateComplete;
+
+    assert.isFalse(element.hidden);
     const messageEl = element.shadowRoot.querySelector('#message');
     assert.include(messageEl.innerHTML, 'fuchsia.dev');
   });

@@ -27,6 +27,8 @@ export class MrCue extends connectStore(LitElement) {
     this.issue = null;
     this.referencedUsers = new Map();
     this.nondismissible = false;
+    this.hidden = this._shouldBeHidden(this.signedIn, this.prefsLoaded,
+        this.cuePrefName, this.message);
   }
 
   static get properties() {
@@ -40,23 +42,31 @@ export class MrCue extends connectStore(LitElement) {
       prefsLoaded: {type: Boolean},
       jumpLocalId: {type: Number},
       loginUrl: {type: String},
+      hidden: {
+        type: Boolean,
+        reflect: true,
+      },
     };
   }
 
   static get styles() {
     return [SHARED_STYLES, css`
+      :host {
+        display: block;
+        margin: 2px 0;
+        padding: 2px 4px 2px 8px;
+        background: var(--chops-notice-bubble-bg);
+        border: var(--chops-notice-border);
+        text-align: center;
+      }
       :host([centered]) {
         display: flex;
         justify-content: center;
       }
-      .cue {
-        margin: 2px 0;
-        padding: 2px 4px 2px 8px;
-        background: var(--chops-notice-bubble-bg);
-        border:  var(--chops-notice-border);
-        text-align: center;
+      :host([hidden]) {
+        display: none;
       }
-      .cue[hidden], button[hidden] {
+      button[hidden] {
         visibility: hidden;
       }
       i.material-icons {
@@ -82,28 +92,25 @@ export class MrCue extends connectStore(LitElement) {
   render() {
     return html`
       <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-      <div class="cue" ?hidden=${this.hidden} id="message">
-        <button
-          @click=${this.dismiss}
-          title="Don't show this message again."
-          ?hidden=${this.nondismissible}
-        >
-          <i class="material-icons">close</i>
-        </button>
-        ${this.message}
-      </div>
+      <button
+        @click=${this.dismiss}
+        title="Don't show this message again."
+        ?hidden=${this.nondismissible}>
+        <i class="material-icons">close</i>
+      </button>
+      <div id="message">${this.message}</div>
     `;
   }
 
   get message() {
-    if (this.cuePrefName == 'code_of_conduct') {
+    if (this.cuePrefName === 'code_of_conduct') {
       return html`
         Please keep discussions respectful and constructive.
         See our
         <a href="${this.codeOfConductUrl}"
            target="_blank">code of conduct</a>.
         `;
-    } else if (this.cuePrefName == 'availability_msgs') {
+    } else if (this.cuePrefName === 'availability_msgs') {
       if (this._availablityMsgsRelevant(this.issue)) {
         return html`
           <b>Note:</b>
@@ -111,7 +118,7 @@ export class MrCue extends connectStore(LitElement) {
           Tooltips show the reason.
           `;
       }
-    } else if (this.cuePrefName == 'switch_to_parent_account') {
+    } else if (this.cuePrefName === 'switch_to_parent_account') {
       if (this._switchToParentAccountRelevant()) {
         return html`
           You are signed in to a linked account.
@@ -119,13 +126,18 @@ export class MrCue extends connectStore(LitElement) {
              Switch to ${this.user.linkedParentRef.displayName}</a>.
           `;
       }
-    } else if (this.cuePrefName == 'search_for_numbers') {
+    } else if (this.cuePrefName === 'search_for_numbers') {
       if (this._searchForNumbersRelevant(this.jumpLocalId)) {
         return html`
           <b>Tip:</b>
           To find issues containing "${this.jumpLocalId}", use quotes.
           `;
       }
+    } else if (this.cuePrefName === 'federated_reference') {
+      // TODO(jeffcarp): Include the name of the tracker.
+      return html`
+        This references an issue in another tracker.
+      `;
     }
   }
 
@@ -138,6 +150,17 @@ export class MrCue extends connectStore(LitElement) {
     }
     return ('https://chromium.googlesource.com/' +
             'chromium/src/+/master/CODE_OF_CONDUCT.md');
+  }
+
+  updated(changedProperties) {
+    const hiddenWatchProps = ['prefsLoaded', 'cuePrefName', 'signedIn',
+      'prefs'];
+    const shouldUpdateHidden = Array.from(changedProperties.keys())
+        .some((propName) => hiddenWatchProps.includes(propName));
+    if (shouldUpdateHidden) {
+      this.hidden = this._shouldBeHidden(this.signedIn, this.prefsLoaded,
+          this.cuePrefName, this.message);
+    }
   }
 
   _availablityMsgsRelevant(issue) {
@@ -164,6 +187,12 @@ export class MrCue extends connectStore(LitElement) {
     return jumpLocalId;
   }
 
+  _shouldBeHidden(signedIn, prefsLoaded, cuePrefName, message) {
+    if (signedIn && !prefsLoaded) return true;
+    if (this.alreadyDismissed(cuePrefName)) return true;
+    return !message;
+  }
+
   stateChanged(state) {
     this.project = project.project(state);
     this.issue = issue.issue(state);
@@ -179,12 +208,6 @@ export class MrCue extends connectStore(LitElement) {
     if (q && q.match(new RegExp('^\\d+$'))) {
       this.jumpLocalId = Number(q);
     }
-  }
-
-  get hidden() {
-    if (this.signedIn && !this.prefsLoaded) return true;
-    if (this.alreadyDismissed(this.cuePrefName)) return true;
-    return !this.message;
   }
 
   alreadyDismissed(pref) {
