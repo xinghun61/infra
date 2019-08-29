@@ -15,6 +15,7 @@ from findit_v2.services.project_api import ProjectAPI
 
 _COMPILE_FAILURE_OUTPUT_NAME = 'compile_failures'
 _TEST_FAILURE_OUTPUT_NAME = 'test_failures'
+_BISECT_BUCKET = 'bisect'
 
 
 class ChromeOSProjectAPI(ProjectAPI):
@@ -337,7 +338,7 @@ class ChromeOSProjectAPI(ProjectAPI):
 
     return '{project}/{bucket}/{builder}'.format(
         project=build.builder.project,
-        bucket=build.builder.bucket,
+        bucket=_BISECT_BUCKET,
         builder=rerun_builder)
 
   def GetCompileRerunBuildInputProperties(self, failed_targets):

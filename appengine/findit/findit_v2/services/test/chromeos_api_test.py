@@ -261,7 +261,7 @@ class ChromeOSProjectAPITest(wf_testcase.TestCase):
     build = Build(builder=self.builder)
     build.output.properties['BISECT_BUILDER'] = 'builder-bisect'
 
-    self.assertEqual('chromeos/postsubmit/builder-bisect',
+    self.assertEqual('chromeos/bisect/builder-bisect',
                      ChromeOSProjectAPI().GetRerunBuilderId(build))
 
   def testGetCompileRerunBuildInputProperties(self):
