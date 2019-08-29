@@ -18,7 +18,6 @@ handlers:
 
 skip_files:
 - ^handlers/.*$  # Exclude all code in v1.
-- ^model/.*$  # Exclude all code in v1.
 - ^pipelines/.*$  # Exclude all code in v1.
 - ^third_party/pipeline/.*$  # Not to use pipeline anymore from v2.
 - ^(.*/)?#.*#$
