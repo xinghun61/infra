@@ -232,7 +232,6 @@ export class MrSearchBar extends LitElement {
       'mode',
       'cells',
       'num',
-      'start',
     ];
     this.initialValue = '';
     this.defaultCan = '2';
