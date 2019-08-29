@@ -12,16 +12,16 @@ import (
 	"time"
 
 	"golang.org/x/net/context"
+	"google.golang.org/genproto/protobuf/field_mask"
 
 	"github.com/golang/mock/gomock"
 	. "github.com/smartystreets/goconvey/convey"
 	"go.chromium.org/gae/impl/memory"
 	"go.chromium.org/gae/service/datastore"
+	buildbucketpb "go.chromium.org/luci/buildbucket/proto"
 	"go.chromium.org/luci/common/api/gerrit"
 	"go.chromium.org/luci/common/proto/git"
 	gitilespb "go.chromium.org/luci/common/proto/gitiles"
-
-	buildbot "infra/monitoring/messages"
 )
 
 func TestFinditRules(t *testing.T) {
@@ -42,7 +42,7 @@ func TestFinditRules(t *testing.T) {
 			CommitTime:       time.Date(2017, time.August, 25, 15, 0, 0, 0, time.UTC),
 			CommitterAccount: "findit@sample.com",
 			AuthorAccount:    "findit@sample.com",
-			CommitMessage:    "Sample Failed Build: https://ci/fake/build",
+			CommitMessage:    "Sample Failed Build: https://ci/buildbot/m/b/42",
 		}
 		cfg := &RepoConfig{
 			BaseRepoURL: "https://a.googlesource.com/a.git",
@@ -78,6 +78,10 @@ func TestFinditRules(t *testing.T) {
 		}
 		testClients := &Clients{}
 		testClients.gerrit = &mockGerritClient{q: q, pr: pr}
+		buildbucketMockClient := buildbucketpb.NewMockBuildsClient(gomock.NewController(t))
+		testClients.buildbucketFactory = func(httpClient *http.Client) buildbucketpb.BuildsClient {
+			return buildbucketMockClient
+		}
 
 		Convey("Culprit age Pass", func() {
 			// Inject gitiles response.
@@ -216,116 +220,251 @@ func TestFinditRules(t *testing.T) {
 		})
 
 		Convey("Culprit in build", func() {
-			fakeBuild := &buildbot.Build{}
-			fakeBuild.SourceStamp.Changes = []buildbot.Change{
-				{Revision: "dummy"},
-				{Revision: "badc0de"},
+			buildbucketMockClient.EXPECT().GetBuild(gomock.Any(), &buildbucketpb.GetBuildRequest{
+				Builder: &buildbucketpb.BuilderID{
+					Project: "chromium",
+					Bucket:  "ci",
+					Builder: "b",
+				},
+				BuildNumber: 42,
+			}).Return(&buildbucketpb.Build{
+				Input: &buildbucketpb.Build_Input{
+					GitilesCommit: &buildbucketpb.GitilesCommit{
+						Project: "a",
+						Id:      "c001c0de",
+					},
+				},
+			}, nil)
+
+			buildbucketMockClient.EXPECT().GetBuild(gomock.Any(), &buildbucketpb.GetBuildRequest{
+				Builder: &buildbucketpb.BuilderID{
+					Project: "chromium",
+					Bucket:  "ci",
+					Builder: "b",
+				},
+				BuildNumber: 41,
+			}).Return(&buildbucketpb.Build{
+				Input: &buildbucketpb.Build_Input{
+					GitilesCommit: &buildbucketpb.GitilesCommit{
+						Project: "a",
+						Id:      "01dc0de",
+					},
+				},
+			}, nil)
+
+			gitilesMockClient := gitilespb.NewMockGitilesClient(gomock.NewController(t))
+			testClients.gitilesFactory = func(host string, httpClient *http.Client) (gitilespb.GitilesClient, error) {
+				return gitilesMockClient, nil
 			}
-			testClients.milo = mockMiloClient{q: map[string]*buildbot.Build{
-				"https://ci/fake/build": fakeBuild,
-			}}
+			gitilesMockClient.EXPECT().Log(gomock.Any(), &gitilespb.LogRequest{
+				Project:            "a",
+				Committish:         "c001c0de",
+				ExcludeAncestorsOf: "01dc0de",
+			}).Return(&gitilespb.LogResponse{
+				Log: []*git.Commit{
+					{
+						Id: "c001c0de",
+						Committer: &git.Commit_User{
+							Time: mustGitilesTime("Fri Aug 25 07:00:00 2017"),
+						},
+					},
+					{
+						Id: "badc0de",
+						Committer: &git.Commit_User{
+							Time: mustGitilesTime("Fri Aug 25 06:00:00 2017"),
+						},
+					},
+				},
+			}, nil)
 			rr := CulpritInBuild{}.Run(ctx, ap, rc, testClients)
 			So(rr.RuleResultStatus, ShouldEqual, rulePassed)
 
 		})
 		Convey("Culprit not in build", func() {
-			fakeBuild := &buildbot.Build{}
-			fakeBuild.SourceStamp.Changes = []buildbot.Change{
-				{Revision: "dummy"},
+			buildbucketMockClient.EXPECT().GetBuild(gomock.Any(), &buildbucketpb.GetBuildRequest{
+				Builder: &buildbucketpb.BuilderID{
+					Project: "chromium",
+					Bucket:  "ci",
+					Builder: "b",
+				},
+				BuildNumber: 42,
+			}).Return(&buildbucketpb.Build{
+				Input: &buildbucketpb.Build_Input{
+					GitilesCommit: &buildbucketpb.GitilesCommit{
+						Project: "a",
+						Id:      "c001c0de",
+					},
+				},
+			}, nil)
+
+			buildbucketMockClient.EXPECT().GetBuild(gomock.Any(), &buildbucketpb.GetBuildRequest{
+				Builder: &buildbucketpb.BuilderID{
+					Project: "chromium",
+					Bucket:  "ci",
+					Builder: "b",
+				},
+				BuildNumber: 41,
+			}).Return(&buildbucketpb.Build{
+				Input: &buildbucketpb.Build_Input{
+					GitilesCommit: &buildbucketpb.GitilesCommit{
+						Project: "a",
+						Id:      "01dc0de",
+					},
+				},
+			}, nil)
+
+			gitilesMockClient := gitilespb.NewMockGitilesClient(gomock.NewController(t))
+			testClients.gitilesFactory = func(host string, httpClient *http.Client) (gitilespb.GitilesClient, error) {
+				return gitilesMockClient, nil
 			}
-			testClients.milo = mockMiloClient{q: map[string]*buildbot.Build{
-				"https://ci/fake/build": fakeBuild,
-			}}
+			gitilesMockClient.EXPECT().Log(gomock.Any(), &gitilespb.LogRequest{
+				Project:            "a",
+				Committish:         "c001c0de",
+				ExcludeAncestorsOf: "01dc0de",
+			}).Return(&gitilespb.LogResponse{
+				Log: []*git.Commit{
+					{
+						Id: "c001c0de",
+						Committer: &git.Commit_User{
+							Time: mustGitilesTime("Fri Aug 25 07:00:00 2017"),
+						},
+					},
+					// Culprit absent.
+				},
+			}, nil)
 			rr := CulpritInBuild{}.Run(ctx, ap, rc, testClients)
 			So(rr.RuleResultStatus, ShouldEqual, ruleFailed)
 			So(rr.Message, ShouldContainSubstring, "not found in changes for build")
 
 		})
 		Convey("Culprit not in build - flake", func() {
-			fakeBuild := &buildbot.Build{}
-			fakeBuild.SourceStamp.Changes = []buildbot.Change{
-				{Revision: "dummy"},
-			}
-			testClients.milo = mockMiloClient{q: map[string]*buildbot.Build{
-				"https://ci/fake/build": fakeBuild,
-			}}
 			rc.CommitMessage = rc.CommitMessage + "\nSample Flaky Test: dummy_test"
 			rr := CulpritInBuild{}.Run(ctx, ap, rc, testClients)
 			So(rr.RuleResultStatus, ShouldEqual, ruleSkipped)
 
 		})
 		Convey("Failed build is compile failure Pass", func() {
-			fakeBuild := &buildbot.Build{}
-			fakeUpdateStep := buildbot.Step{}
-			fakeUpdateStep.Name = "update_scripts"
-			fakeUpdateStep.Results = []interface{}{0.0, 0}
-
-			fakeCompileStep := buildbot.Step{}
-			fakeCompileStep.Name = "compile"
-			fakeCompileStep.Results = []interface{}{2.0, 0}
-			fakeBuild.Steps = []buildbot.Step{fakeUpdateStep, fakeCompileStep}
-
-			testClients.milo = mockMiloClient{q: map[string]*buildbot.Build{
-				"https://ci/fake/build": fakeBuild,
-			}}
+			buildbucketMockClient.EXPECT().GetBuild(gomock.Any(), &buildbucketpb.GetBuildRequest{
+				Builder: &buildbucketpb.BuilderID{
+					Project: "chromium",
+					Bucket:  "ci",
+					Builder: "b",
+				},
+				BuildNumber: 42,
+				Fields:      &field_mask.FieldMask{Paths: []string{"steps"}},
+			}).Return(&buildbucketpb.Build{
+				Steps: []*buildbucketpb.Step{
+					{
+						Name:   "compile",
+						Status: buildbucketpb.Status_FAILURE,
+					},
+				},
+			}, nil)
+			rr := FailedBuildIsAppropriateFailure{}.Run(ctx, ap, rc, testClients)
+			So(rr.RuleResultStatus, ShouldEqual, rulePassed)
+		})
+		Convey("Failed build is compile failure Pass - Nested", func() {
+			buildbucketMockClient.EXPECT().GetBuild(gomock.Any(), &buildbucketpb.GetBuildRequest{
+				Builder: &buildbucketpb.BuilderID{
+					Project: "chromium",
+					Bucket:  "ci",
+					Builder: "b",
+				},
+				BuildNumber: 42,
+				Fields:      &field_mask.FieldMask{Paths: []string{"steps"}},
+			}).Return(&buildbucketpb.Build{
+				Steps: []*buildbucketpb.Step{
+					{
+						Name:   "Nesting step|compile",
+						Status: buildbucketpb.Status_FAILURE,
+					},
+				},
+			}, nil)
 			rr := FailedBuildIsAppropriateFailure{}.Run(ctx, ap, rc, testClients)
 			So(rr.RuleResultStatus, ShouldEqual, rulePassed)
 		})
 		Convey("Failed build is compile failure Fail", func() {
-			fakeBuild := &buildbot.Build{}
-			// This Step fails, but the rule shouldn't care.
-			fakeUpdateStep := buildbot.Step{}
-			fakeUpdateStep.Name = "update_scripts"
-			fakeUpdateStep.Results = []interface{}{2.0, 0}
-
-			// This compile step had warnings but did not fail.
-			fakeCompileStep := buildbot.Step{}
-			fakeCompileStep.Name = "compile"
-			fakeCompileStep.Results = []interface{}{1.0, 0}
-			fakeBuild.Steps = []buildbot.Step{fakeUpdateStep, fakeCompileStep}
-
-			testClients.milo = mockMiloClient{q: map[string]*buildbot.Build{
-				"https://ci/fake/build": fakeBuild,
-			}}
+			buildbucketMockClient.EXPECT().GetBuild(gomock.Any(), &buildbucketpb.GetBuildRequest{
+				Builder: &buildbucketpb.BuilderID{
+					Project: "chromium",
+					Bucket:  "ci",
+					Builder: "b",
+				},
+				BuildNumber: 42,
+				Fields:      &field_mask.FieldMask{Paths: []string{"steps"}},
+			}).Return(&buildbucketpb.Build{
+				Steps: []*buildbucketpb.Step{
+					{
+						Name:   "compile",
+						Status: buildbucketpb.Status_SUCCESS,
+					},
+				},
+			}, nil)
+			rr := FailedBuildIsAppropriateFailure{}.Run(ctx, ap, rc, testClients)
+			So(rr.RuleResultStatus, ShouldEqual, ruleFailed)
+			So(rr.Message, ShouldContainSubstring, "does not have an expected failure")
+			So(rr.Message, ShouldContainSubstring, "compile")
+		})
+		Convey("Failed build is compile failure Fail - missing step", func() {
+			buildbucketMockClient.EXPECT().GetBuild(gomock.Any(), &buildbucketpb.GetBuildRequest{
+				Builder: &buildbucketpb.BuilderID{
+					Project: "chromium",
+					Bucket:  "ci",
+					Builder: "b",
+				},
+				BuildNumber: 42,
+				Fields:      &field_mask.FieldMask{Paths: []string{"steps"}},
+			}).Return(&buildbucketpb.Build{
+				Steps: []*buildbucketpb.Step{
+					{
+						Name:   "No-op (compilation skipped)",
+						Status: buildbucketpb.Status_FAILURE,
+					},
+				},
+			}, nil)
 			rr := FailedBuildIsAppropriateFailure{}.Run(ctx, ap, rc, testClients)
 			So(rr.RuleResultStatus, ShouldEqual, ruleFailed)
 			So(rr.Message, ShouldContainSubstring, "does not have an expected failure")
 			So(rr.Message, ShouldContainSubstring, "compile")
 		})
 		Convey("Failed build is flaky failure Pass", func() {
-			fakeBuild := &buildbot.Build{}
-			fakeUpdateStep := buildbot.Step{}
-			fakeUpdateStep.Name = "update_scripts"
-			fakeUpdateStep.Results = []interface{}{0.0, 0}
-
-			fakeDummyStep := buildbot.Step{}
-			fakeDummyStep.Name = "dummy_step"
-			fakeDummyStep.Results = []interface{}{2.0, 0}
-			fakeBuild.Steps = []buildbot.Step{fakeUpdateStep, fakeDummyStep}
-
-			testClients.milo = mockMiloClient{q: map[string]*buildbot.Build{
-				"https://ci/fake/build": fakeBuild,
-			}}
+			buildbucketMockClient.EXPECT().GetBuild(gomock.Any(), &buildbucketpb.GetBuildRequest{
+				Builder: &buildbucketpb.BuilderID{
+					Project: "chromium",
+					Bucket:  "ci",
+					Builder: "b",
+				},
+				BuildNumber: 42,
+				Fields:      &field_mask.FieldMask{Paths: []string{"steps"}},
+			}).Return(&buildbucketpb.Build{
+				Steps: []*buildbucketpb.Step{
+					{
+						Name:   "dummy_step",
+						Status: buildbucketpb.Status_FAILURE,
+					},
+				},
+			}, nil)
 			rc.CommitMessage = rc.CommitMessage + "\nSample Failed Step: dummy_step\nSample Flaky Test: dummy_test"
 			rr := FailedBuildIsAppropriateFailure{}.Run(ctx, ap, rc, testClients)
 			So(rr.RuleResultStatus, ShouldEqual, rulePassed)
 		})
 		Convey("Failed build is flaky failure Fail", func() {
-			fakeBuild := &buildbot.Build{}
-			// This Step fails, but the rule shouldn't care.
-			fakeUpdateStep := buildbot.Step{}
-			fakeUpdateStep.Name = "update_scripts"
-			fakeUpdateStep.Results = []interface{}{2.0, 0}
-
-			// This dummy step had warnings but did not fail.
-			fakeDummyStep := buildbot.Step{}
-			fakeDummyStep.Name = "dummy_step"
-			fakeDummyStep.Results = []interface{}{1.0, 0}
-			fakeBuild.Steps = []buildbot.Step{fakeUpdateStep, fakeDummyStep}
-
-			testClients.milo = mockMiloClient{q: map[string]*buildbot.Build{
-				"https://ci/fake/build": fakeBuild,
-			}}
+			buildbucketMockClient.EXPECT().GetBuild(gomock.Any(), &buildbucketpb.GetBuildRequest{
+				Builder: &buildbucketpb.BuilderID{
+					Project: "chromium",
+					Bucket:  "ci",
+					Builder: "b",
+				},
+				BuildNumber: 42,
+				Fields:      &field_mask.FieldMask{Paths: []string{"steps"}},
+			}).Return(&buildbucketpb.Build{
+				Steps: []*buildbucketpb.Step{
+					{
+						Name:   "different_dummy_step",
+						Status: buildbucketpb.Status_FAILURE,
+					},
+				},
+			}, nil)
 			rc.CommitMessage = rc.CommitMessage + "\nSample Failed Step: dummy_step\nSample Flaky Test: dummy_test"
 			rr := FailedBuildIsAppropriateFailure{}.Run(ctx, ap, rc, testClients)
 			So(rr.RuleResultStatus, ShouldEqual, ruleFailed)

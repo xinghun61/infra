@@ -5,76 +5,18 @@
 package buildstatus
 
 import (
-	"encoding/json"
-	"net/http"
 	"net/url"
 	"regexp"
 	"strconv"
 
-	"golang.org/x/net/context"
-
 	"go.chromium.org/luci/common/errors"
-	"go.chromium.org/luci/grpc/prpc"
-	milo "go.chromium.org/luci/milo/api/proto"
-	"go.chromium.org/luci/server/auth"
-
-	"infra/libs/infraenv"
-	buildbot "infra/monitoring/messages"
 )
-
-// AuditMiloClient wraps Milo apis that are relevant to audit.
-type AuditMiloClient struct {
-	BuildbotClient milo.BuildbotClient
-}
-
-// GetBuildInfo gets the details about a specifc Buildbot build via Milo.
-//
-// From the buildURL a master, builder and build number are extracted and used
-// to ask Milo for the build's JSON.
-//
-// A client with the appropriate authorization is expected in the parameter c.
-//
-// The response is then unmarshaled using the (very thorough) structs already
-// defined in the messages package.
-func (c *AuditMiloClient) GetBuildInfo(ctx context.Context, buildURL string) (*buildbot.Build, error) {
-	m, b, n, err := parseBuildURL(buildURL)
-	if err != nil {
-		return nil, err
-	}
-
-	req := &milo.BuildbotBuildRequest{Master: m, Builder: b, BuildNum: n}
-	resp, err := c.BuildbotClient.GetBuildbotBuildJSON(ctx, req)
-	if err != nil {
-		return nil, err
-	}
-
-	bi := &buildbot.Build{}
-	if err = json.Unmarshal(resp.Data, bi); err != nil {
-		return nil, err
-	}
-	return bi, nil
-}
-
-// NewAuditMiloClient creates prpc client ready to talk to Milo.
-func NewAuditMiloClient(ctx context.Context, authKind auth.RPCAuthorityKind) (*AuditMiloClient, error) {
-	// TODO(robertocn): Move this (or something apropos) to luci/milo/api.
-	authTransport, err := auth.GetRPCTransport(ctx, authKind)
-	if err != nil {
-		return nil, err
-	}
-	options := prpc.DefaultOptions()
-	return &AuditMiloClient{milo.NewBuildbotPRPCClient(&prpc.Client{
-		Host:    infraenv.ProdMiloHost,
-		C:       &http.Client{Transport: authTransport},
-		Options: options,
-	})}, nil
-}
 
 var miloPathRX = regexp.MustCompile(
 	`/buildbot/(?P<master>[^/]+)/(?P<builder>[^/]+)/(?P<buildNum>\d+)/?`)
 
-// parseBuildURL obtains master, builder and build number from the build url.
-func parseBuildURL(rawURL string) (master string, builder string, buildNum int64, err error) {
+// ParseBuildURL obtains master, builder and build number from the build url.
+func ParseBuildURL(rawURL string) (master string, builder string, buildNum int32, err error) {
 	u, err := url.Parse(rawURL)
 	if err != nil {
 		return
@@ -102,6 +44,6 @@ func parseBuildURL(rawURL string) (master string, builder string, buildNum int64
 	if err != nil {
 		return
 	}
-	buildNum = int64(buildNumI)
+	buildNum = int32(buildNumI)
 	return
 }

@@ -334,7 +334,7 @@ func notifyAboutViolations(ctx context.Context, cfg *RepoConfig, repoState *Repo
 // This does not necessarily mean that a policy has been violated, but only
 // that the audit app has not been able to determine whether one exists. One
 // such failure could be due to a bug in one of the rules or an error in one of
-// the services we depend on (monorail, gitiles, gerrit, milo).
+// the services we depend on (monorail, gitiles, gerrit).
 func reportAuditFailure(ctx context.Context, cfg *RepoConfig, rc *RelevantCommit, cs *Clients) error {
 	summary := fmt.Sprintf("Audit on %q failed over %d times", rc.CommitHash, rc.Retries)
 	description := fmt.Sprintf("commit %s has caused the audit process to fail repeatedly, "+

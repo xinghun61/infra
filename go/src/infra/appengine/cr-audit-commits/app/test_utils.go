@@ -16,7 +16,6 @@ import (
 	ds "go.chromium.org/gae/service/datastore"
 	"go.chromium.org/luci/common/api/gerrit"
 
-	buildbot "infra/monitoring/messages"
 	mr "infra/monorail"
 )
 
@@ -68,15 +67,6 @@ func fakeRelevantCommits(n int, k *ds.Key, bh string, s AuditStatus, t time.Time
 		t = t.Add(d)
 	}
 	return result
-}
-
-type mockMiloClient struct {
-	q map[string]*buildbot.Build
-	e error
-}
-
-func (c mockMiloClient) GetBuildInfo(ctx context.Context, URL string) (*buildbot.Build, error) {
-	return c.q[URL], c.e
 }
 
 type mockMonorailClient struct {

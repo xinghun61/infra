@@ -14,28 +14,31 @@ import (
 	"strings"
 
 	"golang.org/x/net/context"
+	"google.golang.org/genproto/protobuf/field_mask"
 
 	ds "go.chromium.org/gae/service/datastore"
+	buildbucketpb "go.chromium.org/luci/buildbucket/proto"
 	"go.chromium.org/luci/common/api/gerrit"
 	"go.chromium.org/luci/common/api/gitiles"
 	"go.chromium.org/luci/common/logging"
 	gitilespb "go.chromium.org/luci/common/proto/gitiles"
+	"go.chromium.org/luci/grpc/prpc"
 	"go.chromium.org/luci/server/auth"
 	"go.chromium.org/luci/server/router"
 
 	"infra/appengine/cr-audit-commits/buildstatus"
-	buildbot "infra/monitoring/messages"
 	"infra/monorail"
 )
 
 const (
 	// TODO(robertocn): Move this to the gitiles library.
-	gerritScope       = "https://www.googleapis.com/auth/gerritcodereview"
-	emailScope        = "https://www.googleapis.com/auth/userinfo.email"
-	failedBuildPrefix = "Sample Failed Build:"
-	failedStepPrefix  = "Sample Failed Step:"
-	flakyTestPrefix   = "Sample Flaky Test:"
-	bugIDRegex        = "^(?i) *bug[:= ]*(chromium[:= ]*)?(.*) *"
+	gerritScope         = "https://www.googleapis.com/auth/gerritcodereview"
+	emailScope          = "https://www.googleapis.com/auth/userinfo.email"
+	failedBuildPrefix   = "Sample Failed Build:"
+	failedStepPrefix    = "Sample Failed Step:"
+	flakyTestPrefix     = "Sample Flaky Test:"
+	bugIDRegex          = "^(?i) *bug[:= ]*(chromium[:= ]*)?(.*) *"
+	prodBuildbucketHost = "cr-buildbucket.appspot.com"
 )
 
 type gerritClientInterface interface {
@@ -43,10 +46,6 @@ type gerritClientInterface interface {
 	ChangeQuery(context.Context, gerrit.ChangeQueryParams) ([]*gerrit.Change, bool, error)
 	IsChangePureRevert(context.Context, string) (bool, error)
 	SetReview(context.Context, string, string, *gerrit.ReviewInput) (*gerrit.ReviewResult, error)
-}
-
-type miloClientInterface interface {
-	GetBuildInfo(context.Context, string) (*buildbot.Build, error)
 }
 
 // TODO(robertocn): move this into a dedicated file for authentication, and
@@ -219,17 +218,48 @@ func resultText(cfg *RepoConfig, rc *RelevantCommit, issueExists bool) string {
 
 }
 
-func getFailedBuild(ctx context.Context, miloClient miloClientInterface, rc *RelevantCommit) (string, *buildbot.Build) {
-	buildURL, err := failedBuildFromCommitMessage(rc.CommitMessage)
+func getBuildByURL(ctx context.Context, buildURL string, cs *Clients, fm *field_mask.FieldMask) (*buildbucketpb.Build, error) {
+	master, builder, buildNumber, err := buildstatus.ParseBuildURL(buildURL)
 	if err != nil {
-		return "", nil
+		return nil, err
+	}
+	return getBuild(ctx, master, builder, buildNumber, cs, fm)
+}
+
+func getPreviousBuildByURL(ctx context.Context, buildURL string, cs *Clients, fm *field_mask.FieldMask) (*buildbucketpb.Build, error) {
+	master, builder, buildNumber, err := buildstatus.ParseBuildURL(buildURL)
+	if err != nil {
+		return nil, err
+	}
+	return getBuild(ctx, master, builder, buildNumber-1, cs, fm)
+}
+
+func getBuild(ctx context.Context, master, builder string, buildNumber int32, cs *Clients, fm *field_mask.FieldMask) (*buildbucketpb.Build, error) {
+	// TODO(crbug/998334): Use buildbucket id instead, once Findit changes build URLs to /b/<build_id>.
+	// Make some assumptions about project and bucket.
+	project := "chromium"
+	bucket := "ci"
+	if strings.Contains(master, "try") {
+		bucket = "try"
 	}
 
-	failedBuildInfo, err := miloClient.GetBuildInfo(ctx, buildURL)
-	if err != nil {
-		panic(err)
+	req := &buildbucketpb.GetBuildRequest{
+		Builder: &buildbucketpb.BuilderID{
+			Project: project,
+			Bucket:  bucket,
+			Builder: builder,
+		},
+		BuildNumber: buildNumber,
 	}
-	return buildURL, failedBuildInfo
+	if fm != nil {
+		req.Fields = fm
+	}
+	bb := cs.NewBuildbucketClient()
+	build, err := bb.GetBuild(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+	return build, nil
 }
 
 // Clients exposes clients for external services shared throughout one request.
@@ -237,14 +267,33 @@ type Clients struct {
 
 	// Instead of actual clients, use interfaces so that tests
 	// can inject mock clients as needed.
-	gerrit gerritClientInterface
-	milo   miloClientInterface
-
+	gerrit     gerritClientInterface
 	httpClient *http.Client
 
 	// This is already an interface so we use it as exported.
-	monorail       monorail.MonorailClient
-	gitilesFactory GitilesClientFactory
+	monorail           monorail.MonorailClient
+	gitilesFactory     GitilesClientFactory
+	buildbucketFactory BuildbucketClientFactory
+}
+
+// BuildbucketClientFactory is function type for generating new Buildbucket
+// clients, both the production client factory and any mock factories are
+// expected to implement it.
+type BuildbucketClientFactory func(httpClient *http.Client) buildbucketpb.BuildsClient
+
+// ProdBuildbucketClientFactory is a BuildbucketClientFactory used to create production
+// buildbucket PRPC clients.
+func ProdBuildbucketClientFactory(httpClient *http.Client) buildbucketpb.BuildsClient {
+	return buildbucketpb.NewBuildsPRPCClient(&prpc.Client{
+		C:    httpClient,
+		Host: prodBuildbucketHost,
+	})
+}
+
+// NewBuildbucketClient uses a factory set in the Clients object and its httpClient
+// to create a new buildbucket client.
+func (c *Clients) NewBuildbucketClient() buildbucketpb.BuildsClient {
+	return c.buildbucketFactory(c.httpClient)
 }
 
 // GitilesClientFactory is function type for generating new gitiles clients,
@@ -283,13 +332,9 @@ func (c *Clients) ConnectAll(ctx context.Context, cfg *RepoConfig, client *http.
 		return err
 	}
 
-	c.milo, err = buildstatus.NewAuditMiloClient(ctx, auth.AsSelf)
-	if err != nil {
-		return err
-	}
-
 	c.monorail = monorail.NewEndpointsClient(c.httpClient, cfg.MonorailAPIURL)
 	c.gitilesFactory = ProdGitilesClientFactory
+	c.buildbucketFactory = ProdBuildbucketClientFactory
 	return nil
 }
 
@@ -435,4 +480,47 @@ func getURLAsString(ctx context.Context, url string) (string, error) {
 		return "", err
 	}
 	return string(contents), nil
+}
+
+// getBlamelist computes the list of commits in a build and not included in its previous build.
+func getBlamelist(ctx context.Context, buildURL string, cs *Clients) ([]string, error) {
+	currBuild, err := getBuildByURL(ctx, buildURL, cs, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	prevBuild, err := getPreviousBuildByURL(ctx, buildURL, cs, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	gc, err := cs.gitilesFactory(currBuild.Input.GitilesCommit.Host, cs.httpClient)
+	if err != nil {
+		return nil, err
+	}
+
+	logReq := &gitilespb.LogRequest{
+		Project:            currBuild.Input.GitilesCommit.Project,
+		ExcludeAncestorsOf: prevBuild.Input.GitilesCommit.Id,
+		Committish:         currBuild.Input.GitilesCommit.Id,
+	}
+	logResp, err := gc.Log(ctx, logReq)
+	result := make([]string, 0, 10)
+	if err != nil {
+		return nil, err
+	}
+	for _, commit := range logResp.Log {
+		result = append(result, commit.Id)
+	}
+	for logResp.NextPageToken != "" {
+		logReq.PageToken = logResp.NextPageToken
+		logResp, err = gc.Log(ctx, logReq)
+		if err != nil {
+			return nil, err
+		}
+		for _, commit := range logResp.Log {
+			result = append(result, commit.Id)
+		}
+	}
+	return result, nil
 }

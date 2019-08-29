@@ -11,9 +11,11 @@ import (
 	"time"
 
 	"golang.org/x/net/context"
+	"google.golang.org/genproto/protobuf/field_mask"
 
 	"github.com/golang/protobuf/ptypes"
 	ds "go.chromium.org/gae/service/datastore"
+	buildbucketpb "go.chromium.org/luci/buildbucket/proto"
 	"go.chromium.org/luci/common/api/gerrit"
 	"go.chromium.org/luci/common/api/gitiles"
 	gitilespb "go.chromium.org/luci/common/proto/gitiles"
@@ -51,8 +53,11 @@ const (
 	MaxRetriesPerCommit = 6 // Thirty minutes if checking every 5 minutes.
 )
 
-// This is the numeric result code for FAILURE. (As buildbot defines it)
-var failedResultCode = 2
+var (
+	// This is the numeric result code for FAILURE. (As buildbot defines it)
+	failedResultCode = 2
+	stepsFieldMask   = field_mask.FieldMask{Paths: []string{"steps"}}
+)
 
 // countRelevantCommits follows the relevant commits previous pointer until a
 // commit older than the cutoff time is found, and counts those that match the
@@ -231,15 +236,18 @@ func (rule CulpritInBuild) Run(ctx context.Context, ap *AuditParams, rc *Relevan
 			rc.CommitHash))
 	}
 
-	buildURL, failedBuildInfo := getFailedBuild(ctx, cs.milo, rc)
+	buildURL, err := failedBuildFromCommitMessage(rc.CommitMessage)
+	changes, err := getBlamelist(ctx, buildURL, cs)
+	//TODO(crbug.com/978167): Stop using panics in rules.
+	if err != nil {
+		panic(err)
+	}
 
 	changeFound := false
-	if failedBuildInfo != nil {
-		for _, c := range failedBuildInfo.SourceStamp.Changes {
-			if c.Revision == culprit.CurrentRevision {
-				changeFound = true
-				break
-			}
+	for _, c := range changes {
+		if c == culprit.CurrentRevision {
+			changeFound = true
+			break
 		}
 	}
 	if changeFound {
@@ -257,9 +265,6 @@ func (rule CulpritInBuild) Run(ctx context.Context, ap *AuditParams, rc *Relevan
 	}
 	return result
 }
-
-// TODO(robertocn): Move all gerrit/milo/gitiles/monorail specific logic to a
-// file dedicated to each external dependency.
 
 // getRevertAndCulpritChanges gets (through Gerrit) the details of the revert
 // CL and  the CL it reverts.
@@ -308,30 +313,34 @@ func (rule FailedBuildIsAppropriateFailure) GetName() string {
 func (rule FailedBuildIsAppropriateFailure) Run(ctx context.Context, ap *AuditParams, rc *RelevantCommit, cs *Clients) *RuleResult {
 	result := &RuleResult{}
 	failableStepName := getFailedSteps(rc.CommitMessage)
+	buildURL, err := failedBuildFromCommitMessage(rc.CommitMessage)
+	if err != nil || buildURL == "" {
+		result.RuleResultStatus = ruleFailed
+		result.Message = fmt.Sprintf(
+			"The revert does not point to a failed build, expected link prefixed with \"%s\"", failedBuildPrefix)
+		return result
+	}
 
-	buildURL, failedBuildInfo := getFailedBuild(ctx, cs.milo, rc)
+	build, err := getBuildByURL(ctx, buildURL, cs, &stepsFieldMask)
+	if err != nil {
+		panic(err)
+	}
 
-	if failedBuildInfo != nil {
-
-		for _, s := range failedBuildInfo.Steps {
-			r, _ := s.Result()
-			if s.Name == failableStepName {
-				if int(r) == failedResultCode {
-					result.RuleResultStatus = rulePassed
-					return result
-				}
+	for _, s := range build.Steps {
+		// Nested steps are named [<ancestor>|]*<child>
+		stepPath := strings.Split(s.Name, "|")
+		lastPart := stepPath[len(stepPath)-1]
+		if lastPart == failableStepName || s.Name == failableStepName {
+			if s.Status == buildbucketpb.Status_FAILURE {
+				result.RuleResultStatus = rulePassed
+				return result
 			}
 		}
 	}
+
 	result.RuleResultStatus = ruleFailed
-	if buildURL != "" {
-		result.Message = fmt.Sprintf("Referred build %q does not have an expected failure in the following step: %s",
-			buildURL, failableStepName)
-	} else {
-		result.Message = fmt.Sprintf(
-			"The revert does not point to a failed build, expected link prefixed with \"%s\"",
-			failedBuildPrefix)
-	}
+	result.Message = fmt.Sprintf("Referred build %q does not have an expected failure in the following step: %s",
+		buildURL, failableStepName)
 	return result
 }
 

@@ -13,10 +13,8 @@ import (
 	"go.chromium.org/luci/common/api/gerrit"
 	"go.chromium.org/luci/common/api/gitiles"
 	gitilespb "go.chromium.org/luci/common/proto/gitiles"
-	"go.chromium.org/luci/server/auth"
 	"go.chromium.org/luci/server/router"
 
-	"infra/appengine/cr-audit-commits/buildstatus"
 	"infra/monorail"
 )
 
@@ -30,7 +28,6 @@ type SmokeTestCheck struct {
 var AuditAppSmokeTests = []SmokeTestCheck{
 	gitilesCheck,
 	gerritCheck,
-	miloCheck,
 	monorailCheck,
 }
 
@@ -100,21 +97,6 @@ var (
 			}
 			clNum := "630300"
 			_, _, err = ge.ChangeQuery(ctx, gerrit.ChangeQueryParams{Query: clNum})
-			if err != nil {
-				return err
-			}
-			return nil
-		},
-	}
-	miloCheck = SmokeTestCheck{
-		Name: "Check milo connectivity",
-		Check: func(ctx context.Context) error {
-			m, err := buildstatus.NewAuditMiloClient(ctx, auth.AsSelf)
-			if err != nil {
-				return err
-			}
-			buildURL := "https://luci-milo.appspot.com/buildbot/chromium.linux/Android%20Builder/86716"
-			_, err = m.GetBuildInfo(ctx, buildURL)
 			if err != nil {
 				return err
 			}
