@@ -17,12 +17,13 @@ import (
 	"go.chromium.org/luci/common/errors"
 	"go.chromium.org/luci/grpc/prpc"
 
-	"go.chromium.org/chromiumos/infra/proto/go/lab_platform"
-	"go.chromium.org/chromiumos/infra/proto/go/test_platform/skylab_local_state"
 	fleet "infra/appengine/crosskylabadmin/api/fleet/v1"
 	"infra/libs/skylab/dutstate"
 	"infra/libs/skylab/inventory"
 	"infra/libs/skylab/inventory/autotest/labels"
+
+	"go.chromium.org/chromiumos/infra/proto/go/lab_platform"
+	"go.chromium.org/chromiumos/infra/proto/go/test_platform/skylab_local_state"
 )
 
 // Load subcommand: Gather DUT labels and attributes into a host info file.
@@ -117,14 +118,12 @@ func (c *loadRun) innerRun(a subcommands.Application, args []string, env subcomm
 		return fmt.Errorf("No DUT ID for %s", request.DutName)
 	}
 
-	hostInfo := hostInfoFromDutInfo(dut)
-
 	dutState, err := getDutState(request.Config.AutotestDir, dutID)
 	if err != nil {
 		return err
 	}
 
-	addDutStateToHostInfo(hostInfo, dutState)
+	hostInfo := getFullHostInfo(dut, dutState)
 
 	if err := writeHostInfo(request.ResultsDir, request.DutName, hostInfo); err != nil {
 		return err
@@ -252,4 +251,12 @@ func writeHostInfo(resultsDir string, dutName string, i *skylab_local_state.Auto
 	}
 
 	return nil
+}
+
+// getFullHostInfo aggregates data from local and admin services state into one hostinfo object
+func getFullHostInfo(dut *inventory.DeviceUnderTest, dutState *lab_platform.DutState) *skylab_local_state.AutotestHostInfo {
+	hostInfo := hostInfoFromDutInfo(dut)
+
+	addDutStateToHostInfo(hostInfo, dutState)
+	return hostInfo
 }
