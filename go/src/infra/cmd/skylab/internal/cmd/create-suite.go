@@ -172,7 +172,7 @@ func (c *createSuiteRun) innerRunSwarming(ctx context.Context, a subcommands.App
 	}
 	taskURL := swarming.TaskURL(e.SwarmingService, taskID)
 	if c.json {
-		_ = printScheduledTaskJSON(a.GetOut(), taskName, taskID, taskURL)
+		return printScheduledTaskJSON(a.GetOut(), taskName, taskID, taskURL)
 	}
 	fmt.Fprintf(a.GetOut(), "Created Swarming Suite task %s\n", taskURL)
 	return nil
