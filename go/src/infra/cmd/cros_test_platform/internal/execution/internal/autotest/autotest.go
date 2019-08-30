@@ -262,12 +262,13 @@ func (r *Runner) reimageAndRunArgs() (interface{}, error) {
 	for i, v := range r.invocations {
 		switch {
 		case v.DisplayName != "":
-			// crbug.com/993998: This hack promotes the display name to the test
-			// name for Autotest backend, ignoring any test arguments.
+			// crbug.com/993998: This hack promotes the end of the display name
+			// to the test name for Autotest backend, ignoring any test arguments.
 			// This allows the paygen stage in CI builders to request autoupdate
 			// tests using dynamically generated control files in a uniform way
 			// across the autotest and skylab backends.
-			testNames[i] = v.DisplayName
+			parts := strings.Split(v.DisplayName, "/")
+			testNames[i] = parts[len(parts)-1]
 		case v.TestArgs != "":
 			return nil, errors.Reason(
 				"test args %s were specified for test %s; test args are not supported in autotest backend",

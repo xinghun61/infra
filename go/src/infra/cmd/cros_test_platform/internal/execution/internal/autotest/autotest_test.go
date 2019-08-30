@@ -185,7 +185,7 @@ func TestLaunchWithDisplayName(t *testing.T) {
 		invs := []*steps.EnumerationResponse_AutotestInvocation{
 			{
 				Test:        &build_api.AutotestTest{Name: "testName"},
-				DisplayName: "displayName",
+				DisplayName: "foo/bar/displayName",
 				TestArgs:    "-ignored -args",
 			},
 		}
