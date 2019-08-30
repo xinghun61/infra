@@ -126,7 +126,7 @@ func newDelayer() *errDelayer {
 
 func (d *errDelayer) Next() time.Duration {
 	switch {
-	case d.last > 5*time.Minute:
+	case d.last >= 5*time.Minute:
 		d.last = 5 * time.Minute
 	case d.last > 0:
 		d.last *= 2
