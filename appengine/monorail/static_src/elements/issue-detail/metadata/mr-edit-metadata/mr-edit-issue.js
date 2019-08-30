@@ -13,6 +13,8 @@ import {arrayToEnglish} from 'shared/helpers.js';
 import {SHARED_STYLES} from 'shared/shared-styles.js';
 import './mr-edit-metadata.js';
 
+import ClientLogger from 'monitoring/client-logger.js';
+
 /**
  * `<mr-edit-issue>`
  *
@@ -83,6 +85,9 @@ export class MrEditIssue extends connectStore(LitElement) {
       comments: {
         type: Array,
       },
+      /**
+       * The issue being updated.
+       */
       issue: {
         type: Object,
       },
@@ -104,13 +109,19 @@ export class MrEditIssue extends connectStore(LitElement) {
       _issueUpdated: {
         type: Boolean,
       },
-      _resetOnChange: {
+      _awaitingSave: {
         type: Boolean,
       },
       _fieldDefs: {
         type: Array,
       },
     };
+  }
+
+  constructor() {
+    super();
+
+    this.clientLogger = new ClientLogger('issues');
   }
 
   stateChanged(state) {
@@ -134,10 +145,20 @@ export class MrEditIssue extends connectStore(LitElement) {
     }
 
     if (this.issue && changedProperties.has('issue')) {
-      if (this._resetOnChange) {
-        this._resetOnChange = false;
+      if (this._awaitingSave) {
+        // This is the first update cycle after an issue update has finished
+        // saving.
+        this._awaitingSave = false;
         this._issueUpdated = true;
         this.reset();
+      }
+    }
+
+    if (changedProperties.has('_issueUpdated') && this._issueUpdated) {
+      // This case runs after the update cycle when the snackbar telling the
+      // user their issue has been updates shows up.
+      if (this.clientLogger.started('issue-update')) {
+        this.clientLogger.logEnd('issue-update', 'computer-time', 120 * 1000);
       }
     }
   }
@@ -157,9 +178,6 @@ export class MrEditIssue extends connectStore(LitElement) {
       return;
     }
 
-    this._issueUpdated = false;
-    this._resetOnChange = true;
-
     const message = {
       issueRef: this.issueRef,
       delta: delta,
@@ -175,6 +193,11 @@ export class MrEditIssue extends connectStore(LitElement) {
     }
 
     if (message.commentContent || message.delta || message.uploads) {
+      this.clientLogger.logStart('issue-update', 'computer-time');
+
+      this._issueUpdated = false;
+      this._awaitingSave = true;
+
       store.dispatch(issue.update(message));
     }
   }
@@ -244,7 +267,9 @@ export class MrEditIssue extends connectStore(LitElement) {
     let statusDefs = statusDefsArg || [];
     statusDefs = statusDefs.filter((status) => !status.deprecated);
     if (!currentStatusRef || statusDefs.find(
-        (status) => status.status === currentStatusRef.status)) return statusDefs;
+        (status) => status.status === currentStatusRef.status)) {
+      return statusDefs;
+    }
     return [currentStatusRef, ...statusDefs];
   }
 }

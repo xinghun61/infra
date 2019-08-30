@@ -43,9 +43,6 @@
       if (cl.started("issue-search")) {
         cl.logEnd("issue-search");
       }
-      if (cl.started("issue-update")) {
-        cl.logEnd("issue-update", "computer-time", 120 * 1000);
-      }
     }
   });
 </script>

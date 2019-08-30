@@ -4,8 +4,9 @@
 
 import sinon from 'sinon';
 
-export const clientLoggerFake = {
+export const clientLoggerFake = () => ({
   logStart: sinon.stub(),
   logEnd: sinon.stub(),
   logPause: sinon.stub(),
-};
+  started: sinon.stub().returns(true),
+});

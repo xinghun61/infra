@@ -6,6 +6,7 @@ import sinon from 'sinon';
 import {assert} from 'chai';
 import {prpcClient} from 'prpc-client-instance.js';
 import {MrEditIssue} from './mr-edit-issue.js';
+import {clientLoggerFake} from 'shared/test-fakes.js';
 
 let element;
 
@@ -14,6 +15,8 @@ describe('mr-edit-issue', () => {
     element = document.createElement('mr-edit-issue');
     document.body.appendChild(element);
     sinon.stub(prpcClient, 'call');
+
+    element.clientLogger = clientLoggerFake();
   });
 
   afterEach(() => {
@@ -25,7 +28,7 @@ describe('mr-edit-issue', () => {
     assert.instanceOf(element, MrEditIssue);
   });
 
-  it('scrolls into view', async () => {
+  it('scrolls into view on #makechanges hash', async () => {
     await element.updateComplete;
 
     const header = element.shadowRoot.querySelector('#makechanges');
@@ -125,6 +128,30 @@ describe('mr-edit-issue', () => {
           userId: '1234',
         }),
         'test@example.com');
+  });
+
+  it('logs issue-update metrics', async () => {
+    await element.updateComplete;
+
+    const editMetadata = element.shadowRoot.querySelector('mr-edit-metadata');
+
+    sinon.stub(editMetadata, 'delta').get(() => ({summary: 'test'}));
+
+    await element.save();
+
+    sinon.assert.calledOnce(element.clientLogger.logStart);
+    sinon.assert.calledWith(element.clientLogger.logStart,
+        'issue-update', 'computer-time');
+
+    // Simulate a response updating the UI.
+    element.issue = {summary: 'test'};
+
+    await element.updateComplete;
+    await element.updateComplete;
+
+    sinon.assert.calledOnce(element.clientLogger.logEnd);
+    sinon.assert.calledWith(element.clientLogger.logEnd,
+        'issue-update', 'computer-time', 120 * 1000);
   });
 
   it('presubmits issue on change', async () => {

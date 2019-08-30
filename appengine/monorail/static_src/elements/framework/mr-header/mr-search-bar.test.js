@@ -80,7 +80,7 @@ describe('mr-search-bar', () => {
   describe('search form submit', () => {
     beforeEach(() => {
       sinon.stub(element, '_navigateToList');
-      element.clientLogger = clientLoggerFake;
+      element.clientLogger = clientLoggerFake();
     });
 
     afterEach(() => {
