@@ -9,7 +9,10 @@ import (
 	"fmt"
 	"infra/cmd/skylab/internal/userinput"
 	"os"
+	"sort"
 	"strings"
+
+	buildbucketpb "go.chromium.org/luci/buildbucket/proto"
 
 	"github.com/maruel/subcommands"
 	"go.chromium.org/luci/auth/client/authcli"
@@ -92,15 +95,35 @@ func (c *backfillRequestRun) innerRun(a subcommands.Application, args []string, 
 
 	var merr errors.MultiError
 	for _, b := range originalBuilds {
-		id, err := c.scheduleBackfillBuild(ctx, b)
+		latest, err := c.getLatestBackfillBuildFor(ctx, b)
+		if err != nil {
+			logging.Errorf(ctx, "Failed to find existing backfill requests for %s: %s", b, err)
+			merr = append(merr, err)
+			continue
+		}
+		if latest == nil {
+			latest = b
+		}
+
+		if isInFlight(latest) {
+			logging.Infof(ctx, "Build %s already in flight to backfill %s", c.bbClient.BuildURL(latest.ID), c.bbClient.BuildURL(b.ID))
+			continue
+		}
+
+		id, err := c.scheduleBackfillBuild(ctx, latest)
 		if err != nil {
 			logging.Errorf(ctx, "Failed to create backfill request for %s: %s", b, err)
-		} else {
-			logging.Infof(ctx, "Scheduled %s", c.bbClient.BuildURL(id))
+			merr = append(merr, err)
+			continue
 		}
-		merr = append(merr, err)
+		logging.Infof(ctx, "Scheduled %s to backfill %s", c.bbClient.BuildURL(id), c.bbClient.BuildURL(b.ID))
+
 	}
 	return merr.First()
+}
+
+func isInFlight(b *bb.Build) bool {
+	return b.Status == buildbucketpb.Status_SCHEDULED || b.Status == buildbucketpb.Status_STARTED
 }
 
 // validateArgs ensures that the command line arguments are
@@ -184,6 +207,24 @@ func filterOriginalBuilds(builds []*bb.Build) []*bb.Build {
 
 func isOriginalBuild(b *bb.Build) bool {
 	return !isBackfillBuild(b)
+}
+
+// getLatestBackfillBuildFor returns nil (and no error) if no backfill build is
+// found.
+func (c *backfillRequestRun) getLatestBackfillBuildFor(ctx context.Context, b *bb.Build) (*bb.Build, error) {
+	builds, err := c.bbClient.SearchBuildsByTags(ctx, bbBuildSearchLimit, backfillTags(b.Tags, b.ID)...)
+	if err != nil {
+		return nil, errors.Annotate(err, "get latest backfill build for %d", b.ID).Err()
+	}
+	if len(builds) == 0 {
+		return nil, nil
+	}
+	// buildbucket builds IDs are monotonically decreasing.
+	// The build with the smallest ID is the latest.
+	sort.Slice(builds, func(i, j int) bool {
+		return builds[i].ID < builds[j].ID
+	})
+	return builds[0], nil
 }
 
 func (c *backfillRequestRun) confirmMultileBuildsOK(a subcommands.Application, builds []*bb.Build) bool {
