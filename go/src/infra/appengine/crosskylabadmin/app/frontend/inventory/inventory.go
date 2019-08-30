@@ -155,6 +155,10 @@ func (is *ServerImpl) UpdateDeviceConfig(ctx context.Context, req *fleet.UpdateD
 	if err != nil {
 		return nil, errors.Annotate(err, "fail to fetch device configs").Err()
 	}
+	err = SaveDeviceConfig(ctx, deviceConfigs)
+	if err != nil {
+		return nil, errors.Annotate(err, "fail to save device config to datastore").Err()
+	}
 	store, err := is.newStore(ctx)
 	if err != nil {
 		return nil, err
