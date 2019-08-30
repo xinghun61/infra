@@ -38,10 +38,13 @@ func GetForTests(metadata *api.AutotestTestMetadata, tests []*test_platform.Requ
 
 // GetForSuites returns the test metadata for specified suites.
 func GetForSuites(metadata *api.AutotestTestMetadata, suites []*test_platform.Request_Suite) []*steps.EnumerationResponse_AutotestInvocation {
-	sNames := suiteNames(suites)
-	tNames := testsInSuites(metadata.GetSuites(), sNames)
-	tests := filterTests(metadata.GetTests(), tNames)
-	return wrapInAutotestInvocation(tests)
+	invs := []*steps.EnumerationResponse_AutotestInvocation{}
+	for _, sName := range suiteNames(suites).ToSlice() {
+		tNames := testsInSuite(metadata.GetSuites(), sName)
+		tests := filterTests(metadata.GetTests(), tNames)
+		invs = append(invs, autotestInvocationsForSuite(sName, tests)...)
+	}
+	return invs
 }
 
 // GetForEnumeration marshals the provided pre-enumerated tests into standard
@@ -77,10 +80,15 @@ func testsByName(tests []*api.AutotestTest) map[string]*api.AutotestTest {
 	return ret
 }
 
-func wrapInAutotestInvocation(tests []*api.AutotestTest) []*steps.EnumerationResponse_AutotestInvocation {
+func autotestInvocationsForSuite(sName string, tests []*api.AutotestTest) []*steps.EnumerationResponse_AutotestInvocation {
 	ret := make([]*steps.EnumerationResponse_AutotestInvocation, 0, len(tests))
 	for _, t := range tests {
-		ret = append(ret, &steps.EnumerationResponse_AutotestInvocation{Test: t})
+		ret = append(ret, &steps.EnumerationResponse_AutotestInvocation{
+			Test: t,
+			ResultKeyvals: map[string]string{
+				"suite": sName,
+			},
+		})
 	}
 	return ret
 }
@@ -106,10 +114,10 @@ func suiteNames(ss []*test_platform.Request_Suite) stringset.Set {
 	return ns
 }
 
-func testsInSuites(ss []*api.AutotestSuite, sNames stringset.Set) stringset.Set {
+func testsInSuite(ss []*api.AutotestSuite, sName string) stringset.Set {
 	tNames := stringset.New(0)
 	for _, s := range ss {
-		if sNames.Has(s.GetName()) {
+		if s.GetName() == sName {
 			tNames = tNames.Union(extractTestNames(s))
 		}
 	}

@@ -166,6 +166,27 @@ func TestGetForSuites(t *testing.T) {
 	}
 }
 
+func TestGetForSuitesSetsSuiteKeyval(t *testing.T) {
+	tests := enumeration.GetForSuites(
+		autotestMetadata(
+			[]string{"included"},
+			map[string][]string{
+				"selected": {"included"},
+			},
+		),
+		suiteRequest("selected"),
+	)
+	if len(tests) != 1 {
+		t.Errorf("Want 1 test, got %d: %s", len(tests), tests)
+	}
+	want := map[string]string{"suite": "selected"}
+	got := tests[0].GetResultKeyvals()
+	if diff := pretty.Compare(want, got); diff != "" {
+		t.Errorf("Result keyvals differ, -want +got: %s", diff)
+	}
+
+}
+
 func suiteRequest(ns ...string) []*test_platform.Request_Suite {
 	req := make([]*test_platform.Request_Suite, 0, len(ns))
 	for _, n := range ns {
