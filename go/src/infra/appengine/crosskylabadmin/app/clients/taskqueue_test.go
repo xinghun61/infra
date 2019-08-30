@@ -23,7 +23,7 @@ import (
 	"go.chromium.org/luci/appengine/gaetesting"
 )
 
-func TestSuccessfulPush(t *testing.T) {
+func TestSuccessfulPushDuts(t *testing.T) {
 	Convey("success", t, func() {
 		ctx := gaetesting.TestingContext()
 		tqt := taskqueue.GetTestable(ctx)
@@ -40,7 +40,30 @@ func TestSuccessfulPush(t *testing.T) {
 			taskPaths = append(taskPaths, v.Path)
 		}
 		sort.Strings(taskPaths)
-		expectedPaths := []string{"/internal/task/repair/host1", "/internal/task/repair/host2"}
+		expectedPaths := []string{"/internal/task/cros_repair/host1", "/internal/task/cros_repair/host2"}
+		sort.Strings(expectedPaths)
+		So(taskPaths, ShouldResemble, expectedPaths)
+	})
+}
+
+func TestSuccessfulPushLabstations(t *testing.T) {
+	Convey("success", t, func() {
+		ctx := gaetesting.TestingContext()
+		tqt := taskqueue.GetTestable(ctx)
+		qn := "repair-labstations"
+		tqt.CreateQueue(qn)
+		hosts := []string{"host1", "host2"}
+		err := PushRepairLabstations(ctx, hosts)
+		So(err, ShouldBeNil)
+		tasks := tqt.GetScheduledTasks()
+		t, ok := tasks[qn]
+		So(ok, ShouldBeTrue)
+		var taskPaths []string
+		for _, v := range t {
+			taskPaths = append(taskPaths, v.Path)
+		}
+		sort.Strings(taskPaths)
+		expectedPaths := []string{"/internal/task/labstation_repair/host1", "/internal/task/labstation_repair/host2"}
 		sort.Strings(expectedPaths)
 		So(taskPaths, ShouldResemble, expectedPaths)
 	})

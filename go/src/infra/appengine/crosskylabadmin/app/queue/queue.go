@@ -32,8 +32,13 @@ import (
 // All handlers serve paths under /internal/queue/*
 func InstallHandlers(r *router.Router, mwBase router.MiddlewareChain) {
 	r.POST(
-		"/internal/task/repair/*ignored",
-		mwBase.Extend(gaemiddleware.RequireTaskQueue("repair-bots"), gaemiddleware.RequireTaskQueue("repair-labstations")),
+		"/internal/task/cros_repair/*ignored",
+		mwBase.Extend(gaemiddleware.RequireTaskQueue("repair-bots")),
+		logAndSetHTTPErr(runRepairQueueHandler),
+	)
+	r.POST(
+		"/internal/task/labstation_repair/*ignored",
+		mwBase.Extend(gaemiddleware.RequireTaskQueue("repair-labstations")),
 		logAndSetHTTPErr(runRepairQueueHandler),
 	)
 	r.POST(

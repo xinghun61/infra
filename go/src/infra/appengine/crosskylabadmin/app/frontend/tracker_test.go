@@ -128,8 +128,8 @@ func TestPushBotsForAdminTasks(t *testing.T) {
 		}
 		sort.Strings(repairPaths)
 		expectedPaths := []string{
-			fmt.Sprintf("/internal/task/repair/%s", h1),
-			fmt.Sprintf("/internal/task/repair/%s", h2),
+			fmt.Sprintf("/internal/task/cros_repair/%s", h1),
+			fmt.Sprintf("/internal/task/cros_repair/%s", h2),
 		}
 		sort.Strings(expectedPaths)
 		So(repairPaths, ShouldResemble, expectedPaths)
@@ -184,8 +184,8 @@ func TestPushLabstationsForRepair(t *testing.T) {
 		}
 		sort.Strings(repairPaths)
 		expectedPaths := []string{
-			fmt.Sprintf("/internal/task/repair/%s", h1),
-			fmt.Sprintf("/internal/task/repair/%s", h2),
+			fmt.Sprintf("/internal/task/labstation_repair/%s", h1),
+			fmt.Sprintf("/internal/task/labstation_repair/%s", h2),
 		}
 		sort.Strings(expectedPaths)
 		So(repairPaths, ShouldResemble, expectedPaths)

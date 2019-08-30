@@ -30,13 +30,13 @@ const repairLabstationQueue = "repair-labstations"
 // PushRepairLabstations pushes duts to taskqueue repairLabstationQueue for
 // upcoming repair jobs.
 func PushRepairLabstations(ctx context.Context, dutNames []string) error {
-	return pushDUTs(ctx, dutNames, repairLabstationQueue, repairTask)
+	return pushDUTs(ctx, dutNames, repairLabstationQueue, labstationRepairTask)
 }
 
 // PushRepairDUTs pushes duts to taskqueue repairBotsQueue for upcoming repair
 // jobs.
 func PushRepairDUTs(ctx context.Context, dutNames []string) error {
-	return pushDUTs(ctx, dutNames, repairBotsQueue, repairTask)
+	return pushDUTs(ctx, dutNames, repairBotsQueue, crosRepairTask)
 }
 
 // PushResetDUTs pushes duts to taskqueue resetBotsQueue for upcoming reset
@@ -45,10 +45,16 @@ func PushResetDUTs(ctx context.Context, dutNames []string) error {
 	return pushDUTs(ctx, dutNames, resetBotsQueue, resetTask)
 }
 
-func repairTask(dn string) *taskqueue.Task {
+func crosRepairTask(dn string) *taskqueue.Task {
 	values := url.Values{}
 	values.Set("dutName", dn)
-	return taskqueue.NewPOSTTask(fmt.Sprintf("/internal/task/repair/%s", dn), values)
+	return taskqueue.NewPOSTTask(fmt.Sprintf("/internal/task/cros_repair/%s", dn), values)
+}
+
+func labstationRepairTask(dn string) *taskqueue.Task {
+	values := url.Values{}
+	values.Set("dutName", dn)
+	return taskqueue.NewPOSTTask(fmt.Sprintf("/internal/task/labstation_repair/%s", dn), values)
 }
 
 func resetTask(dn string) *taskqueue.Task {
