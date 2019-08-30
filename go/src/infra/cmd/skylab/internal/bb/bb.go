@@ -168,6 +168,16 @@ type Build struct {
 	// RawRequest may be nil if the output properties of the build do not
 	// contain a request field.
 	RawRequest *structpb.Struct
+
+	// RawBackfillRequest is the unmarshalled backfillRequest output property.
+	//
+	// RawBackfillRequest is not interpreted as a test_platform.Request to avoid
+	// compatibility issues arising from skylab tool's test_platform API
+	// version.
+	//
+	// RawBackfillRequest may be nil if the output properties of the build do
+	// not contain a backfill_request field.
+	RawBackfillRequest *structpb.Struct
 }
 
 // GetBuild gets a buildbucket build by ID.
@@ -300,6 +310,15 @@ func extractBuildData(from *buildbucket_pb.Build) (*Build, error) {
 				build.RawRequest = r.StructValue
 			default:
 				return nil, errors.Reason("output properties have malformed request %#v", reqValue).Err()
+			}
+		}
+
+		if reqValue, ok := op["backfill_request"]; ok {
+			switch r := reqValue.Kind.(type) {
+			case *structpb.Value_StructValue:
+				build.RawBackfillRequest = r.StructValue
+			default:
+				return nil, errors.Reason("output properties have malformed backfill_request %#v", reqValue).Err()
 			}
 		}
 	}
