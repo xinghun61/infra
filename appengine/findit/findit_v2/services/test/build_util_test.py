@@ -2,6 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import mock
 import unittest
 
 from buildbucket_proto import common_pb2
@@ -52,3 +53,9 @@ class BuildUtilTest(unittest.TestCase):
 
   def testGetAnalyzedBuildIdFromRerunBuildNoAnalyzedBuildId(self):
     self.assertIsNone(build_util.GetAnalyzedBuildIdFromRerunBuild(Build()))
+
+  @mock.patch(
+      'common.waterfall.buildbucket_client.GetV2Build', return_value=None)
+  def testGetBuildAndContextForAnalysisNoBuild(self, _):
+    self.assertEqual((None, None),
+                     build_util.GetBuildAndContextForAnalysis('chromium', 123))

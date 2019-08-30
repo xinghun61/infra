@@ -4,6 +4,7 @@
 
 from datetime import datetime
 import json
+from parameterized import parameterized
 
 from buildbucket_proto.build_pb2 import Build
 from buildbucket_proto.build_pb2 import BuilderID
@@ -579,3 +580,38 @@ class ChromeOSProjectAPITest(wf_testcase.TestCase):
     analyzed_failure_keys = ChromeOSProjectAPI(
     ).GetFailureKeysToAnalyzeTestFailures(failure_entities)
     self.assertEqual([], analyzed_failure_keys)
+
+  @parameterized.expand([
+      (TestFailure.Create(
+          failed_build_key=ndb.Key(LuciFailedBuild, 8000000000123),
+          step_ui_name='step.suite1',
+          test=None,
+          properties={
+              'needs_bisection': False,
+          }), False),
+      (TestFailure.Create(
+          failed_build_key=ndb.Key(LuciFailedBuild, 8000000000123),
+          step_ui_name='step.suite2',
+          test=None,
+          properties={
+              'needs_bisection': True,
+          }), True),
+  ])
+  def testFailureShouldBeAnalyzed(self, failure_entity, result):
+    cros_api = ChromeOSProjectAPI()
+    self.assertEqual(result, cros_api.FailureShouldBeAnalyzed(failure_entity))
+
+  def testClearSkipFlag(self):
+    build_id = 8000000000598
+    failed_build_key = ndb.Key(LuciFailedBuild, build_id)
+    failure = TestFailure.Create(
+        failed_build_key=failed_build_key,
+        step_ui_name='step.suite8',
+        test=None,
+        properties={
+            'needs_bisection': False,
+        })
+    failure.put()
+    ChromeOSProjectAPI().ClearSkipFlag([failure])
+    failures = TestFailure.query(ancestor=failed_build_key).fetch()
+    self.assertTrue(failures[0].properties['needs_bisection'])

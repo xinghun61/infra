@@ -666,16 +666,24 @@ class TestAnalysisAPITest(wf_testcase.TestCase):
         12134, 8000003412134, 'git_sha_121', builder_name='Mac')
     group_build_entity = luci_build.SaveFailedBuild(self.context, group_build,
                                                     StepTypeEnum.TEST)
-    group_failure = TestFailure.Create(group_build_entity.key, 'step_ui_name',
-                                       'test3')
+    group_failure = TestFailure.Create(
+        group_build_entity.key,
+        'step_ui_name',
+        'test3',
+        first_failed_build_id=8000003412134,
+        failure_group_build_id=8000003412134)
     group_failure.put()
 
     # Prepares data for first failed build.
     first_failed_build = self._MockBuild(121)
     first_failed_build_entity = luci_build.SaveFailedBuild(
         self.context, first_failed_build, StepTypeEnum.TEST)
-    first_failure = TestFailure.Create(first_failed_build_entity.key,
-                                       'step_ui_name', 'test3')
+    first_failure = TestFailure.Create(
+        first_failed_build_entity.key,
+        'step_ui_name',
+        'test3',
+        first_failed_build_id=first_failed_build.id,
+        failure_group_build_id=800000341213)
     first_failure.merged_failure_key = group_failure.key
     first_failure.put()
 
@@ -705,8 +713,12 @@ class TestAnalysisAPITest(wf_testcase.TestCase):
     first_failed_build = self._MockBuild(121)
     first_failed_build_entity = luci_build.SaveFailedBuild(
         self.context, first_failed_build, StepTypeEnum.TEST)
-    first_failure = TestFailure.Create(first_failed_build_entity.key,
-                                       'step_ui_name', None)
+    first_failure = TestFailure.Create(
+        first_failed_build_entity.key,
+        'step_ui_name',
+        None,
+        first_failed_build_id=first_failed_build.id,
+        failure_group_build_id=first_failed_build.id)
     first_failure.put()
 
     self.analysis_api.SaveFailures(self.context, self.build,
@@ -905,18 +917,27 @@ class TestAnalysisAPITest(wf_testcase.TestCase):
                                    detailed_test_failures)
 
     # Prepares data for existing failure group.
+    group_build_id = 8000000000134
     group_build = self._MockBuild(
         12134,
-        build_id=8000000000134,
+        build_id=group_build_id,
         gitiles_commit_id='git_sha_134',
         builder_name='Mac')
     group_build_entity = luci_build.SaveFailedBuild(self.context, group_build,
                                                     StepTypeEnum.TEST)
-    group_failure1 = TestFailure.Create(group_build_entity.key, 'step_ui_name',
-                                        'test1')
+    group_failure1 = TestFailure.Create(
+        group_build_entity.key,
+        'step_ui_name',
+        'test1',
+        first_failed_build_id=group_build_id,
+        failure_group_build_id=group_build_id)
     group_failure1.put()
-    group_failure2 = TestFailure.Create(group_build_entity.key, 'step_ui_name',
-                                        'test2')
+    group_failure2 = TestFailure.Create(
+        group_build_entity.key,
+        'step_ui_name',
+        'test2',
+        first_failed_build_id=group_build_id,
+        failure_group_build_id=group_build_id)
     group_failure2.put()
 
     self.assertEqual(
@@ -1010,15 +1031,11 @@ class TestAnalysisAPITest(wf_testcase.TestCase):
     self.assertEqual(6000010, culprit_commit.commit_position)
 
   def testBisectGitilesCommitFailedToGetGitilesId(self):
-    gitiles_host = 'gitiles.host.com'
-    gitiles_project = 'project/name'
-    gitiles_ref = 'ref/heads/master'
-
     context = Context(
         luci_project_name='chromium',
-        gitiles_project=gitiles_project,
-        gitiles_host=gitiles_host,
-        gitiles_ref=gitiles_ref,
+        gitiles_project='project/name',
+        gitiles_host='gitiles.host.com',
+        gitiles_ref='ref/heads/master',
         gitiles_id=self.commits[10].gitiles_id)
 
     bisect_commit = self.analysis_api._BisectGitilesCommit(
@@ -1330,3 +1347,120 @@ class TestAnalysisAPITest(wf_testcase.TestCase):
     self.assertIsNotNone(culprit_key)
     culprit = culprit_key.get()
     self.assertEqual(6000001, culprit.commit_position)
+
+  @mock.patch.object(
+      ChromiumProjectAPI, 'FailureShouldBeAnalyzed', return_value=False)
+  def testGetSkippedFailures(self, _):
+    step_ui_name = 's'
+    test_name = 't'
+
+    first_build_id = 800000000013954
+    first_failure = TestFailure.Create(
+        ndb.Key(LuciFailedBuild, first_build_id),
+        step_ui_name,
+        test_name,
+        first_failed_build_id=first_build_id,
+        failure_group_build_id=first_build_id)
+    first_failure.put()
+
+    current_failure = TestFailure.Create(
+        ndb.Key(LuciFailedBuild, 800000000013950),
+        step_ui_name,
+        test_name,
+        first_failed_build_id=first_build_id,
+        failure_group_build_id=first_build_id,
+        merged_failure_key=first_failure.key)
+    current_failure.put()
+
+    self.assertEqual({
+        first_build_id: [first_failure],
+    },
+                     self.analysis_api.GetSkippedFailures(
+                         ChromiumProjectAPI(), [current_failure]))
+
+  @mock.patch.object(
+      ChromiumProjectAPI, 'FailureShouldBeAnalyzed', return_value=False)
+  def testGetSkippedFailuresMissingMergedFailure(self, _):
+    step_ui_name = 's'
+    test_name = 't'
+
+    first_build_id = 800000000013954
+    current_failure = TestFailure.Create(
+        ndb.Key(LuciFailedBuild, 800000000013950),
+        step_ui_name,
+        test_name,
+        first_failed_build_id=first_build_id,
+        failure_group_build_id=first_build_id)
+    current_failure.put()
+
+    self.assertEqual({},
+                     self.analysis_api.GetSkippedFailures(
+                         ChromiumProjectAPI(), [current_failure]))
+
+  def testGetSkippedFailuresAllFailuresHaveBeenAnalyzed(self):
+    step_ui_name = 's'
+    test_name = 't'
+
+    first_build_id = 800000000013954
+    first_failure = TestFailure.Create(
+        ndb.Key(LuciFailedBuild, first_build_id),
+        step_ui_name,
+        test_name,
+        first_failed_build_id=first_build_id,
+        failure_group_build_id=first_build_id)
+    first_failure.put()
+    current_failure = TestFailure.Create(
+        ndb.Key(LuciFailedBuild, 800000000013950),
+        step_ui_name,
+        test_name,
+        first_failed_build_id=first_build_id,
+        failure_group_build_id=first_build_id)
+    current_failure.put()
+
+    self.assertEqual({},
+                     self.analysis_api.GetSkippedFailures(
+                         ChromiumProjectAPI(), [current_failure]))
+
+  @mock.patch.object(
+      ChromiumProjectAPI,
+      'GetRerunBuilderId',
+      return_value='chromium/ci/builder')
+  @mock.patch.object(TestAnalysisAPI, 'RerunBasedAnalysis')
+  def testAnalyzeSkippedFailures(self, mock_rerun, _):
+    context = Context(
+        luci_project_name='chromium',
+        gitiles_project='project/name',
+        gitiles_host='gitiles.host.com',
+        gitiles_ref='ref/heads/master',
+        gitiles_id='gitiles_id_125')
+
+    build_id = 800000000003954
+    build = Build(
+        id=build_id,
+        builder=BuilderID(project='chromium', bucket='ci', builder='builder'))
+    failure = TestFailure.Create(
+        ndb.Key(LuciFailedBuild, build_id),
+        'step',
+        'test3231',
+        first_failed_build_id=build_id,
+        failure_group_build_id=build_id)
+    failure.put()
+    group = TestFailureGroup.Create(
+        luci_project=context.luci_project_name,
+        luci_bucket=build.builder.bucket,
+        build_id=build.id,
+        gitiles_host=context.gitiles_host,
+        gitiles_project=context.gitiles_project,
+        gitiles_ref=context.gitiles_ref,
+        last_passed_gitiles_id='gitiles_id_123',
+        last_passed_commit_position=123,
+        first_failed_gitiles_id=context.gitiles_id,
+        first_failed_commit_position=125,
+        test_failure_keys=[failure.key])
+    group.put()
+
+    self.analysis_api.AnalyzeSkippedFailures(ChromiumProjectAPI(), context,
+                                             build, [failure])
+    mock_rerun.assert_called_once_with(context, build_id)
+    analysis = self.analysis_api._GetFailureAnalysis(build_id)
+    self.assertIsNotNone(analysis)

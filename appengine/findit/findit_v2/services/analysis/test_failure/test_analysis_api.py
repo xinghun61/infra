@@ -6,6 +6,7 @@
 Build with test failures will be pre-processed to determine if a new analysis is
 needed or not.
 """
+from collections import defaultdict
 
 from google.appengine.ext import ndb
 
@@ -57,7 +58,7 @@ class TestAnalysisAPI(AnalysisAPI):
         merged_failure_key=merged_failure_key,
         properties=properties)
 
-  def _GetFailureEntitiesForABuild(self, build):
+  def GetFailureEntitiesForABuild(self, build):
     more = True
     cursor = None
     test_failure_entities = []
@@ -172,3 +173,43 @@ class TestAnalysisAPI(AnalysisAPI):
                            first_failures_in_current_build):
     # TODO(crbug.com/993073): Implement this method.
     return {}
+
+  def GetSkippedFailures(self, project_api, failures):
+    """Gets failures that other failures depend on but haven't been analyzed.
+
+    Possible reasons for such case to happen: Findit skips analyzing some
+    failures per project specified requests, but the following failure
+    analyses require the results of them. In this case Findit has stored the
+    failures but didn't start an analysis.
+
+    Note a similar case that is not covered here: for example Findit just starts
+    to support a builder, and the first build it gets is build 100. And there
+    are some failures in build 100 have happened since build 98. Findit doesn't
+    save any information about build 98 or 99, and it will not go back and
+    trigger new analyses on them either.
+
+    """
+    failures_needs_analysis = defaultdict(list)
+
+    for failure in failures:
+      merged_failure = failure.GetMergedFailure()
+      if not merged_failure:
+        #
+        continue
+
+      if merged_failure == failure or project_api.FailureShouldBeAnalyzed(
+          merged_failure):
+        continue
+
+      failures_needs_analysis[merged_failure.build_id].append(merged_failure)
+    return failures_needs_analysis
+
+  def _ClearSkipFlag(self, project_api, failure_entities):
+    project_api.ClearSkipFlag(failure_entities)
+
+  def _GetFailureGroupByContext(self, context):
+    groups = TestFailureGroup.query(
+        TestFailureGroup.luci_project == context.luci_project_name).filter(
+            TestFailureGroup.first_failed_commit.gitiles_id == context
+            .gitiles_id).fetch()
+    return groups[0] if groups else None

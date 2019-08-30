@@ -5,52 +5,15 @@
 
 import logging
 
-from google.protobuf.field_mask_pb2 import FieldMask
-
 from common.constants import DEFAULT_SERVICE_ACCOUNT
-from common.waterfall import buildbucket_client
 
 from findit_v2.model.luci_build import LuciFailedBuild
+from findit_v2.services import build_util
 from findit_v2.services import projects
 from findit_v2.services.analysis.compile_failure import compile_analysis
 from findit_v2.services.analysis.test_failure import test_analysis
-from findit_v2.services.context import Context
 from findit_v2.services.detection import api as detection_api
 from findit_v2.services.failure_type import StepTypeEnum
-
-
-def GetBuildAndContextForAnalysis(project, build_id):
-  """Gets all information about a build and generates context from it.
-
-  Args:
-    project (str): Luci project of the build.
-    build_id (int): Id of the build.
-
-  Returns:
-    (buildbucket build.proto): ALL info about the build.
-    (Context): Context of an analysis.
-
-  """
-  build = buildbucket_client.GetV2Build(build_id, fields=FieldMask(paths=['*']))
-
-  if not build:
-    logging.error('Failed to get build info for build %d.', build_id)
-    return None, None
-
-  if (build.input.gitiles_commit.host !=
-      projects.GERRIT_PROJECTS[project]['gitiles-host'] or
-      build.input.gitiles_commit.project !=
-      projects.GERRIT_PROJECTS[project]['name']):
-    logging.warning('Unexpected gitiles project for build: %r', build_id)
-    return None, None
-
-  context = Context(
-      luci_project_name=project,
-      gitiles_host=build.input.gitiles_commit.host,
-      gitiles_project=build.input.gitiles_commit.project,
-      gitiles_ref=build.input.gitiles_commit.ref,
-      gitiles_id=build.input.gitiles_commit.id)
-  return build, context
 
 
 def OnSupportedBuildCompletion(project, bucket, builder_name, build_id,
@@ -70,7 +33,7 @@ def OnSupportedBuildCompletion(project, bucket, builder_name, build_id,
                   builder_name, build_id)
     return False
 
-  build, context = GetBuildAndContextForAnalysis(project, build_id)
+  build, context = build_util.GetBuildAndContextForAnalysis(project, build_id)
   if not build:
     return False
 
@@ -88,7 +51,8 @@ def OnRerunBuildCompletion(project, build_id):
   Returns:
     False if it is unsupported or skipped; otherwise True.
   """
-  rerun_build, context = GetBuildAndContextForAnalysis(project, build_id)
+  rerun_build, context = build_util.GetBuildAndContextForAnalysis(
+      project, build_id)
   if not rerun_build:
     return False
 

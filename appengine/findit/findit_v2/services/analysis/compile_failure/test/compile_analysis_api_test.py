@@ -125,9 +125,8 @@ class CompileAnalysisAPITest(wf_testcase.TestCase):
   def testAPIStepType(self):
     self.assertEqual(StepTypeEnum.COMPILE, self.analysis_api.step_type)
 
-  def test_GetFailureEntitiesForABuild(self):
-    failure_entities = self.analysis_api._GetFailureEntitiesForABuild(
-        self.build)
+  def testGetFailureEntitiesForABuild(self):
+    failure_entities = self.analysis_api.GetFailureEntitiesForABuild(self.build)
     self.assertEqual(1, len(failure_entities))
     self.assertEqual(self.compile_failure, failure_entities[0])
 
@@ -171,3 +170,11 @@ class CompileAnalysisAPITest(wf_testcase.TestCase):
     self.analysis_api._GetRerunBuildInputProperties(ChromiumProjectAPI(),
                                                     {'compile': ['a.o']})
     self.assertTrue(mock_input_properties.called)
+
+  def testGetFailureGroupOfBuild(self):
+    group = self.analysis_api._CreateFailureGroup(
+        self.context, self.build, [self.compile_failure.key], '122', 122, 123)
+    group.put()
+    self.assertEqual(
+        group,
+        CompileAnalysisAPI()._GetFailureGroupByContext(self.context))

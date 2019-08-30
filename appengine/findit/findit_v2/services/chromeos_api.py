@@ -401,3 +401,15 @@ class ChromeOSProjectAPI(ProjectAPI):
             'test': bisect_input,
         },
     }
+
+  def FailureShouldBeAnalyzed(self, failure_entity):
+    """A Cros test failure should not be analyzed if its 'needs_bisection'
+    property is False.
+    """
+    return failure_entity.properties.get('needs_bisection', True)
+
+  def ClearSkipFlag(self, failure_entities):
+    """Sets the entities 'needs_bisection' property to be True."""
+    for failure in failure_entities:
+      failure.properties['needs_bisection'] = True
+    ndb.put_multi(failure_entities)

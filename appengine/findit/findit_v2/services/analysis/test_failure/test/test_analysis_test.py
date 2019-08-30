@@ -17,6 +17,8 @@ from findit_v2.model.messages import findit_result
 from findit_v2.model.test_failure import TestFailure
 from findit_v2.model.test_failure import TestFailureAnalysis
 from findit_v2.model.test_failure import TestRerunBuild
+from findit_v2.services import build_util
+from findit_v2.services import projects
 from findit_v2.services.analysis.test_failure import test_analysis
 from findit_v2.services.analysis.test_failure.test_analysis_api import (
     TestAnalysisAPI)
@@ -107,7 +109,8 @@ class TestAnalysisTest(wf_testcase.TestCase):
     mock_first_failure.assert_called_once_with(self.context, build, {})
 
   @mock.patch.object(TestAnalysisAPI, 'RerunBasedAnalysis')
-  @mock.patch.object(TestAnalysisAPI, 'SaveFailureAnalysis')
+  @mock.patch.object(
+      TestAnalysisAPI, 'SaveFailureAnalysis', return_value='analysis')
   @mock.patch.object(TestAnalysisAPI, 'SaveFailures')
   @mock.patch.object(TestAnalysisAPI, 'UpdateFailuresWithFirstFailureInfo')
   @mock.patch.object(ChromeOSProjectAPI, 'GetTestFailures', return_value={})
@@ -507,3 +510,73 @@ class TestAnalysisTest(wf_testcase.TestCase):
     self.assertEqual(culprit_id, responses[0].culprits[0].commit.id)
     self.assertTrue(responses[0].is_finished)
     self.assertEqual('test7', responses[0].test_name)
+
+  @mock.patch.object(
+      projects, 'GetProjectAPI', return_value='ChromeOSProjectAPI')
+  @mock.patch.object(
+      build_util,
+      'GetBuildAndContextForAnalysis',
+      return_value=('prev_build', 'prev_context'))
+  @mock.patch.object(TestAnalysisAPI, 'GetSkippedFailures')
+  @mock.patch.object(TestAnalysisAPI, 'AnalyzeSkippedFailures')
+  def testBackfillIfSkippedAnalyses(self, mock_trigger_new_analysis,
+                                    mock_get_failures, *_):
+    first_failed_build_id = 8000000000128
+    first_failure = TestFailure.Create(
+        ndb.Key(LuciFailedBuild, first_failed_build_id),
+        self.test_step_name,
+        'test8',
+        first_failed_build_id=first_failed_build_id,
+        failure_group_build_id=first_failed_build_id,
+        properties={'needs_bisection': False})
+    first_failure.put()
+
+    current_build_id = 8000000000123
+    test_failure = TestFailure.Create(
+        ndb.Key(LuciFailedBuild, current_build_id),
+        self.test_step_name,
+        'test8',
+        first_failed_build_id=first_failed_build_id,
+        failure_group_build_id=first_failed_build_id,
+        merged_failure_key=first_failure.key)
+    test_failure.put()
+
+    mock_get_failures.return_value = {first_failed_build_id: [first_failure]}
+
+    context = Context(
+        luci_project_name='chromeos',
+        gitiles_host='gitiles.host.com',
+        gitiles_project='project/name',
+        gitiles_ref='ref/heads/master',
+        gitiles_id='git_sha_123')
+    build = Build(id=current_build_id)
+    test_analysis.BackfillIfSkippedAnalyses(context, build)
+
+    mock_trigger_new_analysis.assert_called_once_with(
+        'ChromeOSProjectAPI', 'prev_context', 'prev_build', [first_failure])
+
+  @mock.patch.object(TestAnalysisAPI, 'GetSkippedFailures')
+  @mock.patch.object(TestAnalysisAPI, 'AnalyzeSkippedFailures')
+  def testTriggerAnalysisForPreviousFailuresNoNeeded(
+      self, mock_trigger_new_analysis, mock_get_failures):
+    current_build_id = 8000000000123
+    test_failure = TestFailure.Create(
+        ndb.Key(LuciFailedBuild, current_build_id),
+        self.test_step_name,
+        'test8',
+        first_failed_build_id=current_build_id,
+        failure_group_build_id=current_build_id)
+    test_failure.put()
+
+    mock_get_failures.return_value = {}
+
+    context = Context(
+        luci_project_name='chromeos',
+        gitiles_host='gitiles.host.com',
+        gitiles_project='project/name',
+        gitiles_ref='ref/heads/master',
+        gitiles_id='git_sha_123')
+    build = Build(id=current_build_id)
+    test_analysis.BackfillIfSkippedAnalyses(context, build)
+
+    self.assertFalse(mock_trigger_new_analysis.called)

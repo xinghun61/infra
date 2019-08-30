@@ -63,7 +63,12 @@ class TestFailureTest(wf_testcase.WaterfallTestCase):
 
   def testGetMergedFailureKeyNoTestLevelInfo(self):
     step_ui_name = 'step_ui_name3'
-    first_failure = TestFailure.Create(self.build.key, step_ui_name, None)
+    first_failure = TestFailure.Create(
+        self.build.key,
+        step_ui_name,
+        None,
+        first_failed_build_id=self.build_id,
+        failure_group_build_id=self.build_id)
     first_failure.put()
 
     self.assertEqual(
@@ -76,10 +81,20 @@ class TestFailureTest(wf_testcase.WaterfallTestCase):
     test_name = 'test'
 
     base_build = self._CreateLuciBuild(8765432109)
-    base_failure = TestFailure.Create(base_build.key, step_ui_name, test_name)
+    base_failure = TestFailure.Create(
+        base_build.key,
+        step_ui_name,
+        test_name,
+        first_failed_build_id=base_build.build_id,
+        failure_group_build_id=base_build.build_id)
     base_failure.put()
 
-    first_failure = TestFailure.Create(self.build.key, step_ui_name, test_name)
+    first_failure = TestFailure.Create(
+        self.build.key,
+        step_ui_name,
+        test_name,
+        first_failed_build_id=self.build_id,
+        failure_group_build_id=base_build.build_id)
     first_failure.merged_failure_key = base_failure.key
     first_failure.put()
 
@@ -110,11 +125,31 @@ class TestFailureTest(wf_testcase.WaterfallTestCase):
     step_name = 'step'
     test_name = 'test_for_non_first_failure'
     dummy_merged_failure = TestFailure.Create(
-        ndb.Key(LuciFailedBuild, first_failed_build_id), step_name, test_name)
+        ndb.Key(LuciFailedBuild, first_failed_build_id),
+        step_name,
+        test_name,
+        first_failed_build_id=first_failed_build_id,
+        failure_group_build_id=first_failed_build_id)
     dummy_merged_failure.put()
     failure = TestFailure.Create(self.build.key, step_name, test_name)
     failure.first_failed_build_id = first_failed_build_id
     self.assertEqual(dummy_merged_failure, failure.GetMergedFailure())
+
+  def testGetMergedFailureFirstFailureNotStored(self):
+    first_failed_build_id = 9876543208
+    second_failed_build_id = 9876543201
+    step_name = 'step'
+    test_name = 'test_for_non_first_failure'
+    dummy_previous_failure = TestFailure.Create(
+        ndb.Key(LuciFailedBuild, second_failed_build_id),
+        step_name,
+        test_name,
+        first_failed_build_id=first_failed_build_id,
+        failure_group_build_id=first_failed_build_id)
+    dummy_previous_failure.put()
+    failure = TestFailure.Create(self.build.key, step_name, test_name)
+    failure.first_failed_build_id = second_failed_build_id
+    self.assertIsNone(failure.GetMergedFailure())
 
   def testTestFailureGroup(self):
     failure1 = TestFailure.Create(self.build.key, 'step1', 'test1')

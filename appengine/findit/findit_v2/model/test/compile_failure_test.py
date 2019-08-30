@@ -46,7 +46,13 @@ class CompileFailureTest(wf_testcase.WaterfallTestCase):
 
     self.target_entities = []
     for output_targets, rule in self.edges:
-      target = CompileFailure.Create(build.key, 'compile', output_targets, rule)
+      target = CompileFailure.Create(
+          build.key,
+          'compile',
+          output_targets,
+          rule,
+          first_failed_build_id=build.build_id,
+          failure_group_build_id=build.build_id)
       target.put()
       self.target_entities.append(target)
 
@@ -75,8 +81,10 @@ class CompileFailureTest(wf_testcase.WaterfallTestCase):
   def testGetMergedFailureForNonFirstFailure(self):
     first_failed_build_id = 9876543201
     dummy_merged_failure = CompileFailure.Create(
-        ndb.Key(LuciFailedBuild, first_failed_build_id), 'compile',
-        ['target1.o'])
+        ndb.Key(LuciFailedBuild, first_failed_build_id),
+        'compile', ['target1.o'],
+        first_failed_build_id=first_failed_build_id,
+        failure_group_build_id=first_failed_build_id)
     dummy_merged_failure.put()
     failure = self.target_entities[0]
     failure.first_failed_build_id = first_failed_build_id

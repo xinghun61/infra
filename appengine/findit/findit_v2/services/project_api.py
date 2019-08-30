@@ -241,3 +241,22 @@ class ProjectAPI(object):  # pragma: no cover.
     """Creates input object required by heuristic analysis for compile."""
     # pylint: disable=unused-argument
     return {}
+
+  def FailureShouldBeAnalyzed(self, failure_entity):
+    """Checks if the failure is supposed to be analyzed."""
+    # pylint: disable=unused-argument
+    return True
+
+  def ClearSkipFlag(self, failure_entities):
+    """For failures that were skipped on purpose then require to be analyzed,
+      updates them to be picked up by an analysis.
+
+    So far this is a special case for CrOS: CrOS can tell Findit to skip
+    analyzing a failed build if there are too many failures. Those failures
+    will have a flag in properties indicates that they don't need analysis.
+    But a following build with failures that need analysis might be merged into
+    some of the skipped failures, if so those particular failures need to update
+    to be analyzed.
+    """
+    # pylint: disable=unused-argument
+    return

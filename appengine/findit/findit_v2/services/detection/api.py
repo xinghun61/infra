@@ -39,12 +39,23 @@ def OnBuildFailure(context, build):
     logging.info('Compile failure found in build %d.', build.id)
     return compile_analysis.AnalyzeCompileFailure(context, build, compile_steps)
 
-  test_steps = [
-    fs[0] for fs in failed_steps if fs[1] == StepTypeEnum.TEST
-  ]
+  test_steps = [fs[0] for fs in failed_steps if fs[1] == StepTypeEnum.TEST]
   if test_steps:
     logging.info('Test failure found in build %d.', build.id)
-    return test_analysis.AnalyzeTestFailure(context, build, test_steps)
+    analysis_triggered = test_analysis.AnalyzeTestFailure(
+        context, build, test_steps)
+
+    # Because of special project settings, some test failures may skip the
+    # analysis, but a later build may actually need those failures to be
+    # analyzed, so Findit has to check back and trigger a new analysis for
+    # those previously skipped failures.
+    # For example, for CrOS, if there are too many failed steps in one build
+    # (b1), Findit will get notified that b1 doesn't need analysis. Later if
+    # b2 completes with just a few failures, b2 will be analyzed. And if some of
+    # the failures in b2 also happened in b1, Findit should analyze those
+    # particular failures in b1.
+    test_analysis.BackfillIfSkippedAnalyses(context, build)
+    return analysis_triggered
 
   logging.info('Unsupported failure types: %r', [fs[1] for fs in failed_steps])
   return False

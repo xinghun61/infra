@@ -273,3 +273,30 @@ def OnTestFailureAnalysisResultRequested(request, requested_build):
       responses.append(response)
 
   return responses
+
+
+def BackfillIfSkippedAnalyses(context, build):
+  """Trigger analyses on previously skipped failures if required.
+
+  May need to trigger analyses for previous failures if this build's
+  failures are merged into them but they were skipped.
+
+  Note that if Findit just starts to support a builder, there could be non-first
+  failures in the first build analyzed by Findit. In this case since Findit
+  doesn't have any information about the builds before supporting, it will not
+  backfill those analyses.
+  """
+  luci_project = context.luci_project_name
+  project_api = projects.GetProjectAPI(luci_project)
+  analysis_api = TestAnalysisAPI()
+
+  failures = analysis_api.GetFailureEntitiesForABuild(build)
+  skipped_failures = analysis_api.GetSkippedFailures(project_api, failures)
+  if not skipped_failures:
+    return
+
+  for prev_build_id, failures_to_analyze in (skipped_failures.iteritems()):
+    prev_build, prev_context = build_util.GetBuildAndContextForAnalysis(
+        luci_project, prev_build_id)
+    analysis_api.AnalyzeSkippedFailures(project_api, prev_context, prev_build,
+                                        failures_to_analyze)

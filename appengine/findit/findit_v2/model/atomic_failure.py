@@ -106,6 +106,20 @@ class AtomicFailure(ndb.Model):
   @classmethod
   def GetMergedFailureKey(cls, failure_entities, referred_build_id,
                           step_ui_name, atomic_failures):
+    """Gets an existing failure key for a new failure to merge into.
+
+     Looks for a failure which is the same as the new failure and has actually
+     been analyzed.
+
+     Args:
+       failure_entities (dict): map of build_ids to failures of that build.
+       referred_build_id (int): Id of a build which likely has a failure for the
+         new failure to merge into.
+       step_ui_name (str): Step name of the new failure.
+       atomic_failures (frozenset): Identifier of the new failure. To find the
+         failure to merge into, that failure should have the same step name and
+         failure identifier as this new failure.
+     """
 
     def get_failures_by_build_id(build_id):
       """Gets failure entities by build id."""
@@ -126,10 +140,14 @@ class AtomicFailure(ndb.Model):
     for failure in failure_entities[referred_build_id]:
       if (failure.step_ui_name == step_ui_name and
           failure.GetFailureIdentifier() == atomic_failures):
-        # Found the same failure in the first failed build. Uses that
-        # failure's merged_failure_key or key to be the current failure's
-        # merged_failure_key.
-        return failure.merged_failure_key or failure.key
+        # Found the same failure in the referred build.
+        if (failure.build_id == failure.first_failed_build_id and
+            failure.build_id == failure.failure_group_build_id):
+          # This failure is the first failure on its builder and is not merged
+          # into another failure on other builders either. This failure should
+          # have been actually analyzed.
+          return failure.key
+        return failure.merged_failure_key
     return None
 
   def GetFailureIdentifier(self):

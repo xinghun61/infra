@@ -58,7 +58,7 @@ class CompileAnalysisAPI(AnalysisAPI):
         failure_group_build_id=first_failed_build_id,
         merged_failure_key=merged_failure_key)
 
-  def _GetFailureEntitiesForABuild(self, build):
+  def GetFailureEntitiesForABuild(self, build):
     compile_failure_entities = CompileFailure.query(
         ancestor=ndb.Key(luci_build.LuciFailedBuild, build.id)).fetch()
     assert compile_failure_entities, (
@@ -172,3 +172,10 @@ class CompileAnalysisAPI(AnalysisAPI):
       return project_api.HeuristicAnalysis(failure_info, change_logs, deps_info,
                                            signals)
     return None
+
+  def _GetFailureGroupByContext(self, context):
+    groups = CompileFailureGroup.query(
+        CompileFailureGroup.luci_project == context.luci_project_name).filter(
+            CompileFailureGroup.first_failed_commit.gitiles_id == context
+            .gitiles_id).fetch()
+    return groups[0] if groups else None

@@ -66,15 +66,16 @@ class APITest(unittest.TestCase):
   @mock.patch(
       'findit_v2.services.projects.GetProjectAPI',
       return_value=DummyProjectAPI())
+  @mock.patch.object(test_analysis, 'BackfillIfSkippedAnalyses')
   @mock.patch.object(test_analysis, 'AnalyzeTestFailure')
-  def testTestFailure(self, mock_analyzer, _):
+  def testTestFailure(self, mock_analyzer, mock_analyze_prev_build, _):
     build = Build()
     step = build.steps.add()
     step.name = 'test'
     step.status = common_pb2.FAILURE
     self.assertTrue(api.OnBuildFailure(self.context, build))
-    mock_analyzer.assert_called_once_with(
-      self.context, build, [step])
+    mock_analyzer.assert_called_once_with(self.context, build, [step])
+    mock_analyze_prev_build.assert_called_once_with(self.context, build)
 
   @mock.patch(
       'findit_v2.services.projects.GetProjectAPI',
@@ -86,8 +87,7 @@ class APITest(unittest.TestCase):
     step.name = 'compile'
     step.status = common_pb2.FAILURE
     self.assertTrue(api.OnBuildFailure(self.context, build))
-    mock_analyzer.assert_called_once_with(
-        self.context, build, [step])
+    mock_analyzer.assert_called_once_with(self.context, build, [step])
 
   @mock.patch.object(
       compile_analysis, 'OnCompileRerunBuildCompletion', return_value=True)

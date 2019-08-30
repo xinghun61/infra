@@ -170,12 +170,6 @@ class APITest(WaterfallTestCase):
         123, fields=FieldMask(paths=['*']))
     self.assertFalse(mocked_OnRerunBuildCompletion.called)
 
-  @mock.patch(
-      'common.waterfall.buildbucket_client.GetV2Build', return_value=None)
-  def testGetBuildAndContextForAnalysisNoBuild(self, _):
-    self.assertEqual((None, None),
-                     api.GetBuildAndContextForAnalysis('chromium', 123))
-
   @mock.patch('findit_v2.services.projects.LUCI_PROJECTS',
               _MOCKED_LUCI_PROJECTS)
   @mock.patch('findit_v2.services.projects.GERRIT_PROJECTS',

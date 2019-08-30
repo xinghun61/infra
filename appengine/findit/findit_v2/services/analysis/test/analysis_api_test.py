@@ -792,8 +792,13 @@ class AnalysisAPITest(wf_testcase.TestCase):
     first_failed_build = self._MockBuild(121)
     first_failed_build_entity = luci_build.SaveFailedBuild(
         self.context, first_failed_build, StepTypeEnum.COMPILE)
-    first_failure = CompileFailure.Create(first_failed_build_entity.key,
-                                          'compile', None, 'CXX')
+    first_failure = CompileFailure.Create(
+        first_failed_build_entity.key,
+        'compile',
+        None,
+        'CXX',
+        first_failed_build_id=first_failed_build.id,
+        failure_group_build_id=first_failed_build.id)
     first_failure.put()
 
     self.analysis_api.SaveFailures(self.context, self.build,
@@ -1068,11 +1073,19 @@ class AnalysisAPITest(wf_testcase.TestCase):
         12134, 8000000000134, 'git_sha_134', builder_name='Mac')
     group_build_entity = luci_build.SaveFailedBuild(self.context, group_build,
                                                     StepTypeEnum.COMPILE)
-    group_failure1 = CompileFailure.Create(group_build_entity.key, 'compile',
-                                           ['target1'], 'CXX')
+    group_failure1 = CompileFailure.Create(
+        group_build_entity.key,
+        'compile', ['target1'],
+        'CXX',
+        first_failed_build_id=8000000000134,
+        failure_group_build_id=8000000000134)
     group_failure1.put()
-    group_failure2 = CompileFailure.Create(group_build_entity.key, 'compile',
-                                           ['target2'], 'ACTION')
+    group_failure2 = CompileFailure.Create(
+        group_build_entity.key,
+        'compile', ['target2'],
+        'ACTION',
+        first_failed_build_id=8000000000134,
+        failure_group_build_id=8000000000134)
     group_failure2.put()
 
     self.assertEqual(
