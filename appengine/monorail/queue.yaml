@@ -15,7 +15,7 @@ queue:
 
 - name: default
   rate: 5/s
-  max_concurrent_requests: 50
+  max_concurrent_requests: 30
   retry_parameters:
     task_age_limit: 24h
     min_backoff_seconds: 60
