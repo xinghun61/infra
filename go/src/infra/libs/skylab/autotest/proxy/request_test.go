@@ -23,6 +23,7 @@ func TestRunSuite(t *testing.T) {
 			FirmwareROBuild: "foo-ro-build",
 			Model:           "foo-model",
 			Pool:            "foo-pool",
+			Priority:        11,
 			SuiteName:       "foo-suite",
 			SuiteArgs:       map[string]int{"arg1": 1},
 			Timeout:         2 * time.Hour,
@@ -40,6 +41,7 @@ func TestRunSuite(t *testing.T) {
 			So(flatCmd, ShouldContainSubstring, "--firmware_ro_build foo-ro-build")
 			So(flatCmd, ShouldContainSubstring, "--model foo-model")
 			So(flatCmd, ShouldContainSubstring, "--pool foo-pool")
+			So(flatCmd, ShouldContainSubstring, "--priority 11")
 			So(flatCmd, ShouldContainSubstring, "--suite_name foo-suite")
 
 			So(slice.Properties.Command, ShouldContain, "--suite_args_json")

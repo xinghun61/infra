@@ -26,6 +26,7 @@ type RunSuiteArgs struct {
 	Model           string
 	SuiteName       string
 	Pool            string
+	Priority        int
 	AfeHost         string
 	Timeout         time.Duration
 	// SuiteArgs are the arguments to be passed into the suite. This object
@@ -73,6 +74,9 @@ func runSuiteCmd(args RunSuiteArgs) ([]string, error) {
 	}
 	if args.Pool != "" {
 		cmd = append(cmd, "--pool", args.Pool)
+	}
+	if args.Priority > 0 {
+		cmd = append(cmd, "--priority", strconv.Itoa(args.Priority))
 	}
 	if args.AfeHost != "" {
 		cmd = append(cmd, "-w", args.AfeHost)

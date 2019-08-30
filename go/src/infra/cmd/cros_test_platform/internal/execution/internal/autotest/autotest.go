@@ -8,6 +8,7 @@ package autotest
 
 import (
 	"context"
+	"math"
 	"strings"
 	"time"
 
@@ -46,10 +47,6 @@ func New(tests []*steps.EnumerationResponse_AutotestInvocation, params *test_pla
 
 // LaunchAndWait launches an autotest execution and waits for it to complete.
 func (r *Runner) LaunchAndWait(ctx context.Context, client swarming.Client, _ isolate.GetterFactory) error {
-	if p := r.requestParams.GetScheduling().GetPriority(); p != 0 && p != 140 {
-		// TODO(crbug.com/996301): Support priority in autotest backend.
-		logging.Warningf(ctx, "request specifed a nondefault priority %d; this is unsupported in autotest backend, and ignored", p)
-	}
 	if len(r.requestParams.GetDecorations().GetTags()) != 0 {
 		logging.Warningf(ctx, "request specified tags %s; this is unsupported in autotest backend, and ignored", r.requestParams.GetDecorations().GetTags())
 	}
@@ -147,6 +144,9 @@ func (r *Runner) proxyRequest() (*swarming_api.SwarmingRpcsNewTaskRequest, error
 		ReimageAndRunArgs: rArgs,
 		LegacySuite:       r.requestParams.GetLegacy().GetAutotestSuite(),
 	}
+	if p := r.requestParams.GetScheduling().GetPriority(); p > 0 {
+		dsArgs.Priority = toAutotestPriority(p)
+	}
 
 	req, err := dynamicsuite.NewRequest(dsArgs)
 	if err != nil {
@@ -185,6 +185,26 @@ func toTimeout(params *test_platform.Request_Params) (time.Duration, error) {
 		return 0, errors.Annotate(err, "get timeout").Err()
 	}
 	return duration, nil
+}
+
+func toAutotestPriority(p int64) int {
+	// Valid swarming priority values are between 0 and 255.
+	//
+	// Valid autotest priority values are between [10, 80].
+	// Numerically higher number means more important.
+	// Source of truth:
+	// https://chromium.googlesource.com/chromiumos/third_party/autotest/+/master/client/common_lib/priorities.py
+	//
+	// The computation here is the reverse of
+	// https://chromium.googlesource.com/chromiumos/infra/suite_scheduler/+/1b91d6d437ed9f6cf291bb7be3add3af5313977a/swarming_lib.py#512
+	ap := int(math.Floor((260 - float64(p)) / 3))
+	if ap < 10 {
+		ap = 10
+	}
+	if ap > 80 {
+		ap = 80
+	}
+	return ap
 }
 
 func (r *Runner) validate() error {

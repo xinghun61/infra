@@ -28,6 +28,7 @@ type Args struct {
 	FirmwareRWBuild string
 	Model           string
 	Pool            string
+	Priority        int
 	AfeHost         string
 	Timeout         time.Duration
 	// ReimageAndRunArgs specifies arguments to be passed into
@@ -63,6 +64,7 @@ func NewRequest(args Args) (*swarming.SwarmingRpcsNewTaskRequest, error) {
 			FirmwareRWBuild: args.FirmwareRWBuild,
 			Model:           args.Model,
 			Pool:            args.Pool,
+			Priority:        args.Priority,
 			AfeHost:         args.AfeHost,
 			Timeout:         args.Timeout,
 			SuiteName:       s,

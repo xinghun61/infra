@@ -5,6 +5,7 @@
 package autotest
 
 import (
+	"fmt"
 	"testing"
 
 	. "github.com/smartystreets/goconvey/convey"
@@ -60,4 +61,24 @@ func TestToPool(t *testing.T) {
 		}
 	})
 
+}
+
+func TestPriorityConversion(t *testing.T) {
+	var cases = []struct {
+		Tag      string
+		Skylab   int64
+		Autotest int
+	}{
+		{Tag: "clip_above", Skylab: 0, Autotest: 80},
+		{Tag: "clip_below", Skylab: 300, Autotest: 10},
+		{Tag: "convert_default", Skylab: 140, Autotest: 40},
+	}
+	for _, c := range cases {
+		t.Run(fmt.Sprintf("convert_%d", c.Skylab), func(t *testing.T) {
+			got := toAutotestPriority(c.Skylab)
+			if c.Autotest != got {
+				t.Errorf("toAutotestPriority(%d) - want %d got %d", c.Skylab, c.Autotest, got)
+			}
+		})
+	}
 }
