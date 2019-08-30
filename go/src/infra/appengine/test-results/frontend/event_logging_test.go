@@ -59,6 +59,9 @@ func TestCreateEvent(t *testing.T) {
 					BuilderName: p.Builder,
 					BuildNumber: int64(f.BuildNumber),
 				},
+				BuildbucketInfo: &gen.BuildbucketInfo{
+					BuildId: int64(f.BuildID),
+				},
 				StartTime: zeroTS,
 				Run: &gen.TestRun{
 					Actual:       []gen.ResultType{gen.ResultType_PASS},
@@ -76,6 +79,9 @@ func TestCreateEvent(t *testing.T) {
 					MasterName:  p.Master,
 					BuilderName: p.Builder,
 					BuildNumber: int64(f.BuildNumber),
+				},
+				BuildbucketInfo: &gen.BuildbucketInfo{
+					BuildId: int64(f.BuildID),
 				},
 				StartTime: zeroTS,
 				Run: &gen.TestRun{

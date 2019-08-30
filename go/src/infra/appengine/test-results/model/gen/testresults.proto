@@ -233,6 +233,20 @@ message TestResultEvent {
 
   // ChromuimRevision is the revision of the current Chromium checkout, if relevant, e.g. “356123”.
   string chromium_revision = 10;
+
+  BuildbucketInfo buildbucket_info = 11;
+}
+
+// BuildbucketInfo identifies a buildbucket build.
+message BuildbucketInfo {
+  // Project is the buildbucket project name.
+  string project = 1;
+  // Bucket is the buildbucket bucket name.
+  string bucket = 2;
+  // Builder is the buildbucket builder name.
+  string builder = 3;
+  // BuildID is the buildbucket build ID.
+  int64 build_id = 4;
 }
 
 // BuildbotInfo identifies a buildbot build.

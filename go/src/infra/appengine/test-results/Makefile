@@ -24,6 +24,12 @@ test:
 devserver:
 	dev_appserver.py frontend/app.yaml
 
+update_bq_staging:
+	bqschemaupdater -table test-results-test-hrd.events.test_results -message-dir model/gen/ -message testresults.events.TestResultEvent
+
+update_bq_prod:
+	bqschemaupdater -table test-results-hrd.events.test_results -message-dir model/gen/ -message testresults.events.TestResultEvent
+
 deploy_staging:
 	gae.py upload -A test-results-test-hrd
 

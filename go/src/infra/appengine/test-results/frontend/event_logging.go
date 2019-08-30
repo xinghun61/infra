@@ -111,6 +111,9 @@ func createTestResultEvents(c context.Context, f *model.FullResult, p *UploadPar
 
 		if f.BuildID != 0 {
 			evt.BuildId = fmt.Sprintf("%d", f.BuildID)
+			evt.BuildbucketInfo = &gen.BuildbucketInfo{
+				BuildId: int64(f.BuildID),
+			}
 		}
 
 		if f.ChromiumRev != nil {
