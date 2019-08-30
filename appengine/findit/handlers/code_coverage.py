@@ -74,6 +74,9 @@ _BLACKLISTED_DEPS = {
     ],
 }
 
+# The regex to extract the luci project name from the url path.
+_LUCI_PROJECT_REGEX = re.compile(r'^/p/(.+)/coverage.*')
+
 # A mapping from platform to related info such as builder name and ui name.
 _POSTSUBMIT_PLATFORM_INFO_MAP = {
     'linux': {
@@ -1055,6 +1058,12 @@ class ServeCodeCoverageData(BaseHandler):
     if self.request.path == '/coverage/api/coverage-data':
       return self._ServePerCLCoverageData()
 
+    match = _LUCI_PROJECT_REGEX.match(self.request.path)
+    if not match:
+      return BaseHandler.CreateError('Invalid url path %s' % self.request.path,
+                                     400)
+    luci_project = match.group(1)
+
     host = self.request.get('host', 'chromium.googlesource.com')
     project = self.request.get('project', 'chromium/src')
     ref = self.request.get('ref', 'refs/heads/master')
@@ -1277,14 +1286,14 @@ class ServeCodeCoverageData(BaseHandler):
     path_root, _ = _GetPathRootAndSeparatorFromDataType(data_type)
     return {
         'data': {
-            'host':
-                host,
-            'project':
-                project,
-            'ref':
-                ref,
-            'revision':
-                revision,
+            'luci_project':
+                luci_project,
+            'gitiles_commit': {
+                'host': host,
+                'project': project,
+                'ref': ref,
+                'revision': revision,
+            },
             'path':
                 path,
             'platform':

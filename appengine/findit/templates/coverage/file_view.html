@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <head>
   <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon">
-  <title>Coverage for {{project}} - {{path}}</title>
+  <title>Coverage for {{gitiles_commit.project}} - {{path}}</title>
   <meta charset="utf-8">
   <style>
     .coverage-header {
@@ -145,17 +145,17 @@
       {% for name, value in platform_select.params.iteritems() %}
         <input type="hidden" name="{{name}}" value="{{value}}"/>
       {% endfor %}
-      Switch to <a href="/p/chromium/coverage/component?host={{host}}&project={{project}}&ref={{ref}}&revision={{revision}}&path=>>&platform={{platform}}">Component View</a>.
-      See <a href="/p/chromium/coverage/dir?host={{host}}&project={{project}}&ref={{ref}}&platform={{platform}}&list_reports=true">Previous Reports</a>.
+      Switch to <a href="/p/{{luci_project}}/coverage/component?host={{gitiles_commit.host}}&project={{gitiles_commit.project}}&ref={{gitiles_commit.ref}}&revision={{gitiles_commit.revision}}&path=>>&platform={{platform}}">Component View</a>.
+      See <a href="/p/{{luci_project}}/coverage/dir?host={{gitiles_commit.host}}&project={{gitiles_commit.project}}&ref={{gitiles_commit.ref}}&platform={{platform}}&list_reports=true">Previous Reports</a>.
     </form>
     <br>
     <br>
     </div>
     <div style="width: fit-content;">
     <div class="coverage-header">
-            <a href="/p/chromium/coverage?host={{host}}&project={{project}}&platform={{platform}}">{{project}}</a>
+            <a href="/p/{{luci_project}}/coverage?host={{gitiles_commit.host}}&project={{gitiles_commit.project}}&platform={{platform}}">{{gitiles_commit.project}}</a>
             - {{data.commit_position or revision}}
-            - <a href="/p/chromium/coverage?host={{host}}&project={{project}}&ref={{ref}}&revision={{revision}}&path={{path_root}}&platform={{platform}}">{{path_root}}</a>{% for name, sub_path in path_parts %}<a style="padding-left:.3ex;" title="{{sub_path}}" href="/p/chromium/coverage/{{'dir' if name.endswith('/') else 'file'}}?host={{host}}&project={{project}}&ref={{ref}}&revision={{revision}}&path={{sub_path}}&platform={{platform}}">{{name}}</a>{% endfor %}
+            - <a href="/p/{{luci_project}}/coverage?host={{gitiles_commit.host}}&project={{gitiles_commit.project}}&ref={{gitiles_commit.ref}}&revision={{gitiles_commit.revision}}&path={{path_root}}&platform={{platform}}">{{path_root}}</a>{% for name, sub_path in path_parts %}<a style="padding-left:.3ex;" title="{{sub_path}}" href="/p/{{luci_project}}/coverage/{{'dir' if name.endswith('/') else 'file'}}?host={{gitiles_commit.host}}&project={{gitiles_commit.project}}&ref={{gitiles_commit.ref}}&revision={{gitiles_commit.revision}}&path={{sub_path}}&platform={{platform}}">{{name}}</a>{% endfor %}
     </div>
     <table>
       <thead>

@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <head>
   <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon">
-  <title>Coverage for {{project}}</title>
+  <title>Coverage for {{gitiles_commit.project}}</title>
   <meta charset="utf-8">
   <link rel="stylesheet" href="/common.css">
   <style>
@@ -61,9 +61,9 @@
         <thead>
           <tr class="coverage-header">
             {% if user_info and user_info.is_admin %}
-              <th colspan="8">{{project}}</th>
+              <th colspan="8">{{gitiles_commit.project}}</th>
             {% else %}
-              <th colspan="7">{{project}}</th>
+              <th colspan="7">{{gitiles_commit.project}}</th>
             {% endif %}
           </tr>
           <tr>
@@ -91,7 +91,7 @@
                 {{datum.commit_timestamp}}
               </td>
               <td>
-                <a href="/p/chromium/coverage/dir?host={{host}}&project={{project}}&ref={{ref}}&revision={{datum.gitiles_commit.revision}}&path=//&platform={{platform}}">Link</a>
+                <a href="/p/{{luci_project}}/coverage/dir?host={{gitiles_commit.host}}&project={{gitiles_commit.project}}&ref={{gitiles_commit.ref}}&revision={{datum.gitiles_commit.revision}}&path=//&platform={{platform}}">Link</a>
               </td>
               {% for target_metric in metrics %}
                 {% set found = False %}
@@ -122,12 +122,12 @@
         </tbody>
       </table>
       {% if prev_cursor != '' %}
-        <a href="/p/chromium/coverage/dir?host={{host}}&project={{project}}&ref={{ref}}&platform={{platform}}&list_reports=true&direction=previous&cursor={{prev_cursor}}">Previous</a>
+        <a href="/p/{{luci_project}}/coverage/dir?host={{gitiles_commit.host}}&project={{gitiles_commit.project}}&ref={{gitiles_commit.ref}}&platform={{platform}}&list_reports=true&direction=previous&cursor={{prev_cursor}}">Previous</a>
       {% else %}
         <span class="disabled-link">Previous</span>
       {% endif %}
       {% if next_cursor != '' %}
-        <a href="/p/chromium/coverage/dir?host={{host}}&project={{project}}&ref={{ref}}&platform={{platform}}&list_reports=true&direction=next&cursor={{next_cursor}}">Next</a>
+        <a href="/p/{{luci_project}}/coverage/dir?host={{gitiles_commit.host}}&project={{gitiles_commit.project}}&ref={{gitiles_commit.ref}}&platform={{platform}}&list_reports=true&direction=next&cursor={{next_cursor}}">Next</a>
       {% else %}
         <span class="disabled-link">Next</span>
       {% endif %}
