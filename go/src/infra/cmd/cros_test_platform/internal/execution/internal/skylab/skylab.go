@@ -71,6 +71,7 @@ func (t *testRun) RequestArgs(params *test_platform.Request_Params, workerConfig
 
 	kv := getKeyvals(params, parentTaskID)
 	t.addKeyvalsForDisplayName(kv)
+	t.updateWithInvocationKeyvals(kv)
 
 	cmd := &worker.Command{
 		TaskName:        t.invocation.Test.Name,
@@ -107,6 +108,14 @@ func (t *testRun) addKeyvalsForDisplayName(kv map[string]string) {
 		kv[displayNameKey] = t.invocation.DisplayName
 	default:
 		kv[displayNameKey] = t.invocation.GetTest().GetName()
+	}
+}
+
+func (t *testRun) updateWithInvocationKeyvals(kv map[string]string) {
+	for k, v := range t.invocation.GetResultKeyvals() {
+		if _, ok := kv[k]; !ok {
+			kv[k] = v
+		}
 	}
 }
 

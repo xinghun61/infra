@@ -17,6 +17,7 @@ import (
 	"github.com/golang/protobuf/ptypes/duration"
 	. "github.com/smartystreets/goconvey/convey"
 
+	"go.chromium.org/chromiumos/infra/proto/go/chromite/api"
 	build_api "go.chromium.org/chromiumos/infra/proto/go/chromite/api"
 	"go.chromium.org/chromiumos/infra/proto/go/chromiumos"
 	"go.chromium.org/chromiumos/infra/proto/go/test_platform"
@@ -508,6 +509,65 @@ func failingResult() *skylab_test_runner.Result_Autotest {
 			{Name: "foo", Verdict: skylab_test_runner.Result_Autotest_TestCase_VERDICT_FAIL},
 		},
 	}
+}
+
+func TestInvocationKeyvals(t *testing.T) {
+	Convey("Given an enumeration with a suite keyval", t, func() {
+		ctx := context.Background()
+		swarming := newFakeSwarming("")
+		getter := newFakeGetter()
+		gf := fakeGetterFactory(getter)
+
+		invs := []*steps.EnumerationResponse_AutotestInvocation{
+			{
+				Test: &api.AutotestTest{
+					Name:                 "someTest",
+					ExecutionEnvironment: api.AutotestTest_EXECUTION_ENVIRONMENT_CLIENT,
+				},
+				ResultKeyvals: map[string]string{
+					"suite": "someSuite",
+				},
+			},
+		}
+
+		Convey("and a request without keyvals", func() {
+			p := basicParams()
+			p.Decorations = nil
+			run := skylab.NewTaskSet(invs, p, basicConfig(), "foo-parent-task-id")
+			run.LaunchAndWait(ctx, swarming, gf)
+			Convey("created command includes invocation suite keyval", func() {
+				So(swarming.createCalls, ShouldHaveLength, 1)
+				create := swarming.createCalls[0]
+				So(create.TaskSlices, ShouldHaveLength, 2)
+				for _, slice := range create.TaskSlices {
+					flatCommand := strings.Join(slice.Properties.Command, " ")
+					keyvals := extractKeyvalsArgument(flatCommand)
+					So(keyvals, ShouldContainSubstring, `"suite":"someSuite"`)
+				}
+			})
+		})
+
+		Convey("and a request with different suite keyvals", func() {
+			p := basicParams()
+			p.Decorations = &test_platform.Request_Params_Decorations{
+				AutotestKeyvals: map[string]string{
+					"suite": "someOtherSuite",
+				},
+			}
+			run := skylab.NewTaskSet(invs, p, basicConfig(), "foo-parent-task-id")
+			run.LaunchAndWait(ctx, swarming, gf)
+			Convey("created command includes request suite keyval", func() {
+				So(swarming.createCalls, ShouldHaveLength, 1)
+				create := swarming.createCalls[0]
+				So(create.TaskSlices, ShouldHaveLength, 2)
+				for _, slice := range create.TaskSlices {
+					flatCommand := strings.Join(slice.Properties.Command, " ")
+					keyvals := extractKeyvalsArgument(flatCommand)
+					So(keyvals, ShouldContainSubstring, `"suite":"someOtherSuite"`)
+				}
+			})
+		})
+	})
 }
 
 func TestRetries(t *testing.T) {
