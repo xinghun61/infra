@@ -283,6 +283,26 @@ func (r *Runner) reimageAndRunArgs() (interface{}, error) {
 		// of tests.
 		"test_names":  testNames,
 		"name":        suiteName,
-		"job_keyvals": r.requestParams.GetDecorations().GetAutotestKeyvals(),
+		"job_keyvals": r.getMergedKeyvals(),
 	}, nil
+}
+
+func (r *Runner) getMergedKeyvals() map[string]string {
+	kvs := make(map[string]string)
+	for k, v := range r.requestParams.GetDecorations().GetAutotestKeyvals() {
+		kvs[k] = v
+	}
+	// Only update keyvals not already provided with request.
+	// In case of conflicting keyvals within invocations, we respect the first
+	// one encountered.
+	// Autotest backend can not set different keyvals per test invocation, so
+	// picking one arbitrarily is the best we can do.
+	for _, inv := range r.invocations {
+		for k, v := range inv.GetResultKeyvals() {
+			if _, ok := kvs[k]; !ok {
+				kvs[k] = v
+			}
+		}
+	}
+	return kvs
 }

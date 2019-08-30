@@ -231,6 +231,50 @@ func TestLaunchWithTestArgsReturnsError(t *testing.T) {
 	})
 }
 
+func TestLaunchWithSuiteKeyvals(t *testing.T) {
+	Convey("Given one enumerated suite", t, func() {
+		ctx := context.Background()
+		swarming := NewFakeSwarming()
+		setupFakeSwarmingToPassAllTasks(swarming)
+		invs := []*steps.EnumerationResponse_AutotestInvocation{
+			{
+				Test:          &build_api.AutotestTest{Name: "someTest"},
+				ResultKeyvals: map[string]string{"suite": "someSuite"},
+			},
+		}
+
+		Convey("and a request with no result keyvals", func() {
+			p := basicParams()
+			p.Decorations = nil
+			Convey("then autotest invocation includes invocation suite keyval", func() {
+				run := autotest.New(invs, p, basicConfig())
+				err := run.LaunchAndWait(ctx, swarming, nil)
+				So(err, ShouldBeNil)
+				So(swarming.createCalls, ShouldHaveLength, 1)
+				So(swarming.createCalls[0].TaskSlices, ShouldHaveLength, 1)
+				cmd := strings.Join(swarming.createCalls[0].TaskSlices[0].Properties.Command, " ")
+				So(cmd, ShouldContainSubstring, `\"suite\":\"someSuite\"`)
+			})
+		})
+
+		Convey("and a request with explicit suite keyval", func() {
+			p := basicParams()
+			p.Decorations = &test_platform.Request_Params_Decorations{
+				AutotestKeyvals: map[string]string{"suite": "someOtherSuite"},
+			}
+			Convey("then autotest invocation includes request suite keyval", func() {
+				run := autotest.New(invs, p, basicConfig())
+				err := run.LaunchAndWait(ctx, swarming, nil)
+				So(err, ShouldBeNil)
+				So(swarming.createCalls, ShouldHaveLength, 1)
+				So(swarming.createCalls[0].TaskSlices, ShouldHaveLength, 1)
+				cmd := strings.Join(swarming.createCalls[0].TaskSlices[0].Properties.Command, " ")
+				So(cmd, ShouldContainSubstring, `\"suite\":\"someOtherSuite\"`)
+			})
+		})
+	})
+}
+
 var running = &steps.ExecuteResponse{State: &test_platform.TaskState{LifeCycle: test_platform.TaskState_LIFE_CYCLE_RUNNING}}
 
 func TestWaitAndCollect(t *testing.T) {
