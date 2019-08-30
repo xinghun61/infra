@@ -168,7 +168,7 @@ func TestConvertFull(t *testing.T) {
 
 func TestRevertEmpty(t *testing.T) {
 	t.Parallel()
-	want := newScheduableLabels()
+	want := inventory.NewSchedulableLabels()
 	got := Revert(nil)
 	if diff := pretty.Compare(want, *got); diff != "" {
 		t.Errorf("labels differ -want +got, %s", diff)
