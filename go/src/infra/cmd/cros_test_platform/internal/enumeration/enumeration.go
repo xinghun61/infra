@@ -50,9 +50,10 @@ func GetForEnumeration(enumeration *test_platform.Request_Enumeration) []*steps.
 	ret := make([]*steps.EnumerationResponse_AutotestInvocation, 0, len(enumeration.GetAutotestInvocations()))
 	for _, t := range enumeration.GetAutotestInvocations() {
 		ret = append(ret, &steps.EnumerationResponse_AutotestInvocation{
-			Test:        t.GetTest(),
-			TestArgs:    t.GetTestArgs(),
-			DisplayName: t.GetDisplayName(),
+			Test:          t.GetTest(),
+			TestArgs:      t.GetTestArgs(),
+			DisplayName:   t.GetDisplayName(),
+			ResultKeyvals: t.GetResultKeyvals(),
 		})
 	}
 	return ret
