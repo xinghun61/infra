@@ -39,7 +39,7 @@ func GetForTests(metadata *api.AutotestTestMetadata, tests []*test_platform.Requ
 // GetForSuites returns the test metadata for specified suites.
 func GetForSuites(metadata *api.AutotestTestMetadata, suites []*test_platform.Request_Suite) []*steps.EnumerationResponse_AutotestInvocation {
 	invs := []*steps.EnumerationResponse_AutotestInvocation{}
-	for _, sName := range suiteNames(suites).ToSlice() {
+	for _, sName := range suiteNames(suites) {
 		tNames := testsInSuite(metadata.GetSuites(), sName)
 		tests := filterTests(metadata.GetTests(), tNames)
 		invs = append(invs, autotestInvocationsForSuite(sName, tests)...)
@@ -106,12 +106,12 @@ func testNames(ts []*test_platform.Request_Test) (stringset.Set, error) {
 	return ns, nil
 }
 
-func suiteNames(ss []*test_platform.Request_Suite) stringset.Set {
+func suiteNames(ss []*test_platform.Request_Suite) []string {
 	ns := stringset.New(len(ss))
 	for _, s := range ss {
 		ns.Add(s.GetName())
 	}
-	return ns
+	return ns.ToSlice()
 }
 
 func testsInSuite(ss []*api.AutotestSuite, sName string) stringset.Set {
