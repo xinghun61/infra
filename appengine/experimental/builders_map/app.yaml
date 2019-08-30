@@ -1,9 +1,0 @@
-runtime: python27
-api_version: 1
-threadsafe: true
-instance_class: F4
-
-handlers:
-- url: /.*
-  script: builders_map.app
-  secure: always
