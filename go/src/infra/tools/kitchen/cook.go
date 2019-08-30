@@ -39,8 +39,8 @@ import (
 	"go.chromium.org/luci/logdog/client/butler"
 	"go.chromium.org/luci/logdog/client/butler/bootstrap"
 	"go.chromium.org/luci/logdog/client/butler/output"
-	fileOut "go.chromium.org/luci/logdog/client/butler/output/file"
 	out "go.chromium.org/luci/logdog/client/butler/output/logdog"
+	"go.chromium.org/luci/logdog/client/butler/output/null"
 	"go.chromium.org/luci/logdog/client/butler/streamserver"
 	"go.chromium.org/luci/logdog/client/butlerlib/streamclient"
 	"go.chromium.org/luci/logdog/common/types"
@@ -682,10 +682,8 @@ func (c *cookRun) globalTags(env environ.Env) map[string]string {
 // butlerOutput creates LogDog output destination.
 // The caller is responsible for closing it.
 func (c *cookRun) butlerOutput(ctx context.Context) (output.Output, error) {
-	if c.LogFilePath != "" {
-		// Debug: Use a file output.
-		ocfg := fileOut.Options{Path: c.LogFilePath}
-		return ocfg.New(ctx), nil
+	if c.NullOutput {
+		return &null.Output{}, nil
 	}
 
 	prefix, _ := c.AnnotationURL.Path.Split()
@@ -751,7 +749,7 @@ func (c *cookRun) runWithLogdogButler(ctx context.Context, env environ.Env, res 
 	// Augment our environment with Butler parameters.
 	bsEnv := bootstrap.Environment{
 		Project:         c.AnnotationURL.Project,
-		Prefix:          prefix,
+		Prefix:          string(prefix),
 		StreamServerURI: streamServer.Address(),
 		CoordinatorHost: c.AnnotationURL.Host,
 	}

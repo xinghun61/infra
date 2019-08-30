@@ -47,7 +47,7 @@ type CookFlags struct {
 	// LogDog flags.
 	AnnotationURL    types.StreamAddr   `json:"annotation_url"`
 	GlobalLogDogTags streamproto.TagMap `json:"global_tags"`
-	LogFilePath      string             `json:"file_path"`
+	NullOutput       bool               `json:"null_output"`
 }
 
 // Register the CookFlags with the provided FlagSet.
@@ -151,11 +151,11 @@ func (c *CookFlags) Register(fs *flag.FlagSet) {
 		"logdog-annotation-url",
 		"The URL of the LogDog annotation stream to use (logdog://host/project/prefix/+/name). The LogDog "+
 			"project and prefix will be extracted from this URL.")
-	fs.StringVar(
-		&c.LogFilePath,
-		"logdog-debug-out-file",
-		"",
-		"If specified, write all generated logs to this path instead of sending them.")
+	fs.BoolVar(
+		&c.NullOutput,
+		"logdog-null-output",
+		false,
+		"If specified, dump all logdog data to null.")
 	fs.Var(
 		&c.GlobalLogDogTags,
 		"logdog-tag",
@@ -191,7 +191,7 @@ func (c *CookFlags) Dump() []string {
 		ret = append(ret, "-logdog-annotation-url", c.AnnotationURL.String())
 	}
 	ret.stringMap("logdog-tag", c.GlobalLogDogTags)
-	ret.str("logdog-debug-out-file", c.LogFilePath)
+	ret.boolean("logdog-null-output", c.NullOutput)
 
 	return ret
 }

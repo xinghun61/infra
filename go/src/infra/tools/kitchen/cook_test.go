@@ -97,7 +97,6 @@ func TestCook(t *testing.T) {
 
 			// Prepare paths
 			recipeRepoDir := filepath.Join(tdir, "recipe_repo")
-			logdogFilePath := filepath.Join(tdir, "logdog-debug-file.txt")
 			resultFilePath := filepath.Join(tdir, "result.json")
 			workdirPath := filepath.Join(tdir, "k")
 			kitchenTempDir := filepath.Join(tdir, "tmp")
@@ -145,7 +144,7 @@ func TestCook(t *testing.T) {
 					"-temp-dir", kitchenTempDir,
 					"-cache-dir", cacheDirPath,
 					"-logdog-annotation-url", "logdog://logdog.example.com/chromium/prefix/+/annotations",
-					"-logdog-debug-out-file", logdogFilePath,
+					"-logdog-null-output",
 					"-output-result-json", resultFilePath,
 					"-recipe-result-byte-limit", "500000",
 					"-luci-system-account", "system_acc",
@@ -158,13 +157,6 @@ func TestCook(t *testing.T) {
 
 				// Log results
 				t.Logf("cook result:\n%s\n", proto.MarshalTextString(result))
-				logdogFileContents, err := ioutil.ReadFile(logdogFilePath)
-				if os.IsNotExist(err) {
-					t.Logf("logdog file does not exist")
-				} else {
-					So(err, ShouldBeNil)
-					t.Logf("logdog debug file:\n%s\n", logdogFileContents)
-				}
 
 				// Check parsed kitchen own properties.
 				So(cook.kitchenProps, ShouldResemble, &kitchenProperties{
