@@ -145,7 +145,7 @@ export class MrSearchBar extends LitElement {
   render() {
     return html`
       <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-      <form @submit=${this._searchSubmitted}>
+      <form @submit=${this._searchSubmitted} @keypress=${this._submitSearchWithKeypress}>
         <div class="select-container">
           <i class="material-icons">arrow_drop_down</i>
           <select id="can" name="can" @change=${this._redirectOnSelect} aria-label="Search scope">
@@ -239,6 +239,8 @@ export class MrSearchBar extends LitElement {
     this.userSavedQueries = [];
 
     this.clientLogger = new ClientLogger('issues');
+
+    this._page = page;
   }
 
   connectedCallback() {
@@ -275,14 +277,25 @@ export class MrSearchBar extends LitElement {
     this.clientLogger.logEnd('query-edit');
   }
 
+  _submitSearchWithKeypress(e) {
+    if (e.key === 'Enter' && (e.shiftKey)) {
+      const form = e.currentTarget;
+      this._submitSearch(form, true);
+    }
+    // In all other cases, we want to let the submit handler do the work.
+  }
+
   _searchSubmitted(e) {
     e.preventDefault();
 
+    const form = e.target;
+    this._submitSearch(form);
+  }
+
+  _submitSearch(form, newTab) {
     this.clientLogger.logEnd('query-edit');
     this.clientLogger.logPause('issue-search', 'user-time');
     this.clientLogger.logStart('issue-search', 'computer-time');
-
-    const form = e.target;
 
     const params = {};
 
@@ -295,10 +308,10 @@ export class MrSearchBar extends LitElement {
     params.q = form.q.value;
     params.can = form.can.value;
 
-    this._navigateToList(params);
+    this._navigateToList(params, newTab);
   }
 
-  _navigateToList(params) {
+  _navigateToList(params, newTab = false) {
     // TODO(zhangtiff): Remove this check once list_new is removed
     // when the new list page switches to default.
     const isNewPage = window.location.pathname.endsWith('list_new');
@@ -310,8 +323,12 @@ export class MrSearchBar extends LitElement {
       || this.queryParams.q !== params.q
       || this.queryParams.can !== params.can;
 
-    if (hasChanges) {
-      page(`${pathname}?${qs.stringify(params)}`);
+    const url =`${pathname}?${qs.stringify(params)}`;
+
+    if (newTab) {
+      window.open(url, '_blank', 'noopener');
+    } else if (hasChanges) {
+      this._page(url);
     } else {
       if (isNewPage) {
         // TODO(zhangtiff): Replace this event with Redux once all of Monorail

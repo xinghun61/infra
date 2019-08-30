@@ -79,12 +79,16 @@ describe('mr-search-bar', () => {
 
   describe('search form submit', () => {
     beforeEach(() => {
-      sinon.stub(element, '_navigateToList');
       element.clientLogger = clientLoggerFake();
+
+      element._page = sinon.stub();
+      sinon.stub(window, 'open');
+
+      element.projectName = 'chromium';
     });
 
     afterEach(() => {
-      element._navigateToList.restore();
+      window.open.restore();
     });
 
     it('submit prevents default', async () => {
@@ -111,9 +115,9 @@ describe('mr-search-bar', () => {
 
       form.dispatchEvent(new Event('submit'));
 
-      sinon.assert.calledOnce(element._navigateToList);
-      sinon.assert.calledWith(element._navigateToList,
-          {q: 'test query', can: '3'});
+      sinon.assert.calledOnce(element._page);
+      sinon.assert.calledWith(element._page,
+          '/p/chromium/issues/list?q=test%20query&can=3');
     });
 
     it('submit adds form values to url', async () => {
@@ -126,9 +130,9 @@ describe('mr-search-bar', () => {
 
       form.dispatchEvent(new Event('submit'));
 
-      sinon.assert.calledOnce(element._navigateToList);
-      sinon.assert.calledWith(element._navigateToList,
-          {q: 'test', can: '1'});
+      sinon.assert.calledOnce(element._page);
+      sinon.assert.calledWith(element._page,
+          '/p/chromium/issues/list?q=test&can=1');
     });
 
     it('submit only keeps kept query params', async () => {
@@ -141,9 +145,26 @@ describe('mr-search-bar', () => {
 
       form.dispatchEvent(new Event('submit'));
 
-      sinon.assert.calledOnce(element._navigateToList);
-      sinon.assert.calledWith(element._navigateToList,
-          {q: '', can: '2', x: 'Status'});
+      sinon.assert.calledOnce(element._page);
+      sinon.assert.calledWith(element._page,
+          '/p/chromium/issues/list?x=Status&q=&can=2');
+    });
+
+    it('shift+enter opens search in new tab', async () => {
+      await element.updateComplete;
+
+      const form = element.shadowRoot.querySelector('form');
+
+      form.q.value = 'test';
+      form.can.value = '1';
+
+      // Dispatch event from an input in the form.
+      form.q.dispatchEvent(new KeyboardEvent('keypress',
+          {key: 'Enter', shiftKey: true, bubbles: true}));
+
+      sinon.assert.calledOnce(window.open);
+      sinon.assert.calledWith(window.open,
+          '/p/chromium/issues/list?q=test&can=1', '_blank', 'noopener');
     });
   });
 });
