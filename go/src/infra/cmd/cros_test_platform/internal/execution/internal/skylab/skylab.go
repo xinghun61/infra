@@ -8,6 +8,7 @@ package skylab
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/golang/protobuf/ptypes"
@@ -364,24 +365,28 @@ func toInventoryLabels(params *test_platform.Request_Params, deps []*build_api.A
 
 	inv := labels.Revert(flatDims)
 
-	if params.SoftwareAttributes.BuildTarget != nil {
-		inv.Board = &params.SoftwareAttributes.BuildTarget.Name
+	if params.GetSoftwareAttributes().GetBuildTarget() != nil {
+		*inv.Board = params.SoftwareAttributes.BuildTarget.Name
 	}
-	if params.HardwareAttributes.Model != "" {
-		inv.Model = &params.HardwareAttributes.Model
+	if params.GetHardwareAttributes().GetModel() != "" {
+		*inv.Model = params.HardwareAttributes.Model
 	}
 
-	switch v := params.GetScheduling().GetPool().(type) {
-	case *test_platform.Request_Params_Scheduling_ManagedPool_:
-		pool, ok := poolMap[v.ManagedPool]
-		if !ok {
-			return nil, errors.Reason("unknown managed pool %s", v.ManagedPool.String()).Err()
+	if p := params.GetScheduling().GetPool(); p != nil {
+		switch v := p.(type) {
+		case *test_platform.Request_Params_Scheduling_ManagedPool_:
+			pool, ok := poolMap[v.ManagedPool]
+			if !ok {
+				return nil, errors.Reason("unknown managed pool %s", v.ManagedPool.String()).Err()
+			}
+			inv.CriticalPools = append(inv.CriticalPools, pool)
+		case *test_platform.Request_Params_Scheduling_UnmanagedPool:
+			inv.SelfServePools = append(inv.SelfServePools, v.UnmanagedPool)
+		case *test_platform.Request_Params_Scheduling_QuotaAccount:
+			inv.CriticalPools = append(inv.CriticalPools, inventory.SchedulableLabels_DUT_POOL_QUOTA)
+		default:
+			panic(fmt.Sprintf("unhandled scheduling type %#v", p))
 		}
-		inv.CriticalPools = append(inv.CriticalPools, pool)
-	case *test_platform.Request_Params_Scheduling_UnmanagedPool:
-		inv.SelfServePools = append(inv.SelfServePools, v.UnmanagedPool)
-	case *test_platform.Request_Params_Scheduling_QuotaAccount:
-		inv.CriticalPools = append(inv.CriticalPools, inventory.SchedulableLabels_DUT_POOL_QUOTA)
 	}
 
 	return inv, nil
