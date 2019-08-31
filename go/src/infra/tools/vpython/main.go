@@ -62,6 +62,9 @@ var defaultConfig = application.Config{
 		},
 		PartnerSuffix: ".vpython",
 	},
+	DefaultSpec: vpython.Spec{
+		PythonVersion: "2",
+	},
 	VENVPackage: vpython.Spec_Package{
 		Name:    "infra/python/virtualenv",
 		Version: "version:15.1.0",
@@ -97,6 +100,7 @@ func mainImpl(c context.Context, argv []string, env environ.Env) int {
 	if strings.HasSuffix(argv[0], "python3") || strings.HasSuffix(argv[0], "python3.exe") {
 		defaultConfig.SpecLoader.CommonSpecNames = []string{".vpython3"}
 		defaultConfig.SpecLoader.PartnerSuffix = ".vpython3"
+		defaultConfig.DefaultSpec.PythonVersion = "3"
 	}
 	return defaultConfig.Main(c, argv, env)
 }
