@@ -69,6 +69,30 @@ export function labelRefsToStrings(labelRefs) {
   return labelRefs.map(labelRefToString);
 }
 
+/**
+ * Filters a list of labels into a list of only labels with one word.
+ *
+ * @param {Array} labelRefs list of label objects with expected fields {label}.
+ * @return {Array} only the labelRefs that do not have multiple words.
+ */
+export function labelRefsToOneWordLabels(labelRefs) {
+  if (!labelRefs) return [];
+  return labelRefs.filter(({label}) => {
+    return isOneWordLabel(label);
+  });
+}
+
+/**
+ * Checks whether a particular label is one word.
+ *
+ * @param {String} label the name of the label being checked.
+ * @return {Boolean} Whether the label is one word or not.
+ */
+export function isOneWordLabel(label = '') {
+  const words = label.split('-');
+  return words.length === 1;
+}
+
 export function fieldNameToLabelPrefix(fieldName) {
   return `${fieldName.toLowerCase()}-`;
 }

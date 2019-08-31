@@ -4,8 +4,9 @@
 
 import {assert} from 'chai';
 import {displayNameToUserRef, labelStringToRef, labelRefToString,
-  labelRefsToStrings, statusRefToString, statusRefsToStrings,
-  componentStringToRef, componentRefToString, componentRefsToStrings,
+  labelRefsToStrings, labelRefsToOneWordLabels, isOneWordLabel,
+  statusRefToString, statusRefsToStrings, componentStringToRef,
+  componentRefToString, componentRefsToStrings,
   issueStringToRef, issueStringToBlockingRef, issueRefToString,
   issueRefToUrl, fieldNameToLabelPrefix, labelNameToLabelPrefix,
   commentListToDescriptionList, valueToFieldValue, issueToIssueRef,
@@ -17,6 +18,7 @@ describe('displayNameToUserRef', () => {
         displayNameToUserRef('foo@bar.com'),
         {displayName: 'foo@bar.com'});
   });
+
   it('throws on invalid email', () => {
     assert.throws(() => displayNameToUserRef('foo'));
   });
@@ -38,6 +40,37 @@ describe('labelRefsToStrings', () => {
   it('converts labelRefs', () => {
     assert.deepEqual(labelRefsToStrings([{label: 'foo'}, {label: 'test'}]),
         ['foo', 'test']);
+  });
+});
+
+describe('labelRefsToOneWordLabels', () => {
+  it('empty', () => {
+    assert.deepEqual(labelRefsToOneWordLabels(), []);
+    assert.deepEqual(labelRefsToOneWordLabels([]), []);
+  });
+
+  it('filters multi-word labels', () => {
+    assert.deepEqual(labelRefsToOneWordLabels([
+      {label: 'hello'},
+      {label: 'filter-me'},
+      {label: 'hello-world'},
+      {label: 'world'},
+      {label: 'this-label-has-so-many-words'},
+    ]), [
+      {label: 'hello'},
+      {label: 'world'},
+    ]);
+  });
+});
+
+describe('isOneWordLabel', () => {
+  it('true only for one word labels', () => {
+    assert.isTrue(isOneWordLabel('test'));
+    assert.isTrue(isOneWordLabel('LABEL'));
+    assert.isTrue(isOneWordLabel('Security'));
+
+    assert.isFalse(isOneWordLabel('Restrict-View-EditIssue'));
+    assert.isFalse(isOneWordLabel('Type-Feature'));
   });
 });
 

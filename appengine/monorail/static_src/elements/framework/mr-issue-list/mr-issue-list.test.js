@@ -49,6 +49,34 @@ describe('mr-issue-list', () => {
     assert.equal(summaries[1].textContent.trim(), 'I have a summary');
   });
 
+  it('one word labels render in summary column', async () => {
+    element.issues = [
+      {
+        summary: 'test issue',
+        labelRefs: [
+          {label: 'ignore-multi-word-labels'},
+          {label: 'Security'},
+          {label: 'A11y'},
+        ],
+      },
+    ];
+    element.columns = ['Summary'];
+
+    await element.updateComplete;
+
+    const summary = element.shadowRoot.querySelector('.col-summary');
+    const labels = summary.querySelectorAll('.summary-label');
+
+    assert.equal(labels.length, 2);
+
+    assert.equal(labels[0].textContent.trim(), 'Security');
+    assert.include(labels[0].href,
+        '/p/chromium/issues/list?q=label%3ASecurity');
+    assert.equal(labels[1].textContent.trim(), 'A11y');
+    assert.include(labels[1].href,
+        '/p/chromium/issues/list?q=label%3AA11y');
+  });
+
   it('clicking issue link does not trigger _navigateToIssue', async () => {
     sinon.stub(element, '_navigateToIssue');
 

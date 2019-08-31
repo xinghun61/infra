@@ -13,7 +13,7 @@ import 'elements/framework/links/mr-crbug-link/mr-crbug-link.js';
 import 'elements/framework/mr-dropdown/mr-dropdown.js';
 import 'elements/framework/mr-star-button/mr-star-button.js';
 import {issueRefToUrl, issueToIssueRef,
-  issueRefToString} from 'shared/converters.js';
+  issueRefToString, labelRefsToOneWordLabels} from 'shared/converters.js';
 import {isTextInput} from 'shared/dom-helpers.js';
 import {urlWithNewParams} from 'shared/helpers.js';
 import {stringValuesForIssueField, EMPTY_FIELD_VALUE,
@@ -117,6 +117,16 @@ export class MrIssueList extends connectStore(LitElement) {
          * all remaining space in the table, not the full width of
          * the table. */
         width: 100%;
+      }
+      .summary-label {
+        display: inline-block;
+        margin: 0 2px;
+        color: var(--chops-green-800);
+        text-decoration: none;
+        font-size: 90%;
+      }
+      .summary-label:hover {
+        text-decoration: underline;
       }
 
       @media (min-width: 1024px) {
@@ -263,8 +273,15 @@ export class MrIssueList extends connectStore(LitElement) {
           ></mr-issue-link>
         `;
       case 'summary':
-        // TODO(zhangtiff): Add labels.
-        return issue.summary;
+        return html`
+          ${issue.summary}
+          ${labelRefsToOneWordLabels(issue.labelRefs).map(({label}) => html`
+            <a
+              class="summary-label"
+              href="${this._baseUrl()}?q=label%3A${label}"
+            >${label}</a>
+          `)}
+        `;
     }
     const values = stringValuesForIssueField(issue, column, this.projectName,
         this._fieldDefMap, this._labelPrefixSet);
@@ -593,7 +610,8 @@ export class MrIssueList extends connectStore(LitElement) {
   }
 
   _clickIssueRow(e) {
-    const containsIgnoredElement = e.path && e.path.find(
+    const path = e.path || e.composedPath();
+    const containsIgnoredElement = path.find(
         (node) => (node.tagName || '').toUpperCase() === 'A' || (node.classList
         && node.classList.contains('ignore-navigation')));
     if (containsIgnoredElement) return;
