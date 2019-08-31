@@ -26,6 +26,23 @@ var converters []converter
 // inventory labels to Swarming dimensions.
 type converter func(Dimensions, *inventory.SchedulableLabels)
 
+// Revert converts Swarming dimensions to DUT inventory labels.
+func Revert(d Dimensions) *inventory.SchedulableLabels {
+	ls := inventory.NewSchedulableLabels()
+	for _, r := range reverters {
+		d = r(ls, d)
+	}
+	return ls
+}
+
+var reverters []reverter
+
+// reverter is the type of functions used for reverting Swarming
+// dimensions back to Skylab inventory labels.  Each reverter should
+// modify the SchedulableLabels for the Swarming dimension it is
+// responsible for, and return the Dimensions that it does not handle.
+type reverter func(*inventory.SchedulableLabels, Dimensions) Dimensions
+
 // appendDim appends a dimension value for a key.
 func appendDim(dim Dimensions, k, v string) {
 	dim[k] = append(dim[k], v)

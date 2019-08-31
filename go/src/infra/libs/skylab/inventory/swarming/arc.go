@@ -10,10 +10,16 @@ import (
 
 func init() {
 	converters = append(converters, arcConverter)
+	reverters = append(reverters, arcReverter)
 }
 
 func arcConverter(dims Dimensions, ls *inventory.SchedulableLabels) {
 	if ls.GetArc() {
 		dims["label-arc"] = []string{"True"}
 	}
+}
+
+func arcReverter(ls *inventory.SchedulableLabels, d Dimensions) Dimensions {
+	d = assignLastBoolValueAndDropKey(d, ls.Arc, "label-arc")
+	return d
 }

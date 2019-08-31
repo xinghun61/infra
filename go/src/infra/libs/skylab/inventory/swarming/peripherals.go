@@ -10,7 +10,9 @@ import (
 
 func init() {
 	converters = append(converters, boolPeripheralsConverter)
+	reverters = append(reverters, boolPeripheralsReverter)
 	converters = append(converters, otherPeripheralsConverter)
+	reverters = append(reverters, otherPeripheralsReverter)
 }
 
 func boolPeripheralsConverter(dims Dimensions, ls *inventory.SchedulableLabels) {
@@ -47,9 +49,35 @@ func boolPeripheralsConverter(dims Dimensions, ls *inventory.SchedulableLabels) 
 	}
 }
 
+func boolPeripheralsReverter(ls *inventory.SchedulableLabels, d Dimensions) Dimensions {
+	p := ls.Peripherals
+	d = assignLastBoolValueAndDropKey(d, p.AudioBoard, "label-audio_board")
+	d = assignLastBoolValueAndDropKey(d, p.AudioBox, "label-audio_box")
+	d = assignLastBoolValueAndDropKey(d, p.AudioLoopbackDongle, "label-audio_loopback_dongle")
+	d = assignLastBoolValueAndDropKey(d, p.Chameleon, "label-chameleon")
+	d = assignLastBoolValueAndDropKey(d, p.Conductive, "label-conductive")
+	d = assignLastBoolValueAndDropKey(d, p.Huddly, "label-huddly")
+	d = assignLastBoolValueAndDropKey(d, p.Mimo, "label-mimo")
+	d = assignLastBoolValueAndDropKey(d, p.Servo, "label-servo")
+	d = assignLastBoolValueAndDropKey(d, p.Stylus, "label-stylus")
+	d = assignLastBoolValueAndDropKey(d, p.Wificell, "label-wificell")
+	return d
+}
+
 func otherPeripheralsConverter(dims Dimensions, ls *inventory.SchedulableLabels) {
 	p := ls.GetPeripherals()
 	if v := p.GetChameleonType(); v != inventory.Peripherals_CHAMELEON_TYPE_INVALID {
 		dims["label-chameleon_type"] = []string{v.String()}
 	}
+}
+
+func otherPeripheralsReverter(ls *inventory.SchedulableLabels, d Dimensions) Dimensions {
+	p := ls.Peripherals
+	if v, ok := getLastStringValue(d, "label-chameleon_type"); ok {
+		if ct, ok := inventory.Peripherals_ChameleonType_value[v]; ok {
+			*p.ChameleonType = inventory.Peripherals_ChameleonType(ct)
+		}
+		delete(d, "label-chameleon_type")
+	}
+	return d
 }

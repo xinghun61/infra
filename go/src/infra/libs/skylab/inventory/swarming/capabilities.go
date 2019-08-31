@@ -10,8 +10,12 @@ import (
 
 func init() {
 	converters = append(converters, boolCapabilitiesConverter)
+	reverters = append(reverters, boolCapabilitiesReverter)
 	converters = append(converters, stringCapabilitiesConverter)
+	reverters = append(reverters, stringCapabilitiesReverter)
 	converters = append(converters, otherCapabilitiesConverter)
+	reverters = append(reverters, otherCapabilitiesReverter)
+
 }
 
 func boolCapabilitiesConverter(dims Dimensions, ls *inventory.SchedulableLabels) {
@@ -45,6 +49,20 @@ func boolCapabilitiesConverter(dims Dimensions, ls *inventory.SchedulableLabels)
 	}
 }
 
+func boolCapabilitiesReverter(ls *inventory.SchedulableLabels, d Dimensions) Dimensions {
+	c := ls.Capabilities
+	d = assignLastBoolValueAndDropKey(d, c.Atrus, "label-atrus")
+	d = assignLastBoolValueAndDropKey(d, c.Bluetooth, "label-bluetooth")
+	d = assignLastBoolValueAndDropKey(d, c.Detachablebase, "label-detachablebase")
+	d = assignLastBoolValueAndDropKey(d, c.Flashrom, "label-flashrom")
+	d = assignLastBoolValueAndDropKey(d, c.Hotwording, "label-hotwording")
+	d = assignLastBoolValueAndDropKey(d, c.InternalDisplay, "label-internal_display")
+	d = assignLastBoolValueAndDropKey(d, c.Lucidsleep, "label-lucidsleep")
+	d = assignLastBoolValueAndDropKey(d, c.Touchpad, "label-touchpad")
+	d = assignLastBoolValueAndDropKey(d, c.Webcam, "label-webcam")
+	return d
+}
+
 func stringCapabilitiesConverter(dims Dimensions, ls *inventory.SchedulableLabels) {
 	c := ls.GetCapabilities()
 	if v := c.GetGpuFamily(); v != "" {
@@ -67,6 +85,17 @@ func stringCapabilitiesConverter(dims Dimensions, ls *inventory.SchedulableLabel
 	}
 }
 
+func stringCapabilitiesReverter(ls *inventory.SchedulableLabels, d Dimensions) Dimensions {
+	c := ls.Capabilities
+	d = assignLastStringValueAndDropKey(d, c.GpuFamily, "label-gpu_family")
+	d = assignLastStringValueAndDropKey(d, c.Graphics, "label-graphics")
+	d = assignLastStringValueAndDropKey(d, c.Modem, "label-modem")
+	d = assignLastStringValueAndDropKey(d, c.Power, "label-power")
+	d = assignLastStringValueAndDropKey(d, c.Storage, "label-storage")
+	d = assignLastStringValueAndDropKey(d, c.Telephony, "label-telephony")
+	return d
+}
+
 func otherCapabilitiesConverter(dims Dimensions, ls *inventory.SchedulableLabels) {
 	c := ls.GetCapabilities()
 	if v := c.GetCarrier(); v != inventory.HardwareCapabilities_CARRIER_INVALID {
@@ -75,4 +104,22 @@ func otherCapabilitiesConverter(dims Dimensions, ls *inventory.SchedulableLabels
 	for _, v := range c.GetVideoAcceleration() {
 		appendDim(dims, "label-video_acceleration", v.String())
 	}
+}
+
+func otherCapabilitiesReverter(ls *inventory.SchedulableLabels, d Dimensions) Dimensions {
+	c := ls.Capabilities
+	if v, ok := getLastStringValue(d, "label-carrier"); ok {
+		if p, ok := inventory.HardwareCapabilities_Carrier_value[v]; ok {
+			*c.Carrier = inventory.HardwareCapabilities_Carrier(p)
+		}
+		delete(d, "label-carrier")
+	}
+	c.VideoAcceleration = make([]inventory.HardwareCapabilities_VideoAcceleration, len(d["label-video_acceleration"]))
+	for i, v := range d["label-video_acceleration"] {
+		if p, ok := inventory.HardwareCapabilities_VideoAcceleration_value[v]; ok {
+			c.VideoAcceleration[i] = inventory.HardwareCapabilities_VideoAcceleration(p)
+		}
+	}
+	delete(d, "label-video_acceleration")
+	return d
 }

@@ -11,6 +11,7 @@ import (
 func init() {
 	converters = append(converters, poolsConverter)
 	converters = append(converters, selfServePoolsConverter)
+	reverters = append(reverters, poolsReverter)
 }
 
 func poolsConverter(dims Dimensions, ls *inventory.SchedulableLabels) {
@@ -25,4 +26,16 @@ func selfServePoolsConverter(dims Dimensions, ls *inventory.SchedulableLabels) {
 	for _, v := range vs {
 		appendDim(dims, "label-pool", v)
 	}
+}
+
+func poolsReverter(ls *inventory.SchedulableLabels, d Dimensions) Dimensions {
+	for _, v := range d["label-pool"] {
+		if p, ok := inventory.SchedulableLabels_DUTPool_value[v]; ok {
+			ls.CriticalPools = append(ls.CriticalPools, inventory.SchedulableLabels_DUTPool(p))
+		} else {
+			ls.SelfServePools = append(ls.SelfServePools, v)
+		}
+	}
+	delete(d, "label-pool")
+	return d
 }

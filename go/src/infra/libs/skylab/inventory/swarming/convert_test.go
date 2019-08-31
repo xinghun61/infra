@@ -49,6 +49,7 @@ model: "modelval"
 sku: "skuval"
 brand: "HOMH"
 ec_type: 1
+cr50_phase: 0
 cts_cpu: 1
 cts_cpu: 2
 cts_abi: 1
@@ -156,4 +157,34 @@ func TestConvertFull(t *testing.T) {
 	if diff := pretty.Compare(fullDimensions, got); diff != "" {
 		t.Errorf("labels differ -want +got, %s", diff)
 	}
+}
+
+func TestRevertEmpty(t *testing.T) {
+	t.Parallel()
+	want := inventory.NewSchedulableLabels()
+	got := Revert(make(Dimensions))
+	if diff := pretty.Compare(want, *got); diff != "" {
+		t.Errorf("labels differ -want +got, %s", diff)
+	}
+}
+
+func TestRevertFull(t *testing.T) {
+	t.Parallel()
+	var want inventory.SchedulableLabels
+	if err := proto.UnmarshalText(fullTextProto, &want); err != nil {
+		t.Fatalf("Error unmarshalling example text: %s", err)
+	}
+	got := Revert(cloneDimensions(fullDimensions))
+	if diff := pretty.Compare(want, *got); diff != "" {
+		t.Errorf("labels differ -want +got, %s", diff)
+	}
+}
+
+func cloneDimensions(d Dimensions) Dimensions {
+	ret := make(Dimensions)
+	for k, v := range d {
+		ret[k] = make([]string, len(v))
+		copy(ret[k], v)
+	}
+	return ret
 }
