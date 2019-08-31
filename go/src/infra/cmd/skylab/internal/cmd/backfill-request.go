@@ -7,15 +7,14 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"infra/cmd/skylab/internal/userinput"
 	"os"
 	"sort"
 	"strings"
 
-	buildbucketpb "go.chromium.org/luci/buildbucket/proto"
-
+	structpb "github.com/golang/protobuf/ptypes/struct"
 	"github.com/maruel/subcommands"
 	"go.chromium.org/luci/auth/client/authcli"
+	buildbucketpb "go.chromium.org/luci/buildbucket/proto"
 	"go.chromium.org/luci/common/cli"
 	"go.chromium.org/luci/common/errors"
 	"go.chromium.org/luci/common/flag"
@@ -23,6 +22,7 @@ import (
 
 	"infra/cmd/skylab/internal/bb"
 	"infra/cmd/skylab/internal/site"
+	"infra/cmd/skylab/internal/userinput"
 )
 
 // BackfillRequest subcommand: Backfill unsuccessful results for a previous
@@ -233,10 +233,18 @@ func (c *backfillRequestRun) confirmMultileBuildsOK(a subcommands.Application, b
 }
 
 func (c *backfillRequestRun) scheduleBackfillBuild(ctx context.Context, original *bb.Build) (int64, error) {
-	if original.RawRequest == nil {
+	var req *structpb.Struct
+	switch {
+	case original.RawBackfillRequest != nil:
+		req = original.RawBackfillRequest
+	case original.RawRequest != nil:
+		logging.Infof(ctx, "Original build %d has no backfill_request. Using original request instead.", original.ID)
+		req = original.RawRequest
+	default:
 		return -1, errors.Reason("schedule backfill: build %d has no request to clone", original.ID).Err()
 	}
-	ID, err := c.bbClient.ScheduleBuildRaw(ctx, original.RawRequest, backfillTags(original.Tags, original.ID))
+
+	ID, err := c.bbClient.ScheduleBuildRaw(ctx, req, backfillTags(original.Tags, original.ID))
 	if err != nil {
 		return -1, errors.Annotate(err, "schedule backfill").Err()
 	}
