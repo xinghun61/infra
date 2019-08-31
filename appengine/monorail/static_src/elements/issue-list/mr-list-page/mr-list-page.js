@@ -7,6 +7,7 @@ import page from 'page';
 import qs from 'qs';
 import {store, connectStore} from 'reducers/base.js';
 import * as issue from 'reducers/issue.js';
+import * as project from 'reducers/project.js';
 import {prpcClient} from 'prpc-client-instance.js';
 import {COLSPEC_DELIMITER_REGEX, SITEWIDE_DEFAULT_COLUMNS}
   from 'shared/issue-fields.js';
@@ -248,6 +249,10 @@ export class MrListPage extends connectStore(LitElement) {
       selectedIssues: {type: Array},
       columns: {type: Array},
       userDisplayName: {type: String},
+      /**
+       * The current search string the user is querying for.
+       */
+      currentQuery: {type: String},
     };
   };
 
@@ -288,7 +293,8 @@ export class MrListPage extends connectStore(LitElement) {
   }
 
   updated(changedProperties) {
-    if (changedProperties.has('projectName')) {
+    if (changedProperties.has('projectName')
+        || changedProperties.has('currentQuery')) {
       this.refresh();
     } else if (changedProperties.has('queryParams')) {
       const oldParams = changedProperties.get('queryParams') || {};
@@ -309,7 +315,9 @@ export class MrListPage extends connectStore(LitElement) {
   }
 
   refresh() {
-    store.dispatch(issue.fetchIssueList(this.queryParams, this.projectName,
+    store.dispatch(issue.fetchIssueList(
+        {...this.queryParams, q: this.currentQuery},
+        this.projectName,
         {maxItems: this.maxItems, start: this.startIndex}));
   }
 
@@ -317,6 +325,8 @@ export class MrListPage extends connectStore(LitElement) {
     this.issues = (issue.issueList(state) || []);
     this.totalIssues = (issue.totalIssues(state) || 0);
     this.fetchingIssueList = issue.requests(state).fetchIssueList.requesting;
+
+    this.currentQuery = project.currentQuery(state);
   }
 
   get columns() {

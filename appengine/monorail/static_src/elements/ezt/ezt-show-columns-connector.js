@@ -6,7 +6,9 @@
 // found in the LICENSE file.
 
 import {LitElement, html} from 'lit-element';
+import {store, connectStore} from 'reducers/base.js';
 import qs from 'qs';
+import * as sitewide from 'reducers/sitewide.js';
 import 'elements/framework/mr-issue-list/mr-show-columns-dropdown.js';
 import {COLSPEC_DELIMITER_REGEX} from 'shared/issue-fields.js';
 import {equalsIgnoreCase} from 'shared/helpers.js';
@@ -17,7 +19,7 @@ import {equalsIgnoreCase} from 'shared/helpers.js';
  * Glue component to make "Show columns" dropdown work on EZT.
  *
  */
-export class EztShowColumnsConnector extends LitElement {
+export class EztShowColumnsConnector extends connectStore(LitElement) {
   render() {
     return html`
       <mr-show-columns-dropdown
@@ -41,15 +43,12 @@ export class EztShowColumnsConnector extends LitElement {
 
   constructor() {
     super();
-    this.initialColumns = [];
     this.hiddenColumns = new Set();
     this.queryParams = {};
   }
 
-  connectedCallback() {
-    super.connectedCallback();
-
-    this.setQueryParams();
+  stateChanged(state) {
+    this.queryParams = sitewide.queryParams(state);
   }
 
   get columns() {
@@ -57,14 +56,9 @@ export class EztShowColumnsConnector extends LitElement {
       !this.hiddenColumns.has(i));
   }
 
-  setQueryParams() {
-    const search = (window.location.search || '').substr(1);
-    const params = qs.parse(search);
-    if (!params['colspec']) {
-      params['colspec'] = this.colspec || '';
-    }
-    this.queryParams = params;
-    this.initialColumns = params['colspec'].split(COLSPEC_DELIMITER_REGEX);
+  get initialColumns() {
+    // EZT will always pass in a colspec.
+    return this.colspec.split(COLSPEC_DELIMITER_REGEX);
   }
 
   onHideColumn(colName) {
@@ -78,10 +72,7 @@ export class EztShowColumnsConnector extends LitElement {
 
     this.hiddenColumns.add(colIndex);
 
-    this.queryParams.colspec = this.columns.join(' ');
-
-    window.history.replaceState({}, '', '?' + qs.stringify(this.queryParams));
-
+    this.reflectColumnsToQueryParams();
     this.requestUpdate();
 
     // Don't continue navigation.
@@ -95,12 +86,22 @@ export class EztShowColumnsConnector extends LitElement {
       this.hiddenColumns.delete(colIndex);
       TKR_toggleColumn('hide_col_' + colIndex);
 
+      this.reflectColumnsToQueryParams();
       this.requestUpdate();
       return false;
     }
     // Reload the page if this column is not part of the initial
     // table render.
     return true;
+  }
+
+  reflectColumnsToQueryParams() {
+    this.queryParams.colspec = this.columns.join(' ');
+
+    // Make sure the column changes in the URL.
+    window.history.replaceState({}, '', '?' + qs.stringify(this.queryParams));
+
+    store.dispatch(sitewide.setQueryParams(this.queryParams));
   }
 }
 customElements.define('ezt-show-columns-connector', EztShowColumnsConnector);

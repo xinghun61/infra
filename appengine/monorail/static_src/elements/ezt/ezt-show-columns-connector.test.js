@@ -22,18 +22,15 @@ describe('ezt-show-columns-connector', () => {
     assert.instanceOf(element, EztShowColumnsConnector);
   });
 
+  it('initialColumns parses colspec', () => {
+    element.colspec = 'Summary ID Owner';
+    assert.deepEqual(element.initialColumns, ['Summary', 'ID', 'Owner']);
+  });
+
   it('filters columns based on column mask', () => {
-    element.initialColumns = ['ID', 'Summary'];
+    sinon.stub(element, 'initialColumns').get(() => ['ID', 'Summary']);
     element.hiddenColumns = new Set([1]);
 
     assert.deepEqual(element.columns, ['ID']);
-  });
-
-  it('setQueryParams parses colspec', () => {
-    element.colspec = 'Summary ID Owner';
-
-    element.setQueryParams();
-
-    assert.deepEqual(element.columns, ['Summary', 'ID', 'Owner']);
   });
 });

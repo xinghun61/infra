@@ -3,17 +3,17 @@
 // found in the LICENSE file.
 
 import {LitElement, html, css} from 'lit-element';
-import qs from 'qs';
 
 import {connectStore} from 'reducers/base.js';
 import * as user from 'reducers/user.js';
+import * as project from 'reducers/project.js';
+import * as sitewide from 'reducers/sitewide.js';
 
 import '../mr-dropdown/mr-dropdown.js';
 import '../mr-dropdown/mr-account-dropdown.js';
 import './mr-search-bar.js';
 
 import {SHARED_STYLES} from 'shared/shared-styles.js';
-import {prpcClient} from 'prpc-client-instance.js';
 
 import ClientLogger from 'monitoring/client-logger.js';
 
@@ -178,6 +178,7 @@ export class MrHeader extends connectStore(LitElement) {
       //   frontend with logic similar to ComputeIssueEntryURL().
       issueEntryUrl: {type: String},
       clientLogger: {type: Object},
+      _initialSearch: {type: String},
     };
   }
 
@@ -191,38 +192,21 @@ export class MrHeader extends connectStore(LitElement) {
     this.clientLogger = new ClientLogger('mr-header');
   }
 
-  connectedCallback() {
-    super.connectedCallback();
-
-    // Remove question mark at the start.
-    const queryString = window.location.search.substring(1);
-
-    // TODO(zhangtiff): Replace this with page.js integration.
-    // Note: Until we add page.js integration, this does not handle
-    // frontend route changes.
-    this.queryParams = qs.parse(queryString);
-  }
-
   stateChanged(state) {
     this.userProjects = user.projects(state);
 
     const currentUser = user.user(state);
     this.isSiteAdmin = currentUser ? currentUser.isSiteAdmin : false;
-  }
 
-  updated(changedProperties) {
-    if (changedProperties.has('projectName')) {
-      this._fetchPresentationConfig(this.projectName);
-    }
-  }
-
-  // TODO(zhangtiff): Make this into an action creator.
-  async _fetchPresentationConfig(projectName) {
-    const presentationConfig = await prpcClient.call(
-        'monorail.Projects', 'GetPresentationConfig', {projectName});
-
+    const presentationConfig = project.presentationConfig(state);
     this.presentationConfig = presentationConfig;
+    // Set separately in order allow EZT pages to load project logo before
+    // the GetPresentationConfig pRPC request.
     this.projectThumbnailUrl = presentationConfig.projectThumbnailUrl;
+
+    this._initialSearch = project.currentQuery(state);
+
+    this.queryParams = sitewide.queryParams(state);
   }
 
   get canAdministerProject() {
@@ -286,14 +270,6 @@ export class MrHeader extends connectStore(LitElement) {
       items.push({text: 'Administer', url: `/p/${projectName}/admin`});
     }
     return items;
-  }
-
-  get _initialSearch() {
-    const defaultQuery = this.presentationConfig
-      && this.presentationConfig.defaultQuery;
-    const q = this.queryParams && this.queryParams.q;
-    const qIsString = typeof q === 'string';
-    return qIsString ? q : defaultQuery;
   }
 
   get _defaultCan() {

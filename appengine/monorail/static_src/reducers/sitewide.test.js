@@ -11,7 +11,17 @@ import * as sitewide from './sitewide.js';
 
 let prpcCall;
 
-describe('sitewide', () => {
+describe('sitewide selectors', () => {
+  it('queryParams', () => {
+    assert.deepEqual(sitewide.queryParams({}), {});
+    assert.deepEqual(sitewide.queryParams({sitewide: {}}), {});
+    assert.deepEqual(sitewide.queryParams({sitewide: {queryParams:
+      {q: 'owner:me'}}}), {q: 'owner:me'});
+  });
+});
+
+
+describe('sitewide action creators', () => {
   beforeEach(() => {
     prpcCall = sinon.stub(prpcClient, 'call');
   });

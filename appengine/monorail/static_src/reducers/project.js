@@ -5,6 +5,7 @@
 import {combineReducers} from 'redux';
 import {createSelector} from 'reselect';
 import {createReducer, createRequestReducer} from './redux-helpers.js';
+import * as sitewide from 'reducers/sitewide.js';
 import {fieldTypes} from 'shared/issue-fields.js';
 import {hasPrefix, removePrefix} from 'shared/helpers.js';
 import {fieldNameToLabelPrefix,
@@ -16,11 +17,11 @@ const FETCH_CONFIG_START = 'project/FETCH_CONFIG_START';
 const FETCH_CONFIG_SUCCESS = 'project/FETCH_CONFIG_SUCCESS';
 const FETCH_CONFIG_FAILURE = 'project/FETCH_CONFIG_FAILURE';
 
-const FETCH_PRESENTATION_CONFIG_START =
+export const FETCH_PRESENTATION_CONFIG_START =
   'project/FETCH_PRESENTATION_CONFIG_START';
-const FETCH_PRESENTATION_CONFIG_SUCCESS =
+export const FETCH_PRESENTATION_CONFIG_SUCCESS =
   'project/FETCH_PRESENTATION_CONFIG_SUCCESS';
-const FETCH_PRESENTATION_CONFIG_FAILURE =
+export const FETCH_PRESENTATION_CONFIG_FAILURE =
   'project/FETCH_PRESENTATION_CONFIG_FAILURE';
 
 export const FETCH_VISIBLE_MEMBERS_START =
@@ -110,10 +111,30 @@ export const reducer = combineReducers({
 export const project = (state) => state.project || {};
 export const config = createSelector(project,
     (project) => project.config || {});
-export const presentationConfig = createSelector(project,
-    (project) => project.presentationConfig || {});
 export const visibleMembers = createSelector(project,
     (project) => project.visibleMembers || {});
+export const presentationConfig = createSelector(project,
+    (project) => project.presentationConfig || {});
+
+/**
+ * Get the default query for the currently viewed project.
+ */
+export const defaultQuery = createSelector(presentationConfig,
+    (config) => config.defaultQuery || '');
+
+/**
+ * Compute the current issue search query that the user has
+ * entered for a project, based on queryParams and the default
+ * project search.
+ */
+export const currentQuery = createSelector(
+    defaultQuery,
+    sitewide.queryParams,
+    (defaultQuery, params = {}) => {
+      // Make sure entering an empty search still works.
+      if (params.q === '') return params.q;
+      return params.q || defaultQuery;
+    });
 
 // Look up components by path.
 export const componentsMap = createSelector(

@@ -48,6 +48,76 @@ describe('project selectors', () => {
     });
   });
 
+  it('presentationConfig', () => {
+    assert.deepEqual(project.presentationConfig({}), {});
+    assert.deepEqual(project.presentationConfig({project: {}}), {});
+    assert.deepEqual(project.presentationConfig({project: {
+      presentationConfig: {
+        projectThumbnailUrl: 'test.png',
+      },
+    }}), {
+      projectThumbnailUrl: 'test.png',
+    });
+  });
+
+  it('defaultQuery', () => {
+    assert.deepEqual(project.defaultQuery({}), '');
+    assert.deepEqual(project.defaultQuery({project: {}}), '');
+    assert.deepEqual(project.defaultQuery({project: {
+      presentationConfig: {
+        defaultQuery: 'owner:me',
+      },
+    }}), 'owner:me');
+  });
+
+  it('currentQuery', () => {
+    assert.deepEqual(project.currentQuery({}), '');
+    assert.deepEqual(project.currentQuery({project: {}}), '');
+
+    // Uses default when no params.
+    assert.deepEqual(project.currentQuery({project: {
+      presentationConfig: {
+        defaultQuery: 'owner:me',
+      },
+    }}), 'owner:me');
+
+    // Params override default.
+    assert.deepEqual(project.currentQuery({
+      project: {
+        presentationConfig: {
+          defaultQuery: 'owner:me',
+        },
+      },
+      sitewide: {
+        queryParams: {q: 'component:Infra'},
+      },
+    }), 'component:Infra');
+
+    // Empty string overrides default search.
+    assert.deepEqual(project.currentQuery({
+      project: {
+        presentationConfig: {
+          defaultQuery: 'owner:me',
+        },
+      },
+      sitewide: {
+        queryParams: {q: ''},
+      },
+    }), '');
+
+    // Undefined does not override default search.
+    assert.deepEqual(project.currentQuery({
+      project: {
+        presentationConfig: {
+          defaultQuery: 'owner:me',
+        },
+      },
+      sitewide: {
+        queryParams: {q: undefined},
+      },
+    }), 'owner:me');
+  });
+
   it('fieldDefs', () => {
     assert.deepEqual(project.fieldDefs({project: {}}), []);
     assert.deepEqual(project.fieldDefs({project: {config: {}}}), []);
@@ -178,6 +248,28 @@ describe('project action creators', () => {
 
   afterEach(() => {
     prpcClient.call.restore();
+  });
+
+  it('fetchPresentationConfig', async () => {
+    const action = project.fetchPresentationConfig('chromium');
+
+    prpcClient.call.returns(Promise.resolve({projectThumbnailUrl: 'test'}));
+
+    await action(dispatch);
+
+    sinon.assert.calledWith(dispatch,
+        {type: project.FETCH_PRESENTATION_CONFIG_START});
+
+    sinon.assert.calledWith(
+        prpcClient.call,
+        'monorail.Projects',
+        'GetPresentationConfig',
+        {projectName: 'chromium'});
+
+    sinon.assert.calledWith(dispatch, {
+      type: project.FETCH_PRESENTATION_CONFIG_SUCCESS,
+      presentationConfig: {projectThumbnailUrl: 'test'},
+    });
   });
 
   it('fetchVisibleMembers', async () => {

@@ -3,6 +3,7 @@
 // found in the LICENSE file.
 
 import {combineReducers} from 'redux';
+import {createSelector} from 'reselect';
 import {createReducer, createRequestReducer} from './redux-helpers.js';
 import {prpcClient} from 'prpc-client-instance.js';
 
@@ -63,12 +64,18 @@ export const reducer = combineReducers({
 });
 
 // Selectors
-export const bannerMessage = (state) => state.sitewide.bannerMessage;
-export const bannerTime = (state) => state.sitewide.bannerTime;
-export const readOnly = (state) => state.sitewide.readOnly;
-export const queryParams = (state) => state.sitewide.queryParams;
+export const sitewide = (state) => state.sitewide || {};
+export const bannerMessage = createSelector(sitewide,
+    (sitewide) => sitewide.bannerMessage);
+export const bannerTime = createSelector(sitewide,
+    (sitewide) => sitewide.bannerTime);
+export const readOnly = createSelector(sitewide,
+    (sitewide) => sitewide.readOnly);
+export const queryParams = createSelector(sitewide,
+    (sitewide) => sitewide.queryParams || {});
 
-export const requests = (state) => state.sitewide.requests;
+export const requests = createSelector(sitewide,
+    (sitewide) => sitewide.requests || {});
 
 // Action Creators
 export const setQueryParams = (params) => {

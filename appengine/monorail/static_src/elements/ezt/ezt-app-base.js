@@ -3,9 +3,11 @@
 // found in the LICENSE file.
 
 import {LitElement} from 'lit-element';
+import qs from 'qs';
 import {store, connectStore} from 'reducers/base.js';
 import * as user from 'reducers/user.js';
 import * as project from 'reducers/project.js';
+import * as sitewide from 'reducers/sitewide.js';
 
 /**
  * `<ezt-app-base>`
@@ -21,6 +23,12 @@ export class EztAppBase extends connectStore(LitElement) {
       projectName: {type: String},
       userDisplayName: {type: String},
     };
+  }
+
+  connectedCallback() {
+    super.connectedCallback();
+
+    this.mapUrlToQueryParams();
   }
 
   updated(changedProperties) {
@@ -39,6 +47,12 @@ export class EztAppBase extends connectStore(LitElement) {
 
   fetchProjectData(projectName) {
     store.dispatch(project.fetch(projectName));
+  }
+
+  mapUrlToQueryParams() {
+    const params = qs.parse((window.location.search || '').substr(1));
+
+    store.dispatch(sitewide.setQueryParams(params));
   }
 }
 customElements.define('ezt-app-base', EztAppBase);
