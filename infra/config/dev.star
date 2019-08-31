@@ -89,7 +89,7 @@ def ci_builder(
   )
 
 
-ci_builder(name = 'infra-continuous-trusty-64', os = 'Ubuntu-14.04')
+ci_builder(name = 'infra-continuous-xenial-64', os = 'Ubuntu-16.04')
 ci_builder(name = 'infra-continuous-win-64', os = 'Windows-7-SP1')
 ci_builder(name = 'infra-continuous-win10-64', os = 'Windows-10')
 
@@ -120,20 +120,20 @@ def adhoc_builder(
 
 
 adhoc_builder(
-    name = 'goma-hello-world-trusty-64',
-    os = 'Ubuntu-14.04',
+    name = 'goma-hello-world-xenial-64',
+    os = 'Ubuntu-16.04',
     executable = infra.recipe('goma_hello_world'),
     schedule = 'with 10m interval',
 )
 adhoc_builder(
-    name = 'gerrit-hello-world-trusty-64',
-    os = 'Ubuntu-14.04',
+    name = 'gerrit-hello-world-xenial-64',
+    os = 'Ubuntu-16.04',
     executable = infra.recipe('gerrit_hello_world'),
     schedule = 'triggered',  # triggered manually via Scheduler UI
 )
 adhoc_builder(
-    name = 'gsutil-hello-world-trusty-64',
-    os = 'Ubuntu-14.04',
+    name = 'gsutil-hello-world-xenial-64',
+    os = 'Ubuntu-16.04',
     executable = infra.recipe('gsutil_hello_world'),
     schedule = 'triggered',  # triggered manually via Scheduler UI
 )
@@ -181,7 +181,7 @@ luci.notifier(
     on_failure = True,
     notify_emails = ['nodir+spam@google.com'],
     template = 'test',
-    notified_by = ['infra-continuous-trusty-64']
+    notified_by = ['infra-continuous-xenial-64']
 )
 
 luci.notifier_template(
