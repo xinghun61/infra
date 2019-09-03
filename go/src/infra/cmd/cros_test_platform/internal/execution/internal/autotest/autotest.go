@@ -27,6 +27,8 @@ import (
 	"infra/cmd/cros_test_platform/internal/execution/isolate"
 	"infra/cmd/cros_test_platform/internal/execution/swarming"
 	"infra/libs/skylab/autotest/dynamicsuite"
+	inventory_autotest "infra/libs/skylab/inventory/autotest/labels"
+	inventory_swarming "infra/libs/skylab/inventory/swarming"
 )
 
 const suiteName = "cros_test_platform"
@@ -126,10 +128,6 @@ func (r *Runner) proxyRequest() (*swarming_api.SwarmingRpcsNewTaskRequest, error
 	afeHost := r.config.GetAfeHost()
 	if afeHost == "" {
 		return nil, errors.Reason("create proxy request: config specified no afe_host").Err()
-	}
-
-	if f := r.requestParams.GetFreeformAttributes().GetSwarmingDimensions(); len(f) != 0 {
-		return nil, errors.Reason("swarming dimensions are not supported in autotest execution, but were specified as %s", f).Err()
 	}
 
 	dsArgs := dynamicsuite.Args{
@@ -297,14 +295,46 @@ func (r *Runner) reimageAndRunArgs() (interface{}, error) {
 			testNames[i] = v.Test.Name
 		}
 	}
-	return map[string]interface{}{
+	args := map[string]interface{}{
 		// test_names is in argument to reimage_and_run which, if provided, short
 		// cuts the normal test enumeration code and replaces it with this list
 		// of tests.
 		"test_names":  testNames,
 		"name":        suiteName,
 		"job_keyvals": r.getMergedKeyvals(),
-	}, nil
+	}
+
+	cds, err := r.getChildDependencies()
+	if err != nil {
+		return nil, err
+	}
+	if len(cds) > 0 {
+		args["child_dependencies"] = cds
+	}
+	return args, nil
+}
+
+func (r *Runner) getChildDependencies() ([]string, error) {
+	d, err := splitDependencyKeyvals(r.requestParams.GetFreeformAttributes().GetSwarmingDimensions())
+	if err != nil {
+		return nil, errors.Annotate(err, "get child dependencies").Err()
+	}
+	if len(d) == 0 {
+		return nil, nil
+	}
+	return inventory_autotest.Convert(inventory_swarming.Revert(d)), nil
+}
+
+func splitDependencyKeyvals(kvs []string) (inventory_swarming.Dimensions, error) {
+	d := make(inventory_swarming.Dimensions)
+	for _, kv := range kvs {
+		parts := strings.SplitN(kv, ":", 2)
+		if len(parts) != 2 {
+			return nil, errors.Reason("malformed free-form swarming dependency %s", kv).Err()
+		}
+		d[parts[0]] = append(d[parts[0]], parts[1])
+	}
+	return d, nil
 }
 
 func (r *Runner) getMergedKeyvals() map[string]string {

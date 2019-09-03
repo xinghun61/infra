@@ -275,6 +275,32 @@ func TestLaunchWithSuiteKeyvals(t *testing.T) {
 	})
 }
 
+func TestFreeFormAttributes(t *testing.T) {
+	Convey("Given one enumerated test", t, func() {
+		ctx := context.Background()
+		swarming := NewFakeSwarming()
+		setupFakeSwarmingToPassAllTasks(swarming)
+
+		invs := []*steps.EnumerationResponse_AutotestInvocation{invocation("test1")}
+		Convey("when running an autotest execution with a freeform attribute", func() {
+			p := basicParams()
+			p.FreeformAttributes = &test_platform.Request_Params_FreeformAttributes{
+				SwarmingDimensions: []string{"label-usb_detect:True"},
+			}
+			run := autotest.New(invs, p, basicConfig())
+
+			err := run.LaunchAndWait(ctx, swarming, nil)
+			So(err, ShouldBeNil)
+			Convey("then a single run_suite proxy job is created, with correct arguments.", func() {
+				So(swarming.createCalls, ShouldHaveLength, 1)
+				So(swarming.createCalls[0].TaskSlices, ShouldHaveLength, 1)
+				cmd := strings.Join(swarming.createCalls[0].TaskSlices[0].Properties.Command, " ")
+				So(cmd, ShouldContainSubstring, `\"child_dependencies\":[\"usb_detect\"]`)
+			})
+		})
+	})
+}
+
 var running = &steps.ExecuteResponse{State: &test_platform.TaskState{LifeCycle: test_platform.TaskState_LIFE_CYCLE_RUNNING}}
 
 func TestWaitAndCollect(t *testing.T) {
