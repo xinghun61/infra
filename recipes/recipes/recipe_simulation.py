@@ -6,6 +6,7 @@
 import json
 
 from recipe_engine.recipe_api import Property
+from recipe_engine import post_process
 
 DEPS = [
   'depot_tools/bot_update',
@@ -65,8 +66,10 @@ def RunSteps(api, git_repo):
 
   recipes_cfg_path = root_dir.join('s', *CFG_PATH.split('/'))
   cfg = json.loads(api.file.read_raw('read %s' % CFG_PATH, recipes_cfg_path))
+  cfg_recipes_path = cfg.get('recipes_path', '')  # default to the repo's root.
   recipes_py_path = root_dir.join(
-      's', *(cfg['recipes_path'].split('/') + ['recipes.py']))
+      's',
+      *(cfg_recipes_path.split('/') + ['recipes.py']))
   api.step('recipe simulation test', [
     recipes_py_path,
     'test', 'run',
@@ -79,37 +82,54 @@ def GenTests(api):
       api.buildbucket.ci_build(
           # NOTE: this git_repo doesn't become a property, it's to simulate
           # api.buildbucket.gitiles_commit.
-					git_repo='https://chromium.googlesource.com/chromium/tools/build',
+          git_repo='https://chromium.googlesource.com/chromium/tools/build',
       ) +
       api.step_data('read %s' % CFG_PATH, api.file.read_raw('''
         {
-					"api_version": 2,
-					"project_id": "build",
-					"recipes_path": "scripts/slave",
-					"repo_name": "build"
-				}
+          "api_version": 2,
+          "project_id": "build",
+          "recipes_path": "scripts/slave",
+          "repo_name": "build"
+        }
       '''))
   )
   yield (
       api.test('tip_of_tree') +
       api.properties(
-					git_repo='https://chromium.googlesource.com/infra/infra',
+          git_repo='https://chromium.googlesource.com/infra/infra',
       ) +
       api.step_data('read %s' % CFG_PATH, api.file.read_raw('''
         {
-					"api_version": 2,
-					"project_id": "infra",
-					"recipes_path": "recipes",
-					"repo_name": "infra"
-				}
+          "api_version": 2,
+          "project_id": "infra",
+          "recipes_path": "recipes",
+          "repo_name": "infra"
+        }
       '''))
+  )
+  yield (
+      api.test('recipes_path defaults to repo root') +
+      api.properties(
+          git_repo='https://chromium.googlesource.com/infra/infra',
+      ) +
+      api.step_data('read %s' % CFG_PATH, api.file.read_raw('''
+        {
+          "api_version": 2,
+          "project_id": "recipes-py",
+          "repo_name": "recipes-py"
+        }
+      ''')) +
+      api.post_check(lambda check, steps: check(
+          '[CACHE]/builder/https___chromium_infra_infra/s/recipes.py' in
+          steps['recipe simulation test'].cmd)) +
+      api.post_process(post_process.DropExpectation)
   )
   yield (
       api.test('conflicting_repo_urls') +
       api.buildbucket.ci_build(
-					git_repo='https://chromium.googlesource.com/chromium/tools/build',
+          git_repo='https://chromium.googlesource.com/chromium/tools/build',
       ) +
       api.properties(
-					git_repo='https://chromium.googlesource.com/infra/infra.GIT',
+          git_repo='https://chromium.googlesource.com/infra/infra.GIT',
       )
   )
