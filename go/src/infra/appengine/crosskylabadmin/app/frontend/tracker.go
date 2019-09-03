@@ -406,10 +406,12 @@ func identifyBots(ctx context.Context, bots []*swarming.SwarmingRpcsBotInfo) (re
 			logging.Warningf(ctx, "failed to obtain DUT name for bot %q", b.BotId)
 			continue
 		}
-		if os == "OS_TYPE_CROS" && (s == fleet.DutState_NeedsRepair || s == fleet.DutState_RepairFailed) {
+		if os != "OS_TYPE_LABSTATION" && (s == fleet.DutState_NeedsRepair || s == fleet.DutState_RepairFailed) {
+			logging.Infof(ctx, "DUT: %s - Needs repair", n)
 			repairDUTs = append(repairDUTs, n)
 		}
-		if os == "OS_TYPE_CROS" && s == fleet.DutState_NeedsReset {
+		if os != "OS_TYPE_LABSTATION" && s == fleet.DutState_NeedsReset {
+			logging.Infof(ctx, "DUT: %s - Needs reset", n)
 			resetDUTs = append(resetDUTs, n)
 		}
 	}

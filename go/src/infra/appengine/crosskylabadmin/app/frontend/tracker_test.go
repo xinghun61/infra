@@ -94,7 +94,7 @@ func TestPushBotsForAdminTasks(t *testing.T) {
 		tqt.CreateQueue(resetQ)
 		bot1 := botForDUT("dut_1", "needs_repair", "label-os_type:OS_TYPE_CROS")
 		bot2 := botForDUT("dut_2", "repair_failed", "label-os_type:OS_TYPE_CROS")
-		bot3 := botForDUT("dut_3", "needs_reset", "label-os_type:OS_TYPE_CROS")
+		bot3 := botForDUT("dut_3", "needs_reset", "label-os_type:OS_TYPE_JETSTREAM")
 		bots := []*swarming.SwarmingRpcsBotInfo{
 			botForDUT("dut_0", "ready", ""),
 			bot1,
