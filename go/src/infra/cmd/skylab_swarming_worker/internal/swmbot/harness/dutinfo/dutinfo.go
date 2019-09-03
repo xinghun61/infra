@@ -51,7 +51,7 @@ func (s *Store) Close() error {
 	}
 	log.Printf("Labels changed from %s to %s", old.String(), new.String())
 	log.Printf("Calling label update function")
-	if err := s.updateFunc(c.GetId(), new); err != nil {
+	if err := s.updateFunc(c.GetId(), old, new); err != nil {
 		return errors.Annotate(err, "close DUT inventory").Err()
 	}
 	s.updateFunc = nil
@@ -60,7 +60,7 @@ func (s *Store) Close() error {
 
 // UpdateFunc is used to implement inventory updating for any changes
 // to the loaded DUT info.
-type UpdateFunc func(dutID string, labels *inventory.SchedulableLabels) error
+type UpdateFunc func(dutID string, old *inventory.SchedulableLabels, new *inventory.SchedulableLabels) error
 
 // LoadCached loads the bot's DUT's info from the inventory. Returned inventory
 // data may be slightly stale compared to the source of truth of the inventory.

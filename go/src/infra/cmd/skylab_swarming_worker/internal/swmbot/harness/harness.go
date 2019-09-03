@@ -186,7 +186,7 @@ type labelUpdater struct {
 
 // update is a dutinfo.UpdateFunc for updating DUT inventory labels.
 // If adminServiceURL is empty, this method does nothing.
-func (u labelUpdater) update(dutID string, labels *inventory.SchedulableLabels) error {
+func (u labelUpdater) update(dutID string, old *inventory.SchedulableLabels, new *inventory.SchedulableLabels) error {
 	if u.botInfo.AdminService == "" || !u.updateLabels {
 		log.Printf("Skipping label update since no admin service was provided")
 		return nil
@@ -200,7 +200,7 @@ func (u labelUpdater) update(dutID string, labels *inventory.SchedulableLabels) 
 	if err != nil {
 		return errors.Annotate(err, "update inventory labels").Err()
 	}
-	req, err := u.makeRequest(dutID, labels)
+	req, err := u.makeRequest(dutID, old, new)
 	if err != nil {
 		return errors.Annotate(err, "update inventory labels").Err()
 	}
@@ -214,15 +214,20 @@ func (u labelUpdater) update(dutID string, labels *inventory.SchedulableLabels) 
 	return nil
 }
 
-func (u labelUpdater) makeRequest(dutID string, labels *inventory.SchedulableLabels) (*fleet.UpdateDutLabelsRequest, error) {
-	d, err := proto.Marshal(labels)
+func (u labelUpdater) makeRequest(dutID string, old *inventory.SchedulableLabels, new *inventory.SchedulableLabels) (*fleet.UpdateDutLabelsRequest, error) {
+	nl, err := proto.Marshal(new)
+	if err != nil {
+		return nil, err
+	}
+	ol, err := proto.Marshal(old)
 	if err != nil {
 		return nil, err
 	}
 	req := fleet.UpdateDutLabelsRequest{
-		DutId:  dutID,
-		Labels: d,
-		Reason: fmt.Sprintf("%s %s", u.taskName, u.botInfo.TaskRunURL()),
+		DutId:     dutID,
+		Labels:    nl,
+		Reason:    fmt.Sprintf("%s %s", u.taskName, u.botInfo.TaskRunURL()),
+		OldLabels: ol,
 	}
 	return &req, nil
 }
