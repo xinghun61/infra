@@ -14,6 +14,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"time"
 
@@ -940,7 +941,10 @@ func (c *cookRun) newBuildUpdater() (*buildUpdater, error) {
 // Because Windows doesn't have UNIX domain sockets, and Linux doesn't have
 // named pipes, this becomes platform-specific.
 func (c *cookRun) getLogDogStreamServer(ctx context.Context) (streamserver.StreamServer, error) {
-	return getLogDogStreamServerForPlatform(ctx, c.TempDir)
+	if runtime.GOOS == "windows" {
+		return streamserver.New(ctx, "kitchen")
+	}
+	return streamserver.New(ctx, filepath.Join(c.TempDir, "ld.sock"))
 }
 
 func parseProperties(properties map[string]interface{}, propertiesFile string) (result map[string]interface{}, err error) {
