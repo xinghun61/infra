@@ -2440,16 +2440,6 @@ class IssueService(object):
 
     return comments
 
-  def GetAbbrCommentsForIssue(self, cnxn, issue_id):
-    """Get all abbreviated comments for the specified issue."""
-    # Abbreviated comment rows are always loaded from the master so
-    # that they never suffer from replication lag.
-    order_by = [('created ASC', [])]
-    comment_rows = self.comment_tbl.Select(
-        cnxn, cols=ABBR_COMMENT_COLS, issue_id=issue_id, order_by=order_by)
-
-    return comment_rows
-
   # TODO(jrobbins): remove this method because it is too slow when an issue
   # has a huge number of comments.
   def GetCommentsForIssues(self, cnxn, issue_ids, content_only=False):

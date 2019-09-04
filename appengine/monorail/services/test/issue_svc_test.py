@@ -1859,23 +1859,6 @@ class IssueServiceTest(unittest.TestCase):
         id=comment_ids, shard_id=ANY)
     self.assertEqual(3, len(comments))
 
-  def testGetAbbrCommentsForIssue(self):
-    """Retrieve abbreviated rows for the comments on an issue."""
-    issue_id = 100001
-    self.services.issue.comment_tbl.Select = Mock(
-        return_value=[
-            (101001, 111, None, True),
-            (101002, 222, None, False),
-            (101003, 111, None, False)])
-
-    abbr_comments = self.services.issue.GetAbbrCommentsForIssue(
-        self.cnxn, issue_id)
-
-    self.services.issue.comment_tbl.Select.assert_called_once_with(
-        self.cnxn, cols=issue_svc.ABBR_COMMENT_COLS,
-        issue_id=issue_id, order_by=[('created ASC', [])])
-    self.assertEqual(3, len(abbr_comments))
-
   def SetUpGetComments(self, issue_ids):
     # Assumes one comment per issue.
     cids = [issue_id + 1000 for issue_id in issue_ids]

@@ -39,21 +39,13 @@ from tracker import tracker_helpers
 class IssueView(template_helpers.PBProxy):
   """Wrapper class that makes it easier to display an Issue via EZT."""
 
-  def __init__(
-      self, issue, users_by_id, config, open_related=None,
-      closed_related=None, all_related=None):
+  def __init__(self, issue, users_by_id, config):
     """Store relevant values for later display by EZT.
 
     Args:
       issue: An Issue protocol buffer.
       users_by_id: dict {user_id: UserViews} for all users mentioned in issue.
       config: ProjectIssueConfig for this issue.
-      open_related: dict of visible open issues that are related to this issue.
-      closed_related: dict {issue_id: issue} of visible closed issues that
-          are related to this issue.
-      all_related: optional dict {issue_id: issue} of all blocked-on, blocking,
-          or merged-into issues referenced from this issue, regardless of
-          perms.
     """
     super(IssueView, self).__init__(issue)
 
@@ -110,75 +102,10 @@ class IssueView(template_helpers.PBProxy):
     else:
       self.closed = ''
 
-    blocked_on_iids = issue.blocked_on_iids
-    blocking_iids = issue.blocking_iids
-
-    # Note that merged_into_str and blocked_on_str includes all issue
-    # references, even those referring to issues that the user can't view,
-    # so open_related and closed_related cannot be used.
-    if all_related is not None:
-      all_blocked_on_refs = [
-          (all_related[ref_iid].project_name, all_related[ref_iid].local_id)
-          for ref_iid in issue.blocked_on_iids]
-      all_blocked_on_refs.extend([
-          (r.project, r.issue_id) for r in issue.dangling_blocked_on_refs])
-      self.blocked_on_str = ', '.join(
-          tracker_bizobj.FormatIssueRef(
-              ref, default_project_name=issue.project_name)
-          for ref in all_blocked_on_refs)
-      all_blocking_refs = [
-          (all_related[ref_iid].project_name, all_related[ref_iid].local_id)
-          for ref_iid in issue.blocking_iids]
-      all_blocking_refs.extend([
-          (r.project, r.issue_id) for r in issue.dangling_blocking_refs])
-      self.blocking_str = ', '.join(
-          tracker_bizobj.FormatIssueRef(
-              ref, default_project_name=issue.project_name)
-          for ref in all_blocking_refs)
-      if issue.merged_into:
-        merged_issue = all_related[issue.merged_into]
-        merged_into_ref = merged_issue.project_name, merged_issue.local_id
-      else:
-        merged_into_ref = None
-      self.merged_into_str = tracker_bizobj.FormatIssueRef(
-          merged_into_ref, default_project_name=issue.project_name)
-
     self.blocked_on = []
     self.has_dangling = ezt.boolean(self.dangling_blocked_on_refs)
     self.blocking = []
-    current_project_name = issue.project_name
 
-    if (open_related is not None and closed_related is not None
-        and all_related is not None):
-      self.merged_into = IssueRefView(
-          current_project_name, all_related.get(issue.merged_into),
-          open_related, closed_related)
-
-      self.blocked_on = [
-          IssueRefView(
-              current_project_name, all_related.get(iid),
-              open_related, closed_related)
-          for iid in blocked_on_iids]
-      self.blocked_on.extend(
-          [DanglingIssueRefView(ref)
-           for ref in issue.dangling_blocked_on_refs])
-      # TODO(jrobbins): sort by irv project_name and local_id
-
-      self.blocking = [
-          IssueRefView(
-              current_project_name, all_related.get(iid),
-              open_related, closed_related)
-          for iid in blocking_iids]
-      self.blocking.extend(
-          [DanglingIssueRefView(ref)
-           for ref in issue.dangling_blocking_refs])
-      # TODO(jrobbins): sort by irv project_name and local_id
-
-    visible_open_blocked_on = [
-        irv for irv in self.blocked_on
-        if (not irv.is_dangling and
-            open_related and irv.issue_id in open_related)]
-    self.multiple_blocked_on = ezt.boolean(len(visible_open_blocked_on) >= 2)
     self.detail_relative_url = tracker_helpers.FormatRelativeIssueURL(
         issue.project_name, urls.ISSUE_DETAIL, id=issue.local_id)
     self.crbug_url = tracker_helpers.FormatCrBugURL(
