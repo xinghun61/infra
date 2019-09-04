@@ -256,40 +256,57 @@ func addManyDUTsToFleet(ctx context.Context, s *gitstore.InventoryStore, nds []*
 	// TODO(gregorynisbet): f is fail fast ... do we want to do anything specific after
 	// encountering an error?
 	f := func() error {
-		var hostnames []string
+		var ds []*inventory.CommonDeviceSpecs
+		var ids []string
 		newID := make(map[*inventory.CommonDeviceSpecs]string)
+
+		c := newGlobalInvCache(ctx, s)
+
 		for _, nd := range nds {
-			c := newGlobalInvCache(ctx, s)
-			// Clone device specs before modifications so that changes don't leak
-			// across retries.
-			d := proto.Clone(nd).(*inventory.CommonDeviceSpecs)
+			ds = append(ds, proto.Clone(nd).(*inventory.CommonDeviceSpecs))
+		}
 
-			if err := s.Refresh(ctx); err != nil {
-				return errors.Annotate(err, "add dut to fleet").Err()
-			}
+		if err := s.Refresh(ctx); err != nil {
+			return errors.Annotate(err, "add dut to fleet").Err()
+		}
 
+		for _, d := range ds {
 			hostname := d.GetHostname()
-			hostnames = append(hostnames, hostname)
 			if _, ok := c.hostnameToID[hostname]; ok {
 				return errors.Reason("dut with hostname %s already exists", hostname).Err()
 			}
-
 			if pickServoPort && !hasServoPortAttribute(d) {
 				if err := assignNewServoPort(s.Lab.Duts, d); err != nil {
 					return errors.Annotate(err, "add dut to fleet").Err()
 				}
 			}
+		}
 
-			id := addDUTToStore(s, d)
+		for _, d := range ds {
+			ids = append(ids, addDUTToStore(s, d))
+		}
+
+		for i := range ids {
+			id := ids[i]
+			nd := nds[i]
 			newID[nd] = id
-			// TODO(ayatane): Implement this better than just regenerating the cache.
-			c = newGlobalInvCache(ctx, s)
+		}
+
+		// TODO(ayatane): Implement this better than just regenerating the cache.
+		c = newGlobalInvCache(ctx, s)
+
+		for _, id := range ids {
 			if _, err := assignDUT(ctx, c, id); err != nil {
 				return errors.Annotate(err, "add dut to fleet").Err()
 			}
 		}
 
-		url, err := s.Commit(ctx, fmt.Sprintf("Add %d new DUT(s) : %s ...", len(hostnames), hostnames[0]))
+		firstHostname := "<empty>"
+		if len(ds) > 0 {
+			firstHostname = ds[0].GetHostname()
+		}
+
+		url, err := s.Commit(ctx, fmt.Sprintf("Add %d new DUT(s) : %s ...", len(ds), firstHostname))
 		if err != nil {
 			return errors.Annotate(err, "add dut to fleet").Err()
 		}
