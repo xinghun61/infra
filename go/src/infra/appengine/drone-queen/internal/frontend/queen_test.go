@@ -32,7 +32,7 @@ import (
 
 func TestDroneQueenImpl_DeclareDuts(t *testing.T) {
 	t.Parallel()
-	t.Run("first time", func(t *testing.T) {
+	t.Run("happy path", func(t *testing.T) {
 		t.Parallel()
 		ctx := gaetesting.TestingContextWithAppID("go-test")
 		datastore.GetTestable(ctx).Consistent(true)
@@ -48,94 +48,91 @@ func TestDroneQueenImpl_DeclareDuts(t *testing.T) {
 			{ID: "nelo", Group: k},
 		}
 		assertDatastoreDUTs(ctx, t, want)
-		if t.Failed() {
-			t.FailNow()
+	})
+	t.Run("declare invalid DUTs", func(t *testing.T) {
+		t.Parallel()
+		ctx := gaetesting.TestingContextWithAppID("go-test")
+		datastore.GetTestable(ctx).Consistent(true)
+		var d DroneQueenImpl
+		duts := []string{"ion", "nelo", "", ""}
+		_, err := d.DeclareDuts(ctx, &api.DeclareDutsRequest{Duts: duts})
+		if err != nil {
+			t.Fatal(err)
 		}
-		t.Run("declare invalid DUTs", func(t *testing.T) {
-			t.Parallel()
-			ctx := gaetesting.TestingContextWithAppID("go-test")
-			datastore.GetTestable(ctx).Consistent(true)
-			var d DroneQueenImpl
-			duts := []string{"ion", "nelo", "", ""}
-			_, err := d.DeclareDuts(ctx, &api.DeclareDutsRequest{Duts: duts})
-			if err != nil {
-				t.Fatal(err)
-			}
-			k := entities.DUTGroupKey(ctx)
-			want := []*entities.DUT{
-				{ID: "ion", Group: k},
-				{ID: "nelo", Group: k},
-			}
-			assertDatastoreDUTs(ctx, t, want)
-		})
-		t.Run("declare more DUTs", func(t *testing.T) {
-			t.Parallel()
-			ctx := gaetesting.TestingContextWithAppID("go-test")
-			datastore.GetTestable(ctx).Consistent(true)
-			var d DroneQueenImpl
-			duts := []string{"ion", "nelo"}
-			_, err := d.DeclareDuts(ctx, &api.DeclareDutsRequest{Duts: duts})
-			if err != nil {
-				t.Fatal(err)
-			}
-			duts = []string{"ion", "nelo", "casty"}
-			_, err = d.DeclareDuts(ctx, &api.DeclareDutsRequest{Duts: duts})
-			if err != nil {
-				t.Fatal(err)
-			}
-			k := entities.DUTGroupKey(ctx)
-			want := []*entities.DUT{
-				{ID: "ion", Group: k},
-				{ID: "nelo", Group: k},
-				{ID: "casty", Group: k},
-			}
-			assertDatastoreDUTs(ctx, t, want)
-		})
-		t.Run("declare fewer DUTs", func(t *testing.T) {
-			t.Parallel()
-			ctx := gaetesting.TestingContextWithAppID("go-test")
-			datastore.GetTestable(ctx).Consistent(true)
-			var d DroneQueenImpl
-			duts := []string{"ion", "nelo"}
-			_, err := d.DeclareDuts(ctx, &api.DeclareDutsRequest{Duts: duts})
-			if err != nil {
-				t.Fatal(err)
-			}
-			duts = []string{"ion"}
-			_, err = d.DeclareDuts(ctx, &api.DeclareDutsRequest{Duts: duts})
-			if err != nil {
-				t.Fatal(err)
-			}
-			k := entities.DUTGroupKey(ctx)
-			want := []*entities.DUT{
-				{ID: "ion", Group: k},
-				{ID: "nelo", Group: k, Draining: true},
-			}
-			assertDatastoreDUTs(ctx, t, want)
-		})
-		t.Run("declare new and remove old DUTs", func(t *testing.T) {
-			t.Parallel()
-			ctx := gaetesting.TestingContextWithAppID("go-test")
-			datastore.GetTestable(ctx).Consistent(true)
-			var d DroneQueenImpl
-			duts := []string{"ion", "nelo"}
-			_, err := d.DeclareDuts(ctx, &api.DeclareDutsRequest{Duts: duts})
-			if err != nil {
-				t.Fatal(err)
-			}
-			duts = []string{"ion", "casty"}
-			_, err = d.DeclareDuts(ctx, &api.DeclareDutsRequest{Duts: duts})
-			if err != nil {
-				t.Fatal(err)
-			}
-			k := entities.DUTGroupKey(ctx)
-			want := []*entities.DUT{
-				{ID: "ion", Group: k},
-				{ID: "nelo", Group: k, Draining: true},
-				{ID: "casty", Group: k},
-			}
-			assertDatastoreDUTs(ctx, t, want)
-		})
+		k := entities.DUTGroupKey(ctx)
+		want := []*entities.DUT{
+			{ID: "ion", Group: k},
+			{ID: "nelo", Group: k},
+		}
+		assertDatastoreDUTs(ctx, t, want)
+	})
+	t.Run("declare more DUTs", func(t *testing.T) {
+		t.Parallel()
+		ctx := gaetesting.TestingContextWithAppID("go-test")
+		datastore.GetTestable(ctx).Consistent(true)
+		var d DroneQueenImpl
+		duts := []string{"ion", "nelo"}
+		_, err := d.DeclareDuts(ctx, &api.DeclareDutsRequest{Duts: duts})
+		if err != nil {
+			t.Fatal(err)
+		}
+		duts = []string{"ion", "nelo", "casty"}
+		_, err = d.DeclareDuts(ctx, &api.DeclareDutsRequest{Duts: duts})
+		if err != nil {
+			t.Fatal(err)
+		}
+		k := entities.DUTGroupKey(ctx)
+		want := []*entities.DUT{
+			{ID: "ion", Group: k},
+			{ID: "nelo", Group: k},
+			{ID: "casty", Group: k},
+		}
+		assertDatastoreDUTs(ctx, t, want)
+	})
+	t.Run("declare fewer DUTs", func(t *testing.T) {
+		t.Parallel()
+		ctx := gaetesting.TestingContextWithAppID("go-test")
+		datastore.GetTestable(ctx).Consistent(true)
+		var d DroneQueenImpl
+		duts := []string{"ion", "nelo"}
+		_, err := d.DeclareDuts(ctx, &api.DeclareDutsRequest{Duts: duts})
+		if err != nil {
+			t.Fatal(err)
+		}
+		duts = []string{"ion"}
+		_, err = d.DeclareDuts(ctx, &api.DeclareDutsRequest{Duts: duts})
+		if err != nil {
+			t.Fatal(err)
+		}
+		k := entities.DUTGroupKey(ctx)
+		want := []*entities.DUT{
+			{ID: "ion", Group: k},
+			{ID: "nelo", Group: k, Draining: true},
+		}
+		assertDatastoreDUTs(ctx, t, want)
+	})
+	t.Run("declare new and remove old DUTs", func(t *testing.T) {
+		t.Parallel()
+		ctx := gaetesting.TestingContextWithAppID("go-test")
+		datastore.GetTestable(ctx).Consistent(true)
+		var d DroneQueenImpl
+		duts := []string{"ion", "nelo"}
+		_, err := d.DeclareDuts(ctx, &api.DeclareDutsRequest{Duts: duts})
+		if err != nil {
+			t.Fatal(err)
+		}
+		duts = []string{"ion", "casty"}
+		_, err = d.DeclareDuts(ctx, &api.DeclareDutsRequest{Duts: duts})
+		if err != nil {
+			t.Fatal(err)
+		}
+		k := entities.DUTGroupKey(ctx)
+		want := []*entities.DUT{
+			{ID: "ion", Group: k},
+			{ID: "nelo", Group: k, Draining: true},
+			{ID: "casty", Group: k},
+		}
+		assertDatastoreDUTs(ctx, t, want)
 	})
 }
 
