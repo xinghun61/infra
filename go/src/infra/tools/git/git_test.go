@@ -621,9 +621,15 @@ func (ta *testAgent) writeResponse() (err error) {
 }
 
 func (ta *testAgent) run(c context.Context, args []string) int {
+	env := environ.System()
+
+	// On Windows exec.Cmd forcefully appends SYSTEMROOT even if we don't pass it
+	// explicitly. We don't care about it in this test.
+	env.Remove("SYSTEMROOT")
+
 	ta.out = testAgentResponse{
 		Args:       args,
-		Env:        environ.System().Sorted(),
+		Env:        env.Sorted(),
 		Incomplete: true,
 	}
 
