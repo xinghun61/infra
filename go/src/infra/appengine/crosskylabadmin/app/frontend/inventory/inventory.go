@@ -256,6 +256,7 @@ func (is *ServerImpl) PushInventoryToQueen(ctx context.Context, req *fleet.PushI
 		C:    h,
 		Host: cfg.QueenService,
 	})
+	logging.Debugf(ctx, "DUTs to declare: %#v", duts)
 	_, err = c.DeclareDuts(ctx, &api.DeclareDutsRequest{Duts: duts})
 	if err != nil {
 		return nil, err
