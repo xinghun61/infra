@@ -1655,6 +1655,20 @@ wheel: <
 
 * *universal*
 
+## **iso8601**
+
+### 0.1.12
+
+```protobuf
+wheel: <
+  name: "infra/python/wheels/iso8601-py2_py3"
+  version: "version:0.1.12"
+>
+```
+
+
+* *universal*
+
 ## **isort**
 
 ### 4.3.4
