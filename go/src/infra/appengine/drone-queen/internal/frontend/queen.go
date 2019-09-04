@@ -164,7 +164,8 @@ func (q *DroneQueenImpl) DeclareDuts(ctx context.Context, req *api.DeclareDutsRe
 		var modifiedDUTs []*entities.DUT
 		var newDUTs []entities.DUTID
 		declared := make(map[entities.DUTID]bool)
-		for _, dut := range req.GetDuts() {
+		reqDUTs := filterInvalidDUTs(req.GetDuts())
+		for _, dut := range reqDUTs {
 			dutID := entities.DUTID(dut)
 			if dut, ok := existing[dutID]; ok {
 				dut.Draining = false
@@ -198,6 +199,17 @@ func (q *DroneQueenImpl) DeclareDuts(ctx context.Context, req *api.DeclareDutsRe
 		return nil, err
 	}
 	return &api.DeclareDutsResponse{}, nil
+}
+
+func filterInvalidDUTs(s []string) []string {
+	valid := make([]string, 0, len(s))
+	for _, s := range s {
+		if s == "" {
+			continue
+		}
+		valid = append(valid, s)
+	}
+	return valid
 }
 
 // ListDrones implements service interfaces.

@@ -51,6 +51,23 @@ func TestDroneQueenImpl_DeclareDuts(t *testing.T) {
 		if t.Failed() {
 			t.FailNow()
 		}
+		t.Run("declare invalid DUTs", func(t *testing.T) {
+			t.Parallel()
+			ctx := gaetesting.TestingContextWithAppID("go-test")
+			datastore.GetTestable(ctx).Consistent(true)
+			var d DroneQueenImpl
+			duts := []string{"ion", "nelo", "", ""}
+			_, err := d.DeclareDuts(ctx, &api.DeclareDutsRequest{Duts: duts})
+			if err != nil {
+				t.Fatal(err)
+			}
+			k := entities.DUTGroupKey(ctx)
+			want := []*entities.DUT{
+				{ID: "ion", Group: k},
+				{ID: "nelo", Group: k},
+			}
+			assertDatastoreDUTs(ctx, t, want)
+		})
 		t.Run("declare more DUTs", func(t *testing.T) {
 			t.Parallel()
 			ctx := gaetesting.TestingContextWithAppID("go-test")
