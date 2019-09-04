@@ -34,6 +34,15 @@ describe('ezt-app-base', () => {
     sinon.assert.calledWith(element.fetchUserData, 'test@example.com');
   });
 
+  it('does not fetch data when userDisplayName is empty', async () => {
+    sinon.stub(element, 'fetchUserData');
+    element.userDisplayName = '';
+
+    await element.updateComplete;
+
+    sinon.assert.notCalled(element.fetchUserData);
+  });
+
   it('fetches project data when projectName set', async () => {
     sinon.stub(element, 'fetchProjectData');
 
@@ -43,5 +52,14 @@ describe('ezt-app-base', () => {
 
     sinon.assert.calledOnce(element.fetchProjectData);
     sinon.assert.calledWith(element.fetchProjectData, 'chromium');
+  });
+
+  it('does not fetch data when projectName is empty', async () => {
+    sinon.stub(element, 'fetchProjectData');
+    element.projectName = '';
+
+    await element.updateComplete;
+
+    sinon.assert.notCalled(element.fetchProjectData);
   });
 });

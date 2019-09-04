@@ -36,7 +36,7 @@ export class EztAppBase extends connectStore(LitElement) {
       this.fetchUserData(this.userDisplayName);
     }
 
-    if (changedProperties.has('projectName')) {
+    if (changedProperties.has('projectName') && this.projectName) {
       this.fetchProjectData(this.projectName);
     }
   }
