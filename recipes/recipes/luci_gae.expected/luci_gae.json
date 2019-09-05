@@ -148,7 +148,6 @@
       "[CACHE]/infra_gclient_with_go/infra/go/env.py",
       "go",
       "test",
-      "-cover",
       "go.chromium.org/gae/..."
     ],
     "cwd": "[CACHE]/infra_gclient_with_go",
