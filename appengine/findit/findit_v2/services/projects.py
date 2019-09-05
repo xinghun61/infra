@@ -39,9 +39,11 @@ LUCI_PROJECTS = {
     'chromeos': {
         'postsubmit': {
             'supported_builder_pattern': r'.*-postsubmit',
-            'rerun_builder_pattern': r'.*-bisect',
             'supported_builders': ['postsubmit-orchestrator'],
-            'rerun_builders': ['bisecting-orchestrator']
+        },
+        'bisect': {
+            'rerun_builder_pattern': r'.*-bisect',
+            'rerun_builders': ['bisecting-orchestrator'],
         }
     }
 }
