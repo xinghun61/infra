@@ -270,26 +270,21 @@ func addManyDUTsToFleet(ctx context.Context, s *gitstore.InventoryStore, nds []*
 			return errors.Annotate(err, "add dut to fleet").Err()
 		}
 
-		for _, d := range ds {
+		for i, d := range ds {
 			hostname := d.GetHostname()
 			if _, ok := c.hostnameToID[hostname]; ok {
-				return errors.Reason("dut with hostname %s already exists", hostname).Err()
+				logging.Infof(ctx, "dut with hostname %s already exists", hostname)
+				continue
 			}
 			if pickServoPort && !hasServoPortAttribute(d) {
 				if err := assignNewServoPort(s.Lab.Duts, d); err != nil {
-					return errors.Annotate(err, "add dut to fleet").Err()
+					logging.Infof(ctx, "fail to assign new servo port")
+					continue
 				}
 			}
-		}
-
-		for _, d := range ds {
-			ids = append(ids, addDUTToStore(s, d))
-		}
-
-		for i := range ids {
-			id := ids[i]
-			nd := nds[i]
-			newID[nd] = id
+			nid := addDUTToStore(s, d)
+			ids = append(ids, nid)
+			newID[nds[i]] = nid
 		}
 
 		// TODO(ayatane): Implement this better than just regenerating the cache.
