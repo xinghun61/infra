@@ -45,7 +45,7 @@ from services.code_coverage import code_coverage_util
 from waterfall import waterfall_config
 
 # List of Gerrit projects that the Code Coverage service supports.
-_PROJECTS_WHITELIST = set(['chromium/src'])
+_PROJECTS_WHITELIST = ('chromium/src', 'libassistant/internal')
 _ALLOWED_GITILES_HOST = set([
     'android.googlesource.com',
     'aomedia.googlesource.com',
@@ -454,6 +454,14 @@ def _IsReportSuspicious(report):
   return False
 
 
+def _IsPresubmitBuild(build):
+  if build.builder.bucket == 'try':
+    return True
+  return build.builder.bucket in (
+      'master.tryserver.cast-chromecast-internal.gce'
+  ) and build.builder.builder in ('libassistant-incremental_coverage')
+
+
 class FetchSourceFile(BaseHandler):
   PERMISSION_LEVEL = Permission.APP_SELF
 
@@ -736,7 +744,7 @@ class ProcessCodeCoverageData(BaseHandler):
     data = _GetValidatedData(all_json_gs_path)
 
     # For presubmit coverage, save the whole data in json.
-    if build.builder.bucket == 'try':
+    if _IsPresubmitBuild(build):
       # Assume there is only 1 patch which is true in CQ.
       assert len(build.input.gerrit_changes) == 1, 'Expect only one patchset'
       patch = build.input.gerrit_changes[0]
@@ -787,7 +795,8 @@ class ProcessCodeCoverageData(BaseHandler):
     if IsInternalInstance():
       return (project in ('cast-chromecast-internal') and
               bucket in ('master.tryserver.cast-chromecast-internal.gce') and
-              builder in ('libassistant-absolute_coverage'))
+              builder in ('libassistant-absolute_coverage',
+                          'libassistant-incremental_coverage'))
 
     return (project in ('chromium', 'chrome') and
             bucket in ('coverage', 'ci', 'try') and
