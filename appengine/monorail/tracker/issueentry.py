@@ -37,6 +37,7 @@ from proto import tracker_pb2
 PLACEHOLDER_SUMMARY = 'Enter one-line summary'
 PHASES_WITH_MILESTONES = ['Beta', 'Stable', 'Stable-Exp', 'Stable-Full']
 CORP_RESTRICTION_LABEL = 'Restrict-View-Google'
+RESTRICTED_FLT_FIELDS = ['notice', 'whitepaper', 'm-approved']
 
 
 class IssueEntry(servlet.Servlet):
@@ -163,6 +164,10 @@ class IssueEntry(servlet.Servlet):
         config, link_or_template_labels, [], template.field_values,
         field_user_views, parent_approval_ids=approval_ids,
         phases=template.phases)
+    # TODO(jojwang): monorail:6305, remove this hack when Edit perms for field
+    # values are implemented.
+    field_views = [view for view in field_views
+                   if view.field_name.lower() not in RESTRICTED_FLT_FIELDS]
 
     # TODO(jrobbins): remove "or []" after next release.
     (prechecked_approvals, required_approval_ids,

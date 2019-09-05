@@ -206,6 +206,53 @@ class IssueEntryTest(unittest.TestCase):
     # phase fields row hidden when template has no phases
     self.assertEqual(page_data['issue_phase_names'], [])
 
+  # TODO(jojwang): monorail:6305, remove this test when Edit perms
+  # for field values are implemented.
+  def testGatherPageData_FLTSpecialFields(self):
+    user = self.services.user.TestAddUser('user@invalid', 100)
+    mr = testing_helpers.MakeMonorailRequest(
+        path='/p/proj/issues/entry', services=self.services)
+    mr.auth.user_view = framework_views.MakeUserView(
+        'cnxn', self.services.user, 100)
+    mr.template_name = 'rutabaga'
+
+    self.mox.StubOutWithMock(self.services.user, 'GetUser')
+    self.services.user.GetUser(
+        mox.IgnoreArg(), mox.IgnoreArg()).MultipleTimes().AndReturn(user)
+    self.mox.ReplayAll()
+    config = self.services.config.GetProjectConfig(mr.cnxn, mr.project_id)
+    config.field_defs = [
+        tracker_bizobj.MakeFieldDef(
+            25, mr.project_id, 'nOtice',
+            tracker_pb2.FieldTypes.STR_TYPE, None, '', False, False,
+            False, None, None, '', False, '', '',
+            tracker_pb2.NotifyTriggers.NEVER, 'no_action', 'doc', False),
+        tracker_bizobj.MakeFieldDef(
+            24, mr.project_id, 'M-Target',
+            tracker_pb2.FieldTypes.STR_TYPE, None, '', False, False,
+            False, None, None, '', False, '', '',
+            tracker_pb2.NotifyTriggers.NEVER, 'no_action', 'doc', False),
+        tracker_bizobj.MakeFieldDef(
+            25, mr.project_id, 'whitepaper',
+            tracker_pb2.FieldTypes.STR_TYPE, None, '', False, False,
+            False, None, None, '', False, '', '',
+            tracker_pb2.NotifyTriggers.NEVER, 'no_action', 'doc', False),
+        tracker_bizobj.MakeFieldDef(
+            25, mr.project_id, 'm-approved',
+            tracker_pb2.FieldTypes.STR_TYPE, None, '', False, False,
+            False, None, None, '', False, '', '',
+            tracker_pb2.NotifyTriggers.NEVER, 'no_action', 'doc', False),
+    ]
+
+    self.services.config.StoreConfig(mr.cnxn, config)
+    template = tracker_pb2.TemplateDef()
+    self.services.template.GetTemplateByName.return_value = template
+
+    page_data = self.servlet.GatherPageData(mr)
+    self.mox.VerifyAll()
+    self.assertEqual(page_data['fields'][0].field_name, 'M-Target')
+    self.assertEqual(len(page_data['fields']), 1)
+
   def testGatherPageData_DefaultOwnerAvailability(self):
     user = self.services.user.TestAddUser('user@invalid', 100)
     mr = testing_helpers.MakeMonorailRequest(
