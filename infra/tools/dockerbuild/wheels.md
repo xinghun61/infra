@@ -1080,6 +1080,20 @@ wheel: <
 
 * *universal*
 
+## **glob2**
+
+### 0.7
+
+```protobuf
+wheel: <
+  name: "infra/python/wheels/glob2-py2_py3"
+  version: "version:0.7"
+>
+```
+
+
+* *universal*
+
 ## **google-api-core**
 
 ### 0.1.1
