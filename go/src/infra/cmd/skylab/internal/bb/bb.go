@@ -241,7 +241,7 @@ func (c *Client) searchRawBuilds(ctx context.Context, limit int, predicate *buil
 			break
 		}
 	}
-	return rawBuilds[:limit], nil
+	return rawBuilds, nil
 }
 
 func clipToInt32(n int) int32 {
