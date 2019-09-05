@@ -41,7 +41,6 @@ DEPS = [
   'recipe_engine/python',
   'recipe_engine/raw_io',
   'recipe_engine/step',
-  'recipe_engine/tempfile',
 ]
 
 # The gitiles url of the CHROMEOS_LKGM file. This file represents the latest

@@ -34,7 +34,6 @@ DEPS = [
   'recipe_engine/python',
   'recipe_engine/raw_io',
   'recipe_engine/step',
-  'recipe_engine/tempfile',
 ]
 
 # This is a special hostname that resolves to a different DUT depending on
@@ -74,59 +73,59 @@ def RunSteps(api):
             SWARMING_BOT_SSH_ID))
 
   # Download (and optionally extract) the CrOS image in a temp dir.
-  with api.tempfile.temp_dir("cros_flash") as tmp_dir:
-    if gs_image_path.endswith('.tar.xz'):
-      dest = tmp_dir.join('chromiumos_image.tar.xz')
-      api.gsutil.download(
-          gs_image_bucket, gs_image_path, dest, name='download image')
-      with api.context(cwd=tmp_dir):
-        extract_result = api.step(
-            'extract image', ['/bin/tar', '-xvf', dest],
-            stdout=api.raw_io.output('out'))
-      # Pull the name of the exracted file from tar's stdout.
-      img_path = tmp_dir.join(extract_result.stdout.strip())
-    elif gs_image_path.endswith('.bin'):
-      img_path = tmp_dir.join('chromiumos_image.bin')
-      api.gsutil.download(
-          gs_image_bucket, gs_image_path, img_path, name='download image')
-    else:
-      api.python.failing_step('unknown image format',
-          'Image file must end in either ".bin" or ".tar.xz".')
+  tmp_dir = api.path.mkdtemp('cros_flash')
+  if gs_image_path.endswith('.tar.xz'):
+    dest = tmp_dir.join('chromiumos_image.tar.xz')
+    api.gsutil.download(
+        gs_image_bucket, gs_image_path, dest, name='download image')
+    with api.context(cwd=tmp_dir):
+      extract_result = api.step(
+          'extract image', ['/bin/tar', '-xvf', dest],
+          stdout=api.raw_io.output('out'))
+    # Pull the name of the exracted file from tar's stdout.
+    img_path = tmp_dir.join(extract_result.stdout.strip())
+  elif gs_image_path.endswith('.bin'):
+    img_path = tmp_dir.join('chromiumos_image.bin')
+    api.gsutil.download(
+        gs_image_bucket, gs_image_path, img_path, name='download image')
+  else:
+    api.python.failing_step('unknown image format',
+        'Image file must end in either ".bin" or ".tar.xz".')
 
-    # Move into the named cache, and fetch a full ChromiumOS checkout.
-    cros_checkout_path = api.path['cache'].join('builder')
-    with api.context(cwd=cros_checkout_path):
-      try:
-        api.chromite.checkout(repo_sync_args=['-c', '-j2'], branch=CROS_BRANCH)
-      except api.step.StepFailure as f:
-        # repo has a tendency to flake when syncing. If it fails, continue on
-        # with the build. Anything problematic in the checkout should be caught
-        # by the subsequent build-chroot step.
-        f.result.presentation.status = api.step.WARNING
+  # Move into the named cache, and fetch a full ChromiumOS checkout.
+  cros_checkout_path = api.path['cache'].join('builder')
+  with api.context(cwd=cros_checkout_path):
+    try:
+      api.chromite.checkout(repo_sync_args=['-c', '-j2'], branch=CROS_BRANCH)
+    except api.step.StepFailure as f:
+      # repo has a tendency to flake when syncing. If it fails, continue on
+      # with the build. Anything problematic in the checkout should be caught
+      # by the subsequent build-chroot step.
+      f.result.presentation.status = api.step.WARNING
 
-      # Pass in --nouse-image below so the chroot is simply encased in a dir.
-      # It'll otherwise try creating and mounting an image file (which can be a
-      # 500GB sparse file).
-      api.chromite.cros_sdk(
-          'build chroot', ['exit'],
-          chroot_cmd=cros_checkout_path.join('chromite', 'bin', 'cros_sdk'),
-          args=['--nouse-image', '--create', '--debug'])
+    # Pass in --nouse-image below so the chroot is simply encased in a dir.
+    # It'll otherwise try creating and mounting an image file (which can be a
+    # 500GB sparse file).
+    api.chromite.cros_sdk(
+        'build chroot', ['exit'],
+        chroot_cmd=cros_checkout_path.join('chromite', 'bin', 'cros_sdk'),
+        args=['--nouse-image', '--create', '--debug'])
 
-      # chromite's own virtual env setup conflicts with vpython, so temporarily
-      # subvert vpython for the duration of the flash.
-      with api.chromite.with_system_python():
-        cros_tool_path = cros_checkout_path.join('chromite', 'bin', 'cros')
-        arg_list = [
-          'flash',
-          CROS_DUT_HOSTNAME,
-          img_path,
-          '--disable-rootfs-verification',  # Needed to add ssh identity below.
-          '--clobber-stateful',  # Fully wipe the device.
-          '--clear-cache',  # Don't keep old image files lying around.
-          '--force',  # Force yes to all Y/N prompts.
-          '--debug',  # More verbose logging.
-        ]
-        api.python('flash DUT', cros_tool_path, arg_list)
+    # chromite's own virtual env setup conflicts with vpython, so temporarily
+    # subvert vpython for the duration of the flash.
+    with api.chromite.with_system_python():
+      cros_tool_path = cros_checkout_path.join('chromite', 'bin', 'cros')
+      arg_list = [
+        'flash',
+        CROS_DUT_HOSTNAME,
+        img_path,
+        '--disable-rootfs-verification',  # Needed to add ssh identity below.
+        '--clobber-stateful',  # Fully wipe the device.
+        '--clear-cache',  # Don't keep old image files lying around.
+        '--force',  # Force yes to all Y/N prompts.
+        '--debug',  # More verbose logging.
+      ]
+      api.python('flash DUT', cros_tool_path, arg_list)
 
   # Reauthorize the host's ssh identity with the DUT via ssh-copy-id, using
   # sshpass to pass in the root password.
