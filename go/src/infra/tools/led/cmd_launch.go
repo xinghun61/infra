@@ -5,6 +5,7 @@
 package main
 
 import (
+	"encoding/hex"
 	"encoding/json"
 	"os"
 	"time"
@@ -16,10 +17,12 @@ import (
 	"go.chromium.org/luci/auth"
 	"go.chromium.org/luci/auth/client/authcli"
 	"go.chromium.org/luci/common/cli"
+	"go.chromium.org/luci/common/data/rand/cryptorand"
 	"go.chromium.org/luci/common/errors"
 	"go.chromium.org/luci/common/gcloud/googleoauth"
 	"go.chromium.org/luci/common/logging"
 	"go.chromium.org/luci/common/system/terminal"
+	logdog_types "go.chromium.org/luci/logdog/common/types"
 )
 
 func launchCmd(authOpts auth.Options) *subcommands.Command {
@@ -96,23 +99,13 @@ func setOutputResultPath(s *Systemland) error {
 // setInputRecipes passes the CIPD package or isolate containing the recipes
 // code into the led recipe module. This gives the build the information it
 // needs to launch child builds using the same version of the recipes code.
-func setInputRecipes(u *Userland) error {
-	ledProperties := map[string]interface{}{
-		"launched_by_led": true,
+
+func generateLogdogPrefix(ctx context.Context, uid string) (prefix logdog_types.StreamName, err error) {
+	buf := make([]byte, 32)
+	if _, err := cryptorand.Read(ctx, buf); err != nil {
+		return "", errors.Annotate(err, "generating random token").Err()
 	}
-	if u.RecipeIsolatedHash != "" {
-		ledProperties["isolated_input"] = map[string]interface{}{
-			// TODO(iannucci): Set server and namespace too.
-			"hash": u.RecipeIsolatedHash,
-		}
-	} else if u.RecipeCIPDSource != nil {
-		ledProperties["cipd_input"] = map[string]interface{}{
-			"package": u.RecipeCIPDSource.Package,
-			"version": u.RecipeCIPDSource.Version,
-		}
-	}
-	u.RecipeProperties["$recipe_engine/led"] = ledProperties
-	return nil
+	return logdog_types.MakeStreamName("", "led", uid, hex.EncodeToString(buf))
 }
 
 func (c *cmdLaunch) Run(a subcommands.Application, args []string, env subcommands.Env) int {
@@ -162,10 +155,38 @@ func (c *cmdLaunch) Run(a subcommands.Application, args []string, env subcommand
 		return 1
 	}
 
+	logdogPrefix, err := generateLogdogPrefix(ctx, uid)
+	if err != nil {
+		errors.Log(ctx, err)
+		return 1
+	}
+
 	ejd := jd.Edit()
 	ejd.tweakSystemland(setOutputResultPath)
 	ejd.ConsolidateIsolateSources(ctx, isoClient)
-	ejd.tweakUserland(setInputRecipes)
+	// Set the "$recipe_engine/led" recipe properties.
+	ejd.tweakUserland(func(u *Userland) error {
+		ledProperties := map[string]interface{}{
+			"launched_by_led": true,
+			"led_run_id":      logdogPrefix,
+		}
+		// Pass the CIPD package or isolate containing the recipes code into
+		// the led recipe module. This gives the build the information it needs
+		// to launch child builds using the same version of the recipes code.
+		if u.RecipeIsolatedHash != "" {
+			ledProperties["isolated_input"] = map[string]interface{}{
+				// TODO(iannucci): Set server and namespace too.
+				"hash": u.RecipeIsolatedHash,
+			}
+		} else if u.RecipeCIPDSource != nil {
+			ledProperties["cipd_input"] = map[string]interface{}{
+				"package": u.RecipeCIPDSource.Package,
+				"version": u.RecipeCIPDSource.Version,
+			}
+		}
+		u.RecipeProperties["$recipe_engine/led"] = ledProperties
+		return nil
+	})
 	if err := ejd.Finalize(); err != nil {
 		errors.Log(ctx, err)
 		return 1
@@ -174,7 +195,7 @@ func (c *cmdLaunch) Run(a subcommands.Application, args []string, env subcommand
 	jd.TopLevel.Tags = append(jd.TopLevel.Tags, "user:"+uid)
 
 	logging.Infof(ctx, "building swarming task")
-	st, err := jd.GetSwarmingNewTask(ctx, uid)
+	st, err := jd.GetSwarmingNewTask(ctx, uid, logdogPrefix)
 	if err != nil {
 		errors.Log(ctx, err)
 		return 1

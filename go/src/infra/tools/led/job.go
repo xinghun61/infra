@@ -5,7 +5,6 @@
 package main
 
 import (
-	"encoding/hex"
 	"flag"
 	"regexp"
 	"strings"
@@ -13,7 +12,6 @@ import (
 	"golang.org/x/net/context"
 
 	swarming "go.chromium.org/luci/common/api/swarming/swarming/v1"
-	"go.chromium.org/luci/common/data/rand/cryptorand"
 	"go.chromium.org/luci/common/errors"
 	logdog_types "go.chromium.org/luci/logdog/common/types"
 
@@ -176,14 +174,11 @@ func (js *JobSlice) gen(ctx context.Context, uid string, logPrefix logdog_types.
 
 // GetSwarmingNewTask builds a usable SwarmingRpcsNewTaskRequest from the
 // JobDefinition, incorporating all of the extra bits of the JobDefinition.
-func (jd *JobDefinition) GetSwarmingNewTask(ctx context.Context, uid string) (*swarming.SwarmingRpcsNewTaskRequest, error) {
+func (jd *JobDefinition) GetSwarmingNewTask(ctx context.Context, uid string, prefix logdog_types.StreamName) (*swarming.SwarmingRpcsNewTaskRequest, error) {
 	st := &swarming.SwarmingRpcsNewTaskRequest{}
 	jd.TopLevel.apply(st)
-	prefix, err := generateLogdogStream(ctx, uid)
-	if err != nil {
-		return nil, errors.Annotate(err, "generating logdog prefix").Err()
-	}
 	for i, s := range jd.Slices {
+		s.U.RecipeProperties[""] = string(prefix)
 		slc, extraTags := s.gen(ctx, uid, prefix)
 		// HACK(iannucci): Technically the swarming task could define task slice
 		// fallbacks which had e.g. different logdog URLs or different recipe
@@ -208,14 +203,6 @@ func exfiltrateMap(m map[string]string) []*swarming.SwarmingRpcsStringPair {
 		ret = append(ret, &swarming.SwarmingRpcsStringPair{Key: k, Value: v})
 	}
 	return ret
-}
-
-func generateLogdogStream(ctx context.Context, uid string) (prefix logdog_types.StreamName, err error) {
-	buf := make([]byte, 32)
-	if _, err := cryptorand.Read(ctx, buf); err != nil {
-		return "", errors.Annotate(err, "generating random token").Err()
-	}
-	return logdog_types.MakeStreamName("", "led", uid, hex.EncodeToString(buf))
 }
 
 func trimTags(tags []string, keepPrefixes []string) []string {
