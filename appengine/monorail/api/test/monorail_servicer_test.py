@@ -359,27 +359,6 @@ class MonorailServicerTest(unittest.TestCase):
     self.svcr.AssertWhitelistedOrXSRF(mc, metadata)
 
   @mock.patch('google.appengine.api.oauth.get_client_id')
-  def testAssertWhitelistedOrXSRF_AllowedDomain(self, mock_get_client_id):
-    """An oauth requester can be whitelisted by having an email in an
-    allowed domain."""
-    mock_get_client_id.return_value = None
-    metadata = {}
-
-    # pylint: disable=attribute-defined-outside-init
-    self.request.project_name = 'proj'
-    self.project.committer_ids.append(222)
-    mc = monorailcontext.MonorailContext(self.services, auth=self.auth)
-
-    # Domain that is not allowed.
-    self.auth.user_pb.email = 'rutabaga@rutabaga.com'
-    with self.assertRaises(xsrf.TokenIncorrect):
-      self.svcr.AssertWhitelistedOrXSRF(mc, metadata)
-
-    # Domain that is allowed.
-    self.auth.user_pb.email = 'rutabaga@google.com'
-    self.svcr.AssertWhitelistedOrXSRF(mc, metadata)
-
-  @mock.patch('google.appengine.api.oauth.get_client_id')
   def testAssertWhitelistedOrXSRF_XSRFToken_Header(self, mock_get_client_id):
     """Our API is limited to our client by checking an XSRF token."""
     # Disable special whitelisting of the default client_id while testing.
