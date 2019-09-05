@@ -30,8 +30,9 @@ func runGoBuildStep(ctx context.Context, inv *stepRunnerInv) error {
 	env := environ.System()
 	env.Update(extraEnv)
 
-	// TODO(vadimsh): Add "-trimpath" once we switch to go1.13.
-	args := []string{"go", "build"}
+	// See https://github.com/golang/go/issues/33772 for the explanation about
+	// buildid.
+	args := []string{"go", "build", "-trimpath", "-ldflags=-buildid="}
 	if logging.IsLogging(ctx, logging.Debug) {
 		args = append(args, "-v")
 	}
