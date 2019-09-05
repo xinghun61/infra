@@ -241,6 +241,10 @@ func (c *Client) searchRawBuilds(ctx context.Context, limit int, predicate *buil
 			break
 		}
 	}
+	// As noted above, the last paging call may accumulate some extra results.
+	if limit < len(rawBuilds) {
+		rawBuilds = rawBuilds[:limit]
+	}
 	return rawBuilds, nil
 }
 
