@@ -122,7 +122,7 @@ func triggerQuickDeploy(ctx context.Context, ic fleet.InventoryClient, specs []*
 	resp, err := ic.DeployDut(ctx, &fleet.DeployDutRequest{
 		NewSpecs: newSpecs,
 		Actions: &fleet.DutDeploymentActions{
-			StageImageToUsb:  true,
+			StageImageToUsb:  false,
 			InstallFirmware:  false,
 			InstallTestImage: false,
 		},
