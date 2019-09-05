@@ -13,7 +13,6 @@ from buildbucket_proto.step_pb2 import Step
 from google.appengine.api import taskqueue
 
 from common.waterfall import buildbucket_client
-from dto.test_location import TestLocation as DTOTestLocation
 from libs import time_util
 from model.flake.detection.flake_occurrence import BuildConfiguration
 from model.flake.detection.flake_occurrence import FlakeOccurrence
@@ -25,6 +24,7 @@ from model.flake.flake_type import FLAKE_TYPE_DESCRIPTIONS
 from model.wf_build import WfBuild
 from services import bigquery_helper
 from services import step_util
+from services import test_tag_util
 from services.flake_detection import detect_flake_occurrences
 from services.flake_detection.detect_flake_occurrences import (
     QueryAndStoreNonHiddenFlakes)
@@ -287,69 +287,6 @@ class DetectFlakesOccurrencesTest(WaterfallTestCase):
     self.addCleanup(patcher.stop)
     patcher.start()
 
-  def testNormalizePath(self):
-    self.assertEqual('a/b/c', detect_flake_occurrences._NormalizePath('a/b/c'))
-    self.assertEqual('a/b/c',
-                     detect_flake_occurrences._NormalizePath('../../a/b/c'))
-    self.assertEqual('a/b/c',
-                     detect_flake_occurrences._NormalizePath('../../a/b/./c'))
-    self.assertEqual('b/c',
-                     detect_flake_occurrences._NormalizePath('../a/../b/c'))
-
-  @mock.patch.object(
-      detect_flake_occurrences.step_util,
-      'GetStepMetadata',
-      return_value={'swarm_task_ids': ['t1', 't2']})
-  @mock.patch.object(
-      detect_flake_occurrences.swarmed_test_util,
-      'GetTestLocation',
-      side_effect=[None, DTOTestLocation(file='../../path/a.cc', line=2)])
-  def testGetTestLocation(self, *_):
-    occurrence = FlakeOccurrence(
-        build_id=123,
-        step_ui_name='test on Mac',
-    )
-    self.assertEqual(
-        'path/a.cc',
-        detect_flake_occurrences._GetTestLocation(occurrence).file_path)
-
-  @mock.patch.object(
-      detect_flake_occurrences.FinditHttpClient,
-      'Get',
-      return_value=(200,
-                    json.dumps({
-                        'dir-to-component': {
-                            'p/dir1': 'a>b',
-                            'p/dir2': 'd>e>f',
-                        }
-                    }), None))
-  def testGetChromiumDirectoryToComponentMapping(self, *_):
-    self.assertEqual({
-        'p/dir1/': 'a>b',
-        'p/dir2/': 'd>e>f'
-    }, detect_flake_occurrences._GetChromiumDirectoryToComponentMapping())
-
-  @mock.patch.object(
-      detect_flake_occurrences.CachedGitilesRepository,
-      'GetSource',
-      return_value=textwrap.dedent(r"""
-                         {
-                           'WATCHLIST_DEFINITIONS': {
-                             'watchlist1': {
-                               'filepath': 'path/to/source\.cc'
-                             },
-                             'watchlist2': {
-                               'filepath': 'a/to/file1\.cc'\
-                                           '|b/to/file2\.cc'
-                             }
-                           }
-                         }"""))
-  def testGetChromiumWATCHLISTS(self, *_):
-    self.assertEqual({
-        'watchlist1': r'path/to/source\.cc',
-        'watchlist2': r'a/to/file1\.cc|b/to/file2\.cc',
-    }, detect_flake_occurrences._GetChromiumWATCHLISTS())
-
   @mock.patch.object(
       time_util, 'GetDateDaysBeforeNow', return_value=datetime(2019, 1, 1))
   def testUpdateTestLocationAndTagsRecentlyUpdated(self, _):
@@ -361,10 +298,7 @@ class DetectFlakesOccurrencesTest(WaterfallTestCase):
     self.assertFalse(
         detect_flake_occurrences._UpdateTestLocationAndTags(flake, [], {}, {}))
 
-  @mock.patch.object(
-      detect_flake_occurrences,
-      '_GetTestLocation',
-      return_value=NDBTestLocation(file_path='unknown/path.cc',))
+  @mock.patch.object(test_tag_util, 'GetTestLocation', return_value=None)
   def testUpdateTestLocationAndTagsNoComponent(self, *_):
     flake = Flake(
         normalized_test_name='suite.test',
@@ -383,28 +317,21 @@ class DetectFlakesOccurrencesTest(WaterfallTestCase):
         'other': 'a/b/c',
     }
 
-    expected_tags = sorted([
-        'gerrit_project::chromium/src',
-        'directory::unknown/',
-        'source::unknown/path.cc',
-        'component::Unknown',
-        'parent_component::Unknown',
-    ])
-
     for tag in flake.tags:
       name = tag.split(TAG_DELIMITER)[0]
       self.assertTrue(name in detect_flake_occurrences.SUPPORTED_TAGS)
 
-    self.assertTrue(
+    self.assertFalse(
         detect_flake_occurrences._UpdateTestLocationAndTags(
             flake, occurrences, component_mapping, watchlist))
-    self.assertEqual(expected_tags, flake.tags)
 
   @mock.patch.object(
-      step_util, 'GetCanonicalStepName', return_value='context_lost_tests')
-  @mock.patch.object(
-      detect_flake_occurrences, '_GetTestLocation', return_value=None)
-  def testUpdateTestLocationAndTagsNoLocationWithComponent(self, *_):
+      test_tag_util,
+      'GetTestComponentsForGPUTest',
+      side_effect=[['Internals>GPU>Testing'],
+                   ['Internals>GPU>Testing', 'Blink>WebGL']])
+  @mock.patch.object(test_tag_util, 'GetTestLocation', return_value=None)
+  def testUpdateTestLocationAndTagsGPUTest(self, *_):
     flake = Flake(
         normalized_test_name='suite.test',
         normalized_step_name='telemetry_gpu_integration_test',
@@ -418,6 +345,13 @@ class DetectFlakesOccurrencesTest(WaterfallTestCase):
                 luci_builder='builder',
                 legacy_build_number=123,
             )),
+        FlakeOccurrence(
+            step_ui_name='webgl_conformance_vulkan_passthrough_tests',
+            build_configuration=BuildConfiguration(
+                legacy_master_name='master',
+                luci_builder='builder',
+                legacy_build_number=124,
+            )),
     ]
     component_mapping = {
         'base/feature/': 'root>a>b',
@@ -430,8 +364,8 @@ class DetectFlakesOccurrencesTest(WaterfallTestCase):
     }
 
     expected_tags = sorted([
-        'gerrit_project::chromium/src',
-        'component::Internals>GPU>Testing',
+        'gerrit_project::chromium/src', 'component::Internals>GPU>Testing',
+        'component::Blink>WebGL'
     ])
 
     for tag in flake.tags:
@@ -444,10 +378,74 @@ class DetectFlakesOccurrencesTest(WaterfallTestCase):
     self.assertEqual(expected_tags, flake.tags)
 
   @mock.patch.object(
-      detect_flake_occurrences,
-      '_GetTestLocation',
+      test_tag_util, 'GetTestComponentsForGPUTest', return_value=[])
+  @mock.patch.object(test_tag_util, 'GetTestLocation', return_value=None)
+  def testUpdateTestLocationAndTagsGPUTestDefaultComponent(self, *_):
+    flake = Flake(
+        normalized_test_name='suite.test',
+        normalized_step_name='telemetry_gpu_integration_test',
+        tags=['gerrit_project::chromium/src'],
+    )
+    occurrences = [
+        FlakeOccurrence(
+            step_ui_name='unknown_suite_1',
+            build_configuration=BuildConfiguration(
+                legacy_master_name='master',
+                luci_builder='builder',
+                legacy_build_number=123,
+            )),
+        FlakeOccurrence(
+            step_ui_name='unknown_suite_2',
+            build_configuration=BuildConfiguration(
+                legacy_master_name='master',
+                luci_builder='builder',
+                legacy_build_number=124,
+            )),
+    ]
+    component_mapping = {
+        'base/feature/': 'root>a>b',
+        'base/feature/url': 'root>a>b>c',
+    }
+    watchlist = {
+        'feature': 'base/feature',
+        'url': r'base/feature/url_test\.cc',
+        'other': 'a/b/c',
+    }
+
+    expected_tags = sorted(
+        ['gerrit_project::chromium/src', 'component::Unknown'])
+
+    for tag in flake.tags:
+      name = tag.split(TAG_DELIMITER)[0]
+      self.assertTrue(name in detect_flake_occurrences.SUPPORTED_TAGS)
+
+    self.assertTrue(
+        detect_flake_occurrences._UpdateTestLocationAndTags(
+            flake, occurrences, component_mapping, watchlist))
+    self.assertEqual(expected_tags, flake.tags)
+
+  @mock.patch.object(
+      test_tag_util,
+      'GetTagsFromLocation',
+      return_value=sorted([
+          'gerrit_project::chromium/src',
+          'watchlist::feature',
+          'watchlist::url',
+          'directory::base/feature/',
+          'directory::base/',
+          'source::base/feature/url_test.cc',
+          'component::root>a>b',
+          'parent_component::root>a>b',
+          'parent_component::root>a',
+          'parent_component::root',
+      ]))
+  @mock.patch.object(
+      test_tag_util, 'GetTestComponentFromLocation', return_value='root>a>b')
+  @mock.patch.object(
+      test_tag_util,
+      'GetTestLocation',
       return_value=NDBTestLocation(file_path='base/feature/url_test.cc',))
-  def testUpdateTestLocationAndTags(self, *_):
+  def testUpdateTestLocationAndTagsFromLocation(self, *_):
     flake = Flake(
         normalized_test_name='suite.test',
         tags=[
@@ -490,14 +488,10 @@ class DetectFlakesOccurrencesTest(WaterfallTestCase):
             flake, occurrences, component_mapping, watchlist))
     self.assertEqual(expected_tags, flake.tags)
 
+  @mock.patch.object(test_tag_util, 'GetTestLocation', return_value=None)
   @mock.patch.object(
-      detect_flake_occurrences, '_GetTestLocation', return_value=None)
-  @mock.patch.object(
-      detect_flake_occurrences,
-      '_GetChromiumDirectoryToComponentMapping',
-      return_value={})
-  @mock.patch.object(
-      detect_flake_occurrences, '_GetChromiumWATCHLISTS', return_value={})
+      test_tag_util, '_GetChromiumDirectoryToComponentMapping', return_value={})
+  @mock.patch.object(test_tag_util, '_GetChromiumWATCHLISTS', return_value={})
   def testUpdateMetadataForFlakes(self, *_):
     luci_project = 'chromium'
     normalized_step_name = 'normalized_step_name'
@@ -653,14 +647,10 @@ class DetectFlakesOccurrencesTest(WaterfallTestCase):
 
   @mock.patch.object(
       time_util, 'GetUTCNow', return_value=datetime(2018, 12, 20))
+  @mock.patch.object(test_tag_util, 'GetTestLocation', return_value=None)
   @mock.patch.object(
-      detect_flake_occurrences, '_GetTestLocation', return_value=None)
-  @mock.patch.object(
-      detect_flake_occurrences,
-      '_GetChromiumDirectoryToComponentMapping',
-      return_value={})
-  @mock.patch.object(
-      detect_flake_occurrences, '_GetChromiumWATCHLISTS', return_value={})
+      test_tag_util, '_GetChromiumDirectoryToComponentMapping', return_value={})
+  @mock.patch.object(test_tag_util, '_GetChromiumWATCHLISTS', return_value={})
   @mock.patch.object(bigquery_helper, '_GetBigqueryClient')
   def testDetectCQHiddenFlakes(self, mocked_get_client, *_):
     query_response = self._GetEmptyFlakeQueryResponse()
@@ -721,12 +711,9 @@ class DetectFlakesOccurrencesTest(WaterfallTestCase):
     flake = Flake.Get('chromium', 'normalized_step_name', 't1')
     self.assertIsNone(flake)
 
+  @mock.patch.object(test_tag_util, '_GetChromiumWATCHLISTS', return_value={})
   @mock.patch.object(
-      detect_flake_occurrences, '_GetChromiumWATCHLISTS', return_value={})
-  @mock.patch.object(
-      detect_flake_occurrences,
-      '_GetChromiumDirectoryToComponentMapping',
-      return_value={})
+      test_tag_util, '_GetChromiumDirectoryToComponentMapping', return_value={})
   @mock.patch.object(
       build_util,
       'GetBuilderInfoForLUCIBuild',

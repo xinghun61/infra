@@ -2,7 +2,6 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-import ast
 import collections
 from datetime import datetime
 from datetime import timedelta
@@ -20,17 +19,13 @@ from common import constants
 from common.findit_http_client import FinditHttpClient
 from common.waterfall import buildbucket_client
 from gae_libs import appengine_util
-from gae_libs.caches import CompressedMemCache
 from gae_libs.caches import PickledMemCache
-from gae_libs.gitiles.cached_gitiles_repository import CachedGitilesRepository
 from libs import test_name_util
 from libs import time_util
 from libs.cache_decorator import Cached
 from libs.structured_object import StructuredObject
 from model.flake.detection.flake_occurrence import FlakeOccurrence
-from model.flake.flake import DEFAULT_COMPONENT
 from model.flake.flake import Flake
-from model.flake.flake import TestLocation
 from model.flake.flake_type import DESCRIPTION_TO_FLAKE_TYPE
 from model.flake.flake_type import FlakeType
 from model.flake.flake_type import FLAKE_TYPE_DESCRIPTIONS
@@ -38,7 +33,7 @@ from model.wf_build import WfBuild
 from services import bigquery_helper
 from services import monitoring
 from services import step_util
-from services import swarmed_test_util
+from services import test_tag_util
 from waterfall import build_util
 
 _MAP_FLAKY_TESTS_QUERY_PATH = {
@@ -55,10 +50,6 @@ _MAP_FLAKY_TESTS_QUERY_PATH = {
             os.path.join(__file__, os.path.pardir,
                          'flaky_tests.hidden_flakes.sql'))
 }
-
-# Url to the file with the mapping from the directories to crbug components.
-_COMPONENT_MAPPING_URL = ('https://storage.googleapis.com/chromium-owners/'
-                          'component_map_subdirs.json')
 
 # The tags used to filter flakes.
 # TODO(crbug.com/907688): find a way to keep the list updated.
@@ -104,33 +95,6 @@ _DETECT_FLAKES_IN_BUILD_TASK_URL = (
 _FLAKE_TASK_CACHED_SECONDS = 24 * 60 * 60
 
 _FLAKINESS_METADATA_STEP = 'FindIt Flakiness'
-
-# Special mapping between steps and components.
-# So that Findit can still auto assign the component to some flakes' bugs even
-# if cannot get their components based on test location.
-_MAP_STEP_NAME_TO_COMPONENTS = {
-    'context_lost_tests': ['Internals>GPU>Testing'],
-    'depth_capture_tests': ['Internals>GPU>Testing'],
-    'gpu_process_launch_tests': ['Internals>GPU>Testing'],
-    'hardware_accelerated_feature_tests': ['Internals>GPU>Testing'],
-    'info_collection_tests': ['Internals>GPU>Testing'],
-    'maps_pixel_test': ['Internals>GPU>Testing'],
-    'pixel_skia_gold_test': ['Internals>GPU>Testing'],
-    'pixel_test': ['Internals>GPU>Testing'],
-    'screenshot_sync': ['Internals>GPU>Testing'],
-    'webgl_conformance_vulkan_passthrough_tests': [
-        'Internals>GPU>Testing', 'Blink>WebGL'
-    ],
-    'webgl2_conformance_d3d11_validating_tests': ['Blink>WebGL'],
-    'webgl2_conformance_gl_passthrough_tests': ['Blink>WebGL'],
-    'webgl2_conformance_tests': ['Blink>WebGL'],
-    'webgl_conformance_d3d11_validating_tests': ['Blink>WebGL'],
-    'webgl_conformance_d3d9_passthrough_tests': ['Blink>WebGL'],
-    'webgl_conformance_d3d9_validating_tests': ['Blink>WebGL'],
-    'webgl_conformance_gl_passthrough_tests': ['Blink>WebGL'],
-    'webgl_conformance_gles_passthrough': ['Blink>WebGL'],
-    'webgl_conformance_tests': ['Blink>WebGL'],
-}
 
 
 def _CreateFlakeFromRow(row):
@@ -271,83 +235,12 @@ def _StoreMultipleLocalEntities(local_entities):
   return non_existent_local_entities
 
 
-def _NormalizePath(path):
-  """Returns the normalized path of the given one.
-
-     Normalization include:
-     * Convert '\\' to '/'
-     * Convert '\\\\' to '/'
-     * Resolve '../' and './'
-
-     Example:
-     '..\\a/../b/./c/test.cc' --> 'b/c/test.cc'
-  """
-  path = path.replace('\\', '/')
-  path = path.replace('//', '/')
-
-  filtered_parts = []
-  for part in path.split('/'):
-    if part == '..':
-      if filtered_parts:
-        filtered_parts.pop()
-    elif part == '.':
-      continue
-    else:
-      filtered_parts.append(part)
-
-  return '/'.join(filtered_parts)
-
-
-def _GetTestLocation(flake_occurrence):
-  """Returns a TestLocation for the given FlakeOccurrence instance."""
-  logging.info(flake_occurrence.build_id)
-  step_metadata = step_util.GetStepMetadata(flake_occurrence.build_id,
-                                            flake_occurrence.step_ui_name)
-  task_ids = step_metadata.get('swarm_task_ids')
-  for task_id in task_ids:
-    test_path = swarmed_test_util.GetTestLocation(task_id,
-                                                  flake_occurrence.test_name)
-    if test_path:
-      return TestLocation(
-          file_path=_NormalizePath(test_path.file), line_number=test_path.line)
-  return None
-
-
-@Cached(CompressedMemCache(), expire_time=3600)
-def _GetChromiumDirectoryToComponentMapping():
-  """Returns a dict mapping from directories to components."""
-  status, content, _ = FinditHttpClient().Get(_COMPONENT_MAPPING_URL)
-  if status != 200:
-    # None result won't be cached.
-    return None
-  mapping = json.loads(content).get('dir-to-component')
-  if not mapping:
-    return None
-  result = {}
-  for path, component in mapping.iteritems():
-    path = path + '/' if path[-1] != '/' else path
-    result[path] = component
-  return result
-
-
-@Cached(CompressedMemCache(), expire_time=3600)
-def _GetChromiumWATCHLISTS():
-  repo_url = 'https://chromium.googlesource.com/chromium/src'
-  source = CachedGitilesRepository(FinditHttpClient(), repo_url).GetSource(
-      'WATCHLISTS', 'master')
-  if not source:
-    return None
-
-  # https://cs.chromium.org/chromium/src/WATCHLISTS is in python.
-  definitions = ast.literal_eval(source).get('WATCHLIST_DEFINITIONS')
-  return dict((k, v['filepath']) for k, v in definitions.iteritems())
-
-
 def _UpdateTestLocationAndTags(flake, occurrences, component_mapping,
                                watchlists):
   """Updates the test location and tags of the given flake.
 
-  Currently only support gtests and webkit layout tests in chromium/src.
+  Updates the test location and tags for gtests and webkit layout tests and
+  updates the tags for gpu tests in chromium/src.
 
   Returns:
     True if flake is updated; otherwise False.
@@ -366,83 +259,33 @@ def _UpdateTestLocationAndTags(flake, occurrences, component_mapping,
     return False
 
   # Update the test definition location, and then components/tags, etc.
-  test_location = None
-
-  if 'webkit_layout_tests' in occurrences[0].step_ui_name:
-    # For Webkit layout tests, assume that the normalized test name is
-    # the directory name.
-    # TODO(crbug.com/835960): use new location third_party/blink/web_tests.
-    test_location = TestLocation(
-        file_path=_NormalizePath('third_party/blink/web_tests/%s' %
-                                 flake.normalized_test_name))
-  elif test_name_util.GTEST_REGEX.match(flake.normalized_test_name):
-    # For Gtest, we read the test location from the output.json
-    test_location = _GetTestLocation(occurrences[0])
+  test_location = test_tag_util.GetTestLocation(
+      occurrences[0].build_id, occurrences[0].step_ui_name,
+      occurrences[0].test_name, flake.normalized_test_name)
 
   updated = False
-  # Ignore old test-location-based tags.
-  all_tags = set([
-      t for t in (flake.tags or [])
-      if not t.startswith(('watchlist::', 'directory::', 'source::',
-                           'parent_component::', 'component::'))
-  ])
   if test_location:
-    updated = True
     flake.test_location = test_location
-    file_path = test_location.file_path
 
-    # Use watchlist to set the watchlist tags for the flake.
-    for watchlist, pattern in watchlists.iteritems():
-      if re.search(pattern, file_path):
-        all_tags.add('watchlist::%s' % watchlist)
-
-    component = None
-    # Use test file path to find the best matched component in the mapping.
-    # Each parent directory will become a tag.
-    index = len(file_path)
-    while index > 0:
-      index = file_path.rfind('/', 0, index)
-      if index > 0:
-        if not component and file_path[0:index + 1] in component_mapping:
-          component = component_mapping[file_path[0:index + 1]]
-        all_tags.add('directory::%s' % file_path[0:index + 1])
-    all_tags.add('source::%s' % file_path)
-
-    if component:
-      flake.component = component
-
-      all_tags.add('component::%s' % component)
-      all_tags.add('parent_component::%s' % component)
-      index = len(component)
-      while index > 0:
-        index = component.rfind('>', 0, index)
-        if index > 0:
-          all_tags.add('parent_component::%s' % component[0:index])
-    else:
-      flake.component = DEFAULT_COMPONENT
-      all_tags.add('component::%s' % DEFAULT_COMPONENT)
-      all_tags.add('parent_component::%s' % DEFAULT_COMPONENT)
-
-    flake.tags = sorted(all_tags)
+    component = test_tag_util.GetTestComponentFromLocation(
+        test_location, component_mapping)
+    flake.component = component
+    flake.tags = test_tag_util.GetTagsFromLocation(flake.tags, test_location,
+                                                   component, watchlists)
     flake.last_test_location_based_tag_update_time = time_util.GetUTCNow()
-  else:
-    if flake.normalized_step_name == 'telemetry_gpu_integration_test':
-      # Special case for telemetry_gpu_integration_test.
-      components = []
-      for occurrence in occurrences:
-        canonical_step_name = step_util.GetCanonicalStepName(
-            build_id=occurrence.build_id, step_name=occurrence
-            .step_ui_name) or occurrence.step_ui_name.split()[0]
-        components.extend(
-            _MAP_STEP_NAME_TO_COMPONENTS.get(canonical_step_name, []))
-      components = list(set(components))  # To remove duplicates.
+    updated = True
 
-      if components:
-        flake.component = components[0]
-        all_tags = all_tags.union(
-            set(['component::%s' % component for component in components]))
-        flake.tags = sorted(all_tags)
-        updated = True
+  elif flake.normalized_step_name == 'telemetry_gpu_integration_test':
+    components = []
+    for occurrence in occurrences:
+      components.extend(
+          test_tag_util.GetTestComponentsForGPUTest(occurrence.build_id,
+                                                    occurrence.step_ui_name))
+    components = list(set(components))  # To remove duplicates.
+    components = components or [test_tag_util.DEFAULT_COMPONENT]
+    flake.component = components[0]
+    flake.tags = test_tag_util.GetTagsForGPUTest(flake.tags, components)
+    updated = True
 
   return updated
 
@@ -458,8 +301,9 @@ def _UpdateFlakeMetadata(all_occurrences):
   for occurrence in all_occurrences:
     flake_key_to_occurrences[occurrence.key.parent()].append(occurrence)
 
-  component_mapping = _GetChromiumDirectoryToComponentMapping() or {}
-  watchlist = _GetChromiumWATCHLISTS() or {}
+  component_mapping = test_tag_util._GetChromiumDirectoryToComponentMapping(
+  ) or {}
+  watchlists = test_tag_util._GetChromiumWATCHLISTS() or {}
 
   for flake_key, occurrences in flake_key_to_occurrences.iteritems():
     flake = flake_key.get()
@@ -489,7 +333,7 @@ def _UpdateFlakeMetadata(all_occurrences):
 
     # The "gerrit_project:" tag should be updated first.
     updated = _UpdateTestLocationAndTags(flake, occurrences, component_mapping,
-                                         watchlist)
+                                         watchlists)
 
     if changed or updated:  # Avoid io if there was no update.
       flake.put()
