@@ -3,19 +3,26 @@
 
 package qscheduler
 
-import prpc "go.chromium.org/luci/grpc/prpc"
-
 import (
+	prpc "go.chromium.org/luci/grpc/prpc"
+
 	context "context"
+
 	fmt "fmt"
-	protos "infra/qscheduler/qslib/protos"
-	math "math"
 
 	proto "github.com/golang/protobuf/proto"
+
 	wrappers "github.com/golang/protobuf/ptypes/wrappers"
+
 	grpc "google.golang.org/grpc"
+
 	codes "google.golang.org/grpc/codes"
+
 	status "google.golang.org/grpc/status"
+
+	protos "infra/qscheduler/qslib/protos"
+
+	math "math"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.

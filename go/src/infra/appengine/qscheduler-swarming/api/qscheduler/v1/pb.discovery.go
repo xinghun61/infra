@@ -2,9 +2,10 @@
 
 package qscheduler
 
-import discovery "go.chromium.org/luci/grpc/discovery"
-
-import "github.com/golang/protobuf/protoc-gen-go/descriptor"
+import (
+	"github.com/golang/protobuf/protoc-gen-go/descriptor"
+	discovery "go.chromium.org/luci/grpc/discovery"
+)
 
 func init() {
 	discovery.RegisterDescriptorSetCompressed(
