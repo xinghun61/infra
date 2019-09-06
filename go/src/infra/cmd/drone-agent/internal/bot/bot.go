@@ -33,13 +33,16 @@ type Bot interface {
 }
 
 type realBot struct {
-	config Config
-	cmd    *exec.Cmd
+	config  Config
+	cmd     *exec.Cmd
+	logFile *os.File
 }
 
 // Wait implements Bot.
 func (b realBot) Wait() error {
-	return b.cmd.Wait()
+	err := b.cmd.Wait()
+	_ = b.logFile.Close()
+	return err
 }
 
 // Drain implements Bot.
@@ -68,20 +71,30 @@ func NewStarter(c *http.Client) Starter {
 
 // Start starts a Swarming bot.  The returned Bot object can be used
 // to interact with the bot.
-func (s Starter) Start(c Config) (Bot, error) {
+func (s Starter) Start(c Config) (b Bot, err error) {
 	if err := s.downloadBotCode(c); err != nil {
 		return nil, errors.Annotate(err, "start bot with %+v", c).Err()
 	}
+	f, err := os.Create(c.logFilePath())
+	if err != nil {
+		return nil, errors.Annotate(err, "start bot with %+v", c).Err()
+	}
+	defer func() {
+		if err != nil {
+			_ = f.Close()
+		}
+	}()
 	cmd := exec.Command("python2", c.botZipPath(), "start_bot")
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
+	cmd.Stdout = f
+	cmd.Stderr = f
 	cmd.Env = append(c.env(), os.Environ()...)
 	if err := cmd.Start(); err != nil {
 		return nil, errors.Annotate(err, "start bot with %+v", c).Err()
 	}
 	return realBot{
-		config: c,
-		cmd:    cmd,
+		config:  c,
+		cmd:     cmd,
+		logFile: f,
 	}, nil
 }
 
@@ -125,6 +138,10 @@ type Config struct {
 
 func (c Config) drainFilePath() string {
 	return c.WorkDirectory + ".drain"
+}
+
+func (c Config) logFilePath() string {
+	return c.WorkDirectory + ".log"
 }
 
 func (c Config) botZipPath() string {
