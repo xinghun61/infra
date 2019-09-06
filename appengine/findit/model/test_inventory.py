@@ -4,6 +4,8 @@
 
 from google.appengine.ext import ndb
 
+from model.flake.flake_issue import FlakeIssue
+
 
 class DisabledTestVariantsProperty(ndb.JsonProperty):
   """App Engine NDB datastore Property for disabled_test_variants.
@@ -89,6 +91,12 @@ class LuciTest(ndb.Model):
 
   # Time of the most recent update.
   last_updated_time = ndb.DateTimeProperty()
+
+  # Keys to the FlakeIssue entities being used to track the test's disablement.
+  # If a test already has FlakeIssue entities associated with it because it was
+  # previously a Flake, then the same FlakeIssue entity should be used to track
+  # its disablement.
+  issue_keys = ndb.KeyProperty(kind=FlakeIssue, repeated=True)
 
   @ndb.ComputedProperty
   def disabled(self):
