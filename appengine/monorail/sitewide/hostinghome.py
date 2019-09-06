@@ -13,6 +13,7 @@ from third_party import ezt
 
 import settings
 from businesslogic import work_env
+from framework import exceptions
 from framework import permissions
 from framework import servlet
 from framework import template_helpers
@@ -36,6 +37,9 @@ class HostingHome(servlet.Servlet):
     Returns:
       Dict of values used by EZT for rendering the page.
     """
+    redirect_msg = self._MaybeRedirectToDomainDefaultProject(mr)
+    logging.info(redirect_msg)
+
     can_create_project = permissions.CanCreateProject(mr.perms)
 
     # Kick off the search pipeline, it has its own promises for parallelism.
@@ -78,3 +82,26 @@ class HostingHome(servlet.Servlet):
         'projects': project_view_list,
         'pagination': pipeline.pagination,
         }
+
+  def _MaybeRedirectToDomainDefaultProject(self, mr):
+    """If there is a relevant default project, redirect to it."""
+    project_name = settings.domain_to_default_project.get(mr.request.host)
+    if not project_name:
+      return 'No configured default project redirect for this domain.'
+
+    project = None
+    try:
+      project = self.services.project.GetProjectByName(mr.cnxn, project_name)
+    except exceptions.NoSuchProjectException:
+      pass
+
+    if not project:
+      return 'Domain default project %s not found' % project_name
+
+    if not permissions.UserCanViewProject(
+        mr.auth.user_pb, mr.auth.effective_ids, project):
+      return 'User cannot view default project: %r' % project
+
+    project_url = '/p/%s' % project_name
+    self.redirect(project_url, abort=True)
+    return 'Redirected to %r' % project_url

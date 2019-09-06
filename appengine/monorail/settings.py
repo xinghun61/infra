@@ -279,6 +279,12 @@ branded_domains_staging = {
   }
 branded_domains = {}  # empty for dev
 
+# The site home page will immediately redirect to a default project for these
+# domains, if the project can be viewed.  Structure is {hostport: project_name}.
+domain_to_default_project = {}  # empty for dev and localhost
+domain_to_default_project_prod = {'bugs.fuchsia.dev': 'fuchsia'}
+domain_to_default_project_staging = {'bugs-staging.fuchsia.dev': 'fuchsia'}
+
 
 # Names of projects on code.google.com which we allow cross-linking to.
 recognized_codesite_projects = [
@@ -302,6 +308,7 @@ else:
     # The Google Cloud SQL databases to use.
     db_cloud_project = app_id
     branded_domains = branded_domains_staging
+    domain_to_default_project = domain_to_default_project_staging
 
   elif app_id == 'monorail-dev':
     site_name = 'Monorail Dev'
@@ -315,6 +322,7 @@ else:
     db_cloud_project = app_id
     analytics_id = 'UA-55762617-14'
     branded_domains = branded_domains_prod
+    domain_to_default_project = domain_to_default_project_prod
 
 if local_mode:
   site_name = 'Monorail Local'

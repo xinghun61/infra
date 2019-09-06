@@ -8,12 +8,14 @@ from __future__ import print_function
 from __future__ import division
 from __future__ import absolute_import
 
+import mock
 import unittest
 
 from third_party import ezt
 
 import settings
 from framework import permissions
+from proto import project_pb2
 from proto import site_pb2
 from services import service_manager
 from sitewide import hostinghome
@@ -102,3 +104,43 @@ class HostingHomeTest(unittest.TestCase):
     mr.perms = permissions.PermissionSet([])
     page_data = self.servlet.GatherPageData(mr)
     self.assertEqual(ezt.boolean(False), page_data['can_create_project'])
+
+  @mock.patch('settings.domain_to_default_project', {})
+  def testMaybeRedirectToDomainDefaultProject_NoMatch(self):
+    """No redirect if the user is not accessing via a configured domain."""
+    mr = testing_helpers.MakeMonorailRequest()
+    mr.request.host = 'example.com'
+    msg = self.servlet._MaybeRedirectToDomainDefaultProject(mr)
+    print('msg: ' + msg)
+    self.assertTrue(msg.startswith('No configured'))
+
+  @mock.patch('settings.domain_to_default_project', {'example.com': 'huh'})
+  def testMaybeRedirectToDomainDefaultProject_NoSuchProject(self):
+    """No redirect if the configured project does not exist."""
+    mr = testing_helpers.MakeMonorailRequest()
+    mr.request.host = 'example.com'
+    print('host is %r' % mr.request.host)
+    msg = self.servlet._MaybeRedirectToDomainDefaultProject(mr)
+    print('msg: ' + msg)
+    self.assertTrue(msg.endswith('not found'))
+
+  @mock.patch('settings.domain_to_default_project', {'example.com': 'a'})
+  def testMaybeRedirectToDomainDefaultProject_CantView(self):
+    """No redirect if the user can't view the configured project."""
+    self.project_a.access = project_pb2.ProjectAccess.MEMBERS_ONLY
+    mr = testing_helpers.MakeMonorailRequest()
+    mr.request.host = 'example.com'
+    msg = self.servlet._MaybeRedirectToDomainDefaultProject(mr)
+    print('msg: ' + msg)
+    self.assertTrue(msg.startswith('User cannot'))
+
+  @mock.patch('settings.domain_to_default_project', {'example.com': 'a'})
+  def testMaybeRedirectToDomainDefaultProject_Redirect(self):
+    """We redirect if there's a configured project that the user can view."""
+    mr = testing_helpers.MakeMonorailRequest()
+    mr.request.host = 'example.com'
+    self.servlet.redirect = mock.Mock()
+    msg = self.servlet._MaybeRedirectToDomainDefaultProject(mr)
+    print('msg: ' + msg)
+    self.assertTrue(msg.startswith('Redirected'))
+    self.servlet.redirect.assert_called_once()
