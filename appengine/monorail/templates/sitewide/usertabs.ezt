@@ -10,7 +10,7 @@
   </span>
 
   <span class="inst5">
-    <a href="[viewed_user.profile_url][if-any viewing_self]updates/projects[else]updates[end]">Updates</a>
+    <a href="[viewed_user.profile_url]updates">Updates</a>
   </span>
 
   [if-any viewing_self]
