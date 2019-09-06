@@ -1,9 +1,9 @@
 name: luci/results/recorder
 extends: ../../../base.yaml
 
-dockerfile: ../../../../../go/src/go.chromium.org/luci/results/k8s/recorder/Dockerfile
+dockerfile: ../../../../../go/src/go.chromium.org/luci/results/recorder/Dockerfile
 deterministic: true
 
 build:
-  - go_binary: go.chromium.org/luci/results/k8s/recorder
+  - go_binary: go.chromium.org/luci/results/recorder
     dest: bin/recorder
