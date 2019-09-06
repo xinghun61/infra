@@ -13,20 +13,28 @@ infra.console_view(name = 'infra', title = 'infra/infra repository console')
 infra.cq_group(name = 'infra cq', tree_status_host = 'infra-status.appspot.com')
 
 
-def ci_builder(name, os, cpu=None):
+def ci_builder(
+      name,
+      os,
+      cpu=None,
+      recipe=None,
+      console_category=None,
+      properties=None
+  ):
   infra.builder(
       name = name,
       bucket = 'ci',
-      executable = infra.recipe('infra_continuous'),
+      executable = infra.recipe(recipe or 'infra_continuous'),
       os = os,
       cpu = cpu,
       triggered_by = [infra.poller()],
+      properties = properties,
       gatekeeper_group = 'chromium.infra',
   )
   luci.console_view_entry(
       builder = name,
       console_view = 'infra',
-      category = infra.category_from_os(os, short=True),
+      category = console_category or infra.category_from_os(os, short=True),
   )
 
 
@@ -64,6 +72,20 @@ ci_builder(name = 'infra-continuous-mac-10.12-64', os = 'Mac-10.12')
 # CI Win.
 ci_builder(name = 'infra-continuous-win7-64', os = 'Windows')
 ci_builder(name = 'infra-continuous-win10-64', os = 'Windows-10')
+
+# CI for building docker images.
+ci_builder(
+    name = 'infra-continuous-images',
+    os = 'Ubuntu-16.04',  # note: exact Linux version doesn't really matter
+    recipe = 'images_builder',
+    console_category = 'misc',
+    properties = {
+        'mode': 'MODE_CI',
+        'project': 'PROJECT_INFRA',
+        'infra': 'dev',
+        'manifests': ['infra/build/images/deterministic'],
+    },
+)
 
 # All trybots.
 try_builder(name = 'infra-try-xenial-64', os = 'Ubuntu-16.04')
