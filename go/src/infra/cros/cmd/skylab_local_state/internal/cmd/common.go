@@ -13,6 +13,8 @@ import (
 	"go.chromium.org/luci/common/errors"
 )
 
+const currentSerializerVersion = 1
+
 // readJSONPb reads a JSON string from inFile and unpacks it as a proto.
 // Unexpected fields are ignored.
 func readJSONPb(inFile string, payload proto.Message) error {

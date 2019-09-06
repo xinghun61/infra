@@ -41,7 +41,7 @@ test_platform/skylab_local_state/host_info.proto JSON-pb to the host info store
 file inside the results directory.
 
 Write provisionable labels and DUT hostname as a LoadResponse JSON-pb to
-stdout.
+the file given by -output_json.
 `,
 		CommandRun: func() subcommands.CommandRun {
 			c := &loadRun{}
@@ -200,8 +200,6 @@ func getDutInfo(ctx context.Context, client fleet.InventoryClient, dutName strin
 	}
 	return &dut, nil
 }
-
-const currentSerializerVersion = 1
 
 // hostInfoFromDutInfo extracts attributes and labels from an inventory
 // entry and assembles them into a host info file proto.
