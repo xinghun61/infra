@@ -2459,6 +2459,20 @@ wheel: <
 
 * *universal*
 
+## **protobuf-to-dict**
+
+### 0.1.0
+
+```protobuf
+wheel: <
+  name: "infra/python/wheels/protobuf-to-dict-py2_py3"
+  version: "version:0.1.0"
+>
+```
+
+
+* *universal*
+
 ## **psutil**
 
 ### 1.2.1
