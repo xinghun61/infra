@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # Copyright 2018 The Chromium Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
@@ -48,7 +49,7 @@ CROS_SSH_PASSWORD = 'test0000'
 SWARMING_BOT_SSH_ID = '/b/id_rsa'
 
 # Branch to sync the local ChromeOS checkout to.
-CROS_BRANCH = 'release-R72-11316.B'
+CROS_BRANCH = 'release-R77-12371.B'
 
 
 def RunSteps(api):
@@ -96,7 +97,7 @@ def RunSteps(api):
   cros_checkout_path = api.path['cache'].join('builder')
   with api.context(cwd=cros_checkout_path):
     try:
-      api.chromite.checkout(repo_sync_args=['-c', '-j2'], branch=CROS_BRANCH)
+      api.chromite.checkout(repo_sync_args=['-c', '-j4'], branch=CROS_BRANCH)
     except api.step.StepFailure as f:
       # repo has a tendency to flake when syncing. If it fails, continue on
       # with the build. Anything problematic in the checkout should be caught
@@ -110,22 +111,40 @@ def RunSteps(api):
         'build chroot', ['exit'],
         chroot_cmd=cros_checkout_path.join('chromite', 'bin', 'cros_sdk'),
         args=['--nouse-image', '--create', '--debug'])
+    # The prev step is a no-op if the chroot already exists. But if we roll
+    # CROS_BRANCH, the chroot will likely need updating on the next build.
+    # Otherwise, this should similarly be a no-op if CROS_BRANCH doesn't
+    # change.
+    # And it really likes to fail transiently... 🤷 So give it a few
+    # attempts to succeed.
+    for _ in xrange(3):
+      update_result = api.chromite.cros_sdk(
+          'update chroot', ['./update_chroot'],
+          chroot_cmd=cros_checkout_path.join('chromite', 'bin', 'cros_sdk'),
+          args=['--nouse-image', '--debug'], ok_ret='all')
+      if not update_result.retcode:
+        break
+    if update_result.retcode:
+      raise api.step.StepFailure("Exhausted all 'update chroot' attempts.")
 
     # chromite's own virtual env setup conflicts with vpython, so temporarily
     # subvert vpython for the duration of the flash.
     with api.chromite.with_system_python():
-      cros_tool_path = cros_checkout_path.join('chromite', 'bin', 'cros')
-      arg_list = [
-        'flash',
-        CROS_DUT_HOSTNAME,
-        img_path,
-        '--disable-rootfs-verification',  # Needed to add ssh identity below.
-        '--clobber-stateful',  # Fully wipe the device.
-        '--clear-cache',  # Don't keep old image files lying around.
-        '--force',  # Force yes to all Y/N prompts.
-        '--debug',  # More verbose logging.
-      ]
-      api.python('flash DUT', cros_tool_path, arg_list)
+      chromite_bin_path = cros_checkout_path.join('chromite', 'bin')
+      # `cros flash` repeatedly enters and exits the chroot, and so needs
+      # chromite's bin/ on PATH to call cros_sdk.
+      with api.context(env_prefixes={'PATH': [chromite_bin_path]}):
+        arg_list = [
+          'flash',
+          CROS_DUT_HOSTNAME,
+          img_path,
+          '--disable-rootfs-verification',  # Needed to add ssh ID below.
+          '--clobber-stateful',  # Fully wipe the device.
+          '--clear-cache',  # Don't keep old image files lying around.
+          '--force',  # Force yes to all Y/N prompts.
+          '--debug',  # More verbose logging.
+        ]
+        api.python('flash DUT', chromite_bin_path.join('cros'), arg_list)
 
   # Reauthorize the host's ssh identity with the DUT via ssh-copy-id, using
   # sshpass to pass in the root password.
@@ -170,6 +189,20 @@ def GenTests(api):
     ) +
     api.override_step_data('repo sync', retcode=1) +
     api.post_process(post_process.StatusSuccess) +
+    api.post_process(post_process.DropExpectation)
+  )
+
+  yield (
+    api.test('chroot_update_failure') +
+    api.platform('linux', 64) +
+    api.properties(
+        gs_image_bucket='cros-image-bucket',
+        gs_image_path='some/image/path.bin',
+    ) +
+    api.override_step_data('update chroot', retcode=1) +
+    api.override_step_data('update chroot (2)', retcode=1) +
+    api.override_step_data('update chroot (3)', retcode=1) +
+    api.post_process(post_process.StatusFailure) +
     api.post_process(post_process.DropExpectation)
   )
 
