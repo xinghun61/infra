@@ -5,6 +5,7 @@
 package state
 
 import (
+	"log"
 	"sync"
 
 	"infra/cmd/drone-agent/internal/bot"
@@ -57,6 +58,7 @@ func (c *Controller) AddDUT(dutID string) {
 		// DUT already has bot running.
 		return
 	}
+	log.Printf("Starting new bot for DUT %v", dutID)
 	s := newDUTSignals()
 	c.duts[dutID] = s
 	c.wg.Add(1)
@@ -125,6 +127,7 @@ func (c *Controller) DrainDUT(dutID string) {
 	s, ok := c.duts[dutID]
 	c.m.Unlock()
 	if ok {
+		log.Printf("Draining DUT %v", dutID)
 		s.sendDrain()
 	} else {
 		c.hook.ReleaseDUT(dutID)
@@ -142,6 +145,7 @@ func (c *Controller) TerminateDUT(dutID string) {
 	s, ok := c.duts[dutID]
 	c.m.Unlock()
 	if ok {
+		log.Printf("Terminating DUT %v", dutID)
 		s.sendTerminate()
 	} else {
 		c.hook.ReleaseDUT(dutID)
