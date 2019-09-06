@@ -35,8 +35,7 @@ def try_builder(
       os,
       recipe=None,
       experiment_percentage=None,
-      properties=None,
-      cq=True
+      properties=None
   ):
   infra.builder(
       name = name,
@@ -45,12 +44,11 @@ def try_builder(
       os = os,
       properties = properties,
   )
-  if cq:
-    luci.cq_tryjob_verifier(
-        builder = name,
-        cq_group = 'infra cq',
-        experiment_percentage=experiment_percentage,
-    )
+  luci.cq_tryjob_verifier(
+      builder = name,
+      cq_group = 'infra cq',
+      experiment_percentage=experiment_percentage,
+  )
 
 
 # CI Linux.
@@ -74,12 +72,12 @@ try_builder(name = 'infra-try-mac', os = 'Mac-10.13')
 try_builder(name = 'infra-try-win', os = 'Windows')
 try_builder(name = 'infra-try-frontend', os = 'Ubuntu-16.04', recipe = 'infra_frontend_tester')
 
-# On demand (non-CQ) trybot for building docker images out of infra.git CLs.
+# Experimental trybot for building docker images out of infra.git CLs.
 try_builder(
     name = 'infra-try-images',
     os = 'Ubuntu-16.04',
     recipe = 'images_builder',
-    cq = False,
+    experiment_percentage = 100,
     properties = {
         'mode': 'MODE_CL',
         'project': 'PROJECT_INFRA',

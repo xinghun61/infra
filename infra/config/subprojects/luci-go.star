@@ -40,18 +40,25 @@ def ci_builder(name, os):
   )
 
 
-def try_builder(name, os, presubmit=False):
+def try_builder(
+      name,
+      os,
+      recipe=None,
+      experiment_percentage=None,
+      properties=None
+  ):
   infra.builder(
       name = name,
       bucket = 'try',
-      executable = infra.recipe('luci_go'),
+      executable = infra.recipe(recipe or 'luci_go'),
       os = os,
-      properties = {'presubmit': True} if presubmit else None,
+      properties = properties,
   )
   luci.cq_tryjob_verifier(
       builder = name,
       cq_group = 'luci-go cq',
-      disable_reuse = presubmit,
+      experiment_percentage = experiment_percentage,
+      disable_reuse = (properties or {}).get('presubmit'),
   )
 
 
@@ -65,4 +72,23 @@ try_builder(name = 'luci-go-try-trusty-64', os = 'Ubuntu-14.04')
 try_builder(name = 'luci-go-try-xenial-64', os = 'Ubuntu-16.04')
 try_builder(name = 'luci-go-try-mac', os = 'Mac-10.13')
 try_builder(name = 'luci-go-try-win', os = 'Windows')
-try_builder(name = 'luci-go-try-presubmit', os = 'Ubuntu-16.04', presubmit = True)
+
+try_builder(
+    name = 'luci-go-try-presubmit',
+    os = 'Ubuntu-16.04',
+    properties = {'presubmit': True},
+)
+
+# Experimental trybot for building docker images out of luci-go.git CLs.
+try_builder(
+    name = 'luci-go-try-images',
+    os = 'Ubuntu-16.04',
+    recipe = 'images_builder',
+    experiment_percentage = 100,
+    properties = {
+        'mode': 'MODE_CL',
+        'project': 'PROJECT_LUCI_GO',
+        'infra': 'dev',
+        'manifests': ['infra/build/images/deterministic/luci'],
+    },
+)
