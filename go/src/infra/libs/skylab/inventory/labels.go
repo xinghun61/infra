@@ -30,6 +30,7 @@ func NewSchedulableLabels() *SchedulableLabels {
 		},
 		Cr50Phase: new(SchedulableLabels_CR50_Phase),
 		EcType:    new(SchedulableLabels_ECType),
+		HwidSku:   new(string),
 		Model:     new(string),
 		Sku:       new(string),
 		OsType:    new(SchedulableLabels_OSType),

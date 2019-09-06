@@ -48,6 +48,7 @@ peripherals: {
 os_type: 2
 model: "modelval"
 sku: "skuval"
+hwid_sku: "eve_IntelR_CoreTM_i7_7Y75_CPU_1_30GHz_16GB"
 brand: "HOMH"
 ec_type: 1
 cts_cpu: 1
@@ -128,6 +129,7 @@ var fullLabels = []string{
 	"recovery_test",
 	"reference_design:reef",
 	"servo",
+	"sku:eve_IntelR_CoreTM_i7_7Y75_CPU_1_30GHz_16GB",
 	"storage:storageval",
 	"stylus",
 	"telephony:telephonyval",

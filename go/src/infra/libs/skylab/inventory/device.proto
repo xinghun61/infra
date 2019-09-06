@@ -143,7 +143,7 @@ message Shard {
 //
 // Keep sorted by field name.
 //
-// NEXT TAG: 27
+// NEXT TAG: 28
 message SchedulableLabels {
   // Whether this device supports ARC execution environment.
   optional bool arc = 20;
@@ -207,6 +207,9 @@ message SchedulableLabels {
     EC_TYPE_CHROME_OS = 1;
   }
   optional ECType ec_type = 10;
+
+  // crbug.com/994200: this matches to label "sku" in autotest.
+  optional string hwid_sku = 27;
 
   optional string model = 13;
 
