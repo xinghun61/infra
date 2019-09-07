@@ -19,7 +19,6 @@ import (
 
 	"cloud.google.com/go/bigquery"
 	"go.chromium.org/luci/common/bq"
-	"go.chromium.org/luci/common/logging"
 
 	"infra/qscheduler/qslib/protos/metrics"
 )
@@ -44,18 +43,6 @@ func TaskEvents(ctx context.Context, events ...*metrics.TaskEvent) error {
 // library.
 type AsyncBqInserter interface {
 	Insert(ctx context.Context, rows ...bigquery.ValueSaver) error
-}
-
-// NullBQInserter implements AsyncBqInserter and just logs "inserted" events.
-type NullBQInserter struct {
-}
-
-// Insert implements AsyncBqInserter interface.
-func (n *NullBQInserter) Insert(ctx context.Context, rows ...bigquery.ValueSaver) error {
-	for row := range rows {
-		logging.Debugf(ctx, "nullBQInserter is ignoring row %s", row)
-	}
-	return nil
 }
 
 var contextKey = "eventlog"
