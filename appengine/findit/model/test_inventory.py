@@ -98,9 +98,25 @@ class LuciTest(ndb.Model):
   # its disablement.
   issue_keys = ndb.KeyProperty(kind=FlakeIssue, repeated=True)
 
+  # Tags that specify the category of the test, e.g. directory, component,
+  # step, test_type.
+  tags = ndb.StringProperty(repeated=True)
+
   @ndb.ComputedProperty
   def disabled(self):
     return bool(self.disabled_test_variants)
+
+  @ndb.ComputedProperty
+  def luci_project(self):
+    return self.key.id().split('@')[0]
+
+  @ndb.ComputedProperty
+  def normalized_step_name(self):
+    return self.key.id().split('@')[1]
+
+  @ndb.ComputedProperty
+  def normalized_test_name(self):
+    return self.key.id().split('@')[2]
 
   @staticmethod
   def _GetId(luci_project, normalized_step_name, normalized_test_name):

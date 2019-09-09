@@ -241,34 +241,38 @@ class DetectDisabledTestsTest(WaterfallTestCase):
       (  # Tests have different keys, create two entries.
           {
               'local_tests': {
-                  ndb.Key('LuciTest', 'test_key_2'): {
+                  ndb.Key('LuciTest', 'a@b@test_key_2'): {
                       'disabled_test_variants': {('config1',)},
-                      'issue_keys': {ndb.Key('FlakeIssue', 'chromium@123')}
+                      'issue_keys': {ndb.Key('FlakeIssue', 'chromium@123')},
+                      'tags': set()
                   },
               },
               'new_disabled_variant': ('config1',),
               'expected_local_tests': {
-                  ndb.Key('LuciTest', 'test_key_1'): {
+                  ndb.Key('LuciTest', 'a@b@test_key_1'): {
                       'disabled_test_variants': {('config1',)},
-                      'issue_keys': {ndb.Key('FlakeIssue', 'chromium@123')}
+                      'issue_keys': {ndb.Key('FlakeIssue', 'chromium@123')},
+                      'tags': set()
                   },
-                  ndb.Key('LuciTest', 'test_key_2'): {
+                  ndb.Key('LuciTest', 'a@b@test_key_2'): {
                       'disabled_test_variants': {('config1',)},
-                      'issue_keys': {ndb.Key('FlakeIssue', 'chromium@123')}
+                      'issue_keys': {ndb.Key('FlakeIssue', 'chromium@123')},
+                      'tags': set()
                   },
               }
           },),
       (  # Tests have same key, update variants and issue_keys
           {
               'local_tests': {
-                  ndb.Key('LuciTest', 'test_key_1'): {
+                  ndb.Key('LuciTest', 'a@b@test_key_1'): {
                       'disabled_test_variants': {('config1',),},
-                      'issue_keys': {ndb.Key('FlakeIssue', 'chromium@124')}
+                      'issue_keys': {ndb.Key('FlakeIssue', 'chromium@124')},
+                      'tags': set()
                   },
               },
               'new_disabled_variant': ('config2',),
               'expected_local_tests': {
-                  ndb.Key('LuciTest', 'test_key_1'): {
+                  ndb.Key('LuciTest', 'a@b@test_key_1'): {
                       'disabled_test_variants': {
                           ('config1',),
                           ('config2',),
@@ -276,29 +280,32 @@ class DetectDisabledTestsTest(WaterfallTestCase):
                       'issue_keys': {
                           ndb.Key('FlakeIssue', 'chromium@123'),
                           ndb.Key('FlakeIssue', 'chromium@124')
-                      }
+                      },
+                      'tags': set()
                   },
               }
           },),
       (  # Cannot retrieve disabled variants. Adds Default config.
           {
               'local_tests': {
-                  ndb.Key('LuciTest', 'test_key_1'): {
+                  ndb.Key('LuciTest', 'a@b@test_key_1'): {
                       'disabled_test_variants': {('config2',)},
-                      'issue_keys': {ndb.Key('FlakeIssue', 'chromium@123')}
+                      'issue_keys': {ndb.Key('FlakeIssue', 'chromium@123')},
+                      'tags': set()
                   },
               },
               'new_disabled_variant': ('Unknown',),
               'expected_local_tests': {
-                  ndb.Key('LuciTest', 'test_key_1'): {
+                  ndb.Key('LuciTest', 'a@b@test_key_1'): {
                       'disabled_test_variants': {('config2',), ('Unknown',)},
-                      'issue_keys': {ndb.Key('FlakeIssue', 'chromium@123')}
+                      'issue_keys': {ndb.Key('FlakeIssue', 'chromium@123')},
+                      'tags': set()
                   },
               },
           },),
   ])
   @mock.patch.object(
-      LuciTest, 'CreateKey', return_value=ndb.Key('LuciTest', 'test_key_1'))
+      LuciTest, 'CreateKey', return_value=ndb.Key('LuciTest', 'a@b@test_key_1'))
   @mock.patch.object(detect_disabled_tests, '_CreateDisabledVariant')
   def testCreateLocalTests(self, cases, mocked_disabled_variant, *_):
     rows = [{
@@ -318,7 +325,7 @@ class DetectDisabledTestsTest(WaterfallTestCase):
 
   # To filter out tests results with invalid build_id.
   # TODO (crbug.com/999215): Remove this check after test-results is fixed.
-  def testUpdateDatastoreInvalidBuildID(self):
+  def testCreateLocalTestsInvalidBuildID(self):
     local_tests = {}
     rows = [{
         'builder_name': 'builder1',
@@ -340,6 +347,7 @@ class DetectDisabledTestsTest(WaterfallTestCase):
                       key=LuciTest.CreateKey('a', 'b', 'c'),
                       disabled_test_variants=set(),
                       issue_keys=[ndb.Key('FlakeIssue', 'bug1')],
+                      tags=set(),
                       last_updated_time=datetime(2019, 6, 27, 0, 0, 0)),
               'test_key':
                   LuciTest.CreateKey('a', 'b', 'c'),
@@ -359,6 +367,7 @@ class DetectDisabledTestsTest(WaterfallTestCase):
                           ('config1', 'config2'),
                       },
                       issue_keys=[ndb.Key('FlakeIssue', 'bug1')],
+                      tags=set(),
                       last_updated_time=datetime(2019, 6, 27, 0, 0, 0)),
               'test_key':
                   LuciTest.CreateKey('a', 'b', 'c'),
@@ -381,6 +390,7 @@ class DetectDisabledTestsTest(WaterfallTestCase):
                       key=LuciTest.CreateKey('a', 'b', 'c'),
                       disabled_test_variants=set(),
                       issue_keys=[ndb.Key('FlakeIssue', 'bug1')],
+                      tags=set(),
                       last_updated_time=datetime(2019, 6, 27, 0, 0, 0)),
               'test_key':
                   LuciTest.CreateKey('a', 'b', 'c'),
@@ -428,9 +438,13 @@ class DetectDisabledTestsTest(WaterfallTestCase):
   def testUpdateDatastore(self, cases):
     if cases['remote_test']:
       cases['remote_test'].put()
+    test_attributes = {
+        'disabled_test_variants': cases.get('disabled_test_variants', set()),
+        'issue_keys': cases.get('issue_keys', set()),
+        'tags': cases.get('tags', set())
+    }
     future = detect_disabled_tests._UpdateDatastore(
-        cases['test_key'], cases['query_time'], cases['disabled_test_variants'],
-        cases.get('issue_keys', set()))
+        cases['test_key'], test_attributes, cases['query_time'])
     future.get_result()
     updated_test = cases['test_key'].get()
     self.assertEqual(cases['disabled_test_variants'],
@@ -442,36 +456,41 @@ class DetectDisabledTestsTest(WaterfallTestCase):
       (  # New test, should be updated.
           {
               'local_tests': {
-                  ndb.Key('LuciTest', 'test_key'): {
+                  ndb.Key('LuciTest', 'a@b@test_key'): {
                       'disabled_test_variants': {('config1',)},
-                      'issue_keys': {ndb.Key('FlakeIssue', 'chromium@123')}
+                      'issue_keys': {ndb.Key('FlakeIssue', 'chromium@123')},
+                      'tags': set()
                   },
               },
               'expected_remote_test':
                   LuciTest(
-                      key=ndb.Key('LuciTest', 'test_key'),
+                      key=ndb.Key('LuciTest', 'a@b@test_key'),
                       disabled_test_variants={('config1',)},
                       last_updated_time=datetime(2019, 6, 29, 0, 0, 0),
+                      tags=set(),
                       issue_keys=[ndb.Key('FlakeIssue', 'chromium@123')]),
           },),
       (  # No change, should not be updated.
           {
               'remote_test':
                   LuciTest(
-                      key=ndb.Key('LuciTest', 'test_key'),
+                      key=ndb.Key('LuciTest', 'a@b@test_key'),
                       disabled_test_variants={('config1',)},
+                      tags=set(),
                       last_updated_time=datetime(2019, 6, 28, 0, 0, 0),
                       issue_keys=[ndb.Key('FlakeIssue', 'chromium@123')]),
               'local_tests': {
-                  ndb.Key('LuciTest', 'test_key'): {
+                  ndb.Key('LuciTest', 'a@b@test_key'): {
                       'disabled_test_variants': {('config1',)},
-                      'issue_keys': {ndb.Key('FlakeIssue', 'chromium@123')}
+                      'issue_keys': {ndb.Key('FlakeIssue', 'chromium@123')},
+                      'tags': set()
                   },
               },
               'expected_remote_test':
                   LuciTest(
-                      key=ndb.Key('LuciTest', 'test_key'),
+                      key=ndb.Key('LuciTest', 'a@b@test_key'),
                       disabled_test_variants={('config1',)},
+                      tags=set(),
                       last_updated_time=datetime(2019, 6, 28, 0, 0, 0),
                       issue_keys=[ndb.Key('FlakeIssue', 'chromium@123')]),
           },),
@@ -479,20 +498,23 @@ class DetectDisabledTestsTest(WaterfallTestCase):
           {
               'remote_test':
                   LuciTest(
-                      key=ndb.Key('LuciTest', 'test_key'),
+                      key=ndb.Key('LuciTest', 'a@b@test_key'),
                       disabled_test_variants={('config1',)},
+                      tags=set(),
                       last_updated_time=datetime(2019, 6, 28, 0, 0, 0),
                       issue_keys=[]),
               'local_tests': {
-                  ndb.Key('LuciTest', 'test_key'): {
+                  ndb.Key('LuciTest', 'a@b@test_key'): {
                       'disabled_test_variants': {('config2',)},
-                      'issue_keys': set()
+                      'issue_keys': set(),
+                      'tags': set()
                   },
               },
               'expected_remote_test':
                   LuciTest(
-                      key=ndb.Key('LuciTest', 'test_key'),
+                      key=ndb.Key('LuciTest', 'a@b@test_key'),
                       disabled_test_variants={('config2',)},
+                      tags=set(),
                       last_updated_time=datetime(2019, 6, 29, 0, 0, 0),
                       issue_keys=[]),
           },),
@@ -500,20 +522,23 @@ class DetectDisabledTestsTest(WaterfallTestCase):
           {
               'remote_test':
                   LuciTest(
-                      key=ndb.Key('LuciTest', 'test_key'),
+                      key=ndb.Key('LuciTest', 'a@b@test_key'),
                       disabled_test_variants={('config1',)},
+                      tags=set(),
                       last_updated_time=datetime(2019, 6, 28, 0, 0, 0),
                       issue_keys=[ndb.Key('FlakeIssue', 'chromium@123')]),
               'local_tests': {
-                  ndb.Key('LuciTest', 'test_key'): {
+                  ndb.Key('LuciTest', 'a@b@test_key'): {
                       'disabled_test_variants': {('config2',)},
-                      'issue_keys': set()
+                      'issue_keys': set(),
+                      'tags': set()
                   },
               },
               'expected_remote_test':
                   LuciTest(
-                      key=ndb.Key('LuciTest', 'test_key'),
+                      key=ndb.Key('LuciTest', 'a@b@test_key'),
                       disabled_test_variants={('config2',)},
+                      tags=set(),
                       last_updated_time=datetime(2019, 6, 29, 0, 0, 0),
                       issue_keys=[ndb.Key('FlakeIssue', 'chromium@123')]),
           },),
@@ -521,20 +546,23 @@ class DetectDisabledTestsTest(WaterfallTestCase):
           {
               'remote_test':
                   LuciTest(
-                      key=ndb.Key('LuciTest', 'test_key'),
+                      key=ndb.Key('LuciTest', 'a@b@test_key'),
                       disabled_test_variants={('config1',)},
+                      tags=set(),
                       last_updated_time=datetime(2019, 6, 28, 0, 0, 0),
                       issue_keys=[ndb.Key('FlakeIssue', 'chromium@124')]),
               'local_tests': {
-                  ndb.Key('LuciTest', 'test_key'): {
+                  ndb.Key('LuciTest', 'a@b@test_key'): {
                       'disabled_test_variants': {('config1',)},
-                      'issue_keys': {ndb.Key('FlakeIssue', 'chromium@123')}
+                      'issue_keys': {ndb.Key('FlakeIssue', 'chromium@123')},
+                      'tags': set()
                   },
               },
               'expected_remote_test':
                   LuciTest(
-                      key=ndb.Key('LuciTest', 'test_key'),
+                      key=ndb.Key('LuciTest', 'a@b@test_key'),
                       disabled_test_variants={('config1',)},
+                      tags=set(),
                       last_updated_time=datetime(2019, 6, 29, 0, 0, 0),
                       issue_keys=[
                           ndb.Key('FlakeIssue', 'chromium@123'),
@@ -545,23 +573,26 @@ class DetectDisabledTestsTest(WaterfallTestCase):
           {
               'remote_test':
                   LuciTest(
-                      key=ndb.Key('LuciTest', 'test_key'),
+                      key=ndb.Key('LuciTest', 'a@b@test_key'),
                       disabled_test_variants={('config1',)},
+                      tags=set(),
                       last_updated_time=datetime(2019, 6, 28, 0, 0, 0),
                       issue_keys=[ndb.Key('FlakeIssue', 'chromium@124')]),
               'local_tests': {
-                  ndb.Key('LuciTest', 'test_key'): {
+                  ndb.Key('LuciTest', 'a@b@test_key'): {
                       'disabled_test_variants': {('config2',)},
                       'issue_keys': {
                           ndb.Key('FlakeIssue', 'chromium@123'),
                           ndb.Key('FlakeIssue', 'chromium@124')
-                      }
+                      },
+                      'tags': set()
                   },
               },
               'expected_remote_test':
                   LuciTest(
-                      key=ndb.Key('LuciTest', 'test_key'),
+                      key=ndb.Key('LuciTest', 'a@b@test_key'),
                       disabled_test_variants={('config2',)},
+                      tags=set(),
                       last_updated_time=datetime(2019, 6, 29, 0, 0, 0),
                       issue_keys=[
                           ndb.Key('FlakeIssue', 'chromium@123'),
@@ -572,14 +603,16 @@ class DetectDisabledTestsTest(WaterfallTestCase):
           {
               'remote_test':
                   LuciTest(
-                      key=ndb.Key('LuciTest', 'test_key'),
+                      key=ndb.Key('LuciTest', 'a@b@test_key'),
                       disabled_test_variants={('config1',)},
+                      tags=set(),
                       last_updated_time=datetime(2019, 6, 28, 0, 0, 0)),
               'local_tests': {},
               'expected_remote_test':
                   LuciTest(
-                      key=ndb.Key('LuciTest', 'test_key'),
+                      key=ndb.Key('LuciTest', 'a@b@test_key'),
                       disabled_test_variants={('config1',)},
+                      tags=set(),
                       last_updated_time=datetime(2019, 6, 28, 0, 0, 0)),
           },),
   ])
@@ -599,18 +632,19 @@ class DetectDisabledTestsTest(WaterfallTestCase):
           {
               'remote_test':
                   LuciTest(
-                      key=ndb.Key('LuciTest', 'test_key'),
+                      key=ndb.Key('LuciTest', 'a@b@test_key'),
                       disabled_test_variants={('config1',)},
+                      tags=set(),
                       last_updated_time=datetime(2019, 6, 28, 0, 0, 0)),
               'local_tests': {
-                  ndb.Key('LuciTest', 'test_key'): {
+                  ndb.Key('LuciTest', 'a@b@test_key'): {
                       'disabled_test_variants': {('config1',), ('config2',)},
                       'issue_keys': set()
                   }
               },
               'expected_remote_test':
                   LuciTest(
-                      key=ndb.Key('LuciTest', 'test_key'),
+                      key=ndb.Key('LuciTest', 'a@b@test_key'),
                       disabled_test_variants={('config1',)},
                       last_updated_time=datetime(2019, 6, 28, 0, 0, 0)),
           },),
@@ -618,15 +652,17 @@ class DetectDisabledTestsTest(WaterfallTestCase):
           {
               'remote_test':
                   LuciTest(
-                      key=ndb.Key('LuciTest', 'test_key'),
+                      key=ndb.Key('LuciTest', 'a@b@test_key'),
                       disabled_test_variants={('config1',)},
+                      tags=set(),
                       last_updated_time=datetime(2019, 6, 28, 0, 0, 0),
                       issue_keys=[ndb.Key('FlakeIssue', 'chromium@123')]),
               'local_tests': {},
               'expected_remote_test':
                   LuciTest(
-                      key=ndb.Key('LuciTest', 'test_key'),
+                      key=ndb.Key('LuciTest', 'a@b@test_key'),
                       disabled_test_variants=set(),
+                      tags=set(),
                       last_updated_time=datetime(2019, 6, 29, 0, 0, 0),
                       issue_keys=[ndb.Key('FlakeIssue', 'chromium@123')]),
           },),
@@ -634,14 +670,16 @@ class DetectDisabledTestsTest(WaterfallTestCase):
           {
               'remote_test':
                   LuciTest(
-                      key=ndb.Key('LuciTest', 'test_key'),
+                      key=ndb.Key('LuciTest', 'a@b@test_key'),
                       disabled_test_variants=set(),
+                      tags=set(),
                       last_updated_time=datetime(2019, 6, 28, 0, 0, 0)),
               'local_tests': {},
               'expected_remote_test':
                   LuciTest(
-                      key=ndb.Key('LuciTest', 'test_key'),
+                      key=ndb.Key('LuciTest', 'a@b@test_key'),
                       disabled_test_variants=set(),
+                      tags=set(),
                       last_updated_time=datetime(2019, 6, 28, 0, 0, 0)),
           },),
   ])
@@ -666,6 +704,7 @@ class DetectDisabledTestsTest(WaterfallTestCase):
                           'MSan:True',
                           'os:os1',
                       )},
+                      tags=set(),
                       issue_keys=[ndb.Key('FlakeIssue', 'chromium@123')],
                       last_updated_time=datetime(2019, 6, 28, 0, 0, 0)),
               'expected_remote_test':
@@ -687,6 +726,7 @@ class DetectDisabledTestsTest(WaterfallTestCase):
                       key=ndb.Key('LuciTest',
                                   'chromium@normal_step_name@test_name1'),
                       disabled_test_variants={('os:os2',)},
+                      tags=set(),
                       issue_keys=[ndb.Key('FlakeIssue', 'chromium@123')],
                       last_updated_time=datetime(2019, 6, 28, 0, 0, 0)),
               'expected_remote_test':
@@ -698,6 +738,7 @@ class DetectDisabledTestsTest(WaterfallTestCase):
                           'MSan:True',
                           'os:os1',
                       )},
+                      tags=set(),
                       issue_keys=[ndb.Key('FlakeIssue', 'chromium@123')],
                       last_updated_time=datetime(2019, 6, 29, 0, 0, 0))
           },),
@@ -712,6 +753,7 @@ class DetectDisabledTestsTest(WaterfallTestCase):
                           'MSan:True',
                           'os:os1',
                       )},
+                      tags=set(),
                       issue_keys=[],
                       last_updated_time=datetime(2019, 6, 28, 0, 0, 0)),
               'expected_remote_test':
@@ -723,6 +765,7 @@ class DetectDisabledTestsTest(WaterfallTestCase):
                           'MSan:True',
                           'os:os1',
                       )},
+                      tags=set(),
                       issue_keys=[ndb.Key('FlakeIssue', 'chromium@123')],
                       last_updated_time=datetime(2019, 6, 29, 0, 0, 0))
           },),
@@ -733,6 +776,7 @@ class DetectDisabledTestsTest(WaterfallTestCase):
                       key=ndb.Key('LuciTest',
                                   'chromium@normal_step_name@test_name2'),
                       disabled_test_variants={('os:os2',)},
+                      tags=set(),
                       issue_keys=[ndb.Key('FlakeIssue', 'chromium@123')],
                       last_updated_time=datetime(2019, 6, 28, 0, 0, 0)),
               'expected_remote_test':
@@ -740,6 +784,7 @@ class DetectDisabledTestsTest(WaterfallTestCase):
                       key=ndb.Key('LuciTest',
                                   'chromium@normal_step_name@test_name2'),
                       issue_keys=[ndb.Key('FlakeIssue', 'chromium@123')],
+                      tags=set(),
                       disabled_test_variants=set(),
                       last_updated_time=datetime(2019, 6, 29, 0, 0, 0))
           },),
@@ -750,6 +795,7 @@ class DetectDisabledTestsTest(WaterfallTestCase):
                       key=ndb.Key('LuciTest',
                                   'chromium@normal_step_name@test_name2'),
                       disabled_test_variants=set(),
+                      tags=set(),
                       issue_keys=[ndb.Key('FlakeIssue', 'chromium@123')],
                       last_updated_time=datetime(2019, 6, 28, 0, 0, 0)),
               'expected_remote_test':
@@ -757,6 +803,7 @@ class DetectDisabledTestsTest(WaterfallTestCase):
                       key=ndb.Key('LuciTest',
                                   'chromium@normal_step_name@test_name2'),
                       disabled_test_variants=set(),
+                      tags=set(),
                       issue_keys=[ndb.Key('FlakeIssue', 'chromium@123')],
                       last_updated_time=datetime(2019, 6, 28, 0, 0, 0))
           },),

@@ -64,3 +64,15 @@ class TestInventoryTest(TestCase):
 
     test.disabled_test_variants.add(('disabled_test_variant',))
     self.assertTrue(test.disabled)
+
+  def testLuciProject(self):
+    test = LuciTest(key=LuciTest.CreateKey('a', 'b', 'c'))
+    self.assertEqual('a', test.luci_project)
+
+  def testNormalizedStepName(self):
+    test = LuciTest(key=LuciTest.CreateKey('a', 'b', 'c'))
+    self.assertEqual('b', test.normalized_step_name)
+
+  def testNormalizedTestName(self):
+    test = LuciTest(key=LuciTest.CreateKey('a', 'b', 'c'))
+    self.assertEqual('c', test.normalized_test_name)

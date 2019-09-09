@@ -162,7 +162,8 @@ def _CreateLocalTests(row, local_tests):
   if not local_tests.get(test_key):
     local_tests[test_key] = {
         'disabled_test_variants': set(),
-        'issue_keys': set()
+        'issue_keys': set(),
+        'tags': set()
     }
 
   disabled_variant = _CreateDisabledVariant(build_id, builder_name, step_name)
@@ -171,26 +172,35 @@ def _CreateLocalTests(row, local_tests):
 
 
 @ndb.tasklet
-def _UpdateDatastore(test_key, query_time, disabled_test_variants, issue_keys):
-  """Updates disabled_test_variants, issue_keys for a LuciTest in the datastore.
+def _UpdateDatastore(test_key, test_attributes, query_time):
+  """Updates a LuciTest's disabled_test_variants, issue_keys, tags in datastore.
 
   Args:
     test_key (ndb.Key): Key of LuciTest entities.
+    test_attributes (dict): Dictionary that contains the new property values for
+    a LuciTest of the form
+      {'disabled_test_variants': set(), 'issue_keys': set(), 'tags': set()}
     query_time (datetime): The time of the latest query.
-    disabled_test_variants (set): Disabled test variants to write to datastore.
-    issue_keys (ndb.Key): FlakeIssue keys for bugs associated with the test.
   """
   test = yield test_key.get_async()
   if not test:
     test = LuciTest(key=test_key)
     test.issue_keys = []
-  new_issue_keys = issue_keys.difference(test.issue_keys)
+    test.tags = []
+
+  new_issue_keys = test_attributes.get('issue_keys',
+                                       set()).difference(test.issue_keys)
   for new_issue_key in new_issue_keys:
     _CreateIssue(new_issue_key)
   test.issue_keys.extend(new_issue_keys)
   test.issue_keys.sort()
 
-  test.disabled_test_variants = disabled_test_variants
+  new_tags = test_attributes.get('tags', set()).difference(test.tags)
+  test.tags.extend(new_tags)
+  test.tags.sort()
+
+  test.disabled_test_variants = test_attributes.get('disabled_test_variants',
+                                                    set())
   test.last_updated_time = query_time
   yield test.put_async()
 
@@ -242,9 +252,8 @@ def _UpdateCurrentlyDisabledTests(local_tests, query_time):
 
   logging.info('Updating or Creating %d LuciTests: ', len(updated_test_keys))
   for updated_test_key in updated_test_keys:
-    _UpdateDatastore(updated_test_key, query_time,
-                     local_tests[updated_test_key]['disabled_test_variants'],
-                     local_tests[updated_test_key]['issue_keys'])
+    _UpdateDatastore(updated_test_key, local_tests[updated_test_key],
+                     query_time)
 
 
 @ndb.toplevel
@@ -268,7 +277,7 @@ def _UpdateNoLongerDisabledTests(currently_disabled_test_keys, query_time):
   logging.info('%d tests are no longer disabled: ',
                len(no_longer_disabled_test_keys))
   for no_longer_disabled_test_key in no_longer_disabled_test_keys:
-    _UpdateDatastore(no_longer_disabled_test_key, query_time, set(), set())
+    _UpdateDatastore(no_longer_disabled_test_key, {}, query_time)
 
 
 def ProcessQueryForDisabledTests():
