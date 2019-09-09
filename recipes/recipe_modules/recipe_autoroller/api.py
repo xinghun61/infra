@@ -7,7 +7,10 @@ import datetime
 import hashlib
 import re
 
+from google.protobuf import json_format as jsonpb
+
 from recipe_engine import recipe_api
+from PB.recipe_engine.recipes_cfg import RepoSpec
 
 
 class RepoData(object):
@@ -294,28 +297,26 @@ class RecipeAutorollerApi(recipe_api.RecipeApi):
     roll_result = roll_step.json.output
     picked_details = roll_result['picked_roll_details']
 
-    autoroll_settings = picked_details['spec']['autoroll_recipe_options']
+    spec = jsonpb.ParseDict(picked_details['spec'], RepoSpec())
 
     upload_args = ['--send-mail']
     if roll_result['trivial']:
-      s = autoroll_settings['trivial']
-      extra_tbr = s.get('tbr_emails')
-      if extra_tbr:
-        upload_args.append('--tbrs=%s' % (','.join(extra_tbr)))
+      s = spec.autoroll_recipe_options.trivial
+      if s.tbr_emails:
+        upload_args.append('--tbrs=%s' % (','.join(s.tbr_emails)))
 
       upload_args.append('--tbr-owners')
 
-      if s.get('automatic_commit'):
+      if s.automatic_commit:
         upload_args.append('--use-commit-queue')
     else:
-      s = autoroll_settings['nontrivial']
-      extra_r = s.get('extra_reviewers')
-      if extra_r:
-        upload_args.append('--reviewers=%s' % (','.join(extra_r)))
+      s = spec.autoroll_recipe_options.nontrivial
+      if s.extra_reviewer_emails:
+        upload_args.append('--reviewers=%s' % ','.join(s.extra_reviewer_emails))
 
       upload_args.append('--r-owners')
 
-      if s.get('automatic_commit_dry_run'):
+      if s.automatic_commit_dry_run:
         upload_args.append('--cq-dry-run')
 
     cc_list = set()

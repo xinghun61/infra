@@ -42,10 +42,7 @@
   },
   {
     "cmd": [],
-    "name": "build",
-    "~followup_annotations": [
-      "@@@STEP_FAILURE@@@"
-    ]
+    "name": "build"
   },
   {
     "cmd": [
@@ -180,24 +177,6 @@
       "@@@STEP_NEST_LEVEL@1@@@",
       "@@@STEP_LOG_LINE@json.output@{@@@",
       "@@@STEP_LOG_LINE@json.output@  \"api_version\": 2, @@@",
-      "@@@STEP_LOG_LINE@json.output@  \"autoroll_recipe_options\": {@@@",
-      "@@@STEP_LOG_LINE@json.output@    \"disable_reason\": \"\", @@@",
-      "@@@STEP_LOG_LINE@json.output@    \"nontrivial\": {@@@",
-      "@@@STEP_LOG_LINE@json.output@      \"automatic_commit_dry_run\": true, @@@",
-      "@@@STEP_LOG_LINE@json.output@      \"extra_reviewer_emails\": [@@@",
-      "@@@STEP_LOG_LINE@json.output@        \"foo@chromium.org\", @@@",
-      "@@@STEP_LOG_LINE@json.output@        \"foo@bar.example.com\", @@@",
-      "@@@STEP_LOG_LINE@json.output@        \"meep@example.com\"@@@",
-      "@@@STEP_LOG_LINE@json.output@      ]@@@",
-      "@@@STEP_LOG_LINE@json.output@    }, @@@",
-      "@@@STEP_LOG_LINE@json.output@    \"trivial\": {@@@",
-      "@@@STEP_LOG_LINE@json.output@      \"automatic_commit\": true, @@@",
-      "@@@STEP_LOG_LINE@json.output@      \"tbr_emails\": [@@@",
-      "@@@STEP_LOG_LINE@json.output@        \"foo@bar.example.com\", @@@",
-      "@@@STEP_LOG_LINE@json.output@        \"meep@example.com\"@@@",
-      "@@@STEP_LOG_LINE@json.output@      ]@@@",
-      "@@@STEP_LOG_LINE@json.output@    }@@@",
-      "@@@STEP_LOG_LINE@json.output@  }, @@@",
       "@@@STEP_LOG_LINE@json.output@  \"deps\": {@@@",
       "@@@STEP_LOG_LINE@json.output@    \"recipe_engine\": {}@@@",
       "@@@STEP_LOG_LINE@json.output@  }@@@",
@@ -256,24 +235,6 @@
       "@@@STEP_LOG_LINE@json.output@    }, @@@",
       "@@@STEP_LOG_LINE@json.output@    \"spec\": {@@@",
       "@@@STEP_LOG_LINE@json.output@      \"api_version\": 2, @@@",
-      "@@@STEP_LOG_LINE@json.output@      \"autoroll_recipe_options\": {@@@",
-      "@@@STEP_LOG_LINE@json.output@        \"disable_reason\": \"\", @@@",
-      "@@@STEP_LOG_LINE@json.output@        \"nontrivial\": {@@@",
-      "@@@STEP_LOG_LINE@json.output@          \"automatic_commit_dry_run\": true, @@@",
-      "@@@STEP_LOG_LINE@json.output@          \"extra_reviewer_emails\": [@@@",
-      "@@@STEP_LOG_LINE@json.output@            \"foo@chromium.org\", @@@",
-      "@@@STEP_LOG_LINE@json.output@            \"foo@bar.example.com\", @@@",
-      "@@@STEP_LOG_LINE@json.output@            \"meep@example.com\"@@@",
-      "@@@STEP_LOG_LINE@json.output@          ]@@@",
-      "@@@STEP_LOG_LINE@json.output@        }, @@@",
-      "@@@STEP_LOG_LINE@json.output@        \"trivial\": {@@@",
-      "@@@STEP_LOG_LINE@json.output@          \"automatic_commit\": true, @@@",
-      "@@@STEP_LOG_LINE@json.output@          \"tbr_emails\": [@@@",
-      "@@@STEP_LOG_LINE@json.output@            \"foo@bar.example.com\", @@@",
-      "@@@STEP_LOG_LINE@json.output@            \"meep@example.com\"@@@",
-      "@@@STEP_LOG_LINE@json.output@          ]@@@",
-      "@@@STEP_LOG_LINE@json.output@        }@@@",
-      "@@@STEP_LOG_LINE@json.output@      }, @@@",
       "@@@STEP_LOG_LINE@json.output@      \"deps\": {@@@",
       "@@@STEP_LOG_LINE@json.output@        \"recipe_engine\": {}@@@",
       "@@@STEP_LOG_LINE@json.output@      }@@@",
@@ -297,24 +258,6 @@
       "@@@STEP_LOG_LINE@json.output@      }, @@@",
       "@@@STEP_LOG_LINE@json.output@      \"spec\": {@@@",
       "@@@STEP_LOG_LINE@json.output@        \"api_version\": 2, @@@",
-      "@@@STEP_LOG_LINE@json.output@        \"autoroll_recipe_options\": {@@@",
-      "@@@STEP_LOG_LINE@json.output@          \"disable_reason\": \"\", @@@",
-      "@@@STEP_LOG_LINE@json.output@          \"nontrivial\": {@@@",
-      "@@@STEP_LOG_LINE@json.output@            \"automatic_commit_dry_run\": true, @@@",
-      "@@@STEP_LOG_LINE@json.output@            \"extra_reviewer_emails\": [@@@",
-      "@@@STEP_LOG_LINE@json.output@              \"foo@chromium.org\", @@@",
-      "@@@STEP_LOG_LINE@json.output@              \"foo@bar.example.com\", @@@",
-      "@@@STEP_LOG_LINE@json.output@              \"meep@example.com\"@@@",
-      "@@@STEP_LOG_LINE@json.output@            ]@@@",
-      "@@@STEP_LOG_LINE@json.output@          }, @@@",
-      "@@@STEP_LOG_LINE@json.output@          \"trivial\": {@@@",
-      "@@@STEP_LOG_LINE@json.output@            \"automatic_commit\": true, @@@",
-      "@@@STEP_LOG_LINE@json.output@            \"tbr_emails\": [@@@",
-      "@@@STEP_LOG_LINE@json.output@              \"foo@bar.example.com\", @@@",
-      "@@@STEP_LOG_LINE@json.output@              \"meep@example.com\"@@@",
-      "@@@STEP_LOG_LINE@json.output@            ]@@@",
-      "@@@STEP_LOG_LINE@json.output@          }@@@",
-      "@@@STEP_LOG_LINE@json.output@        }, @@@",
       "@@@STEP_LOG_LINE@json.output@        \"deps\": {@@@",
       "@@@STEP_LOG_LINE@json.output@          \"recipe_engine\": {}@@@",
       "@@@STEP_LOG_LINE@json.output@        }@@@",
@@ -362,9 +305,7 @@
       "RECIPE_REPO[depot_tools]/git_cl.py",
       "upload",
       "--send-mail",
-      "--tbrs=foo@bar.example.com,meep@example.com",
       "--tbr-owners",
-      "--use-commit-queue",
       "--cc=foo@chromium.org",
       "--bypass-hooks",
       "-f",
@@ -390,30 +331,33 @@
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@",
       "@@@STEP_LOG_LINE@json.output@{@@@",
-      "@@@STEP_LOG_LINE@json.output@  \"issue\": null, @@@",
-      "@@@STEP_LOG_LINE@json.output@  \"issue_url\": null@@@",
+      "@@@STEP_LOG_LINE@json.output@  \"issue\": 123456789, @@@",
+      "@@@STEP_LOG_LINE@json.output@  \"issue_url\": \"https://codereview.chromium.org/123456789\"@@@",
       "@@@STEP_LOG_LINE@json.output@}@@@",
-      "@@@STEP_LOG_END@json.output@@@"
+      "@@@STEP_LOG_END@json.output@@@",
+      "@@@STEP_LINK@Issue 123456789@https://codereview.chromium.org/123456789@@@"
     ]
   },
   {
     "cmd": [
       "python",
       "-u",
-      "import sys; sys.exit(1)"
+      "RECIPE_MODULE[depot_tools::gsutil]/resources/gsutil_smart_retry.py",
+      "--",
+      "RECIPE_REPO[depot_tools]/gsutil.py",
+      "----",
+      "cp",
+      "{\"issue\": \"123456789\", \"issue_url\": \"https://codereview.chromium.org/123456789\", \"last_roll_ts_utc\": \"2012-05-14T12:53:21\", \"trivial\": true}",
+      "gs://recipe-mega-roller-crappy-db/repo_metadata/aHR0cHM6Ly9leGFtcGxlLmNvbS9idWlsZC5naXQ="
     ],
-    "name": "build.git cl upload failed",
+    "infra_step": true,
+    "name": "build.gsutil upload",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@",
-      "@@@STEP_TEXT@no issue metadata returned@@@",
-      "@@@STEP_FAILURE@@@"
+      "@@@STEP_LINK@gsutil.upload@https://storage.cloud.google.com/recipe-mega-roller-crappy-db/repo_metadata/aHR0cHM6Ly9leGFtcGxlLmNvbS9idWlsZC5naXQ=@@@"
     ]
   },
   {
-    "failure": {
-      "failure": {},
-      "humanReason": "1 out of 1 aggregated steps failed: Step('build.git cl upload failed') (retcode: 1)"
-    },
     "name": "$result"
   }
 ]

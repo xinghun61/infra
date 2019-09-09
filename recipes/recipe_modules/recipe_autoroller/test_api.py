@@ -22,30 +22,34 @@ class RecipeAutorollerTestApi(recipe_test_api.RecipeTestApi):
         'automatic_commit': trivial_commit,
       },
       'nontrivial': {
-        'extra_reviewers': list(extra_reviewers),
+        'extra_reviewer_emails': list(extra_reviewers),
         'automatic_commit_dry_run': nontrivial_dryrun,
       },
     }
 
   def roll_data(self, project, success=True, trivial=True, empty=False,
                 tbr_emails=_TBR_EMAILS, extra_reviewers=_EXTRA_REVIEWERS,
-                disable_reason='', trivial_commit=True, nontrivial_dryrun=True):
+                disable_reason='', trivial_commit=True, nontrivial_dryrun=True,
+                include_autoroll_options=True):
     """Returns mock roll and recipes.cfg data for |project|."""
     if empty:
       success = False
 
     ret = self.empty_test_data()
 
-    autoroll_recipe_options = self._autoroll_recipe_options(
-      tbr_emails, extra_reviewers, disable_reason, trivial_commit,
-      nontrivial_dryrun)
+    spec = {
+      'api_version': 2,
+      'deps': {
+        'recipe_engine': {},
+      },
+    }
+    if include_autoroll_options:
+      spec['autoroll_recipe_options'] = self._autoroll_recipe_options(
+        tbr_emails, extra_reviewers, disable_reason, trivial_commit,
+        nontrivial_dryrun)
 
     ret += self.override_step_data(
-      '%s.read recipes.cfg' % project,
-      self.m.json.output({
-        'autoroll_recipe_options': autoroll_recipe_options,
-      })
-    )
+      '%s.read recipes.cfg' % project, self.m.json.output(spec))
     if disable_reason:
       return ret
 
@@ -63,13 +67,7 @@ class RecipeAutorollerTestApi(recipe_test_api.RecipeTestApi):
           },
         ],
       },
-      'spec': {
-        'api_version': 2,
-        'deps': {
-          'recipe_engine': {},
-        },
-        'autoroll_recipe_options': autoroll_recipe_options,
-      },
+      'spec': spec,
     }
 
     roll_result = {

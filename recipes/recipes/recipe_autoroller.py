@@ -129,3 +129,16 @@ def GenTests(api):
       api.recipe_autoroller.roll_data(
         'build', disable_reason='I am a water buffalo.')
   )
+
+  # The recipe shouldn't crash if the autoroller options are not specified.
+  yield (
+      test('trivial_no_autoroll_options') +
+      api.recipe_autoroller.roll_data(
+          'build', trivial=True, include_autoroll_options=False)
+  )
+
+  yield (
+      test('nontrivial_no_autoroll_options') +
+      api.recipe_autoroller.roll_data(
+          'build', trivial=False, include_autoroll_options=False)
+  )

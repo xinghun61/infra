@@ -183,7 +183,7 @@
       "@@@STEP_LOG_LINE@json.output@    \"disable_reason\": \"\", @@@",
       "@@@STEP_LOG_LINE@json.output@    \"nontrivial\": {@@@",
       "@@@STEP_LOG_LINE@json.output@      \"automatic_commit_dry_run\": true, @@@",
-      "@@@STEP_LOG_LINE@json.output@      \"extra_reviewers\": [@@@",
+      "@@@STEP_LOG_LINE@json.output@      \"extra_reviewer_emails\": [@@@",
       "@@@STEP_LOG_LINE@json.output@        \"foo@chromium.org\", @@@",
       "@@@STEP_LOG_LINE@json.output@        \"foo@bar.example.com\", @@@",
       "@@@STEP_LOG_LINE@json.output@        \"meep@example.com\"@@@",
