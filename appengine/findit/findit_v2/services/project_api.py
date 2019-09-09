@@ -260,3 +260,8 @@ class ProjectAPI(object):  # pragma: no cover.
     """
     # pylint: disable=unused-argument
     return
+
+  def GetTestFailureInfo(self, context, build, first_failures_in_current_build):
+    """Creates input object required by heuristic analysis for test."""
+    # pylint: disable=unused-argument
+    return {}

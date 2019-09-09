@@ -55,8 +55,8 @@ def ExtractSignalsForCompileFailure(failure_info, http_client):
     # 2. Tries to get ninja_output as failure log.
     from_ninja_output = False
     use_ninja_output_log = (
-        waterfall_config.GetDownloadBuildDataSettings()
-        .get('use_ninja_output_log'))
+        waterfall_config.GetDownloadBuildDataSettings().get(
+            'use_ninja_output_log'))
     if use_ninja_output_log:
       failure_log = step_util.GetWaterfallBuildStepLog(
           master_name, builder_name, build_number, step_name, http_client,

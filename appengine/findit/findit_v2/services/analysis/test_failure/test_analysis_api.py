@@ -10,6 +10,9 @@ from collections import defaultdict
 
 from google.appengine.ext import ndb
 
+from services import deps
+from services import git
+
 from findit_v2.model import luci_build
 from findit_v2.model import test_failure
 from findit_v2.model.test_failure import TestFailure
@@ -169,11 +172,6 @@ class TestAnalysisAPI(AnalysisAPI):
     """
     return project_api.GetFailureKeysToAnalyzeTestFailures(failure_entities)
 
-  def GetSuspectedCulprits(self, project_api, context, build,
-                           first_failures_in_current_build):
-    # TODO(crbug.com/993073): Implement this method.
-    return {}
-
   def GetSkippedFailures(self, project_api, failures):
     """Gets failures that other failures depend on but haven't been analyzed.
 
@@ -194,7 +192,6 @@ class TestAnalysisAPI(AnalysisAPI):
     for failure in failures:
       merged_failure = failure.GetMergedFailure()
       if not merged_failure:
-        #
         continue
 
       if merged_failure == failure or project_api.FailureShouldBeAnalyzed(
@@ -213,3 +210,21 @@ class TestAnalysisAPI(AnalysisAPI):
             TestFailureGroup.first_failed_commit.gitiles_id == context
             .gitiles_id).fetch()
     return groups[0] if groups else None
+
+  def GetSuspectedCulprits(self, project_api, context, build,
+                           first_failures_in_current_build):
+    failure_info = project_api.GetTestFailureInfo(
+        context, build, first_failures_in_current_build)
+    # Projects that support heuristic analysis must implement GetFailureInfo
+    if not failure_info:
+      return None
+    signals = project_api.ExtractSignalsForTestFailure(failure_info)
+
+    change_logs = git.PullChangeLogs(
+        first_failures_in_current_build['last_passed_build']['commit_id'],
+        context.gitiles_id)
+
+    deps_info = deps.ExtractDepsInfo(failure_info, change_logs)
+
+    return project_api.HeuristicAnalysisForTest(failure_info, change_logs,
+                                                deps_info, signals)

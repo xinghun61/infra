@@ -169,8 +169,8 @@ class CompileAnalysisAPI(AnalysisAPI):
 
       deps_info = deps.ExtractDepsInfo(failure_info, change_logs)
 
-      return project_api.HeuristicAnalysis(failure_info, change_logs, deps_info,
-                                           signals)
+      return project_api.HeuristicAnalysisForCompile(failure_info, change_logs,
+                                                     deps_info, signals)
     return None
 
   def _GetFailureGroupByContext(self, context):

@@ -30,6 +30,7 @@ from findit_v2.services.chromium_api import ChromiumProjectAPI
 from findit_v2.services.context import Context
 from findit_v2.services.failure_type import StepTypeEnum
 from libs import analysis_status
+from services import deps
 from services import git
 from waterfall.test import wf_testcase
 
@@ -1464,3 +1465,42 @@ class TestAnalysisAPITest(wf_testcase.TestCase):
     mock_rerun.assert_called_once_with(context, build_id)
     analysis = self.analysis_api._GetFailureAnalysis(build_id)
     self.assertIsNotNone(analysis)
+
+  @mock.patch.object(git, 'PullChangeLogs')
+  @mock.patch.object(deps, 'ExtractDepsInfo')
+  @mock.patch.object(ChromiumProjectAPI, 'GetTestFailureInfo')
+  @mock.patch.object(ChromiumProjectAPI, 'ExtractSignalsForTestFailure')
+  @mock.patch.object(ChromiumProjectAPI, 'HeuristicAnalysisForTest')
+  def testGetSuspectedCulprits(self, mock_heuristic, *_):
+    context = Context(
+        luci_project_name='chromium',
+        gitiles_project='project/name',
+        gitiles_host='gitiles.host.com',
+        gitiles_ref='ref/heads/master',
+        gitiles_id='gitiles_id_125')
+
+    build_id = 800000000003954
+    build = Build(
+        id=build_id,
+        builder=BuilderID(project='chromium', bucket='ci', builder='builder'))
+    mock_step = Step()
+    mock_step.name = 'step_ui_name'
+    mock_step.status = common_pb2.FAILURE
+    build_120 = self._MockBuild(120)
+    build_120.steps.extend([mock_step])
+    build_120_info = self._GetBuildInfo(120)
+    first_failures_in_current_build = {
+        'failures': {
+            'step_ui_name': {
+                'atomic_failures': [frozenset(['test3'])],
+                'last_passed_build': build_120_info,
+            },
+        },
+        'last_passed_build': build_120_info
+    }
+    self.analysis_api.GetSuspectedCulprits(ChromiumProjectAPI(), context, build,
+                                           first_failures_in_current_build)
+    # There is not much testable logic here, this method functions as glue
+    # routing together inputs for the heuristic analysis only. All we test is
+    # that the correct implementation is called.
+    self.assertEqual(1, mock_heuristic.call_count)
