@@ -9,6 +9,7 @@ package skylab
 import (
 	"context"
 	"fmt"
+	"sync"
 	"time"
 
 	"github.com/golang/protobuf/ptypes"
@@ -50,7 +51,23 @@ type TaskSet struct {
 
 type testRun struct {
 	invocation *steps.EnumerationResponse_AutotestInvocation
-	attempts   []*attempt
+	// Do not read from or mutate attempts without holding appropriate lock
+	// on l.
+	attempts []*attempt
+	l        sync.RWMutex
+}
+
+func (t *testRun) addAttempt(a *attempt) {
+	t.l.Lock()
+	t.attempts = append(t.attempts, a)
+	t.l.Unlock()
+}
+
+func (t *testRun) getAttempts() []*attempt {
+	t.l.RLock()
+	val := t.attempts
+	t.l.RUnlock()
+	return val
 }
 
 func (t *testRun) RequestArgs(params *test_platform.Request_Params, workerConfig *config.Config_SkylabWorker, parentTaskID string) (request.Args, error) {
@@ -233,7 +250,7 @@ func (r *TaskSet) launchSingle(ctx context.Context, swarming swarming.Client, tr
 
 	logging.Infof(ctx, "Launched test named %s as task %s", tr.invocation.Test.Name, swarming.GetTaskURL(resp.TaskId))
 
-	tr.attempts = append(tr.attempts, &attempt{taskID: resp.TaskId})
+	tr.addAttempt(&attempt{taskID: resp.TaskId})
 	return nil
 }
 
@@ -257,7 +274,8 @@ func (r *TaskSet) tick(ctx context.Context, client swarming.Client, gf isolate.G
 	complete = true
 
 	for _, testRun := range r.testRuns {
-		latestAttempt := testRun.attempts[len(testRun.attempts)-1]
+		attempts := testRun.getAttempts()
+		latestAttempt := attempts[len(attempts)-1]
 		if latestAttempt.complete() {
 			continue
 		}
@@ -343,15 +361,16 @@ func (r *TaskSet) shouldRetry(tr *testRun) (bool, error) {
 	if !tr.invocation.Test.AllowRetries {
 		return false, nil
 	}
-	attempts := len(tr.attempts)
-	if attempts < 1 {
+	attempts := tr.getAttempts()
+	attemptCount := len(attempts)
+	if attemptCount < 1 {
 		return false, errors.Reason("should retry: can't retry a never-tried test").Err()
 	}
 	// Allow up to MaxRetries + 1 total attempts of a given test.
-	if attempts > int(tr.invocation.Test.MaxRetries) {
+	if attemptCount > int(tr.invocation.Test.MaxRetries) {
 		return false, nil
 	}
-	latestAttempt := tr.attempts[attempts-1]
+	latestAttempt := attempts[attemptCount-1]
 	switch verdict := flattenToVerdict(latestAttempt.autotestResult.GetTestCases()); verdict {
 	case test_platform.TaskState_VERDICT_UNSPECIFIED:
 		fallthrough
