@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <head>
   <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon">
-  <title>Coverage Summary for {{gitiles_commit.project}} - {{data.commit_position or revision}} - {{path}}</title>
+  <title>Coverage Summary for {{gitiles_commit.project}} - {{gitiles_commit.revision[:7]}} - {{path}}</title>
   <meta charset="utf-8">
   <link rel="stylesheet" href="/common.css">
   <style>
@@ -145,7 +145,7 @@
           <tr class="coverage-header">
             <th colspan="4">
               <a href="/p/{{luci_project}}/coverage?host={{gitiles_commit.host}}&project={{gitiles_commit.project}}&platform={{platform}}">{{gitiles_commit.project}}</a>
-              - {{data.commit_position or revision}}
+              - {{gitiles_commit.revision[:7]}}
               {% if data_type == 'components' %}
                 {% if path_root == path %}
                 - <a href="/p/{{luci_project}}/coverage/component?host={{gitiles_commit.host}}&project={{gitiles_commit.project}}&ref={{gitiles_commit.ref}}&revision={{gitiles_commit.revision}}&path=>>&platform={{platform}}">ALL</a>

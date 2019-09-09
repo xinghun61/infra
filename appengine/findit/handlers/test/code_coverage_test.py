@@ -70,7 +70,6 @@ def _CreateSamplePostsubmitReport(manifest=None):
       revision='aaaaa',
       bucket='coverage',
       builder='linux-code-coverage',
-      commit_position=100,
       commit_timestamp=datetime.datetime(2018, 1, 1),
       manifest=manifest,
       summary_metrics=_CreateSampleCoverageSummaryMetric(),
@@ -364,7 +363,6 @@ class ProcessCodeCoverageDataTest(WaterfallTestCase):
 
     # Mock Gitiles API to get change log.
     change_log = mock.Mock()
-    change_log.commit_position = 100
     change_log.committer.time = datetime.datetime(2018, 1, 1)
     mocked_get_change_log.return_value = change_log
 

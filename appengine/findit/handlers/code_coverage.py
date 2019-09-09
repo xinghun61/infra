@@ -147,8 +147,7 @@ def _GetSameOrMostRecentReportForEachPlatform(host, project, ref, revision):
         PostsubmitReport.gitiles_commit.project == project,
         PostsubmitReport.bucket == bucket, PostsubmitReport.builder == builder,
         PostsubmitReport.visible == True).order(
-            -PostsubmitReport.commit_position).order(
-                -PostsubmitReport.commit_timestamp)
+            -PostsubmitReport.commit_timestamp)
     entities = query.fetch(limit=1)
     if entities:
       result[platform] = entities[0]
@@ -438,8 +437,7 @@ def _IsReportSuspicious(report):
       PostsubmitReport.gitiles_commit.project == target_project,
       PostsubmitReport.bucket == target_bucket,
       PostsubmitReport.builder == target_builder, PostsubmitReport.visible ==
-      True).order(-PostsubmitReport.commit_position).order(
-          -PostsubmitReport.commit_timestamp).fetch(1)
+      True).order(-PostsubmitReport.commit_timestamp).fetch(1)
   if not most_recent_visible_reports:
     logging.warn('No existing visible reports to use for reference, the new '
                  'report is determined as not suspicious by default')
@@ -511,7 +509,6 @@ class ProcessCodeCoverageData(BaseHandler):
         revision=commit.id,
         bucket=builder.bucket,
         builder=builder.builder,
-        commit_position=change_log.commit_position,
         commit_timestamp=change_log.committer.time,
         manifest=manifest,
         summary_metrics=data.get('summaries'),
@@ -1127,8 +1124,7 @@ class ServeCodeCoverageData(BaseHandler):
           PostsubmitReport.gitiles_commit.project == project,
           PostsubmitReport.bucket == bucket,
           PostsubmitReport.builder == builder)
-      order_props = [(PostsubmitReport.commit_position, 'desc'),
-                     (PostsubmitReport.commit_timestamp, 'desc')]
+      order_props = [(PostsubmitReport.commit_timestamp, 'desc')]
       entities, prev_cursor, next_cursor = GetPagedResults(
           query, order_props, cursor, direction, page_size)
 
@@ -1137,10 +1133,7 @@ class ServeCodeCoverageData(BaseHandler):
       data = []
       for entity in entities:
         data.append({
-            'gitiles_commit': {
-                'revision': entity.gitiles_commit.revision,
-            },
-            'commit_position': entity.commit_position,
+            'gitiles_commit': entity.gitiles_commit.to_dict(),
             'commit_timestamp': ConvertUTCToPST(entity.commit_timestamp),
             'summary_metrics': entity.summary_metrics,
             'build_id': entity.build_id,
@@ -1160,8 +1153,7 @@ class ServeCodeCoverageData(BaseHandler):
             PostsubmitReport.gitiles_commit.project == project,
             PostsubmitReport.bucket == bucket,
             PostsubmitReport.builder == builder, PostsubmitReport.visible ==
-            True).order(-PostsubmitReport.commit_position).order(
-                -PostsubmitReport.commit_timestamp)
+            True).order(-PostsubmitReport.commit_timestamp)
         entities = query.fetch(limit=1)
         report = entities[0]
         revision = report.gitiles_commit.revision
@@ -1236,7 +1228,6 @@ class ServeCodeCoverageData(BaseHandler):
 
       metadata = entity.data
       data = {
-          'commit_position': report.commit_position,
           'metadata': metadata,
       }
 

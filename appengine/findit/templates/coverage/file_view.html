@@ -153,9 +153,9 @@
     </div>
     <div style="width: fit-content;">
     <div class="coverage-header">
-            <a href="/p/{{luci_project}}/coverage?host={{gitiles_commit.host}}&project={{gitiles_commit.project}}&platform={{platform}}">{{gitiles_commit.project}}</a>
-            - {{data.commit_position or revision}}
-            - <a href="/p/{{luci_project}}/coverage?host={{gitiles_commit.host}}&project={{gitiles_commit.project}}&ref={{gitiles_commit.ref}}&revision={{gitiles_commit.revision}}&path={{path_root}}&platform={{platform}}">{{path_root}}</a>{% for name, sub_path in path_parts %}<a style="padding-left:.3ex;" title="{{sub_path}}" href="/p/{{luci_project}}/coverage/{{'dir' if name.endswith('/') else 'file'}}?host={{gitiles_commit.host}}&project={{gitiles_commit.project}}&ref={{gitiles_commit.ref}}&revision={{gitiles_commit.revision}}&path={{sub_path}}&platform={{platform}}">{{name}}</a>{% endfor %}
+      <a href="/p/{{luci_project}}/coverage?host={{gitiles_commit.host}}&project={{gitiles_commit.project}}&platform={{platform}}">{{gitiles_commit.project}}</a>
+      - {{gitiles_commit.revision[:7]}}
+      - <a href="/p/{{luci_project}}/coverage?host={{gitiles_commit.host}}&project={{gitiles_commit.project}}&ref={{gitiles_commit.ref}}&revision={{gitiles_commit.revision}}&path={{path_root}}&platform={{platform}}">{{path_root}}</a>{% for name, sub_path in path_parts %}<a style="padding-left:.3ex;" title="{{sub_path}}" href="/p/{{luci_project}}/coverage/{{'dir' if name.endswith('/') else 'file'}}?host={{gitiles_commit.host}}&project={{gitiles_commit.project}}&ref={{gitiles_commit.ref}}&revision={{gitiles_commit.revision}}&path={{sub_path}}&platform={{platform}}">{{name}}</a>{% endfor %}
     </div>
     <table>
       <thead>

@@ -423,8 +423,6 @@ indexes:
   - name: bucket
   - name: builder
   - name: visible
-  - name: commit_position
-    direction: desc
   - name: commit_timestamp
     direction: desc
 
@@ -434,8 +432,6 @@ indexes:
   - name: gitiles_commit.server_host
   - name: bucket
   - name: builder
-  - name: commit_position
-    direction: desc
   - name: commit_timestamp
     direction: desc
 
@@ -446,7 +442,6 @@ indexes:
   - name: bucket
   - name: builder
   - name: visible
-  - name: commit_position
   - name: commit_timestamp
 
 - kind: PostsubmitReport
@@ -455,7 +450,6 @@ indexes:
   - name: gitiles_commit.server_host
   - name: bucket
   - name: builder
-  - name: commit_position
   - name: commit_timestamp
 
 # For Flake report

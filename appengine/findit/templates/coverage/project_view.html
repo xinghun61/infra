@@ -67,9 +67,9 @@
             {% endif %}
           </tr>
           <tr>
-            <th title="Commit position used to build targets and generate code coverage report.">Commit Position</th>
-            <th title="Time when the revision was commited into the source tree.">Commit Time (PST)</th>
             <th title="Link to code coverage report for the particular commit position.">Report</th>
+            <th title="Time when the revision was commited into the source tree.">Commit Time (PST)</th>
+            <th title="Commit used to build targets and generate code coverage report.">Commit</th>
             {% for m in metrics %}
               <th title="{{ m.detail }}">{{ m.name | capitalize }} </th>
             {% endfor %}
@@ -85,13 +85,13 @@
           {% if user_info and user_info.is_admin or datum.visible %}
             <tr>
               <td>
-                <a href="https://crrev.com/{{datum.commit_position}}">{{datum.commit_position}}</a>
+                <a href="/p/chromium/coverage/dir?host={{datum.gitiles_commit.server_host}}&project={{datum.gitiles_commit.project}}&ref={{datum.gitiles_commit.ref}}&revision={{datum.gitiles_commit.revision}}&path=//&platform={{platform}}">Link</a>
               </td>
               <td>
                 {{datum.commit_timestamp}}
               </td>
               <td>
-                <a href="/p/{{luci_project}}/coverage/dir?host={{gitiles_commit.host}}&project={{gitiles_commit.project}}&ref={{gitiles_commit.ref}}&revision={{datum.gitiles_commit.revision}}&path=//&platform={{platform}}">Link</a>
+                <a href="https://{{datum.gitiles_commit.server_host}}/{{datum.gitiles_commit.project}}/+/{{datum.gitiles_commit.revision}}">{{datum.gitiles_commit.revision[:7]}}</a>
               </td>
               {% for target_metric in metrics %}
                 {% set found = False %}
