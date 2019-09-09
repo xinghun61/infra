@@ -55,8 +55,14 @@ func (r Renewer) KeepNew(ctx context.Context) {
 			continue
 		}
 		d.Reset()
-		sleep(ctx, tok.Expiry.Sub(time.Now())-time.Second)
+		sleep(ctx, sleepForToken(time.Now(), tok))
 	}
+}
+
+// sleepForToken returns how much time to sleep for the given token
+// before renewing.
+func sleepForToken(now time.Time, tok *oauth2.Token) time.Duration {
+	return tok.Expiry.Sub(now) - time.Minute
 }
 
 // sleep provides cancelable sleep.
