@@ -50,7 +50,7 @@ func TestSleepForToken(t *testing.T) {
 		Expiry: time.Date(2000, 1, 2, 3, 30, 5, 6, time.UTC),
 	}
 	got := sleepForToken(time.Date(2000, 1, 2, 3, 4, 5, 6, time.UTC), tok)
-	want := 25 * time.Minute
+	want := 11 * time.Minute
 	if got != want {
 		t.Errorf("sleepForToken(...) = %v; want %v", got, want)
 	}
