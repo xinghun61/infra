@@ -108,7 +108,7 @@ cnxn_pool = ConnectionPool(settings.db_cnxn_pool_size)
 MASTER_CNXN = 'master_cnxn'
 
 # When one replica is temporarily unresponseive, we can use a different one.
-BAD_SHARD_AVOIDANCE_SEC = 15
+BAD_SHARD_AVOIDANCE_SEC = 45
 
 
 CONNECTION_COUNT = ts_mon.CounterMetric(
