@@ -21,7 +21,7 @@ import (
 )
 
 const (
-	defaultLifetime = 10 * time.Minute
+	defaultLifetime = 30 * time.Minute
 )
 
 // Renewer is used to renew an access token file.
