@@ -28,6 +28,7 @@ type fakeSwarming struct {
 
 	output string
 	result *swarming_api.SwarmingRpcsTaskResult
+	l      sync.Mutex
 }
 
 func NewFakeSwarming() *fakeSwarming {
@@ -39,11 +40,15 @@ func NewFakeSwarming() *fakeSwarming {
 }
 
 func (f *fakeSwarming) CreateTask(ctx context.Context, req *swarming_api.SwarmingRpcsNewTaskRequest) (*swarming_api.SwarmingRpcsTaskRequestMetadata, error) {
+	f.l.Lock()
+	defer f.l.Unlock()
 	f.createCalls = append(f.createCalls, req)
 	return &swarming_api.SwarmingRpcsTaskRequestMetadata{TaskId: "task_1"}, nil
 }
 
 func (f *fakeSwarming) GetResults(ctx context.Context, IDs []string) ([]*swarming_api.SwarmingRpcsTaskResult, error) {
+	f.l.Lock()
+	defer f.l.Unlock()
 	return []*swarming_api.SwarmingRpcsTaskResult{f.result}, nil
 }
 
@@ -52,14 +57,20 @@ func (f *fakeSwarming) GetTaskURL(taskID string) string {
 }
 
 func (f *fakeSwarming) GetTaskOutputs(ctx context.Context, IDs []string) ([]*swarming_api.SwarmingRpcsTaskOutput, error) {
+	f.l.Lock()
+	defer f.l.Unlock()
 	return []*swarming_api.SwarmingRpcsTaskOutput{{Output: f.output}}, nil
 }
 
 func (f *fakeSwarming) SetOutput(output string) {
+	f.l.Lock()
+	defer f.l.Unlock()
 	f.output = output
 }
 
 func (f *fakeSwarming) SetResult(result *swarming_api.SwarmingRpcsTaskResult) {
+	f.l.Lock()
+	defer f.l.Unlock()
 	f.result = result
 }
 

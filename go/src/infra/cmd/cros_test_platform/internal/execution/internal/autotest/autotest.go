@@ -10,6 +10,7 @@ import (
 	"context"
 	"math"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/golang/protobuf/ptypes"
@@ -39,7 +40,8 @@ type Runner struct {
 	requestParams *test_platform.Request_Params
 	config        *config.Config_AutotestBackend
 
-	response *steps.ExecuteResponse
+	response     *steps.ExecuteResponse
+	responseLock sync.RWMutex
 }
 
 // New returns a new autotest runner.
@@ -59,19 +61,19 @@ func (r *Runner) LaunchAndWait(ctx context.Context, client swarming.Client, _ is
 	}
 	logging.Infof(ctx, "launched task with ID %s", taskID)
 
-	r.response = &steps.ExecuteResponse{State: &test_platform.TaskState{LifeCycle: test_platform.TaskState_LIFE_CYCLE_RUNNING}}
+	r.setResponse(&steps.ExecuteResponse{State: &test_platform.TaskState{LifeCycle: test_platform.TaskState_LIFE_CYCLE_RUNNING}})
 
 	if err = r.wait(ctx, client, taskID); err != nil {
 		return err
 	}
 
-	r.response = &steps.ExecuteResponse{State: &test_platform.TaskState{LifeCycle: test_platform.TaskState_LIFE_CYCLE_COMPLETED}}
+	r.setResponse(&steps.ExecuteResponse{State: &test_platform.TaskState{LifeCycle: test_platform.TaskState_LIFE_CYCLE_COMPLETED}})
 
 	resp, err := r.collect(ctx, client, taskID)
 	if err != nil {
 		return err
 	}
-	r.response = resp
+	r.setResponse(resp)
 
 	return nil
 }
@@ -79,7 +81,16 @@ func (r *Runner) LaunchAndWait(ctx context.Context, client swarming.Client, _ is
 // Response constructs a response based on the current state of the
 // Runner.
 func (r *Runner) Response(swarming swarming.URLer) *steps.ExecuteResponse {
-	return r.response
+	r.responseLock.RLock()
+	val := r.response
+	r.responseLock.RUnlock()
+	return val
+}
+
+func (r *Runner) setResponse(resp *steps.ExecuteResponse) {
+	r.responseLock.Lock()
+	r.response = resp
+	r.responseLock.Unlock()
 }
 
 func (r *Runner) launch(ctx context.Context, client swarming.Client) (string, error) {
@@ -256,7 +267,7 @@ func (r *Runner) tick(ctx context.Context, client swarming.Client, taskID string
 	return !swarming.UnfinishedTaskStates[taskState], nil
 }
 
-func (r Runner) collect(ctx context.Context, client swarming.Client, taskID string) (*steps.ExecuteResponse, error) {
+func (r *Runner) collect(ctx context.Context, client swarming.Client, taskID string) (*steps.ExecuteResponse, error) {
 	resps, err := client.GetTaskOutputs(ctx, []string{taskID})
 	if err != nil {
 		return nil, errors.Annotate(err, "collect results").Err()
