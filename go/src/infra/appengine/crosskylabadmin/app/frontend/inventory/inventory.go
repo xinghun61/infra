@@ -274,6 +274,7 @@ const queenDronePrefix = "drone-queen-"
 
 // UpdateDCAndCheckIfSkipLabelUpdate updates DUT labels with cached device config and checks if skipping DUT label update.
 func UpdateDCAndCheckIfSkipLabelUpdate(ctx context.Context, req updateDutLabelsRequest) bool {
+	logging.Infof(ctx, "checking lables for dut ID: %s", req.dutID)
 	logging.Infof(ctx, "labels before update: %s", req.oldLabels.String())
 	logging.Infof(ctx, "labels after update: %s", req.labels.String())
 	if req.oldLabels.String() == "" {
