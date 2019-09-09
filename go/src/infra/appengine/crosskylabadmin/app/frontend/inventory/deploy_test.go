@@ -254,6 +254,24 @@ func TestDeployDut(t *testing.T) {
 			// See also TestDeployMultipleDuts.
 			So(firstPort, ShouldEqual, "9999")
 		})
+
+		Convey("DeployDUT should skip deployment if SkipDeployment is provided", func() {
+			tf.MockSwarming.EXPECT().CreateTask(gomock.Any(), gomock.Any(), gomock.Any()).MaxTimes(0)
+			tf.MockSwarming.EXPECT().GetTaskResult(gomock.Any(), gomock.Any()).AnyTimes().MaxTimes(0)
+			_, err := tf.Inventory.DeployDut(tf.C, &fleet.DeployDutRequest{
+				NewSpecs: marshalOrPanicMany(&inventory.CommonDeviceSpecs{
+					Id:       stringPtr("This ID is ignored"),
+					Hostname: stringPtr("first-dut"),
+					Attributes: []*inventory.KeyValue{
+						{Key: stringPtr("servo_host"), Value: stringPtr("my-special-labstation")},
+					},
+				}),
+				Actions: &fleet.DutDeploymentActions{
+					SkipDeployment: true,
+				},
+			})
+			So(err, ShouldBeNil)
+		})
 	})
 }
 

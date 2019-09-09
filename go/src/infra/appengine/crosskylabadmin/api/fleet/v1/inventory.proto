@@ -255,6 +255,9 @@ message DutDeploymentActions {
 
   // Install ChromeOS test image from the image staged on USB.
   bool install_test_image = 3;
+
+  // Skip deployment task.
+  bool skip_deployment = 4;
 }
 
 message DutDeploymentOptions {

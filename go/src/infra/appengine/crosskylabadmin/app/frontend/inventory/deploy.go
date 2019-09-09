@@ -237,6 +237,9 @@ func deployManyDUTs(ctx context.Context, s *gitstore.InventoryStore, sc clients.
 		failDeployStatus(ctx, ds, fmt.Sprintf("failed to add DUT(s) to fleet: %s", err))
 		return ds
 	}
+	if a.GetSkipDeployment() {
+		return ds
+	}
 	for _, nd := range nds {
 		taskID, err := scheduleDUTPreparationTask(ctx, sc, nd.GetId(), a)
 		// TODO(gregorynisbet): this only records the last task ID
@@ -405,6 +408,9 @@ func addDUTToStore(s *gitstore.InventoryStore, nd *inventory.CommonDeviceSpecs) 
 
 // scheduleDUTPreparationTask schedules a Skylab DUT preparation task.
 func scheduleDUTPreparationTask(ctx context.Context, sc clients.SwarmingClient, dutID string, a *fleet.DutDeploymentActions) (string, error) {
+	if a.GetSkipDeployment() {
+		return "", errors.New("no DUT preparation task should be scheduled if deployment is skipped")
+	}
 	taskCfg := config.Get(ctx).GetEndpoint().GetDeployDut()
 	tags := swarming.AddCommonTags(ctx, fmt.Sprintf("deploy_task:%s", dutID))
 	at := worker.DeployTaskWithActions(ctx, deployActionArgs(a))

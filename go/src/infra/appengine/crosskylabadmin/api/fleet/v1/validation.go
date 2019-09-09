@@ -135,6 +135,18 @@ func (r *DeployDutRequest) Validate() error {
 	if r.NewSpecs == nil {
 		return status.Errorf(codes.InvalidArgument, "new_specs must be set")
 	}
+	a := r.Actions
+	if a.GetSkipDeployment() {
+		if a.GetInstallTestImage() {
+			return status.Errorf(codes.InvalidArgument, "skip-deployment and install-test-image are incompatible")
+		}
+		if a.GetInstallFirmware() {
+			return status.Errorf(codes.InvalidArgument, "skip-deployment and install-firmware are incompatible")
+		}
+		if a.GetStageImageToUsb() {
+			return status.Errorf(codes.InvalidArgument, "skip-deployment and get-stage-image-to-usb are incompatible")
+		}
+	}
 	return nil
 }
 
