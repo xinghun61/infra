@@ -24,10 +24,10 @@ _MIN_NON_HIDDEN_DISTINCT_CL_NUMBER = 3
 _MIN_TOTAL_DISTINCT_CL_NUMBER = 20
 
 
-def _QueryTypedFlakeOccurrences(flake, start_date, flake_type):
+def _GetTypedFlakeOccurrencesQuery(flake, start_date, flake_type):
   return FlakeOccurrence.query(ancestor=flake.key).filter(
       ndb.AND(FlakeOccurrence.flake_type == flake_type,
-              FlakeOccurrence.time_happened > start_date)).fetch()
+              FlakeOccurrence.time_happened > start_date))
 
 
 def _GetTypedCQFlakeCounts(flake, start_date, flake_type,
@@ -44,21 +44,25 @@ def _GetTypedCQFlakeCounts(flake, start_date, flake_type,
     (FlakeCountsByType, set): A FlakeCountsByType to store the counts of a type
       of the flake, and a set of counted cls.
   """
-  occurrences = _QueryTypedFlakeOccurrences(flake, start_date, flake_type)
-  occurrence_count = len(occurrences)
 
-  if not occurrence_count:
-    return None, counted_gerrit_cl_ids
+  query = _GetTypedFlakeOccurrencesQuery(flake, start_date, flake_type)
+  more = True
+  cursor = None
+  occurrence_count = 0
+  impacted_cl_count = 0
+  while more:
+    occurrences, cursor, more = query.fetch_page(
+        500, start_cursor=cursor, projection=[FlakeOccurrence.gerrit_cl_id])
+    occurrence_count += len(occurrences)
+    if not occurrence_count:
+      return None, counted_gerrit_cl_ids
 
-  # Only count the CL as being impacted if it was not counted before.
-  gerrit_cl_ids = set([occurrence.gerrit_cl_id for occurrence in occurrences
-                      ]) - counted_gerrit_cl_ids
-  counted_gerrit_cl_ids = counted_gerrit_cl_ids | gerrit_cl_ids
+    # Only count the CL as being impacted if it was not counted before.
+    gerrit_cl_ids = set([occurrence.gerrit_cl_id for occurrence in occurrences
+                        ]) - counted_gerrit_cl_ids
+    counted_gerrit_cl_ids = counted_gerrit_cl_ids | gerrit_cl_ids
 
-  impacted_cl_count = len(gerrit_cl_ids)
-
-  if occurrence_count == 0:
-    return None, counted_gerrit_cl_ids
+    impacted_cl_count += len(gerrit_cl_ids)
 
   return FlakeCountsByType(
       flake_type=flake_type,
@@ -130,18 +134,18 @@ def _UpdateFlakeCountsAndScore(flake, start_date):
     flake.flake_counts_last_week.append(typed_counts)
 
   # Counts CI flake occurrences.
-  ci_flake_occurrences = _QueryTypedFlakeOccurrences(flake, start_date,
-                                                     FlakeType.CI_FAILED_STEP)
-  if ci_flake_occurrences:
+  ci_flake_occurrence_count = _GetTypedFlakeOccurrencesQuery(
+      flake, start_date, FlakeType.CI_FAILED_STEP).count()
+  if ci_flake_occurrence_count:
     flake.flake_counts_last_week.append(
         FlakeCountsByType(
             flake_type=FlakeType.CI_FAILED_STEP,
-            occurrence_count=len(ci_flake_occurrences),
+            occurrence_count=ci_flake_occurrence_count,
             impacted_cl_count=-1))
 
   if (len(non_hidden_flake_gerrit_cl_ids) < _MIN_NON_HIDDEN_DISTINCT_CL_NUMBER
       and len(counted_gerrit_cl_ids) < _MIN_TOTAL_DISTINCT_CL_NUMBER and
-      not ci_flake_occurrences):
+      ci_flake_occurrence_count == 0):
     # If there is not enough occurrences for the flake, bail out.
     return
 

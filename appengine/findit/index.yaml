@@ -194,6 +194,14 @@ indexes:
   - name: time_happened
     direction: desc
 
+# For updating flake count and score.
+- kind: FlakeOccurrence
+  ancestor: yes
+  properties:
+  - name: flake_type
+  - name: time_happened
+  - name: gerrit_cl_id
+
 # For flake report to get distinct impacted CLs
 - kind: FlakeOccurrence
   properties:

@@ -21,13 +21,13 @@ cron:
 
 - description: Query and store flakes.
   url: /flake/detection/cron/detect-flakes
-  schedule: every 30 minutes
+  schedule: every 2 hours
   retry_parameters:
     job_retry_limit: 0
 
 - description: Count occurrences and impacted CLs for each flake
   url: /flake/detection/cron/update-flake-counts
-  schedule: every 30 minutes
+  schedule: every 2 hours
   retry_parameters:
     job_retry_limit: 0
 
@@ -42,6 +42,6 @@ cron:
 
 - description: File bugs and trigger analyses on selected flakes.
   url: /flake/detection/cron/process-flakes
-  schedule: every 30 minutes
+  schedule: every 2 hours
   retry_parameters:
     job_retry_limit: 0
