@@ -31,7 +31,7 @@ func TestGetDeviceConfig(t *testing.T) {
 	tf, validate := newTestFixtureWithContext(ctx, t)
 	defer validate()
 	Convey("Get device config", t, func() {
-		platformID := "coral"
+		platformID := "Coral"
 		modelID := "mmm"
 		variantID := "vvv"
 		gpuFamily := "GGG"
@@ -81,7 +81,7 @@ func TestSaveDeviceConfig(t *testing.T) {
 	defer validate()
 	Convey("Save device config", t, func() {
 		id1 := DeviceConfigID{
-			PlatformID: "board1",
+			PlatformID: "Board1",
 			ModelID:    "model1",
 			VariantID:  "variant1",
 		}
@@ -131,7 +131,7 @@ func TestUpdateLabelsWithDeviceConfig(t *testing.T) {
 
 	Convey("Sync device config with existing device config ID", t, func() {
 		id1 := DeviceConfigID{
-			PlatformID: "board1",
+			PlatformID: "Board1",
 			ModelID:    "model1",
 			VariantID:  "variant1",
 		}
@@ -148,7 +148,7 @@ func TestUpdateLabelsWithDeviceConfig(t *testing.T) {
 		err := SaveDeviceConfig(ctx, deviceConfigs)
 		So(err, ShouldBeNil)
 
-		l := newSchedulableLabels(id1.PlatformID, id1.ModelID, id1.VariantID)
+		l := newSchedulableLabels("board1", id1.ModelID, id1.VariantID)
 		err = UpdateLabelsWithDeviceConfig(ctx, l)
 		So(err, ShouldBeNil)
 		So(l.GetCapabilities().GetGpuFamily(), ShouldEqual, "gpu1")
@@ -156,7 +156,7 @@ func TestUpdateLabelsWithDeviceConfig(t *testing.T) {
 
 	Convey("Sync device config with non-existing device config ID", t, func() {
 		id1 := DeviceConfigID{
-			PlatformID: "board1",
+			PlatformID: "Board1",
 			ModelID:    "model1",
 			VariantID:  "variant1",
 		}
@@ -173,7 +173,7 @@ func TestUpdateLabelsWithDeviceConfig(t *testing.T) {
 		err := SaveDeviceConfig(ctx, deviceConfigs)
 		So(err, ShouldBeNil)
 
-		l := newSchedulableLabels(id1.PlatformID, id2.ModelID, id1.VariantID)
+		l := newSchedulableLabels("board1", id2.ModelID, id1.VariantID)
 		err = UpdateLabelsWithDeviceConfig(ctx, l)
 		So(err, ShouldBeNil)
 	})

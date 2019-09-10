@@ -42,22 +42,26 @@ type DeviceConfigID struct {
 
 // getDeviceConfigIDStr generates device id for a DUT.
 func getDeviceConfigIDStr(ctx context.Context, dcID DeviceConfigID) string {
-	return strings.Join([]string{dcID.PlatformID, dcID.ModelID, dcID.VariantID}, ".")
+	return strings.Join([]string{
+		strings.ToLower(dcID.PlatformID),
+		strings.ToLower(dcID.ModelID),
+		strings.ToLower(dcID.VariantID),
+	}, ".")
 }
 
 func getIDForDeviceConfig(ctx context.Context, dc *device.Config) string {
 	return getDeviceConfigIDStr(ctx, DeviceConfigID{
-		PlatformID: dc.Id.PlatformId.Value,
-		ModelID:    dc.Id.ModelId.Value,
-		VariantID:  dc.Id.VariantId.Value,
+		PlatformID: strings.ToLower(dc.Id.PlatformId.Value),
+		ModelID:    strings.ToLower(dc.Id.ModelId.Value),
+		VariantID:  strings.ToLower(dc.Id.VariantId.Value),
 	})
 }
 
 func getIDForInventoryLabels(ctx context.Context, sl *inventory.SchedulableLabels) string {
 	return getDeviceConfigIDStr(ctx, DeviceConfigID{
-		PlatformID: sl.GetBoard(),
-		ModelID:    sl.GetModel(),
-		VariantID:  sl.GetSku(),
+		PlatformID: strings.ToLower(sl.GetBoard()),
+		ModelID:    strings.ToLower(sl.GetModel()),
+		VariantID:  strings.ToLower(sl.GetSku()),
 	})
 }
 
