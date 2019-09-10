@@ -10,6 +10,7 @@ import (
 	"errors"
 	"fmt"
 	"os/exec"
+	"strings"
 	"syscall"
 )
 
@@ -80,10 +81,23 @@ func (r *Runner) Warnings(paths ...string) ([]Warning, error) {
 	}
 
 	var warns []Warning
+	var comments Comments
 
 	// Parse shellcheck JSON output format; defer decode error handling until
 	// later to give precedence to shellcheck execution failures.
-	decodeErr := json.NewDecoder(stdout).Decode(&warns)
+	dec := json.NewDecoder(stdout)
+	nestedJSON := false
+	if v, err := r.Version(); err == nil {
+		nestedJSON = strings.HasPrefix(v, "0.7")
+	} else {
+		return nil, fmt.Errorf("Parsing version failed: %v", err)
+	}
+	var decodeErr error
+	if nestedJSON {
+		decodeErr = dec.Decode(&comments)
+	} else {
+		decodeErr = dec.Decode(&warns)
+	}
 
 	// Wait for shellcheck to finish.
 	if err := cmd.Wait(); err != nil {
@@ -106,6 +120,9 @@ func (r *Runner) Warnings(paths ...string) ([]Warning, error) {
 	if decodeErr != nil {
 		return nil, fmt.Errorf("Decode failed: %v", decodeErr)
 	}
+	if nestedJSON {
+		warns = comments.Comments
+	}
 
 	return warns, nil
 }
@@ -126,6 +143,12 @@ type Warning struct {
 	Level     string `json:"level"`
 	Code      int32  `json:"code"`
 	Message   string `json:"message"`
+	Fix       string `json:"fix"`
+}
+
+// Comments represents a dict containing a list of Warnings emitted by shellcheck.
+type Comments struct {
+	Comments []Warning `json:"comments"`
 }
 
 // WikiURL returns a link to more information about this warning type.
