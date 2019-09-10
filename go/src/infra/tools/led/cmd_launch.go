@@ -166,9 +166,10 @@ func (c *cmdLaunch) Run(a subcommands.Application, args []string, env subcommand
 	ejd.ConsolidateIsolateSources(ctx, isoClient)
 	// Set the "$recipe_engine/led" recipe properties.
 	ejd.tweakUserland(func(u *Userland) error {
+		// The logdog prefix is unique to each led job, so it can be used as an
+		// ID for the job.
 		ledProperties := map[string]interface{}{
-			"launched_by_led": true,
-			"led_run_id":      logdogPrefix,
+			"led_run_id": logdogPrefix,
 		}
 		// Pass the CIPD package or isolate containing the recipes code into
 		// the led recipe module. This gives the build the information it needs
