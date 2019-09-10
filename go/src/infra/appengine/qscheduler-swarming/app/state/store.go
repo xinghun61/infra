@@ -17,6 +17,8 @@ package state
 import (
 	"context"
 
+	"go.chromium.org/luci/common/logging"
+
 	"infra/appengine/qscheduler-swarming/app/state/metrics"
 	"infra/appengine/qscheduler-swarming/app/state/nodestore"
 	"infra/appengine/qscheduler-swarming/app/state/types"
@@ -41,15 +43,15 @@ func (n *NodeStoreOperationRunner) Modify(ctx context.Context, qs *types.QSchedu
 
 // Commit implements nodestore.Operator.
 func (n *NodeStoreOperationRunner) Commit(ctx context.Context) error {
-	// TODO(akeshet): Move this to Finish() once BigQuery events are re-enabled
-	// for this app, because transactional emission of task queue items is
-	// not supported from GKE runtime.
-	return n.mb.FlushToBQ(ctx)
+	return nil
 }
 
 // Finish implements nodestore.Operator.
 func (n *NodeStoreOperationRunner) Finish(ctx context.Context) {
 	n.mb.FlushToTsMon(ctx)
+	if err := n.mb.FlushToBQ(ctx); err != nil {
+		logging.Errorf(ctx, "error while flushing to bigquery: %s", err)
+	}
 }
 
 // NewNodeStoreOperationRunner returns a new operation runner for the
