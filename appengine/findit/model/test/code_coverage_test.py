@@ -4,6 +4,9 @@
 
 import datetime
 
+from google.appengine.api import datastore_errors
+
+from model.code_coverage import CoveragePercentage
 from model.code_coverage import DependencyRepository
 from model.code_coverage import FileCoverageData
 from model.code_coverage import PostsubmitReport
@@ -84,6 +87,21 @@ class CodeCoverageTest(WaterfallTestCase):
             revision=revision,
             bucket=bucket,
             builder=builder))
+
+  def testCreateAndGetCoveragePercentage(self):
+    path = '//base/test.cc'
+    total_lines = 10
+    covered_lines = 1
+
+    percentage = CoveragePercentage(
+        path=path, total_lines=total_lines, covered_lines=covered_lines)
+    self.assertEqual(path, percentage.path)
+    self.assertEqual(total_lines, percentage.total_lines)
+    self.assertEqual(covered_lines, percentage.covered_lines)
+
+  def testCreateCoveragePercentageRaiseError(self):
+    with self.assertRaises(datastore_errors.BadValueError):
+      CoveragePercentage(path='//base/test.cc', total_lines=0, covered_lines=0)
 
   def testCreateAndGetPresubmitCoverageData(self):
     server_host = 'chromium-review.googlesource.com'

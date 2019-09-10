@@ -1035,6 +1035,8 @@ class ServeCodeCoverageData(BaseHandler):
           patchset=patchset,
           build_id=latest_entity.build_id,
           data=rebased_coverage_data)
+      entity.absolute_percentages = latest_entity.absolute_percentages
+      entity.incremental_percentages = latest_entity.incremental_percentages
       entity.put()
 
     data = entity.data

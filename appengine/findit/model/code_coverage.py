@@ -4,6 +4,7 @@
 
 import hashlib
 
+from google.appengine.api import datastore_errors
 from google.appengine.ext import ndb
 
 
@@ -145,6 +146,15 @@ class CLPatchset(ndb.Model):
   patchset = ndb.IntegerProperty(indexed=True, required=True)
 
 
+def PercentageValidator(_, value):
+  """Validates that the total number of lines is greater than 0."""
+  if value <= 0:
+    raise datastore_errors.BadValueError(
+        'total_lines is expected to be greater than 0.')
+
+  return value
+
+
 class CoveragePercentage(ndb.Model):
   """Represents code coverage percentage metric for a file.
 
@@ -156,7 +166,7 @@ class CoveragePercentage(ndb.Model):
 
   # Total number of lines.
   total_lines = ndb.IntegerProperty(
-      indexed=False, required=True, validator=lambda _, value: value > 0)
+      indexed=False, required=True, validator=PercentageValidator)
 
   # Number of covered lines.
   covered_lines = ndb.IntegerProperty(indexed=False, required=True)
