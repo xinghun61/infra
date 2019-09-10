@@ -11,7 +11,7 @@
 very easily by using the issue list headers or by entering a few
 simple keywords into the main search field.</p>
 
-<p>Whenever you visit the "<a href="list">Issues</a>" tab in your
+<p>Whenever you visit the "<a href="list">issue list</a>" in your
 project, you are presented with a table of all open issues, or the default
 query set up by the project owners.  If you
 see too many results, you can quickly filter your results by clicking
@@ -54,21 +54,43 @@ names.</p>
 
 
 
+<h3>Full-text search</h3>
+
+<p>As with Google web search, you can search for issues by simply
+entering a few words.  However, you may get a few more results than
+you expected.  When you need to search more precisely, you can use
+search operators for more power.</p>
+
+<form action="list" method="GET">
+ <p><input type="text" size="45" name="q" value="&quot;out of memory&quot;">
+ <input type="submit" name="btn" value="Search"></p>
+</form>
+
+<p>Full-text search terms can include quoted phrases, and words or
+phrases can be negated by using a leading minus sign.  Please note
+that negated full-text terms are likely to give large result sets,
+so it is best to use structured search operators when possible.</p>
+
+
 <h3>Search operators</h3>
-
-<p>Just like the Google web search that everyone knows and loves, you
-can search for issues by simply entering a few words.  However, you
-may get a few more results than you expected.  When you need to search
-more precisely, you can use search operators for more power.</p>
-
-<h4>Searching in specific fields</h4>
 
 <p>Normal search terms will match words found in any field of an
 issue.  You can narrow the search to a specific field by using the
 name of the field.  The built-in field operators are <tt>summary</tt>,
 <tt>description</tt>, <tt>comment</tt>, <tt>status</tt>, <tt>reporter</tt>,
-<tt>owner</tt>, <tt>cc</tt>, <tt>commentby</tt>,
-and <tt>label</tt>.  You can limit your search to just open issues by using
+<tt>owner</tt>, <tt>cc</tt>, <tt>component</tt>, <tt>commentby</tt>,
+<tt>hotlist</tt>, <tt>ID</tt>, <tt>project</tt>,
+and <tt>label</tt>.</p>
+
+<p>Field names can be compared to a list of values using:</p>
+<ul>
+  <li>a colon (:) for word matching,</li>
+  <li>an equals sign (=) for full string matching,</li>
+  <li>a not equals sign (!=) or leading minus sign to negate, or</li>
+  <li>inequality operators (&lt;, &gt;, &lt;=, &gt;=) for numeric comparison.</li>
+</ul>
+
+<p>You can limit your search to just open issues by using
 is:open, or to just closed issues by using a minus sign to negate it:
 <tt>-is:open</tt>.</p>
 [# TODO(jrobbins): dateopened:]
@@ -77,7 +99,7 @@ is:open, or to just closed issues by using a minus sign to negate it:
 "calculation" in the summary field.</p>
 
 <form action="list" method="GET">
- <p><input type="text" size="25" name="q" value="summary:calculation">
+ <p><input type="text" size="45" name="q" value="summary:calculation">
  <input type="submit" name="btn" value="Search"></p>
 </form>
 
@@ -87,12 +109,12 @@ or her email address, or part of it.  When referring to yourself, you can also
 issues that are owned by you.</p>
 
 <form action="list" method="GET">
- <p><input type="text" size="25" name="q" value="owner:user@chromium.org">
+ <p><input type="text" size="45" name="q" value="owner:user@chromium.org">
  <input type="submit" name="btn" value="Search">
 </form>
 
 <form action="list" method="GET">
- <p><input type="text" size="25" name="q" value="owner:me">
+ <p><input type="text" size="45" name="q" value="owner:me">
  <input type="submit" name="btn" [if-any logged_in_user][else]disabled=disabled[end] value="Search">
  [if-any logged_in_user][else]
    <span style="white-space:nowrap"><a href="[login_url]"
@@ -107,7 +129,7 @@ tracker stores many issue details as labels.</p>
 <tt>Security</tt>, here's how to search for them.</p>
 
 <form action="list" method="GET">
- <p><input type="text" size="25" name="q" value="label:security">
+ <p><input type="text" size="45" name="q" value="label:security">
  <input type="submit" name="btn" value="Search"></p>
 </form>
 
@@ -122,14 +144,14 @@ label name like an operator.</p>
 <tt>Priority-High</tt>, here's one way to search for them.</p>
 
 <form action="list" method="GET">
- <p><input type="text" size="25" name="q" value="label:Priority-High">
+ <p><input type="text" size="45" name="q" value="label:Priority-High">
  <input type="submit" name="btn" value="Search"></p>
 </form>
 
 <p>And, here is a more compact way to do the same search.</p>
 
 <form action="list" method="GET">
- <p><input type="text" size="25" name="q" value="Priority:High">
+ <p><input type="text" size="45" name="q" value="Priority:High">
  <input type="submit" name="btn" value="Search"></p>
 </form>
 
@@ -137,14 +159,24 @@ label name like an operator.</p>
 issues in that component and all of its subcomponents.</p>
 
 <form action="list" method="GET">
- <p><input type="text" size="25" name="q" value="component:UI">
+ <p><input type="text" size="45" name="q" value="component:UI">
  <input type="submit" name="btn" value="Search"></p>
 </form>
 
 <p>And of course, you can combine any of these field operators.</p>
 
 <form action="list" method="GET">
- <p><input type="text" size="25" name="q" value="is:open owner:me Hostlist:Fixit">
+ <p><input type="text" size="45" name="q"
+     value="status!=New owner:me component:UI">
+ <input type="submit" name="btn" value="Search"></p>
+</form>
+
+<p>You can search for issues in the current project that are also on a user's
+hotlist.</p>
+
+<form action="list" method="GET">
+ <p><input type="text" size="45" name="q"
+     value="hostlist=username@domain:hotlistname">
  <input type="submit" name="btn" value="Search"></p>
 </form>
 
@@ -161,7 +193,7 @@ any custom field name.</p>
 components.</p>
 
 <form action="list" method="GET">
- <p><input type="text" size="25" name="q" value="has:component">
+ <p><input type="text" size="45" name="q" value="has:component">
  <input type="submit" name="btn" value="Search">
 </form>
 
@@ -172,7 +204,7 @@ issues with empty fields.</p>
 any component.</p>
 
 <form action="list" method="GET">
- <p><input type="text" size="25" name="q" value="-has:component">
+ <p><input type="text" size="45" name="q" value="-has:component">
  <input type="submit" name="btn" value="Search">
 </form>
 
@@ -183,7 +215,7 @@ any component.</p>
 with the same prefix by using.</p>
 
 <form action="list" method="GET">
- <p><input type="text" size="25" name="q" value="Priority:High,Medium">
+ <p><input type="text" size="45" name="q" value="Priority:High,Medium">
  <input type="submit" name="btn" value="Search"></p>
 </form>
 
@@ -192,7 +224,7 @@ with the same prefix by using.</p>
 We do not support parentheses or complex boolean expressions, just top-level OR.</p>
 
 <form action="list" method="GET">
- <p><input type="text" size="25" name="q" value="Priority:High OR -has:owner">
+ <p><input type="text" size="45" name="q" value="Priority:High OR -has:owner">
  <input type="submit" name="btn" value="Search"></p>
 </form>
 
@@ -208,7 +240,7 @@ issues with the labels <tt>Milestone-2009</tt>, <tt>Milestone-2009-Q1</tt>, <tt>
 etc.</p>
 
 <form action="list" method="GET">
- <p><input type="text" size="25" name="q" value="Milestone=2009">
+ <p><input type="text" size="45" name="q" value="Milestone=2009">
  <input type="submit" name="btn" value="Search"></p>
 </form>
 
@@ -216,7 +248,7 @@ etc.</p>
 that are in that component, not including any of its descendants.</p>
 
 <form action="list" method="GET">
- <p><input type="text" size="25" name="q" value="component=UI">
+ <p><input type="text" size="45" name="q" value="component=UI">
  <input type="submit" name="btn" value="Search"></p>
 </form>
 
@@ -229,7 +261,7 @@ indicates interest in the issue.</p>
 have starred, you could use the following:</p>
 
 <form action="list" method="GET">
- <p><input type="text" size="25" name="q" value="is:starred">
+ <p><input type="text" size="45" name="q" value="is:starred">
  <input type="submit" name="btn" [if-any logged_in_user][else]disabled="disabled"[end] value="Search">
  [if-any logged_in_user][else]
    <span style="white-space:nowrap"><a href="[login_url]"
@@ -240,7 +272,7 @@ have starred, you could use the following:</p>
 <p>And, to see the issues that more than ten users have starred, use the following:</p>
 
 <form action="list" method="GET">
- <p><input type="text" size="25" name="q" value="stars>10">
+ <p><input type="text" size="45" name="q" value="stars>10">
  <input type="submit" name="btn" value="Search"></p>
 </form>
 
@@ -255,7 +287,7 @@ existing issue with that ID, the system will search for issues that
 contain that number anywhere in the issue.</p>
 
 <form action="list" method="GET">
- <p><input type="text" size="25" name="q" value="1">
+ <p><input type="text" size="45" name="q" value="1">
  <input type="submit" name="btn" value="Search"></p>
 </form>
 
@@ -263,7 +295,18 @@ contain that number anywhere in the issue.</p>
 jumping to issue 1, enclose the number in quotation marks.</p>
 
 <form action="list" method="GET">
- <p><input type="text" size="25" name="q" value="&quot;1&quot;">
+ <p><input type="text" size="45" name="q" value="&quot;1&quot;">
+ <input type="submit" name="btn" value="Search"></p>
+</form>
+
+<p>Searching for a list of specific issue IDs is one way to
+communicate a set of issues to someone that you are working with.  Be
+sure to set the search scope to "All issues" if the issues might be
+closed.</p>
+
+<form action="list" method="GET">
+ <p><input type="text" size="45" name="q" value="ID=1,2,3,4">
+ <input type="hidden" name="can" value="1">
  <input type="submit" name="btn" value="Search"></p>
 </form>
 
@@ -276,21 +319,21 @@ part of issue comments.</p>
 <p>To quickly see all the issues that have attachments, use the following:</p>
 
 <form action="list" method="GET">
- <p><input type="text" size="25" name="q" value="has:attachments">
+ <p><input type="text" size="45" name="q" value="has:attachments">
  <input type="submit" name="btn" value="Search"></p>
 </form>
 
 <p>Or, you can search for a specific filename of the attachment.</p>
 
 <form action="list" method="GET">
- <p><input type="text" size="25" name="q" value="attachment:screenshot">
+ <p><input type="text" size="45" name="q" value="attachment:screenshot">
  <input type="submit" name="btn" value="Search"></p>
 </form>
 
 <p>You can also search for the file extension of the attachment.</p>
 
 <form action="list" method="GET">
- <p><input type="text" size="25" name="q" value="attachment:png">
+ <p><input type="text" size="45" name="q" value="attachment:png">
  <input type="submit" name="btn" value="Search"></p>
 </form>
 
@@ -298,7 +341,7 @@ part of issue comments.</p>
 <p>You can also search for issues with a certain number of  attachments.</p>
 
 <form action="list" method="GET">
- <p><input type="text" size="25" name="q" value="attachments>10">
+ <p><input type="text" size="45" name="q" value="attachments>10">
  <input type="submit" name="btn" value="Search"></p>
 </form>
 
@@ -319,7 +362,7 @@ specified as YYYY-MM-DD, YYYY/MM/DD or today-N.</p>
 could do the following:</p>
 
 <form action="list" method="GET">
- <p><input type="text" size="25" name="q" value="opened>2009/4/1">
+ <p><input type="text" size="45" name="q" value="opened>2009/4/1">
  <input type="submit" name="btn" value="Search"></p>
 </form>
 
@@ -327,7 +370,7 @@ could do the following:</p>
 you could do the following:</p>
 
 <form action="list" method="GET">
- <p><input type="text" size="25" name="q" value="modified<today-20">
+ <p><input type="text" size="45" name="q" value="modified<today-20">
  <input type="submit" name="btn" value="Search"></p>
 </form>
 
@@ -336,7 +379,7 @@ recently by using ownermodified:, statusmodified:, componentmodified:.
 For example:</p>
 
 <form action="list" method="GET">
- <p><input type="text" size="25" name="q" value="ownermodified>today-20">
+ <p><input type="text" size="45" name="q" value="ownermodified>today-20">
  <input type="submit" name="btn" value="Search"></p>
 </form>
 
