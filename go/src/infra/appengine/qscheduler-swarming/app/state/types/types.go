@@ -23,9 +23,7 @@ import (
 )
 
 // Operation is the type for functions that examine and mutate a state.
-//
-// If an operation returns an error, it should not mutate state.
-type Operation func(ctx context.Context, state *QScheduler, events scheduler.EventSink) error
+type Operation func(ctx context.Context, state *QScheduler, events scheduler.EventSink)
 
 // QScheduler encapsulates the state of a scheduler.
 type QScheduler struct {

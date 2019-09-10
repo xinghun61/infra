@@ -35,7 +35,8 @@ var _ nodestore.Operator = &NodeStoreOperationRunner{}
 // Modify implements nodestore.Operator.
 func (n *NodeStoreOperationRunner) Modify(ctx context.Context, qs *types.QScheduler) error {
 	n.mb = metrics.NewBuffer(n.poolID)
-	return n.op(ctx, qs, n.mb)
+	n.op(ctx, qs, n.mb)
+	return nil
 }
 
 // Commit implements nodestore.Operator.

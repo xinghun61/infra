@@ -25,7 +25,7 @@ import (
 	"infra/appengine/qscheduler-swarming/app/eventlog"
 	"infra/appengine/qscheduler-swarming/app/frontend"
 	"infra/qscheduler/qslib/tutils"
-	swarming "infra/swarming"
+	"infra/swarming"
 )
 
 func TestAssignTasks(t *testing.T) {

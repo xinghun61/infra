@@ -21,8 +21,7 @@ import (
 
 	"infra/appengine/qscheduler-swarming/app/state"
 	"infra/appengine/qscheduler-swarming/app/state/nodestore"
-	"infra/appengine/qscheduler-swarming/app/state/operations"
-	swarming "infra/swarming"
+	"infra/swarming"
 
 	"go.chromium.org/luci/grpc/grpcutil"
 	"google.golang.org/grpc/codes"
@@ -101,19 +100,8 @@ func (s *BatchedQSchedulerServer) AssignTasks(ctx context.Context, r *swarming.A
 		defer cancel()
 	}
 
-	op, result := operations.AssignTasks([]*swarming.AssignTasksRequest{r})
-
 	batcher := s.getOrCreateBatcher(r.SchedulerId)
-	wait := batcher.EnqueueOperation(ctx, op, state.BatchPriorityAssign)
-	select {
-	case err := <-wait:
-		if err != nil {
-			return nil, err
-		}
-		return result[0], nil
-	case <-ctx.Done():
-		return nil, ctx.Err()
-	}
+	return batcher.Assign(ctx, r)
 }
 
 // GetCancellations implements QSchedulerServer.
@@ -155,19 +143,8 @@ func (s *BatchedQSchedulerServer) NotifyTasks(ctx context.Context, r *swarming.N
 		defer cancel()
 	}
 
-	op, result := operations.NotifyTasks(r)
-
 	batcher := s.getOrCreateBatcher(r.SchedulerId)
-	wait := batcher.EnqueueOperation(ctx, op, state.BatchPriorityNotify)
-	select {
-	case err := <-wait:
-		if err != nil {
-			return nil, err
-		}
-		return result, nil
-	case <-ctx.Done():
-		return nil, ctx.Err()
-	}
+	return batcher.Notify(ctx, r)
 }
 
 // GetCallbacks implements QSchedulerServer.
