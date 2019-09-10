@@ -16,6 +16,7 @@ def cron(name, recipe, execution_timeout=None):
           'os': 'Ubuntu-16.04',
           'cpu': 'x86-64',
           'pool': 'luci.infra.cron',
+          'builderless': '1',
       },
       properties = {
           'mastername': 'chromium.infra.cron',
