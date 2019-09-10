@@ -1062,6 +1062,68 @@ class ServeCodeCoverageData(BaseHandler):
         'allowed_origin': '*'
     }
 
+  def _ServeProjectViewCoverageData(self, luci_project, host, project, ref,
+                                    revision, platform, bucket, builder):
+    """Serves coverage data for the project view."""
+    cursor = self.request.get('cursor', None)
+    page_size = int(self.request.get('page_size', 100))
+    direction = self.request.get('direction', 'next').lower()
+
+    query = PostsubmitReport.query(
+        PostsubmitReport.gitiles_commit.server_host == host,
+        PostsubmitReport.gitiles_commit.project == project,
+        PostsubmitReport.bucket == bucket,
+        PostsubmitReport.builder == builder)
+    order_props = [(PostsubmitReport.commit_timestamp, 'desc')]
+    entities, prev_cursor, next_cursor = GetPagedResults(
+        query, order_props, cursor, direction, page_size)
+
+    # TODO(crbug.com/926237): Move the conversion to client side and use
+    # local timezone.
+    data = []
+    for entity in entities:
+      data.append({
+          'gitiles_commit': entity.gitiles_commit.to_dict(),
+          'commit_timestamp': ConvertUTCToPST(entity.commit_timestamp),
+          'summary_metrics': entity.summary_metrics,
+          'build_id': entity.build_id,
+          'visible': entity.visible,
+      })
+
+    return {
+        'data': {
+            'luci_project':
+                luci_project,
+            'gitiles_commit': {
+                'host': host,
+                'project': project,
+                'ref': ref,
+                'revision': revision,
+            },
+            'platform':
+                platform,
+            'platform_ui_name':
+                _POSTSUBMIT_PLATFORM_INFO_MAP[platform]['ui_name'],
+            'metrics':
+                code_coverage_util.GetMetricsBasedOnCoverageTool(
+                    _POSTSUBMIT_PLATFORM_INFO_MAP[platform]['coverage_tool']),
+            'data':
+                data,
+            'data_type':
+                'project',
+            'platform_select':
+                _MakePlatformSelect(host, project, ref, revision, None,
+                                    platform),
+            'banner':
+                _GetBanner(project),
+            'next_cursor':
+                next_cursor,
+            'prev_cursor':
+                prev_cursor,
+        },
+        'template': 'coverage/project_view.html',
+    }
+
   def HandleGet(self):
     if self.request.path == '/coverage/api/coverage-data':
       return self._ServePerCLCoverageData()
@@ -1084,13 +1146,6 @@ class ServeCodeCoverageData(BaseHandler):
     if isinstance(list_reports, str):
       list_reports = (list_reports.lower() == 'true')
 
-    cursor = self.request.get('cursor', None)
-    page_size = int(self.request.get('page_size', 100))
-    direction = self.request.get('direction', 'next').lower()
-
-    next_cursor = ''
-    prev_cursor = ''
-
     if not data_type and path:
       if path.endswith('/'):
         data_type = 'dirs'
@@ -1111,9 +1166,6 @@ class ServeCodeCoverageData(BaseHandler):
       return BaseHandler.CreateError('Invalid request', 400)
 
     logging.info('Servicing coverage data for postsubmit')
-    template = None
-    warning = None
-
     if platform not in _POSTSUBMIT_PLATFORM_INFO_MAP:
       return BaseHandler.CreateError('Platform: %s is not supported' % platform,
                                      404)
@@ -1121,88 +1173,80 @@ class ServeCodeCoverageData(BaseHandler):
     builder = _POSTSUBMIT_PLATFORM_INFO_MAP[platform]['builder']
 
     if list_reports:
+      return self._ServeProjectViewCoverageData(
+          luci_project, host, project, ref, revision, platform, bucket, builder)
+
+    template = None
+    warning = None
+    if not data_type:
+      data_type = 'dirs'
+    if not revision:
       query = PostsubmitReport.query(
           PostsubmitReport.gitiles_commit.server_host == host,
           PostsubmitReport.gitiles_commit.project == project,
           PostsubmitReport.bucket == bucket,
-          PostsubmitReport.builder == builder)
-      order_props = [(PostsubmitReport.commit_timestamp, 'desc')]
-      entities, prev_cursor, next_cursor = GetPagedResults(
-          query, order_props, cursor, direction, page_size)
-
-      # TODO(crbug.com/926237): Move the conversion to client side and use
-      # local timezone.
-      data = []
-      for entity in entities:
-        data.append({
-            'gitiles_commit': entity.gitiles_commit.to_dict(),
-            'commit_timestamp': ConvertUTCToPST(entity.commit_timestamp),
-            'summary_metrics': entity.summary_metrics,
-            'build_id': entity.build_id,
-            'visible': entity.visible,
-        })
-
-      template = 'coverage/project_view.html'
-      data_type = 'project'
+          PostsubmitReport.builder == builder, PostsubmitReport.visible ==
+          True).order(-PostsubmitReport.commit_timestamp)
+      entities = query.fetch(limit=1)
+      report = entities[0]
+      revision = report.gitiles_commit.revision
 
     else:
-      warning = None
-      if not data_type:
-        data_type = 'dirs'
-      if not revision:
-        query = PostsubmitReport.query(
-            PostsubmitReport.gitiles_commit.server_host == host,
-            PostsubmitReport.gitiles_commit.project == project,
-            PostsubmitReport.bucket == bucket,
-            PostsubmitReport.builder == builder, PostsubmitReport.visible ==
-            True).order(-PostsubmitReport.commit_timestamp)
-        entities = query.fetch(limit=1)
-        report = entities[0]
-        revision = report.gitiles_commit.revision
+      report = PostsubmitReport.Get(
+          server_host=host,
+          project=project,
+          ref=ref,
+          revision=revision,
+          bucket=bucket,
+          builder=builder)
+      if not report:
+        return BaseHandler.CreateError('Report record not found', 404)
 
-      else:
-        report = PostsubmitReport.Get(
-            server_host=host,
-            project=project,
-            ref=ref,
-            revision=revision,
-            bucket=bucket,
-            builder=builder)
-        if not report:
-          return BaseHandler.CreateError('Report record not found', 404)
-
-      template = 'coverage/summary_view.html'
-      if data_type == 'dirs':
-        default_path = '//'
-      elif data_type == 'components':
-        default_path = '>>'
-      else:
-        if data_type != 'files':
-          return BaseHandler.CreateError(
-              'Expected data_type to be "files", but got "%s"' % data_type, 400)
-
-        template = 'coverage/file_view.html'
-
-      path = path or default_path
-
-      if data_type == 'files':
-        entity = FileCoverageData.Get(
-            server_host=host,
-            project=project,
-            ref=ref,
-            revision=revision,
-            path=path,
-            bucket=bucket,
-            builder=builder)
-        if not entity:
-          warning = (
-              'File "%s" does not exist in this report, defaulting to root' %
-              path)
-          logging.warning(warning)
-          path = '//'
-          data_type = 'dirs'
-          template = 'coverage/summary_view.html'
+    template = 'coverage/summary_view.html'
+    if data_type == 'dirs':
+      default_path = '//'
+    elif data_type == 'components':
+      default_path = '>>'
+    else:
       if data_type != 'files':
+        return BaseHandler.CreateError(
+            'Expected data_type to be "files", but got "%s"' % data_type, 400)
+
+      template = 'coverage/file_view.html'
+
+    path = path or default_path
+
+    if data_type == 'files':
+      entity = FileCoverageData.Get(
+          server_host=host,
+          project=project,
+          ref=ref,
+          revision=revision,
+          path=path,
+          bucket=bucket,
+          builder=builder)
+      if not entity:
+        warning = ('File "%s" does not exist in this report, defaulting to root'
+                   % path)
+        logging.warning(warning)
+        path = '//'
+        data_type = 'dirs'
+        template = 'coverage/summary_view.html'
+    if data_type != 'files':
+      entity = SummaryCoverageData.Get(
+          server_host=host,
+          project=project,
+          ref=ref,
+          revision=revision,
+          data_type=data_type,
+          path=path,
+          bucket=bucket,
+          builder=builder)
+      if not entity:
+        warning = ('Path "%s" does not exist in this report, defaulting to root'
+                   % path)
+        logging.warning(warning)
+        path = default_path
         entity = SummaryCoverageData.Get(
             server_host=host,
             project=project,
@@ -1212,76 +1256,60 @@ class ServeCodeCoverageData(BaseHandler):
             path=path,
             bucket=bucket,
             builder=builder)
-        if not entity:
-          warning = (
-              'Path "%s" does not exist in this report, defaulting to root' %
-              path)
-          logging.warning(warning)
-          path = default_path
-          entity = SummaryCoverageData.Get(
-              server_host=host,
-              project=project,
-              ref=ref,
-              revision=revision,
-              data_type=data_type,
-              path=path,
-              bucket=bucket,
-              builder=builder)
 
-      metadata = entity.data
-      data = {
-          'metadata': metadata,
-      }
+    metadata = entity.data
+    data = {
+        'metadata': metadata,
+    }
 
-      line_to_data = None
-      if data_type == 'files':
-        line_to_data = collections.defaultdict(dict)
+    line_to_data = None
+    if data_type == 'files':
+      line_to_data = collections.defaultdict(dict)
 
-        if 'revision' in metadata:
-          gs_path = _ComposeSourceFileGsPath(report, path, metadata['revision'])
-          file_content = _GetFileContentFromGs(gs_path)
-          if not file_content:
-            # Fetching files from Gitiles is slow, only use it as a backup.
-            file_content = _GetFileContentFromGitiles(report, path,
-                                                      metadata['revision'])
-        else:
-          # If metadata['revision'] is empty, it means that the file is not
-          # a source file.
-          file_content = None
-
+      if 'revision' in metadata:
+        gs_path = _ComposeSourceFileGsPath(report, path, metadata['revision'])
+        file_content = _GetFileContentFromGs(gs_path)
         if not file_content:
-          line_to_data[1]['line'] = '!!!!No source code available!!!!'
-          line_to_data[1]['count'] = 0
-        else:
-          file_lines = file_content.splitlines()
-          for i, line in enumerate(file_lines):
-            # According to http://jinja.pocoo.org/docs/2.10/api/#unicode,
-            # Jinja requires passing unicode objects or ASCII-only bytestring,
-            # and given that it is possible for source files to have non-ASCII
-            # chars, thus converting lines to unicode.
-            line_to_data[i + 1]['line'] = unicode(line, 'utf8')
-            line_to_data[i + 1]['count'] = -1
+          # Fetching files from Gitiles is slow, only use it as a backup.
+          file_content = _GetFileContentFromGitiles(report, path,
+                                                    metadata['revision'])
+      else:
+        # If metadata['revision'] is empty, it means that the file is not
+        # a source file.
+        file_content = None
 
-          uncovered_blocks = {}
-          if 'uncovered_blocks' in metadata:
-            for line_data in metadata['uncovered_blocks']:
-              uncovered_blocks[line_data['line']] = line_data['ranges']
+      if not file_content:
+        line_to_data[1]['line'] = '!!!!No source code available!!!!'
+        line_to_data[1]['count'] = 0
+      else:
+        file_lines = file_content.splitlines()
+        for i, line in enumerate(file_lines):
+          # According to http://jinja.pocoo.org/docs/2.10/api/#unicode,
+          # Jinja requires passing unicode objects or ASCII-only bytestring,
+          # and given that it is possible for source files to have non-ASCII
+          # chars, thus converting lines to unicode.
+          line_to_data[i + 1]['line'] = unicode(line, 'utf8')
+          line_to_data[i + 1]['count'] = -1
 
-          for line in metadata['lines']:
-            for line_num in range(line['first'], line['last'] + 1):
-              line_to_data[line_num]['count'] = line['count']
-              if line_num in uncovered_blocks:
-                text = line_to_data[line_num]['line']
-                regions = _SplitLineIntoRegions(text,
-                                                uncovered_blocks[line_num])
-                line_to_data[line_num]['regions'] = regions
-                line_to_data[line_num]['is_partially_covered'] = True
-              else:
-                line_to_data[line_num]['is_partially_covered'] = False
+        uncovered_blocks = {}
+        if 'uncovered_blocks' in metadata:
+          for line_data in metadata['uncovered_blocks']:
+            uncovered_blocks[line_data['line']] = line_data['ranges']
 
-        line_to_data = list(line_to_data.iteritems())
-        line_to_data.sort(key=lambda x: x[0])
-        data['line_to_data'] = line_to_data
+        for line in metadata['lines']:
+          for line_num in range(line['first'], line['last'] + 1):
+            line_to_data[line_num]['count'] = line['count']
+            if line_num in uncovered_blocks:
+              text = line_to_data[line_num]['line']
+              regions = _SplitLineIntoRegions(text, uncovered_blocks[line_num])
+              line_to_data[line_num]['regions'] = regions
+              line_to_data[line_num]['is_partially_covered'] = True
+            else:
+              line_to_data[line_num]['is_partially_covered'] = False
+
+      line_to_data = list(line_to_data.iteritems())
+      line_to_data.sort(key=lambda x: x[0])
+      data['line_to_data'] = line_to_data
 
     # Compute the mapping of the name->path mappings in order.
     path_parts = _GetNameToPathSeparator(path, data_type)
@@ -1320,10 +1348,6 @@ class ServeCodeCoverageData(BaseHandler):
                 _GetBanner(project),
             'warning':
                 warning,
-            'next_cursor':
-                next_cursor,
-            'prev_cursor':
-                prev_cursor,
         },
         'template': template,
     }
