@@ -12,6 +12,7 @@ API_EXPLORER_CLIENT_ID = '292824132082.apps.googleusercontent.com'
 # Names of all modules.
 WATERFALL_BACKEND = 'waterfall-backend'
 FLAKE_DETECTION_BACKEND = 'flake-detection-backend'
+DISABLED_TEST_DETECTION_BACKEND = 'disabled-test-detection-backend'
 AUTO_ACTION_BACKEND = 'auto-action-backend'
 
 # Names of all queues.
@@ -24,6 +25,7 @@ RERUN_TRYJOB_QUEUE = 'rerun-tryjob'
 FLAKE_DETECTION_QUEUE = 'flake-detection-queue'
 AUTO_ACTION_QUEUE = 'auto-action-queue'
 FLAKE_DETECTION_MULTITASK_QUEUE = 'flake-detection-multitask-queue'
+DISABLED_TEST_DETECTION_QUEUE = 'disabled-test-detection-queue'
 
 # Waterfall-related.
 WATERFALL_PROCESS_FAILURE_ANALYSIS_REQUESTS_URL = (

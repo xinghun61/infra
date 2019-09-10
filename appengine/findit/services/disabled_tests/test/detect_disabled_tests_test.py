@@ -23,7 +23,7 @@ from services.disabled_tests import detect_disabled_tests
 _DEFAULT_LUCI_PROJECT = 'chromium'
 
 
-class DetectDisabledTestsTest(WaterfallTestCase):
+class DetectTestDisablementTest(WaterfallTestCase):
 
   def _GetEmptyDisabledTestQueryResponse(self):
     """Returns an empty query response for testing.
@@ -107,7 +107,7 @@ class DetectDisabledTestsTest(WaterfallTestCase):
     query_response['totalRows'] = str(int(query_response['totalRows']) + 1)
 
   def setUp(self):
-    super(DetectDisabledTestsTest, self).setUp()
+    super(DetectTestDisablementTest, self).setUp()
 
     # NormalizeStepName performs network requests, needs to be mocked.
     patcher = mock.patch.object(

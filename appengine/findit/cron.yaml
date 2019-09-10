@@ -45,3 +45,9 @@ cron:
   schedule: every 2 hours
   retry_parameters:
     job_retry_limit: 0
+
+- description: Query and store disabled tests.
+  url: /disabled-tests/detection/cron/detect-test-disablement
+  schedule: every 6 hours
+  retry_parameters:
+    job_retry_limit: 0

@@ -11,6 +11,12 @@ dispatch:
   - url: "*/findit/internal/*"
     module: findit-backend
 
+  - url: "*/disabled-tests/detection/cron/*"
+    module: disabled-test-detection-backend
+
+  - url: "*/disabled-tests/detection/task/*"
+    module: disabled-test-detection-backend
+
   - url: "*/flake/detection/cron/*"
     module: flake-detection-backend
 
