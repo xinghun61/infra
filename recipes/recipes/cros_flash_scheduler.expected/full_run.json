@@ -130,10 +130,10 @@
       "RECIPE_REPO[depot_tools]/gsutil.py",
       "----",
       "ls",
-      "gs://chromeos-image-archive/some-device-type-full//chromiumos_test_image.tar.xz"
+      "gs://chromeos-image-archive/some-device-type-full/some/path/chromiumos_test_image.tar.xz"
     ],
     "infra_step": true,
-    "name": "gsutil ls gs://chromeos-image-archive/some-device-type-full//chromiumos_test_image.tar.xz"
+    "name": "gsutil ls gs://chromeos-image-archive/some-device-type-full/some/path/chromiumos_test_image.tar.xz"
   },
   {
     "cmd": [
@@ -266,7 +266,7 @@
       "put",
       "-host",
       "some-buildbucket-server",
-      "{\"bucket\": \"luci.infra.cron\", \"experimental\": false, \"parameters_json\": \"{\\\"builder_name\\\": \\\"cros-dut-flash\\\", \\\"properties\\\": {\\\"gs_image_bucket\\\": \\\"chromeos-image-archive\\\", \\\"gs_image_path\\\": \\\"some-device-type-full//chromiumos_test_image.tar.xz\\\"}, \\\"swarming\\\": {\\\"override_builder_cfg\\\": {\\\"dimensions\\\": [\\\"id:out_of_date_bot_2\\\", \\\"device_os:11111\\\"]}}}\", \"tags\": [\"builder:cros-dut-flash\", \"buildset:commit/gitiles/chromium.googlesource.com/infra/+/2d72510e447ab60a9728aeea2362d8be2cbd7789\", \"gitiles_ref:refs/heads/master\", \"parent_buildername:cros-scheduler\", \"user_agent:recipe\"]}"
+      "{\"bucket\": \"luci.infra.cron\", \"experimental\": false, \"parameters_json\": \"{\\\"builder_name\\\": \\\"cros-dut-flash\\\", \\\"properties\\\": {\\\"gs_image_bucket\\\": \\\"chromeos-image-archive\\\", \\\"gs_image_path\\\": \\\"some-device-type-full/some/path/chromiumos_test_image.tar.xz\\\"}, \\\"swarming\\\": {\\\"override_builder_cfg\\\": {\\\"dimensions\\\": [\\\"id:out_of_date_bot_2\\\", \\\"device_os:11111\\\"]}}}\", \"tags\": [\"builder:cros-dut-flash\", \"buildset:commit/gitiles/chromium.googlesource.com/infra/+/2d72510e447ab60a9728aeea2362d8be2cbd7789\", \"gitiles_ref:refs/heads/master\", \"parent_buildername:cros-scheduler\", \"user_agent:recipe\"]}"
     ],
     "infra_step": true,
     "name": "flash bots.out_of_date_bot_2",

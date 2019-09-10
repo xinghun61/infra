@@ -456,5 +456,10 @@ def GenTests(api):
                                                 '--without-fuchsia']) +
     api.post_process(post_process.DropExpectation) +
     api.step_data('get gn version',
-                  stdout=api.raw_io.output('1496 (0790d304)'))
+                  stdout=api.raw_io.output('1496 (0790d304)')) +
+    api.step_data('gsutil ls', stdout=api.raw_io.output(
+        'gs://chromium-browser-official/chromium-74.0.3729.169.tar.xz\n'
+        'gs://chromium-browser-official/chromium-74.0.3729.169-lite.tar.xz\n'
+        'gs://chromium-browser-official/chromium-74.0.3729.169-nacl.tar.xz\n'
+    ))
   )

@@ -177,7 +177,8 @@ def GenTests(api):
         gs_image_path='some/image/path.tar.xz',
     ) +
     api.post_process(post_process.StatusSuccess) +
-    api.post_process(post_process.DropExpectation)
+    api.post_process(post_process.DropExpectation) +
+    api.step_data('extract image', stdout=api.raw_io.output('some/path'))
   )
 
   yield (

@@ -467,7 +467,10 @@ def GenTests(api):
       test += (
         api.override_step_data(
             'fetch CHROMEOS_LKGM',
-            api.json.output({'value': base64.b64encode('12345.0.0')}))
+            api.json.output({'value': base64.b64encode('12345.0.0')})) +
+        api.step_data(
+            'find latest image at 12345.gsutil cat LATEST-12345',
+            stdout=api.raw_io.output('some/path'))
       )
     return test
 
