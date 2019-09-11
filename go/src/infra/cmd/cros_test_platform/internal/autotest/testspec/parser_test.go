@@ -193,6 +193,7 @@ func TestParseTestControlSuites(t *testing.T) {
 		{"two suites", `ATTRIBUTES = "suite:bvt, suite:bvt-inline"`, stringset.NewFromSlice("bvt", "bvt-inline")},
 		{"one suite in context", `ATTRIBUTES = "suite:cts,another_attribute"`, stringset.NewFromSlice("cts")},
 		{"one suite with tabs", `ATTRIBUTES = "	suite:cts	"`, stringset.NewFromSlice("cts")},
+		{"one suite with mistmatched quotes", `ATTRIBUTES = "suite:cts'`, stringset.NewFromSlice()},
 		{"suite in parens", `ATTRIBUTES = ('suite:network_nightly')`, stringset.NewFromSlice("network_nightly")},
 		{"suite in parens and space", `ATTRIBUTES = ( 'suite:network_nightly' )`, stringset.NewFromSlice("network_nightly")},
 		{
@@ -219,6 +220,31 @@ func TestParseTestControlSuites(t *testing.T) {
 			}
 			if diff := pretty.Compare(c.Want, stringset.NewFromSlice(tm.Suites...)); diff != "" {
 				t.Errorf("Suites differ for |%s|, -want, +got, %s", c.Text, diff)
+			}
+		})
+	}
+}
+
+func TestParseSuiteControlName(t *testing.T) {
+	var cases = []struct {
+		Tag  string
+		Text string
+		Want string
+	}{
+		{"default value", ``, ""},
+		{"mismatched quotes", `NAME = 'some_suite"`, ""},
+		{"incorrect key", `SUITE = "some_suite"`, ""},
+		{"happy case", `NAME = "some_suite"`, "some_suite"},
+	}
+
+	for _, c := range cases {
+		t.Run(c.Tag, func(t *testing.T) {
+			as, err := parseSuiteControl(c.Text)
+			if err != nil {
+				t.Fatalf("parseSuiteControl: %s", err)
+			}
+			if c.Want != as.Name {
+				t.Errorf("Suite name differs for |%s|, want %s, +got %s", c.Text, c.Want, as.Name)
 			}
 		})
 	}

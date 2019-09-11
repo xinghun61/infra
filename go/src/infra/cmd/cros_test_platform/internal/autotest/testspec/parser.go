@@ -42,12 +42,12 @@ func unwrapMultiErrorIfNil(merr errors.MultiError) error {
 
 func parseTestName(text string, tm *testMetadata) {
 	ms := findMatchesInAllLines(text, namePattern)
-	tm.Name = unwrapLastSubmatch(ms, "parseTestName")
+	tm.Name, _ = stripMatchingQuotes(unwrapLastSubmatch(ms, "parseTestName"))
 }
 
 func parseExecutionEnvironment(text string, tm *testMetadata) {
 	ms := findMatchesInAllLines(text, testTypePattern)
-	env := unwrapLastSubmatch(ms, "parseExecutionEnvironment")
+	env, _ := stripMatchingQuotes(unwrapLastSubmatch(ms, "parseExecutionEnvironment"))
 	env = strings.ToLower(env)
 	switch env {
 	case "client":
@@ -134,7 +134,8 @@ func setDefaultRetries(tm *testMetadata) {
 
 func parseDependencies(text string, tm *testMetadata) error {
 	ms := findMatchesInAllLines(text, dependenciesPattern)
-	for _, s := range splitAndTrimCommaList(unwrapLastSubmatch(ms, "parseDependencies")) {
+	cl, _ := stripMatchingQuotes(unwrapLastSubmatch(ms, "parseDependencies"))
+	for _, s := range splitAndTrimCommaList(cl) {
 		tm.Dependencies = append(tm.Dependencies, &api.AutotestTaskDependency{Label: s})
 	}
 	return nil
@@ -159,7 +160,7 @@ func parseSuites(text string, tm *testMetadata) {
 
 func extractSingleLineSuites(text string) []string {
 	ms := findMatchesInAllLines(text, attributesPattern)
-	attrs := unwrapLastSubmatch(ms, "extractSingleLineSuites")
+	attrs, _ := stripMatchingQuotes(unwrapLastSubmatch(ms, "extractSingleLineSuites"))
 	return extractSuitesFromAttributes(attrs)
 }
 
@@ -228,24 +229,24 @@ func hasSurroundingCharacter(s string, c string) bool {
 
 func parseSuiteName(text string, as *api.AutotestSuite) {
 	ms := findMatchesInAllLines(text, namePattern)
-	as.Name = unwrapLastSubmatch(ms, "parseSuiteName")
+	as.Name, _ = stripMatchingQuotes(unwrapLastSubmatch(ms, "parseSuiteName"))
 }
 
 func parseChildDependencies(text string, as *api.AutotestSuite) {
 	ms := findMatchesInAllLines(text, suiteDependenciesPattern)
-	cl := unwrapLastSubmatch(ms, "parseChildDependencies")
+	cl, _ := stripMatchingQuotes(unwrapLastSubmatch(ms, "parseChildDependencies"))
 	for _, s := range splitAndTrimCommaList(cl) {
 		as.ChildDependencies = append(as.ChildDependencies, &api.AutotestTaskDependency{Label: s})
 	}
 }
 
 var (
-	namePattern                = regexp.MustCompile(`^\s*NAME\s*=\s*['"]([\w\.-]+)['"]\s*`)
-	testTypePattern            = regexp.MustCompile(`^\s*TEST_TYPE\s*=\s*['"](\w+)['"]\s*`)
+	namePattern                = regexp.MustCompile(`^\s*NAME\s*=\s*(['"][\w\.-]+['"])\s*`)
+	testTypePattern            = regexp.MustCompile(`^\s*TEST_TYPE\s*=\s*(['"]\w+['"])\s*`)
 	syncCountPattern           = regexp.MustCompile(`^\s*SYNC_COUNT\s*=\s*(\d+)\s*`)
 	retriesPattern             = regexp.MustCompile(`^\s*JOB_RETRIES\s*=\s*(\d+)\s*`)
-	dependenciesPattern        = regexp.MustCompile(`^\s*DEPENDENCIES\s*=\s*['"]([\s\w\.,:-]+)['"]\s*`)
-	attributesPattern          = regexp.MustCompile(`^\s*ATTRIBUTES\s*=\s*[\(]?\s*['"]([\s\w\.,:-]+)['"]\s*[\)]?\s*`)
+	dependenciesPattern        = regexp.MustCompile(`^\s*DEPENDENCIES\s*=\s*(['"][\s\w\.,:-]+['"])\s*`)
+	attributesPattern          = regexp.MustCompile(`^\s*ATTRIBUTES\s*=\s*[\(]?\s*(['"][\s\w\.,:-]+['"])\s*[\)]?\s*`)
 	multilineAttributesPattern = regexp.MustCompile(`^\s*ATTRIBUTES\s*=\s*\(((?:\n*\s*(?:['"][\s\w\.,:-]+['"])\s*\n*)*)\)\s*`)
-	suiteDependenciesPattern   = regexp.MustCompile(`^\s*args_dict\s*\[\s*['"]suite_dependencies['"]\s*\]\s*=\s*['"]([\s\w\.,:-]+)['"]\s*`)
+	suiteDependenciesPattern   = regexp.MustCompile(`^\s*args_dict\s*\[\s*['"]suite_dependencies['"]\s*\]\s*=\s*(['"][\s\w\.,:-]+['"])\s*`)
 )
