@@ -36,6 +36,18 @@ var (
 		field.String("repo"),
 	)
 
+	// GitExecutions counts the number of times a git command has been executed
+	// per repo and exit code.
+	// We only keep track of the git commands executed by a depot_tools command.
+	GitExecutions = metric.NewCounter(
+		"depot_tools_metrics/git/count",
+		"Number of executions per git command.",
+		nil,
+		field.String("command"),
+		field.Int("exit_code"),
+		field.String("repo"),
+	)
+
 	// PresubmitLatency keeps track of how long it takes to run presubmit cheks
 	// per repo and exit code.
 	PresubmitLatency = metric.NewCumulativeDistribution(
@@ -64,7 +76,8 @@ func reportDepotToolsMetrics(ctx context.Context, m schema.Metrics) {
 	}
 	for _, sc := range m.SubCommands {
 		if sc.Command == "git push" {
-			GitLatency.Add(ctx, sc.ExecutionTime, "git push", sc.ExitCode, repo)
+			GitLatency.Add(ctx, sc.ExecutionTime, sc.Command, sc.ExitCode, repo)
+			GitExecutions.Add(ctx, 1, sc.Command, sc.ExitCode, repo)
 		}
 		if sc.Command == "presubmit" {
 			PresubmitLatency.Add(ctx, sc.ExecutionTime, sc.ExitCode, repo)
