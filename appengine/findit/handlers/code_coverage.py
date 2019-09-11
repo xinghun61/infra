@@ -456,8 +456,8 @@ def _IsPresubmitBuild(build):
   if build.builder.bucket == 'try':
     return True
   return build.builder.bucket in (
-      'master.tryserver.cast-chromecast-internal.gce'
-  ) and build.builder.builder in ('libassistant-incremental_coverage')
+      'master.tryserver.cast-chromecast-internal.gce',
+  ) and build.builder.builder in ('libassistant-incremental_coverage',)
 
 
 class FetchSourceFile(BaseHandler):
@@ -790,8 +790,8 @@ class ProcessCodeCoverageData(BaseHandler):
     # The internal instance of the coverage service is deployed and used ONLY by
     # the cast and libassistant team.
     if IsInternalInstance():
-      return (project in ('cast-chromecast-internal') and
-              bucket in ('master.tryserver.cast-chromecast-internal.gce') and
+      return (project in ('cast-chromecast-internal',) and
+              bucket in ('master.tryserver.cast-chromecast-internal.gce',) and
               builder in ('libassistant-absolute_coverage',
                           'libassistant-incremental_coverage'))
 
