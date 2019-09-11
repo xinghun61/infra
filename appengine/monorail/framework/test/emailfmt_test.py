@@ -8,6 +8,7 @@ from __future__ import print_function
 from __future__ import division
 from __future__ import absolute_import
 
+import mock
 import unittest
 
 from google.appengine.ext import testbed
@@ -246,21 +247,35 @@ class FormatFromAddrTest(unittest.TestCase):
 
   def setUp(self):
     self.project = project_pb2.Project(project_name='monorail')
-    self.old_send_email_as = settings.send_email_as
-    settings.send_email_as = 'monorail@chromium.org'
-    self.old_send_noreply_email_as = settings.send_noreply_email_as
-    settings.send_noreply_email_as = 'monorail+noreply@chromium.org'
+    self.old_send_email_as_format = settings.send_email_as_format
+    settings.send_email_as_format = 'monorail@%(domain)s'
+    self.old_send_noreply_email_as_format = (
+        settings.send_noreply_email_as_format)
+    settings.send_noreply_email_as_format = 'monorail+noreply@%(domain)s'
 
   def tearDown(self):
-    self.old_send_email_as = settings.send_email_as
-    self.old_send_noreply_email_as = settings.send_noreply_email_as
+    self.old_send_email_as_format = settings.send_email_as_format
+    self.old_send_noreply_email_as_format = (
+        settings.send_noreply_email_as_format)
 
   def testNoCommenter(self):
-    self.assertEqual(settings.send_email_as,
+    self.assertEqual('monorail@chromium.org',
+                     emailfmt.FormatFromAddr(self.project))
+
+  @mock.patch('settings.branded_domains',
+              {'monorail': 'bugs.branded.com', '*': 'bugs.chromium.org'})
+  def testNoCommenter_Branded(self):
+    self.assertEqual('monorail@branded.com',
                      emailfmt.FormatFromAddr(self.project))
 
   def testNoCommenterWithNoReply(self):
-    self.assertEqual(settings.send_noreply_email_as,
+    self.assertEqual('monorail+noreply@chromium.org',
+                     emailfmt.FormatFromAddr(self.project, can_reply_to=False))
+
+  @mock.patch('settings.branded_domains',
+              {'monorail': 'bugs.branded.com', '*': 'bugs.chromium.org'})
+  def testNoCommenterWithNoReply_Branded(self):
+    self.assertEqual('monorail+noreply@branded.com',
                      emailfmt.FormatFromAddr(self.project, can_reply_to=False))
 
   def testWithCommenter(self):
@@ -268,6 +283,16 @@ class FormatFromAddrTest(unittest.TestCase):
         111, 'user@example.com', True)
     self.assertEqual(
         u'user via monorail <monorail+v2.111@chromium.org>',
+        emailfmt.FormatFromAddr(
+            self.project, commenter_view=commenter_view, reveal_addr=True))
+
+  @mock.patch('settings.branded_domains',
+              {'monorail': 'bugs.branded.com', '*': 'bugs.chromium.org'})
+  def testWithCommenter_Branded(self):
+    commenter_view = framework_views.StuffUserView(
+        111, 'user@example.com', True)
+    self.assertEqual(
+        u'user via monorail <monorail+v2.111@branded.com>',
         emailfmt.FormatFromAddr(
             self.project, commenter_view=commenter_view, reveal_addr=True))
 

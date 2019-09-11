@@ -53,8 +53,8 @@ send_local_email_to = (
 #       email addresses then setting these values to
 #       'reply@${app_id}.appspotmail.com' and 'noreply@{app_id}.appspotmail.com'
 #       is likely the best option.
-send_email_as = 'monorail@chromium.org'
-send_noreply_email_as = 'monorail+noreply@chromium.org'
+send_email_as_format = 'monorail@%(domain)s'
+send_noreply_email_as_format = 'monorail+noreply@%(domain)s'
 
 # The default is to look for a database named "monorail" in replicas
 # named "replica-00" .. "replica-09"
