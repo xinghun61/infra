@@ -22,6 +22,7 @@ import (
 	"github.com/golang/protobuf/ptypes"
 	"go.chromium.org/gae/service/datastore"
 	"go.chromium.org/luci/common/errors"
+	"go.chromium.org/luci/common/logging"
 	"go.chromium.org/luci/common/proto/google"
 	"go.chromium.org/luci/grpc/grpcutil"
 	"golang.org/x/net/context"
@@ -139,7 +140,7 @@ func (is *ServerImpl) UpdateCachedInventory(ctx context.Context, req *fleet.Upda
 	if err := dsinventory.UpdateDUTs(ctx, duts); err != nil {
 		return nil, err
 	}
-	es := makeDroneConfigs(store.Infrastructure, store.Lab)
+	es := makeDroneConfigs(ctx, store.Infrastructure, store.Lab)
 	if err := dronecfg.Update(ctx, es); err != nil {
 		return nil, err
 	}
@@ -158,7 +159,7 @@ func dutsInCurrentEnvironment(ctx context.Context, duts []*inventory.DeviceUnder
 	return duts
 }
 
-func makeDroneConfigs(inf *inventory.Infrastructure, lab *inventory.Lab) []dronecfg.Entity {
+func makeDroneConfigs(ctx context.Context, inf *inventory.Infrastructure, lab *inventory.Lab) []dronecfg.Entity {
 	dutHostnames := makeDUTHostnameMap(lab.GetDuts())
 	var entities []dronecfg.Entity
 	for _, s := range inf.GetServers() {
@@ -169,9 +170,14 @@ func makeDroneConfigs(inf *inventory.Infrastructure, lab *inventory.Lab) []drone
 			Hostname: s.GetHostname(),
 		}
 		for _, d := range s.GetDutUids() {
+			h, ok := dutHostnames[d]
+			if !ok {
+				logging.Infof(ctx, "DUT ID %s doesn't match any hostname", d)
+				continue
+			}
 			e.DUTs = append(e.DUTs, dronecfg.DUT{
 				ID:       d,
-				Hostname: dutHostnames[d],
+				Hostname: h,
 			})
 		}
 		entities = append(entities, e)

@@ -20,7 +20,9 @@ import (
 
 	fleet "infra/appengine/crosskylabadmin/api/fleet/v1"
 	"infra/appengine/crosskylabadmin/app/config"
+	"infra/appengine/crosskylabadmin/app/frontend/internal/datastore/dronecfg"
 	"infra/appengine/crosskylabadmin/app/frontend/internal/datastore/freeduts"
+	"infra/appengine/crosskylabadmin/app/frontend/internal/fakes"
 	"infra/libs/skylab/inventory"
 
 	"github.com/golang/protobuf/proto"
@@ -35,6 +37,40 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
+
+func TestInvalidDutID(t *testing.T) {
+	Convey("DutID with empty hostname won't go to drone config datastore", t, func() {
+		ctx := testingContext()
+		ctx = withDutInfoCacheValidity(ctx, 100*time.Minute)
+		tf, validate := newTestFixtureWithContext(ctx, t)
+		defer validate()
+
+		err := tf.FakeGitiles.SetInventory(config.Get(tf.C).Inventory, fakes.InventoryData{
+			Lab: inventoryBytesFromDUTs([]testInventoryDut{
+				{"dut1_id", "dut1_hostname", "link", "DUT_POOL_SUITES"},
+			}),
+			Infrastructure: inventoryBytesFromServers([]testInventoryServer{
+				{
+					hostname:    "fake-drone.google.com",
+					environment: inventory.Environment_ENVIRONMENT_STAGING,
+					dutIDs:      []string{"dut1_id", "empty_id"},
+				},
+			}),
+		})
+		So(err, ShouldBeNil)
+
+		_, err = tf.Inventory.UpdateCachedInventory(tf.C, &fleet.UpdateCachedInventoryRequest{})
+		So(err, ShouldBeNil)
+		e, err := dronecfg.Get(tf.C, "fake-drone.google.com")
+		So(err, ShouldBeNil)
+		So(e.DUTs, ShouldHaveLength, 1)
+		duts := make([]string, len(e.DUTs))
+		for i, d := range e.DUTs {
+			duts[i] = d.Hostname
+		}
+		So(duts, ShouldResemble, []string{"dut1_hostname"})
+	})
+}
 
 func TestListRemovedDuts(t *testing.T) {
 	t.Parallel()
