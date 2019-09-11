@@ -181,14 +181,11 @@ def NoReplyAddress(commenter_view=None, reveal_addr=False):
   """Return an address that ignores all messages sent to it."""
   # Note: We use "no_reply" with an underscore to avoid potential conflict
   # with any project name.  Project names cannot have underscores.
-  # Note: This does not take branded domains into account, but this address
-  # is only used for email error messages and in the reply-to address
-  # when the user is not allowed to reply.
   sender = 'no_reply@%s' % MailDomain()
   return FormatFriendly(commenter_view, sender, reveal_addr)
 
 
-def FormatFromAddr(project, commenter_view=None, reveal_addr=False,
+def FormatFromAddr(_project, commenter_view=None, reveal_addr=False,
                    can_reply_to=True):
   """Return a string to be used on the email From: line.
 
@@ -204,14 +201,9 @@ def FormatFromAddr(project, commenter_view=None, reveal_addr=False,
     A string that should be used in the From: line of outbound email
     notifications for the given project.
   """
-  addr_format = (settings.send_email_as_format if can_reply_to
-                 else settings.send_noreply_email_as_format)
-  domain = settings.branded_domains.get(
-      project.project_name, settings.branded_domains.get('*'))
-  domain = domain or 'chromium.org'
-  if domain.count('.') > 1:
-    domain = '.'.join(domain.split('.')[-2:])
-  addr = addr_format % {'domain': domain}
+  addr = (settings.send_email_as if can_reply_to
+                                 else settings.send_noreply_email_as)
+   # TODO(jrobbins): try this on just /p/monorail, then do full launch.
   return FormatFriendly(commenter_view, addr, reveal_addr)
 
 
