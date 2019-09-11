@@ -20,7 +20,7 @@ TEST_CASES = [
 
     # 'requests' is known to accept revoked certificates.
     # https://github.com/kennethreitz/requests/issues/3770
-    ('https://revoked.badssl.com', 200),
+    # ('https://revoked.badssl.com', requests.exceptions.SSLError),
 ]
 
 
