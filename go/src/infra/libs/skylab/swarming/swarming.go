@@ -70,8 +70,6 @@ func (c *Client) CreateTask(ctx context.Context, req *swarming_api.SwarmingRpcsN
 // GetResults gets results for the tasks with given IDs,
 // retrying transient errors.
 func (c *Client) GetResults(ctx context.Context, IDs []string) ([]*swarming_api.SwarmingRpcsTaskResult, error) {
-	ctx, cf := context.WithTimeout(ctx, 60*time.Second)
-	defer cf()
 	results := make([]*swarming_api.SwarmingRpcsTaskResult, len(IDs))
 	for i, ID := range IDs {
 		var r *swarming_api.SwarmingRpcsTaskResult
@@ -91,8 +89,6 @@ func (c *Client) GetResults(ctx context.Context, IDs []string) ([]*swarming_api.
 // GetResultsForTags gets results for tasks that match all the given tags,
 // retrying transient errors.
 func (c *Client) GetResultsForTags(ctx context.Context, tags []string) ([]*swarming_api.SwarmingRpcsTaskResult, error) {
-	ctx, cf := context.WithTimeout(ctx, 60*time.Second)
-	defer cf()
 	var results *swarming_api.SwarmingRpcsTaskList
 	getResults := func() error {
 		var err error
@@ -109,8 +105,6 @@ func (c *Client) GetResultsForTags(ctx context.Context, tags []string) ([]*swarm
 // GetRequests gets the task requests for the given task IDs,
 // retrying transient errors.
 func (c *Client) GetRequests(ctx context.Context, IDs []string) ([]*swarming_api.SwarmingRpcsTaskRequest, error) {
-	ctx, cf := context.WithTimeout(ctx, 60*time.Second)
-	defer cf()
 	requests := make([]*swarming_api.SwarmingRpcsTaskRequest, len(IDs))
 	for i, ID := range IDs {
 		var request *swarming_api.SwarmingRpcsTaskRequest
@@ -145,8 +139,6 @@ func (c *Client) GetTaskState(ctx context.Context, ID string) (*swarming_api.Swa
 // GetTaskOutputs gets the task outputs for the given IDs,
 // retrying transient errors.
 func (c *Client) GetTaskOutputs(ctx context.Context, IDs []string) ([]*swarming_api.SwarmingRpcsTaskOutput, error) {
-	ctx, cf := context.WithTimeout(ctx, 60*time.Second)
-	defer cf()
 	results := make([]*swarming_api.SwarmingRpcsTaskOutput, len(IDs))
 	for i, ID := range IDs {
 		var result *swarming_api.SwarmingRpcsTaskOutput
