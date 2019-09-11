@@ -21,6 +21,7 @@ import (
 	"infra/appengine/crosskylabadmin/app/config"
 	"infra/appengine/crosskylabadmin/app/frontend/internal/dutpool"
 	"infra/appengine/crosskylabadmin/app/frontend/internal/gitstore"
+	"infra/appengine/crosskylabadmin/app/frontend/internal/swarming"
 	"infra/libs/skylab/inventory"
 	"sync"
 
@@ -459,8 +460,8 @@ func getBotsHealth(ctx context.Context, sc clients.SwarmingClient) (map[string]f
 	botsHealth := make(map[string]fleet.Health, len(bots))
 	for _, b := range bots {
 		ds := clients.GetStateDimension(b.Dimensions)
-		dims := clients.SwarmingDimensionsMap(b.Dimensions)
-		dutID, err := clients.ExtractSingleValuedDimension(dims, clients.DutIDDimensionKey)
+		dims := swarming.DimensionsMap(b.Dimensions)
+		dutID, err := swarming.ExtractSingleValuedDimension(dims, clients.DutIDDimensionKey)
 		if err != nil {
 			logging.Errorf(ctx, "fail to get dutID for bot %s: %s", b.BotId, err.Error())
 			continue

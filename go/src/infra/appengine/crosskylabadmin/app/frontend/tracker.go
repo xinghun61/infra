@@ -33,6 +33,7 @@ import (
 	"infra/appengine/crosskylabadmin/app/frontend/internal/datastore/botsummary"
 	"infra/appengine/crosskylabadmin/app/frontend/internal/diagnosis"
 	"infra/appengine/crosskylabadmin/app/frontend/internal/metrics/utilization"
+	swarming_utils "infra/appengine/crosskylabadmin/app/frontend/internal/swarming"
 )
 
 // TrackerServerImpl implements the fleet.TrackerServer interface.
@@ -293,13 +294,13 @@ func singleBotInfoToSummary(bi *swarming.SwarmingRpcsBotInfo) (*fleet.BotSummary
 	bs := &fleet.BotSummary{
 		Dimensions: &fleet.BotDimensions{},
 	}
-	dims := swarmingDimensionsMap(bi.Dimensions)
+	dims := swarming_utils.DimensionsMap(bi.Dimensions)
 	var err error
-	bs.DutId, err = extractSingleValuedDimension(dims, clients.DutIDDimensionKey)
+	bs.DutId, err = swarming_utils.ExtractSingleValuedDimension(dims, clients.DutIDDimensionKey)
 	if err != nil {
 		return nil, errors.Annotate(err, "failed to obtain DUT ID for bot %q", bi.BotId).Err()
 	}
-	bs.Dimensions.DutName, err = extractSingleValuedDimension(dims, clients.DutNameDimensionKey)
+	bs.Dimensions.DutName, err = swarming_utils.ExtractSingleValuedDimension(dims, clients.DutNameDimensionKey)
 	if err != nil {
 		return nil, errors.Annotate(err, "failed to obtain DUT name for bot %q", bi.BotId).Err()
 	}
@@ -370,38 +371,15 @@ func getIdleDuration(ctx context.Context, sc clients.SwarmingClient, botID strin
 	return d, nil
 }
 
-func swarmingDimensionsMap(sdims []*swarming.SwarmingRpcsStringListPair) strpair.Map {
-	dims := make(strpair.Map)
-	for _, sdim := range sdims {
-		dims[sdim.Key] = sdim.Value
-	}
-	return dims
-}
-
-func extractSingleValuedDimension(dims strpair.Map, key string) (string, error) {
-	vs, ok := dims[key]
-	if !ok {
-		return "", fmt.Errorf("failed to find dimension %s", key)
-	}
-	switch len(vs) {
-	case 1:
-		return vs[0], nil
-	case 0:
-		return "", fmt.Errorf("no value for dimension %s", key)
-	default:
-		return "", fmt.Errorf("multiple values for dimension %s", key)
-	}
-}
-
 // identifyBots identifies bots that need reset and need repair.
 func identifyBots(ctx context.Context, bots []*swarming.SwarmingRpcsBotInfo) (repairDUTs []string, resetDUTs []string) {
 	repairDUTs = make([]string, 0, len(bots))
 	resetDUTs = make([]string, 0, len(bots))
 	for _, b := range bots {
 		s := clients.GetStateDimension(b.Dimensions)
-		dims := swarmingDimensionsMap(b.Dimensions)
-		os, err := extractSingleValuedDimension(dims, clients.DutOSDimensionKey)
-		n, err := extractSingleValuedDimension(dims, clients.DutNameDimensionKey)
+		dims := swarming_utils.DimensionsMap(b.Dimensions)
+		os, err := swarming_utils.ExtractSingleValuedDimension(dims, clients.DutOSDimensionKey)
+		n, err := swarming_utils.ExtractSingleValuedDimension(dims, clients.DutNameDimensionKey)
 		if err != nil {
 			logging.Warningf(ctx, "failed to obtain DUT name for bot %q", b.BotId)
 			continue
@@ -422,9 +400,9 @@ func identifyBots(ctx context.Context, bots []*swarming.SwarmingRpcsBotInfo) (re
 func identifyLabstationsForRepair(ctx context.Context, bots []*swarming.SwarmingRpcsBotInfo) (repairLabstations []string) {
 	dutNames := make([]string, 0, len(bots))
 	for _, b := range bots {
-		dims := swarmingDimensionsMap(b.Dimensions)
-		os, err := extractSingleValuedDimension(dims, clients.DutOSDimensionKey)
-		n, err := extractSingleValuedDimension(dims, clients.DutNameDimensionKey)
+		dims := swarming_utils.DimensionsMap(b.Dimensions)
+		os, err := swarming_utils.ExtractSingleValuedDimension(dims, clients.DutOSDimensionKey)
+		n, err := swarming_utils.ExtractSingleValuedDimension(dims, clients.DutNameDimensionKey)
 		if err != nil {
 			logging.Warningf(ctx, "failed to obtain DUT name for bot %q", b.BotId)
 			continue

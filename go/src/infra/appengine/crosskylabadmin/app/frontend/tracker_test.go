@@ -28,6 +28,7 @@ import (
 	fleet "infra/appengine/crosskylabadmin/api/fleet/v1"
 	"infra/appengine/crosskylabadmin/app/clients"
 	"infra/appengine/crosskylabadmin/app/config"
+	swarming_utils "infra/appengine/crosskylabadmin/app/frontend/internal/swarming"
 )
 
 const repairQ = "repair-bots"
@@ -102,7 +103,7 @@ func TestPushBotsForAdminTasks(t *testing.T) {
 			bot3,
 		}
 		getDutName := func(bot *swarming.SwarmingRpcsBotInfo) string {
-			h, err := extractSingleValuedDimension(swarmingDimensionsMap(bot.Dimensions), clients.DutNameDimensionKey)
+			h, err := swarming_utils.ExtractSingleValuedDimension(swarming_utils.DimensionsMap(bot.Dimensions), clients.DutNameDimensionKey)
 			if err != nil {
 				t.Fatalf("fail to extract dut_name for bot %s", bot1.BotId)
 			}
@@ -160,7 +161,7 @@ func TestPushLabstationsForRepair(t *testing.T) {
 			bot2,
 		}
 		getDutName := func(bot *swarming.SwarmingRpcsBotInfo) string {
-			h, err := extractSingleValuedDimension(swarmingDimensionsMap(bot.Dimensions), clients.DutNameDimensionKey)
+			h, err := swarming_utils.ExtractSingleValuedDimension(swarming_utils.DimensionsMap(bot.Dimensions), clients.DutNameDimensionKey)
 			if err != nil {
 				t.Fatalf("fail to extract dut_name for bot %s", bot1.BotId)
 			}
