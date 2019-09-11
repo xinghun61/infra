@@ -7,7 +7,7 @@ import page from 'page';
 import qs from 'qs';
 import {connectStore} from 'reducers/base.js';
 import * as project from 'reducers/project.js';
-import {DEFAULT_ISSUE_FIELD_LIST} from 'shared/issue-fields.js';
+import {DEFAULT_ISSUE_FIELD_LIST, fieldTypes} from 'shared/issue-fields.js';
 
 
 /**
@@ -90,16 +90,46 @@ export class MrShowColumnsDropdown extends connectStore(MrDropdown) {
 
     const availableFields = new Set();
 
-    defaultFields.forEach((field) => this._addAvailableField(
+    // Built-in, hard-coded fields like Owner, Status, and Labels.
+    defaultFields.forEach((field) => this._addUnselectedField(
         availableFields, field, selectedOptions));
 
+    // HACK/TODO(zhangtiff): Replace this with dynamically computed phase names
+    // once it's possible to get phase data from the API.
+    const allPhases = ['Beta', 'Stable', 'Stable-Exp', 'Stable-Full'];
+
+    // Custom fields.
     fieldDefs.forEach((fd) => {
-      const field = fd.fieldRef.fieldName;
-      this._addAvailableField(
-          availableFields, field, selectedOptions);
+      const {fieldRef, isPhaseField} = fd;
+      const {fieldName, type} = fieldRef;
+      if (isPhaseField) {
+        // If the custom field belongs to phases, prefix the phase name for
+        // each phase.
+        allPhases.forEach((phaseName) => {
+          this._addUnselectedField(
+              availableFields, `${phaseName}.${fieldName}`, selectedOptions);
+        });
+        return;
+      }
+
+      // TODO(zhangtiff): Prefix custom fields with "approvalName" defined by
+      // the approval name after deprecating the old issue list page.
+
+      // Most custom fields can be directly added to the list with no
+      // modifications.
+      this._addUnselectedField(
+          availableFields, fieldName, selectedOptions);
+
+      // If the custom field is type approval, then it also has a built in
+      // "Approver" field.
+      if (type === fieldTypes.APPROVAL_TYPE) {
+        this._addUnselectedField(
+            availableFields, `${fieldName}-Approver`, selectedOptions);
+      }
     });
 
-    labelPrefixes.forEach((field) => this._addAvailableField(
+    // Fields inferred from label prefixes.
+    labelPrefixes.forEach((field) => this._addUnselectedField(
         availableFields, field, selectedOptions));
 
     const sortedFields = [...availableFields];
@@ -119,7 +149,7 @@ export class MrShowColumnsDropdown extends connectStore(MrDropdown) {
     ];
   }
 
-  _addAvailableField(availableFields, field, selectedOptions) {
+  _addUnselectedField(availableFields, field, selectedOptions) {
     if (!selectedOptions.has(field.toLowerCase())) {
       availableFields.add(field);
     }

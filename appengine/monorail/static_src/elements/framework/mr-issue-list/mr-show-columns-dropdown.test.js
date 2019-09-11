@@ -26,7 +26,6 @@ describe('mr-show-columns-dropdown', () => {
     assert.instanceOf(element, MrShowColumnsDropdown);
   });
 
-
   it('clicking unset column in show columns menu adds new column', async () => {
     element.defaultIssueFields = ['ID'];
     element.columns = [];
@@ -93,7 +92,7 @@ describe('mr-show-columns-dropdown', () => {
     assert.equal(options[2].icon, '');
   });
 
-  it('sorts field defs and label prefixes', async () => {
+  it('sorts field defs and label prefix column options', async () => {
     element.defaultIssueFields = ['ID', 'Summary'];
     element.columns = [];
     element._fieldDefs = [
@@ -125,6 +124,25 @@ describe('mr-show-columns-dropdown', () => {
 
     assert.equal(options[5].text.trim(), 'TestField');
     assert.equal(options[5].icon, '');
+  });
+
+  it('add approver fields for approval type fields', async () => {
+    element.defaultIssueFields = [];
+    element.columns = [];
+    element._fieldDefs = [
+      {fieldRef: {fieldName: 'HelloWorld', type: 'APPROVAL_TYPE'}},
+    ];
+
+    // Re-compute menu items on update.
+    await element.updateComplete;
+    const options = element.items;
+
+    assert.equal(options.length, 2);
+    assert.equal(options[0].text.trim(), 'HelloWorld');
+    assert.equal(options[0].icon, '');
+
+    assert.equal(options[1].text.trim(), 'HelloWorld-Approver');
+    assert.equal(options[1].icon, '');
   });
 
   it('reloadColspec navigates to page with new colspec', () => {

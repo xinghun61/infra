@@ -10,7 +10,7 @@ import {labelRefsToStrings, issueRefsToStrings, componentRefsToStrings,
 import {removePrefix} from './helpers.js';
 import {fieldValueMapKey} from 'shared/metadata-helpers.js';
 
-// TODO(zhangtiff): Merge this field with metadata-helpers.js.
+// TODO(zhangtiff): Merge this file with metadata-helpers.js.
 
 export const fieldTypes = Object.freeze({
   APPROVAL_TYPE: 'APPROVAL_TYPE',
@@ -63,6 +63,14 @@ export function extractTypeForIssue(fieldValues, labelRefs) {
   return;
 }
 
+/**
+ * Converts issue.fieldValues into a map where values can be looked up given
+ * a field ref.
+ *
+ * @param {Array} fieldValues List of values with a fieldRef attached.
+ * @return {Map} keys are a string constructed using fieldValueMapKey() and
+ *   values are an Array of value strings.
+ */
 export function fieldValuesToMap(fieldValues) {
   if (!fieldValues) return new Map();
   const acc = new Map();
