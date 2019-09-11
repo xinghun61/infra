@@ -24,7 +24,7 @@ import metrics
 import model
 import user
 
-MAX_RETURN_BUILDS = 250
+MAX_RETURN_BUILDS = 1000
 RE_TAG_INDEX_SEARCH_CURSOR = re.compile(r'^id>\d+$')
 
 
