@@ -1,30 +1,36 @@
-*.pyc
-.coverage
-.expect_tests_coverage*
-ENV
-.wheelcache
-bootstrap/virtualenv-ext
+# Python local environment:
+/.wheelcache
+/ENV
+
+# TODO(crbug/1002047): Have these auto-generated.
+/bootstrap/virtualenv-ext
+/go/src/go.chromium.org
 /luci
-appengine/swarming
-appengine/milo/vulcanized_main.html
-appengine/experimental/milo-linear/vulcanized_main.html
-appengine/milo/html/parts/graph/viz.js
+/recipes-py
+/recipes/.recipe_deps
+
+# TODO: Move to native cipd gclient support:
 /cipd/*
-.DS_Store
-/node/runtimes
-# build_cache is used by infra.services.builder_alerts
-build_cache
-go/src/go.chromium.org
-recipes-py
-*.recipe_deps
 !/cipd/README.md
-reasons.sqlite
-# sublime text
-*.sublime-*
+
 # Used by "infra/tools/dockerbuild".
 .dockerbuild
+
 # Cache directory created by 3pp/run_locally.sh
 .3pp_wd
+
 # build/build.py script produces *.cipd binaries, they must not be committed.
 *.cipd
+
+# Stale?
+/node/runtimes
+build_cache
+reasons.sqlite
+
+# People with misconfigured global ignores:
+*.pyc
+*.sublime-*
+.DS_Store
+.coverage
+.expect_tests_coverage*
 .vscode
