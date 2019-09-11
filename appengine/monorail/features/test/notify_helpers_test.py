@@ -86,35 +86,48 @@ class MergeLinkedAccountReasonsTest(unittest.TestCase):
     """Zero users to notify."""
     self.assertEqual(
         {},
-        notify_helpers._MergeLinkedAccountReasons({}))
+        notify_helpers._MergeLinkedAccountReasons({}, {}))
 
   def testNormal(self):
     """No users are related."""
-    addr_reasons_dict = {
-       self.addr_perm_parent: [notify_reasons.REASON_CCD],
-       self.addr_perm_3: [notify_reasons.REASON_OWNER],
-       self.addr_perm_4: [notify_reasons.REASON_CCD],
-       self.addr_perm_5: [notify_reasons.REASON_CCD],
+    addr_to_addrperm = {
+       self.addr_perm_parent.address: self.addr_perm_parent,
+       self.addr_perm_3.address: self.addr_perm_3,
+       self.addr_perm_4.address: self.addr_perm_4,
+       self.addr_perm_5.address: self.addr_perm_5,
+       }
+    addr_to_reasons = {
+       self.addr_perm_parent.address: [notify_reasons.REASON_CCD],
+       self.addr_perm_3.address: [notify_reasons.REASON_OWNER],
+       self.addr_perm_4.address: [notify_reasons.REASON_CCD],
+       self.addr_perm_5.address: [notify_reasons.REASON_CCD],
        }
     self.assertEqual(
-        {self.addr_perm_parent: [notify_reasons.REASON_CCD],
-         self.addr_perm_3: [notify_reasons.REASON_OWNER],
-         self.addr_perm_4: [notify_reasons.REASON_CCD],
-         self.addr_perm_5: [notify_reasons.REASON_CCD]
+        {self.addr_perm_parent.address: [notify_reasons.REASON_CCD],
+         self.addr_perm_3.address: [notify_reasons.REASON_OWNER],
+         self.addr_perm_4.address: [notify_reasons.REASON_CCD],
+         self.addr_perm_5.address: [notify_reasons.REASON_CCD]
          },
-        notify_helpers._MergeLinkedAccountReasons(addr_reasons_dict))
+        notify_helpers._MergeLinkedAccountReasons(
+            addr_to_addrperm, addr_to_reasons))
 
   def testMerged(self):
     """A child is merged into parent notification."""
-    addr_reasons_dict = {
-       self.addr_perm_parent: [notify_reasons.REASON_OWNER],
-       self.addr_perm_child: [notify_reasons.REASON_CCD],
+    addr_to_addrperm = {
+       self.addr_perm_parent.address: self.addr_perm_parent,
+       self.addr_perm_child.address: self.addr_perm_child,
+       }
+    addr_to_reasons = {
+       self.addr_perm_parent.address: [notify_reasons.REASON_OWNER],
+       self.addr_perm_child.address: [notify_reasons.REASON_CCD],
        }
     self.assertEqual(
-        {self.addr_perm_parent: [notify_reasons.REASON_OWNER,
-                                 notify_reasons.REASON_LINKED_ACCOUNT]
+        {self.addr_perm_parent.address:
+         [notify_reasons.REASON_OWNER,
+          notify_reasons.REASON_LINKED_ACCOUNT]
          },
-        notify_helpers._MergeLinkedAccountReasons(addr_reasons_dict))
+        notify_helpers._MergeLinkedAccountReasons(
+            addr_to_addrperm, addr_to_reasons))
 
 
 class MakeBulletedEmailWorkItemsTest(unittest.TestCase):

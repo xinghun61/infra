@@ -141,24 +141,26 @@ class NotifyTaskBase(jsonfeed.InternalTask):
           compress_whitespace=False, base_format=ezt.FORMAT_RAW)
 
 
-def _MergeLinkedAccountReasons(addr_reasons_dict):
+def _MergeLinkedAccountReasons(addr_to_addrperm, addr_to_reasons):
   """Return an addr_reasons_dict where parents omit child accounts."""
   all_ids = set(addr_perm.user.user_id
-                for addr_perm in addr_reasons_dict
+                for addr_perm in addr_to_addrperm.values()
                 if addr_perm.user)
   merged_ids = set()
 
   result = {}
-  for addr_perm, reasons in addr_reasons_dict.items():
+  for addr, reasons in addr_to_reasons.items():
+    addr_perm = addr_to_addrperm[addr]
     parent_id = addr_perm.user.linked_parent_id if addr_perm.user else None
     if parent_id and parent_id in all_ids:
       # The current user is a child account and the parent would be notified,
       # so only notify the parent.
       merged_ids.add(parent_id)
     else:
-      result[addr_perm] = reasons
+      result[addr] = reasons
 
-  for addr_perm, reasons in result.items():
+  for addr, reasons in result.items():
+    addr_perm = addr_to_addrperm[addr]
     if addr_perm.user and addr_perm.user.user_id in merged_ids:
       reasons.append(notify_reasons.REASON_LINKED_ACCOUNT)
 
@@ -191,15 +193,21 @@ def MakeBulletedEmailWorkItems(
     reasons why that user received the email.
   """
   logging.info('group_reason_list is %r', group_reason_list)
-  addr_reasons_dict = {}
+  addr_to_addrperm = {}  # {email_address: AddrPerm object}
+  addr_to_reasons = {}  # {email_address: [reason, ...]}
   for group, reason in group_reason_list:
     for memb_addr_perm in group:
-      addr_reasons_dict.setdefault(memb_addr_perm, []).append(reason)
+      addr = memb_addr_perm.address
+      addr_to_addrperm[addr] = memb_addr_perm
+      addr_to_reasons.setdefault(addr, []).append(reason)
 
-  addr_reasons_dict = _MergeLinkedAccountReasons(addr_reasons_dict)
+  addr_to_reasons = _MergeLinkedAccountReasons(
+      addr_to_addrperm, addr_to_reasons)
+  logging.info('addr_to_reasons is %r', addr_to_reasons)
 
   email_tasks = []
-  for memb_addr_perm, reasons in addr_reasons_dict.items():
+  for addr, reasons in addr_to_reasons.items():
+    memb_addr_perm = addr_to_addrperm[addr]
     email_tasks.append(_MakeEmailWorkItem(
         memb_addr_perm, reasons, issue, body_link_only, body_for_non_members,
         body_for_members, project, hostport, commenter_view, detail_url,
