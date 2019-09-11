@@ -14,10 +14,8 @@ In addition to Token Bucket, QuotaScheduler supports features directly related t
 - Accounts can specify a maximum parallelism, beyond which tasks will not run concurrently.
 
 Code layout:
-|||
-|-|-|
-|`profiler`|Performance profiling tool and simulator for quotascheduler algorithm.|
-|`protos`|Internal proto definitions, for serializing scheduler state.|
-|`reconciler`|Caching/queueing logic between swarming (which makes task- or worker- bound calls to this library) and scheduler logic (which uses a global scheduling pass on each scheduling run).|
-|`scheduler`|Core QuotaScheduler algorithm.|
-|`tutils`|Convenience library to casting proto timestamps.|
+- `profiler`    Performance profiling tool and simulator for quotascheduler algorithm.
+- `protos`      Internal proto definitions, for serializing scheduler state.
+- `reconciler`  Caching/queueing logic between swarming (which makes task- or worker- bound calls to this library) and scheduler logic (which uses a global scheduling pass on each scheduling run).
+- `scheduler`   Core QuotaScheduler algorithm.
+- `tutils`      Convenience library to casting proto timestamps.
