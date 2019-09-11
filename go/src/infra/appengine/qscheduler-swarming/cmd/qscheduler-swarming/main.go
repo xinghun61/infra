@@ -49,9 +49,16 @@ func main() {
 		// Periodically cleanup old nodestore entities.
 		srv.RunInBackground("qscheduler.cleanup", cleanupNodestore)
 
+		bi, err := eventlog.NewRAMBufferedBQInserter(srv.Context,
+			srv.Options.CloudProject, eventlog.DatasetID, eventlog.TableID)
+		if err != nil {
+			return err
+		}
+		srv.RegisterCleanup(func() { bi.CloseAndDrain(srv.Context) })
+
 		// Make config and eventlog implementations available to all handlers.
 		srv.Context = config.Use(srv.Context, cfgLoader.Config)
-		srv.Context = eventlog.Use(srv.Context, &eventlog.NullBQInserter{})
+		srv.Context = eventlog.Use(srv.Context, bi)
 
 		// Install main API services.
 		frontend.InstallServices(srv.PRPC)
