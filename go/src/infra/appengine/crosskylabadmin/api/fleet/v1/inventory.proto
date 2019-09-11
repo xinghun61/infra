@@ -63,6 +63,11 @@ service Inventory {
   rpc EnsurePoolHealthyForAllModels(EnsurePoolHealthyForAllModelsRequest)
           returns (EnsurePoolHealthyForAllModelsResponse);
 
+  // BalancePools is the RPC used by balance pool efforts issued from
+  // automatic balance pool cron job or users (skylab ensure-pool-healthy).
+  // The above 2 RPCs will be deprecated.
+  rpc BalancePools(BalancePoolsRequest) returns (BalancePoolsResponse);
+
   // ResizePool changes the size of the target DUT pool.
   //
   // ResizePool borrows or returns extra DUTs from the spare pool.
@@ -364,6 +369,43 @@ message EnsurePoolHealthyForAllModelsRequest {
 }
 
 message EnsurePoolHealthyForAllModelsResponse {
+  // model_result maps a model to the EnsurePoolHealthyResponse for that model.
+  map<string, EnsurePoolHealthyResponse> model_result = 1;
+}
+
+message BalancePoolsRequest {
+  // dut_selectors filters the set of DUTs considered by EnsurePoolHealthy.
+  //
+  // It can be empty, but it would allow DUT reallocation between pools
+  // for all models.
+  DutSelector dut_selector = 1;
+
+  // target_pool is the pool that should contain healthy DUTs.
+  string target_pool = 2;
+
+  // spare_pool is the pool from which healthy DUTs will be swapped into
+  // target_pool.
+  string spare_pool = 3;
+
+  // max_unhealthy_duts is the maximum number of DUTs that may be unhealthy in
+  // the target pool before any action is taken.
+  //
+  // max_unhealthy_duts is meaningful only when it has a positive value (> 0).
+  //
+  // If the total number of unhealthy DUTs is above this threshold,
+  // EnsurePoolHealthy does not change DUT pools and returns a
+  // NOT_ENOUGH_HEALTHY_SPARES failure.
+  int32 max_unhealthy_duts = 4;
+
+  message Options {
+    // If dryrun is true, no inventory changes are made. Proposed changes are
+    // returned.
+    bool dryrun = 1;
+  }
+  Options options = 5;
+}
+
+message BalancePoolsResponse {
   // model_result maps a model to the EnsurePoolHealthyResponse for that model.
   map<string, EnsurePoolHealthyResponse> model_result = 1;
 }

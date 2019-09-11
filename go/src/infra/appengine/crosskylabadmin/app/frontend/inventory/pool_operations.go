@@ -17,12 +17,14 @@ package inventory
 import (
 	"fmt"
 	fleet "infra/appengine/crosskylabadmin/api/fleet/v1"
+	"infra/appengine/crosskylabadmin/app/clients"
 	"infra/appengine/crosskylabadmin/app/config"
 	"infra/appengine/crosskylabadmin/app/frontend/internal/dutpool"
 	"infra/appengine/crosskylabadmin/app/frontend/internal/gitstore"
 	"infra/libs/skylab/inventory"
 	"sync"
 
+	"go.chromium.org/luci/common/data/strpair"
 	"go.chromium.org/luci/common/errors"
 	"go.chromium.org/luci/common/logging"
 	"go.chromium.org/luci/common/retry"
@@ -32,6 +34,98 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
+
+// BalancePools implements the method from fleet.InventoryServer interface.
+func (is *ServerImpl) BalancePools(ctx context.Context, req *fleet.BalancePoolsRequest) (resp *fleet.BalancePoolsResponse, err error) {
+	defer func() {
+		err = grpcutil.GRPCifyAndLogErr(ctx, err)
+	}()
+	if err = req.Validate(); err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+	err = retry.Retry(
+		ctx,
+		transientErrorRetries(),
+		func() error {
+			var ierr error
+			resp, ierr = is.balancePoolsNoRetry(ctx, req)
+			return ierr
+		},
+		retry.LogCallback(ctx, "BalancePools"),
+	)
+	return resp, err
+}
+
+func (is *ServerImpl) balancePoolsNoRetry(ctx context.Context, req *fleet.BalancePoolsRequest) (*fleet.BalancePoolsResponse, error) {
+	cfg := config.Get(ctx)
+	sc, err := is.newSwarmingClient(ctx, cfg.Swarming.Host)
+	if err != nil {
+		return nil, err
+	}
+
+	botsHealth, err := getBotsHealth(ctx, sc)
+	if err != nil {
+		return nil, err
+	}
+
+	inventoryConfig := config.Get(ctx).Inventory
+	store, err := is.newStore(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if err = store.Refresh(ctx); err != nil {
+		return nil, err
+	}
+
+	duts := selectDutsFromInventory(store.Lab, req.DutSelector, inventoryConfig.Environment)
+	if len(duts) == 0 {
+		// Technically correct: No DUTs were selected so both target and spare are
+		// empty and healthy and no changes were required.
+		logging.Infof(ctx, "no duts were found based on %s", req.DutSelector.String())
+		return &fleet.BalancePoolsResponse{}, nil
+	}
+
+	mds := mapModelsToDUTs(duts, inventoryConfig.Environment)
+	resp := &fleet.BalancePoolsResponse{
+		ModelResult: make(map[string]*fleet.EnsurePoolHealthyResponse),
+	}
+	// Protects access to resp
+	mResp := &sync.Mutex{}
+	err = parallel.WorkPool(10, func(workC chan<- func() error) {
+		for m, ds := range mds {
+			// In-scope variables for goroutine closure.
+			im := m
+			ids := ds
+			workC <- func() error {
+				logging.Infof(ctx, "balancing pool for model: %s", m)
+				iResp, err2 := ensurePoolHealthyForModel(ctx, ids, botsHealth, req.TargetPool, req.SparePool, req.MaxUnhealthyDuts)
+				if err2 != nil {
+					return err2
+				}
+
+				mResp.Lock()
+				defer mResp.Unlock()
+				resp.ModelResult[im] = iResp
+				return nil
+			}
+		}
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	changes := collectChanges(resp.ModelResult)
+	if !req.GetOptions().GetDryrun() {
+		u, err := is.commitBalancePoolChanges(ctx, store, changes)
+		if err != nil {
+			return nil, err
+		}
+		for _, res := range resp.ModelResult {
+			res.Url = u
+		}
+	}
+	return resp, nil
+}
 
 // EnsurePoolHealthy implements the method from fleet.InventoryServer interface.
 func (is *ServerImpl) EnsurePoolHealthy(ctx context.Context, req *fleet.EnsurePoolHealthyRequest) (resp *fleet.EnsurePoolHealthyResponse, err error) {
@@ -223,7 +317,10 @@ func (is *ServerImpl) commitBalancePoolChanges(ctx context.Context, store *gitst
 func selectDutsFromInventory(lab *inventory.Lab, sel *fleet.DutSelector, env string) []*inventory.DeviceUnderTest {
 	duts := []*inventory.DeviceUnderTest{}
 	for _, d := range lab.Duts {
-		if d.GetCommon().GetEnvironment().String() == env && dutMatchesSelector(d, sel) {
+		if sel != nil && d.GetCommon().GetEnvironment().String() == env && dutMatchesSelector(d, sel) {
+			duts = append(duts, d)
+		}
+		if sel == nil {
 			duts = append(duts, d)
 		}
 	}
@@ -253,6 +350,29 @@ func ensurePoolHealthyFor(ctx context.Context, ts fleet.TrackerServer, duts []*i
 		return nil, errors.Annotate(err, "ensure pool healthy").Err()
 	}
 	logging.Debugf(ctx, "Pool balancer initial state: %+v", pb)
+
+	changes, failures := pb.EnsureTargetHealthy(int(maxUnhealthyDUTs))
+	return &fleet.EnsurePoolHealthyResponse{
+		Failures: failures,
+		TargetPoolStatus: &fleet.PoolStatus{
+			Size:         int32(len(pb.Target)),
+			HealthyCount: int32(pb.TargetHealthyCount()),
+		},
+		SparePoolStatus: &fleet.PoolStatus{
+			Size:         int32(len(pb.Spare)),
+			HealthyCount: int32(pb.SpareHealthyCount()),
+		},
+		Changes: changes,
+	}, nil
+}
+
+func ensurePoolHealthyForModel(ctx context.Context, duts []*inventory.DeviceUnderTest, botsHealth map[string]fleet.Health, target, spare string, maxUnhealthyDUTs int32) (*fleet.EnsurePoolHealthyResponse, error) {
+	pb, err := dutpool.NewBalancer(duts, target, spare)
+	if err != nil {
+		return nil, errors.Annotate(err, "ensure pool healthy").Err()
+	}
+	pb.FillInHealth(botsHealth)
+	logging.Debugf(ctx, "initial state: %+v", pb)
 
 	changes, failures := pb.EnsureTargetHealthy(int(maxUnhealthyDUTs))
 	return &fleet.EnsurePoolHealthyResponse{
@@ -328,4 +448,28 @@ func mapModelsToDUTs(duts []*inventory.DeviceUnderTest, env string) map[string][
 		dms[m] = append(dms[m], d)
 	}
 	return dms
+}
+
+func getBotsHealth(ctx context.Context, sc clients.SwarmingClient) (map[string]fleet.Health, error) {
+	cfg := config.Get(ctx)
+	bots, err := sc.ListAliveBotsInPool(ctx, cfg.Swarming.BotPool, strpair.Map{})
+	if err != nil {
+		return nil, err
+	}
+	botsHealth := make(map[string]fleet.Health, len(bots))
+	for _, b := range bots {
+		ds := clients.GetStateDimension(b.Dimensions)
+		dims := clients.SwarmingDimensionsMap(b.Dimensions)
+		dutID, err := clients.ExtractSingleValuedDimension(dims, clients.DutIDDimensionKey)
+		if err != nil {
+			logging.Errorf(ctx, "fail to get dutID for bot %s: %s", b.BotId, err.Error())
+			continue
+		}
+		if healthy := clients.HealthyDutStates[ds]; healthy {
+			botsHealth[dutID] = fleet.Health_Healthy
+		} else {
+			botsHealth[dutID] = fleet.Health_Unhealthy
+		}
+	}
+	return botsHealth, nil
 }

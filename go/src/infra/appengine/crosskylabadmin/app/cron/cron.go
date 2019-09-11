@@ -51,7 +51,7 @@ func InstallHandlers(r *router.Router, mwBase router.MiddlewareChain) {
 	r.GET("/internal/cron/ensure-background-tasks", mwCron, logAndSetHTTPErr(ensureBackgroundTasksCronHandler))
 	r.GET("/internal/cron/trigger-repair-on-idle", mwCron, logAndSetHTTPErr(triggerRepairOnIdleCronHandler))
 	r.GET("/internal/cron/trigger-repair-on-repair-failed", mwCron, logAndSetHTTPErr(triggerRepairOnRepairFailedCronHandler))
-	r.GET("/internal/cron/ensure-critical-pools-healthy", mwCron, logAndSetHTTPErr(ensureCriticalPoolsHealthy))
+	r.GET("/internal/cron/balance-pools", mwCron, logAndSetHTTPErr(balancePoolCronHandler))
 
 	// Generate repair or reset jobs for CrOS DUTs.
 	r.GET("/internal/cron/push-bots-for-admin-tasks", mwCron, logAndSetHTTPErr(pushBotsForAdminTasksCronHandler))
@@ -270,7 +270,7 @@ func refreshInventoryCronHandler(c *router.Context) error {
 	return err
 }
 
-func ensureCriticalPoolsHealthy(c *router.Context) (err error) {
+func balancePoolCronHandler(c *router.Context) (err error) {
 	cronCfg := config.Get(c.Context)
 	if cronCfg.RpcControl.DisableEnsureCriticalPoolsHealthy {
 		logging.Infof(c.Context, "EnsureCriticalPoolsHealthy is disabled via config.")
@@ -285,7 +285,7 @@ func ensureCriticalPoolsHealthy(c *router.Context) (err error) {
 	inv := createInventoryServer(c)
 	merr := make(errors.MultiError, 0)
 	for _, target := range cfg.GetTargetPools() {
-		resp, err := inv.EnsurePoolHealthyForAllModels(c.Context, &fleet.EnsurePoolHealthyForAllModelsRequest{
+		resp, err := inv.EnsurePoolHealthy(c.Context, &fleet.EnsurePoolHealthyRequest{
 			TargetPool:       target,
 			SparePool:        cfg.GetSparePool(),
 			MaxUnhealthyDuts: cfg.GetMaxUnhealthyDuts(),

@@ -44,6 +44,25 @@ func (r *TriggerRepairOnRepairFailedRequest) Validate() error {
 }
 
 // Validate returns an error if r is invalid.
+func (r *BalancePoolsRequest) Validate() error {
+	if r.DutSelector != nil {
+		if err := r.DutSelector.Validate(); err != nil {
+			return err
+		}
+	}
+	if r.SparePool == "" {
+		return errors.New("must set spare_pool")
+	}
+	if r.TargetPool == "" {
+		return errors.New("must set target_pool")
+	}
+	if r.GetMaxUnhealthyDuts() < 0 {
+		return errors.New("must set positive max_unhealthy_duts")
+	}
+	return nil
+}
+
+// Validate returns an error if r is invalid.
 func (r *EnsurePoolHealthyRequest) Validate() error {
 	if r.DutSelector == nil {
 		return errors.New("must set dut_selector")

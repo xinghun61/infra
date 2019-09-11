@@ -448,6 +448,41 @@ func GetStateDimension(dims []*swarming.SwarmingRpcsStringListPair) fleet.DutSta
 	return fleet.DutState_DutStateInvalid
 }
 
+// ExtractSingleValuedDimension extracts one specified dimension from a dimension slice.
+// TODO(xixuan): remove duplicated extractSingleValueDimension in tracker.
+func ExtractSingleValuedDimension(dims strpair.Map, key string) (string, error) {
+	vs, ok := dims[key]
+	if !ok {
+		return "", fmt.Errorf("failed to find dimension %s", key)
+	}
+	switch len(vs) {
+	case 1:
+		return vs[0], nil
+	case 0:
+		return "", fmt.Errorf("no value for dimension %s", key)
+	default:
+		return "", fmt.Errorf("multiple values for dimension %s", key)
+	}
+}
+
+// SwarmingDimensionsMap converts swarming bot dimensions to a map.
+// TODO(xixuan): remove duplicated swarmingDimensionsMap in tracker.
+func SwarmingDimensionsMap(sdims []*swarming.SwarmingRpcsStringListPair) strpair.Map {
+	dims := make(strpair.Map)
+	for _, sdim := range sdims {
+		dims[sdim.Key] = sdim.Value
+	}
+	return dims
+}
+
+// HealthyDutStates is the set of healthy DUT states.
+var HealthyDutStates = map[fleet.DutState]bool{
+	fleet.DutState_Ready:        true,
+	fleet.DutState_NeedsCleanup: true,
+	fleet.DutState_NeedsRepair:  true,
+	fleet.DutState_NeedsReset:   true,
+}
+
 // dutStateMap maps string values to DutState values.  The zero value
 // for unknown keys is DutState_StateInvalid.
 var dutStateMap = map[string]fleet.DutState{

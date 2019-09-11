@@ -15,23 +15,346 @@
 package inventory
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 
 	fleet "infra/appengine/crosskylabadmin/api/fleet/v1"
 	"infra/appengine/crosskylabadmin/app/config"
 	"infra/appengine/crosskylabadmin/app/frontend/internal/fakes"
+	"infra/appengine/crosskylabadmin/app/frontend/test"
 	"infra/libs/skylab/inventory"
 
 	"github.com/golang/mock/gomock"
-	"github.com/golang/protobuf/proto"
 	"github.com/kylelemons/godebug/pretty"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
 	. "github.com/smartystreets/goconvey/convey"
+	swarming "go.chromium.org/luci/common/api/swarming/swarming/v1"
 	. "go.chromium.org/luci/common/testing/assertions"
 )
+
+func TestBalancePoolsDryrun(t *testing.T) {
+	Convey("BalancePools (dryrun) with empty DutSelector", t, func() {
+		tf, validate := newTestFixture(t)
+		defer validate()
+
+		err := setGitilesDUTs(tf.C, tf.FakeGitiles, []testInventoryDut{
+			{"link_cq_unhealthy", "link_cq_unhealthy", "link", "DUT_POOL_CQ"},
+			{"link_suites_healthy", "link_suites_healthy", "link", "DUT_POOL_SUITES"},
+			{"coral_cq_unhealthy", "coral_cq_unhealthy", "coral", "DUT_POOL_CQ"},
+			{"coral_suites_healthy", "coral_suites_healthy", "coral", "DUT_POOL_SUITES"},
+		})
+		So(err, ShouldBeNil)
+
+		expectDutsHealthFromSwarming(tf, []*swarming.SwarmingRpcsBotInfo{
+			test.BotForDUT("link_cq_unhealthy", "repair_failed", "label-model:link"),
+			test.BotForDUT("link_suites_healthy", "ready", "label-model:link"),
+			test.BotForDUT("coral_cq_unhealthy", "repair_failed", "label-model:coral"),
+			test.BotForDUT("coral_suites_healthy", "ready", "label-model:coral"),
+		})
+
+		resp, err := tf.Inventory.BalancePools(tf.C, &fleet.BalancePoolsRequest{
+			SparePool:  "DUT_POOL_SUITES",
+			TargetPool: "DUT_POOL_CQ",
+			Options:    &fleet.BalancePoolsRequest_Options{Dryrun: true},
+		})
+
+		So(err, ShouldBeNil)
+		So(len(resp.ModelResult), ShouldEqual, 2)
+		fmt.Println(resp.ModelResult)
+		r, ok := resp.ModelResult["link"]
+		So(ok, ShouldBeTrue)
+		r2, ok := resp.ModelResult["coral"]
+		So(ok, ShouldBeTrue)
+		So(r.GetSparePoolStatus().GetHealthyCount(), ShouldEqual, 0)
+		So(r.GetTargetPoolStatus().GetSize(), ShouldEqual, 1)
+		So(r.GetTargetPoolStatus().GetHealthyCount(), ShouldEqual, 1)
+		So(r2.GetSparePoolStatus().GetHealthyCount(), ShouldEqual, 0)
+		So(r2.GetTargetPoolStatus().GetSize(), ShouldEqual, 1)
+		So(r2.GetTargetPoolStatus().GetHealthyCount(), ShouldEqual, 1)
+
+		changes := collectChanges(resp.ModelResult)
+		mc := poolChangeMap(changes)
+		So(mc, ShouldResemble, map[string]*partialPoolChange{
+			"link_cq_unhealthy": {
+				OldPool: "DUT_POOL_CQ",
+				NewPool: "DUT_POOL_SUITES",
+			},
+			"link_suites_healthy": {
+				OldPool: "DUT_POOL_SUITES",
+				NewPool: "DUT_POOL_CQ",
+			},
+			"coral_cq_unhealthy": {
+				OldPool: "DUT_POOL_CQ",
+				NewPool: "DUT_POOL_SUITES",
+			},
+			"coral_suites_healthy": {
+				OldPool: "DUT_POOL_SUITES",
+				NewPool: "DUT_POOL_CQ",
+			},
+		})
+		So(r.Failures, ShouldHaveLength, 0)
+	})
+	Convey("BalancePools (dryrun) succeeds with no changes for empty inventory", t, func() {
+		tf, validate := newTestFixture(t)
+		defer validate()
+
+		err := setGitilesDUTs(tf.C, tf.FakeGitiles, []testInventoryDut{})
+		So(err, ShouldBeNil)
+		expectDutsHealthFromSwarming(tf, []*swarming.SwarmingRpcsBotInfo{})
+
+		resp, err := tf.Inventory.BalancePools(tf.C, &fleet.BalancePoolsRequest{
+			SparePool:  "suites",
+			TargetPool: "cq",
+			Options:    &fleet.BalancePoolsRequest_Options{Dryrun: true},
+		})
+		So(err, ShouldBeNil)
+		So(resp.ModelResult, ShouldBeNil)
+	})
+
+	Convey("BalancePools (dryrun) swaps no DUT with all DUTs healthy", t, func() {
+		tf, validate := newTestFixture(t)
+		defer validate()
+
+		err := setGitilesDUTs(tf.C, tf.FakeGitiles, []testInventoryDut{
+			{"link_cq_healthy", "link_cq_healthy", "link", "DUT_POOL_CQ"},
+			{"link_suites_healthy", "link_suites_healthy", "link", "DUT_POOL_SUITES"},
+		})
+		So(err, ShouldBeNil)
+
+		expectDutsHealthFromSwarming(tf, []*swarming.SwarmingRpcsBotInfo{
+			test.BotForDUT("link_cq_healthy", "ready", "label-model:link"),
+			test.BotForDUT("link_suites_healthy", "ready", "label-model:link"),
+		})
+
+		resp, err := tf.Inventory.BalancePools(tf.C, &fleet.BalancePoolsRequest{
+			SparePool:  "DUT_POOL_SUITES",
+			TargetPool: "DUT_POOL_CQ",
+			Options:    &fleet.BalancePoolsRequest_Options{Dryrun: true},
+		})
+		So(err, ShouldBeNil)
+		r, ok := resp.ModelResult["link"]
+		So(ok, ShouldBeTrue)
+		fmt.Println(r)
+		So(r.GetSparePoolStatus().GetSize(), ShouldEqual, 1)
+		So(r.GetSparePoolStatus().GetHealthyCount(), ShouldEqual, 1)
+		So(r.GetTargetPoolStatus().GetSize(), ShouldEqual, 1)
+		So(r.GetTargetPoolStatus().GetHealthyCount(), ShouldEqual, 1)
+		So(r.Changes, ShouldHaveLength, 0)
+		So(r.Failures, ShouldHaveLength, 0)
+	})
+	Convey("BalancePools (dryrun) swaps one DUT with one DUT needed and one available", t, func() {
+		tf, validate := newTestFixture(t)
+		defer validate()
+
+		err := setGitilesDUTs(tf.C, tf.FakeGitiles, []testInventoryDut{
+			{"link_cq_unhealthy", "link_cq_unhealthy", "link", "DUT_POOL_CQ"},
+			{"link_suites_healthy", "link_suites_healthy", "link", "DUT_POOL_SUITES"},
+		})
+		So(err, ShouldBeNil)
+
+		expectDutsHealthFromSwarming(tf, []*swarming.SwarmingRpcsBotInfo{
+			test.BotForDUT("link_cq_unhealthy", "repair_failed", "label-model:link"),
+			test.BotForDUT("link_suites_healthy", "ready", "label-model:link"),
+		})
+
+		resp, err := tf.Inventory.BalancePools(tf.C, &fleet.BalancePoolsRequest{
+			DutSelector: &fleet.DutSelector{
+				Model: "link",
+			},
+			SparePool:  "DUT_POOL_SUITES",
+			TargetPool: "DUT_POOL_CQ",
+			Options:    &fleet.BalancePoolsRequest_Options{Dryrun: true},
+		})
+
+		So(err, ShouldBeNil)
+		So(len(resp.ModelResult), ShouldEqual, 1)
+		r, ok := resp.ModelResult["link"]
+		So(ok, ShouldBeTrue)
+		So(r.GetSparePoolStatus().GetHealthyCount(), ShouldEqual, 0)
+		So(r.GetTargetPoolStatus().GetSize(), ShouldEqual, 1)
+		So(r.GetTargetPoolStatus().GetHealthyCount(), ShouldEqual, 1)
+
+		changes := collectChanges(resp.ModelResult)
+		mc := poolChangeMap(changes)
+		So(mc, ShouldResemble, map[string]*partialPoolChange{
+			"link_cq_unhealthy": {
+				OldPool: "DUT_POOL_CQ",
+				NewPool: "DUT_POOL_SUITES",
+			},
+			"link_suites_healthy": {
+				OldPool: "DUT_POOL_SUITES",
+				NewPool: "DUT_POOL_CQ",
+			},
+		})
+		So(r.Failures, ShouldHaveLength, 0)
+	})
+
+	Convey("BalancePools (dryrun) swaps one DUT and reports failure with two DUTs needed but one available", t, func() {
+		tf, validate := newTestFixture(t)
+		defer validate()
+
+		err := setGitilesDUTs(tf.C, tf.FakeGitiles, []testInventoryDut{
+			{"link_cq_unhealthy_1", "link_cq_unhealthy_1", "link", "DUT_POOL_CQ"},
+			{"link_cq_unhealthy_2", "link_cq_unhealthy_2", "link", "DUT_POOL_CQ"},
+			{"link_suites_healthy", "link_suites_healthy", "link", "DUT_POOL_SUITES"},
+		})
+		So(err, ShouldBeNil)
+		expectDutsHealthFromSwarming(tf, []*swarming.SwarmingRpcsBotInfo{
+			test.BotForDUT("link_cq_unhealthy_1", "repair_failed", "label-model:link"),
+			test.BotForDUT("link_cq_unhealthy_2", "repair_failed", "label-model:link"),
+			test.BotForDUT("link_suites_healthy", "ready", "label-model:link"),
+		})
+
+		resp, err := tf.Inventory.BalancePools(tf.C, &fleet.BalancePoolsRequest{
+			SparePool:  "DUT_POOL_SUITES",
+			TargetPool: "DUT_POOL_CQ",
+			Options:    &fleet.BalancePoolsRequest_Options{Dryrun: true},
+		})
+
+		So(err, ShouldBeNil)
+		r, ok := resp.ModelResult["link"]
+		So(ok, ShouldBeTrue)
+		So(r.GetSparePoolStatus().GetSize(), ShouldEqual, 1)
+		So(r.GetSparePoolStatus().GetHealthyCount(), ShouldEqual, 0)
+		So(r.GetTargetPoolStatus().GetSize(), ShouldEqual, 2)
+		So(r.GetTargetPoolStatus().GetHealthyCount(), ShouldEqual, 1)
+
+		changes := collectChanges(resp.ModelResult)
+		mc := poolChangeMap(changes)
+		So(mc["link_suites_healthy"], ShouldResemble, &partialPoolChange{
+			OldPool: "DUT_POOL_SUITES",
+			NewPool: "DUT_POOL_CQ",
+		})
+		if d, ok := mc["link_cq_unhealthy_1"]; ok {
+			So(d, ShouldResemble, &partialPoolChange{
+				OldPool: "DUT_POOL_CQ",
+				NewPool: "DUT_POOL_SUITES",
+			})
+		} else if d, ok := mc["link_cq_unhealthy_2"]; ok {
+			So(d, ShouldResemble, &partialPoolChange{
+				OldPool: "DUT_POOL_CQ",
+				NewPool: "DUT_POOL_SUITES",
+			})
+		} else {
+			t.Error("no DUT swapped out of target pool")
+		}
+
+		So(collectFailures(resp.ModelResult), ShouldResemble, []fleet.EnsurePoolHealthyResponse_Failure{fleet.EnsurePoolHealthyResponse_NOT_ENOUGH_HEALTHY_SPARES})
+	})
+
+	Convey("BalancePools (dryrun) treats target DUT with unknown health as unhealthy", t, func() {
+		tf, validate := newTestFixture(t)
+		defer validate()
+
+		err := setGitilesDUTs(tf.C, tf.FakeGitiles, []testInventoryDut{
+			{"link_cq_unknown", "link_cq_unknown", "link", "DUT_POOL_CQ"},
+			{"link_suites_healthy", "link_suites_healthy", "link", "DUT_POOL_SUITES"},
+		})
+		So(err, ShouldBeNil)
+		expectDutsHealthFromSwarming(tf, []*swarming.SwarmingRpcsBotInfo{
+			test.BotForDUT("link_cq_unknown", "unknown", "label-model:link"),
+			test.BotForDUT("link_suites_healthy", "ready", "label-model:link"),
+		})
+
+		resp, err := tf.Inventory.BalancePools(tf.C, &fleet.BalancePoolsRequest{
+			SparePool:  "DUT_POOL_SUITES",
+			TargetPool: "DUT_POOL_CQ",
+			Options:    &fleet.BalancePoolsRequest_Options{Dryrun: true},
+		})
+
+		So(err, ShouldBeNil)
+		r, ok := resp.ModelResult["link"]
+		So(ok, ShouldBeTrue)
+		So(r.GetSparePoolStatus().GetSize(), ShouldEqual, 1)
+		So(r.GetSparePoolStatus().GetHealthyCount(), ShouldEqual, 0)
+		So(r.GetTargetPoolStatus().GetSize(), ShouldEqual, 1)
+		So(r.GetTargetPoolStatus().GetHealthyCount(), ShouldEqual, 1)
+
+		changes := collectChanges(resp.ModelResult)
+		mc := poolChangeMap(changes)
+		So(mc, ShouldResemble, map[string]*partialPoolChange{
+			"link_cq_unknown": {
+				OldPool: "DUT_POOL_CQ",
+				NewPool: "DUT_POOL_SUITES",
+			},
+			"link_suites_healthy": {
+				OldPool: "DUT_POOL_SUITES",
+				NewPool: "DUT_POOL_CQ",
+			},
+		})
+
+		So(collectFailures(resp.ModelResult), ShouldHaveLength, 0)
+	})
+
+	Convey("BalancePools (dryrun) swaps no DUTs and reports failure with too many unhealthy DUTs", t, func() {
+		tf, validate := newTestFixture(t)
+		defer validate()
+
+		err := setGitilesDUTs(tf.C, tf.FakeGitiles, []testInventoryDut{
+			{"link_cq_unhealthy_1", "link_cq_unhealthy_1", "link", "DUT_POOL_CQ"},
+			{"link_cq_unhealthy_2", "link_cq_unhealthy_2", "link", "DUT_POOL_CQ"},
+		})
+		So(err, ShouldBeNil)
+
+		expectDutsHealthFromSwarming(tf, []*swarming.SwarmingRpcsBotInfo{
+			test.BotForDUT("link_cq_unhealthy_1", "repair_failed", "label-model:link"),
+			test.BotForDUT("link_cq_unhealthy_2", "repair_failed", "label-model:link"),
+		})
+
+		resp, err := tf.Inventory.BalancePools(tf.C, &fleet.BalancePoolsRequest{
+			SparePool:        "DUT_POOL_SUITES",
+			TargetPool:       "DUT_POOL_CQ",
+			MaxUnhealthyDuts: 1,
+			Options:          &fleet.BalancePoolsRequest_Options{Dryrun: true},
+		})
+
+		So(err, ShouldBeNil)
+		r, ok := resp.ModelResult["link"]
+		So(ok, ShouldBeTrue)
+		So(r.GetTargetPoolStatus().GetSize(), ShouldEqual, 2)
+		So(r.GetTargetPoolStatus().GetHealthyCount(), ShouldEqual, 0)
+		So(r.Changes, ShouldHaveLength, 0)
+		So(r.Failures, ShouldResemble, []fleet.EnsurePoolHealthyResponse_Failure{fleet.EnsurePoolHealthyResponse_TOO_MANY_UNHEALTHY_DUTS})
+	})
+}
+
+func TestBalancePoolsCommit(t *testing.T) {
+	Convey("BalancePools commits expected changes to gerrit", t, func(c C) {
+		tf, validate := newTestFixture(t)
+		defer validate()
+
+		err := setGitilesDUTs(tf.C, tf.FakeGitiles, []testInventoryDut{
+			{"link_cq_unhealthy", "link_cq_unhealthy", "link", "DUT_POOL_CQ"},
+			{"link_suites_healthy", "link_suites_healthy", "link", "DUT_POOL_SUITES"},
+			{"coral_cq_unhealthy", "coral_cq_unhealthy", "coral", "DUT_POOL_CQ"},
+			{"coral_suites_healthy", "coral_suites_healthy", "coral", "DUT_POOL_SUITES"},
+		})
+		So(err, ShouldBeNil)
+
+		expectDutsHealthFromSwarming(tf, []*swarming.SwarmingRpcsBotInfo{
+			test.BotForDUT("link_cq_unhealthy", "repair_failed", "label-model:link"),
+			test.BotForDUT("link_suites_healthy", "ready", "label-model:link"),
+			test.BotForDUT("coral_cq_unhealthy", "repair_failed", "label-model:coral"),
+			test.BotForDUT("coral_suites_healthy", "ready", "label-model:coral"),
+		})
+
+		_, err = tf.Inventory.BalancePools(tf.C, &fleet.BalancePoolsRequest{
+			SparePool:  "DUT_POOL_SUITES",
+			TargetPool: "DUT_POOL_CQ",
+		})
+		So(err, ShouldBeNil)
+
+		assertLabInventoryChange(c, tf.FakeGerrit, []testInventoryDut{
+			{"link_cq_unhealthy", "link_cq_unhealthy", "link", "DUT_POOL_SUITES"},
+			{"link_suites_healthy", "link_suites_healthy", "link", "DUT_POOL_CQ"},
+			{"coral_cq_unhealthy", "coral_cq_unhealthy", "coral", "DUT_POOL_SUITES"},
+			{"coral_suites_healthy", "coral_suites_healthy", "coral", "DUT_POOL_CQ"},
+		})
+	})
+}
 
 func TestEnsurePoolHealthyDryrun(t *testing.T) {
 	Convey("EnsurePoolHealthy(dryrun) fails with no DutSelector", t, func() {
@@ -587,10 +910,11 @@ func assertLabInventoryChange(c C, fg *fakes.GerritClient, duts []testInventoryD
 	var expectedLab inventory.Lab
 	err = inventory.LoadLabFromString(string(inventoryBytesFromDUTs(duts)), &expectedLab)
 	So(err, ShouldBeNil)
-	if !proto.Equal(&actualLab, &expectedLab) {
-		prettyPrintLabDiff(c, &expectedLab, &actualLab)
-		So(proto.Equal(&actualLab, &expectedLab), ShouldBeTrue)
-	}
+	// Sort before comparison
+	want, _ := inventory.WriteLabToString(&expectedLab)
+	got, _ := inventory.WriteLabToString(&actualLab)
+	c.Printf("submitted incorrect lab -want +got: %s", pretty.Compare(strings.Split(want, "\n"), strings.Split(got, "\n")))
+	So(want, ShouldEqual, got)
 }
 
 func expectDutsWithHealth(t *fleet.MockTrackerServer, dutHealths map[string]fleet.Health) {
@@ -598,8 +922,16 @@ func expectDutsWithHealth(t *fleet.MockTrackerServer, dutHealths map[string]flee
 	t.EXPECT().SummarizeBots(gomock.Any(), gomock.Any()).AnyTimes().DoAndReturn(ft.SummarizeBots)
 }
 
-func prettyPrintLabDiff(c C, want, got *inventory.Lab) {
-	w, _ := inventory.WriteLabToString(want)
-	g, _ := inventory.WriteLabToString(got)
-	c.Printf("submitted incorrect lab -want +got: %s", pretty.Compare(strings.Split(w, "\n"), strings.Split(g, "\n")))
+func expectDutsHealthFromSwarming(tf testFixture, bots []*swarming.SwarmingRpcsBotInfo) {
+	tf.MockSwarming.EXPECT().ListAliveBotsInPool(
+		gomock.Any(), gomock.Eq(config.Get(tf.C).Swarming.BotPool), gomock.Any(),
+	).AnyTimes().DoAndReturn(test.FakeListAliveBotsInPool(bots))
+}
+
+func collectFailures(mrs map[string]*fleet.EnsurePoolHealthyResponse) []fleet.EnsurePoolHealthyResponse_Failure {
+	ret := make([]fleet.EnsurePoolHealthyResponse_Failure, 0)
+	for _, res := range mrs {
+		ret = append(ret, res.Failures...)
+	}
+	return ret
 }

@@ -1,4 +1,8 @@
 cron:
+- description: balance critical pools.
+  url: /internal/cron/balance-pools
+  schedule: every 4 hours
+
 - description: push labstations for repair tasks
   url: /internal/cron/push-repair-jobs-for-labstations
   schedule: every 60 minutes

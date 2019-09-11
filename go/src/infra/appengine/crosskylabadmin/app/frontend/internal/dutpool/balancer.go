@@ -54,6 +54,21 @@ func NewBalancer(duts []*inventory.DeviceUnderTest, target, spare string) (*Bala
 	return pb, nil
 }
 
+// FillInHealth fills in the health info for each DUT.
+func (pb *Balancer) FillInHealth(botsHealth map[string]fleet.Health) {
+	for d := range pb.Target {
+		if val, ok := botsHealth[d]; ok {
+			pb.Target[d] = val
+		}
+	}
+
+	for d := range pb.Spare {
+		if val, ok := botsHealth[d]; ok {
+			pb.Spare[d] = val
+		}
+	}
+}
+
 // TargetHealthyCount counts the number of healthy DUTs in the target pool.
 func (pb *Balancer) TargetHealthyCount() int {
 	return len(getHealthy(pb.Target))

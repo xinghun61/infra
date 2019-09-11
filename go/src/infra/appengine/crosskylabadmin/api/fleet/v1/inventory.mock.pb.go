@@ -154,6 +154,26 @@ func (mr *MockInventoryClientMockRecorder) EnsurePoolHealthyForAllModels(ctx, in
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "EnsurePoolHealthyForAllModels", reflect.TypeOf((*MockInventoryClient)(nil).EnsurePoolHealthyForAllModels), varargs...)
 }
 
+// BalancePools mocks base method
+func (m *MockInventoryClient) BalancePools(ctx context.Context, in *BalancePoolsRequest, opts ...grpc.CallOption) (*BalancePoolsResponse, error) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "BalancePools", varargs...)
+	ret0, _ := ret[0].(*BalancePoolsResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// BalancePools indicates an expected call of BalancePools
+func (mr *MockInventoryClientMockRecorder) BalancePools(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BalancePools", reflect.TypeOf((*MockInventoryClient)(nil).BalancePools), varargs...)
+}
+
 // ResizePool mocks base method
 func (m *MockInventoryClient) ResizePool(ctx context.Context, in *ResizePoolRequest, opts ...grpc.CallOption) (*ResizePoolResponse, error) {
 	m.ctrl.T.Helper()
@@ -485,6 +505,21 @@ func (m *MockInventoryServer) EnsurePoolHealthyForAllModels(arg0 context.Context
 func (mr *MockInventoryServerMockRecorder) EnsurePoolHealthyForAllModels(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "EnsurePoolHealthyForAllModels", reflect.TypeOf((*MockInventoryServer)(nil).EnsurePoolHealthyForAllModels), arg0, arg1)
+}
+
+// BalancePools mocks base method
+func (m *MockInventoryServer) BalancePools(arg0 context.Context, arg1 *BalancePoolsRequest) (*BalancePoolsResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "BalancePools", arg0, arg1)
+	ret0, _ := ret[0].(*BalancePoolsResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// BalancePools indicates an expected call of BalancePools
+func (mr *MockInventoryServerMockRecorder) BalancePools(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BalancePools", reflect.TypeOf((*MockInventoryServer)(nil).BalancePools), arg0, arg1)
 }
 
 // ResizePool mocks base method
