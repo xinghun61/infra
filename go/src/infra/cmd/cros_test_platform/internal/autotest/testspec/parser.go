@@ -153,9 +153,23 @@ func splitAndTrimCommaList(cl string) []string {
 }
 
 func parseSuites(text string, tm *testMetadata) {
+	tm.Suites = extractSingleLineSuites(text)
+	tm.Suites = append(tm.Suites, extractMultilineSuites(text)...)
+}
+
+func extractSingleLineSuites(text string) []string {
 	ms := findMatchesInAllLines(text, attributesPattern)
-	cl := unwrapLastSubmatch(ms, "parseSuites")
-	tm.Suites = findAndStripPrefixFromEach(splitAndTrimCommaList(cl), "suite:")
+	attrs := unwrapLastSubmatch(ms, "extractSingleLineSuites")
+	return extractSuitesFromAttributes(attrs)
+}
+
+func extractMultilineSuites(text string) []string {
+	attrs := extractMultilineAttributes(text)
+	return extractSuitesFromAttributes(attrs)
+}
+
+func extractSuitesFromAttributes(s string) []string {
+	return findAndStripPrefixFromEach(splitAndTrimCommaList(s), "suite:")
 }
 
 func findAndStripPrefixFromEach(ss []string, prefix string) []string {
@@ -166,6 +180,50 @@ func findAndStripPrefixFromEach(ss []string, prefix string) []string {
 		}
 	}
 	return ret
+}
+
+func extractMultilineAttributes(text string) string {
+	s := unwrapLastSubmatch(multilineAttributesPattern.FindAllStringSubmatch(text, -1), "parseMultilineSuites")
+	return mergeAttributeLines(s)
+}
+
+// mergeAttributeLines returns the empty string for corrupted multi-line
+// attributes (e.g. 'something with non-matching quotes").
+func mergeAttributeLines(s string) string {
+	ls := strings.Split(s, "\n")
+	m := ""
+	for _, el := range ls {
+		el = strings.Trim(el, " \t")
+		if el == "" {
+			continue
+		}
+		el, ok := stripMatchingQuotes(el)
+		if !ok {
+			return ""
+		}
+		m += el
+	}
+	return m
+}
+
+// stripMatchingQuotes strips out matching quotes from the given string.
+// bool return value indicates if the incoming string was well-formed and
+// successfully unquoted.
+func stripMatchingQuotes(s string) (string, bool) {
+	if len(s) < 2 {
+		return "", false
+	}
+	if hasSurroundingCharacter(s, "'") || hasSurroundingCharacter(s, "\"") {
+		return s[1 : len(s)-1], true
+	}
+	return "", false
+}
+
+func hasSurroundingCharacter(s string, c string) bool {
+	if len(s) < 2 {
+		panic(fmt.Sprintf("hasSurroundingCharacter called with too-short string \"%s\"", s))
+	}
+	return strings.HasPrefix(s, c) && strings.HasSuffix(s, c)
 }
 
 func parseSuiteName(text string, as *api.AutotestSuite) {
@@ -182,11 +240,12 @@ func parseChildDependencies(text string, as *api.AutotestSuite) {
 }
 
 var (
-	namePattern              = regexp.MustCompile(`^\s*NAME\s*=\s*['"]([\w\.-]+)['"]\s*`)
-	testTypePattern          = regexp.MustCompile(`^\s*TEST_TYPE\s*=\s*['"](\w+)['"]\s*`)
-	syncCountPattern         = regexp.MustCompile(`^\s*SYNC_COUNT\s*=\s*(\d+)\s*`)
-	retriesPattern           = regexp.MustCompile(`^\s*JOB_RETRIES\s*=\s*(\d+)\s*`)
-	dependenciesPattern      = regexp.MustCompile(`^\s*DEPENDENCIES\s*=\s*['"]([\s\w\.,:-]+)['"]\s*`)
-	attributesPattern        = regexp.MustCompile(`^\s*ATTRIBUTES\s*=\s*['"]([\s\w\.,:-]+)['"]\s*`)
-	suiteDependenciesPattern = regexp.MustCompile(`^\s*args_dict\s*\[\s*['"]suite_dependencies['"]\s*\]\s*=\s*['"]([\s\w\.,:-]+)['"]\s*`)
+	namePattern                = regexp.MustCompile(`^\s*NAME\s*=\s*['"]([\w\.-]+)['"]\s*`)
+	testTypePattern            = regexp.MustCompile(`^\s*TEST_TYPE\s*=\s*['"](\w+)['"]\s*`)
+	syncCountPattern           = regexp.MustCompile(`^\s*SYNC_COUNT\s*=\s*(\d+)\s*`)
+	retriesPattern             = regexp.MustCompile(`^\s*JOB_RETRIES\s*=\s*(\d+)\s*`)
+	dependenciesPattern        = regexp.MustCompile(`^\s*DEPENDENCIES\s*=\s*['"]([\s\w\.,:-]+)['"]\s*`)
+	attributesPattern          = regexp.MustCompile(`^\s*ATTRIBUTES\s*=\s*[\(]?\s*['"]([\s\w\.,:-]+)['"]\s*[\)]?\s*`)
+	multilineAttributesPattern = regexp.MustCompile(`^\s*ATTRIBUTES\s*=\s*\(((?:\n*\s*(?:['"][\s\w\.,:-]+['"])\s*\n*)*)\)\s*`)
+	suiteDependenciesPattern   = regexp.MustCompile(`^\s*args_dict\s*\[\s*['"]suite_dependencies['"]\s*\]\s*=\s*['"]([\s\w\.,:-]+)['"]\s*`)
 )

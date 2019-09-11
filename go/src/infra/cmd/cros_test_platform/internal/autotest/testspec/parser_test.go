@@ -192,6 +192,22 @@ func TestParseTestControlSuites(t *testing.T) {
 		{"one suite", `ATTRIBUTES = 'suite:network_nightly'`, stringset.NewFromSlice("network_nightly")},
 		{"two suites", `ATTRIBUTES = "suite:bvt, suite:bvt-inline"`, stringset.NewFromSlice("bvt", "bvt-inline")},
 		{"one suite in context", `ATTRIBUTES = "suite:cts,another_attribute"`, stringset.NewFromSlice("cts")},
+		{"suite in parens", `ATTRIBUTES = ('suite:network_nightly')`, stringset.NewFromSlice("network_nightly")},
+		{"suite in parens and space", `ATTRIBUTES = ( 'suite:network_nightly' )`, stringset.NewFromSlice("network_nightly")},
+		{
+			"suite in parens and newline with spaces",
+			`ATTRIBUTES = ('suite:network_nightly,'
+                           "suite:cq")`,
+			stringset.NewFromSlice("network_nightly", "cq"),
+		},
+		{
+			"suite in parens and newline with tabs",
+			`ATTRIBUTES = (
+				'suite:network_nightly,'
+				"suite:cq"
+			)`,
+			stringset.NewFromSlice("network_nightly", "cq"),
+		},
 	}
 
 	for _, c := range cases {
