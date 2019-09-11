@@ -144,7 +144,7 @@ func splitAndTrimCommaList(cl string) []string {
 	ret := []string{}
 	ss := strings.Split(cl, ",")
 	for _, s := range ss {
-		s = strings.Trim(s, " ")
+		s = strings.Trim(s, " \t")
 		if s != "" {
 			ret = append(ret, s)
 		}
