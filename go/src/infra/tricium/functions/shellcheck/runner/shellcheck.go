@@ -143,7 +143,7 @@ type Warning struct {
 	Level     string `json:"level"`
 	Code      int32  `json:"code"`
 	Message   string `json:"message"`
-	Fix       string `json:"fix"`
+	// TODO(crbug.com/894543): Parse the fix field and turn it into tricium Suggestions.
 }
 
 // Comments represents a dict containing a list of Warnings emitted by shellcheck.

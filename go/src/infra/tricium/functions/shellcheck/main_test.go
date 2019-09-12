@@ -65,7 +65,7 @@ func TestRun(t *testing.T) {
 		})
 
 		Convey("There should be two comments", func() {
-			So(len(comments), ShouldEqual, 3)
+			So(len(comments), ShouldEqual, 4)
 		})
 
 		Convey("Comments should have specific contents", func() {
@@ -96,6 +96,15 @@ func TestRun(t *testing.T) {
 					"endLine":   float64(6),
 					"startChar": float64(6),
 					"endChar":   float64(6),
+				},
+				{
+					"category":  "ShellCheck/SC2086",
+					"message":   "info: Double quote to prevent globbing and word splitting.\n\nhttps://github.com/koalaman/shellcheck/wiki/SC2086",
+					"path":      "bad.sh",
+					"startLine": float64(8),
+					"endLine":   float64(8),
+					"startChar": float64(5),
+					"endChar":   float64(9),
 				},
 			})
 		})
