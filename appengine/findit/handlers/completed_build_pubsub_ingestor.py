@@ -11,12 +11,14 @@ import urlparse
 
 from google.appengine.api import taskqueue
 from google.appengine.ext import ndb
+from google.protobuf import json_format
 from google.protobuf.field_mask_pb2 import FieldMask
 
 from gae_libs import appengine_util
 from gae_libs.handlers.base_handler import BaseHandler
 from gae_libs.handlers.base_handler import Permission
 
+from common import constants
 from common.waterfall.buildbucket_client import GetV2Build
 from model.isolated_target import IsolatedTarget
 
@@ -70,6 +72,11 @@ class CompletedBuildPubsubIngestor(BaseHandler):
                                        int(build_id), build_result)
         if project == 'chromium':
           # Only ingests chromium builds.
+
+          # TODO (crbug.com/966982): Remove when v2 for chromium is working.
+          _TriggerV1AnalysisForChromiumBuildIfNeeded(bucket, builder_name,
+                                                     int(build_id),
+                                                     build_result)
           return _IngestProto(int(build_id))
     # We don't care about pending or non-supported builds, so we accept the
     # notification by returning 200, and prevent pubsub from retrying it.
@@ -135,12 +142,11 @@ def _IngestProto(build_id):
   # Sanity check.
   assert build_id == build.id
 
-  properties_struct = build.output.properties
   commit = build.input.gitiles_commit
   patches = build.input.gerrit_changes
 
   # Convert the Struct to standard dict, to use .get, .iteritems etc.
-  properties = dict(properties_struct.items())
+  properties = json_format.MessageToDict(build.output.properties)
 
   swarm_hashes_properties = {}
   for k, v in properties.iteritems():
@@ -208,3 +214,49 @@ def _IngestProto(build_id):
               revision=properties.get('got_revision')))
   result = [key.pairs() for key in ndb.put_multi(entities)]
   return {'data': {'created_rows': result}}
+
+
+def _TriggerV1AnalysisForChromiumBuildIfNeeded(bucket, builder_name, build_id,
+                                               build_result):
+  """Temporary solution of triggering v1 analysis until v2 is ready."""
+  if bucket != 'ci':
+    return
+
+  if build_result != 'FAILURE':
+    logging.debug('Build %d is not a failure', build_id)
+    return
+
+  assert build_id
+  build = GetV2Build(
+      build_id, fields=FieldMask(paths=['id', 'number', 'output.properties']))
+
+  # Sanity check.
+  assert build, 'Failed to download build for {}.'.format(build_id)
+  assert build_id == build.id, (
+      'Build id {} is different from the requested id {}.'.format(
+          build.id, build_id))
+  assert build.number, 'No build_number for chromium build {}'.format(build_id)
+
+  # Converts the Struct to standard dict, to use .get, .iteritems etc.
+  properties = json_format.MessageToDict(build.output.properties)
+  master_name = properties.get('target_mastername',
+                               properties.get('mastername'))
+  if not master_name:
+    logging.error('Build %d does not have expected "mastername" property',
+                  build_id)
+    return
+
+  build_info = {
+      'master_name': master_name,
+      'builder_name': builder_name,
+      'build_number': build.number,
+  }
+
+  logging.info('Triggering v1 analysis for chromium build %d', build_id)
+  target = appengine_util.GetTargetNameForModule(constants.WATERFALL_BACKEND)
+  payload = json.dumps({'builds': [build_info]})
+  taskqueue.add(
+      url=constants.WATERFALL_PROCESS_FAILURE_ANALYSIS_REQUESTS_URL,
+      payload=payload,
+      target=target,
+      queue_name=constants.WATERFALL_FAILURE_ANALYSIS_REQUEST_QUEUE)
