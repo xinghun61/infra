@@ -23,13 +23,15 @@ const (
 	// no quota account or have an empty quota account.
 	FreeBucket Priority = NumPriorities
 
+	// TODO(akeshet): Make the following thresholds configurable.
+
 	// PromoteThreshold is the account balance at which the scheduler will consider
 	// promoting jobs.
-	PromoteThreshold = 5.0
+	PromoteThreshold = 600.0
 
 	// DemoteThreshold is the account balance at which the scheduler will consider
 	// demoting jobs.
-	DemoteThreshold = -5.0
+	DemoteThreshold = -600.0
 )
 
 // AccountConfig represents a single account's config. It is the native struct
