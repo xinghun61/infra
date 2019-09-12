@@ -285,13 +285,13 @@ func balancePoolCronHandler(c *router.Context) (err error) {
 	inv := createInventoryServer(c)
 	merr := make(errors.MultiError, 0)
 	for _, target := range cfg.GetTargetPools() {
-		resp, err := inv.EnsurePoolHealthy(c.Context, &fleet.EnsurePoolHealthyRequest{
+		resp, err := inv.BalancePools(c.Context, &fleet.BalancePoolsRequest{
 			TargetPool:       target,
 			SparePool:        cfg.GetSparePool(),
 			MaxUnhealthyDuts: cfg.GetMaxUnhealthyDuts(),
 		})
 		if err != nil {
-			logging.Errorf(c.Context, "Error ensuring pool health for %s: %s", target, err.Error())
+			logging.Errorf(c.Context, "Error in balancing pool for %s: %s", target, err.Error())
 			merr = append(merr, errors.Annotate(err, "ensure critical pools healthy for pool %s", target).Err())
 			continue
 		}
