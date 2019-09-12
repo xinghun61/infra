@@ -70,7 +70,7 @@ func (t *testRun) getAttempts() []*attempt {
 	return val
 }
 
-func (t *testRun) RequestArgs(params *test_platform.Request_Params, workerConfig *config.Config_SkylabWorker, parentTaskID string) (request.Args, error) {
+func (t *testRun) RequestArgs(ctx context.Context, params *test_platform.Request_Params, workerConfig *config.Config_SkylabWorker, parentTaskID string) (request.Args, error) {
 	isClient, err := t.isClientTest()
 	if err != nil {
 		return request.Args{}, errors.Annotate(err, "create request args").Err()
@@ -87,8 +87,8 @@ func (t *testRun) RequestArgs(params *test_platform.Request_Params, workerConfig
 	}
 
 	kv := getKeyvals(params, parentTaskID)
-	t.addKeyvalsForDisplayName(kv)
 	t.updateWithInvocationKeyvals(kv)
+	t.addKeyvalsForDisplayName(ctx, kv, params)
 
 	cmd := &worker.Command{
 		TaskName:        t.invocation.Test.Name,
@@ -118,14 +118,48 @@ func (t *testRun) RequestArgs(params *test_platform.Request_Params, workerConfig
 	return args, nil
 }
 
-func (t *testRun) addKeyvalsForDisplayName(kv map[string]string) {
+func (t *testRun) addKeyvalsForDisplayName(ctx context.Context, kv map[string]string, params *test_platform.Request_Params) {
 	const displayNameKey = "label"
-	switch {
-	case t.invocation.DisplayName != "":
+
+	if t.invocation.DisplayName != "" {
 		kv[displayNameKey] = t.invocation.DisplayName
-	default:
-		kv[displayNameKey] = t.invocation.GetTest().GetName()
+		return
 	}
+
+	testName := t.invocation.GetTest().GetName()
+	kv[displayNameKey] = constructDisplayNameFromRequestParams(ctx, kv, params, testName)
+}
+
+const (
+	suiteKey         = "suite"
+	defaultSuiteName = "cros_test_platform"
+)
+
+// This is a hack to satisfy tko/parse's insistence on parsing the display name
+// (aka "label") keyval to obtain semantic information about the request.
+// TODO(crbug.com/1003490): Drop this once result reporting is updated to stop
+// parsing the "label" keyval.
+func constructDisplayNameFromRequestParams(ctx context.Context, kv map[string]string, params *test_platform.Request_Params, testName string) string {
+	builds, err := common.ExtractBuilds(params.SoftwareDependencies)
+	if err != nil {
+		logging.Warningf(ctx,
+			"Failed to get build due to error %s\n Defaulting to test name as display name: %s",
+			err.Error(), testName)
+		return testName
+	}
+
+	build := builds.ChromeOS
+	if build == "" {
+		logging.Warningf(ctx, "Build missing. Defaulting to test name as display name: %s", testName)
+		return testName
+	}
+
+	suite := kv[suiteKey]
+	if suite == "" {
+		suite = defaultSuiteName
+	}
+
+	return build + "/" + suite + "/" + testName
 }
 
 func (t *testRun) updateWithInvocationKeyvals(kv map[string]string) {
@@ -233,7 +267,7 @@ func (r *TaskSet) launchAll(ctx context.Context, swarming swarming.Client) error
 }
 
 func (r *TaskSet) launchSingle(ctx context.Context, swarming swarming.Client, tr *testRun) error {
-	args, err := tr.RequestArgs(r.params, r.workerConfig, r.parentTaskID)
+	args, err := tr.RequestArgs(ctx, r.params, r.workerConfig, r.parentTaskID)
 	if err != nil {
 		return errors.Annotate(err, "launch test named %s", tr.invocation.Test.Name).Err()
 	}

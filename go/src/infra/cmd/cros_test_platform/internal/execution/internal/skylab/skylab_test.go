@@ -480,7 +480,7 @@ func TestRequestArguments(t *testing.T) {
 	})
 }
 
-var keyvalsPattern = regexp.MustCompile(`\-keyvals\s*\{([\w\s":,-]+)\}`)
+var keyvalsPattern = regexp.MustCompile(`\-keyvals\s*\{([\w\s":,-/]+)\}`)
 
 func extractKeyvalsArgument(cmd string) string {
 	ms := keyvalsPattern.FindAllStringSubmatch(cmd, -1)
@@ -543,6 +543,7 @@ func TestInvocationKeyvals(t *testing.T) {
 					flatCommand := strings.Join(slice.Properties.Command, " ")
 					keyvals := extractKeyvalsArgument(flatCommand)
 					So(keyvals, ShouldContainSubstring, `"suite":"someSuite"`)
+					So(keyvals, ShouldContainSubstring, `"label":"foo-build/someSuite/someTest"`)
 				}
 			})
 		})
@@ -564,6 +565,7 @@ func TestInvocationKeyvals(t *testing.T) {
 					flatCommand := strings.Join(slice.Properties.Command, " ")
 					keyvals := extractKeyvalsArgument(flatCommand)
 					So(keyvals, ShouldContainSubstring, `"suite":"someOtherSuite"`)
+					So(keyvals, ShouldContainSubstring, `"label":"foo-build/someOtherSuite/someTest"`)
 				}
 			})
 		})
