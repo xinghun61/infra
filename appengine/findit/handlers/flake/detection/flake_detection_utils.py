@@ -299,6 +299,28 @@ def GetFlakeInformation(flake, max_occurrence_count, with_occurrences=True):
   return flake_dict
 
 
+def RemoveDisabledFlakes(flakes):
+  """Filters out flakes which have been disabled.
+
+  A test is considered disabled if it appears in LuciTest with disabled test
+  variants.
+  TODO(crbug.com/1002944): Look for comments on an issue from bugdroid within
+  the past 7 days as indication that the flake is being actively worked on.
+
+  Args:
+    flakes (list): A list of Flakes.
+  Returns:
+    enabled_flakes (list): A list of flakes which are not disabled.
+  """
+  luci_test_keys = [ndb.Key('LuciTest', flake.key.id()) for flake in flakes]
+  luci_tests = ndb.get_multi(luci_test_keys)
+  enabled_flakes = []
+  for flake, luci_test in zip(flakes, luci_tests):
+    if not luci_test or not luci_test.disabled:
+      enabled_flakes.append(flake)
+  return enabled_flakes
+
+
 def GetFlakesByFilter(flake_filter,
                       luci_project,
                       cursor,

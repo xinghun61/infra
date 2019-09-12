@@ -11,6 +11,7 @@ from handlers.flake.detection import rank_flakes
 from libs import time_util
 from model.flake.flake import Flake
 from model.flake.flake_issue import FlakeIssue
+from model.test_inventory import LuciTest
 from services.flake_detection.detect_flake_occurrences import SUPPORTED_TAGS
 from waterfall.test.wf_testcase import WaterfallTestCase
 
@@ -113,6 +114,23 @@ class RankFlakesTest(WaterfallTestCase):
     self.flake6.flake_issue_key = self.flake_issue0.key
     self.flake6.tags = ['suite::suite', 'test_type::flavored_tests']
     self.flake6.put()
+
+    self.flake7 = Flake.Create(
+        luci_project=self.luci_project,
+        normalized_step_name=self.normalized_step_name,
+        normalized_test_name='suite.test7',
+        test_label_name='suite.test7')
+    self.flake7.false_rejection_count_last_week = 5
+    self.flake7.impacted_cl_count_last_week = 3
+    self.flake7.flake_score_last_week = 10800
+    self.flake7.last_occurred_time = datetime.datetime(2018, 10, 1)
+    self.flake7.put()
+
+    self.luci_test1 = LuciTest(
+        key=LuciTest.CreateKey(self.luci_project, self.normalized_step_name,
+                               'suite.test7'),
+        disabled_test_variants={('config1',)})
+    self.luci_test1.put()
 
     flake_issue0_dict = self.flake_issue0.to_dict()
     flake_issue0_dict['issue_link'] = FlakeIssue.GetLinkForIssue(

@@ -15,6 +15,7 @@ from model.flake.flake import Flake
 from model.flake.flake import TestLocation
 from model.flake.flake_issue import FlakeIssue
 from model.flake.flake_type import FlakeType
+from model.test_inventory import LuciTest
 from waterfall.test.wf_testcase import WaterfallTestCase
 
 
@@ -979,3 +980,22 @@ class FlakeDetectionUtilsTest(WaterfallTestCase):
 
     self.assertEqual(([], {}),
                      flake_detection_utils._GetFlakeAnalysesResults(123))
+
+  def testRemoveDisabledFlakes(self):
+    flake_1 = Flake.Create('a', 'b', '1', 'test_label')
+    flake_2 = Flake.Create('a', 'b', '2', 'test_label')
+    flake_3 = Flake.Create('a', 'b', '3', 'test_label')
+
+    luci_test_1 = LuciTest(
+        key=LuciTest.CreateKey('a', 'b', 1),
+        disabled_test_variants={('config',)},
+    )
+    luci_test_1.put()
+    luci_test_2 = LuciTest(
+        key=LuciTest.CreateKey('a', 'b', 2),
+        disabled_test_variants=set(),
+    )
+    luci_test_2.put()
+    self.assertEqual([flake_2, flake_3],
+                     flake_detection_utils.RemoveDisabledFlakes(
+                         [flake_1, flake_2, flake_3]))

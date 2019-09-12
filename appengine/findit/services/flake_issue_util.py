@@ -348,6 +348,12 @@ def GetFlakesWithEnoughOccurrences():
 
   key_to_flake = dict(zip(unique_flake_keys, flakes))
 
+  luci_test_keys = [
+      ndb.Key('LuciTest', flake_key.id()) for flake_key in unique_flake_keys
+  ]
+  luci_tests = ndb.get_multi(luci_test_keys)
+  key_to_luci_test = dict(zip(unique_flake_keys, luci_tests))
+
   # Filter out occurrences that have already been reported according to the
   # last update time of the associated flake issue.
   flake_key_to_enough_unreported_occurrences = {}
@@ -360,6 +366,12 @@ def GetFlakesWithEnoughOccurrences():
       continue
 
     flake_issue = GetFlakeIssue(flake_key.get())
+    # Do not update issues for flakes which have been disabled and the
+    # FlakeIssue is being tracked by LuciTest.
+    luci_test = key_to_luci_test.get(flake_key)
+    if (flake_issue and luci_test and luci_test.disabled and
+        flake_issue.key in luci_test.issue_keys):
+      continue
     last_updated_time_by_flake_detection = (
         flake_issue.last_updated_time_by_flake_detection
         if flake_issue else None)

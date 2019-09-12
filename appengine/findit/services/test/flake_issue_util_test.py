@@ -11,6 +11,7 @@ from model.flake.detection.flake_occurrence import FlakeOccurrence
 from model.flake.flake import Flake
 from model.flake.flake_issue import FlakeIssue
 from model.flake.flake_type import FlakeType
+from model.test_inventory import LuciTest
 from monorail_api import Issue
 from services import flake_issue_util
 from services import monorail_util
@@ -23,6 +24,18 @@ from waterfall.test.wf_testcase import WaterfallTestCase
 
 
 class FlakeReportUtilTest(WaterfallTestCase):
+
+  def _CreateLuciTest(self, normalized_step_name, normalized_test_name,
+                      disabled):
+    luci_test = LuciTest(
+        key=LuciTest.CreateKey(
+            'chromium',
+            normalized_step_name=normalized_step_name,
+            normalized_test_name=normalized_test_name))
+    if disabled:
+      luci_test.disabled_test_variants = {('config',)}
+    luci_test.put()
+    return luci_test
 
   def _CreateFlake(self,
                    normalized_step_name,
@@ -81,6 +94,7 @@ class FlakeReportUtilTest(WaterfallTestCase):
     patcher.start()
 
     self.flake = self._CreateFlake('step', 'test', 'test_label')
+    self.luci_test = self._CreateLuciTest('step', 'test', False)
     self._CreateFlakeOccurrence(111, 'step1', 'test1', 98765, self.flake.key)
     self._CreateFlakeOccurrence(
         222,
@@ -102,12 +116,44 @@ class FlakeReportUtilTest(WaterfallTestCase):
     self._CreateFlakeOccurrence(333, 'step1_3', 'test1_3', 98763,
                                 flake_with_higher_score.key)
 
+    flake_issue = FlakeIssue.Create(monorail_project='chromium', issue_id=900)
+    flake_issue.last_updated_time_by_flake_detection = (
+        self._GetDatetimeHoursAgo(25))
+    flake_issue.put()
+
+    disabled_flake1 = self._CreateFlake(
+        'step2', 'test2', 'test_label2', flake_score_last_week=90)
+    self._CreateFlakeOccurrence(111, 'step2_1', 'test2_1', 98765,
+                                disabled_flake1.key)
+    self._CreateFlakeOccurrence(222, 'step2_2', 'test2_2', 98764,
+                                disabled_flake1.key)
+    self._CreateFlakeOccurrence(333, 'step2_3', 'test2_3', 98763,
+                                disabled_flake1.key)
+    disabled_flake1.flake_issue_key = flake_issue.key
+    disabled_flake1.put()
+    disabled_luci_test1 = self._CreateLuciTest('step2', 'test2', True)
+
+    disabled_flake2 = self._CreateFlake(
+        'step3', 'test3', 'test_label3', flake_score_last_week=90)
+    self._CreateFlakeOccurrence(111, 'step3_1', 'test3_1', 98765,
+                                disabled_flake2.key)
+    self._CreateFlakeOccurrence(222, 'step3_2', 'test3_2', 98764,
+                                disabled_flake2.key)
+    self._CreateFlakeOccurrence(333, 'step3_3', 'test3_3', 98763,
+                                disabled_flake2.key)
+    disabled_flake2.flake_issue_key = flake_issue.key
+    disabled_flake2.put()
+    disabled_luci_test2 = self._CreateLuciTest('step3', 'test3', True)
+    disabled_luci_test2.issue_keys.append(flake_issue.key)
+    disabled_luci_test2.put()
+
     flakes_with_occurrences = flake_issue_util.GetFlakesWithEnoughOccurrences()
-    self.assertEqual(2, len(flakes_with_occurrences))
-    self.assertEqual(3, len(flakes_with_occurrences[1][1]))
-    self.assertIsNone(flakes_with_occurrences[1][2])
+    self.assertEqual(3, len(flakes_with_occurrences))
     self.assertEqual(flake_with_higher_score.key,
                      flakes_with_occurrences[0][0].key)
+    self.assertEqual(disabled_flake1.key, flakes_with_occurrences[1][0].key)
+    self.assertEqual(3, len(flakes_with_occurrences[2][1]))
+    self.assertIsNone(flakes_with_occurrences[2][2])
 
   # This test tests that in order for a flake to have enough occurrences, there
   # needs to be at least 3 (min_required_impacted_cls_per_day) occurrences
@@ -170,6 +216,25 @@ class FlakeReportUtilTest(WaterfallTestCase):
         ])).fetch()
     occurrences[2].time_detected = self._GetDatetimeHoursAgo(10)
     occurrences[2].put()
+
+    flakes_with_occurrences = flake_issue_util.GetFlakesWithEnoughOccurrences()
+    self.assertEqual(0, len(flakes_with_occurrences))
+
+  # This test tests that a flake issue is not updated if the flake is disabled
+  # and the FlakeIssue is being tracked by LuciTest.
+  def testIgnoreDisabledTestsWithIssueKey(self):
+    flake = Flake.query().fetch()[0]
+    flake_issue = FlakeIssue.Create(monorail_project='chromium', issue_id=900)
+    flake_issue.last_updated_time_by_flake_detection = (
+        self._GetDatetimeHoursAgo(25))
+    flake_issue.put()
+    flake.flake_issue_key = flake_issue.key
+    flake.put()
+
+    luci_test = LuciTest.query().fetch()[0]
+    luci_test.disabled_test_variants = {('config1',)}
+    luci_test.issue_keys.append(flake_issue.key)
+    luci_test.put()
 
     flakes_with_occurrences = flake_issue_util.GetFlakesWithEnoughOccurrences()
     self.assertEqual(0, len(flakes_with_occurrences))

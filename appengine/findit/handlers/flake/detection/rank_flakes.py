@@ -125,7 +125,10 @@ class RankFlakes(BaseHandler):
           luci_project, self.request.get('cursor'),
           self.request.get('direction').strip(), page_size)
 
-    flakes_data = flake_detection_utils.GenerateFlakesData(flakes, bool(bug_id))
+    enabled_flakes = flake_detection_utils.RemoveDisabledFlakes(flakes)
+
+    flakes_data = flake_detection_utils.GenerateFlakesData(
+        enabled_flakes, bool(bug_id))
 
     data = {
         'flakes_data':
