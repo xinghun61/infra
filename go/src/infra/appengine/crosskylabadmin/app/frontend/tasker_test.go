@@ -29,6 +29,7 @@ import (
 	"infra/appengine/crosskylabadmin/app/clients"
 	"infra/appengine/crosskylabadmin/app/config"
 	"infra/appengine/crosskylabadmin/app/frontend/internal/worker"
+	"infra/appengine/crosskylabadmin/app/frontend/test"
 )
 
 func TestRunTaskByDUTName(t *testing.T) {
@@ -363,7 +364,7 @@ func setKnownBotsInState(tf testFixture, duts []string, state string) {
 
 	bots := make([]*swarming.SwarmingRpcsBotInfo, 0, len(duts))
 	for _, d := range duts {
-		bots = append(bots, botForDUT(d, state, ""))
+		bots = append(bots, test.BotForDUT(d, state, ""))
 	}
 
 	tf.MockSwarming.EXPECT().ListAliveBotsInPool(

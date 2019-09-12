@@ -29,6 +29,7 @@ import (
 	"infra/appengine/crosskylabadmin/app/clients"
 	"infra/appengine/crosskylabadmin/app/config"
 	swarming_utils "infra/appengine/crosskylabadmin/app/frontend/internal/swarming"
+	"infra/appengine/crosskylabadmin/app/frontend/test"
 )
 
 const repairQ = "repair-bots"
@@ -55,8 +56,8 @@ func TestFlattenAndDuplicateBots(t *testing.T) {
 		defer validate()
 
 		sbots := []*swarming.SwarmingRpcsBotInfo{
-			botForDUT("dut_1", "ready", ""),
-			botForDUT("dut_2", "repair_failed", ""),
+			test.BotForDUT("dut_1", "ready", ""),
+			test.BotForDUT("dut_2", "repair_failed", ""),
 		}
 		tf.MockSwarming.EXPECT().ListAliveBotsInPool(
 			gomock.Any(), gomock.Eq(config.Get(tf.C).Swarming.BotPool), gomock.Any(),
@@ -73,8 +74,8 @@ func TestFlattenAndDuplicateBots(t *testing.T) {
 		defer validate()
 
 		sbots := []*swarming.SwarmingRpcsBotInfo{
-			botForDUT("dut_1", "ready", ""),
-			botForDUT("dut_1", "repair_failed", ""),
+			test.BotForDUT("dut_1", "ready", ""),
+			test.BotForDUT("dut_1", "repair_failed", ""),
 		}
 		tf.MockSwarming.EXPECT().ListAliveBotsInPool(
 			gomock.Any(), gomock.Eq(config.Get(tf.C).Swarming.BotPool), gomock.Any(),
@@ -93,11 +94,12 @@ func TestPushBotsForAdminTasks(t *testing.T) {
 		tqt := taskqueue.GetTestable(tf.C)
 		tqt.CreateQueue(repairQ)
 		tqt.CreateQueue(resetQ)
-		bot1 := botForDUT("dut_1", "needs_repair", "label-os_type:OS_TYPE_CROS")
-		bot2 := botForDUT("dut_2", "repair_failed", "label-os_type:OS_TYPE_CROS")
-		bot3 := botForDUT("dut_3", "needs_reset", "label-os_type:OS_TYPE_JETSTREAM")
+		bot1 := test.BotForDUT("dut_1", "needs_repair", "label-os_type:OS_TYPE_CROS")
+		bot2 := test.BotForDUT("dut_2", "repair_failed", "label-os_type:OS_TYPE_CROS")
+		bot3 := test.BotForDUT("dut_3", "needs_reset", "label-os_type:OS_TYPE_JETSTREAM")
 		bots := []*swarming.SwarmingRpcsBotInfo{
-			botForDUT("dut_0", "ready", ""),
+			test.BotForDUT("dut_0", "ready", ""),
+			test.BotForDUT("dut_l", "needs_repair", "label-os_type:OS_TYPE_LABSTATION"),
 			bot1,
 			bot2,
 			bot3,
@@ -154,8 +156,8 @@ func TestPushLabstationsForRepair(t *testing.T) {
 		defer validate()
 		tqt := taskqueue.GetTestable(tf.C)
 		tqt.CreateQueue(repairLabstationQ)
-		bot1 := botForDUT("dut_1", "needs_repair", "label-os_type:OS_TYPE_LABSTATION")
-		bot2 := botForDUT("dut_2", "ready", "label-os_type:OS_TYPE_LABSTATION")
+		bot1 := test.BotForDUT("dut_1", "needs_repair", "label-os_type:OS_TYPE_LABSTATION")
+		bot2 := test.BotForDUT("dut_2", "ready", "label-os_type:OS_TYPE_LABSTATION")
 		bots := []*swarming.SwarmingRpcsBotInfo{
 			bot1,
 			bot2,
@@ -261,10 +263,10 @@ func TestRefreshAndSummarizeOneBotAvailable(t *testing.T) {
 	Convey("with a single dut available", t, func() {
 		tf, validate := newTestFixture(t)
 		defer validate()
-		bots := []*swarming.SwarmingRpcsBotInfo{botForDUT("dut_1", "ready", "")}
+		bots := []*swarming.SwarmingRpcsBotInfo{test.BotForDUT("dut_1", "ready", "")}
 		tf.MockSwarming.EXPECT().ListAliveBotsInPool(
 			gomock.Any(), gomock.Eq(config.Get(tf.C).Swarming.BotPool), gomock.Any(),
-		).AnyTimes().DoAndReturn(fakeListAliveBotsInPool(bots))
+		).AnyTimes().DoAndReturn(test.FakeListAliveBotsInPool(bots))
 		expectDefaultPerBotRefresh(tf)
 
 		Convey("refresh filtering to available dut refreshes that dut", func() {
@@ -339,12 +341,12 @@ func TestRefreshAndSummarizeMultipleBotsAvailable(t *testing.T) {
 		tf, validate := newTestFixture(t)
 		defer validate()
 		bots := []*swarming.SwarmingRpcsBotInfo{
-			botForDUT("dut_1", "ready", ""),
-			botForDUT("dut_2", "ready", ""),
+			test.BotForDUT("dut_1", "ready", ""),
+			test.BotForDUT("dut_2", "ready", ""),
 		}
 		tf.MockSwarming.EXPECT().ListAliveBotsInPool(
 			gomock.Any(), gomock.Eq(config.Get(tf.C).Swarming.BotPool), gomock.Any(),
-		).AnyTimes().DoAndReturn(fakeListAliveBotsInPool(bots))
+		).AnyTimes().DoAndReturn(test.FakeListAliveBotsInPool(bots))
 		expectDefaultPerBotRefresh(tf)
 
 		Convey("refresh without filter refreshes both duts", func() {
@@ -404,11 +406,11 @@ func TestRefreshLargeNumberOfBotsAvailable(t *testing.T) {
 		for i := 0; i < numDuts; i++ {
 			dn := fmt.Sprintf("dut_%d", i)
 			dutNames = append(dutNames, dn)
-			bots = append(bots, botForDUT(dn, "ready", ""))
+			bots = append(bots, test.BotForDUT(dn, "ready", ""))
 		}
 		tf.MockSwarming.EXPECT().ListAliveBotsInPool(
 			gomock.Any(), gomock.Eq(config.Get(tf.C).Swarming.BotPool), gomock.Any(),
-		).AnyTimes().DoAndReturn(fakeListAliveBotsInPool(bots))
+		).AnyTimes().DoAndReturn(test.FakeListAliveBotsInPool(bots))
 		expectDefaultPerBotRefresh(tf)
 
 		Convey("refresh selecting all the DUTs refreshes all duts", func() {
@@ -428,10 +430,10 @@ func TestRefreshAndSummarizeBotsDutState(t *testing.T) {
 	Convey("with a swarming dut in state needs_reset", t, func() {
 		tf, validate := newTestFixture(t)
 		defer validate()
-		bots := []*swarming.SwarmingRpcsBotInfo{botForDUT("dut_1", "needs_reset", "")}
+		bots := []*swarming.SwarmingRpcsBotInfo{test.BotForDUT("dut_1", "needs_reset", "")}
 		tf.MockSwarming.EXPECT().ListAliveBotsInPool(
 			gomock.Any(), gomock.Eq(config.Get(tf.C).Swarming.BotPool), gomock.Any(),
-		).AnyTimes().DoAndReturn(fakeListAliveBotsInPool(bots))
+		).AnyTimes().DoAndReturn(test.FakeListAliveBotsInPool(bots))
 		expectDefaultPerBotRefresh(tf)
 
 		Convey("refresh with empty filter", func() {
@@ -459,10 +461,10 @@ func TestRefreshAndSummarizeIdleDuration(t *testing.T) {
 	Convey("with a swarming dut with no recent tasks", t, func() {
 		tf, validate := newTestFixture(t)
 		defer validate()
-		bots := []*swarming.SwarmingRpcsBotInfo{botForDUT("dut_task_1", "ready", "")}
+		bots := []*swarming.SwarmingRpcsBotInfo{test.BotForDUT("dut_task_1", "ready", "")}
 		tf.MockSwarming.EXPECT().ListAliveBotsInPool(
 			gomock.Any(), gomock.Eq(config.Get(tf.C).Swarming.BotPool), gomock.Any(),
-		).AnyTimes().DoAndReturn(fakeListAliveBotsInPool(bots))
+		).AnyTimes().DoAndReturn(test.FakeListAliveBotsInPool(bots))
 		expectDefaultPerBotRefresh(tf)
 
 		Convey("refresh with empty filter", func() {
@@ -488,10 +490,10 @@ func TestRefreshAndSummarizeIdleDuration(t *testing.T) {
 	Convey("with a swarming dut with one recent completed task", t, func() {
 		tf, validate := newTestFixture(t)
 		defer validate()
-		bots := []*swarming.SwarmingRpcsBotInfo{botForDUT("dut_task_1", "ready", "")}
+		bots := []*swarming.SwarmingRpcsBotInfo{test.BotForDUT("dut_task_1", "ready", "")}
 		tf.MockSwarming.EXPECT().ListAliveBotsInPool(
 			gomock.Any(), gomock.Eq(config.Get(tf.C).Swarming.BotPool), gomock.Any(),
-		).AnyTimes().DoAndReturn(fakeListAliveBotsInPool(bots))
+		).AnyTimes().DoAndReturn(test.FakeListAliveBotsInPool(bots))
 		tf.MockSwarming.EXPECT().ListSortedRecentTasksForBot(
 			gomock.Any(), gomock.Eq("bot_dut_task_1"), gomock.Any(),
 		).AnyTimes().Return([]*swarming.SwarmingRpcsTaskResult{
@@ -534,10 +536,10 @@ func TestRefreshAndSummarizeIdleDuration(t *testing.T) {
 	Convey("with a swarming dut with one running task", t, func() {
 		tf, validate := newTestFixture(t)
 		defer validate()
-		bots := []*swarming.SwarmingRpcsBotInfo{botForDUT("dut_task_1", "ready", "")}
+		bots := []*swarming.SwarmingRpcsBotInfo{test.BotForDUT("dut_task_1", "ready", "")}
 		tf.MockSwarming.EXPECT().ListAliveBotsInPool(
 			gomock.Any(), gomock.Eq(config.Get(tf.C).Swarming.BotPool), gomock.Any(),
-		).AnyTimes().DoAndReturn(fakeListAliveBotsInPool(bots))
+		).AnyTimes().DoAndReturn(test.FakeListAliveBotsInPool(bots))
 		tf.MockSwarming.EXPECT().ListSortedRecentTasksForBot(
 			gomock.Any(), gomock.Eq("bot_dut_task_1"), gomock.Any(),
 		).AnyTimes().Return([]*swarming.SwarmingRpcsTaskResult{
@@ -583,13 +585,13 @@ func TestRefreshBotsWithDimensions(t *testing.T) {
 		defer validate()
 
 		bots := []*swarming.SwarmingRpcsBotInfo{
-			botForDUT("dut_cq_link", "ready", "label-pool:cq; label-model:link"),
-			botForDUT("dut_cq_lumpy", "ready", "label-pool:cq; label-model:lumpy"),
-			botForDUT("dut_bvt_lumpy", "ready", "label-pool:bvt; label-model:lumpy"),
+			test.BotForDUT("dut_cq_link", "ready", "label-pool:cq; label-model:link"),
+			test.BotForDUT("dut_cq_lumpy", "ready", "label-pool:cq; label-model:lumpy"),
+			test.BotForDUT("dut_bvt_lumpy", "ready", "label-pool:bvt; label-model:lumpy"),
 		}
 		tf.MockSwarming.EXPECT().ListAliveBotsInPool(
 			gomock.Any(), gomock.Eq(config.Get(tf.C).Swarming.BotPool), gomock.Any(),
-		).AnyTimes().DoAndReturn(fakeListAliveBotsInPool(bots))
+		).AnyTimes().DoAndReturn(test.FakeListAliveBotsInPool(bots))
 		expectDefaultPerBotRefresh(tf)
 
 		Convey("refresh filtering by pool works", func() {
@@ -635,11 +637,11 @@ func TestSummarizeBotsWithDimensions(t *testing.T) {
 		defer validate()
 
 		bots := []*swarming.SwarmingRpcsBotInfo{
-			botForDUT("dut_cq_link", "ready", "label-pool:cq,bvt; label-model:link"),
+			test.BotForDUT("dut_cq_link", "ready", "label-pool:cq,bvt; label-model:link"),
 		}
 		tf.MockSwarming.EXPECT().ListAliveBotsInPool(
 			gomock.Any(), gomock.Eq(config.Get(tf.C).Swarming.BotPool), gomock.Any(),
-		).AnyTimes().DoAndReturn(fakeListAliveBotsInPool(bots))
+		).AnyTimes().DoAndReturn(test.FakeListAliveBotsInPool(bots))
 		expectDefaultPerBotRefresh(tf)
 
 		Convey("refresh and summarize without filter include non-trivial dimensions", func() {
@@ -665,10 +667,10 @@ func TestHealthSummary(t *testing.T) {
 		tf, validate := newTestFixture(t)
 		defer validate()
 
-		bots := []*swarming.SwarmingRpcsBotInfo{botForDUT("dut_ready", "ready", "")}
+		bots := []*swarming.SwarmingRpcsBotInfo{test.BotForDUT("dut_ready", "ready", "")}
 		tf.MockSwarming.EXPECT().ListAliveBotsInPool(
 			gomock.Any(), gomock.Eq(config.Get(tf.C).Swarming.BotPool), gomock.Any(),
-		).AnyTimes().DoAndReturn(fakeListAliveBotsInPool(bots))
+		).AnyTimes().DoAndReturn(test.FakeListAliveBotsInPool(bots))
 		expectDefaultPerBotRefresh(tf)
 
 		Convey("bot summary reports the bot healthy", func() {
@@ -685,10 +687,10 @@ func TestHealthSummary(t *testing.T) {
 		tf, validate := newTestFixture(t)
 		defer validate()
 
-		bots := []*swarming.SwarmingRpcsBotInfo{botForDUT("dut_ready", "repair_failed", "")}
+		bots := []*swarming.SwarmingRpcsBotInfo{test.BotForDUT("dut_ready", "repair_failed", "")}
 		tf.MockSwarming.EXPECT().ListAliveBotsInPool(
 			gomock.Any(), gomock.Eq(config.Get(tf.C).Swarming.BotPool), gomock.Any(),
-		).AnyTimes().DoAndReturn(fakeListAliveBotsInPool(bots))
+		).AnyTimes().DoAndReturn(test.FakeListAliveBotsInPool(bots))
 		expectDefaultPerBotRefresh(tf)
 
 		Convey("bot summary reports the bot unhealthy", func() {

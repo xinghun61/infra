@@ -30,7 +30,6 @@ import (
 // This fake implementation captures the bots argument and returns a subset of
 // the bots filtered by the dimensions argument in the
 // SwarmingClient.ListAliveBotsInPool call.
-// TODO(xixuan): remove the duplication in package frontend.
 func FakeListAliveBotsInPool(bots []*swarming.SwarmingRpcsBotInfo) func(context.Context, string, strpair.Map) ([]*swarming.SwarmingRpcsBotInfo, error) {
 	return func(_ context.Context, _ string, ds strpair.Map) ([]*swarming.SwarmingRpcsBotInfo, error) {
 		resp := []*swarming.SwarmingRpcsBotInfo{}
@@ -45,7 +44,6 @@ func FakeListAliveBotsInPool(bots []*swarming.SwarmingRpcsBotInfo) func(context.
 
 // botContainsDims determines if the bot b satisfies the requirements specified
 // via dims
-// TODO(xixuan): remove the duplication in package frontend.
 func botContainsDims(b *swarming.SwarmingRpcsBotInfo, dims strpair.Map) bool {
 	bdm := strpair.Map{}
 	for _, bds := range b.Dimensions {
@@ -67,7 +65,6 @@ func botContainsDims(b *swarming.SwarmingRpcsBotInfo, dims strpair.Map) bool {
 // dims is a convenient way to specify other bot dimensions.
 // "a:x,y;b:z" will set the dimensions of the bot to ["a": ["x", "y"], "b":
 //   ["z"]]
-// TODO(xixuan): remove the duplication in package frontend.
 func BotForDUT(id string, state string, dims string) *swarming.SwarmingRpcsBotInfo {
 	sdims := make([]*swarming.SwarmingRpcsStringListPair, 0, 2)
 	if dims != "" {
