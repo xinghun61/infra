@@ -15,6 +15,8 @@ import logging
 
 import endpoints
 from google.appengine.api import taskqueue
+from google.protobuf import json_format
+from google.protobuf.field_mask_pb2 import FieldMask
 from protorpc import messages
 from protorpc import remote
 
@@ -23,6 +25,7 @@ import gae_ts_mon
 from common import acl
 from common import constants
 from common import exceptions
+from common.waterfall import buildbucket_client
 from common.waterfall import failure_type
 from findit_v2.model.messages import findit_result
 from findit_v2.services import api as findit_v2_api
@@ -696,6 +699,104 @@ class FindItApi(remote.Service):
 
     return _FlakeAnalysis(queued=queued)
 
+  def _GetV2CulpritFromV1(self, v1_suspected_cls):
+    """Constructs [findit_result.Culprit] based on [_SuspectedCL]."""
+    culprits = []
+    for suspected_cl in v1_suspected_cls or []:
+      if suspected_cl.analysis_approach != _AnalysisApproach.TRY_JOB:
+        # Suspected CL is not included in v2 results for now.
+
+        continue
+
+      culprit = findit_result.Culprit(
+          commit=findit_result.GitilesCommit(
+              host='chromium.googlesource.com',
+              project='chromium/src',
+              ref='refs/heads/master',
+              id=suspected_cl.revision,
+              commit_position=suspected_cl.commit_position))
+      culprits.append(culprit)
+    return culprits
+
+  def _GetV2ResultFromV1(self, request, v1_results):
+    if not v1_results:
+      return None
+
+    v2_results = []
+    for v1_result in v1_results:
+      v2_result = findit_result.BuildFailureAnalysisResponse(
+          build_id=request.build_id,
+          build_alternative_id=request.build_alternative_id,
+          step_name=v1_result.step_name,
+          test_name=v1_result.test_name,
+          culprits=self._GetV2CulpritFromV1(v1_result.suspected_cls),
+          is_finished=v1_result.is_finished,
+          is_supported=True,
+      )
+      v2_results.append(v2_result)
+    return v2_results
+
+  def _GetV2AnalysisResultFromV1(self, request):
+    """Constructs v2 analysis results based on v1 analysis.
+
+    This is a temporary work around to make sure Findit's analysis results for
+    chromium build failures are still available on SoM during v1 to v2
+    migration.
+
+    Args:
+      request (findit_result.BuildFailureAnalysisRequest)
+
+    Returns:
+      [findit_result.BuildFailureAnalysisResponse] for results of a v1 analysis,
+      otherwise return None.
+    """
+    if (request.build_alternative_id and
+        request.build_alternative_id.project != 'chromium'):
+      return None
+
+    build = None
+    if request.build_id:
+      build = buildbucket_client.GetV2Build(
+          request.build_id,
+          fields=FieldMask(
+              paths=['id', 'number', 'builder', 'output.properties']))
+    elif request.build_alternative_id:
+      build = buildbucket_client.GetV2BuildByBuilderAndBuildNumber(
+          request.build_alternative_id.project,
+          request.build_alternative_id.bucket,
+          request.build_alternative_id.builder,
+          request.build_alternative_id.number,
+          fields=FieldMask(
+              paths=['id', 'number', 'builder', 'output.properties']))
+
+    if not build:
+      logging.error('Failed to download build when requesting for %s', request)
+      return None
+
+    if build.builder.project != 'chromium':
+      return None
+
+    properties = json_format.MessageToDict(build.output.properties)
+    build_number = build.number
+    master_name = properties.get('target_mastername',
+                                 properties.get('mastername'))
+    if not build_number or not master_name:
+      logging.error('Missing master_name or build_number for build %d',
+                    build.id)
+      return None
+
+    heuristic_analysis = WfAnalysis.Get(master_name, build.builder.builder,
+                                        build_number)
+    if not heuristic_analysis:
+      return None
+
+    results = []
+    v1_build_request = _BuildFailure(
+        builder_name=build.builder.builder, build_number=build_number)
+    self._GenerateResultsForBuild(v1_build_request, heuristic_analysis, results,
+                                  None)
+    return self._GetV2ResultFromV1(request, results)
+
   @gae_ts_mon.instrument_endpoint()
   @endpoints.method(
       findit_result.BuildFailureAnalysisRequestCollection,
@@ -722,10 +823,17 @@ class FindItApi(remote.Service):
 
     results = []
     build_count_with_responses = 0
+    build_count_with_v1_responses = 0
 
     for request in api_input.requests:
+      build_results = self._GetV2AnalysisResultFromV1(request)
+      if build_results:
+        build_count_with_v1_responses += 1
+        continue
+
       build_results = findit_v2_api.OnBuildFailureAnalysisResultRequested(
           request)
+
       if not build_results:
         continue
 
@@ -734,6 +842,8 @@ class FindItApi(remote.Service):
 
     logging.info(
         '%d build failure(s), while findit_v2 can provide results for'
-        '%d.', len(api_input.requests), build_count_with_responses)
+        '%d, and findit_v1 can provide results for %d.',
+        len(api_input.requests), build_count_with_responses,
+        build_count_with_v1_responses)
     return findit_result.BuildFailureAnalysisResponseCollection(
         responses=results)

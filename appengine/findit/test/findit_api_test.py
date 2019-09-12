@@ -8,12 +8,15 @@ import mock
 import pickle
 import re
 
+from buildbucket_proto.build_pb2 import Build
+from buildbucket_proto.build_pb2 import BuilderID
 from google.appengine.api import taskqueue
 import webtest
 
 from testing_utils import testing
 
 from common import exceptions
+from common.waterfall import buildbucket_client
 from common.waterfall import failure_type
 import endpoint_api
 from findit_v2.model.messages import findit_result
@@ -1426,11 +1429,13 @@ class FinditApiTest(testing.EndpointsTestCase):
     #     None)
 
   @mock.patch.object(
+      endpoint_api.FindItApi, '_GetV2AnalysisResultFromV1', return_value=None)
+  @mock.patch.object(
       endpoint_api, '_ValidateOauthUser', return_value=('email', False))
   @mock.patch.object(logging, 'info')
   @mock.patch(
       'endpoint_api.findit_v2_api.OnBuildFailureAnalysisResultRequested')
-  def testAnalyzeLuciBuildFailures(self, mock_api, mock_logging, _):
+  def testAnalyzeLuciBuildFailures(self, mock_api, mock_logging, *_):
     api_input = {
         'requests': [
             {
@@ -1466,4 +1471,95 @@ class FinditApiTest(testing.EndpointsTestCase):
     response = self.call_api('AnalyzeLuciBuildFailures', body=api_input)
     self.assertEqual(200, response.status_int)
     mock_logging.assert_called_once_with(
-        '%d build failure(s), while findit_v2 can provide results for%d.', 2, 1)
+        '%d build failure(s), while findit_v2 can provide results for%d, and'
+        ' findit_v1 can provide results for %d.', 2, 1, 0)
+
+  @mock.patch.object(
+      endpoint_api, '_ValidateOauthUser', return_value=('email', False))
+  @mock.patch.object(buildbucket_client, 'GetV2BuildByBuilderAndBuildNumber')
+  @mock.patch.object(buildbucket_client, 'GetV2Build')
+  @mock.patch.object(logging, 'info')
+  @mock.patch(
+      'endpoint_api.findit_v2_api.OnBuildFailureAnalysisResultRequested')
+  def testGetV1AnalysesResults(self, mock_api, mock_logging,
+                               mock_get_build_by_id, mock_get_build_by_number,
+                               _):
+    api_input = {
+        'requests': [
+            {
+                'build_id': 8000000000123,
+                'failed_steps': ['a']
+            },
+            {
+                'build_alternative_id': {
+                    'project': 'chromium',
+                    'bucket': 'ci',
+                    'builder': 'Luci Tests',
+                    'number': 124
+                },
+                'failed_steps': ['compile']
+            },
+        ]
+    }
+
+    mock_api.return_value = []
+
+    mock_build1 = Build(
+        id=8000000000123,
+        builder=BuilderID(project='chromeos', bucket='ci', builder='builder'))
+    mock_get_build_by_id.return_value = mock_build1
+
+    master_name = 'chromium.linux'
+    builder_name = 'Luci Tests'
+    build_number = 124
+    mock_build2 = Build(
+        id=8000000000124,
+        builder=BuilderID(
+            project='chromium', bucket='ci', builder=builder_name),
+        number=build_number)
+    mock_build2.output.properties['mastername'] = master_name
+    mock_get_build_by_number.return_value = mock_build2
+
+    analysis = WfAnalysis.Create(master_name, builder_name, build_number)
+    analysis.status = analysis_status.COMPLETED
+    analysis.result = {
+        'failures': [{
+            'step_name':
+                'test',
+            'first_failure':
+                3,
+            'last_pass':
+                1,
+            'supported':
+                True,
+            'suspected_cls': [{
+                'build_number': 2,
+                'repo_name': 'chromium',
+                'revision': 'git_hash1',
+                'commit_position': 234,
+                'score': 11,
+                'hints': {
+                    'add a/b/x.cc': 5,
+                    'delete a/b/y.cc': 5,
+                    'modify e/f/z.cc': 1,
+                }
+            },
+                              {
+                                  'build_number': 3,
+                                  'repo_name': 'chromium',
+                                  'revision': 'git_hash2',
+                                  'commit_position': 288,
+                                  'score': 1,
+                                  'hints': {
+                                      'modify d/e/f.cc': 1,
+                                  }
+                              }]
+        }]
+    }
+    analysis.put()
+
+    response = self.call_api('AnalyzeLuciBuildFailures', body=api_input)
+    self.assertEqual(200, response.status_int)
+    mock_logging.assert_called_once_with(
+        '%d build failure(s), while findit_v2 can provide results for%d, and'
+        ' findit_v1 can provide results for %d.', 2, 0, 1)
