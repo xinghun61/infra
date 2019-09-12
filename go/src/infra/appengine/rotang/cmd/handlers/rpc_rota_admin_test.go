@@ -87,7 +87,7 @@ func TestRPCCreateExternal(t *testing.T) {
 			description: "External Rotation Test",
 		`,
 	}, {
-		name: "Rota Aleady exists",
+		name: "Rota Already exists",
 		fail: true,
 		in: `
 			name: "Already Exists Rota",
