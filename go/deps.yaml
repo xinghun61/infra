@@ -98,7 +98,9 @@ import:
   - google
   - jwt
 - package: google.golang.org/api
-  version: master
+  # This is pinned due to crbug.com/1003496, as gensupport was moved to
+  # internal/gensupport after this commit and thus would be unreachable.
+  version: a5d32fec5493cdc53ee6392d77152517d5d8f2af
   repo: https://code.googlesource.com/google-api-go-client.git
   subpackages:
   - bigquery/v2
@@ -419,7 +421,7 @@ import:
   version: master
   repo: https://chromium.googlesource.com/external/github.com/go-warnings/warnings.git
 - package: go.skia.org/infra
-  version: 159008b8e534f2a4ab68c9e1396f3ebac99dd48b
+  version: 763c9e3aadeaf5704051c01e76aadb3652e24878
   repo: https://skia.googlesource.com/buildbot.git
   subpackages:
   - gold-client/cmd/goldctl
