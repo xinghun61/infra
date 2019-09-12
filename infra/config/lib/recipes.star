@@ -12,6 +12,7 @@ load('//lib/infra.star', 'infra')
 _KNOWN_REPOS = {
     'build': ('https://chromium.googlesource.com/chromium/tools/build', 'Build'),
     'depot_tools': ('https://chromium.googlesource.com/chromium/tools/depot_tools', 'Depot Tools'),
+    'fuchsia': ('https://fuchsia.googlesource.com/infra/recipes', 'Fuchsia'),
     'infra': ('https://chromium.googlesource.com/infra/infra', 'Infra'),
     'recipe_engine': ('https://chromium.googlesource.com/infra/luci/recipes-py', 'Recipe Engine'),
     'skia': ('https://skia.googlesource.com/skia', 'Skia'),

@@ -63,6 +63,7 @@ recipes.roll_trybots(
         'build',
         'chromiumos',
         'depot_tools',
+        'fuchsia',
         'infra',
         'skia',
         'skiabuildbot',
