@@ -35,9 +35,6 @@ var CreateSuite = &subcommands.Command{
 		c.authFlags.Register(&c.Flags, site.DefaultAuthOptions)
 		c.envFlags.Register(&c.Flags)
 		c.createRunCommon.Register(&c.Flags)
-		c.Flags.IntVar(&c.maxRetries, "max-retries", 0,
-			`Maximum retries allowed in total for all child tests of this
-suite. No retry if it is 0.`)
 		// TODO(akeshet): Deprecate this arg; it will be irrelevant in the cros_test_platform
 		// recipe, and is problematic even in the swarming suite bot implementation
 		// (because of a latent swarming feature that cancels child tasks once
@@ -52,12 +49,11 @@ suite. No retry if it is 0.`)
 type createSuiteRun struct {
 	subcommands.CommandRunBase
 	createRunCommon
-	authFlags  authcli.Flags
-	envFlags   envFlags
-	maxRetries int
-	orphan     bool
-	json       bool
-	taskName   string
+	authFlags authcli.Flags
+	envFlags  envFlags
+	orphan    bool
+	json      bool
+	taskName  string
 }
 
 func (c *createSuiteRun) Run(a subcommands.Application, args []string, env subcommands.Env) int {
@@ -126,7 +122,6 @@ func (c *createSuiteRun) testPlatformRequest(suite string) (*test_platform.Reque
 	if err != nil {
 		return nil, err
 	}
-	recipeArgs.MaxRetries = c.maxRetries
 	recipeArgs.TestPlan = recipe.NewTestPlanForSuites(suite)
 	return recipeArgs.TestPlatformRequest()
 }

@@ -26,6 +26,7 @@ type createRunCommon struct {
 	provisionLabels []string
 	priority        int
 	timeoutMins     int
+	maxRetries      int
 	tags            []string
 	keyvals         []string
 	qsAccount       string
@@ -48,6 +49,9 @@ multiple times.  Optional.`)
 		`Specify the priority of the test.  A high value means this test
 will be executed in a low priority. If the tasks runs in a quotascheduler controlled pool, this value will be ignored.`)
 	fl.IntVar(&c.timeoutMins, "timeout-mins", 30, "Task runtime timeout.")
+	fl.IntVar(&c.maxRetries, "max-retries", 0,
+		`Maximum retries allowed in total for all child tests of this
+suite. No retry if it is 0.`)
 	fl.Var(flagx.StringSlice(&c.keyvals), "keyval",
 		`Autotest keyval for test. Key may not contain : character. May be
 specified multiple times.`)
@@ -87,6 +91,7 @@ func (c *createRunCommon) RecipeArgs(tags []string) (recipe.Args, error) {
 		Pool:                       c.pool,
 		QuotaAccount:               c.qsAccount,
 		Timeout:                    time.Duration(c.timeoutMins) * time.Minute,
+		MaxRetries:                 c.maxRetries,
 		Keyvals:                    keyvalMap,
 		Priority:                   int64(c.priority),
 		Tags:                       tags,
