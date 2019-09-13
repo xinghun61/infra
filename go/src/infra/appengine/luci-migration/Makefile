@@ -19,3 +19,9 @@ up:
 
 switch:
 	gae.py switch -A luci-migration --app-dir $(projdir)/app
+
+up-dev:
+	gae.py upload -A luci-migration-dev --app-dir $(projdir)/app
+
+switch-dev:
+	gae.py switch -A luci-migration-dev --app-dir $(projdir)/app
