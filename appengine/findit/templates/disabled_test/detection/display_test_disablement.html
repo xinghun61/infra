@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<head>
+  <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon">
+  <title>Disabled Tests</title>
+  <meta charset="utf-8">
+  <link rel="stylesheet" href="/common.css">
+  <script src="/ui/js/common.js"></script>
+  <script src="/bower_components/webcomponentsjs/webcomponents-lite.js"></script>
+  <link rel="import" href="/ui/elements/cats-app.html">
+  <link rel="import" href="/ui/elements/disabled_test_detection/display_test_disablement.html">
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+  <style type="text/css">
+    html {
+      margin: 0;
+      height: 100%;
+    }
+
+    body {
+      margin: 0;
+      height: 100%;
+      overflow-y: auto;
+      overflow-x: hidden;
+    }
+
+    table, tr, td {
+      border: 0px;
+    }
+
+    #footer {
+      margin-top: 10px;
+      float: left;
+    }
+
+  </style>
+</head>
+<body>
+  <cats-app id="app" components="Infra>Test>Flakiness" page-header="Disabled tests sorted by most recently updated">
+    {% if error_message %}
+    <div style="font-weight:bold; color: red">{{ error_message }}</div>
+    {% endif %}
+    <br>
+    <display-test-disablement
+      disabled_tests='{{disabled_tests_data | tojson}}'
+      page_size='{{page_size}}'
+      cursor='{{cursor}}'
+      prev_cursor='{{prev_cursor}}'
+    ></display-test-disablement>
+    <br>
+  </cats-app>
+</body>

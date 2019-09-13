@@ -1,0 +1,50 @@
+<link rel="import" href="/bower_components/paper-button/paper-button.html">
+<link rel="import" href="/bower_components/paper-tooltip/paper-tooltip.html">
+<link rel="import" href="/bower_components/polymer/polymer.html">
+
+
+<dom-module id="display-test-disablement-item">
+  <template>
+    <style>
+      td {
+        padding: 2px;
+        padding-right: 10px;
+        height: 50px;
+        vertical-align: top;
+        overflow:hidden;
+        text-overflow:ellipsis;
+        text-align: left;
+      }
+
+    </style>
+      <td>[[disabled_test.normalized_test_name]]</td>
+      <td>
+          <template is="dom-repeat" items="{{disabled_test.disabled_test_variants}}" as="disabled_test_variant">
+            <ul>
+              <li>
+                [[disabled_test_variant]]
+              </li>
+            </ul>
+        </template>
+      </td>
+      <!-- TODO(crbug.com/1001130): Add bugs to dashboard -->
+      <td>None</td>
+    </template>
+
+  <script src="../../js/common.js"></script>
+  <script>
+    (function () {
+      "use strict";
+
+      Polymer({
+        is: "display-test-disablement-item",
+        properties: {
+          disabled_test: {
+            type: Object
+          },
+        },
+
+      });
+    })();
+  </script>
+</dom-module>

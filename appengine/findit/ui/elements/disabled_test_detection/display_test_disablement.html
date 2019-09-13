@@ -1,0 +1,174 @@
+<link rel="import" href="/bower_components/iron-form/iron-form.html">
+<link rel="import" href="/bower_components/iron-pages/iron-pages.html">
+<link rel="import" href="/bower_components/paper-button/paper-button.html">
+<link rel="import" href="/bower_components/paper-tabs/paper-tabs.html">
+<link rel="import" href="/bower_components/paper-tooltip/paper-tooltip.html">
+<link rel="import" href="/bower_components/polymer/polymer.html">
+<link rel="import" href="/ui/elements/disabled_test_detection/display-test-disablement-item.html">
+
+
+<dom-module id="display-test-disablement">
+  <template>
+    <style>
+      table {
+        border: 1px solid gray;
+      }
+
+      table th {
+        padding: 5px;
+        color: #FFF;
+        white-space: nowrap;
+        text-align: left;
+      }
+
+      display-test-disablement-item:nth-child(odd) {
+        background-color:#E8F0FE;
+      }
+
+      display-test-disablement-item:nth-child(even) {
+        background-color: #FFF;
+      }
+
+      display-test-disablement-item {
+        display: table-row;
+      }
+
+
+      .column-header {
+        background-color: #4285F4;
+      }
+
+      .hidden {
+        display: none;
+      }
+
+      paper-button {
+        color: #fff;
+        background: #4285F4;
+        margin: 20px;
+      }
+
+      #form-div {
+        float: left;
+        width: 100vw;
+      }
+
+      .paging {
+        padding: 5px;
+      }
+
+      .previous, .next {
+        color: #1A73EB;
+        background: none;
+        border: none;
+        padding: 0;
+        margin: 0;
+        font: inherit;
+        border-bottom:1px solid #1A73EB;
+        cursor: pointer;
+      }
+
+      .disabled {
+        color: #9AA0A6;
+        background: none;
+        border: none;
+        padding: 0;
+        font: inherit;
+        border-bottom:1px solid #9AA0A6;
+        cursor: pointer;
+      }
+
+      paper-tab.iron-selected {
+        color: #FFF;
+        background-color: #4285F4;
+        font-size: 18px;
+      }
+
+    </style>
+    <div id="form-div">
+        <form id="disabled-tests-form" is="iron-form" method="get" action="/p/chromium/disabled-tests">
+          <input type="text" name="page_size" id="page_size" class="hidden" value="{{page_size}}" disabled$="{{_isValueEmpty(page_size)}}">
+          <input type="text" name="cursor" id="cursor" class="hidden" value="{{cursor_in_use}}" disabled$="{{_isValueEmpty(cursor_in_use)}}">
+          <input type="text" name="direction" id="direction" class="hidden" value="{{direction}}" disabled$="{{_isValueEmpty(direction)}}">
+        </form>
+    </div>
+    <br>
+    <div class="paging">
+      <paper-button class$="previous {{_getDisabledClass(prev_cursor)}}" disabled$="{{_isValueEmpty(prev_cursor)}}" on-tap="_submitFormWithCursor">Previous</paper-button>
+      <paper-button class$="next {{_getDisabledClass(cursor)}}" disabled$="{{_isValueEmpty(cursor)}}" on-tap="_submitFormWithCursor">Next</paper-button>
+    </div>
+    <br>
+
+    <table width="95%">
+      <tr>
+        <th class="column-header" width="30%">Test Name
+        <th class="column-header" width="35%">Variants
+        <th class="column-header" width="35%">Bugs
+      </tr>
+      <template is="dom-repeat" items="{{disabled_tests}}" as="disabled_test">
+        <display-test-disablement-item disabled_test={{disabled_test}} ></display-test-disablement-item>
+      </template>
+    </table>
+  </template>
+  <script>
+    (function () {
+      "use strict";
+
+      Polymer({
+        is: "display-test-disablement",
+        properties: {
+          // A list of LuciTest objects to be ranked and displayed.
+          disabled_tests: {
+            type: Array
+          },
+          page_size: {
+            type: String
+          },
+          cursor: {
+            type: String
+          },
+          prev_cursor: {
+            type: String
+          },
+          direction: {
+            type: String,
+            value: ""
+          },
+          cursor_in_use: {
+            type: String,
+            value: ""
+          }
+        },
+
+
+        _isValueEmpty: function (value) {
+          return typeof(value) === "undefined" || value === null || value === "";
+        },
+
+        _getDisabledClass: function (value) {
+          if (value == "") return "disabled";
+          return "";
+        },
+
+
+        _submitFormWithCursor: function(e) {
+          let pageButton = Polymer.dom(e).localTarget;
+          if (pageButton.classList.contains('previous')) {
+            this.cursor_in_use = this.prev_cursor;
+            this.direction = 'previous';
+          } else {
+            this.cursor_in_use = this.cursor;
+            this.direction = 'next';
+          }
+
+          this._submitForm(e);
+        },
+
+        _submitForm: function (e) {
+          let form = this.shadowRoot.querySelector('#disabled-tests-form');
+          form.submit();
+        },
+      });
+    })();
+  </script>
+</dom-module>

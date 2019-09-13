@@ -61,6 +61,12 @@ handlers:
   script: frontend_main.flake_detection_frontend_web_application
   secure: always
 
+  # Disabled tests web UI pages.
+- url: /p/chromium/disabled-tests*
+  script: frontend_main.disabled_test_detection_frontend_web_application
+  secure: always
+
+
 # Keep this one as the last match for redirection of old URLs.
 - url: /.*
   script: frontend_main.waterfall_frontend_web_application

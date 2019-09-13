@@ -499,3 +499,18 @@ indexes:
   ancestor: yes
   properties:
   - name: gitiles_commit.commit_position
+
+# For disabled test dashboard.
+- kind: LuciTest
+  properties:
+  - name: disabled
+  - name: last_updated_time
+    direction: desc
+  - name: normalized_test_name
+
+- kind: LuciTest
+  properties:
+  - name: disabled
+  - name: last_updated_time
+  - name: normalized_test_name
+    direction: desc

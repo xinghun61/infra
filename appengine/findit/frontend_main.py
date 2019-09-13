@@ -21,6 +21,7 @@ from handlers import triage_suspected_cl
 from handlers import trooper
 from handlers import try_job_dashboard
 from handlers import url_redirect
+from handlers.disabled_tests.detection import display_test_disablement
 from handlers.flake import check_flake
 from handlers.flake import flake_culprit
 from handlers.flake import list_flakes
@@ -84,3 +85,13 @@ flake_detection_frontend_web_application = webapp2.WSGIApplication(
     flake_detection_frontend_web_pages_handler_mappings, debug=False)
 if appengine_util.IsInProductionApp():
   gae_ts_mon.initialize(flake_detection_frontend_web_application)
+
+# disabled test dashboard frontend.
+disabled_test_detection_frontend_web_pages_handler_mappings = [
+    ('/p/chromium/disabled-tests',
+     display_test_disablement.DisplayTestDisablement),
+]
+disabled_test_detection_frontend_web_application = webapp2.WSGIApplication(
+    disabled_test_detection_frontend_web_pages_handler_mappings, debug=False)
+if appengine_util.IsInProductionApp():
+  gae_ts_mon.initialize(disabled_test_detection_frontend_web_application)
