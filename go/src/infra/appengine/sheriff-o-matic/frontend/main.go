@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-// Package som implements HTTP server that handles requests to default module.
-package som
+// Package main implements HTTP server that handles requests to default module.
+package main
 
 import (
 	"encoding/json"
@@ -17,6 +17,8 @@ import (
 	"infra/appengine/sheriff-o-matic/som/client"
 	"infra/appengine/sheriff-o-matic/som/handler"
 	"infra/monorail"
+
+	"google.golang.org/appengine"
 
 	"golang.org/x/net/context"
 
@@ -320,4 +322,8 @@ func init() {
 	http.DefaultServeMux.Handle("/alertdiff/", r)
 
 	http.DefaultServeMux.Handle("/", rootRouter)
+}
+
+func main() {
+	appengine.Main()
 }

@@ -1,22 +1,14 @@
-runtime: go
-api_version: go1
+runtime: go111
 service: analyzer
 instance_class: F4_1G
 
 handlers:
 - url: /_cron/analyze/.*
-  script: _go_app
+  script: auto
   secure: always
   login: admin
 
 - url: /_ah/queue/.*
-  script: _go_app
+  script: auto
   secure: always
   login: admin
-
-skip_files:
-- ^(.*/)?#.*#$
-- ^(.*/)?.*~$
-- ^(.*/)?.*\.py[co]$
-- ^(.*/)?.*/RCS/.*$
-- ^(.*/)?\..*$

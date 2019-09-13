@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-// Package som implements HTTP server that handles requests to the backend analyzer module.
-package som
+// Package main implements HTTP server that handles requests to the backend analyzer module.
+package main
 
 import (
 	"net/http"
@@ -12,6 +12,8 @@ import (
 	"infra/appengine/sheriff-o-matic/som/analyzer/step"
 	"infra/appengine/sheriff-o-matic/som/client"
 	"infra/appengine/sheriff-o-matic/som/handler"
+
+	"google.golang.org/appengine"
 
 	"go.chromium.org/gae/service/info"
 	"go.chromium.org/luci/appengine/gaeauth/server"
@@ -71,4 +73,8 @@ func init() {
 	r.GET("/_ah/queue/addannotationtrees", basemw, handler.AnnotationTreeWorker)
 
 	http.DefaultServeMux.Handle("/", r)
+}
+
+func main() {
+	appengine.Main()
 }

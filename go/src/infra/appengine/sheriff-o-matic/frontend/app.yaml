@@ -1,5 +1,4 @@
-runtime: go
-api_version: go1
+runtime: go111
 instance_class: F4
 service: default
 
@@ -25,21 +24,21 @@ handlers:
   secure: always
 
 - url: /api/.*
-  script: _go_app
+  script: auto
   secure: always
 
 - url: /_cron/.*
-  script: _go_app
+  script: auto
   secure: always
   login: admin
 
 - url: /internal/.*
-  script: _go_app
+  script: auto
   secure: always
   login: admin
 
 - url: /_ah/push-handlers/.*
-  script: _go_app
+  script: auto
   login: admin
 
 - url: /google03daf1850f438695\.html
@@ -48,23 +47,5 @@ handlers:
   upload: static/google03daf1850f438695.html
 
 - url: /.*
-  script: _go_app
+  script: auto
   secure: always
-
-skip_files:
-- ^(.*/)?#.*#$
-- ^(.*/)?.*~$
-- ^(.*/)?.*\.py[co]$
-- ^(.*/)?.*/RCS/.*$
-- ^(.*/)?\..*$
-- ^node_modules$
-- ^bower_components/web-component-tester$
-- ^bower_components/accessibility-developer-tools$
-- ^bower_components/async$
-- ^bower_components/chai$
-- ^bower_components/lodash$
-- ^bower_components/mocha$
-- ^bower_components/sinon-chai$
-- ^bower_components/sinonjs$
-- ^bower_components/stacky$
-- ^bower_components/test-fixture$
