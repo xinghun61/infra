@@ -353,10 +353,12 @@ export class MrApprovalCard extends connectStore(LitElement) {
   }
 
   get _isApprover() {
-    if (!this.approvers || !this.user || !this.user.email) return false;
+    // Assumption: Since a user who is an approver should always be a project
+    // member, displayNames should be visible to them if they are an approver.
+    if (!this.approvers || !this.user || !this.user.displayName) return false;
     const userGroups = this.user.groups || [];
     return !!this.approvers.find((a) => {
-      return a.displayName === this.user.email || userGroups.find(
+      return a.displayName === this.user.displayName || userGroups.find(
           (group) => group.displayName === a.displayName
       );
     });

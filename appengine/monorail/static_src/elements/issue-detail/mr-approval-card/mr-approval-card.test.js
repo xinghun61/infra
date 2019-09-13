@@ -28,7 +28,7 @@ describe('mr-approval-card', () => {
       {displayName: 'test@notuser.com'},
       {displayName: 'hello@world.com'},
     ];
-    element.user = {email: 'test@user.com', groups: []};
+    element.user = {displayName: 'test@user.com', groups: []};
     assert.isFalse(element._isApprover);
 
     // Use is in approver list.
@@ -48,7 +48,7 @@ describe('mr-approval-card', () => {
       {displayName: 'ignore@test.com'},
     ];
     element.user = {
-      email: 'test@user.com',
+      displayName: 'test@user.com',
       groups: [
         {displayName: 'group@group.com'},
         {displayName: 'test@group.com'},
@@ -64,7 +64,7 @@ describe('mr-approval-card', () => {
       {displayName: 'test@notuser.com'},
     ];
     element.user = {
-      email: 'test@user.com',
+      displayName: 'test@user.com',
       groups: [
         {displayName: 'group@group.com'},
       ],
@@ -106,7 +106,7 @@ describe('mr-approval-card', () => {
   });
 
   it('approvers see all approval statuses except NotSet', () => {
-    element.user = {isSiteAdmin: false, email: 'test@email.com'};
+    element.user = {isSiteAdmin: false, displayName: 'test@email.com'};
     element.approvers = [{displayName: 'test@email.com'}];
 
     assert.isTrue(element._isApprover);

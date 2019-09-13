@@ -26,10 +26,8 @@ export function displayNameToUserRef(displayName) {
 
 export function userToUserRef(user) {
   if (!user) return {};
-  // TODO(crbug.com/monorail/6224): Remove "email" condition after making
-  // the API more consistent.
-  const {userId, displayName, email} = user;
-  return {userId, displayName: (displayName || email)};
+  const {userId, displayName} = user;
+  return {userId, displayName};
 }
 
 export function userRefToId(userRef) {
