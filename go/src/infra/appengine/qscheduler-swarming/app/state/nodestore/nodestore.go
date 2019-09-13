@@ -92,8 +92,43 @@ func NewModOnlyOperator(f func(ctx context.Context, state *types.QScheduler) err
 }
 
 // New returns a new NodeStore.
+//
+// Most callers should use For instead, to fetch a singleton for the given pool.
+// Using the singlton in production reduces the probability of bad contention
+// concurrent operations.
+//
+// Tests that explicitly want to test interaction between two separate NodeStores
+// should use New.
 func New(qsPoolID string) *NodeStore {
 	return &NodeStore{qsPoolID: qsPoolID}
+}
+
+// stores is an internal cache of per-pool Nodestore singletons.
+var stores = map[string]*NodeStore{}
+
+// storesLock is help when reading or mutating stores.
+var storesLock sync.RWMutex
+
+// For returns a NodeStore for the given pool from a collection of per-pool
+// singletons, or creates a new store if necessary.
+//
+// Production callers should prefer this over New.
+func For(qsPoolID string) *NodeStore {
+	storesLock.RLock()
+	store, ok := stores[qsPoolID]
+	storesLock.RUnlock()
+	if ok {
+		return store
+	}
+
+	storesLock.Lock()
+	store, ok = stores[qsPoolID]
+	if !ok {
+		store = New(qsPoolID)
+		stores[qsPoolID] = store
+	}
+	storesLock.Unlock()
+	return store
 }
 
 // List returns the full list of scheduler ids.

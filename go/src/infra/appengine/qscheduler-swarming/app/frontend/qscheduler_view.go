@@ -36,7 +36,7 @@ func (s *QSchedulerViewServerImpl) InspectPool(ctx context.Context, r *qschedule
 		err = grpcutil.GRPCifyAndLogErr(ctx, err)
 	}()
 
-	store := nodestore.New(r.PoolId)
+	store := nodestore.For(r.PoolId)
 	sp, err := store.Get(ctx)
 	if err != nil {
 		return nil, err

@@ -39,7 +39,7 @@ func TestBatcherCancellations(t *testing.T) {
 		ctx, _ = testclock.UseTime(ctx, time.Now())
 		ctx = eventlog.Use(ctx, &eventlog.NullBQInserter{})
 		poolID := "pool 1"
-		store := nodestore.New(poolID)
+		store := nodestore.For(poolID)
 		store.Create(ctx, time.Now())
 
 		batcher := state.NewBatchRunnerForTest()
@@ -83,7 +83,7 @@ func TestBatcherBehavior(t *testing.T) {
 		ctx, _ = testclock.UseTime(ctx, time.Now())
 		ctx = eventlog.Use(ctx, &eventlog.NullBQInserter{})
 		poolID := "pool 1"
-		store := nodestore.New(poolID)
+		store := nodestore.For(poolID)
 		store.Create(ctx, time.Now())
 
 		batcher := state.NewBatchRunnerForTest()

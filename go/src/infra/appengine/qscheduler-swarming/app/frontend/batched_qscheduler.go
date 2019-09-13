@@ -66,7 +66,7 @@ func (s *BatchedQSchedulerServer) getOrCreateBatcher(schedulerID string) *state.
 		return batcher
 	}
 	batcher = state.NewBatcher(schedulerID)
-	store := nodestore.New(schedulerID)
+	store := nodestore.For(schedulerID)
 	// TODO(akeshet): close all started batchers in the server's close handler.
 	batcher.Start(store)
 	s.batchers[schedulerID] = batcher
@@ -113,7 +113,7 @@ func (s *BatchedQSchedulerServer) GetCancellations(ctx context.Context, r *swarm
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 
-	store := nodestore.New(r.SchedulerId)
+	store := nodestore.For(r.SchedulerId)
 	sp, err := store.Get(ctx)
 	if err != nil {
 		return nil, err
@@ -153,7 +153,7 @@ func (s *BatchedQSchedulerServer) GetCallbacks(ctx context.Context, r *swarming.
 		err = grpcutil.GRPCifyAndLogErr(ctx, err)
 	}()
 
-	store := nodestore.New(r.SchedulerId)
+	store := nodestore.For(r.SchedulerId)
 	sp, err := store.Get(ctx)
 	if err != nil {
 		return nil, err

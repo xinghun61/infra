@@ -83,7 +83,7 @@ func cleanupNodestore(ctx context.Context) {
 		}
 
 		for _, ID := range IDs {
-			s := nodestore.New(ID)
+			s := nodestore.For(ID)
 
 			cctx, cancel := context.WithTimeout(ctx, 5*time.Minute)
 			cleaned, err := s.Clean(cctx)
