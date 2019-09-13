@@ -6,8 +6,8 @@ The algorithm is similar to the [Token Bucket](https://en.wikipedia.org/wiki/Tok
 
 - A number of accounts are defined.
 - Each account has a quota recharge rate, defined over multiple priority levels.
-- Tasks belong to a particular account, and are prioritized based on the account's balance (i.e. they given a priority corresponding to the best priority with positive quota for that account).
-- Tasks of higher priority may preempt lower-priority ones (and reimburse spent quota from the preempter's account).
+- Tasks belong to a particular account, and are prioritized based on the account's balance (i.e. they are given a priority corresponding to the best priority with positive quota for that account).
+- If the scheduler is configured with preemption enabled, tasks of higher priority may preempt lower-priority ones (and reimburse spent quota from the preempter's account).
 
 In addition to Token Bucket, QuotaScheduler supports features directly related to the ChromeOS Test Lab's needs. In particular:
 - Tasks are preferentially assigned to workers that already have matching "provisionable labels" (i.e. installable dependencies).
