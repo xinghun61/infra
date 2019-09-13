@@ -12,31 +12,9 @@ class RecipeAutorollerTestApi(recipe_test_api.RecipeTestApi):
   _EXTRA_REVIEWERS = ('foo@chromium.org', 'foo@bar.example.com',
                       'meep@example.com')
 
-  def _autoroll_recipe_options(self, tbr_emails, extra_reviewers,
-                               disable_reason, trivial_commit,
-                               nontrivial_dryrun):
-    return {
-      'disable_reason': disable_reason,
-      'trivial': {
-        'tbr_emails': list(tbr_emails),
-        'automatic_commit': trivial_commit,
-      },
-      'nontrivial': {
-        'extra_reviewer_emails': list(extra_reviewers),
-        'automatic_commit_dry_run': nontrivial_dryrun,
-      },
-    }
-
-  def roll_data(self, project, success=True, trivial=True, empty=False,
-                tbr_emails=_TBR_EMAILS, extra_reviewers=_EXTRA_REVIEWERS,
-                disable_reason='', trivial_commit=True, nontrivial_dryrun=True,
-                include_autoroll_options=True):
-    """Returns mock roll and recipes.cfg data for |project|."""
-    if empty:
-      success = False
-
-    ret = self.empty_test_data()
-
+  def repo_spec(self, tbr_emails=_TBR_EMAILS, extra_reviewers=_EXTRA_REVIEWERS,
+                disable_reason='', trivial_commit=True, trivial_dryrun=False,
+                nontrivial_dryrun=True, include_autoroll_options=True):
     spec = {
       'api_version': 2,
       'deps': {
@@ -44,13 +22,30 @@ class RecipeAutorollerTestApi(recipe_test_api.RecipeTestApi):
       },
     }
     if include_autoroll_options:
-      spec['autoroll_recipe_options'] = self._autoroll_recipe_options(
-        tbr_emails, extra_reviewers, disable_reason, trivial_commit,
-        nontrivial_dryrun)
+      spec['autoroll_recipe_options'] = {
+        'trivial': {
+          'tbr_emails': list(tbr_emails),
+          'automatic_commit': trivial_commit,
+          'dry_run': trivial_dryrun,
+        },
+        'nontrivial': {
+          'extra_reviewer_emails': list(extra_reviewers),
+          'automatic_commit_dry_run': nontrivial_dryrun,
+        },
+        'disable_reason': disable_reason,
+      }
+    return spec
 
-    ret += self.override_step_data(
-      '%s.read recipes.cfg' % project, self.m.json.output(spec))
-    if disable_reason:
+  def roll_data(self, project, spec=None, success=True, trivial=True,
+                empty=False):
+    """Returns mock roll and recipes.cfg data for |project|."""
+    if spec is None:
+      spec = self.repo_spec()
+    if empty:
+      success = False
+
+    ret = self.empty_test_data() + self.recipe_cfg(project, spec)
+    if spec.get('autoroll_recipe_options', {}).get('disable_reason'):
       return ret
 
     picked_roll_details = {
@@ -102,9 +97,7 @@ class RecipeAutorollerTestApi(recipe_test_api.RecipeTestApi):
       self.step_data('%s.git cl status' % project,
                      self.m.raw_io.stream_output(status)))
 
-  def recipe_cfg(self, project, tbr_emails=_TBR_EMAILS,
-                 extra_reviewers=_EXTRA_REVIEWERS, disable_reason='',
-                 trivial_commit=True, nontrivial_dryrun=True):
+  def recipe_cfg(self, project, spec=None):
     """Returns mock recipes.cfg data (only) for |project|.
 
     This is used for tests which abort between the 'read recipes.cfg' step and
@@ -113,11 +106,8 @@ class RecipeAutorollerTestApi(recipe_test_api.RecipeTestApi):
     For "normal" test runs, you'll want to use roll_data() from this
     RecipeTestApi, which includes this step data automatically.
     """
+    if spec is None:
+      spec = self.repo_spec()
     return self.override_step_data(
-      '%s.read recipes.cfg' % project,
-      self.m.json.output({
-        'autoroll_recipe_options': self._autoroll_recipe_options(
-          tbr_emails, extra_reviewers, disable_reason, trivial_commit,
-          nontrivial_dryrun),
-      })
+      '%s.read recipes.cfg' % project, self.m.json.output(spec)
     )

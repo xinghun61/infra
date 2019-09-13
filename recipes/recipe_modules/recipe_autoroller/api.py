@@ -309,6 +309,8 @@ class RecipeAutorollerApi(recipe_api.RecipeApi):
 
       if s.automatic_commit:
         upload_args.append('--use-commit-queue')
+      elif s.dry_run:
+        upload_args.append('--cq-dry-run')
     else:
       s = spec.autoroll_recipe_options.nontrivial
       if s.extra_reviewer_emails:

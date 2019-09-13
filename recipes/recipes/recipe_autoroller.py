@@ -27,6 +27,9 @@ def RunSteps(api, projects):
 
 
 def GenTests(api):
+  # For conciseness.
+  repo_spec = api.recipe_autoroller.repo_spec
+
   def test(name):
     return (
         api.test(name) +
@@ -121,24 +124,30 @@ def GenTests(api):
 
   yield (
       test('trivial_custom_tbr_no_dryrun') +
-      api.recipe_autoroller.roll_data('build', trivial_commit=False)
+      api.recipe_autoroller.roll_data('build', repo_spec(trivial_commit=False))
+  )
+
+  yield (
+      test('trivial_custom_tbr_dryrun') +
+      api.recipe_autoroller.roll_data(
+          'build', repo_spec(trivial_commit=False, trivial_dryrun=True))
   )
 
   yield (
       test('repo_disabled') +
       api.recipe_autoroller.roll_data(
-        'build', disable_reason='I am a water buffalo.')
+          'build', repo_spec(disable_reason='I am a water buffalo.'))
   )
 
   # The recipe shouldn't crash if the autoroller options are not specified.
   yield (
       test('trivial_no_autoroll_options') +
       api.recipe_autoroller.roll_data(
-          'build', trivial=True, include_autoroll_options=False)
+          'build', repo_spec(include_autoroll_options=False), trivial=True)
   )
 
   yield (
       test('nontrivial_no_autoroll_options') +
       api.recipe_autoroller.roll_data(
-          'build', trivial=False, include_autoroll_options=False)
+          'build', repo_spec(include_autoroll_options=False), trivial=False)
   )

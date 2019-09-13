@@ -189,6 +189,7 @@
       "@@@STEP_LOG_LINE@json.output@    }, @@@",
       "@@@STEP_LOG_LINE@json.output@    \"trivial\": {@@@",
       "@@@STEP_LOG_LINE@json.output@      \"automatic_commit\": true, @@@",
+      "@@@STEP_LOG_LINE@json.output@      \"dry_run\": false, @@@",
       "@@@STEP_LOG_LINE@json.output@      \"tbr_emails\": [@@@",
       "@@@STEP_LOG_LINE@json.output@        \"foo@bar.example.com\", @@@",
       "@@@STEP_LOG_LINE@json.output@        \"meep@example.com\"@@@",
