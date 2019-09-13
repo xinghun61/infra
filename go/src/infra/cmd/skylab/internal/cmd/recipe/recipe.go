@@ -113,7 +113,6 @@ func (a *Args) TestPlatformRequest() (*test_platform.Request, error) {
 		SwarmingDimensions: a.FreeformSwarmingDimensions,
 	}
 
-	// TODO(akeshet): Make retry-allowance paramaterizable.
 	params.Retry = &test_platform.Request_Params_Retry{
 		Max:   int32(a.MaxRetries),
 		Allow: a.MaxRetries != 0,

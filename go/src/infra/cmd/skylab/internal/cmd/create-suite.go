@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/maruel/subcommands"
+	"go.chromium.org/chromiumos/infra/proto/go/test_platform"
 	"go.chromium.org/luci/auth/client/authcli"
 	swarming_api "go.chromium.org/luci/common/api/swarming/swarming/v1"
 	"go.chromium.org/luci/common/cli"
@@ -104,12 +105,7 @@ func (c *createSuiteRun) innerRunBB(ctx context.Context, a subcommands.Applicati
 		return err
 	}
 
-	recipeArg, err := c.RecipeArgs(c.buildTags(suiteName))
-	if err != nil {
-		return err
-	}
-	recipeArg.TestPlan = recipe.NewTestPlanForSuites(suiteName)
-	req, err := recipeArg.TestPlatformRequest()
+	req, err := c.testPlatformRequest(suiteName)
 	if err != nil {
 		return err
 	}
@@ -123,6 +119,16 @@ func (c *createSuiteRun) innerRunBB(ctx context.Context, a subcommands.Applicati
 	}
 	fmt.Fprintf(a.GetOut(), "Created request at %s\n", buildURL)
 	return nil
+}
+
+func (c *createSuiteRun) testPlatformRequest(suite string) (*test_platform.Request, error) {
+	recipeArgs, err := c.RecipeArgs(c.buildTags(suite))
+	if err != nil {
+		return nil, err
+	}
+	recipeArgs.MaxRetries = c.maxRetries
+	recipeArgs.TestPlan = recipe.NewTestPlanForSuites(suite)
+	return recipeArgs.TestPlatformRequest()
 }
 
 func (c *createSuiteRun) validateForBB() error {
