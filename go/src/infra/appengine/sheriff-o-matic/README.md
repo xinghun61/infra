@@ -4,8 +4,6 @@ aka SoM
 
 ## Prerequisites
 
-Download and install the [AppEngine SDK for Go](https://cloud.google.com/appengine/docs/flexible/go/download).
-
 You will need a chrome infra checkout as
 [described here](https://chromium.googlesource.com/infra/infra/). That will
 create a local checkout of the entire infra repo, but that will include this
@@ -27,7 +25,8 @@ If you don't have npm or node installed yet, make sure you do so using
 npm (avoid using other installation methods, as they won't match what
 the builders and other infra devs have installed). *Then* make sure you've
 run
-```
+
+```sh
 eval `../../../../env.py`
 ```
 in that shell window.
@@ -154,61 +153,25 @@ UI (8081 vs 8080). This is because the cron tasks run in a separate GAE service
 (aka "module" in some docs). These requests may also take quite a while to
 complete, depending on the current state of your builders.
 
-### CrOS: Populating alerts from a local alerts-dispatcher run
-
-ChromeOS has a separate som_alerts_dispatcher process for scanning builds and
-generating alerts, which is a special case unlike the rest of the trees on SoM.
-This code lives [here](https://cs.chromium.org/chromium/src/third_party/chromite/scripts/som_alerts_dispatcher.py).
-Please consult the source or recent comitters for instructions on how to use or modify it.
-
-### Populating alerts from a JSON file
-
-In some instances, you may want to input specific alert JSON data into
-Sheriff-o-Matic. For example, you may wish to send a JSON file containing a
-snapshot of old alerts, or you may wish to tailor JSON data for a specific case
-you are testing.
-
-To do this, you can use curl to directly post alerts to Sheriff-o-Matic. For
-example, the following command would post the contents of a JSON file
-containing alert data to the chromium tree.
-
-```sh
-curl -X POST -d @/path/to/alerts.json localhost:8080/api/v1/alerts/chromium
-```
-
-An example of the alerts JSON format used by Sheriff-o-Matic can be found at
-test/alerts-data.js
-
-For more detailed information on the alert JSON format, see
-[infra/monitoring/messages.Alert](https://cs.chromium.org/chromium/infra/go/src/infra/monitoring/messages/alerts.go)
-
-## Setting up credentials for local testing
+## Setting up credentials for local development and testing
 
 You will need access to either staging or prod
 sheriff-o-matic before you can do this, so contact cit-sheriffing@google.com
-to request access if don't already have it.
+to request access ("Please add me to the relevant AMI roles...") if you don't already have it.
 
-Currently, Sheriff-o-Matic accesses two APIs that require service account credentials:
-
-* Monorail - for the bug queue
-* Google Cloud Storage - for secure storage of the tree logo images
-
-To test these features locally you will need to get credentials for an App
-Engine service account.
-
-* Navigate to Google Cloud console -> IAM & Admin -> Service accounts.
-* Select the three-dot menu on the "App Engine default service account" item and
-click "Create Key".
-* Select the "JSON" option from the radio buttons and then click the "Create"
-button.
-* A JSON file containing your key will download.
-
-Once you have the key for your service account, add the key to your environment
-variables:
-
-```sh
-export GOOGLE_APPLICATION_CREDENTIALS=/path/to/credentials/file.json
 ```
+# in case you already have this pointed at a jwt file downloaded from gcp console:
+unset GOOGLE_APPLICATION_CREDENTIALS
+
+# Use your user identity instead of a service account, will require web flow auth:
+gcloud auth application-default login
+```
+
+Note that some services (notably, Monorail) will not honor your credentials when
+authenticated this way. You'll see `401 Unauthorized` responses in the console logs.
+For these, you may need to get service account credentials.
+We no longer recommend developers download service account credentials to their machines
+because they are more sensitive (and GCP limits how many we can have out in the wild).
 
 ## Contributors
 
