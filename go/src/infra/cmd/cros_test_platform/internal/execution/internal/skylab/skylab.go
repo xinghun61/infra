@@ -323,17 +323,21 @@ func (r *TaskSet) tick(ctx context.Context, client swarming.Client, gf isolate.G
 			continue
 		}
 
+		logging.Debugf(ctx, "Task %s (%s) completed with verdict %s", latestAttempt.taskID, testRun.invocation.Test.Name, flattenToVerdict(latestAttempt.autotestResult.GetTestCases()))
+
 		shouldRetry, err := r.shouldRetry(testRun)
 		if err != nil {
 			return false, errors.Annotate(err, "tick for task %s", latestAttempt.taskID).Err()
 		}
 		if shouldRetry {
 			complete = false
-			logging.Debugf(ctx, "retrying test %s", testRun.invocation.Test.Name)
+			logging.Debugf(ctx, "Retrying %s", testRun.invocation.Test.Name)
 			if err := r.launchSingle(ctx, client, testRun); err != nil {
 				return false, errors.Annotate(err, "tick for task %s: retry test", latestAttempt.taskID).Err()
 			}
 			r.retries++
+		} else {
+			logging.Debugf(ctx, "Not retrying %s", testRun.invocation.Test.Name)
 		}
 	}
 
