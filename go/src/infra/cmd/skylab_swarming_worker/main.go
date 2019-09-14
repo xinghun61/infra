@@ -153,7 +153,10 @@ func mainInner(a *args) error {
 	}
 
 	if a.isolatedOutdir != "" {
-		blob, err := parser.GetResults(i.ParserArgs(), annotWriter)
+		pa := i.ParserArgs()
+		pa.Failed = luciferErr != nil
+
+		blob, err := parser.GetResults(pa, annotWriter)
 		if err != nil {
 			return errors.Wrap(err, "results parsing")
 		}
@@ -163,6 +166,12 @@ func mainInner(a *args) error {
 		if err != nil {
 			return errors.Wrap(err, "writing results to isolated output file")
 		}
+	} else {
+		// Show Stainless links here for admin tasks.
+		// For test tasks they are bundled with results.json.
+		annotations.BuildStep(annotWriter, "Epilog")
+		annotations.StepLink(annotWriter, "Task results (Stainless)", i.Info.Task.StainlessURL())
+		annotations.StepClosed(annotWriter)
 	}
 	if err := i.Close(); err != nil {
 		return err

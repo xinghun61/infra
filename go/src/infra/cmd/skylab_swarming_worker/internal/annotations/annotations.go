@@ -39,6 +39,11 @@ func StepStarted(w io.Writer) (int, error) {
 	return fmt.Fprintf(w, "@@@STEP_STARTED@@@\n")
 }
 
+// StepFailure prints a STEP_FAILURE annotation.
+func StepFailure(w io.Writer) (int, error) {
+	return fmt.Fprintf(w, "@@@STEP_FAILURE@@@\n")
+}
+
 // StepException prints a STEP_EXCEPTION annotation.
 func StepException(w io.Writer) (int, error) {
 	return fmt.Fprintf(w, "@@@STEP_EXCEPTION@@@\n")

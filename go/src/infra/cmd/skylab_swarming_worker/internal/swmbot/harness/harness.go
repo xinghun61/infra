@@ -97,8 +97,9 @@ func Open(ctx context.Context, b *swmbot.Info, o ...Option) (i *Info, err error)
 // ParserArgs returns the parser.Args for the Swarming bot.
 func (i *Info) ParserArgs() parser.Args {
 	return parser.Args{
-		ParserPath: i.ParserPath,
-		ResultsDir: i.ResultsDir,
+		ParserPath:   i.ParserPath,
+		ResultsDir:   i.ResultsDir,
+		StainlessURL: i.Info.Task.StainlessURL(),
 	}
 }
 

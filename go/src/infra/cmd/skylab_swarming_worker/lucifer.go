@@ -11,7 +11,6 @@ import (
 	"os/exec"
 	"strings"
 
-	"infra/cmd/skylab_swarming_worker/internal/annotations"
 	"infra/cmd/skylab_swarming_worker/internal/event"
 	"infra/cmd/skylab_swarming_worker/internal/swmbot"
 	"infra/cmd/skylab_swarming_worker/internal/swmbot/harness"
@@ -42,9 +41,6 @@ func runLuciferCommand(i *harness.Info, w io.Writer, cmd *exec.Cmd) (*luciferRes
 		}
 	}
 	err := event.RunCommand(cmd, f)
-	annotations.BuildStep(w, "Epilog")
-	annotations.StepLink(w, "Task results (Stainless)", i.Info.Task.StainlessURL())
-	annotations.StepClosed(w)
 	return r, err
 }
 

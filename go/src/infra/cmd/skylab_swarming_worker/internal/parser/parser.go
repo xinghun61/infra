@@ -20,15 +20,19 @@ const parseSubcommand = "parse"
 
 // Args contains information needed to run the parser command.
 type Args struct {
-	ParserPath string
-	ResultsDir string
+	ParserPath   string
+	ResultsDir   string
+	StainlessURL string
+	Failed       bool
 }
 
 // GetResults calls autotest_status_parser and returns its stdout.
 func GetResults(a Args, w io.Writer) ([]byte, error) {
-	annotations.SeedStep(w, "Get results")
-	annotations.StepCursor(w, "Get results")
+	annotations.SeedStep(w, "Test results")
+	annotations.StepCursor(w, "Test results")
 	annotations.StepStarted(w)
+	annotations.StepLink(w, "Full logs (Stainless)", a.StainlessURL)
+
 	defer annotations.StepClosed(w)
 
 	cmd, err := parseCommand(a)
@@ -44,6 +48,13 @@ func GetResults(a Args, w io.Writer) ([]byte, error) {
 		annotations.StepException(w)
 		return nil, errors.Annotate(err, "parse autotest status").Err()
 	}
+
+	if a.Failed {
+		annotations.StepFailure(w)
+	}
+
+	fmt.Fprintf(w, "Test results summary:\n%s", output)
+
 	return output, nil
 }
 
