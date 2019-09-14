@@ -193,6 +193,62 @@ describe('mr-issue-list', () => {
     assert.equal(labels[1].textContent.trim(), 'one-label');
   });
 
+  it('issues sorted into groups when groups defined', async () => {
+    element.issues = [
+      {ownerRef: {displayName: 'test@example.com'}},
+      {ownerRef: {displayName: 'test@example.com'}},
+      {ownerRef: {displayName: 'other.user@example.com'}},
+      {},
+    ];
+
+    element.columns = ['Owner'];
+    element.groups = ['Owner'];
+
+    await element.updateComplete;
+
+    const owners = element.shadowRoot.querySelectorAll('.col-owner');
+    assert.equal(owners.length, 4);
+
+    const groupHeaders = element.shadowRoot.querySelectorAll(
+        '.group-header');
+    assert.equal(groupHeaders.length, 3);
+
+    assert.include(groupHeaders[0].textContent,
+        '2 issues: Owner=test@example.com');
+    assert.include(groupHeaders[1].textContent,
+        '1 issue: Owner=other.user@example.com');
+    assert.include(groupHeaders[2].textContent, '1 issue: -has:Owner');
+  });
+
+  it('toggling group hides members', async () => {
+    element.issues = [
+      {ownerRef: {displayName: 'group1@example.com'}},
+      {ownerRef: {displayName: 'group2@example.com'}},
+    ];
+
+    element.columns = ['Owner'];
+    element.groups = ['Owner'];
+
+    await element.updateComplete;
+
+    const issueRows = element.shadowRoot.querySelectorAll('.list-row');
+    assert.equal(issueRows.length, 2);
+
+    assert.isFalse(issueRows[0].hidden);
+    assert.isFalse(issueRows[1].hidden);
+
+    const groupHeaders = element.shadowRoot.querySelectorAll(
+        '.group-header');
+    assert.equal(groupHeaders.length, 2);
+
+    // Toggle first group hidden.
+    groupHeaders[0].click();
+    await element.updateComplete;
+
+    assert.isTrue(issueRows[0].hidden);
+    assert.isFalse(issueRows[1].hidden);
+  });
+
   it('reloadColspec navigates to page with new colspec', () => {
     element.columns = ['ID', 'Summary'];
     element.queryParams = {};
@@ -249,6 +305,16 @@ describe('mr-issue-list', () => {
 
     sinon.assert.calledWith(element._page,
         '/p/chromium/issues/list?sort=-owner%20-summary');
+  });
+
+  it('addGroupBy updates groupby URL param', async () => {
+    element.columns = ['Owner', 'Priority'];
+    element.groups = ['Status'];
+
+    element.addGroupBy(0);
+
+    sinon.assert.calledWith(element._page,
+        '/p/chromium/issues/list?groupby=Owner%20Status&colspec=Priority');
   });
 
   it('addColumn adds a column', () => {
@@ -355,15 +421,15 @@ describe('mr-issue-list', () => {
   it('selected issues render selected attribute', async () => {
     element.selectionEnabled = true;
     element.issues = [
-      {summary: 'issue 1'},
-      {summary: 'another issue'},
-      {summary: 'issue 2'},
+      {summary: 'issue 1', localId: 1, projectName: 'proj'},
+      {summary: 'another issue', localId: 2, projectName: 'proj'},
+      {summary: 'issue 2', localId: 3, projectName: 'proj'},
     ];
     element.columns = ['Summary'];
 
     await element.updateComplete;
 
-    element._selectedIssues = [true, false, false];
+    element._selectedIssues = new Set(['proj:1']);
 
     await element.updateComplete;
 
@@ -377,8 +443,8 @@ describe('mr-issue-list', () => {
   it('clicking select all selects all issues', async () => {
     element.selectionEnabled = true;
     element.issues = [
-      {summary: 'issue 1'},
-      {summary: 'issue 2'},
+      {summary: 'issue 1', localId: 1, projectName: 'proj'},
+      {summary: 'issue 2', localId: 2, projectName: 'proj'},
     ];
 
     await element.updateComplete;
@@ -389,27 +455,27 @@ describe('mr-issue-list', () => {
     selectAll.click();
 
     assert.deepEqual(element.selectedIssues, [
-      {summary: 'issue 1'},
-      {summary: 'issue 2'},
+      {summary: 'issue 1', localId: 1, projectName: 'proj'},
+      {summary: 'issue 2', localId: 2, projectName: 'proj'},
     ]);
   });
 
   it('when checked select all deselects all issues', async () => {
     element.selectionEnabled = true;
     element.issues = [
-      {summary: 'issue 1'},
-      {summary: 'issue 2'},
+      {summary: 'issue 1', localId: 1, projectName: 'proj'},
+      {summary: 'issue 2', localId: 2, projectName: 'proj'},
     ];
 
     await element.updateComplete;
 
-    element._selectedIssues = [true, true];
+    element._selectedIssues = new Set(['proj:1', 'proj:2']);
 
     await element.updateComplete;
 
     assert.deepEqual(element.selectedIssues, [
-      {summary: 'issue 1'},
-      {summary: 'issue 2'},
+      {summary: 'issue 1', localId: 1, projectName: 'proj'},
+      {summary: 'issue 2', localId: 2, projectName: 'proj'},
     ]);
 
     const selectAll = element.shadowRoot.querySelector('.select-all');
@@ -421,9 +487,9 @@ describe('mr-issue-list', () => {
   it('selected issues added when issues checked', async () => {
     element.selectionEnabled = true;
     element.issues = [
-      {summary: 'issue 1'},
-      {summary: 'another issue'},
-      {summary: 'issue 2'},
+      {summary: 'issue 1', localId: 1, projectName: 'proj'},
+      {summary: 'another issue', localId: 2, projectName: 'proj'},
+      {summary: 'issue 2', localId: 3, projectName: 'proj'},
     ];
 
     await element.updateComplete;
@@ -440,7 +506,7 @@ describe('mr-issue-list', () => {
     await element.updateComplete;
 
     assert.deepEqual(element.selectedIssues, [
-      {summary: 'issue 2'},
+      {summary: 'issue 2', localId: 3, projectName: 'proj'},
     ]);
 
     checkboxes[0].checked = true;
@@ -449,8 +515,8 @@ describe('mr-issue-list', () => {
     await element.updateComplete;
 
     assert.deepEqual(element.selectedIssues, [
-      {summary: 'issue 1'},
-      {summary: 'issue 2'},
+      {summary: 'issue 1', localId: 1, projectName: 'proj'},
+      {summary: 'issue 2', localId: 3, projectName: 'proj'},
     ]);
   });
 

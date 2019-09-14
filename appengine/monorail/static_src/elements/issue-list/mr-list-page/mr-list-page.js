@@ -21,7 +21,8 @@ import '../dialogs/mr-change-columns/mr-change-columns.js';
 import '../mr-mode-selector/mr-mode-selector.js';
 
 export const DEFAULT_ISSUES_PER_PAGE = 100;
-const PARAMS_THAT_TRIGGER_REFRESH = ['q', 'can', 'sort', 'num', 'start'];
+const PARAMS_THAT_TRIGGER_REFRESH = ['q', 'can', 'sort', 'groupby', 'num',
+  'start'];
 
 export class MrListPage extends connectStore(LitElement) {
   static get styles() {
@@ -170,6 +171,7 @@ export class MrListPage extends connectStore(LitElement) {
         .columns=${this.columns}
         ?selectionEnabled=${this.editingEnabled}
         ?starringEnabled=${this.starringEnabled}
+        .groups=${this.groups}
         @selectionChange=${this._setSelectedIssues}
       ></mr-issue-list>
     `;
@@ -356,6 +358,11 @@ export class MrListPage extends connectStore(LitElement) {
     const colspec = this.queryParams.colspec;
     return colspec ? colspec.split(COLSPEC_DELIMITER_REGEX)
       : SITEWIDE_DEFAULT_COLUMNS;
+  }
+
+  get groups() {
+    const groupBy = this.queryParams.groupby;
+    return groupBy ? groupBy.split(COLSPEC_DELIMITER_REGEX) : [];
   }
 
   get maxItems() {

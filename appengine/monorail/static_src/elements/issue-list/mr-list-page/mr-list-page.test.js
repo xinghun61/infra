@@ -162,6 +162,20 @@ describe('mr-list-page', () => {
         ['ID', 'Summary', 'Test-Label', 'Another-Label']);
   });
 
+  it('parses groupby parameter correctly', () => {
+    element.queryParams = {groupby: 'Priority+Status'};
+
+    assert.deepEqual(element.groups,
+        ['Priority', 'Status']);
+  });
+
+  it('groupby parsing preserves dashed parameters', () => {
+    element.queryParams = {colspec: 'Priority+Custom-Status'};
+
+    assert.deepEqual(element.columns,
+        ['Priority', 'Custom-Status']);
+  });
+
   describe('pagination', () => {
     beforeEach(() => {
       // Stop Redux from overriding values being tested.

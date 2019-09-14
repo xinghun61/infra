@@ -15,7 +15,7 @@ import 'elements/framework/mr-star-button/mr-star-button.js';
 import {issueRefToUrl, issueToIssueRef,
   issueRefToString, labelRefsToOneWordLabels} from 'shared/converters.js';
 import {isTextInput} from 'shared/dom-helpers.js';
-import {urlWithNewParams} from 'shared/helpers.js';
+import {urlWithNewParams, pluralize} from 'shared/helpers.js';
 import {stringValuesForIssueField, EMPTY_FIELD_VALUE,
   COLSPEC_DELIMITER_REGEX} from 'shared/issue-fields.js';
 import './mr-show-columns-dropdown.js';
@@ -23,6 +23,12 @@ import './mr-show-columns-dropdown.js';
 const COLUMN_DISPLAY_NAMES = {
   'summary': 'Summary + Labels',
 };
+
+/**
+ * Really high cardinality attributes like ID and Summary are unlikely to be
+ * useful if grouped, so it's better to just hide the option.
+ */
+const UNGROUPABLE_COLUMNS = new Set(['id', 'summary']);
 
 export class MrIssueList extends connectStore(LitElement) {
   static get styles() {
@@ -74,11 +80,23 @@ export class MrIssueList extends connectStore(LitElement) {
         border-top: none;
         transform: rotate(-45deg);
       }
-      td {
+      td, th.group-header {
         padding: 4px 8px;
         text-overflow: ellipsis;
         border-bottom: var(--chops-normal-border);
         cursor: pointer;
+        font-weight: normal;
+      }
+      .group-header-content {
+        height: 100%;
+        width: 100%;
+        align-items: center;
+        display: flex;
+      }
+      th.group-header i.material-icons {
+        font-size: var(--chops-icon-font-size);
+        color: var(--chops-primary-icon-color);
+        margin-right: 4px;
       }
       td.ignore-navigation {
         cursor: default;
@@ -88,6 +106,7 @@ export class MrIssueList extends connectStore(LitElement) {
         white-space: nowrap;
         text-align: left;
         z-index: 10;
+        border-bottom: var(--chops-normal-border);
       }
       th.first-column {
         padding: 3px 8px;
@@ -112,7 +131,7 @@ export class MrIssueList extends connectStore(LitElement) {
       td:hover > mr-crbug-link {
         visibility: visible;
       }
-      .col-summary {
+      .col-summary, .header-summary {
         /* Setting a table cell to 100% width makes it take up
          * all remaining space in the table, not the full width of
          * the table. */
@@ -139,7 +158,8 @@ export class MrIssueList extends connectStore(LitElement) {
   }
 
   render() {
-    const selectAllChecked = this._selectedIssues.some(Boolean);
+    const selectAllChecked = this._selectedIssues.size > 0;
+
     return html`
       <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
       <tbody>
@@ -163,10 +183,11 @@ export class MrIssueList extends connectStore(LitElement) {
               title="Show columns"
               menuAlignment="right"
               .columns=${this.columns}
+              .queryParams=${this.queryParams}
             ></mr-show-columns-dropdown>
           </th>
         </tr>
-        ${this.issues.map((issue, i) => this._renderRow(issue, i))}
+        ${this._renderIssues()}
       </tbody>
     `;
   }
@@ -174,14 +195,13 @@ export class MrIssueList extends connectStore(LitElement) {
   _renderHeader(column, i) {
     // zIndex is used to render the z-index property in descending order
     const zIndex = this.highestZIndex - i;
-
     const colKey = column.toLowerCase();
     const name = colKey in COLUMN_DISPLAY_NAMES ? COLUMN_DISPLAY_NAMES[colKey]
       : column;
     return html`
-      <th style="z-index: ${zIndex};">
+      <th style="z-index: ${zIndex};" class="header-${colKey}">
         <mr-dropdown
-          class="dropdown-${column.toLowerCase()}"
+          class="dropdown-${colKey}"
           .text=${name}
           .items=${this._headerActions(column, i)}
           menuAlignment="left"
@@ -190,7 +210,7 @@ export class MrIssueList extends connectStore(LitElement) {
   }
 
   _headerActions(column, i) {
-    return [
+    const actions = [
       {
         text: 'Sort up',
         handler: () => this.updateSortSpec(column),
@@ -204,17 +224,88 @@ export class MrIssueList extends connectStore(LitElement) {
         text: 'Hide column',
         handler: () => this.removeColumn(i),
       },
-      // TODO(zhangtiff): Add "Group rows" feature.
     ];
+    if (!UNGROUPABLE_COLUMNS.has(column.toLowerCase())) {
+      actions.push({
+        text: 'Group rows',
+        handler: () => this.addGroupBy(i),
+      });
+    }
+    return actions;
   }
 
-  _renderRow(issue, i) {
+  _renderIssues() {
+    // Keep track of all the groups that we've seen so far to create
+    // group headers as needed.
+    const {issues, groupedIssues} = this;
+
+    if (groupedIssues) {
+      // Make sure issues in groups are rendered with unique indices across
+      // groups to make sure hot keys and the like still work.
+      let indexOffset = 0;
+      return html`${groupedIssues.map(({groupName, issues}) => {
+        const template = html`
+          ${this._renderGroup(groupName, issues, indexOffset)}
+        `;
+        indexOffset += issues.length;
+        return template;
+      })}`;
+    }
+
+    return html`
+      ${issues.map((issue, i) => this._renderRow(issue, i))}
+    `;
+  }
+
+  _renderGroup(groupName, issues, iOffset) {
+    if (!this.groups.length) return '';
+
+    const count = issues.length;
+    const groupKey = groupName.toLowerCase();
+    const isHidden = this._hiddenGroups.has(groupKey);
+
+    return html`
+      <tr>
+        <th
+          class="group-header"
+          colspan="${this.numColumns}"
+          @click=${() => this._toggleGroup(groupKey)}
+          aria-expanded=${(!isHidden).toString()}
+        >
+          <div class="group-header-content">
+            <i
+              class="material-icons"
+              title=${isHidden ? 'Show' : 'Hide'}
+            >${isHidden ? 'add' : 'remove'}</i>
+            ${count} ${pluralize(count, 'issue')}: ${groupName}
+          </div>
+        </th>
+      </tr>
+      ${issues.map((issue, i) => this._renderRow(issue, iOffset + i, isHidden))}
+    `;
+  }
+
+  _toggleGroup(groupKey) {
+    if (this._hiddenGroups.has(groupKey)) {
+      this._hiddenGroups.delete(groupKey);
+    } else {
+      this._hiddenGroups.add(groupKey);
+    }
+
+    // Lit-element's default hasChanged check does not notice when Sets mutate.
+    this.requestUpdate('_hiddenGroups');
+  }
+
+  _renderRow(issue, i, isHidden = false) {
     const draggable = this.rerankEnabled && this.rerankEnabled(issue);
-    const rowSelected = this._selectedIssues[i];
+    const rowSelected = this._selectedIssues.has(issueRefToString(issue));
+    const id = issueRefToString(issue);
+
     return html`
       <tr
         class="row-${i} list-row ${i === this.srcIndex ? 'dragged' : ''}"
         ?selected=${rowSelected}
+        ?hidden=${isHidden}
         draggable=${draggable}
         data-index=${i}
         @dragstart=${this._dragstart}
@@ -229,12 +320,15 @@ export class MrIssueList extends connectStore(LitElement) {
         <td class="first-column ignore-navigation">
           <div class="edit-widget-container">
             ${draggable ? html`
-              <i class="material-icons draggable">drag_indicator</i>
+              <i
+                class="material-icons draggable"
+                title="Drag issue"
+              >drag_indicator</i>
             ` : ''}
             ${this.selectionEnabled ? html`
               <input
                 class="issue-checkbox"
-                .value=${i}
+                .value=${id}
                 .checked=${rowSelected}
                 type="checkbox"
                 aria-label="Select Issue ${issue.localId}"
@@ -297,6 +391,10 @@ export class MrIssueList extends connectStore(LitElement) {
        */
       columns: {type: Array},
       /**
+       * Array of columns that are used as groups for issues.
+       */
+      groups: {type: Array},
+      /**
        * List of issues to display.
        */
       issues: {type: Array},
@@ -326,8 +424,11 @@ export class MrIssueList extends connectStore(LitElement) {
        */
       queryParams: {type: Object},
       /**
-       * Array of all selected issues. Each value is either true or false
-       * depending on whether the issue at that index is selected.
+       * Set of group keys that are currently hidden.
+       */
+      _hiddenGroups: {type: Object},
+      /**
+       * Set of all selected issues where each entry is an issue ref string.
        */
       _selectedIssues: {type: Object},
       /**
@@ -345,15 +446,17 @@ export class MrIssueList extends connectStore(LitElement) {
   constructor() {
     super();
     this.issues = [];
-    this._selectedIssues = [];
+    this._selectedIssues = new Set();
     this.selectionEnabled = false;
     this.starringEnabled = false;
     this.role = 'table';
 
     this.columns = ['ID', 'Summary'];
+    this.groups = [];
 
     this._boundRunNavigationHotKeys = this._runNavigationHotKeys.bind(this);
 
+    this._hiddenGroups = new Set();
 
     this._fieldDefMap = new Map();
     this._labelPrefixSet = new Set();
@@ -389,10 +492,14 @@ export class MrIssueList extends connectStore(LitElement) {
 
   update(changedProperties) {
     if (changedProperties.has('issues')) {
-      // TODO(zhangtiff): Consider whether we want to redesign _selectedIssues
-      // to work in the case when the issue list changes. ie: for example if
-      // issues are auto-updated to reflect the latest issues matching a query.
-      this._selectedIssues = Array(this.issues.length).fill(false);
+      // Clear selected issues to avoid an ever-growing Set size. In the future,
+      // we may want to consider saving selections across issue reloads, though,
+      // such as in the case or list refreshing.
+      this._selectedIssues = new Set();
+
+      // Clear group toggle state when the list of issues changes to prevent an
+      // ever-growing Set size.
+      this._hiddenGroups = new Set();
     }
     super.update(changedProperties);
   }
@@ -406,10 +513,60 @@ export class MrIssueList extends connectStore(LitElement) {
   }
 
   /**
+   * The number of columns displayed in the table. This is the count of
+   * customized columns + number of built in columns.
+   */
+  get numColumns() {
+    return this.columns.length + 2;
+  }
+
+  /**
+   * Sort issues into groups if groups are defined.
+   */
+  get groupedIssues() {
+    if (!this.groups || !this.groups.length) return;
+
+    const issuesByGroup = new Map();
+
+    this.issues.forEach((issue) => {
+      const groupName = this._groupNameForIssue(issue);
+      const groupKey = groupName.toLowerCase();
+
+      if (!issuesByGroup.has(groupKey)) {
+        issuesByGroup.set(groupKey, {groupName, issues: [issue]});
+      } else {
+        const entry = issuesByGroup.get(groupKey);
+        entry.issues.push(issue);
+      }
+    });
+    return [...issuesByGroup.values()];
+  }
+
+  _groupNameForIssue(issue) {
+    const groups = this.groups;
+    const keyPieces = [];
+
+    groups.forEach((group) => {
+      const values = stringValuesForIssueField(issue, group, this.projectName,
+          this._fieldDefMap, this._labelPrefixSet);
+      if (!values.length) {
+        keyPieces.push(`-has:${group}`);
+      } else {
+        values.forEach((v) => {
+          keyPieces.push(`${group}=${v}`);
+        });
+      }
+    });
+
+    return keyPieces.join(' ');
+  }
+
+  /**
    * Return an Array of selected issues in the order they appear in the list.
    */
   get selectedIssues() {
-    return this.issues.filter((_, i) => this._selectedIssues[i]);
+    return this.issues.filter((issue) =>
+      this._selectedIssues.has(issueRefToString(issue)));
   }
 
   /**
@@ -430,6 +587,25 @@ export class MrIssueList extends connectStore(LitElement) {
     newSpec.unshift(`${descending ? '-' : ''}${column}`);
 
     this._updateQueryParams({sort: newSpec.join(' ')}, ['start']);
+  }
+
+  /**
+   * Updates the groupby URL parameter to include a new column to group.
+   *
+   * @param {Number} i index of the column to be grouped.
+   */
+  addGroupBy(i) {
+    const groups = [...this.groups];
+    const columns = [...this.columns];
+    const groupedColumn = columns[i];
+    columns.splice(i, 1);
+
+    groups.unshift(groupedColumn);
+
+    this._updateQueryParams({
+      groupby: groups.join(' '),
+      colspec: columns.join('+'),
+    }, ['start']);
   }
 
   /**
@@ -546,7 +722,8 @@ export class MrIssueList extends connectStore(LitElement) {
         this.starIssue(issueToIssueRef(issue));
         break;
       case 'x': // Toggle selection of focused issue.
-        this._updateSelectedIssue(i, !this._selectedIssues[i]);
+        const key = issueRefToString(issue);
+        this._updateSelectedIssue(key, !this._selectedIssues.has(key));
         break;
       case 'o': // Open current issue.
       case 'O': // Open current issue in new tab.
@@ -583,10 +760,11 @@ export class MrIssueList extends connectStore(LitElement) {
     const checkbox = e.target;
 
     if (checkbox.checked) {
-      this._selectedIssues = this.issues.map(() => true);
+      this._selectedIssues = new Set(this.issues.map(issueRefToString));
     } else {
-      this._selectedIssues = this.issues.map(() => false);
+      this._selectedIssues = new Set();
     }
+    this.dispatchEvent(new CustomEvent('selectionChange'));
   }
 
   // TODO(zhangtiff): Add Shift+Click to select a range of issues.
@@ -594,25 +772,24 @@ export class MrIssueList extends connectStore(LitElement) {
     if (!this.selectionEnabled) return;
 
     const checkbox = e.target;
-    const i = Number.parseInt(checkbox.value);
+    const idKey = checkbox.value;
 
-    if (i < 0 || i >= this._selectedIssues.length) return;
-
-    this._updateSelectedIssue(i, checkbox.checked);
+    this._updateSelectedIssue(idKey, checkbox.checked);
   }
 
-  _updateSelectedIssue(i, selected) {
-    const oldSelection = this._selectedIssues[i];
+  _updateSelectedIssue(issueKey, selected) {
+    const oldSelection = this._selectedIssues.has(issueKey);
 
     if (selected) {
-      this._selectedIssues[i] = true;
-    } else {
-      this._selectedIssues[i] = false;
+      this._selectedIssues.add(issueKey);
+    } else if (this._selectedIssues.has(issueKey)) {
+      this._selectedIssues.delete(issueKey);
     }
 
-    if (this._selectedIssues[i] !== oldSelection) {
-      this.requestUpdate('_selectedIssues');
+    const newSelection = this._selectedIssues.has(issueKey);
 
+    if (newSelection !== oldSelection) {
+      this.requestUpdate('_selectedIssues');
       this.dispatchEvent(new CustomEvent('selectionChange'));
     }
   }
