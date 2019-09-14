@@ -7,11 +7,12 @@ import page from 'page';
 import qs from 'qs';
 import {store, connectStore} from 'reducers/base.js';
 import * as issue from 'reducers/issue.js';
+import * as user from 'reducers/user.js';
 import * as project from 'reducers/project.js';
 import {prpcClient} from 'prpc-client-instance.js';
 import {COLSPEC_DELIMITER_REGEX, SITEWIDE_DEFAULT_COLUMNS}
   from 'shared/issue-fields.js';
-import {urlWithNewParams} from 'shared/helpers.js';
+import {urlWithNewParams, userIsMember} from 'shared/helpers.js';
 import 'elements/framework/mr-dropdown/mr-dropdown.js';
 import 'elements/framework/mr-issue-list/mr-issue-list.js';
 // eslint-disable-next-line max-len
@@ -167,7 +168,8 @@ export class MrListPage extends connectStore(LitElement) {
         .projectName=${this.projectName}
         .queryParams=${this.queryParams}
         .columns=${this.columns}
-        selectionEnabled
+        ?selectionEnabled=${this.editingEnabled}
+        ?starringEnabled=${this.starringEnabled}
         @selectionChange=${this._setSelectedIssues}
       ></mr-issue-list>
     `;
@@ -183,30 +185,32 @@ export class MrListPage extends connectStore(LitElement) {
     return html`
       <div class="list-controls">
         <div class="edit-actions">
-          <button
-            class="bulk-edit-button"
-            @click=${this.bulkEdit}
-          >
-            Bulk edit
-          </button>
-          <button
-            class="add-to-hotlist-button"
-            @click=${this.addToHotlist}
-          >
-            Add to hotlist
-          </button>
-          <button
-            class="change-columns-button"
-            @click=${this.changeColumns}
-          >
-            Change columns
-          </button>
-          <mr-dropdown
-            icon="more_vert"
-            menuAlignment="left"
-            title="More actions..."
-            .items=${this._moreActions}
-          ></mr-dropdown>
+          ${this.editingEnabled ? html`
+            <button
+              class="bulk-edit-button"
+              @click=${this.bulkEdit}
+            >
+              Bulk edit
+            </button>
+            <button
+              class="add-to-hotlist-button"
+              @click=${this.addToHotlist}
+            >
+              Add to hotlist
+            </button>
+            <button
+              class="change-columns-button"
+              @click=${this.changeColumns}
+            >
+              Change columns
+            </button>
+            <mr-dropdown
+              icon="more_vert"
+              menuAlignment="left"
+              title="More actions..."
+              .items=${this._moreActions}
+            ></mr-dropdown>
+          ` : ''}
         </div>
 
         <div class="right-controls">
@@ -253,6 +257,9 @@ export class MrListPage extends connectStore(LitElement) {
        * The current search string the user is querying for.
        */
       currentQuery: {type: String},
+      _isLoggedIn: {type: Boolean},
+      _currentUser: {type: Object},
+      _usersProjects: {type: Object},
     };
   };
 
@@ -262,6 +269,7 @@ export class MrListPage extends connectStore(LitElement) {
     this.fetchingIssueList = false;
     this.selectedIssues = [];
     this.queryParams = {};
+    this._usersProjects = new Map();
 
     this._boundRefresh = this.refresh.bind(this);
 
@@ -322,11 +330,25 @@ export class MrListPage extends connectStore(LitElement) {
   }
 
   stateChanged(state) {
+    this._isLoggedIn = user.isLoggedIn(state);
+    this._currentUser = user.user(state);
+    this._usersProjects = user.projectsPerUser(state);
+
     this.issues = (issue.issueList(state) || []);
     this.totalIssues = (issue.totalIssues(state) || 0);
     this.fetchingIssueList = issue.requests(state).fetchIssueList.requesting;
 
     this.currentQuery = project.currentQuery(state);
+  }
+
+  get starringEnabled() {
+    return this._isLoggedIn;
+  }
+
+  get editingEnabled() {
+    return this._isLoggedIn && (userIsMember(this._currentUser,
+        this.projectName, this._usersProjects)
+        || this._currentUser.isSiteAdmin);
   }
 
   get columns() {

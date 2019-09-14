@@ -241,9 +241,11 @@ export class MrIssueList extends connectStore(LitElement) {
                 @change=${this._selectIssue}
               />
             ` : ''}
-            <mr-star-button
-              .issueRef=${issueToIssueRef(issue)}
-            ></mr-star-button>
+            ${this.starringEnabled ? html`
+              <mr-star-button
+                .issueRef=${issueToIssueRef(issue)}
+              ></mr-star-button>
+            ` : ''}
           </div>
         </td>
 
@@ -308,6 +310,10 @@ export class MrIssueList extends connectStore(LitElement) {
        */
       selectionEnabled: {type: Boolean},
       /**
+       * Whether to show issue starring or not.
+       */
+      starringEnabled: {type: Boolean},
+      /**
        * Attribute set to make host element into a table. Do not override.
        */
       role: {
@@ -341,6 +347,7 @@ export class MrIssueList extends connectStore(LitElement) {
     this.issues = [];
     this._selectedIssues = [];
     this.selectionEnabled = false;
+    this.starringEnabled = false;
     this.role = 'table';
 
     this.columns = ['ID', 'Summary'];
@@ -549,6 +556,7 @@ export class MrIssueList extends connectStore(LitElement) {
   }
 
   starIssue(issueRef) {
+    if (!this.starringEnabled) return;
     const issueKey = issueRefToString(issueRef);
 
     // TODO(zhangtiff): Find way to share star disabling logic more.

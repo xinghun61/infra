@@ -279,10 +279,60 @@ describe('mr-list-page', () => {
   describe('edit actions', () => {
     beforeEach(() => {
       sinon.stub(window, 'alert');
+
+      // Give the test user edit privileges.
+      element._isLoggedIn = true;
+      element._currentUser = {isSiteAdmin: true};
     });
 
     afterEach(() => {
       window.alert.restore();
+    });
+
+    it('edit actions hidden when user is logged out', async () => {
+      element._isLoggedIn = false;
+
+      await element.updateComplete;
+
+      const editActions = element.shadowRoot.querySelector('.edit-actions');
+      assert.isFalse(editActions.children.length > 0);
+    });
+
+    it('edit actions hidden when user is not a project member', async () => {
+      element._isLoggedIn = true;
+      element._currentUser = {displayName: 'regular@user.com'};
+
+      await element.updateComplete;
+
+      const editActions = element.shadowRoot.querySelector('.edit-actions');
+      assert.isFalse(editActions.children.length > 0);
+    });
+
+    it('edit actions shown when user is a project member', async () => {
+      element.projectName = 'chromium';
+      element._isLoggedIn = true;
+      element._currentUser = {isSiteAdmin: false, userId: '123'};
+      element._usersProjects = new Map([['123', {ownerOf: ['chromium']}]]);
+
+      await element.updateComplete;
+
+      const editActions = element.shadowRoot.querySelector('.edit-actions');
+      assert.isTrue(editActions.children.length > 0);
+
+      element.projectName = 'nonmember-project';
+      await element.updateComplete;
+
+      assert.isFalse(editActions.children.length > 0);
+    });
+
+    it('edit actions shown when user is a site admin', async () => {
+      element._isLoggedIn = true;
+      element._currentUser = {isSiteAdmin: true};
+
+      await element.updateComplete;
+
+      const editActions = element.shadowRoot.querySelector('.edit-actions');
+      assert.isTrue(editActions.children.length > 0);
     });
 
     it('bulk edit stops when no issues selected', () => {

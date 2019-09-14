@@ -96,11 +96,8 @@ export class MrStarButton extends connectStore(LitElement) {
   }
 
   stateChanged(state) {
-    const currentUser = user.user(state);
-    this._isLoggedIn = currentUser && currentUser.userId;
-
+    this._isLoggedIn = user.isLoggedIn(state);
     this._starringIssues = issue.starringIssues(state);
-
     this._starredIssues = issue.starredIssues(state);
     this._fetchingIsStarred = issue.requests(state).fetchIsStarred.requesting;
   }

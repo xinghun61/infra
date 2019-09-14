@@ -314,7 +314,7 @@ describe('mr-issue-list', () => {
     sinon.assert.calledWith(element.removeColumn, 1);
   });
 
-  it('selected disabled when selectionEnabled is false', async () => {
+  it('selections disabled when selectionEnabled is false', async () => {
     element.selectionEnabled = false;
     element.issues = [
       {summary: 'test issue'},
@@ -323,9 +323,33 @@ describe('mr-issue-list', () => {
 
     await element.updateComplete;
 
-    const checkboxes = element.shadowRoot.querySelectorAll('.issue-checkbox');
-
+    let checkboxes = element.shadowRoot.querySelectorAll('.issue-checkbox');
     assert.equal(checkboxes.length, 0);
+
+    element.selectionEnabled = true;
+    await element.updateComplete;
+
+    checkboxes = element.shadowRoot.querySelectorAll('.issue-checkbox');
+    assert.equal(checkboxes.length, 2);
+  });
+
+  it('starring disabled when starringEnabled is false', async () => {
+    element.starringEnabled = false;
+    element.issues = [
+      {summary: 'test issue'},
+      {summary: 'I have a summary'},
+    ];
+
+    await element.updateComplete;
+
+    let stars = element.shadowRoot.querySelectorAll('mr-star-button');
+    assert.equal(stars.length, 0);
+
+    element.starringEnabled = true;
+    await element.updateComplete;
+
+    stars = element.shadowRoot.querySelectorAll('mr-star-button');
+    assert.equal(stars.length, 2);
   });
 
   it('selected issues render selected attribute', async () => {
@@ -597,6 +621,7 @@ describe('mr-issue-list', () => {
     });
 
     it('pressing s stars focused issue', async () => {
+      element.starringEnabled = true;
       sinon.stub(element, 'starIssue');
       await element.updateComplete;
 
@@ -608,6 +633,7 @@ describe('mr-issue-list', () => {
     });
 
     it('starIssue does not star issue while stars are fetched', () => {
+      element.starringEnabled = true;
       sinon.stub(element, '_starIssue');
       element._fetchingStarredIssues = true;
 
@@ -617,6 +643,7 @@ describe('mr-issue-list', () => {
     });
 
     it('starIssue does not star when issue is being starred', () => {
+      element.starringEnabled = true;
       sinon.stub(element, '_starIssue');
       element._starringIssues = new Map([['chromium:2', {requesting: true}]]);
 
@@ -626,6 +653,7 @@ describe('mr-issue-list', () => {
     });
 
     it('starIssue stars issue when issue is not being starred', () => {
+      element.starringEnabled = true;
       sinon.stub(element, '_starIssue');
       element._starringIssues = new Map([['chromium:2', {requesting: false}]]);
 
@@ -636,6 +664,7 @@ describe('mr-issue-list', () => {
     });
 
     it('starIssue unstars issue when issue is already starred', () => {
+      element.starringEnabled = true;
       sinon.stub(element, '_starIssue');
       element._starredIssues = new Set(['chromium:2']);
 

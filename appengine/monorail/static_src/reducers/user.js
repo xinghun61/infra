@@ -138,6 +138,9 @@ export const reducer = combineReducers({
 // Selectors
 export const requests = (state) => state.user.requests;
 export const user = (state) => state.user.currentUser || {};
+// TODO(zhangtiff): Replace custom logic to check if the user is logged in
+// across the frontend.
+export const isLoggedIn = createSelector(user, (user) => user && user.userId);
 export const userRef = createSelector(user, (user) => userToUserRef(user));
 export const prefs = createSelector(user, (user) => objectToMap(user.prefs));
 
