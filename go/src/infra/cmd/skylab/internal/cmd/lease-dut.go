@@ -124,6 +124,7 @@ func createLeaseTask(ctx context.Context, t *swarming.Client, e site.Environment
 		Tags: []string{
 			"pool:ChromeOSSkylab",
 			"skylab-tool:lease",
+			fmt.Sprintf("dut-name:%s", lt.host),
 		},
 		TaskSlices:     slices,
 		Priority:       10,

@@ -67,6 +67,75 @@ func (c *Client) CreateTask(ctx context.Context, req *swarming_api.SwarmingRpcsN
 	return resp, nil
 }
 
+func getFullTaskList(ctx context.Context, call *swarming_api.TasksListCall) ([]*swarming_api.SwarmingRpcsTaskResult, error) {
+	var tr []*swarming_api.SwarmingRpcsTaskResult
+	var err error
+	var tl *swarming_api.SwarmingRpcsTaskList
+	for {
+		tl, err = call.Context(ctx).Do()
+		if err != nil {
+			return nil, err
+		}
+		tr = append(tr, tl.Items...)
+		if tl.Cursor == "" {
+			break
+		}
+		call = call.Cursor(tl.Cursor)
+	}
+	return tr, nil
+}
+
+// GetActiveLeaseTasksForHost returns a list of RUNNING or PENDING lease tasks,
+// retrying transient errors.
+func (c *Client) GetActiveLeaseTasksForHost(ctx context.Context, hostname string) ([]*swarming_api.SwarmingRpcsTaskResult, error) {
+	var tr []*swarming_api.SwarmingRpcsTaskResult
+	getResult := func() error {
+		tr = nil
+		var err error
+		tags := []string{fmt.Sprintf("dut_name:%s", hostname), "skylab-tool:lease"}
+		call := c.SwarmingService.Tasks.List().Tags(tags...).State("RUNNING")
+		r, err := getFullTaskList(ctx, call)
+		if err != nil {
+			return err
+		}
+		tr = append(tr, r...)
+		call = c.SwarmingService.Tasks.List().Tags(tags...).State("PENDING")
+		r, err = getFullTaskList(ctx, call)
+		if err != nil {
+			return err
+		}
+		tr = append(tr, r...)
+		return nil
+	}
+	if err := callWithRetries(ctx, getResult); err != nil {
+		return nil, errors.Annotate(err, fmt.Sprintf("get active lease tasks for host %s", hostname)).Err()
+	}
+	return tr, nil
+}
+
+// CancelTask cancels a swarming task by taskID,
+// retrying transient errors.
+func (c *Client) CancelTask(ctx context.Context, taskID string) error {
+	ctx, cf := context.WithTimeout(ctx, 60*time.Second)
+	defer cf()
+	var tc *swarming_api.SwarmingRpcsCancelResponse
+	getResult := func() error {
+		var err error
+		req := &swarming_api.SwarmingRpcsTaskCancelRequest{
+			KillRunning: true,
+		}
+		tc, err = c.SwarmingService.Task.Cancel(taskID, req).Context(ctx).Do()
+		return err
+	}
+	if err := callWithRetries(ctx, getResult); err != nil {
+		return errors.Annotate(err, fmt.Sprintf("cancel task %s", taskID)).Err()
+	}
+	if !tc.Ok {
+		return errors.New(fmt.Sprintf("task %s is not successfully canceled", taskID))
+	}
+	return nil
+}
+
 // GetResults gets results for the tasks with given IDs,
 // retrying transient errors.
 func (c *Client) GetResults(ctx context.Context, IDs []string) ([]*swarming_api.SwarmingRpcsTaskResult, error) {
