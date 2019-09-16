@@ -8,6 +8,7 @@ import (
 	"context"
 	"fmt"
 	"strconv"
+	"strings"
 
 	buildbucketpb "go.chromium.org/luci/buildbucket/proto"
 	"go.chromium.org/luci/common/errors"
@@ -16,6 +17,7 @@ import (
 	fm "google.golang.org/genproto/protobuf/field_mask"
 
 	admin "infra/tricium/api/admin/v1"
+	tricium "infra/tricium/api/v1"
 )
 
 // BuildbucketServer implements the ServerAPI for the buildbucket service.
@@ -59,7 +61,7 @@ func trigger(c context.Context, params *TriggerParameters, client buildbucketpb.
 
 	// Trigger build.
 	build, err := client.ScheduleBuild(c, &buildbucketpb.ScheduleBuildRequest{
-		RequestId: fmt.Sprintf("%s~%s~%s", params.Patch.GerritProject, params.Patch.GerritCl, params.Patch.GerritPatch),
+		RequestId: makeRequestID(&params.Patch, recipe.Recipe),
 		Builder: &buildbucketpb.BuilderID{
 			Project: recipe.Recipe.Project,
 			Bucket:  recipe.Recipe.Bucket,
@@ -82,6 +84,19 @@ func trigger(c context.Context, params *TriggerParameters, client buildbucketpb.
 
 	logging.Infof(c, "Scheduled new build: %s", build.String())
 	return &TriggerResult{BuildID: build.Id}, nil
+}
+
+// makeRequestID returns a request ID string.
+//
+// This string is used for deduplicating requests, so it's arbitrary but in
+// general each request for some particular thing should have a request ID that
+// is unique but will be the same if the same thing is requested for some
+// reason. The request ID cannot contain "/".
+func makeRequestID(patch *PatchDetails, recipe *tricium.Recipe) string {
+	id := fmt.Sprintf("%s~%s~%s~%s.%s.%s",
+		patch.GerritProject, patch.GerritCl, patch.GerritPatch,
+		recipe.Project, recipe.Bucket, recipe.Builder)
+	return strings.ReplaceAll(id, "/", "_")
 }
 
 // Collect implements the TaskServerAPI.

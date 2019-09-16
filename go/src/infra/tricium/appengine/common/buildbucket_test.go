@@ -61,7 +61,30 @@ func TestTrigger(t *testing.T) {
 		result, err := trigger(ctx, params, client)
 		So(err, ShouldBeNil)
 		So(result.BuildID, ShouldEqual, 1)
+	})
 
+	Convey("Different analyzers have different request IDs", t, func() {
+		patch := &PatchDetails{
+			GerritHost:    "cr.example.com",
+			GerritProject: "foo",
+			GerritCl:      "123",
+			GerritPatch:   "7",
+		}
+		recipeX := &tricium.Recipe{Project: "cr", Bucket: "try", Builder: "x-lint"}
+		recipeY := &tricium.Recipe{Project: "cr", Bucket: "try", Builder: "y-lint"}
+		So(makeRequestID(patch, recipeX), ShouldEqual, "foo~123~7~cr.try.x-lint")
+		So(makeRequestID(patch, recipeY), ShouldEqual, "foo~123~7~cr.try.y-lint")
+	})
+
+	Convey("Request IDs do not contain slash", t, func() {
+		patch := &PatchDetails{
+			GerritHost:    "cr-review.goo.com",
+			GerritProject: "foo/bar",
+			GerritCl:      "123",
+			GerritPatch:   "7",
+		}
+		recipe := &tricium.Recipe{Project: "cr", Bucket: "try", Builder: "x"}
+		So(makeRequestID(patch, recipe), ShouldEqual, "foo_bar~123~7~cr.try.x")
 	})
 }
 
