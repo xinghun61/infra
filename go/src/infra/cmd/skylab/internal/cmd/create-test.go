@@ -170,7 +170,7 @@ func (c *createTestRun) innerRunSwarming(a subcommands.Application, args []strin
 		Priority:                int64(c.priority),
 		ParentTaskID:            c.parentTaskID,
 	}
-	req, err := request.New(ra)
+	req, err := ra.SwarmingNewTaskRequest()
 
 	h, err := newHTTPClient(ctx, &c.authFlags)
 	if err != nil {

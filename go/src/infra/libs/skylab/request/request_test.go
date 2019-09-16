@@ -26,7 +26,7 @@ func TestProvisionableDimensions(t *testing.T) {
 			SchedulableLabels:       inventory.SchedulableLabels{Model: &model},
 		}
 		Convey("when a request is formed", func() {
-			req, err := request.New(args)
+			req, err := args.SwarmingNewTaskRequest()
 			So(err, ShouldBeNil)
 			So(req, ShouldNotBeNil)
 			Convey("then request should have correct slice structure.", func() {
@@ -83,7 +83,7 @@ func TestSliceExpiration(t *testing.T) {
 		args := request.Args{
 			Timeout: timeout,
 		}
-		req, err := request.New(args)
+		req, err := args.SwarmingNewTaskRequest()
 		So(req, ShouldNotBeNil)
 		So(err, ShouldBeNil)
 		Convey("request should have a single slice with provided timeout.", func() {
@@ -96,7 +96,7 @@ func TestSliceExpiration(t *testing.T) {
 			Timeout:                 timeout,
 			ProvisionableDimensions: []string{"k1:v1"},
 		}
-		req, err := request.New(args)
+		req, err := args.SwarmingNewTaskRequest()
 		So(req, ShouldNotBeNil)
 		So(err, ShouldBeNil)
 		Convey("request should have 2 slices, with provided timeout on only the second.", func() {

@@ -272,7 +272,7 @@ func (r *TaskSet) launchSingle(ctx context.Context, swarming swarming.Client, tr
 		return errors.Annotate(err, "launch test named %s", tr.invocation.Test.Name).Err()
 	}
 
-	req, err := request.New(args)
+	req, err := args.SwarmingNewTaskRequest()
 	if err != nil {
 		return errors.Annotate(err, "launch test named %s", tr.invocation.Test.Name).Err()
 	}

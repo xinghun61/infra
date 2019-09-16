@@ -46,19 +46,20 @@ type Args struct {
 	ParentTaskID      string
 }
 
-// New creates a new swarming request for the given worker command and parameters.
-func New(args Args) (*swarming.SwarmingRpcsNewTaskRequest, error) {
-	slices, err := getSlices(args.Cmd, args.ProvisionableDimensions, args.Dimensions, args.SchedulableLabels, args.Timeout)
+// SwarmingNewTaskRequest returns the Swarming request to create the Skylab
+// task with these arguments.
+func (a *Args) SwarmingNewTaskRequest() (*swarming.SwarmingRpcsNewTaskRequest, error) {
+	slices, err := getSlices(a.Cmd, a.ProvisionableDimensions, a.Dimensions, a.SchedulableLabels, a.Timeout)
 	if err != nil {
 		return nil, errors.Annotate(err, "create request").Err()
 	}
 
 	req := &swarming.SwarmingRpcsNewTaskRequest{
-		Name:         args.Cmd.TaskName,
-		Tags:         args.SwarmingTags,
+		Name:         a.Cmd.TaskName,
+		Tags:         a.SwarmingTags,
 		TaskSlices:   slices,
-		Priority:     args.Priority,
-		ParentTaskId: args.ParentTaskID,
+		Priority:     a.Priority,
+		ParentTaskId: a.ParentTaskID,
 	}
 	return req, nil
 }
@@ -67,7 +68,6 @@ func New(args Args) (*swarming.SwarmingRpcsNewTaskRequest, error) {
 func getSlices(cmd worker.Command, provisionableDimensions []string, dimensions []string, inv inventory.SchedulableLabels, timeout time.Duration) ([]*swarming.SwarmingRpcsTaskSlice, error) {
 	slices := make([]*swarming.SwarmingRpcsTaskSlice, 1, 2)
 
-	// TODO(crbug.com/939976): Generalize request library to support non-test tasks.
 	basePairs, _ := stringToPairs("pool:ChromeOSSkylab", "dut_state:ready")
 
 	rawPairs, err := stringToPairs(dimensions...)
