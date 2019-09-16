@@ -96,7 +96,7 @@ func makeRequestID(patch *PatchDetails, recipe *tricium.Recipe) string {
 	id := fmt.Sprintf("%s~%s~%s~%s.%s.%s",
 		patch.GerritProject, patch.GerritCl, patch.GerritPatch,
 		recipe.Project, recipe.Bucket, recipe.Builder)
-	return strings.ReplaceAll(id, "/", "_")
+	return strings.Replace(id, "/", "_", -1)
 }
 
 // Collect implements the TaskServerAPI.
