@@ -83,6 +83,18 @@ var (
 		field.Int("priority"),
 	)
 
+	counterAccountLabelSpend = metric.NewCounter(
+		"qscheduler/state/event/account_label_spend",
+		"A task completed for this account, with given label and given cost.",
+		&types.MetricMetadata{
+			Units: types.Seconds,
+		},
+		field.String("scheduler_id"),
+		field.String("account_id"),
+		field.String("label"),
+		field.Int("priority"),
+	)
+
 	// TODO(akeshet): Deprecate and delete this metric in favor of
 	// qscheduler/state/task_state which already incorporates it.
 	gaugeQueueSize = metric.NewInt(
@@ -210,6 +222,9 @@ func flushAccountSpendToTsMon(ctx context.Context, event *metrics.TaskEvent) {
 	}
 	for priority, spend := range event.Cost {
 		counterAccountSpend.Add(ctx, int64(spend), event.SchedulerId, event.AccountId, priority)
+		for _, label := range event.BaseLabels {
+			counterAccountLabelSpend.Add(ctx, int64(spend), event.SchedulerId, event.AccountId, label, priority)
+		}
 	}
 }
 
