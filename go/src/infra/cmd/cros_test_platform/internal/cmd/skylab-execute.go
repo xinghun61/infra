@@ -81,7 +81,10 @@ func (c *skylabExecuteRun) innerRun(a subcommands.Application, args []string, en
 		taskID = env["SWARMING_TASK_ID"].Value
 	}
 
-	runner := execution.NewSkylabRunner(request.Enumeration.AutotestInvocations, request.RequestParams, request.Config.SkylabWorker, taskID)
+	runner, err := execution.NewSkylabRunner(ctx, request.Enumeration.AutotestInvocations, request.RequestParams, request.Config.SkylabWorker, taskID)
+	if err != nil {
+		return err
+	}
 
 	response, err := c.handleRequest(ctx, runner, client, gf)
 	if err != nil && response == nil {
