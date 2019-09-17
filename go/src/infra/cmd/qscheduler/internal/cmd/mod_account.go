@@ -34,6 +34,7 @@ var ModAccount = &subcommands.Command{
 			"Maximum amount of time (seconds) for which the account can accumulate quota.")
 		c.Flags.Var(nullableInt32Value(&c.fanout), "fanout", "Maximum number of concurrent tasks that account will pay for.")
 		c.Flags.Var(nullableBoolValue(&c.disableFreeTasks), "disable-free-tasks", "Disallow the account from running free tasks.")
+		c.Flags.BoolVar(&c.resetBalance, "reset-balance", false, "Reset the account's balance to 0.")
 		return c
 	},
 }
@@ -47,6 +48,7 @@ type modAccountRun struct {
 	chargeTime       *float32
 	fanout           *int32
 	disableFreeTasks *bool
+	resetBalance     bool
 }
 
 // validate validates command line arguments.
@@ -87,8 +89,9 @@ func (c *modAccountRun) Run(a subcommands.Application, args []string, env subcom
 	}
 
 	req := &qscheduler.ModAccountRequest{
-		AccountId: accountID,
-		PoolId:    poolID,
+		AccountId:    accountID,
+		PoolId:       poolID,
+		ResetBalance: c.resetBalance,
 	}
 
 	if c.fanout != nil {
