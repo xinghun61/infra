@@ -242,14 +242,14 @@ func NewTaskSet(tests []*steps.EnumerationResponse_AutotestInvocation, params *t
 // If the supplied context is cancelled prior to completion, or some other error
 // is encountered, this method returns whatever partial execution response
 // was visible to it prior to that error.
-func (r *TaskSet) LaunchAndWait(ctx context.Context, swarming swarming.Client, gf isolate.GetterFactory) error {
+func (r *TaskSet) LaunchAndWait(ctx context.Context, client swarming.Client, gf isolate.GetterFactory) error {
 	defer func() { r.running = false }()
 
-	if err := r.launchAll(ctx, swarming); err != nil {
+	if err := r.launchAll(ctx, client); err != nil {
 		return err
 	}
 
-	return r.wait(ctx, swarming, gf)
+	return r.wait(ctx, client, gf)
 }
 
 var isClientTest = map[build_api.AutotestTest_ExecutionEnvironment]bool{
@@ -257,16 +257,16 @@ var isClientTest = map[build_api.AutotestTest_ExecutionEnvironment]bool{
 	build_api.AutotestTest_EXECUTION_ENVIRONMENT_SERVER: false,
 }
 
-func (r *TaskSet) launchAll(ctx context.Context, swarming swarming.Client) error {
+func (r *TaskSet) launchAll(ctx context.Context, client swarming.Client) error {
 	for _, testRun := range r.testRuns {
-		if err := r.launchSingle(ctx, swarming, testRun); err != nil {
+		if err := r.launchSingle(ctx, client, testRun); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func (r *TaskSet) launchSingle(ctx context.Context, swarming swarming.Client, tr *testRun) error {
+func (r *TaskSet) launchSingle(ctx context.Context, client swarming.Client, tr *testRun) error {
 	args, err := tr.RequestArgs(ctx, r.params, r.workerConfig, r.parentTaskID)
 	if err != nil {
 		return errors.Annotate(err, "launch test named %s", tr.invocation.Test.Name).Err()
@@ -277,12 +277,12 @@ func (r *TaskSet) launchSingle(ctx context.Context, swarming swarming.Client, tr
 		return errors.Annotate(err, "launch test named %s", tr.invocation.Test.Name).Err()
 	}
 
-	resp, err := swarming.CreateTask(ctx, req)
+	resp, err := client.CreateTask(ctx, req)
 	if err != nil {
 		return errors.Annotate(err, "launch test named %s", tr.invocation.Test.Name).Err()
 	}
 
-	logging.Infof(ctx, "Launched test named %s as task %s", tr.invocation.Test.Name, swarming.GetTaskURL(resp.TaskId))
+	logging.Infof(ctx, "Launched test named %s as task %s", tr.invocation.Test.Name, client.GetTaskURL(resp.TaskId))
 
 	tr.addAttempt(&attempt{taskID: resp.TaskId})
 	return nil
