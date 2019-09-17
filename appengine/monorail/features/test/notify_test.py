@@ -19,6 +19,7 @@ from google.appengine.api import taskqueue
 from google.appengine.ext import testbed
 
 from features import notify
+from features import notify_reasons
 from framework import urls
 from proto import tracker_pb2
 from services import service_manager
@@ -58,14 +59,15 @@ class NotifyTaskHandleRequestTest(unittest.TestCase):
         issue=fake.IssueService(),
         issue_star=fake.IssueStarService(),
         features=fake.FeaturesService())
-    self.services.user.TestAddUser('requester@example.com', 1)
-    self.services.user.TestAddUser('user@example.com', 2)
-    self.services.user.TestAddUser('member@example.com', 3)
-    self.services.project.TestAddProject(
-        'test-project', owner_ids=[1, 3],
-        project_id=12345)
+    self.requester = self.services.user.TestAddUser('requester@example.com', 1)
+    self.nonmember = self.services.user.TestAddUser('user@example.com', 2)
+    self.member = self.services.user.TestAddUser('member@example.com', 3)
+    self.project = self.services.project.TestAddProject(
+        'test-project', owner_ids=[1, 3], project_id=12345)
     self.issue1 = MakeTestIssue(
         project_id=12345, local_id=1, owner_id=2, reporter_id=1)
+    self.issue2 = MakeTestIssue(
+        project_id=12345, local_id=2, owner_id=2, reporter_id=1)
     self.services.issue.TestAddIssue(self.issue1)
 
     self._old_gcs_open = cloudstorage.open
@@ -267,6 +269,94 @@ class NotifyTaskHandleRequestTest(unittest.TestCase):
         services=self.services)
     result = task.HandleRequest(mr)
     self.assertEquals(1, len(result['notified']))
+
+  def testFormatBulkIssues_Normal_Single(self):
+    """A user may see full notification details for all changed issues."""
+    self.issue1.summary = 'one summary'
+    task = notify.NotifyBulkChangeTask(
+        request=None, response=None, services=self.services)
+    users_by_id = {}
+    commenter_view = None
+    config = self.services.config.GetProjectConfig('cnxn', 12345)
+    addrperm = notify_reasons.AddrPerm(
+        False, 'nonmember@example.com', self.nonmember,
+        notify_reasons.REPLY_NOT_ALLOWED, None)
+
+    subject, body = task._FormatBulkIssues(
+      [self.issue1], users_by_id, commenter_view, 'localhost:8080',
+      'test comment', [], config, addrperm)
+
+    self.assertIn('one summary', subject)
+    self.assertIn('one summary', body)
+    self.assertIn('test comment', body)
+
+  def testFormatBulkIssues_Normal_Multiple(self):
+    """A user may see full notification details for all changed issues."""
+    self.issue1.summary = 'one summary'
+    self.issue2.summary = 'two summary'
+    task = notify.NotifyBulkChangeTask(
+        request=None, response=None, services=self.services)
+    users_by_id = {}
+    commenter_view = None
+    config = self.services.config.GetProjectConfig('cnxn', 12345)
+    addrperm = notify_reasons.AddrPerm(
+        False, 'nonmember@example.com', self.nonmember,
+        notify_reasons.REPLY_NOT_ALLOWED, None)
+
+    subject, body = task._FormatBulkIssues(
+      [self.issue1, self.issue2], users_by_id, commenter_view, 'localhost:8080',
+      'test comment', [], config, addrperm)
+
+    self.assertIn('2 issues changed', subject)
+    self.assertIn('one summary', body)
+    self.assertIn('two summary', body)
+    self.assertIn('test comment', body)
+
+  def testFormatBulkIssues_LinkOnly_Single(self):
+    """A user may not see full notification details for some changed issue."""
+    self.issue1.summary = 'one summary'
+    self.issue1.labels = ['Restrict-View-Google']
+    task = notify.NotifyBulkChangeTask(
+        request=None, response=None, services=self.services)
+    users_by_id = {}
+    commenter_view = None
+    config = self.services.config.GetProjectConfig('cnxn', 12345)
+    addrperm = notify_reasons.AddrPerm(
+        False, 'nonmember@example.com', self.nonmember,
+        notify_reasons.REPLY_NOT_ALLOWED, None)
+
+    subject, body = task._FormatBulkIssues(
+      [self.issue1], users_by_id, commenter_view, 'localhost:8080',
+      'test comment', [], config, addrperm)
+
+    self.assertIn('issue 1', subject)
+    self.assertNotIn('one summary', subject)
+    self.assertNotIn('one summary', body)
+    self.assertNotIn('test comment', body)
+
+  def testFormatBulkIssues_LinkOnly_Multiple(self):
+    """A user may not see full notification details for some changed issue."""
+    self.issue1.summary = 'one summary'
+    self.issue1.labels = ['Restrict-View-Google']
+    self.issue2.summary = 'two summary'
+    task = notify.NotifyBulkChangeTask(
+        request=None, response=None, services=self.services)
+    users_by_id = {}
+    commenter_view = None
+    config = self.services.config.GetProjectConfig('cnxn', 12345)
+    addrperm = notify_reasons.AddrPerm(
+        False, 'nonmember@example.com', self.nonmember,
+        notify_reasons.REPLY_NOT_ALLOWED, None)
+
+    subject, body = task._FormatBulkIssues(
+      [self.issue1, self.issue2], users_by_id, commenter_view, 'localhost:8080',
+      'test comment', [], config, addrperm)
+
+    self.assertIn('2 issues', subject)
+    self.assertNotIn('summary', subject)
+    self.assertNotIn('one summary', body)
+    self.assertIn('two summary', body)
+    self.assertNotIn('test comment', body)
 
   def testNotifyApprovalChangeTask_Normal(self):
     config = self.services.config.GetProjectConfig('cnxn', 12345)

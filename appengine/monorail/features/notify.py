@@ -531,6 +531,9 @@ class NotifyBulkChangeTask(notify_helpers.NotifyTaskBase):
     non_member_ids_to_notify_of_issue = {}
     member_additional_addrs = {}
     non_member_additional_addrs = {}
+    addr_to_addrperm = {}  # {email_address: AddrPerm object}
+    all_user_prefs = self.services.user.GetUsersPrefs(
+        cnxn, ids_to_notify_of_issue)
 
     # TODO(jrobbins): Merge ids_to_notify_of_issue entries for linked accounts.
 
@@ -551,7 +554,11 @@ class NotifyBulkChangeTask(notify_helpers.NotifyTaskBase):
         member_ids_to_notify_of_issue[user_id] = user_issues
       else:
         non_member_ids_to_notify_of_issue[user_id] = user_issues
-      omit_addrs.add(users_by_id[user_id].email)
+      addr = users_by_id[user_id].email
+      omit_addrs.add(addr)
+      addr_to_addrperm[addr] = notify_reasons.AddrPerm(
+          is_member, addr, users_by_id[user_id].user,
+          notify_reasons.REPLY_NOT_ALLOWED, all_user_prefs[user_id])
 
     for addr, addr_issues in additional_addrs_to_notify_of_issue.items():
       auth = None
@@ -569,12 +576,14 @@ class NotifyBulkChangeTask(notify_helpers.NotifyTaskBase):
       else:
         non_member_additional_addrs[addr] = addr_issues
       omit_addrs.add(addr)
+      addr_to_addrperm[addr] = notify_reasons.AddrPerm(
+          is_member, addr, None, notify_reasons.REPLY_NOT_ALLOWED, None)
 
     for user_id, user_issues in non_member_ids_to_notify_of_issue.items():
+      addr = users_by_id[user_id].email
       email = self._FormatBulkIssuesEmail(
-          users_by_id[user_id].email, user_issues, users_by_id,
-          commenter_view, hostport, comment_text, amendments, config, project,
-          False)
+          addr_to_addrperm[addr], user_issues, users_by_id,
+          commenter_view, hostport, comment_text, amendments, config, project)
       email_tasks.append(email)
       logging.info('about to bulk notify non-member %s (%s) of %s',
                    users_by_id[user_id].email, user_id,
@@ -582,8 +591,8 @@ class NotifyBulkChangeTask(notify_helpers.NotifyTaskBase):
 
     for addr, addr_issues in non_member_additional_addrs.items():
       email = self._FormatBulkIssuesEmail(
-          addr, addr_issues, users_by_id, commenter_view, hostport,
-          comment_text, amendments, config, project, False)
+          addr_to_addrperm[addr], addr_issues, users_by_id, commenter_view,
+          hostport, comment_text, amendments, config, project, False)
       email_tasks.append(email)
       logging.info('about to bulk notify non-member additional addr %s of %s',
                    addr, [addr_issue.local_id for addr_issue in addr_issues])
@@ -592,19 +601,18 @@ class NotifyBulkChangeTask(notify_helpers.NotifyTaskBase):
     commenter_view.RevealEmail()
 
     for user_id, user_issues in member_ids_to_notify_of_issue.items():
+      addr = users_by_id[user_id].email
       email = self._FormatBulkIssuesEmail(
-          users_by_id[user_id].email, user_issues, users_by_id,
-          commenter_view, hostport, comment_text, amendments, config, project,
-          True)
+          addr_to_addrperm[addr], user_issues, users_by_id,
+          commenter_view, hostport, comment_text, amendments, config, project)
       email_tasks.append(email)
       logging.info('about to bulk notify member %s (%s) of %s',
-                   users_by_id[user_id].email, user_id,
-                   [issue.local_id for issue in user_issues])
+                   addr, user_id, [issue.local_id for issue in user_issues])
 
     for addr, addr_issues in member_additional_addrs.items():
       email = self._FormatBulkIssuesEmail(
-          addr, addr_issues, users_by_id, commenter_view, hostport,
-          comment_text, amendments, config, project, True)
+          addr_to_addrperm[addr], addr_issues, users_by_id, commenter_view,
+          hostport, comment_text, amendments, config, project, True)
       email_tasks.append(email)
       logging.info('about to bulk notify member additional addr %s of %s',
                    addr, [addr_issue.local_id for addr_issue in addr_issues])
@@ -637,47 +645,56 @@ class NotifyBulkChangeTask(notify_helpers.NotifyTaskBase):
     return email_tasks
 
   def _FormatBulkIssuesEmail(
-      self, dest_email, issues, users_by_id, commenter_view,
-      hostport, comment_text, amendments, config, project, is_member):
+      self, addr_perm, issues, users_by_id, commenter_view,
+      hostport, comment_text, amendments, config, project):
     """Format an email to one user listing many issues."""
 
     from_addr = emailfmt.FormatFromAddr(
-        project, commenter_view=commenter_view, reveal_addr=is_member,
+        project, commenter_view=commenter_view, reveal_addr=addr_perm.is_member,
         can_reply_to=False)
 
     subject, body = self._FormatBulkIssues(
         issues, users_by_id, commenter_view, hostport, comment_text,
-        amendments, config)
+        amendments, config, addr_perm)
     body = notify_helpers._TruncateBody(body)
 
-    return dict(from_addr=from_addr, to=dest_email, subject=subject, body=body)
+    return dict(from_addr=from_addr, to=addr_perm.address, subject=subject,
+                body=body)
 
   def _FormatBulkIssues(
       self, issues, users_by_id, commenter_view, hostport, comment_text,
-      amendments, config, body_type='email'):
+      amendments, config, addr_perm):
     """Format a subject and body for a bulk issue edit."""
-    assert body_type in ('email', 'feed')
     project_name = issues[0].project_name
 
+    any_link_only = False
     issue_views = []
     for issue in issues:
       # TODO(jrobbins): choose config from dict of prefetched configs.
-      issue_views.append(tracker_views.IssueView(issue, users_by_id, config))
+      issue_view = tracker_views.IssueView(issue, users_by_id, config)
+      issue_view.link_only = ezt.boolean(False)
+      if addr_perm and notify_helpers.ShouldUseLinkOnly(addr_perm, issue):
+        issue_view.link_only = ezt.boolean(True)
+        any_link_only = True
+      issue_views.append(issue_view)
 
     email_data = {
+        'any_link_only': ezt.boolean(any_link_only),
         'hostport': hostport,
         'num_issues': len(issues),
         'issues': issue_views,
         'comment_text': comment_text,
         'commenter': commenter_view,
         'amendments': amendments,
-        'body_type': body_type,
     }
 
     if len(issues) == 1:
       # TODO(jrobbins): use compact email subject lines based on user pref.
-      subject = 'issue %s in %s: %s' % (
-          issues[0].local_id, project_name, issues[0].summary)
+      if addr_perm and notify_helpers.ShouldUseLinkOnly(addr_perm, issues[0]):
+        subject = 'issue %s in %s' % (issues[0].local_id, project_name)
+      else:
+        subject = 'issue %s in %s: %s' % (
+            issues[0].local_id, project_name, issues[0].summary)
       # TODO(jrobbins): Look up the sequence number instead and treat this
       # more like an individual change for email threading.  For now, just
       # add "Re:" because bulk edits are always replies.

@@ -228,9 +228,10 @@ def _TruncateBody(body):
 def _GetNotifyRestrictedIssues(user_prefs, email, user):
   """Return the notify_restricted_issues pref or a calculated default value."""
   # If we explicitly set a pref for this address, use it.
-  for pref in user_prefs.prefs:
-    if pref.name == NOTIFY_RESTRICTED_ISSUES_PREF_NAME:
-      return pref.value
+  if user_prefs:
+    for pref in user_prefs.prefs:
+      if pref.name == NOTIFY_RESTRICTED_ISSUES_PREF_NAME:
+        return pref.value
 
   # Mailing lists cannot visit the site, so if it visited, it is a person.
   if user and user.last_visit_timestamp:
@@ -244,7 +245,7 @@ def _GetNotifyRestrictedIssues(user_prefs, email, user):
   return NOTIFY_WITH_LINK_ONLY
 
 
-def _ShouldUseLinkOnly(addr_perm, issue):
+def ShouldUseLinkOnly(addr_perm, issue):
   """Return true when there is a risk of leaking a restricted issue.
 
   We send notifications that contain only a link to the issue with no other
@@ -275,7 +276,7 @@ def _MakeEmailWorkItem(
     body_for_non_members, body_for_members, project, hostport, commenter_view,
     detail_url, seq_num=None, subject_prefix=None, compact_subject_prefix=None):
   """Make one email task dict for one user, includes a detailed reason."""
-  should_use_link_only = _ShouldUseLinkOnly(addr_perm, issue)
+  should_use_link_only = ShouldUseLinkOnly(addr_perm, issue)
   subject_format = (
       (subject_prefix or 'Issue ') +
       '%(local_id)d in %(project_name)s')

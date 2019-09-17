@@ -172,6 +172,17 @@ class LinkOnlyLogicTest(unittest.TestCase):
         False, 'user@example.com', self.user, notify_reasons.REPLY_MAY_COMMENT,
         self.user_prefs)
 
+  def testGetNotifyRestrictedIssues_NoPrefsPassed(self):
+    """AlsoNotify and all-issues addresses have no UserPrefs.  None is used."""
+    actual = notify_helpers._GetNotifyRestrictedIssues(
+        None, 'user@example.com', self.user)
+    self.assertEqual('notify with link only', actual)
+
+    self.user.last_visit_timestamp = 123456789
+    actual = notify_helpers._GetNotifyRestrictedIssues(
+        None, 'user@example.com', self.user)
+    self.assertEqual('notify with details', actual)
+
   def testGetNotifyRestrictedIssues_PrefIsSet(self):
     """When the notify_restricted_issues pref is set, we use it."""
     self.user_prefs.prefs.extend([
@@ -208,18 +219,18 @@ class LinkOnlyLogicTest(unittest.TestCase):
 
   def testShouldUseLinkOnly_UnrestrictedIssue(self):
     """Issue is not restricted, so go ahead and send comment details."""
-    self.assertFalse(notify_helpers._ShouldUseLinkOnly(
+    self.assertFalse(notify_helpers.ShouldUseLinkOnly(
         self.addr_perm, self.issue))
 
   @mock.patch('features.notify_helpers._GetNotifyRestrictedIssues')
   def testShouldUseLinkOnly_NotifyWithDetails(self, fake_gnri):
     """Issue is restricted, and user is allowed to get full comment details."""
     fake_gnri.return_value = notify_helpers.NOTIFY_WITH_DETAILS
-    self.assertFalse(notify_helpers._ShouldUseLinkOnly(
+    self.assertFalse(notify_helpers.ShouldUseLinkOnly(
         self.addr_perm, self.rvg_issue))
-    self.assertFalse(notify_helpers._ShouldUseLinkOnly(
+    self.assertFalse(notify_helpers.ShouldUseLinkOnly(
         self.addr_perm, self.more_restricted_issue))
-    self.assertFalse(notify_helpers._ShouldUseLinkOnly(
+    self.assertFalse(notify_helpers.ShouldUseLinkOnly(
         self.addr_perm, self.both_restricted_issue))
 
 
@@ -243,9 +254,9 @@ class MakeEmailWorkItemTest(unittest.TestCase):
         project_name='proj1')
     self.detail_url = 'http://test-detail-url.com/id=1234'
 
-  @mock.patch('features.notify_helpers._ShouldUseLinkOnly')
+  @mock.patch('features.notify_helpers.ShouldUseLinkOnly')
   def testBodySelection_LinkOnly(self, mock_sulo):
-    """We send a link-only body when _ShouldUseLinkOnly() is true."""
+    """We send a link-only body when ShouldUseLinkOnly() is true."""
     mock_sulo.return_value = True
     email_task = notify_helpers._MakeEmailWorkItem(
         notify_reasons.AddrPerm(
