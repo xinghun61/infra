@@ -6,11 +6,14 @@
 package parser
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"os/exec"
 	"strings"
 
+	"github.com/golang/protobuf/jsonpb"
+	"go.chromium.org/chromiumos/infra/proto/go/test_platform/skylab_test_runner"
 	"go.chromium.org/luci/common/errors"
 
 	"infra/cmd/skylab_swarming_worker/internal/annotations"
@@ -55,6 +58,12 @@ func GetResults(a Args, w io.Writer) ([]byte, error) {
 
 	fmt.Fprintf(w, "Test results summary:\n%s", output)
 
+	if err := annotateTestCases(output, a.Failed, w); err != nil {
+		fmt.Fprintf(w,
+			"Failed to create logdog annotations for test cases due to error %s",
+			err.Error())
+	}
+
 	return output, nil
 }
 
@@ -68,4 +77,63 @@ func parseCommand(a Args) (*exec.Cmd, error) {
 	}
 
 	return exec.Command(a.ParserPath, parseSubcommand, a.ResultsDir), nil
+}
+
+// annotateTestCases prints LogDog annotations for test cases in the output blob.
+func annotateTestCases(b []byte, runFailed bool, w io.Writer) error {
+	var r skylab_test_runner.Result
+	if err := jsonpb.Unmarshal(bytes.NewReader(b), &r); err != nil {
+		fmt.Printf("error: %s", err.Error())
+		return err
+	}
+	fmt.Printf("%v", r)
+
+	failureEncountered := false
+
+	for _, s := range r.Prejob.GetStep() {
+		failed := s.GetVerdict() != skylab_test_runner.Result_Prejob_Step_VERDICT_PASS
+
+		if failed {
+			failureEncountered = true
+		}
+
+		// TODO(crbug/1003867): Add summary.
+		annotateTestCase(s.GetName(), failed, "", w)
+	}
+
+	for _, tc := range r.GetAutotestResult().GetTestCases() {
+		failed := tc.GetVerdict() != skylab_test_runner.Result_Autotest_TestCase_VERDICT_PASS
+
+		if failed {
+			failureEncountered = true
+		}
+
+		// TODO(crbug/1003867): Add summary.
+		annotateTestCase(tc.GetName(), failed, "", w)
+	}
+
+	// If no individual test case can be blamed for the overall failure,
+	// blame the test executor process.
+	if runFailed && !failureEncountered {
+		annotateTestCase("autoserv", true,
+			"autoserv failed. The test list is likely incomplete. "+
+				"Consult autoserv.ERROR for more details.", w)
+	}
+
+	return nil
+}
+
+func annotateTestCase(name string, failed bool, summary string, w io.Writer) {
+	annotations.SeedStep(w, name)
+	annotations.StepCursor(w, name)
+	annotations.StepStarted(w)
+	defer annotations.StepClosed(w)
+
+	if failed {
+		annotations.StepFailure(w)
+	}
+
+	if summary != "" {
+		fmt.Fprintf(w, summary)
+	}
 }
