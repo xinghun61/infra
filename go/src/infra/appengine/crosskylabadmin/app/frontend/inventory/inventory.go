@@ -22,6 +22,7 @@ import (
 	"time"
 
 	"github.com/golang/protobuf/proto"
+	"github.com/kylelemons/godebug/pretty"
 	"go.chromium.org/chromiumos/infra/proto/go/device"
 	"go.chromium.org/luci/common/errors"
 	"go.chromium.org/luci/common/logging"
@@ -277,6 +278,7 @@ func UpdateDCAndCheckIfSkipLabelUpdate(ctx context.Context, req updateDutLabelsR
 	logging.Infof(ctx, "checking lables for dut ID: %s", req.dutID)
 	logging.Infof(ctx, "labels before update: %s", req.oldLabels.String())
 	logging.Infof(ctx, "labels after update: %s", req.labels.String())
+	logging.Infof(ctx, "comparison between old and new: \n%s", pretty.Compare(req.oldLabels, req.labels))
 	if req.oldLabels.String() == "" {
 		logging.Warningf(ctx, "old labels hasn't been set, won't skip update")
 		return false
