@@ -194,6 +194,11 @@ indexes:
   - name: time_happened
     direction: desc
 
+- kind: FlakeOccurrence
+  properties:
+  - name: flake_type
+  - name: time_detected
+
 # For updating flake count and score.
 - kind: FlakeOccurrence
   ancestor: yes
