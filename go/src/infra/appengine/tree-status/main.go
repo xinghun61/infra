@@ -2,15 +2,13 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-package ts
+package main
 
 import (
 	"encoding/json"
 	"html/template"
 	"net/http"
 	"strings"
-
-	"golang.org/x/net/context"
 
 	"go.chromium.org/gae/service/info"
 	"go.chromium.org/luci/appengine/gaeauth/server"
@@ -21,6 +19,8 @@ import (
 	"go.chromium.org/luci/server/auth"
 	"go.chromium.org/luci/server/auth/xsrf"
 	"go.chromium.org/luci/server/router"
+	"golang.org/x/net/context"
+	"google.golang.org/appengine"
 )
 
 const (
@@ -153,4 +153,8 @@ func init() {
 	http.DefaultServeMux.Handle("/internal/", r)
 
 	http.DefaultServeMux.Handle("/", rootRouter)
+}
+
+func main() {
+	appengine.Main()
 }
