@@ -3,4 +3,4 @@
 // found in the LICENSE file.
 
 // Package crauditcommits implements cr-audit-commits.appspot.com services.
-package crauditcommits
+package main

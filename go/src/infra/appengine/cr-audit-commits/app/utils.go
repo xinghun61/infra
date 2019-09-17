@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-package crauditcommits
+package main
 
 import (
 	"bufio"
@@ -13,7 +13,7 @@ import (
 	"sort"
 	"strings"
 
-	"golang.org/x/net/context"
+	"context"
 	"google.golang.org/genproto/protobuf/field_mask"
 
 	ds "go.chromium.org/gae/service/datastore"

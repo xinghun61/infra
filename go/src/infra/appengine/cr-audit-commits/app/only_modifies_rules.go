@@ -2,13 +2,13 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-package crauditcommits
+package main
 
 import (
 	"fmt"
 	"strings"
 
-	"golang.org/x/net/context"
+	"context"
 
 	"go.chromium.org/luci/common/api/gitiles"
 	"go.chromium.org/luci/common/proto/git"

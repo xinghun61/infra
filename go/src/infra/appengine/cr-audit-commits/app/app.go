@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-package crauditcommits
+package main
 
 import (
 	"net/http"
@@ -11,9 +11,10 @@ import (
 	"go.chromium.org/luci/appengine/gaemiddleware/standard"
 	"go.chromium.org/luci/server/router"
 	"go.chromium.org/luci/server/templates"
+	"google.golang.org/appengine"
 )
 
-func init() {
+func main() {
 	r := router.New()
 
 	// This does not require auth. Needed for index page.
@@ -37,6 +38,7 @@ func init() {
 	r.GET("/view/status", templatesmw, Status)
 
 	http.DefaultServeMux.Handle("/", r)
+	appengine.Main()
 }
 
 // Handler for the index page.

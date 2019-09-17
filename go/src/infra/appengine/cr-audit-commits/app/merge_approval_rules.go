@@ -2,15 +2,15 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-package crauditcommits
+package main
 
 import (
 	"fmt"
 	"strconv"
 	"strings"
 
+	"context"
 	"go.chromium.org/luci/common/logging"
-	"golang.org/x/net/context"
 )
 
 const (
