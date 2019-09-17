@@ -96,6 +96,9 @@ message ModAccountRequest {
   google.protobuf.Int32Value max_fanout = 5;
 
   google.protobuf.BoolValue disable_free_tasks = 6;
+
+  // If true, reset this account's balance to 0.
+  bool reset_balance = 7;
 }
 
 message ModAccountResponse {}

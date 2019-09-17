@@ -283,6 +283,13 @@ func (s *Scheduler) GetBalances() map[AccountID]Balance {
 	return s.state.balances
 }
 
+// ResetBalance resets the given account's balance to 0, if it exists.
+func (s *Scheduler) ResetBalance(aid AccountID) {
+	if _, ok := s.state.balances[aid]; ok {
+		s.state.balances[aid] = Balance{}
+	}
+}
+
 // RunningRequests gets the number of running task requests.
 func (s *Scheduler) RunningRequests() int {
 	return len(s.state.runningRequestsCache)
