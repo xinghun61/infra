@@ -97,8 +97,7 @@ func annotateTestCases(b []byte, runFailed bool, w io.Writer) error {
 			failureEncountered = true
 		}
 
-		// TODO(crbug/1003867): Add summary.
-		annotateTestCase(s.GetName(), failed, "", w)
+		annotateTestCase(s.GetName(), failed, s.GetHumanReadableSummary(), w)
 	}
 
 	for _, tc := range r.GetAutotestResult().GetTestCases() {
@@ -108,8 +107,7 @@ func annotateTestCases(b []byte, runFailed bool, w io.Writer) error {
 			failureEncountered = true
 		}
 
-		// TODO(crbug/1003867): Add summary.
-		annotateTestCase(tc.GetName(), failed, "", w)
+		annotateTestCase(tc.GetName(), failed, tc.GetHumanReadableSummary(), w)
 	}
 
 	// If no individual test case can be blamed for the overall failure,

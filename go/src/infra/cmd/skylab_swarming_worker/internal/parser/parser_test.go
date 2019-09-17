@@ -88,8 +88,8 @@ func TestPassingRun(t *testing.T) {
 
 			got := output.String()
 
-			got = checkOneTestCase(got, "provision", false)
-			got = checkOneTestCase(got, "passing_test_case", false)
+			got = checkOneTestCase(got, "provision", false, "")
+			got = checkOneTestCase(got, "passing_test_case", false, "")
 
 			So(strings.Index(got, "@@@"), ShouldEqual, -1)
 		})
@@ -108,7 +108,8 @@ func TestFailingTestCase(t *testing.T) {
 		},
 		{
 			"name": "failing_test_case",
-			"verdict": "VERDICT_FAIL"
+			"verdict": "VERDICT_FAIL",
+			"humanReadableSummary": "Failure because reasons."
 		},
 		{
 			"name": "mystery_test_case"
@@ -129,10 +130,10 @@ func TestFailingTestCase(t *testing.T) {
 
 			got := output.String()
 
-			got = checkOneTestCase(got, "provision", false)
-			got = checkOneTestCase(got, "passing_test_case", false)
-			got = checkOneTestCase(got, "failing_test_case", true)
-			got = checkOneTestCase(got, "mystery_test_case", true)
+			got = checkOneTestCase(got, "provision", false, "")
+			got = checkOneTestCase(got, "passing_test_case", false, "")
+			got = checkOneTestCase(got, "failing_test_case", true, "Failure because reasons.")
+			got = checkOneTestCase(got, "mystery_test_case", true, "")
 
 			So(strings.Index(got, "@@@"), ShouldEqual, -1)
 		})
@@ -150,7 +151,8 @@ func TestFailingPrejob(t *testing.T) {
 		"step": [
 		{
 			"name": "provision",
-			"verdict": "VERDICT_FAIL"
+			"verdict": "VERDICT_FAIL",
+			"humanReadableSummary": "The DUT exploded."
 		}]
 	}
 }`)
@@ -161,7 +163,7 @@ func TestFailingPrejob(t *testing.T) {
 
 			got := output.String()
 
-			got = checkOneTestCase(got, "provision", true)
+			got = checkOneTestCase(got, "provision", true, "The DUT exploded.")
 
 			So(strings.Index(got, "@@@"), ShouldEqual, -1)
 		})
@@ -195,18 +197,21 @@ func TestAutoservFailure(t *testing.T) {
 
 			got := output.String()
 
-			got = checkOneTestCase(got, "provision", false)
-			got = checkOneTestCase(got, "passing_test_case", false)
-			got = checkOneTestCase(got, "autoserv", true)
+			got = checkOneTestCase(got, "provision", false, "")
+			got = checkOneTestCase(got, "passing_test_case", false, "")
+			got = checkOneTestCase(got, "autoserv", true, "")
 
 			So(strings.Index(got, "@@@"), ShouldEqual, -1)
 		})
 }
 
-func checkOneTestCase(input string, name string, failed bool) string {
+func checkOneTestCase(input string, name string, failed bool, summary string) string {
 	input = checkNextAnnotation(input, "SEED_STEP "+name)
 	input = checkNextAnnotation(input, "STEP_CURSOR "+name)
 	input = checkNextAnnotation(input, "STEP_STARTED")
+
+	So(input, ShouldContainSubstring, summary)
+
 	if failed {
 		input = checkNextAnnotation(input, "STEP_FAILURE")
 	}
