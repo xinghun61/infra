@@ -838,25 +838,26 @@ func TestResponseVerdict(t *testing.T) {
 		run, err := skylab.NewTaskSet(ctx, invs, params, basicConfig(), "foo-parent-task-id")
 		So(err, ShouldBeNil)
 
-		Convey("when tests are still running, response verdict is correct.", func() {
+		// TODO(crbug.com/1001746, akeshet) Fix this test.
+		// This test is broken even after adding locks around testRun.attempts because it is possible that the
+		// assertions at the end are run before LaunchAndWait() does anything. That is not the intent of this test.
+		SkipConvey("when tests are still running, response verdict is correct.", func() {
 			swarming.setTaskState(jsonrpc.TaskState_RUNNING)
 
 			wg := sync.WaitGroup{}
+			defer wg.Wait()
+			defer cancel()
 			wg.Add(1)
 			go func() {
+				defer wg.Done()
 				// Can't verify error returned is nil because Convey() doesn't
 				// like assertions in goroutines.
 				_ = run.LaunchAndWait(ctx, swarming, gf)
-				wg.Done()
 			}()
 
 			resp := run.Response(swarming)
 			So(resp.State.LifeCycle, ShouldEqual, test_platform.TaskState_LIFE_CYCLE_RUNNING)
 			So(resp.State.Verdict, ShouldEqual, test_platform.TaskState_VERDICT_UNSPECIFIED)
-
-			// Clean up after test.
-			cancel()
-			wg.Wait()
 		})
 
 		Convey("when the test passed, response verdict is correct.", func() {
