@@ -155,15 +155,35 @@ func fakeGetterFactory(getter isolate.Getter) isolate.GetterFactory {
 	}
 }
 
-func invocation(name string, args string, client bool, deps ...*build_api.AutotestTaskDependency) *steps.EnumerationResponse_AutotestInvocation {
-	ee := build_api.AutotestTest_EXECUTION_ENVIRONMENT_SERVER
-	if client {
-		ee = build_api.AutotestTest_EXECUTION_ENVIRONMENT_CLIENT
-	}
+func invocation(name string, args string, e build_api.AutotestTest_ExecutionEnvironment) *steps.EnumerationResponse_AutotestInvocation {
 	return &steps.EnumerationResponse_AutotestInvocation{
-		Test:     &build_api.AutotestTest{Name: name, ExecutionEnvironment: ee, Dependencies: deps},
+		Test:     &build_api.AutotestTest{Name: name, ExecutionEnvironment: e},
 		TestArgs: args,
 	}
+}
+
+func clientTestInvocation(name string, args string) *steps.EnumerationResponse_AutotestInvocation {
+	return &steps.EnumerationResponse_AutotestInvocation{
+		Test: &build_api.AutotestTest{
+			Name:                 name,
+			ExecutionEnvironment: build_api.AutotestTest_EXECUTION_ENVIRONMENT_CLIENT,
+		},
+		TestArgs: args,
+	}
+}
+
+func serverTestInvocation(name string, args string) *steps.EnumerationResponse_AutotestInvocation {
+	return &steps.EnumerationResponse_AutotestInvocation{
+		Test: &build_api.AutotestTest{
+			Name:                 name,
+			ExecutionEnvironment: build_api.AutotestTest_EXECUTION_ENVIRONMENT_SERVER,
+		},
+		TestArgs: args,
+	}
+}
+
+func addAutotestDependency(inv *steps.EnumerationResponse_AutotestInvocation, dep string) {
+	inv.Test.Dependencies = append(inv.Test.Dependencies, &api.AutotestTaskDependency{Label: dep})
 }
 
 func basicParams() *test_platform.Request_Params {
@@ -220,7 +240,7 @@ func TestLaunchAndWaitTest(t *testing.T) {
 		gf := fakeGetterFactory(getter)
 
 		var invs []*steps.EnumerationResponse_AutotestInvocation
-		invs = append(invs, invocation("", "", false), invocation("", "", true))
+		invs = append(invs, clientTestInvocation("", ""), clientTestInvocation("", ""))
 
 		Convey("when running a skylab execution", func() {
 			run := skylab.NewTaskSet(invs, basicParams(), basicConfig(), "foo-parent-task-id")
@@ -255,7 +275,7 @@ func TestTaskStates(t *testing.T) {
 		ctx := context.Background()
 
 		var invs []*steps.EnumerationResponse_AutotestInvocation
-		invs = append(invs, invocation("", "", false))
+		invs = append(invs, clientTestInvocation("", ""))
 
 		cases := []struct {
 			description     string
@@ -321,7 +341,7 @@ func TestServiceError(t *testing.T) {
 		getter := newFakeGetter()
 		gf := fakeGetterFactory(getter)
 
-		invs := []*steps.EnumerationResponse_AutotestInvocation{invocation("", "", false)}
+		invs := []*steps.EnumerationResponse_AutotestInvocation{clientTestInvocation("", "")}
 		run := skylab.NewTaskSet(invs, basicParams(), basicConfig(), "foo-parent-task-id")
 
 		Convey("when the swarming service immediately returns errors, that error is surfaced as a launch error.", func() {
@@ -351,7 +371,7 @@ func TestTaskURL(t *testing.T) {
 		getter := newFakeGetter()
 		gf := fakeGetterFactory(getter)
 
-		invs := []*steps.EnumerationResponse_AutotestInvocation{invocation("", "", false)}
+		invs := []*steps.EnumerationResponse_AutotestInvocation{clientTestInvocation("", "")}
 		run := skylab.NewTaskSet(invs, basicParams(), basicConfig(), "foo-parent-task-id")
 		run.LaunchAndWait(ctx, swarming, gf)
 
@@ -372,7 +392,7 @@ func TestIncompleteWait(t *testing.T) {
 		getter := newFakeGetter()
 		gf := fakeGetterFactory(getter)
 
-		invs := []*steps.EnumerationResponse_AutotestInvocation{invocation("", "", false)}
+		invs := []*steps.EnumerationResponse_AutotestInvocation{clientTestInvocation("", "")}
 		run := skylab.NewTaskSet(invs, basicParams(), basicConfig(), "foo-parent-task-id")
 
 		wg := sync.WaitGroup{}
@@ -405,7 +425,8 @@ func TestRequestArguments(t *testing.T) {
 		getter := newFakeGetter()
 		gf := fakeGetterFactory(getter)
 
-		inv := invocation("name1", "foo-arg1 foo-arg2", false, &build_api.AutotestTaskDependency{Label: "cr50:pvt"})
+		inv := serverTestInvocation("name1", "foo-arg1 foo-arg2")
+		addAutotestDependency(inv, "cr50:pvt")
 		inv.DisplayName = "given_name"
 		invs := []*steps.EnumerationResponse_AutotestInvocation{inv}
 
@@ -582,7 +603,7 @@ func TestRetries(t *testing.T) {
 			ts.Add(2 * d)
 		})
 		swarming := newFakeSwarming("")
-		invs := []*steps.EnumerationResponse_AutotestInvocation{invocation("name1", "", true)}
+		invs := []*steps.EnumerationResponse_AutotestInvocation{serverTestInvocation("name1", "")}
 		params := basicParams()
 		getter := newFakeGetter()
 		gf := fakeGetterFactory(getter)
@@ -700,7 +721,7 @@ func TestClientTestArg(t *testing.T) {
 		ctx := context.Background()
 		swarming := newFakeSwarming("")
 
-		invs := []*steps.EnumerationResponse_AutotestInvocation{invocation("name1", "", true)}
+		invs := []*steps.EnumerationResponse_AutotestInvocation{clientTestInvocation("name1", "")}
 
 		run := skylab.NewTaskSet(invs, basicParams(), basicConfig(), "foo-parent-task-id")
 		run.LaunchAndWait(ctx, swarming, fakeGetterFactory(newFakeGetter()))
@@ -721,7 +742,7 @@ func TestQuotaSchedulerAccount(t *testing.T) {
 	Convey("Given a client test and a selected quota account", t, func() {
 		ctx := context.Background()
 		swarming := newFakeSwarming("")
-		invs := []*steps.EnumerationResponse_AutotestInvocation{invocation("name1", "", true)}
+		invs := []*steps.EnumerationResponse_AutotestInvocation{serverTestInvocation("name1", "")}
 		params := basicParams()
 		params.Scheduling.Pool = &test_platform.Request_Params_Scheduling_QuotaAccount{
 			QuotaAccount: "foo-account",
@@ -749,7 +770,7 @@ func TestUnmanagedPool(t *testing.T) {
 	Convey("Given a client test and an unmanaged pool.", t, func() {
 		ctx := context.Background()
 		swarming := newFakeSwarming("")
-		invs := []*steps.EnumerationResponse_AutotestInvocation{invocation("name1", "", true)}
+		invs := []*steps.EnumerationResponse_AutotestInvocation{serverTestInvocation("name1", "")}
 		params := basicParams()
 		params.Scheduling.Pool = &test_platform.Request_Params_Scheduling_UnmanagedPool{
 			UnmanagedPool: "foo-pool",
@@ -786,7 +807,7 @@ func TestResponseVerdict(t *testing.T) {
 		})
 
 		swarming := newFakeSwarming("")
-		invs := []*steps.EnumerationResponse_AutotestInvocation{invocation("name1", "", true)}
+		invs := []*steps.EnumerationResponse_AutotestInvocation{serverTestInvocation("name1", "")}
 		params := basicParams()
 		getter := newFakeGetter()
 		gf := fakeGetterFactory(getter)
