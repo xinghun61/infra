@@ -4,11 +4,14 @@
 """Defines the chromium-specific APIs required by Findit."""
 
 from collections import defaultdict
+import json
+import logging
 
 from findit_v2.services.failure_type import StepTypeEnum
 from findit_v2.services.project_api import ProjectAPI
 
 from common.findit_http_client import FinditHttpClient
+from infra_api_clients import logdog_util
 from services import git
 from services.compile_failure import extract_compile_signal
 from services.compile_failure import compile_failure_analysis
@@ -39,8 +42,46 @@ class ChromiumProjectAPI(ProjectAPI):
 
     return StepTypeEnum.INFRA
 
-  def GetCompileFailures(self, build, compile_steps):  # pragma: no cover.
-    raise NotImplementedError
+  def GetCompileFailures(self, build, compile_steps):
+    """Returns the detailed compile failures from a failed build.
+
+    For Chromium builds, the failure details are found in the ninja_info json
+    log of the failed compile step.
+
+    Although there's usually one compile step per build, this implementation
+    can potentially handle multiple.
+    """
+    build_info = {
+        'id': build.id,
+        'number': build.number,
+        'commit_id': build.input.gitiles_commit.id
+    }
+    ninja_infos = {}
+    for step in compile_steps or []:
+      for log in step.logs or []:
+        if log.name.lower() == 'json.output[ninja_info]':
+          ninja_infos[step.name] = logdog_util.GetLogFromViewUrl(
+              log.view_url, FinditHttpClient())
+
+    result = {}
+    for step_name, ninja_info in ninja_infos.iteritems():
+      if isinstance(ninja_info, basestring):
+        ninja_info = json.loads(ninja_info)
+      for failure in ninja_info.get('failures', []):
+        failed_targets = failure.get('output_nodes')
+        rule = failure.get('rule')
+        if failed_targets:
+          logging.info('Found the following failed targets in step %s: %s',
+                       step_name, ', '.join(failed_targets))
+          result.setdefault(step_name, {'failures': {}})
+          result[step_name]['failures'][frozenset(failed_targets)] = {
+              'properties': {
+                  'rule': rule
+              },
+              'first_failed_build': build_info,
+              'last_passed_build': None,
+          }
+    return result
 
   def GetTestFailures(self, build, test_steps):  # pragma: no cover.
     raise NotImplementedError

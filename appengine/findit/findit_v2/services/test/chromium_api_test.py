@@ -5,8 +5,10 @@
 from mock import patch
 import unittest
 
+from buildbucket_proto.build_pb2 import Build
+from buildbucket_proto.common_pb2 import Log
 from buildbucket_proto.step_pb2 import Step
-
+from infra_api_clients import logdog_util
 from findit_v2.services.chromium_api import ChromiumProjectAPI
 from findit_v2.services.failure_type import StepTypeEnum
 from services.compile_failure import compile_failure_analysis
@@ -221,3 +223,219 @@ class ChromiumProjectAPITest(unittest.TestCase):
             None,
             None,
             None))
+
+  def _CreateBuildbucketBuild(self, build_id, build_number):
+    build = Build(id=build_id, number=build_number)
+    build.input.gitiles_commit.host = 'gitiles.host.com'
+    build.input.gitiles_commit.project = 'project/name'
+    build.input.gitiles_commit.ref = 'ref/heads/master'
+    build.input.gitiles_commit.id = 'git_sha'
+    return build
+
+  @patch.object(logdog_util, 'GetLogFromViewUrl')
+  def testGetCompileFailures(self, mock_get_log):
+    build_id = 8765432109123
+    build_number = 123
+    build = self._CreateBuildbucketBuild(build_id, build_number)
+
+    step_name = 'compile'
+    log = Log()
+    log.name = 'json.output[ninja_info]'
+    log.view_url = 'https://dummy/path'
+    step = Step()
+    step.name = step_name
+    step.logs.extend([log])
+    build.steps.extend([step])
+    mock_get_log.return_value = {
+        'failures': [{
+            'output': '...some very long \n multi-line \n string',
+            'output_nodes': [
+                'broken_target1',
+                'broken_target2',
+            ],
+            'rule': 'ACTION',
+        }],
+    }
+    expected_response = {
+        'compile': {
+            'failures': {
+                frozenset(['broken_target1', 'broken_target2']): {
+                    'properties': {
+                        'rule': 'ACTION'
+                    },
+                    'first_failed_build': {
+                        'commit_id': 'git_sha',
+                        'id': 8765432109123,
+                        'number': 123,
+                    },
+                    'last_passed_build': None
+                }
+            }
+        }
+    }
+
+    self.assertEqual(expected_response,
+                     ChromiumProjectAPI().GetCompileFailures(build, [step]))
+
+  @patch.object(logdog_util, 'GetLogFromViewUrl')
+  def testGetCompileFailuresEmptyNinjaInfo(self, mock_get_log):
+    build_id = 8765432109123
+    build_number = 123
+    build = self._CreateBuildbucketBuild(build_id, build_number)
+
+    step_name = 'compile'
+    log = Log()
+    log.name = 'json.output[ninja_info]'
+    log.view_url = 'https://dummy/path'
+    step = Step()
+    step.name = step_name
+    step.logs.extend([log])
+    build.steps.extend([step])
+    # Cover the case when the retrieval of the log returns a string with
+    # json-encoded info.
+    mock_get_log.return_value = "{}"
+    expected_response = {}
+    self.assertEqual(expected_response,
+                     ChromiumProjectAPI().GetCompileFailures(build, [step]))
+
+  @patch.object(logdog_util, 'GetLogFromViewUrl')
+  def testGetCompileFailuresMultipleFailuresInNinjaInfo(self, mock_get_log):
+    build_id = 8765432109123
+    build_number = 123
+    build = self._CreateBuildbucketBuild(build_id, build_number)
+
+    step_name = 'compile'
+    log = Log()
+    log.name = 'json.output[ninja_info]'
+    log.view_url = 'https://dummy/path'
+    step = Step()
+    step.name = step_name
+    step.logs.extend([log])
+    build.steps.extend([step])
+    # This is not expected, but should behave correctly nonetheless.
+    mock_get_log.return_value = {
+        'failures': [
+            {
+                'output': '...some very long \n multi-line \n string',
+                'output_nodes': ['broken_target1',],
+                'rule': 'ACTION',
+            },
+            {
+                'output': '...some very long \n multi-line \n string',
+                'output_nodes': ['broken_target2',],
+                'rule': 'ACTION',
+            },
+        ],
+    }
+    expected_response = {
+        'compile': {
+            'failures': {
+                frozenset(['broken_target1']): {
+                    'properties': {
+                        'rule': 'ACTION'
+                    },
+                    'first_failed_build': {
+                        'commit_id': 'git_sha',
+                        'id': 8765432109123,
+                        'number': 123,
+                    },
+                    'last_passed_build': None
+                },
+                frozenset(['broken_target2']): {
+                    'properties': {
+                        'rule': 'ACTION'
+                    },
+                    'first_failed_build': {
+                        'commit_id': 'git_sha',
+                        'id': 8765432109123,
+                        'number': 123,
+                    },
+                    'last_passed_build': None
+                }
+            }
+        }
+    }
+
+    self.assertEqual(expected_response,
+                     ChromiumProjectAPI().GetCompileFailures(build, [step]))
+
+  @patch.object(logdog_util, 'GetLogFromViewUrl')
+  def testGetCompileFailuresMultipleSteps(self, mock_get_log):
+    build_id = 8765432109123
+    build_number = 123
+    build = self._CreateBuildbucketBuild(build_id, build_number)
+
+    step_name = 'compile'
+    log = Log()
+    log.name = 'json.output[ninja_info]'
+    log.view_url = 'https://dummy/path'
+    step = Step()
+    step.name = step_name
+    step.logs.extend([log])
+
+    step2_name = 'compile-like-step'
+    log = Log()
+    log.name = 'json.output[ninja_info]'
+    log.view_url = 'https://dummy/path'
+    step2 = Step()
+    step2.name = step2_name
+    step2.logs.extend([log])
+    build.steps.extend([step, step2])
+    mock_get_log.side_effect = [
+        {
+            'failures': [{
+                'output': '...some very long \n multi-line \n string',
+                'output_nodes': [
+                    'broken_target1',
+                    'broken_target2',
+                ],
+                'rule': 'ACTION',
+            }],
+        },
+        {
+            'failures': [{
+                'output': '...some very long \n multi-line \n string',
+                'output_nodes': [
+                    'broken_target3',
+                    'broken_target4',
+                ],
+                'rule': 'ACTION',
+            }],
+        },
+    ]
+    expected_response = {
+        'compile': {
+            'failures': {
+                frozenset(['broken_target1', 'broken_target2']): {
+                    'first_failed_build': {
+                        'commit_id': 'git_sha',
+                        'id': 8765432109123,
+                        'number': 123,
+                    },
+                    'properties': {
+                        'rule': 'ACTION'
+                    },
+                    'last_passed_build': None
+                }
+            }
+        },
+        'compile-like-step': {
+            'failures': {
+                frozenset(['broken_target3', 'broken_target4']): {
+                    'properties': {
+                        'rule': 'ACTION'
+                    },
+                    'first_failed_build': {
+                        'commit_id': 'git_sha',
+                        'id': 8765432109123,
+                        'number': 123,
+                    },
+                    'last_passed_build': None
+                }
+            }
+        }
+    }
+
+    self.assertEqual(
+        expected_response,
+        ChromiumProjectAPI().GetCompileFailures(build, [step, step2]))
