@@ -389,7 +389,9 @@ corp_mode_user_groups = [
   'chromeos-acl@google.com',
   'chromeos-acl@chromium.org',
   'chromeos-fte-tvc@google.com',
+  'chromeos-fte-tvc@chromium.org',
   'create-team@google.com',
+  'create-team@chromium.org',
   'test-corp-mode@google.com',
   ]
 
