@@ -193,13 +193,17 @@ func (b *BatchRunner) collectForBatch(ctx context.Context, nb *batch) error {
 				continue
 			}
 			logging.Debugf(r.Ctx(), "request picked up as batch slave, will eventually execute")
-			// TODO(akeshet): Bail out of batch construction if batch reaches
-			// some maximum size.
+
 			nb.append(r)
 			// In test fixture, wait for a signal to continue after appending
 			// an item to the batch.
 			// In production, this channel is closed so the read returns immediately.
 			<-b.testonlyBatchWait
+
+			// Limit batch size at 1000.
+			if nb.numOperations() >= 1000 {
+				return nil
+			}
 		case <-ctx.Done():
 			// Note: it may appear that this case is redundant with respect to the
 			// timer case, but in unit tests on windows the timer doesn't
