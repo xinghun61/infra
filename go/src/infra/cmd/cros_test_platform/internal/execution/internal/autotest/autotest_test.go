@@ -21,6 +21,7 @@ import (
 	"go.chromium.org/chromiumos/infra/proto/go/test_platform/config"
 	"go.chromium.org/chromiumos/infra/proto/go/test_platform/steps"
 	swarming_api "go.chromium.org/luci/common/api/swarming/swarming/v1"
+	"go.chromium.org/luci/common/errors"
 )
 
 type fakeSwarming struct {
@@ -66,6 +67,10 @@ func (f *fakeSwarming) SetOutput(output string) {
 	f.l.Lock()
 	defer f.l.Unlock()
 	f.output = output
+}
+
+func (f *fakeSwarming) BotExists(ctx context.Context, dims []*swarming_api.SwarmingRpcsStringPair) (bool, error) {
+	return false, errors.Reason("not implemented").Err()
 }
 
 func (f *fakeSwarming) SetResult(result *swarming_api.SwarmingRpcsTaskResult) {

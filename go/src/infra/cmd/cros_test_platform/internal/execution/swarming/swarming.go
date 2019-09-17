@@ -21,10 +21,9 @@ type URLer interface {
 }
 
 // Client defines an interface used to interact with a swarming service.
-//
-// Note: this is a superset of the URLer interface.
 type Client interface {
 	URLer
+	BotExists(context.Context, []*swarming_api.SwarmingRpcsStringPair) (bool, error)
 	CreateTask(context.Context, *swarming_api.SwarmingRpcsNewTaskRequest) (*swarming_api.SwarmingRpcsTaskRequestMetadata, error)
 	GetResults(ctx context.Context, IDs []string) ([]*swarming_api.SwarmingRpcsTaskResult, error)
 	GetTaskOutputs(ctx context.Context, IDs []string) ([]*swarming_api.SwarmingRpcsTaskOutput, error)

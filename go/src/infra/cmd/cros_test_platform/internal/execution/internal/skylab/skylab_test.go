@@ -27,6 +27,7 @@ import (
 	swarming_api "go.chromium.org/luci/common/api/swarming/swarming/v1"
 	"go.chromium.org/luci/common/clock"
 	"go.chromium.org/luci/common/clock/testclock"
+	"go.chromium.org/luci/common/errors"
 	"go.chromium.org/luci/common/isolated"
 	"go.chromium.org/luci/swarming/proto/jsonrpc"
 
@@ -78,6 +79,10 @@ func (f *fakeSwarming) GetResults(ctx context.Context, IDs []string) ([]*swarmin
 		}
 	}
 	return results, nil
+}
+
+func (f *fakeSwarming) BotExists(ctx context.Context, dims []*swarming_api.SwarmingRpcsStringPair) (bool, error) {
+	return false, errors.Reason("not implemented").Err()
 }
 
 func (f *fakeSwarming) GetTaskURL(taskID string) string {

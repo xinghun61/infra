@@ -224,6 +224,36 @@ func (c *Client) GetTaskOutputs(ctx context.Context, IDs []string) ([]*swarming_
 	return results, nil
 }
 
+// BotExists checks if an bot exists with the given dimensions.
+func (c *Client) BotExists(ctx context.Context, dims []*swarming_api.SwarmingRpcsStringPair) (bool, error) {
+	var resp *swarming_api.SwarmingRpcsBotList
+	err := callWithRetries(ctx, func() error {
+		call := c.SwarmingService.Bots.List().Dimensions(flattenStringPairs(dims)...).IsDead("FALSE").Limit(1)
+		r, err := call.Context(ctx).Do()
+		if err != nil {
+			return errors.Annotate(err, "bot exists").Err()
+		}
+		if resp == nil {
+			return errors.Reason("bot exists: nil RPC response").Err()
+		}
+		// Assign to captured variable only on success.
+		resp = r
+		return nil
+	})
+	if err != nil {
+		return false, err
+	}
+	return len(resp.Items) > 0, nil
+}
+
+func flattenStringPairs(pairs []*swarming_api.SwarmingRpcsStringPair) []string {
+	ss := make([]string, len(pairs))
+	for i, p := range pairs {
+		ss[i] = fmt.Sprintf("%s:%s", p.Key, p.Value)
+	}
+	return ss
+}
+
 // GetTaskURL gets a URL for the task with the given ID.
 func (c *Client) GetTaskURL(taskID string) string {
 	return TaskURL(c.server, taskID)
