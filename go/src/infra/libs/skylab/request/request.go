@@ -64,6 +64,25 @@ func (a *Args) SwarmingNewTaskRequest() (*swarming.SwarmingRpcsNewTaskRequest, e
 	return req, nil
 }
 
+// StaticDimensions returns the dimensions required on a Swarming bot that can
+// service this request.
+//
+// StaticDimensions() do not include dimensions used to optimize task
+// scheduling.
+func (a *Args) StaticDimensions() ([]*swarming.SwarmingRpcsStringPair, error) {
+	ret := schedulableLabelsToPairs(a.SchedulableLabels)
+	d, err := stringToPairs(a.Dimensions...)
+	if err != nil {
+		return nil, errors.Annotate(err, "get static dimensions").Err()
+	}
+	ret = append(ret, d...)
+	ret = append(ret, &swarming.SwarmingRpcsStringPair{
+		Key:   "pool",
+		Value: "ChromeOSSkylab",
+	})
+	return ret, nil
+}
+
 // getSlices generates and returns the set of swarming task slices for the given test task.
 func getSlices(cmd worker.Command, provisionableDimensions []string, dimensions []string, inv inventory.SchedulableLabels, timeout time.Duration) ([]*swarming.SwarmingRpcsTaskSlice, error) {
 	slices := make([]*swarming.SwarmingRpcsTaskSlice, 1, 2)

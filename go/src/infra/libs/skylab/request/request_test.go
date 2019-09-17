@@ -5,10 +5,13 @@
 package request_test
 
 import (
+	"fmt"
+	"sort"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/kylelemons/godebug/pretty"
 	. "github.com/smartystreets/goconvey/convey"
 
 	swarming "go.chromium.org/luci/common/api/swarming/swarming/v1"
@@ -105,4 +108,92 @@ func TestSliceExpiration(t *testing.T) {
 			So(req.TaskSlices[1].ExpirationSecs, ShouldEqual, 60*11)
 		})
 	})
+}
+
+func TestStaticDimensions(t *testing.T) {
+	cases := []struct {
+		Tag  string
+		Args request.Args
+		Want []*swarming.SwarmingRpcsStringPair
+	}{
+		{
+			Tag:  "empty args",
+			Args: request.Args{},
+			Want: toStringPairs([]string{"pool:ChromeOSSkylab"}),
+		},
+		{
+			Tag: "one schedulable label",
+			Args: request.Args{
+				SchedulableLabels: inventory.SchedulableLabels{
+					Model: stringPtr("some_model"),
+				},
+			},
+			Want: toStringPairs([]string{"pool:ChromeOSSkylab", "label-model:some_model"}),
+		},
+		{
+			Tag: "one dimension",
+			Args: request.Args{
+				Dimensions: []string{"some:value"},
+			},
+			Want: toStringPairs([]string{"pool:ChromeOSSkylab", "some:value"}),
+		},
+		{
+			Tag: "one provisionable dimension",
+			Args: request.Args{
+				ProvisionableDimensions: []string{"cros-version:value"},
+			},
+			Want: toStringPairs([]string{"pool:ChromeOSSkylab"}),
+		},
+		{
+			Tag: "one of each",
+			Args: request.Args{
+				SchedulableLabels: inventory.SchedulableLabels{
+					Model: stringPtr("some_model"),
+				},
+				Dimensions:              []string{"some:value"},
+				ProvisionableDimensions: []string{"cros-version:value"},
+			},
+			Want: toStringPairs([]string{"pool:ChromeOSSkylab", "label-model:some_model", "some:value"}),
+		},
+	}
+
+	for _, c := range cases {
+		t.Run(c.Tag, func(t *testing.T) {
+			got, err := c.Args.StaticDimensions()
+			if err != nil {
+				t.Fatalf("error in StaticDimensions(): %s", err)
+			}
+			want := sortDimensions(c.Want)
+			got = sortDimensions(got)
+			if diff := pretty.Compare(want, got); diff != "" {
+				t.Errorf("Incorrect static dimensions, -want +got: %s", diff)
+			}
+		})
+	}
+}
+
+func stringPtr(s string) *string {
+	return &s
+}
+
+func toStringPairs(ss []string) []*swarming.SwarmingRpcsStringPair {
+	ret := make([]*swarming.SwarmingRpcsStringPair, len(ss))
+	for i, s := range ss {
+		p := strings.Split(s, ":")
+		if len(p) != 2 {
+			panic(fmt.Sprintf("Invalid dimension %s", s))
+		}
+		ret[i] = &swarming.SwarmingRpcsStringPair{
+			Key:   p[0],
+			Value: p[1],
+		}
+	}
+	return ret
+}
+
+func sortDimensions(dims []*swarming.SwarmingRpcsStringPair) []*swarming.SwarmingRpcsStringPair {
+	sort.SliceStable(dims, func(i, j int) bool {
+		return dims[i].Key < dims[j].Key || (dims[i].Key == dims[j].Key && dims[i].Value < dims[j].Value)
+	})
+	return dims
 }
