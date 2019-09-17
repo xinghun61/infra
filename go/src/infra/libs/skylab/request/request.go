@@ -49,7 +49,11 @@ type Args struct {
 // SwarmingNewTaskRequest returns the Swarming request to create the Skylab
 // task with these arguments.
 func (a *Args) SwarmingNewTaskRequest() (*swarming.SwarmingRpcsNewTaskRequest, error) {
-	slices, err := getSlices(a.Cmd, a.ProvisionableDimensions, a.Dimensions, a.SchedulableLabels, a.Timeout)
+	dims, err := a.StaticDimensions()
+	if err != nil {
+		return nil, errors.Annotate(err, "create request").Err()
+	}
+	slices, err := getSlices(a.Cmd, dims, a.ProvisionableDimensions, a.Timeout)
 	if err != nil {
 		return nil, errors.Annotate(err, "create request").Err()
 	}
@@ -84,32 +88,23 @@ func (a *Args) StaticDimensions() ([]*swarming.SwarmingRpcsStringPair, error) {
 }
 
 // getSlices generates and returns the set of swarming task slices for the given test task.
-func getSlices(cmd worker.Command, provisionableDimensions []string, dimensions []string, inv inventory.SchedulableLabels, timeout time.Duration) ([]*swarming.SwarmingRpcsTaskSlice, error) {
+func getSlices(cmd worker.Command, staticDimensions []*swarming.SwarmingRpcsStringPair, provisionableDimensions []string, timeout time.Duration) ([]*swarming.SwarmingRpcsTaskSlice, error) {
 	slices := make([]*swarming.SwarmingRpcsTaskSlice, 1, 2)
 
-	basePairs, _ := stringToPairs("pool:ChromeOSSkylab", "dut_state:ready")
-
-	rawPairs, err := stringToPairs(dimensions...)
-	if err != nil {
-		return nil, errors.Annotate(err, "create slices").Err()
-	}
-
-	inventoryPairs := schedulableLabelsToPairs(inv)
-
-	basePairs = append(basePairs, inventoryPairs...)
-	basePairs = append(basePairs, rawPairs...)
+	dims, _ := stringToPairs("dut_state:ready")
+	dims = append(dims, staticDimensions...)
 
 	provisionablePairs, err := stringToPairs(provisionableDimensions...)
 	if err != nil {
 		return nil, errors.Annotate(err, "create slices").Err()
 	}
 
-	s0Dims := append(basePairs, provisionablePairs...)
+	s0Dims := append(dims, provisionablePairs...)
 	slices[0] = taskSlice(cmd.Args(), s0Dims, timeout)
 
 	if len(provisionableDimensions) != 0 {
 		cmd.ProvisionLabels = provisionDimensionsToLabels(provisionableDimensions)
-		s1Dims := basePairs
+		s1Dims := dims
 		slices = append(slices, taskSlice(cmd.Args(), s1Dims, timeout))
 	}
 

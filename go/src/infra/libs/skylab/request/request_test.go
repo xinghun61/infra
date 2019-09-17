@@ -42,31 +42,18 @@ func TestProvisionableDimensions(t *testing.T) {
 				So(s0.Properties.Dimensions, ShouldHaveLength, 6)
 				So(s1.Properties.Dimensions, ShouldHaveLength, 4)
 
-				type KV struct {
-					K string
-					V string
-				}
+				s1Expect := toStringPairs([]string{
+					"pool:ChromeOSSkylab",
+					"dut_state:ready",
+					fmt.Sprintf("label-model:%s", model),
+					"k1:v1",
+				})
+				diff := pretty.Compare(sortDimensions(s1.Properties.Dimensions), sortDimensions(s1Expect))
+				So(diff, ShouldBeEmpty)
 
-				s0Expect := []KV{
-					{"pool", "ChromeOSSkylab"},
-					{"dut_state", "ready"},
-					{"label-model", model},
-					{"k1", "v1"},
-					{"k2", "v2"},
-					{"k3", "v3"},
-				}
-				s1Expect := s0Expect[:4]
-
-				// TODO(akeshet): Use pretty.Compare instead of looped assertion.
-				compare := func([]*swarming.SwarmingRpcsStringPair, []KV) {
-					for i, d := range s0.Properties.Dimensions {
-						So(d.Key, ShouldEqual, s0Expect[i].K)
-						So(d.Value, ShouldEqual, s0Expect[i].V)
-					}
-				}
-
-				compare(s0.Properties.Dimensions, s0Expect)
-				compare(s1.Properties.Dimensions, s1Expect)
+				s0Expect := append(s1Expect, toStringPairs([]string{"k2:v2", "k3:v3"})...)
+				diff = pretty.Compare(sortDimensions(s0.Properties.Dimensions), sortDimensions(s0Expect))
+				So(diff, ShouldBeEmpty)
 
 				// First slice command doesn't include provisioning.
 				// Second slice (fallback) does.
