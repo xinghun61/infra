@@ -54,7 +54,7 @@
   <select name="is_private" id="privacy">
     <option disabled="disabled">Select an access level...</option>
     <option value="no">Anyone on the internet</option>
-    <option value="yes">Hotlist members</option>
+    <option value="yes" selected="selected">Hotlist members</option>
   </select>
   <br><br>
 
