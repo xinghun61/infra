@@ -126,6 +126,12 @@ func TestLaunch(t *testing.T) {
 			Convey("then a single run_suite proxy job is created, with correct arguments.", func() {
 				So(swarming.createCalls, ShouldHaveLength, 1)
 				So(swarming.createCalls[0].TaskSlices, ShouldHaveLength, 1)
+				slice := swarming.createCalls[0].TaskSlices[0]
+				// 60 minutes is the timeout from the execution request.
+				// 5 minutes is shaved off so that run_suite will hopefully
+				// terminate before autotest-execute does.
+				// 10 minutes grace period is added to the actual swarming task slice.
+				So(slice.ExpirationSecs, ShouldEqual, (60-5+10)*60)
 				cmd := swarming.createCalls[0].TaskSlices[0].Properties.Command
 				expected := []string{
 					"/usr/local/autotest/site_utils/run_suite.py",
@@ -136,7 +142,7 @@ func TestLaunch(t *testing.T) {
 					"--suite_name", "cros_test_platform",
 					"--pool", "cq",
 					"-w", "foo-afe-host",
-					"--timeout_mins", "60",
+					"--timeout_mins", "55",
 					"--suite_args_json",
 					`{"args_dict_json":"{\"job_keyvals\":{\"k1\":\"v1\"},\"name\":\"cros_test_platform\",\"test_names\":[\"test1\",\"test2\"]}"}`,
 				}
@@ -179,7 +185,7 @@ func TestLaunchLegacy(t *testing.T) {
 					"--suite_name", "legacy_suite",
 					"--pool", "cq",
 					"-w", "foo-afe-host",
-					"--timeout_mins", "60",
+					"--timeout_mins", "55",
 					"--suite_args_json", "{}",
 				}
 				So(cmd, ShouldResemble, expected)

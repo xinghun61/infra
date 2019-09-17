@@ -193,6 +193,19 @@ func toTimeout(params *test_platform.Request_Params) (time.Duration, error) {
 	if err != nil {
 		return 0, errors.Annotate(err, "get timeout").Err()
 	}
+
+	if duration > 0 && duration < 20*time.Minute {
+		return 0, errors.Reason("timeout %s is too small; if specified, timeout must be >= 20 minutes", duration).Err()
+	}
+
+	// Give the suite job a little bit less time to run than the autotest-execute
+	// caller. This increases the chance that if the suite is going to time out
+	// due to lack of capacity, then the run_suite call will timeout before
+	// autotest-execute does.
+	if duration > 0 {
+		duration = duration - 5*time.Minute
+	}
+
 	return duration, nil
 }
 
