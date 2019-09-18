@@ -720,6 +720,17 @@ func TestRetries(t *testing.T) {
 				err = run.LaunchAndWait(ctx, swarming, gf)
 				So(err, ShouldBeNil)
 				response := run.Response(swarming)
+
+				Convey("each attempt request should have a unique logdog url.", func() {
+					s := map[string]bool{}
+					for _, req := range swarming.createCalls {
+						url, ok := extractLogdogUrl(req.TaskSlices[0].Properties.Command)
+						So(ok, ShouldBeTrue)
+						s[url] = true
+					}
+					So(s, ShouldHaveLength, len(swarming.createCalls))
+				})
+
 				Convey("then the launched task count should be correct.", func() {
 					So(response.TaskResults, ShouldHaveLength, c.expectedRetryCount+1)
 				})
@@ -731,6 +742,15 @@ func TestRetries(t *testing.T) {
 			})
 		}
 	})
+}
+
+func extractLogdogUrl(command []string) (string, bool) {
+	for i, s := range command[:len(command)-1] {
+		if s == "-logdog-annotation-url" {
+			return command[i+1], true
+		}
+	}
+	return "", false
 }
 
 func TestClientTestArg(t *testing.T) {
