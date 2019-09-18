@@ -3,7 +3,7 @@
 // found in the LICENSE file.
 
 // Package app sets up the AppEngine routing and h.
-package app
+package main
 
 import (
 	"context"
@@ -198,7 +198,7 @@ func checkAPIAccess(ctx context.Context, methodName string, req proto.Message) (
 	return ctx, nil
 }
 
-func init() {
+func main() {
 	prodENV := os.Getenv("PROD_ENV")
 	switch prodENV {
 	case "production", "local", "staging":
@@ -315,4 +315,6 @@ func init() {
 	r.GET("/cron/external", tmw, h.JobExternal)
 
 	http.DefaultServeMux.Handle("/", r)
+
+	appengine.Main()
 }
