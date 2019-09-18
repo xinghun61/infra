@@ -222,14 +222,12 @@ type AlertedBuilder struct {
 	// LatestFailure is the build number of latest failure.
 	LatestFailure int64 `json:"latest_failure"`
 	// LatestPassing is the build number of latest passing build
-	LatestPassing     int64            `json:"latest_passing"`
-	LatestPassingRev  *RevisionSummary `json:"last_passing_rev"`
-	FirstFailingRev   *RevisionSummary `json:"first_failing_rev"`
-	Count             int              `json:"count"`
-	Project           string           `json:"project"`
-	Bucket            string           `json:"bucket"`
-	FailingTestsTrunc string           `json:"failing_tests_trunc"`
-	NumFailingTests   int64            `json:"num_failing_tests"`
+	LatestPassing    int64            `json:"latest_passing"`
+	LatestPassingRev *RevisionSummary `json:"last_passing_rev"`
+	FirstFailingRev  *RevisionSummary `json:"first_failing_rev"`
+	Count            int              `json:"count"`
+	Project          string           `json:"project"`
+	Bucket           string           `json:"bucket"`
 }
 
 // RegressionRange identifies the bounds of the location of a regression.
