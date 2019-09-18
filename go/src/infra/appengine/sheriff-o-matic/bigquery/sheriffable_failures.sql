@@ -103,9 +103,11 @@ SELECT
   s.builder AS Builder,
   s.mastername AS MasterName,
   s.step AS StepName,
-  # TODO: rename these ranges and add a diagram to explain what they mean.
+  s.test_names_fp as TestNamesFingerprint,
+  s.test_names_trunc as TestNamesTrunc,
+  s.num_tests as NumTests,
   t.latest.id AS BuildIdBegin,
-  s.id AS BuildIdEnd,
+  s.build_id AS BuildIdEnd,
   t.latest.number AS BuildNumberBegin,
   s.number AS BuildNumberEnd,
   t.latest.previous_output_commit AS CPRangeOutputBegin,
