@@ -100,7 +100,7 @@ message Config {
 }
 
 
-// Next available tag: 7
+// Next available tag: 11
 message PresentationConfig {
   string project_thumbnail_url = 1;
   string project_summary = 2;
@@ -108,7 +108,10 @@ message PresentationConfig {
   string default_query = 4;
   repeated SavedQuery saved_queries = 5;
   string revision_url_format = 6;
-  // TODO(zhangtiff): Add default issue list columns.
+  string default_col_spec = 7;
+  string default_sort_spec = 8;
+  string default_x_attr = 9;
+  string default_y_attr = 10;
 }
 
 

@@ -125,6 +125,10 @@ class ProjectsServicer(monorail_servicer.MonorailServicer):
         project_summary=project_summary,
         custom_issue_entry_url=custom_issue_entry_url,
         default_query=default_query,
+        default_col_spec=config.default_col_spec,
+        default_sort_spec=config.default_sort_spec,
+        default_x_attr=config.default_x_attr,
+        default_y_attr=config.default_y_attr,
         saved_queries=converters.IngestSavedQueries(
             mc.cnxn, self.services.project, saved_queries),
         revision_url_format=revision_url_format)

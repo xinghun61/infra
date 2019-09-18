@@ -167,6 +167,10 @@ class ProjectsServicerTest(unittest.TestCase):
     self.project.summary = 'project summary'
     config.custom_issue_entry_url = 'issue entry url'
     config.member_default_query = 'default query'
+    config.default_col_spec = 'ID Summary'
+    config.default_sort_spec = 'Priority Status'
+    config.default_x_attr = 'Priority'
+    config.default_y_attr = 'Status'
     self.project.revision_url_format = 'revision url format'
     self.services.config.StoreConfig(self.cnxn, config)
 
@@ -180,6 +184,10 @@ class ProjectsServicerTest(unittest.TestCase):
     self.assertEqual('project summary', response.project_summary)
     self.assertEqual('issue entry url', response.custom_issue_entry_url)
     self.assertEqual('default query', response.default_query)
+    self.assertEqual('ID Summary', response.default_col_spec)
+    self.assertEqual('Priority Status', response.default_sort_spec)
+    self.assertEqual('Priority', response.default_x_attr)
+    self.assertEqual('Status', response.default_y_attr)
     self.assertEqual('revision url format', response.revision_url_format)
 
   def testGetPresentationConfig_SavedQueriesAllowed(self):
