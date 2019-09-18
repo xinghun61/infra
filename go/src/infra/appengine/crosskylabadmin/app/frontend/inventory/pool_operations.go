@@ -121,6 +121,7 @@ func (is *ServerImpl) balancePoolsNoRetry(ctx context.Context, req *fleet.Balanc
 		if err != nil {
 			return nil, err
 		}
+		resp.GeneratedChangeUrl = u
 		for _, res := range resp.ModelResult {
 			res.Url = u
 		}

@@ -295,7 +295,7 @@ func balancePoolCronHandler(c *router.Context) (err error) {
 			merr = append(merr, errors.Annotate(err, "ensure critical pools healthy for pool %s", target).Err())
 			continue
 		}
-		logging.Infof(c.Context, "Ensured pool health for target pool %s. Result %#v", target, resp)
+		logging.Infof(c.Context, "Successfully balanced pool for target pool %s. Inventory change: %s", target, resp.GetGeneratedChangeUrl())
 	}
 	return merr.First()
 }

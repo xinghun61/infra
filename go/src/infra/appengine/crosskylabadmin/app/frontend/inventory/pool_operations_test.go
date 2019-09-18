@@ -15,7 +15,6 @@
 package inventory
 
 import (
-	"fmt"
 	"strings"
 	"testing"
 
@@ -63,7 +62,6 @@ func TestBalancePoolsDryrun(t *testing.T) {
 
 		So(err, ShouldBeNil)
 		So(len(resp.ModelResult), ShouldEqual, 2)
-		fmt.Println(resp.ModelResult)
 		r, ok := resp.ModelResult["link"]
 		So(ok, ShouldBeTrue)
 		r2, ok := resp.ModelResult["coral"]
@@ -137,7 +135,6 @@ func TestBalancePoolsDryrun(t *testing.T) {
 		So(err, ShouldBeNil)
 		r, ok := resp.ModelResult["link"]
 		So(ok, ShouldBeTrue)
-		fmt.Println(r)
 		So(r.GetSparePoolStatus().GetSize(), ShouldEqual, 1)
 		So(r.GetSparePoolStatus().GetHealthyCount(), ShouldEqual, 1)
 		So(r.GetTargetPoolStatus().GetSize(), ShouldEqual, 1)
@@ -341,11 +338,12 @@ func TestBalancePoolsCommit(t *testing.T) {
 			test.BotForDUT("coral_suites_healthy", "ready", "label-model:coral"),
 		})
 
-		_, err = tf.Inventory.BalancePools(tf.C, &fleet.BalancePoolsRequest{
+		resp, err := tf.Inventory.BalancePools(tf.C, &fleet.BalancePoolsRequest{
 			SparePool:  "DUT_POOL_SUITES",
 			TargetPool: "DUT_POOL_CQ",
 		})
 		So(err, ShouldBeNil)
+		So(resp.GetGeneratedChangeUrl(), ShouldContainSubstring, config.Get(tf.C).Inventory.GerritHost)
 
 		assertLabInventoryChange(c, tf.FakeGerrit, []testInventoryDut{
 			{"link_cq_unhealthy", "link_cq_unhealthy", "link", "DUT_POOL_SUITES"},

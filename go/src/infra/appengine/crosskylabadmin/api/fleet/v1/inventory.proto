@@ -408,6 +408,15 @@ message BalancePoolsRequest {
 message BalancePoolsResponse {
   // model_result maps a model to the EnsurePoolHealthyResponse for that model.
   map<string, EnsurePoolHealthyResponse> model_result = 1;
+
+  // generated_change_url is an opaque URL for this inventory change.
+  //
+  // It is intended to be the gerrit CL corresponding to the change, or the
+  // gitiles path for a committed changelist for the change. Example CL:
+  // https://crrev.com/i/1814710
+  //
+  // generated_change_url is empty in dryrun mode.
+  string generated_change_url = 2;
 }
 
 message ResizePoolRequest {
