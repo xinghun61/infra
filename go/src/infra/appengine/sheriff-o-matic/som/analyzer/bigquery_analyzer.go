@@ -8,13 +8,13 @@ import (
 	"go.chromium.org/luci/common/logging"
 	"golang.org/x/net/context"
 	"google.golang.org/api/iterator"
+	"infra/appengine/sheriff-o-matic/som/analyzer/step"
 	"infra/monitoring/messages"
 	"sort"
 	"strings"
 	"time"
 )
 
-// TODO: Update bigquery/ scripts to match staging!
 const selectFromWhere = `
 SELECT
   Project,
@@ -22,8 +22,11 @@ SELECT
   Builder,
   MasterName,
   StepName,
-  BuildNumberBegin,
-  BuildNumberEnd,
+  TestNamesFingerprint,
+  TestNamesTrunc,
+  NumTests,
+  BuildIdBegin,
+  BuildIdEnd,
   CPRangeOutputBegin,
   CPRangeOutputEnd,
   CPRangeInputBegin,
@@ -39,16 +42,11 @@ WHERE
 // TODO: customize the WHERE clause for chromium.  I suspect
 // just using the project field isn't quite right.
 const failuresQuery = selectFromWhere + `
-	(project = %q
-	OR
-	MasterName = %q)
-  AND bucket NOT IN ("try",
-    "cq",
-    "staging",
-    "general")
-  AND (mastername IS NULL
-		OR mastername NOT LIKE "%%.fyi")
-	AND builder not like "%%bisect%%"
+	(Project = %q OR MasterName = %q)
+	AND Bucket NOT IN ("try", "cq", "staging", "general")
+    AND (Mastername IS NULL
+		OR Mastername NOT LIKE "%%.fyi")
+	AND Builder NOT LIKE "%%bisect%%"
 LIMIT
 	1000
 `
@@ -76,20 +74,23 @@ const crosFailuresQuery = selectFromWhere + `
 `
 
 type failureRow struct {
-	StepName            string
-	MasterName          bigquery.NullString
-	Builder             string
-	Bucket              string
-	Project             string
-	BuildNumberBegin    bigquery.NullInt64
-	BuildNumberEnd      bigquery.NullInt64
-	CPRangeInputBegin   *GitCommit
-	CPRangeInputEnd     *GitCommit
-	CPRangeOutputBegin  *GitCommit
-	CPRangeOutputEnd    *GitCommit
-	CulpritIDRangeBegin bigquery.NullInt64
-	CulpritIDRangeEnd   bigquery.NullInt64
-	StartTime           bigquery.NullTimestamp
+	TestNamesFingerprint bigquery.NullInt64
+	TestNamesTrunc       bigquery.NullString
+	NumTests             bigquery.NullInt64
+	StepName             string
+	MasterName           bigquery.NullString
+	Builder              string
+	Bucket               string
+	Project              string
+	BuildIDBegin         bigquery.NullInt64
+	BuildIDEnd           bigquery.NullInt64
+	CPRangeInputBegin    *GitCommit
+	CPRangeInputEnd      *GitCommit
+	CPRangeOutputBegin   *GitCommit
+	CPRangeOutputEnd     *GitCommit
+	CulpritIDRangeBegin  bigquery.NullInt64
+	CulpritIDRangeEnd    bigquery.NullInt64
+	StartTime            bigquery.NullTimestamp
 }
 
 // GitCommit represents a struct column for BQ query results.
@@ -105,9 +106,11 @@ type GitCommit struct {
 // simpler design we wouldn't have to use this but it's here to make
 // the transition from previous analyzer logic easier.
 type bqFailure struct {
-	Name     string `json:"name"`
-	kind     string
-	severity messages.Severity
+	Name            string `json:"step"`
+	kind            string
+	severity        messages.Severity
+	Tests           []step.TestWithResult `json:"tests"`
+	NumFailingTests int64                 `json:"num_failing_tests"`
 }
 
 func (b *bqFailure) Signature() string {
@@ -124,11 +127,17 @@ func (b *bqFailure) Severity() messages.Severity {
 
 func (b *bqFailure) Title(bses []*messages.BuildStep) string {
 	f := bses[0]
-	if len(bses) == 1 {
-		return fmt.Sprintf("%s failing on %s/%s", f.Step.Name, f.Master.Name(), f.Build.BuilderName)
+	prefix := fmt.Sprintf("%s failing", f.Step.Name)
+
+	if b.NumFailingTests > 0 {
+		prefix = fmt.Sprintf("%s (%d tests)", prefix, b.NumFailingTests)
 	}
 
-	return fmt.Sprintf("%s failing on multiple builders", f.Step.Name)
+	if len(bses) == 1 {
+		return fmt.Sprintf("%s on %s/%s", prefix, f.Master.Name(), f.Build.BuilderName)
+	}
+
+	return fmt.Sprintf("%s on multiple builders", prefix)
 }
 
 // GetBigQueryAlerts generates alerts for currently failing build steps, using
@@ -170,15 +179,18 @@ func GetBigQueryAlerts(ctx context.Context, tree string) ([]messages.BuildFailur
 	if err != nil {
 		return nil, err
 	}
-	return processBQResults(it)
+	return processBQResults(ctx, it)
 }
 
 type nexter interface {
 	Next(interface{}) error
 }
 
-func processBQResults(it nexter) ([]messages.BuildFailure, error) {
+func processBQResults(ctx context.Context, it nexter) ([]messages.BuildFailure, error) {
 	alertedBuildersByStep := map[string][]messages.AlertedBuilder{}
+	alertedBuildersByStepAndTests := map[string]map[int64][]messages.AlertedBuilder{}
+	testNamesTruncForFingerprint := map[int64]string{}
+
 	for {
 		var r failureRow
 		err := it.Next(&r)
@@ -217,24 +229,37 @@ func processBQResults(it nexter) ([]messages.BuildFailure, error) {
 			}
 		}
 		ab := messages.AlertedBuilder{
-			Project: r.Project,
-			Bucket:  r.Bucket,
-			Name:    r.Builder,
-			Master:  r.MasterName.StringVal,
-			// Replace these with build IDs.
-			FirstFailure:     r.BuildNumberBegin.Int64,
-			LatestFailure:    r.BuildNumberEnd.Int64,
+			Project:          r.Project,
+			Bucket:           r.Bucket,
+			Name:             r.Builder,
+			Master:           r.MasterName.StringVal,
+			FirstFailure:     r.BuildIDBegin.Int64,
+			LatestFailure:    r.BuildIDEnd.Int64,
 			URL:              fmt.Sprintf("https://ci.chromium.org/p/%s/builders/%s/%s", r.Project, r.Bucket, r.Builder),
 			LatestPassingRev: latestPassingRev,
 			FirstFailingRev:  firstFailingRev,
+			NumFailingTests:  r.NumTests.Int64,
 		}
+
 		forStep, ok := alertedBuildersByStep[r.StepName]
 		if !ok {
 			forStep = []messages.AlertedBuilder{}
 			alertedBuildersByStep[r.StepName] = forStep
+			alertedBuildersByStepAndTests[r.StepName] = map[int64][]messages.AlertedBuilder{}
 		}
 		forStep = append(forStep, ab)
 		alertedBuildersByStep[r.StepName] = forStep
+		if r.TestNamesFingerprint.Valid {
+			testNamesTruncForFingerprint[r.TestNamesFingerprint.Int64] = r.TestNamesTrunc.StringVal
+
+			forTest, ok := alertedBuildersByStepAndTests[r.StepName][r.TestNamesFingerprint.Int64]
+			if !ok {
+				forTest = []messages.AlertedBuilder{}
+				alertedBuildersByStepAndTests[r.StepName][r.TestNamesFingerprint.Int64] = forTest
+			}
+			forTest = append(forTest, ab)
+			alertedBuildersByStepAndTests[r.StepName][r.TestNamesFingerprint.Int64] = forTest
+		}
 	}
 
 	ret := []messages.BuildFailure{}
@@ -274,25 +299,63 @@ func processBQResults(it nexter) ([]messages.BuildFailure, error) {
 			regressionRanges = append(regressionRanges, regRange)
 		}
 
-		reason := &bqFailure{
-			Name:     stepName,
-			kind:     "basic",
-			severity: messages.ReliableFailure,
-		}
-
-		bf := messages.BuildFailure{
-			StepAtFault: &messages.BuildStep{
-				Step: &messages.Step{
-					Name: stepName,
+		forTest, ok := alertedBuildersByStepAndTests[stepName]
+		if ok && len(forTest) > 0 {
+			for testNamesFingerprint, buildersForTest := range forTest {
+				reason := &bqFailure{
+					Name:     stepName, // TODO: Use step package's GetTestSuite here.
+					kind:     "test",
+					severity: messages.ReliableFailure,
+				}
+				testNames := strings.Split(testNamesTruncForFingerprint[testNamesFingerprint], "\n")
+				sort.Strings(testNames)
+				for _, testName := range testNames {
+					reason.Tests = append(reason.Tests, step.TestWithResult{
+						TestName: testName,
+						// TODO: set these, as they are in test_step.go:
+						// IsFlaky
+						// SuspectedCLs
+						// Expectations
+						// Artifacts
+					})
+				}
+				for _, abForTest := range buildersForTest {
+					reason.NumFailingTests = abForTest.NumFailingTests
+				}
+				bf := messages.BuildFailure{
+					StepAtFault: &messages.BuildStep{
+						Step: &messages.Step{
+							Name: stepName,
+						},
+					},
+					Builders: buildersForTest,
+					Reason: &messages.Reason{
+						Raw: reason,
+					},
+					RegressionRanges: regressionRanges,
+				}
+				ret = append(ret, bf)
+			}
+		} else {
+			reason := &bqFailure{
+				Name:     stepName,
+				kind:     "basic",
+				severity: messages.ReliableFailure,
+			}
+			bf := messages.BuildFailure{
+				StepAtFault: &messages.BuildStep{
+					Step: &messages.Step{
+						Name: stepName,
+					},
 				},
-			},
-			Builders: alertedBuilders,
-			Reason: &messages.Reason{
-				Raw: reason,
-			},
-			RegressionRanges: regressionRanges,
+				Builders: alertedBuilders,
+				Reason: &messages.Reason{
+					Raw: reason,
+				},
+				RegressionRanges: regressionRanges,
+			}
+			ret = append(ret, bf)
 		}
-		ret = append(ret, bf)
 	}
 
 	ret = filterHierarchicalSteps(ret)
