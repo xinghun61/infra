@@ -314,6 +314,21 @@ export const hotlists = (state) => state.issue.hotlists;
 export const issueList = (state) => state.issue.issueList.issues;
 export const totalIssues = (state) => state.issue.issueList.totalResults;
 export const issueListProgress = (state) => state.issue.issueList.progress;
+export const issueListPhaseNames = createSelector(issueList, (issueList) => {
+  const phaseNamesSet = new Set();
+  if (issueList) {
+    issueList.forEach(({phases}) => {
+      if (phases) {
+        phases.forEach(({phaseRef: {phaseName}}) => {
+          phaseNamesSet.add(phaseName.toLowerCase());
+        });
+      }
+    });
+  }
+  return Array.from(phaseNamesSet);
+});
+
+
 export const issueLoaded = (state) => state.issue.issueLoaded;
 export const permissions = (state) => state.issue.permissions;
 export const presubmitResponse = (state) => state.issue.presubmitResponse;

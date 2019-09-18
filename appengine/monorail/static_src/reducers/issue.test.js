@@ -87,6 +87,32 @@ describe('issue', () => {
     assert.isFalse(issue.isOpen(wrapIssue({statusRef: {meansOpen: false}})));
   });
 
+  it('issueListPhaseNames', () => {
+    const stateWithEmptyIssueList = {issue: {
+      issueList: [],
+    }};
+    assert.deepEqual(issue.issueListPhaseNames(stateWithEmptyIssueList), []);
+    const stateWithIssueList = {issue: {
+      issueList: {
+        issues: [
+          {localId: 1, phases: [{phaseRef: {phaseName: 'chicken-phase'}}]},
+          {localId: 2, phases: [
+            {phaseRef: {phaseName: 'chicken-Phase'}},
+            {phaseRef: {phaseName: 'cow-phase'}}],
+          },
+          {localId: 3, phases: [
+            {phaseRef: {phaseName: 'cow-Phase'}},
+            {phaseRef: {phaseName: 'DOG-phase'}}],
+          },
+          {localId: 4, phases: [
+            {phaseRef: {phaseName: 'dog-phase'}},
+          ]},
+        ],
+      }}};
+    assert.deepEqual(issue.issueListPhaseNames(stateWithIssueList),
+        ['chicken-phase', 'cow-phase', 'dog-phase']);
+  });
+
   it('blockingIssues', () => {
     const relatedIssues = {
       ['proj:1']: {
