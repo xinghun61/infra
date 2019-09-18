@@ -34,7 +34,7 @@ export const fieldTypes = Object.freeze({
   PROJECT_TYPE: 'PROJECT_TYPE',
 });
 
-export const COLSPEC_DELIMITER_REGEX = /[\s\+]+/;
+export const SPEC_DELIMITER_REGEX = /[\s\+]+/;
 export const SITEWIDE_DEFAULT_COLUMNS = ['ID', 'Type', 'Status',
   'Priority', 'Milestone', 'Owner', 'Summary'];
 

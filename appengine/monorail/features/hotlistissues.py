@@ -111,6 +111,8 @@ class HotlistIssues(servlet.Servlet):
                       'grid_mode': ezt.boolean(mr.mode == 'grid'),
                       'page_perms': page_perms,
                       'colspec': mr.col_spec,
+                      # monorail:6336, used in <ezt-show-columns-connector>
+                      'phasespec': "",
                       'allow_rerank': ezt.boolean(allow_rerank),
                       'csv_link': framework_helpers.FormatURL(
                           [(name, mr.GetParam(name)) for name in

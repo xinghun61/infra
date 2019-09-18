@@ -275,6 +275,24 @@ class IssueListFunctionsTest(unittest.TestCase):
 
     settings.enable_quick_edit = saved_flag
 
+  def testGetAllPhaseNames(self):
+    issues = [
+        fake.MakeTestIssue(789, 1, 'summary', 'New', 0,
+                           phases=[
+                               tracker_pb2.Phase(name='chicken'),
+                               tracker_pb2.Phase(name='cow'),
+                               tracker_pb2.Phase(name='dog'),
+                               tracker_pb2.Phase(name='goat')]),
+        fake.MakeTestIssue(789, 2, 'summary', 'New', 0,
+                           phases=[
+                               tracker_pb2.Phase(name='CHICKEN'),
+                               tracker_pb2.Phase(name='hippo')]),
+        fake.MakeTestIssue(789, 2, 'summary', 'New', 0),
+        ]
+    self.assertItemsEqual(
+        issuelist._GetAllPhaseNames(issues),
+        ['chicken', 'cow', 'dog', 'goat', 'hippo'])
+
 
 def _GetColumns():
   """Return a list of all well known column names."""

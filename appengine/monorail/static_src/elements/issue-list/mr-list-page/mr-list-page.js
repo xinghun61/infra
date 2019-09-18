@@ -10,7 +10,7 @@ import * as issue from 'reducers/issue.js';
 import * as user from 'reducers/user.js';
 import * as project from 'reducers/project.js';
 import {prpcClient} from 'prpc-client-instance.js';
-import {COLSPEC_DELIMITER_REGEX, SITEWIDE_DEFAULT_COLUMNS}
+import {SPEC_DELIMITER_REGEX, SITEWIDE_DEFAULT_COLUMNS}
   from 'shared/issue-fields.js';
 import {urlWithNewParams, userIsMember} from 'shared/helpers.js';
 import 'elements/framework/mr-dropdown/mr-dropdown.js';
@@ -356,13 +356,13 @@ export class MrListPage extends connectStore(LitElement) {
   get columns() {
     // TODO(zhangtiff): Add project default columns.
     const colspec = this.queryParams.colspec;
-    return colspec ? colspec.split(COLSPEC_DELIMITER_REGEX)
+    return colspec ? colspec.split(SPEC_DELIMITER_REGEX)
       : SITEWIDE_DEFAULT_COLUMNS;
   }
 
   get groups() {
     const groupBy = this.queryParams.groupby;
-    return groupBy ? groupBy.split(COLSPEC_DELIMITER_REGEX) : [];
+    return groupBy ? groupBy.split(SPEC_DELIMITER_REGEX) : [];
   }
 
   get maxItems() {

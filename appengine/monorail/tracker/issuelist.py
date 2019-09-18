@@ -12,6 +12,7 @@ from __future__ import print_function
 from __future__ import division
 from __future__ import absolute_import
 
+import itertools
 import logging
 from third_party import ezt
 
@@ -156,12 +157,17 @@ class IssueList(servlet.Servlet):
     if mr.mode == 'grid':
       new_ui_url = self.request.url.replace('list', 'list_new')
 
+    # monorail:6336, needed for <ezt-show-columns-connector>
+    phase_names = _GetAllPhaseNames(pipeline.visible_results)
+
     page_data.update({
         'issue_tab_mode': 'issueList',
         'pagination': pipeline.pagination,
         'is_cross_project': ezt.boolean(len(pipeline.query_project_ids) != 1),
         'project_has_any_issues': ezt.boolean(project_has_any_issues),
         'colspec': mr.col_spec,
+        # monorail:6336, used in <ezt-show-columns-connector>
+        'phasespec': " ".join(phase_names),
         'page_perms': page_perms,
         'grid_mode': ezt.boolean(pipeline.grid_mode),
         'list_mode': ezt.boolean(pipeline.list_mode),
@@ -340,3 +346,17 @@ def _ShouldPreviewOnHover(user):
     True if the preview (peek) should open on hover over the issue ID.
   """
   return settings.enable_quick_edit and user.preview_on_hover
+
+def _GetAllPhaseNames(issues):
+  """Return a list of unique phase names that are part of issues.
+
+  Args:
+    issues: list of Issue PBs
+
+  Returns:
+    list of unique phase names that appear in at least one issue.
+  """
+  return list(set(
+      itertools.chain.from_iterable(
+          (phase.name.lower() for phase in issue.phases) for
+          issue in issues)))

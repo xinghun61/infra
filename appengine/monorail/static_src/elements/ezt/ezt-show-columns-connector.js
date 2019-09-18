@@ -10,7 +10,7 @@ import {store, connectStore} from 'reducers/base.js';
 import qs from 'qs';
 import * as sitewide from 'reducers/sitewide.js';
 import 'elements/framework/mr-issue-list/mr-show-columns-dropdown.js';
-import {COLSPEC_DELIMITER_REGEX} from 'shared/issue-fields.js';
+import {SPEC_DELIMITER_REGEX} from 'shared/issue-fields.js';
 import {equalsIgnoreCase} from 'shared/helpers.js';
 
 /**
@@ -35,9 +35,9 @@ export class EztShowColumnsConnector extends connectStore(LitElement) {
     return {
       initialColumns: {type: Array},
       hiddenColumns: {type: Object},
-      columns: {type: Array},
       queryParams: {type: Object},
       colspec: {type: String},
+      phasespec: {type: String},
     };
   }
 
@@ -58,7 +58,11 @@ export class EztShowColumnsConnector extends connectStore(LitElement) {
 
   get initialColumns() {
     // EZT will always pass in a colspec.
-    return this.colspec.split(COLSPEC_DELIMITER_REGEX);
+    return this.colspec.split(SPEC_DELIMITER_REGEX);
+  }
+
+  get phaseNames() {
+    return this.phasespec.split(SPEC_DELIMITER_REGEX);
   }
 
   onHideColumn(colName) {

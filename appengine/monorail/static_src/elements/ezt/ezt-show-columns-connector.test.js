@@ -33,4 +33,9 @@ describe('ezt-show-columns-connector', () => {
 
     assert.deepEqual(element.columns, ['ID']);
   });
+
+  it('phaseNames parses phasespec', () => {
+    element.phasespec = 'stable beta stable-exp';
+    assert.deepEqual(element.phaseNames, ['stable', 'beta', 'stable-exp']);
+  });
 });

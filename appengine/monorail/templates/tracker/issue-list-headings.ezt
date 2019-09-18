@@ -24,7 +24,7 @@
      class="dotdotdot" aria-label="Column list">...</a></th>
  [else]
  <th style="padding: 0;">
-   <ezt-show-columns-connector colspec="[colspec]"></ezt-show-columns-connector>
+   <ezt-show-columns-connector colspec="[colspec]" phasespec="[phasespec]"></ezt-show-columns-connector>
  </th>
  [end]
 </tr>
