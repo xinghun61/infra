@@ -592,7 +592,7 @@ class NotifyBulkChangeTask(notify_helpers.NotifyTaskBase):
     for addr, addr_issues in non_member_additional_addrs.items():
       email = self._FormatBulkIssuesEmail(
           addr_to_addrperm[addr], addr_issues, users_by_id, commenter_view,
-          hostport, comment_text, amendments, config, project, False)
+          hostport, comment_text, amendments, config, project)
       email_tasks.append(email)
       logging.info('about to bulk notify non-member additional addr %s of %s',
                    addr, [addr_issue.local_id for addr_issue in addr_issues])
@@ -612,7 +612,7 @@ class NotifyBulkChangeTask(notify_helpers.NotifyTaskBase):
     for addr, addr_issues in member_additional_addrs.items():
       email = self._FormatBulkIssuesEmail(
           addr_to_addrperm[addr], addr_issues, users_by_id, commenter_view,
-          hostport, comment_text, amendments, config, project, True)
+          hostport, comment_text, amendments, config, project)
       email_tasks.append(email)
       logging.info('about to bulk notify member additional addr %s of %s',
                    addr, [addr_issue.local_id for addr_issue in addr_issues])

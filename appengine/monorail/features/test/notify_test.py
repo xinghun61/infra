@@ -188,6 +188,39 @@ class NotifyTaskHandleRequestTest(unittest.TestCase):
       if 'member' in task_params['to']:
         self.assertNotIn(u'\u2026', task_params['from_addr'])
 
+  def testNotifyBulkChangeTask_AlsoNotify(self):
+    """We generate email tasks for also-notify addresses."""
+    self.issue1.derived_notify_addrs = [
+        'mailing-list@example.com', 'member@example.com']
+    task = notify.NotifyBulkChangeTask(
+        request=None, response=None, services=self.services)
+    params = {
+        'send_email': 1, 'seq': 0,
+        'issue_ids': '%d' % (self.issue1.issue_id),
+        'old_owner_ids': '1', 'commenter_id': 1}
+    mr = testing_helpers.MakeMonorailRequest(
+        user_info={'user_id': 1},
+        params=params,
+        method='POST',
+        services=self.services)
+    result = task.HandleRequest(mr)
+    self.VerifyParams(result, params)
+
+    tasks = self.taskqueue_stub.get_filtered_tasks(
+        url=urls.OUTBOUND_EMAIL_TASK + '.do')
+    self.assertEqual(3, len(tasks))
+    self.assertItemsEqual(
+        ['user@example.com', 'mailing-list@example.com', 'member@example.com'],
+        result['notified'])
+    for task in tasks:
+      task_params = json.loads(task.payload)
+      # obfuscated email for non-members
+      if 'user' in task_params['to']:
+        self.assertIn(u'\u2026', task_params['from_addr'])
+      # Full email for members
+      if 'member' in task_params['to']:
+        self.assertNotIn(u'\u2026', task_params['from_addr'])
+
   def testNotifyBulkChangeTask_SubscriberGetsEmail(self):
     """If a user subscription matches the issue, notify that user."""
     task = notify.NotifyBulkChangeTask(
