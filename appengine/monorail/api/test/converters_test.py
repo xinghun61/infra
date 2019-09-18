@@ -569,6 +569,9 @@ class ConverterFunctionsTest(unittest.TestCase):
         reporter_ref=common_pb2.UserRef(
             user_id=222, display_name='two@example.com', is_derived=False),
         opened_timestamp=now,
+        component_modified_timestamp=now,
+        status_modified_timestamp=now,
+        owner_modified_timestamp=now,
         star_count=12,
         is_spam=False,
         attachment_count=0,

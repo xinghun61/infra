@@ -382,6 +382,9 @@ def ConvertIssue(issue, users_by_id, related_refs, config):
       opened_timestamp=issue.opened_timestamp,
       closed_timestamp=issue.closed_timestamp,
       modified_timestamp=issue.modified_timestamp,
+      component_modified_timestamp=issue.component_modified_timestamp,
+      status_modified_timestamp=issue.status_modified_timestamp,
+      owner_modified_timestamp=issue.owner_modified_timestamp,
       star_count=issue.star_count, is_spam=issue.is_spam,
       # TODO(crbug.com/monorail/5665): Re-enable once the issues with
       # attachment_count have been fixed.

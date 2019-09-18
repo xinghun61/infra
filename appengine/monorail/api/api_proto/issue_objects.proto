@@ -98,7 +98,7 @@ message FieldValue {
 }
 
 
-// Next available tag: 25
+// Next available tag: 28
 message Issue {
   string project_name = 1;
   uint32 local_id = 2;
@@ -119,6 +119,9 @@ message Issue {
   fixed32 opened_timestamp = 15;
   fixed32 closed_timestamp = 16;
   fixed32 modified_timestamp = 17;
+  fixed32 component_modified_timestamp = 25;
+  fixed32 status_modified_timestamp = 26;
+  fixed32 owner_modified_timestamp = 27;
   uint32 star_count = 18;
   bool is_spam = 19;
   uint32 attachment_count = 20;

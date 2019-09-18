@@ -293,7 +293,10 @@ class IssuesServicerTest(unittest.TestCase):
             reporter_ref=common_pb2.UserRef(
                 user_id=111,
                 display_name='owner@example.com'),
-            opened_timestamp=1234567890),
+            opened_timestamp=self.NOW,
+            component_modified_timestamp=self.NOW,
+            status_modified_timestamp=self.NOW,
+            owner_modified_timestamp=self.NOW),
         response.open_refs[0])
 
   def testListReferencedIssues_MissingInput(self):
@@ -1263,7 +1266,10 @@ class IssuesServicerTest(unittest.TestCase):
                 common_pb2.IssueRef(project_name='proj', local_id=2)],
             reporter_ref=common_pb2.UserRef(
                 user_id=111, display_name='owner@example.com'),
-            opened_timestamp=1234567890,
+            opened_timestamp=self.NOW,
+            component_modified_timestamp=self.NOW,
+            status_modified_timestamp=self.NOW,
+            owner_modified_timestamp=self.NOW,
             ))
 
   def testConvertIssueApprovalsTemplate_MissingRequiredFields(self):
