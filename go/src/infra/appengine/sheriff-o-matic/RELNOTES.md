@@ -1,3 +1,20 @@
+# Release Notes sheriff-o-matic 2019-09-18
+
+- 2 commits, 1 bugs affected since 7a81e25 (2019-08-28T20:14:51Z)
+- 1 Authors:
+  - seanmccullough@chromium.org
+
+## Changes in this release
+
+- [[som] Update README.md for getting started with a new checkout.](https://chromium-review.googlesource.com/c/infra/infra/+/1804421) (seanmccullough@chromium.org)
+- [[som] Update to go111 runtime](https://chromium-review.googlesource.com/c/infra/infra/+/1803720) (seanmccullough@chromium.org)
+
+
+## Bugs updated, by author
+- seanmccullough@chromium.org:
+  -  [https://crbug.com/980258](https://crbug.com/980258)
+
+
 # Release Notes sheriff-o-matic 2019-08-23
 
 - 2 commits, 1 bugs affected since 318ba4f (2019-08-21T17:32:38Z)
