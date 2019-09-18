@@ -103,13 +103,13 @@ func (c *ensurePoolHealthyRun) innerRun(a subcommands.Application, args []string
 }
 
 func (c *ensurePoolHealthyRun) ensurePoolForModel(ctx context.Context, w io.Writer, ic fleet.InventoryClient, target, model string) error {
-	res, err := ic.EnsurePoolHealthy(
+	res, err := ic.BalancePools(
 		ctx,
-		&fleet.EnsurePoolHealthyRequest{
+		&fleet.BalancePoolsRequest{
 			DutSelector: &fleet.DutSelector{Model: model},
 			TargetPool:  target,
 			SparePool:   c.spare,
-			Options: &fleet.EnsurePoolHealthyRequest_Options{
+			Options: &fleet.BalancePoolsRequest_Options{
 				Dryrun: c.dryrun,
 			},
 		},
@@ -117,7 +117,7 @@ func (c *ensurePoolHealthyRun) ensurePoolForModel(ctx context.Context, w io.Writ
 	if err != nil {
 		return errors.Annotate(err, "ensure pool for %s", model).Err()
 	}
-	c.printEnsurePoolHealthyResult(w, model, target, res)
+	c.printEnsurePoolHealthyResult(w, model, target, res.ModelResult[model])
 	return nil
 }
 
