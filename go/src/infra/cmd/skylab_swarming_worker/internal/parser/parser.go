@@ -20,6 +20,7 @@ import (
 )
 
 const parseSubcommand = "parse"
+const logdogStepName = "Test results"
 
 // Args contains information needed to run the parser command.
 type Args struct {
@@ -31,8 +32,8 @@ type Args struct {
 
 // GetResults calls autotest_status_parser and returns its stdout.
 func GetResults(a Args, w io.Writer) ([]byte, error) {
-	annotations.SeedStep(w, "Test results")
-	annotations.StepCursor(w, "Test results")
+	annotations.SeedStep(w, logdogStepName)
+	annotations.StepCursor(w, logdogStepName)
 	annotations.StepStarted(w)
 	annotations.StepLink(w, "Full logs (Stainless)", a.StainlessURL)
 
@@ -125,7 +126,6 @@ func annotateTestCase(name string, failed bool, summary string, w io.Writer) {
 	annotations.SeedStep(w, name)
 	annotations.StepCursor(w, name)
 	annotations.StepStarted(w)
-	defer annotations.StepClosed(w)
 
 	if failed {
 		annotations.StepFailure(w)
@@ -134,4 +134,7 @@ func annotateTestCase(name string, failed bool, summary string, w io.Writer) {
 	if summary != "" {
 		fmt.Fprintf(w, summary)
 	}
+
+	annotations.StepClosed(w)
+	annotations.StepCursor(w, logdogStepName)
 }

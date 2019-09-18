@@ -216,6 +216,7 @@ func checkOneTestCase(input string, name string, failed bool, summary string) st
 		input = checkNextAnnotation(input, "STEP_FAILURE")
 	}
 	input = checkNextAnnotation(input, "STEP_CLOSED")
+	input = checkNextAnnotation(input, "STEP_CURSOR Test results")
 
 	return input
 }
