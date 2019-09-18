@@ -3,11 +3,13 @@ package client
 import (
 	"fmt"
 	"testing"
+	"time"
 
 	. "github.com/smartystreets/goconvey/convey"
 )
 
 func TestRetry(t *testing.T) {
+	retryBaseDelay = 0 * time.Second
 	Convey("test retry logic", t, func() {
 		Convey("success, no retry", func() {
 			i := 0

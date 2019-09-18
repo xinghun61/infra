@@ -21,7 +21,7 @@ format:
 	cd frontend && make format
 
 test: build
-	cd som && go test infra/appengine/sheriff-o-matic/som/... -cover
+	cd som && go test infra/appengine/sheriff-o-matic/som/... -count 10 -failfast -cover -race
 	cd frontend && make wct
 
 relnotes:
