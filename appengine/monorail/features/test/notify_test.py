@@ -221,6 +221,38 @@ class NotifyTaskHandleRequestTest(unittest.TestCase):
       if 'member' in task_params['to']:
         self.assertNotIn(u'\u2026', task_params['from_addr'])
 
+  def testNotifyBulkChangeTask_ProjectNotify(self):
+    """We generate email tasks for project.issue_notify_address."""
+    self.project.issue_notify_address = 'mailing-list@example.com'
+    task = notify.NotifyBulkChangeTask(
+        request=None, response=None, services=self.services)
+    params = {
+        'send_email': 1, 'seq': 0,
+        'issue_ids': '%d' % (self.issue1.issue_id),
+        'old_owner_ids': '1', 'commenter_id': 1}
+    mr = testing_helpers.MakeMonorailRequest(
+        user_info={'user_id': 1},
+        params=params,
+        method='POST',
+        services=self.services)
+    result = task.HandleRequest(mr)
+    self.VerifyParams(result, params)
+
+    tasks = self.taskqueue_stub.get_filtered_tasks(
+        url=urls.OUTBOUND_EMAIL_TASK + '.do')
+    self.assertEqual(2, len(tasks))
+    self.assertItemsEqual(
+        ['user@example.com', 'mailing-list@example.com'],
+        result['notified'])
+    for task in tasks:
+      task_params = json.loads(task.payload)
+      # obfuscated email for non-members
+      if 'user' in task_params['to']:
+        self.assertIn(u'\u2026', task_params['from_addr'])
+      # Full email for members
+      if 'member' in task_params['to']:
+        self.assertNotIn(u'\u2026', task_params['from_addr'])
+
   def testNotifyBulkChangeTask_SubscriberGetsEmail(self):
     """If a user subscription matches the issue, notify that user."""
     task = notify.NotifyBulkChangeTask(
@@ -279,7 +311,7 @@ class NotifyTaskHandleRequestTest(unittest.TestCase):
       if task_params['to'] == 'subscriber@example.com':
         found = True
         body = task_params['body']
-        self.assertEqual(1, body.count('issue %d' % self.issue1.local_id))
+        self.assertEqual(1, body.count('Issue %d' % self.issue1.local_id))
     self.assertTrue(found)
 
   def testNotifyBulkChangeTask_Spam(self):

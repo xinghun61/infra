@@ -632,10 +632,13 @@ class NotifyBulkChangeTask(notify_helpers.NotifyTaskBase):
           non_private_issues_live.append(issue)
 
       if non_private_issues_live:
+        project_notify_addrperm = notify_reasons.AddrPerm(
+            True, project.issue_notify_address, None,
+            notify_reasons.REPLY_NOT_ALLOWED, None)
         email = self._FormatBulkIssuesEmail(
-            project.issue_notify_address, non_private_issues_live,
+            project_notify_addrperm, non_private_issues_live,
             users_by_id, commenter_view, hostport, comment_text, amendments,
-            config, project, True)
+            config, project)
         email_tasks.append(email)
         omit_addrs.add(project.issue_notify_address)
         logging.info('about to bulk notify all-issues %s of %s',

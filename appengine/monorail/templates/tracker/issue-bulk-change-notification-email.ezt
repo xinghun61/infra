@@ -5,7 +5,7 @@ Comment[if-any commenter] by [commenter.display_name][end]:
 [if-any comment_text][format "raw"][comment_text][end][else](No comment was entered for this change.)[end]
 [end]
 Affected issues:
-[for issues]  issue [issues.local_id]: [if-any issues.link_only][else][format "raw"][issues.summary][end][end]
+[for issues]  Issue [issues.local_id]: [if-any issues.link_only][else][format "raw"][issues.summary][end][end]
     [format "raw"]http://[hostport][issues.detail_relative_url][end]
 
 [end]
