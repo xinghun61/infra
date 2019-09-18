@@ -1,5 +1,3 @@
-application: tree-status
-
 runtime: go111
 instance_class: F4
 service: default
