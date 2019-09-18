@@ -1,0 +1,10 @@
+{
+	"files": [
+		{ "path": "src/good.xml" },
+		{ "path": "src/good_individuals.xml" },
+		{ "path": "src/no_owners.xml" },
+		{ "path": "src/one_owner.xml" },
+		{ "path": "src/first_team_owner.xml" },
+		{ "path": "src/first_team_one_owner.xml" }
+	]
+}

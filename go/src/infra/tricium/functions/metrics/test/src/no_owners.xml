@@ -1,0 +1,7 @@
+<histogram-configuration>
+    <histograms>
+        <histogram name="Test.Histogram1" units="units">
+            <summary> This is a summary </summary>
+        </histogram>
+    </histograms>
+</histogram-configuration>

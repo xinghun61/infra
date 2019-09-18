@@ -1,0 +1,9 @@
+<histogram-configuration>
+    <histograms>
+        <histogram name="Test.Histogram1" units="units">
+            <owner>chrome-metrics-team@google.com</owner>
+            <owner>ltina@google.com</owner>
+            <summary> This is a summary </summary>
+        </histogram>
+    </histograms>
+</histogram-configuration>
