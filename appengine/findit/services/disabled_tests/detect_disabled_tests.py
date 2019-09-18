@@ -10,12 +10,14 @@ from google.appengine.ext import ndb
 
 from common.swarmbucket import swarmbucket
 from gae_libs import appengine_util
+from libs import test_name_util
 from libs import time_util
 from model.flake.flake import Flake
 from model.flake.flake import FlakeIssue
 from model.test_inventory import LuciTest
 from services import bigquery_helper
 from services import step_util
+from services import test_tag_util
 
 _DEFAULT_LUCI_PROJECT = 'chromium'
 
@@ -34,6 +36,14 @@ _MEMORY_FLAGS_REGEX = [
     (re.compile('MSan', re.I), 'MSan:True'),
     (re.compile('TSan', re.I), 'TSan:True'),
     (re.compile('UBSan', re.I), 'UBSan:True'),
+]
+
+_LOCATION_BASED_TAGS = [
+    'watchlist',
+    'directory',
+    'source',
+    'parent_component',
+    'component',
 ]
 
 
@@ -55,13 +65,16 @@ def _ExecuteQuery(parameters=None):
       query = f.read()
     return query
 
+  component_mapping = test_tag_util._GetChromiumDirectoryToComponentMapping()
+  watchlists = test_tag_util._GetChromiumWATCHLISTS()
+
   query = GetQuery()
   local_tests = {}
   total_rows = 0
   for row in bigquery_helper.QueryResultIterator(
       appengine_util.GetApplicationId(), query, parameters=parameters):
     total_rows += 1
-    _CreateLocalTests(row, local_tests)
+    _CreateLocalTests(row, local_tests, component_mapping, watchlists)
 
   assert total_rows > 0, '0 rows fetched for disabled tests from BigQuery.'
 
@@ -111,6 +124,111 @@ def _CreateDisabledVariant(build_id, builder_name, step_name):
   return tuple(variant_configurations)
 
 
+def _GetNewTestTags(test_tags, step_name, test_name, normalized_step_name,
+                    normalized_test_name, build_id, component_mapping,
+                    watchlists):
+  """Gets new tags for a LuciTest-test variant pair.
+
+  Args:
+    test_tags (set([str])): Tags that specify the category of the test.
+    step_name (str): The name of the step.
+    test_name (str): The name of the test.
+    normalized_step_name (str): The normalized version of the step name.
+    normalized_test_name (str): The normalized version of the test name.
+    build_id (int): Build id of the build.
+    component_mapping (dict): Mapping from directories to crbug components.
+    watchlists (dict): Mapping from directories to watchlists.
+
+  Returns:
+    new_tags (set([str])): Set of new tags for a test-test variant pair.
+  """
+  new_tags = {'step::%s' % step_name, 'test_type::%s' % step_name.split(' ')[0]}
+  new_tags.update(
+      _GetLocationBasedTags(test_tags, step_name, test_name,
+                            normalized_step_name, normalized_test_name,
+                            build_id, component_mapping, watchlists))
+  return new_tags
+
+
+def _GetLocationBasedTags(test_tags, step_name, test_name, normalized_step_name,
+                          normalized_test_name, build_id, component_mapping,
+                          watchlists):
+  """Gets location-based tags for a LuciTest.
+
+  Only gets location-based tags if they do not already appear in test_tags.
+  If location-based tags do not already appear in test_tags, first attempts to
+  retrieve them from a related flake. Otherwise, tries to generate them.
+  There is a special case for GPU tests. GPU location-based tags consist only of
+  component tags and are added based on the canonical step name of each variant.
+  Because of the dependency on test variants, location-based tags for a GPU test
+  cannot be retrieved from Flake and must be generated for every test variant.
+
+  Args:
+    test_tags (set([str])): Tags that specify the category of the test.
+    step_name (str): The name of the step.
+    test_name (str): The name of the test.
+    normalized_step_name (str): The normalized version of the step name.
+    normalized_test_name (str): The normalized version of the test name.
+    build_id (int): Build id of the build.
+    component_mapping (dict): Mapping from directories to crbug components.
+    watchlists (dict): Mapping from directories to watchlists.
+
+  Returns:
+    Set of location-based tags for a test if they do not already exist in
+    test_tags, empty set otherwise.
+  """
+  if normalized_step_name == 'telemetry_gpu_integration_test':
+    return _GetLocationBasedTagsForGPUTest(build_id, step_name)
+  if any(tag.startswith('component::') for tag in test_tags):
+    return set()
+  tags_from_flake = _GetLocationBasedTagsFromFlake(
+      _DEFAULT_LUCI_PROJECT, normalized_step_name, normalized_test_name)
+  if tags_from_flake:
+    return tags_from_flake
+  return _CreateLocationBasedTags(build_id, step_name, test_name,
+                                  normalized_step_name, normalized_test_name,
+                                  component_mapping, watchlists)
+
+
+def _GetLocationBasedTagsFromFlake(luci_project, normalized_step_name,
+                                   normalized_test_name):
+  """Gets the location-based tags from a Flake if it exists."""
+  flake = ndb.Key(
+      'Flake', '%s@%s@%s' % (luci_project, normalized_step_name,
+                             normalized_test_name)).get()
+  if not flake:
+    return set()
+  return set([
+      t for t in (flake.tags or []) if t.split('::')[0] in _LOCATION_BASED_TAGS
+  ])
+
+
+def _CreateLocationBasedTags(build_id, step_name, test_name,
+                             normalized_step_name, normalized_test_name,
+                             component_mapping, watchlists):
+  """Creates location-based tags for gtests and webkit layout tests."""
+  location = test_tag_util.GetTestLocation(
+      build_id, step_name, test_name, normalized_step_name
+  ) if not test_name_util.GTEST_REGEX.match(normalized_test_name) else None
+  if location:
+    component = test_tag_util.GetTestComponentFromLocation(
+        location, component_mapping)
+    return test_tag_util.GetTagsFromLocation(set(), location, component,
+                                             watchlists)
+  return {
+      'component::%s' % test_tag_util.DEFAULT_COMPONENT,
+      'parent_component::%s' % test_tag_util.DEFAULT_COMPONENT
+  }
+
+
+def _GetLocationBasedTagsForGPUTest(build_id, step_name):
+  """Gets location-based tags for GPU tests."""
+  components = test_tag_util.GetTestComponentsForGPUTest(
+      build_id, step_name) or [test_tag_util.DEFAULT_COMPONENT]
+  return test_tag_util.GetTagsForGPUTest(set(),
+                                         components) if components else set()
+
+
 def _CreateIssueKeys(bugs):
   """Creates a list of FlakeIssue keys from a list of bugs.
 
@@ -133,14 +251,16 @@ def _CreateIssueKeys(bugs):
   return issue_keys
 
 
-def _CreateLocalTests(row, local_tests):
+def _CreateLocalTests(row, local_tests, component_mapping, watchlists):
   """Creates a LuciTest key-test variant pair for a row fetched from BigQuery.
 
   Args:
-    row: A row of query result.
+    row: A row of query results.
     local_tests (dict): LuciTest entities in local memory in the format
       {LuciTest.key: {'disabled_test_variants : set(), issue_keys: set()},
       mutated by this function.
+    component_mapping (dict): Mapping from directories to crbug components.
+    watchlists (dict): Mapping from directories to watchlists.
   """
   build_id = row['build_id']
   builder_name = row['builder_name']
@@ -165,6 +285,10 @@ def _CreateLocalTests(row, local_tests):
         'issue_keys': set(),
         'tags': set()
     }
+  local_tests[test_key]['tags'].update(
+      _GetNewTestTags(local_tests[test_key]['tags'], step_name, test_name,
+                      normalized_step_name, normalized_test_name, build_id,
+                      component_mapping, watchlists))
 
   disabled_variant = _CreateDisabledVariant(build_id, builder_name, step_name)
   local_tests[test_key]['disabled_test_variants'].add(disabled_variant)
@@ -174,6 +298,11 @@ def _CreateLocalTests(row, local_tests):
 @ndb.tasklet
 def _UpdateDatastore(test_key, test_attributes, query_time):
   """Updates a LuciTest's disabled_test_variants, issue_keys, tags in datastore.
+
+  This function modifies LuciTest attributes as follows:
+  - Overwrites existing disabled_test_variants.
+  - Adds new issue_keys to existing issue_keys,
+  - Overwrites existing tags.
 
   Args:
     test_key (ndb.Key): Key of LuciTest entities.
@@ -188,6 +317,8 @@ def _UpdateDatastore(test_key, test_attributes, query_time):
     test.issue_keys = []
     test.tags = []
 
+  test.disabled_test_variants = test_attributes.get('disabled_test_variants',
+                                                    set())
   new_issue_keys = test_attributes.get('issue_keys',
                                        set()).difference(test.issue_keys)
   for new_issue_key in new_issue_keys:
@@ -195,12 +326,9 @@ def _UpdateDatastore(test_key, test_attributes, query_time):
   test.issue_keys.extend(new_issue_keys)
   test.issue_keys.sort()
 
-  new_tags = test_attributes.get('tags', set()).difference(test.tags)
-  test.tags.extend(new_tags)
+  test.tags = test_attributes.get('tags', set())
   test.tags.sort()
 
-  test.disabled_test_variants = test_attributes.get('disabled_test_variants',
-                                                    set())
   test.last_updated_time = query_time
   yield test.put_async()
 
@@ -227,8 +355,8 @@ def _CreateIssue(issue_key):
 def _UpdateCurrentlyDisabledTests(local_tests, query_time):
   """Updates currently disabled tests.
 
-  Overwrites existing disabled_test_variants and adds to issue_keys if new
-  monorail issues are associated with the test.
+  Overwrites existing disabled_test_variants and tags and adds to issue_keys if
+  new monorail issues are associated with the test.
 
   Args:
     local_tests (dict): LuciTest entities in local memory in the format
@@ -240,7 +368,6 @@ def _UpdateCurrentlyDisabledTests(local_tests, query_time):
 
   # (LuciTest key, set of disabled test variants)
   updated_test_keys = []
-
   for remote_test, local_test in zip(remote_tests, local_tests.items()):
     if not remote_test:
       updated_test_keys.append(local_test[0])
@@ -248,6 +375,8 @@ def _UpdateCurrentlyDisabledTests(local_tests, query_time):
         remote_test.disabled_test_variants):
       updated_test_keys.append(local_test[0])
     elif local_test[1]['issue_keys'].difference(remote_test.issue_keys):
+      updated_test_keys.append(local_test[0])
+    elif local_test[1]['tags'].symmetric_difference(remote_test.tags):
       updated_test_keys.append(local_test[0])
 
   logging.info('Updating or Creating %d LuciTests: ', len(updated_test_keys))
@@ -258,9 +387,9 @@ def _UpdateCurrentlyDisabledTests(local_tests, query_time):
 
 @ndb.toplevel
 def _UpdateNoLongerDisabledTests(currently_disabled_test_keys, query_time):
-  """Removes test variants from LuciTest entities which are no longer disabled.
+  """Updates LuciTest entities which are no longer disabled.
 
-  Does not overwrite other attributes from the LuciTest entity.
+  Overwrites existing disabled_test_variants and tags.
 
   Args:
     currently_disabled_test_keys (list): Keys of currently disabled LuciTest

@@ -12,12 +12,15 @@ from google.appengine.ext import ndb
 from waterfall.test.wf_testcase import WaterfallTestCase
 
 from common.swarmbucket import swarmbucket
+from libs import test_name_util
 from libs import time_util
 from model.flake.flake import Flake
 from model.flake.flake import FlakeIssue
+from model.flake.flake import TestLocation as TestLocation
 from model.test_inventory import LuciTest
 from services import bigquery_helper
 from services import step_util
+from services import test_tag_util
 from services.disabled_tests import detect_disabled_tests
 
 _DEFAULT_LUCI_PROJECT = 'chromium'
@@ -237,91 +240,72 @@ class DetectTestDisablementTest(WaterfallTestCase):
     self.assertEqual(1, len(flake_issues))
     self.assertIn(expected_flake_issue, flake_issues)
 
-  @parameterized.expand([
-      (  # Tests have different keys, create two entries.
-          {
-              'local_tests': {
-                  ndb.Key('LuciTest', 'a@b@test_key_2'): {
-                      'disabled_test_variants': {('config1',)},
-                      'issue_keys': {ndb.Key('FlakeIssue', 'chromium@123')},
-                      'tags': set()
-                  },
-              },
-              'new_disabled_variant': ('config1',),
-              'expected_local_tests': {
-                  ndb.Key('LuciTest', 'a@b@test_key_1'): {
-                      'disabled_test_variants': {('config1',)},
-                      'issue_keys': {ndb.Key('FlakeIssue', 'chromium@123')},
-                      'tags': set()
-                  },
-                  ndb.Key('LuciTest', 'a@b@test_key_2'): {
-                      'disabled_test_variants': {('config1',)},
-                      'issue_keys': {ndb.Key('FlakeIssue', 'chromium@123')},
-                      'tags': set()
-                  },
-              }
-          },),
-      (  # Tests have same key, update variants and issue_keys
-          {
-              'local_tests': {
-                  ndb.Key('LuciTest', 'a@b@test_key_1'): {
-                      'disabled_test_variants': {('config1',),},
-                      'issue_keys': {ndb.Key('FlakeIssue', 'chromium@124')},
-                      'tags': set()
-                  },
-              },
-              'new_disabled_variant': ('config2',),
-              'expected_local_tests': {
-                  ndb.Key('LuciTest', 'a@b@test_key_1'): {
-                      'disabled_test_variants': {
-                          ('config1',),
-                          ('config2',),
-                      },
-                      'issue_keys': {
-                          ndb.Key('FlakeIssue', 'chromium@123'),
-                          ndb.Key('FlakeIssue', 'chromium@124')
-                      },
-                      'tags': set()
-                  },
-              }
-          },),
-      (  # Cannot retrieve disabled variants. Adds Default config.
-          {
-              'local_tests': {
-                  ndb.Key('LuciTest', 'a@b@test_key_1'): {
-                      'disabled_test_variants': {('config2',)},
-                      'issue_keys': {ndb.Key('FlakeIssue', 'chromium@123')},
-                      'tags': set()
-                  },
-              },
-              'new_disabled_variant': ('Unknown',),
-              'expected_local_tests': {
-                  ndb.Key('LuciTest', 'a@b@test_key_1'): {
-                      'disabled_test_variants': {('config2',), ('Unknown',)},
-                      'issue_keys': {ndb.Key('FlakeIssue', 'chromium@123')},
-                      'tags': set()
-                  },
-              },
-          },),
-  ])
   @mock.patch.object(
-      LuciTest, 'CreateKey', return_value=ndb.Key('LuciTest', 'a@b@test_key_1'))
-  @mock.patch.object(detect_disabled_tests, '_CreateDisabledVariant')
-  def testCreateLocalTests(self, cases, mocked_disabled_variant, *_):
-    rows = [{
+      detect_disabled_tests,
+      '_GetNewTestTags',
+      return_value={'mock_tag::mock_tag'})
+  @mock.patch.object(
+      detect_disabled_tests,
+      '_CreateDisabledVariant',
+      return_value=('config1',))
+  @mock.patch.object(
+      Flake, 'NormalizeTestName', return_value='normal_test_name')
+  def testCreateLocalTestsNewTest(self, *_):
+    row = {
         'builder_name': 'builder1',
         'build_id': 123,
         'bugs': ['crbug.com/123'],
         'step_name': 'step_name',
         'test_name': 'test_name1'
-    }]
-    mocked_disabled_variant.return_value = cases['new_disabled_variant']
+    }
+    local_tests = {}
+    detect_disabled_tests._CreateLocalTests(row, local_tests, {}, {})
+    expected_local_test = {
+        ndb.Key('LuciTest', 'chromium@normal_step_name@normal_test_name'): {
+            'disabled_test_variants': {('config1',)},
+            'issue_keys': {ndb.Key('FlakeIssue', 'chromium@123')},
+            'tags': {'mock_tag::mock_tag'}
+        }
+    }
+    self.assertEqual(expected_local_test, local_tests)
 
-    # Updating local_tests
-    local_tests = cases['local_tests']
-    for row in rows:
-      detect_disabled_tests._CreateLocalTests(row, local_tests)
-    self.assertEqual(local_tests, cases['expected_local_tests'])
+  @mock.patch.object(
+      detect_disabled_tests,
+      '_GetNewTestTags',
+      return_value={'mock_tag::mock_tag1'})
+  @mock.patch.object(
+      detect_disabled_tests,
+      '_CreateDisabledVariant',
+      return_value=('config1',))
+  @mock.patch.object(
+      Flake, 'NormalizeTestName', return_value='normal_test_name')
+  def testCreateLocalTestsExistingTest(self, *_):
+    row = {
+        'builder_name': 'builder1',
+        'build_id': 123,
+        'bugs': ['crbug.com/123'],
+        'step_name': 'step_name',
+        'test_name': 'test_name1'
+    }
+    local_tests = {
+        ndb.Key('LuciTest', 'chromium@normal_step_name@normal_test_name'): {
+            'disabled_test_variants': {('config2',)},
+            'issue_keys': {ndb.Key('FlakeIssue', 'chromium@124')},
+            'tags': {'mock_tag::mock_tag2'}
+        }
+    }
+    detect_disabled_tests._CreateLocalTests(row, local_tests, {}, {})
+    expected_local_tests = {
+        ndb.Key('LuciTest', 'chromium@normal_step_name@normal_test_name'): {
+            'disabled_test_variants': {('config2',), ('config1',)},
+            'issue_keys': {
+                ndb.Key('FlakeIssue', 'chromium@124'),
+                ndb.Key('FlakeIssue', 'chromium@123')
+            },
+            'tags': {'mock_tag::mock_tag2', 'mock_tag::mock_tag1'}
+        }
+    }
+    self.assertEqual(expected_local_tests, local_tests)
 
   # To filter out tests results with invalid build_id.
   # TODO (crbug.com/999215): Remove this check after test-results is fixed.
@@ -335,362 +319,281 @@ class DetectTestDisablementTest(WaterfallTestCase):
         'test_name': 'test_name1'
     }]
     for row in rows:
-      detect_disabled_tests._CreateLocalTests(row, local_tests)
+      detect_disabled_tests._CreateLocalTests(row, local_tests, {}, {})
     self.assertEqual({}, local_tests)
 
+  @mock.patch.object(test_tag_util, 'GetTestLocation')
+  @mock.patch.object(test_name_util, 'GTEST_REGEX')
+  def testCreateLocationBasedTagsGTest(self, mock_regex, mock_get_location):
+    mock_regex.match.return_value = True
+    self.assertEqual(0, mock_get_location.call_count)
+
   @parameterized.expand([
-      # Update an existing LuciTest.
-      (  # Only variants
+      ({
+          'tags': {'component::tag', 'step::tag'},
+          'normalized_step_name': 'step',
+          'has_flake': True,
+          'mocked_for_gpu_test_calls': 0,
+          'mocked_get_from_flake_calls': 0,
+          'mocked_create_calls': 0
+      },),
+      ({
+          'tags': {'step::tag'},
+          'normalized_step_name': 'telemetry_gpu_integration_test',
+          'has_flake': True,
+          'mocked_for_gpu_test_calls': 1,
+          'mocked_get_from_flake_calls': 0,
+          'mocked_create_calls': 0
+      },),
+      ({
+          'tags': {'step::tag'},
+          'normalized_step_name': 'step',
+          'has_flake': True,
+          'mocked_for_gpu_test_calls': 0,
+          'mocked_get_from_flake_calls': 1,
+          'mocked_create_calls': 0
+      },),
+      ({
+          'tags': {'step::tag'},
+          'normalized_step_name': 'step',
+          'has_flake': False,
+          'mocked_for_gpu_test_calls': 0,
+          'mocked_get_from_flake_calls': 1,
+          'mocked_create_calls': 1
+      },),
+  ])
+  @mock.patch.object(detect_disabled_tests, '_CreateLocationBasedTags')
+  @mock.patch.object(detect_disabled_tests, '_GetLocationBasedTagsFromFlake')
+  @mock.patch.object(detect_disabled_tests, '_GetLocationBasedTagsForGPUTest')
+  def testGetLocationBasedTags(self, cases, mocked_for_gpu_test,
+                               mocked_get_from_flake, mocked_create):
+    mocked_get_from_flake.return_value = {'tag'
+                                         } if cases['has_flake'] else set()
+    detect_disabled_tests._GetLocationBasedTags(cases['tags'], 'step', 'test',
+                                                cases['normalized_step_name'],
+                                                'normal_test', 123, {}, {})
+    self.assertEqual(cases['mocked_for_gpu_test_calls'],
+                     mocked_for_gpu_test.call_count)
+    self.assertEqual(cases['mocked_get_from_flake_calls'],
+                     mocked_get_from_flake.call_count)
+    self.assertEqual(cases['mocked_create_calls'], mocked_create.call_count)
+
+  def testGetNewTestTagsExistingLocationTags(self):
+    existing_tags = {'component::tag'}
+    expected_tags = sorted({
+        'step::step (with patch)',
+        'test_type::step',
+    })
+    self.assertEqual(
+        expected_tags,
+        sorted(
+            detect_disabled_tests._GetNewTestTags(
+                existing_tags, 'step (with patch)', 'test', 'normal_step',
+                'normal_test', 123, {}, {})))
+
+  def testGetTestLocationWithFlake(self):
+    luci_project = detect_disabled_tests._DEFAULT_LUCI_PROJECT
+    normalized_step_name = 'normal_step'
+    normalized_test_name = 'normal_test'
+    flake = Flake.Create(luci_project, normalized_step_name,
+                         normalized_test_name, 'label')
+    flake.tags = sorted({
+        'watchlist::feature',
+        'watchlist::url',
+        'directory::base/feature/',
+        'directory::base/',
+        'source::base/feature/url_test.cc',
+        'component::root>a>b',
+        'parent_component::root>a>b',
+        'parent_component::root>a',
+        'parent_component::root',
+        'step::from/flake',
+        'test_type::from/flake',
+        'other_tag::from/flake',
+    })
+    flake.put()
+
+    expected_tags = sorted({
+        'test_type::step',
+        'step::step (with patch)',
+        'watchlist::feature',
+        'watchlist::url',
+        'directory::base/feature/',
+        'directory::base/',
+        'source::base/feature/url_test.cc',
+        'component::root>a>b',
+        'parent_component::root>a>b',
+        'parent_component::root>a',
+        'parent_component::root',
+    })
+    self.assertEqual(
+        expected_tags,
+        sorted(
+            detect_disabled_tests._GetNewTestTags(
+                {}, 'step (with patch)', 'test', normalized_step_name,
+                normalized_test_name, 123, {}, {})))
+
+  @parameterized.expand([
+      (
+          TestLocation(file_path='base/feature/url_test.cc'),
+          {
+              'test_type::step',
+              'step::step (with patch)',
+              'watchlist::feature',
+              'watchlist::url',
+              'directory::base/feature/',
+              'directory::base/',
+              'source::base/feature/url_test.cc',
+              'component::root>a>b',
+              'parent_component::root>a>b',
+              'parent_component::root>a',
+              'parent_component::root',
+          },
+      ),
+      (
+          None,
+          {
+              'test_type::step',
+              'step::step (with patch)',
+              'component::%s' % test_tag_util.DEFAULT_COMPONENT,
+              'parent_component::%s' % test_tag_util.DEFAULT_COMPONENT,
+          },
+      ),
+  ])
+  @mock.patch.object(test_tag_util, 'GetTestLocation')
+  def testGetNewTestTagsNoFlake(self, location, expected_tags,
+                                mock_get_location):
+    watchlists = {
+        'feature': 'base/feature',
+        'url': r'base/feature/url_test\.cc',
+        'other': 'a/b/c',
+    }
+    component_mapping = {
+        'base/feature/': 'root>a>b',
+        'base/feature/url': 'root>a>b>c',
+    }
+    mock_get_location.return_value = location
+    self.assertEqual(
+        expected_tags,
+        detect_disabled_tests._GetNewTestTags({}, 'step (with patch)', 'test',
+                                              'normal_step', 'normal_test', 123,
+                                              component_mapping, watchlists))
+
+  @mock.patch.object(
+      step_util, 'GetCanonicalStepName', return_value='depth_capture_tests')
+  def testGetNewTestTagsGPU(self, *_):
+    existing_tags = {
+        'test_type::context_lost_tests', 'step::context_lost_tests',
+        'component::Internals>GPU>Testing'
+    }
+    expected_tags = sorted([
+        'test_type::context_lost_tests', 'step::context_lost_tests',
+        'test_type::depth_capture_tests', 'step::depth_capture_tests',
+        'component::Internals>GPU>Testing'
+    ])
+    actual_tags = sorted(
+        existing_tags.union(
+            detect_disabled_tests._GetNewTestTags(
+                existing_tags, 'depth_capture_tests', 'test_name',
+                'telemetry_gpu_integration_test', 'normal_test', 123, {}, {})))
+    self.assertEqual(expected_tags, actual_tags)
+
+  @parameterized.expand([
+      (  # Create a new LuciTest.
+          {
+              'remote_test': None,
+              'test_key': LuciTest.CreateKey('a', 'b', 'c'),
+              'test_attributes': {
+                  'disabled_test_variants': {('config1', 'config2'),},
+                  'issue_keys': {ndb.Key('FlakeIssue', 'bug1')},
+                  'tags': {
+                      'watchlist::new',
+                      'directory::new',
+                      'source::new',
+                      'parent_component::new',
+                      'component::new',
+                      'step::new',
+                      'test_type::new',
+                  }
+              },
+              'expected_disabled_test_variants': {('config1', 'config2'),},
+              'expected_issue_keys': [ndb.Key('FlakeIssue', 'bug1')],
+              'expected_tags': {
+                  'watchlist::new',
+                  'directory::new',
+                  'source::new',
+                  'parent_component::new',
+                  'component::new',
+                  'step::new',
+                  'test_type::new',
+              },
+              'query_time': datetime(2019, 6, 29, 0, 0, 0),
+          },),
+      (  # Update existing LuciTest
           {
               'remote_test':
                   LuciTest(
                       key=LuciTest.CreateKey('a', 'b', 'c'),
                       disabled_test_variants=set(),
                       issue_keys=[ndb.Key('FlakeIssue', 'bug1')],
-                      tags=set(),
-                      last_updated_time=datetime(2019, 6, 27, 0, 0, 0)),
-              'test_key':
-                  LuciTest.CreateKey('a', 'b', 'c'),
-              'disabled_test_variants': {('config1', 'config2'),},
-              'issue_keys':
-                  set(),
-              'expected_issue_keys': [ndb.Key('FlakeIssue', 'bug1')],
-              'query_time':
-                  datetime(2019, 6, 29, 0, 0, 0),
-          },),  # Update an existing LuciTest.
-      (  # Only issue_keys.
-          {
-              'remote_test':
-                  LuciTest(
-                      key=LuciTest.CreateKey('a', 'b', 'c'),
-                      disabled_test_variants={
-                          ('config1', 'config2'),
+                      tags={
+                          'watchlist::existing',
+                          'directory::existing',
+                          'source::existing',
+                          'parent_component::existing',
+                          'component::existing',
+                          'step::existing',
+                          'test_type::existing',
                       },
-                      issue_keys=[ndb.Key('FlakeIssue', 'bug1')],
-                      tags=set(),
                       last_updated_time=datetime(2019, 6, 27, 0, 0, 0)),
               'test_key':
                   LuciTest.CreateKey('a', 'b', 'c'),
-              'disabled_test_variants': {('config1', 'config2'),},
-              'issue_keys': {
-                  ndb.Key('FlakeIssue', 'bug1'),
-                  ndb.Key('FlakeIssue', 'bug2')
+              'test_attributes': {
+                  'disabled_test_variants': {('config1', 'config2'),},
+                  'issue_keys': {ndb.Key('FlakeIssue', 'bug2')},
+                  'tags': {
+                      'watchlist::new',
+                      'directory::new',
+                      'source::new',
+                      'parent_component::new',
+                      'component::new',
+                      'step::new',
+                      'test_type::new',
+                  },
               },
+              'expected_disabled_test_variants': {('config1', 'config2'),},
               'expected_issue_keys': [
                   ndb.Key('FlakeIssue', 'bug1'),
                   ndb.Key('FlakeIssue', 'bug2')
               ],
-              'query_time':
-                  datetime(2019, 6, 29, 0, 0, 0),
-          },),  # Update an existing LuciTest.
-      (  # Variants and issue_keys.
-          {
-              'remote_test':
-                  LuciTest(
-                      key=LuciTest.CreateKey('a', 'b', 'c'),
-                      disabled_test_variants=set(),
-                      issue_keys=[ndb.Key('FlakeIssue', 'bug1')],
-                      tags=set(),
-                      last_updated_time=datetime(2019, 6, 27, 0, 0, 0)),
-              'test_key':
-                  LuciTest.CreateKey('a', 'b', 'c'),
-              'disabled_test_variants': {('config1', 'config2'),},
-              'issue_keys': {
-                  ndb.Key('FlakeIssue', 'bug1'),
-                  ndb.Key('FlakeIssue', 'bug2')
+              'expected_tags': {
+                  'watchlist::new',
+                  'directory::new',
+                  'source::new',
+                  'parent_component::new',
+                  'component::new',
+                  'step::new',
+                  'test_type::new',
               },
-              'expected_issue_keys': [
-                  ndb.Key('FlakeIssue', 'bug1'),
-                  ndb.Key('FlakeIssue', 'bug2')
-              ],
               'query_time':
                   datetime(2019, 6, 29, 0, 0, 0),
-          },),
-      # Create a new LuciTest.
-      (  # Only variants.
-          {
-              'remote_test': None,
-              'test_key': LuciTest.CreateKey('a', 'b', 'c'),
-              'disabled_test_variants': {('config1', 'config2'),},
-              'expected_issue_keys': [],
-              'query_time': datetime(2019, 6, 29, 0, 0, 0),
-          },),
-      (  # Only issue_keys.
-          #TODO: Default config if empty tuple
-          {
-              'remote_test': None,
-              'test_key': LuciTest.CreateKey('a', 'b', 'c'),
-              'disabled_test_variants': {('Unknown',)},
-              'issue_keys': {ndb.Key('FlakeIssue', 'bug1')},
-              'expected_issue_keys': [ndb.Key('FlakeIssue', 'bug1')],
-              'query_time': datetime(2019, 6, 29, 0, 0, 0),
-          },),
-      (  # Variants and issue_keys.
-          {
-              'remote_test': None,
-              'test_key': LuciTest.CreateKey('a', 'b', 'c'),
-              'disabled_test_variants': {('config1', 'config2'),},
-              'issue_keys': {ndb.Key('FlakeIssue', 'bug1')},
-              'expected_issue_keys': [ndb.Key('FlakeIssue', 'bug1')],
-              'query_time': datetime(2019, 6, 29, 0, 0, 0),
           },),
   ])
   def testUpdateDatastore(self, cases):
     if cases['remote_test']:
       cases['remote_test'].put()
-    test_attributes = {
-        'disabled_test_variants': cases.get('disabled_test_variants', set()),
-        'issue_keys': cases.get('issue_keys', set()),
-        'tags': cases.get('tags', set())
-    }
+
     future = detect_disabled_tests._UpdateDatastore(
-        cases['test_key'], test_attributes, cases['query_time'])
+        cases['test_key'], cases['test_attributes'], cases['query_time'])
     future.get_result()
+
     updated_test = cases['test_key'].get()
-    self.assertEqual(cases['disabled_test_variants'],
-                     updated_test.disabled_test_variants)
     self.assertEqual(cases['query_time'], updated_test.last_updated_time)
-    self.assertEqual(cases['expected_issue_keys'], updated_test.issue_keys)
-
-  @parameterized.expand([
-      (  # New test, should be updated.
-          {
-              'local_tests': {
-                  ndb.Key('LuciTest', 'a@b@test_key'): {
-                      'disabled_test_variants': {('config1',)},
-                      'issue_keys': {ndb.Key('FlakeIssue', 'chromium@123')},
-                      'tags': set()
-                  },
-              },
-              'expected_remote_test':
-                  LuciTest(
-                      key=ndb.Key('LuciTest', 'a@b@test_key'),
-                      disabled_test_variants={('config1',)},
-                      last_updated_time=datetime(2019, 6, 29, 0, 0, 0),
-                      tags=set(),
-                      issue_keys=[ndb.Key('FlakeIssue', 'chromium@123')]),
-          },),
-      (  # No change, should not be updated.
-          {
-              'remote_test':
-                  LuciTest(
-                      key=ndb.Key('LuciTest', 'a@b@test_key'),
-                      disabled_test_variants={('config1',)},
-                      tags=set(),
-                      last_updated_time=datetime(2019, 6, 28, 0, 0, 0),
-                      issue_keys=[ndb.Key('FlakeIssue', 'chromium@123')]),
-              'local_tests': {
-                  ndb.Key('LuciTest', 'a@b@test_key'): {
-                      'disabled_test_variants': {('config1',)},
-                      'issue_keys': {ndb.Key('FlakeIssue', 'chromium@123')},
-                      'tags': set()
-                  },
-              },
-              'expected_remote_test':
-                  LuciTest(
-                      key=ndb.Key('LuciTest', 'a@b@test_key'),
-                      disabled_test_variants={('config1',)},
-                      tags=set(),
-                      last_updated_time=datetime(2019, 6, 28, 0, 0, 0),
-                      issue_keys=[ndb.Key('FlakeIssue', 'chromium@123')]),
-          },),
-      (  # Change in variants, should be updated.
-          {
-              'remote_test':
-                  LuciTest(
-                      key=ndb.Key('LuciTest', 'a@b@test_key'),
-                      disabled_test_variants={('config1',)},
-                      tags=set(),
-                      last_updated_time=datetime(2019, 6, 28, 0, 0, 0),
-                      issue_keys=[]),
-              'local_tests': {
-                  ndb.Key('LuciTest', 'a@b@test_key'): {
-                      'disabled_test_variants': {('config2',)},
-                      'issue_keys': set(),
-                      'tags': set()
-                  },
-              },
-              'expected_remote_test':
-                  LuciTest(
-                      key=ndb.Key('LuciTest', 'a@b@test_key'),
-                      disabled_test_variants={('config2',)},
-                      tags=set(),
-                      last_updated_time=datetime(2019, 6, 29, 0, 0, 0),
-                      issue_keys=[]),
-          },),
-      (  # Change in variants, no new bugs, issue_keys should not be updated.
-          {
-              'remote_test':
-                  LuciTest(
-                      key=ndb.Key('LuciTest', 'a@b@test_key'),
-                      disabled_test_variants={('config1',)},
-                      tags=set(),
-                      last_updated_time=datetime(2019, 6, 28, 0, 0, 0),
-                      issue_keys=[ndb.Key('FlakeIssue', 'chromium@123')]),
-              'local_tests': {
-                  ndb.Key('LuciTest', 'a@b@test_key'): {
-                      'disabled_test_variants': {('config2',)},
-                      'issue_keys': set(),
-                      'tags': set()
-                  },
-              },
-              'expected_remote_test':
-                  LuciTest(
-                      key=ndb.Key('LuciTest', 'a@b@test_key'),
-                      disabled_test_variants={('config2',)},
-                      tags=set(),
-                      last_updated_time=datetime(2019, 6, 29, 0, 0, 0),
-                      issue_keys=[ndb.Key('FlakeIssue', 'chromium@123')]),
-          },),
-      (  # New bugs, should be updated.
-          {
-              'remote_test':
-                  LuciTest(
-                      key=ndb.Key('LuciTest', 'a@b@test_key'),
-                      disabled_test_variants={('config1',)},
-                      tags=set(),
-                      last_updated_time=datetime(2019, 6, 28, 0, 0, 0),
-                      issue_keys=[ndb.Key('FlakeIssue', 'chromium@124')]),
-              'local_tests': {
-                  ndb.Key('LuciTest', 'a@b@test_key'): {
-                      'disabled_test_variants': {('config1',)},
-                      'issue_keys': {ndb.Key('FlakeIssue', 'chromium@123')},
-                      'tags': set()
-                  },
-              },
-              'expected_remote_test':
-                  LuciTest(
-                      key=ndb.Key('LuciTest', 'a@b@test_key'),
-                      disabled_test_variants={('config1',)},
-                      tags=set(),
-                      last_updated_time=datetime(2019, 6, 29, 0, 0, 0),
-                      issue_keys=[
-                          ndb.Key('FlakeIssue', 'chromium@123'),
-                          ndb.Key('FlakeIssue', 'chromium@124')
-                      ]),
-          },),
-      (  # Change in variants and new bugs, should be updated.
-          {
-              'remote_test':
-                  LuciTest(
-                      key=ndb.Key('LuciTest', 'a@b@test_key'),
-                      disabled_test_variants={('config1',)},
-                      tags=set(),
-                      last_updated_time=datetime(2019, 6, 28, 0, 0, 0),
-                      issue_keys=[ndb.Key('FlakeIssue', 'chromium@124')]),
-              'local_tests': {
-                  ndb.Key('LuciTest', 'a@b@test_key'): {
-                      'disabled_test_variants': {('config2',)},
-                      'issue_keys': {
-                          ndb.Key('FlakeIssue', 'chromium@123'),
-                          ndb.Key('FlakeIssue', 'chromium@124')
-                      },
-                      'tags': set()
-                  },
-              },
-              'expected_remote_test':
-                  LuciTest(
-                      key=ndb.Key('LuciTest', 'a@b@test_key'),
-                      disabled_test_variants={('config2',)},
-                      tags=set(),
-                      last_updated_time=datetime(2019, 6, 29, 0, 0, 0),
-                      issue_keys=[
-                          ndb.Key('FlakeIssue', 'chromium@123'),
-                          ndb.Key('FlakeIssue', 'chromium@124')
-                      ]),
-          },),
-      (  # Test does not appear in local_tests, should not be updated.
-          {
-              'remote_test':
-                  LuciTest(
-                      key=ndb.Key('LuciTest', 'a@b@test_key'),
-                      disabled_test_variants={('config1',)},
-                      tags=set(),
-                      last_updated_time=datetime(2019, 6, 28, 0, 0, 0)),
-              'local_tests': {},
-              'expected_remote_test':
-                  LuciTest(
-                      key=ndb.Key('LuciTest', 'a@b@test_key'),
-                      disabled_test_variants={('config1',)},
-                      tags=set(),
-                      last_updated_time=datetime(2019, 6, 28, 0, 0, 0)),
-          },),
-  ])
-  def testUpdateCurrentlyDisabledTests(self, cases):
-    remote_test = cases.get('remote_test')
-    if remote_test:
-      remote_test.put()
-    detect_disabled_tests._UpdateCurrentlyDisabledTests(
-        cases['local_tests'], datetime(2019, 6, 29, 0, 0, 0))
-    remote_tests = LuciTest.query().fetch()
-
-    self.assertEqual(1, len(remote_tests))
-    self.assertIn(cases['expected_remote_test'], remote_tests)
-
-  @parameterized.expand([
-      (  # Currently disabled test, should not be updated.
-          {
-              'remote_test':
-                  LuciTest(
-                      key=ndb.Key('LuciTest', 'a@b@test_key'),
-                      disabled_test_variants={('config1',)},
-                      tags=set(),
-                      last_updated_time=datetime(2019, 6, 28, 0, 0, 0)),
-              'local_tests': {
-                  ndb.Key('LuciTest', 'a@b@test_key'): {
-                      'disabled_test_variants': {('config1',), ('config2',)},
-                      'issue_keys': set()
-                  }
-              },
-              'expected_remote_test':
-                  LuciTest(
-                      key=ndb.Key('LuciTest', 'a@b@test_key'),
-                      disabled_test_variants={('config1',)},
-                      last_updated_time=datetime(2019, 6, 28, 0, 0, 0)),
-          },),
-      (  # No longer disabled test, should be updated.
-          {
-              'remote_test':
-                  LuciTest(
-                      key=ndb.Key('LuciTest', 'a@b@test_key'),
-                      disabled_test_variants={('config1',)},
-                      tags=set(),
-                      last_updated_time=datetime(2019, 6, 28, 0, 0, 0),
-                      issue_keys=[ndb.Key('FlakeIssue', 'chromium@123')]),
-              'local_tests': {},
-              'expected_remote_test':
-                  LuciTest(
-                      key=ndb.Key('LuciTest', 'a@b@test_key'),
-                      disabled_test_variants=set(),
-                      tags=set(),
-                      last_updated_time=datetime(2019, 6, 29, 0, 0, 0),
-                      issue_keys=[ndb.Key('FlakeIssue', 'chromium@123')]),
-          },),
-      (  # Not disabled test, should not be updated.
-          {
-              'remote_test':
-                  LuciTest(
-                      key=ndb.Key('LuciTest', 'a@b@test_key'),
-                      disabled_test_variants=set(),
-                      tags=set(),
-                      last_updated_time=datetime(2019, 6, 28, 0, 0, 0)),
-              'local_tests': {},
-              'expected_remote_test':
-                  LuciTest(
-                      key=ndb.Key('LuciTest', 'a@b@test_key'),
-                      disabled_test_variants=set(),
-                      tags=set(),
-                      last_updated_time=datetime(2019, 6, 28, 0, 0, 0)),
-          },),
-  ])
-  def testUpdateNoLongerDisabledTests(self, cases):
-    cases['remote_test'].put()
-    detect_disabled_tests._UpdateNoLongerDisabledTests(
-        cases['local_tests'], datetime(2019, 6, 29, 0, 0, 0))
-    remote_tests = LuciTest.query().fetch()
-
-    self.assertEqual(1, len(remote_tests))
-    self.assertIn(cases['expected_remote_test'], remote_tests)
+    self.assertEqual(cases['expected_disabled_test_variants'],
+                     updated_test.disabled_test_variants)
+    self.assertEqual(
+        sorted(cases['expected_issue_keys']), updated_test.issue_keys)
+    self.assertEqual(sorted(cases['expected_tags']), updated_test.tags)
 
   @parameterized.expand([
       (  # Currently disabled, no changes, should not be updated.
@@ -704,8 +607,14 @@ class DetectTestDisablementTest(WaterfallTestCase):
                           'MSan:True',
                           'os:os1',
                       )},
-                      tags=set(),
                       issue_keys=[ndb.Key('FlakeIssue', 'chromium@123')],
+                      tags=sorted({
+                          'component::%s' % test_tag_util.DEFAULT_COMPONENT,
+                          'parent_component::%s' %
+                          test_tag_util.DEFAULT_COMPONENT,
+                          'step::step_name (full)',
+                          'test_type::step_name',
+                      }),
                       last_updated_time=datetime(2019, 6, 28, 0, 0, 0)),
               'expected_remote_test':
                   LuciTest(
@@ -717,6 +626,13 @@ class DetectTestDisablementTest(WaterfallTestCase):
                           'os:os1',
                       )},
                       issue_keys=[ndb.Key('FlakeIssue', 'chromium@123')],
+                      tags=sorted({
+                          'component::%s' % test_tag_util.DEFAULT_COMPONENT,
+                          'parent_component::%s' %
+                          test_tag_util.DEFAULT_COMPONENT,
+                          'step::step_name (full)',
+                          'test_type::step_name',
+                      }),
                       last_updated_time=datetime(2019, 6, 28, 0, 0, 0))
           },),
       (  # Currently disabled, change in variants, should be updated.
@@ -726,8 +642,14 @@ class DetectTestDisablementTest(WaterfallTestCase):
                       key=ndb.Key('LuciTest',
                                   'chromium@normal_step_name@test_name1'),
                       disabled_test_variants={('os:os2',)},
-                      tags=set(),
                       issue_keys=[ndb.Key('FlakeIssue', 'chromium@123')],
+                      tags=sorted({
+                          'component::%s' % test_tag_util.DEFAULT_COMPONENT,
+                          'parent_component::%s' %
+                          test_tag_util.DEFAULT_COMPONENT,
+                          'step::step_name (full)',
+                          'test_type::step_name',
+                      }),
                       last_updated_time=datetime(2019, 6, 28, 0, 0, 0)),
               'expected_remote_test':
                   LuciTest(
@@ -738,7 +660,13 @@ class DetectTestDisablementTest(WaterfallTestCase):
                           'MSan:True',
                           'os:os1',
                       )},
-                      tags=set(),
+                      tags=sorted({
+                          'component::%s' % test_tag_util.DEFAULT_COMPONENT,
+                          'parent_component::%s' %
+                          test_tag_util.DEFAULT_COMPONENT,
+                          'step::step_name (full)',
+                          'test_type::step_name',
+                      }),
                       issue_keys=[ndb.Key('FlakeIssue', 'chromium@123')],
                       last_updated_time=datetime(2019, 6, 29, 0, 0, 0))
           },),
@@ -753,7 +681,91 @@ class DetectTestDisablementTest(WaterfallTestCase):
                           'MSan:True',
                           'os:os1',
                       )},
-                      tags=set(),
+                      issue_keys=[],
+                      tags=sorted({
+                          'component::%s' % test_tag_util.DEFAULT_COMPONENT,
+                          'parent_component::%s' %
+                          test_tag_util.DEFAULT_COMPONENT,
+                          'step::step_name (full)',
+                          'test_type::step_name',
+                      }),
+                      last_updated_time=datetime(2019, 6, 28, 0, 0, 0)),
+              'expected_remote_test':
+                  LuciTest(
+                      key=ndb.Key('LuciTest',
+                                  'chromium@normal_step_name@test_name1'),
+                      disabled_test_variants={(
+                          'ASan:True',
+                          'MSan:True',
+                          'os:os1',
+                      )},
+                      issue_keys=[ndb.Key('FlakeIssue', 'chromium@123')],
+                      tags=sorted({
+                          'component::%s' % test_tag_util.DEFAULT_COMPONENT,
+                          'parent_component::%s' %
+                          test_tag_util.DEFAULT_COMPONENT,
+                          'step::step_name (full)',
+                          'test_type::step_name',
+                      }),
+                      last_updated_time=datetime(2019, 6, 29, 0, 0, 0))
+          },),
+      (  # Currently disabled, change in tags, should be updated.
+          {
+              'remote_test':
+                  LuciTest(
+                      key=ndb.Key('LuciTest',
+                                  'chromium@normal_step_name@test_name1'),
+                      disabled_test_variants={(
+                          'ASan:True',
+                          'MSan:True',
+                          'os:os1',
+                      )},
+                      issue_keys=[ndb.Key('FlakeIssue', 'chromium@123')],
+                      tags=sorted({
+                          'watchlist::tag',
+                          'directory::tag',
+                          'source::tag',
+                          'parent_component::tag',
+                          'component::tag',
+                          'step::tag',
+                          'test_type::tag',
+                      }),
+                      last_updated_time=datetime(2019, 6, 28, 0, 0, 0)),
+              'expected_remote_test':
+                  LuciTest(
+                      key=ndb.Key('LuciTest',
+                                  'chromium@normal_step_name@test_name1'),
+                      disabled_test_variants={(
+                          'ASan:True',
+                          'MSan:True',
+                          'os:os1',
+                      )},
+                      tags=sorted({
+                          'component::%s' % test_tag_util.DEFAULT_COMPONENT,
+                          'parent_component::%s' %
+                          test_tag_util.DEFAULT_COMPONENT,
+                          'step::step_name (full)',
+                          'test_type::step_name',
+                      }),
+                      issue_keys=[ndb.Key('FlakeIssue', 'chromium@123')],
+                      last_updated_time=datetime(2019, 6, 29, 0, 0, 0))
+          },),
+      (  # Currently disabled, change in all, should be updated.
+          {
+              'remote_test':
+                  LuciTest(
+                      key=ndb.Key('LuciTest',
+                                  'chromium@normal_step_name@test_name1'),
+                      disabled_test_variants={('os:os2',)},
+                      tags=sorted({
+                          'watchlist::tag',
+                          'directory::tag',
+                          'source::tag',
+                          'parent_component::tag',
+                          'component::tag',
+                          'step::tag',
+                          'test_type::tag',
+                      }),
                       issue_keys=[],
                       last_updated_time=datetime(2019, 6, 28, 0, 0, 0)),
               'expected_remote_test':
@@ -765,7 +777,13 @@ class DetectTestDisablementTest(WaterfallTestCase):
                           'MSan:True',
                           'os:os1',
                       )},
-                      tags=set(),
+                      tags=sorted({
+                          'component::%s' % test_tag_util.DEFAULT_COMPONENT,
+                          'parent_component::%s' %
+                          test_tag_util.DEFAULT_COMPONENT,
+                          'step::step_name (full)',
+                          'test_type::step_name',
+                      }),
                       issue_keys=[ndb.Key('FlakeIssue', 'chromium@123')],
                       last_updated_time=datetime(2019, 6, 29, 0, 0, 0))
           },),
@@ -776,7 +794,15 @@ class DetectTestDisablementTest(WaterfallTestCase):
                       key=ndb.Key('LuciTest',
                                   'chromium@normal_step_name@test_name2'),
                       disabled_test_variants={('os:os2',)},
-                      tags=set(),
+                      tags=sorted({
+                          'watchlist::tag',
+                          'directory::tag',
+                          'source::tag',
+                          'parent_component::tag',
+                          'component::tag',
+                          'step::tag',
+                          'test_type::tag',
+                      }),
                       issue_keys=[ndb.Key('FlakeIssue', 'chromium@123')],
                       last_updated_time=datetime(2019, 6, 28, 0, 0, 0)),
               'expected_remote_test':
@@ -795,19 +821,22 @@ class DetectTestDisablementTest(WaterfallTestCase):
                       key=ndb.Key('LuciTest',
                                   'chromium@normal_step_name@test_name2'),
                       disabled_test_variants=set(),
-                      tags=set(),
                       issue_keys=[ndb.Key('FlakeIssue', 'chromium@123')],
+                      tags=set(),
                       last_updated_time=datetime(2019, 6, 28, 0, 0, 0)),
               'expected_remote_test':
                   LuciTest(
                       key=ndb.Key('LuciTest',
                                   'chromium@normal_step_name@test_name2'),
                       disabled_test_variants=set(),
-                      tags=set(),
                       issue_keys=[ndb.Key('FlakeIssue', 'chromium@123')],
+                      tags=set(),
                       last_updated_time=datetime(2019, 6, 28, 0, 0, 0))
           },),
   ])
+  @mock.patch.object(
+      test_tag_util, '_GetChromiumDirectoryToComponentMapping', return_value={})
+  @mock.patch.object(test_tag_util, '_GetChromiumWATCHLISTS', return_value={})
   @mock.patch.object(swarmbucket, 'GetMasters', return_value=['chromium.linux'])
   @mock.patch.object(step_util, 'GetOS', return_value='os1')
   @mock.patch.object(
@@ -818,7 +847,7 @@ class DetectTestDisablementTest(WaterfallTestCase):
     query_response = self._GetEmptyDisabledTestQueryResponse()
     self._AddRowToDisabledTestQueryResponse(
         query_response=query_response,
-        step_name='step_name',
+        step_name='step_name (full)',
         test_name='test_name1',
         builder_name='msan_asan_builder1',
         build_id=123,
@@ -830,8 +859,109 @@ class DetectTestDisablementTest(WaterfallTestCase):
     mocked_client.jobs().getQueryResults().execute.return_value = query_response
 
     detect_disabled_tests.ProcessQueryForDisabledTests()
-    self.assertEqual(cases['expected_remote_test'],
-                     cases['remote_test'].key.get())
+    actual_remote_test = cases['remote_test'].key.get()
+    self.assertEqual(cases['expected_remote_test'], actual_remote_test)
+
+  @parameterized.expand([
+      (  # Currently disabled, changes, should be updated.
+          {
+              'remote_test':
+                  LuciTest(
+                      key=ndb.Key(
+                          'LuciTest',
+                          'chromium@telemetry_gpu_integration_test@test_name1'),
+                      disabled_test_variants={(
+                          'ASan:True',
+                          'MSan:True',
+                          'os:os1',
+                      )},
+                      issue_keys=[ndb.Key('FlakeIssue', 'chromium@123')],
+                      tags=sorted({
+                          'step::existing',
+                          'test_type::existing',
+                          'component::existing',
+                      }),
+                      last_updated_time=datetime(2019, 6, 28, 0, 0, 0)),
+              'expected_remote_test':
+                  LuciTest(
+                      key=ndb.Key(
+                          'LuciTest',
+                          'chromium@telemetry_gpu_integration_test@test_name1'),
+                      disabled_test_variants={(
+                          'ASan:True',
+                          'MSan:True',
+                          'os:os1',
+                      )},
+                      issue_keys=[ndb.Key('FlakeIssue', 'chromium@123')],
+                      tags=sorted({
+                          'step::step_name (full)',
+                          'test_type::step_name',
+                          'component::Internals>GPU>Testing',
+                      }),
+                      last_updated_time=datetime(2019, 6, 29, 0, 0, 0))
+          },),
+      (  # No longer disabled, should be updated.
+          {
+              'remote_test':
+                  LuciTest(
+                      key=ndb.Key(
+                          'LuciTest',
+                          'chromium@telemetry_gpu_integration_test@test_name2'),
+                      disabled_test_variants={(
+                          'ASan:True',
+                          'MSan:True',
+                          'os:os1',
+                      )},
+                      issue_keys=[ndb.Key('FlakeIssue', 'chromium@123')],
+                      tags=sorted({
+                          'step::existing',
+                          'test_type::existing',
+                          'component::existing',
+                      }),
+                      last_updated_time=datetime(2019, 6, 28, 0, 0, 0)),
+              'expected_remote_test':
+                  LuciTest(
+                      key=ndb.Key(
+                          'LuciTest',
+                          'chromium@telemetry_gpu_integration_test@test_name2'),
+                      disabled_test_variants=set(),
+                      issue_keys=[ndb.Key('FlakeIssue', 'chromium@123')],
+                      tags=[],
+                      last_updated_time=datetime(2019, 6, 29, 0, 0, 0))
+          },),
+  ])
+  @mock.patch.object(
+      test_tag_util, '_GetChromiumDirectoryToComponentMapping', return_value={})
+  @mock.patch.object(test_tag_util, '_GetChromiumWATCHLISTS', return_value={})
+  @mock.patch.object(swarmbucket, 'GetMasters', return_value=['chromium.linux'])
+  @mock.patch.object(step_util, 'GetOS', return_value='os1')
+  @mock.patch.object(
+      time_util, 'GetUTCNow', return_value=datetime(2019, 6, 29, 0, 0, 0))
+  @mock.patch.object(
+      step_util, 'GetCanonicalStepName', return_value='depth_capture_tests')
+  @mock.patch.object(
+      Flake, 'NormalizeStepName', return_value='telemetry_gpu_integration_test')
+  @mock.patch.object(bigquery_helper, '_GetBigqueryClient')
+  def testProcessQueryForDisabledTestsGPUTest(self, cases, mocked_get_client,
+                                              *_):
+    cases['remote_test'].put()
+    query_response = self._GetEmptyDisabledTestQueryResponse()
+    self._AddRowToDisabledTestQueryResponse(
+        query_response=query_response,
+        step_name='step_name (full)',
+        test_name='test_name1',
+        builder_name='msan_asan_builder1',
+        build_id=123,
+        bugs=['crbug.com/123'])
+
+    mocked_client = mock.Mock()
+    mocked_get_client.return_value = mocked_client
+    mocked_client.jobs().query().execute.return_value = query_response
+    mocked_client.jobs().getQueryResults().execute.return_value = query_response
+
+    detect_disabled_tests.ProcessQueryForDisabledTests()
+    actual_remote_test = cases['remote_test'].key.get()
+    self.assertEqual(cases['expected_remote_test'], actual_remote_test)
 
   @parameterized.expand([
       ({}, 2, [
@@ -847,6 +977,9 @@ class DetectTestDisablementTest(WaterfallTestCase):
       time_util, 'GetUTCNow', return_value=datetime(2019, 6, 29, 0, 0, 0))
   @mock.patch.object(bigquery_helper, '_GetBigqueryClient')
   @mock.patch.object(bigquery_helper, '_RunBigQuery', return_value='job')
+  @mock.patch.object(
+      test_tag_util, '_GetChromiumDirectoryToComponentMapping', return_value={})
+  @mock.patch.object(test_tag_util, '_GetChromiumWATCHLISTS', return_value={})
   @mock.patch.object(detect_disabled_tests, '_CreateLocalTests')
   @mock.patch.object(bigquery_helper, '_ReadQueryResultsPage')
   def testExecuteQuery(self, local_tests, mock_local_call_count, paged_rows,
@@ -860,6 +993,9 @@ class DetectTestDisablementTest(WaterfallTestCase):
       time_util, 'GetUTCNow', return_value=datetime(2019, 6, 29, 0, 0, 0))
   @mock.patch.object(bigquery_helper, '_GetBigqueryClient')
   @mock.patch.object(bigquery_helper, '_RunBigQuery', return_value='job')
+  @mock.patch.object(
+      test_tag_util, '_GetChromiumDirectoryToComponentMapping', return_value={})
+  @mock.patch.object(test_tag_util, '_GetChromiumWATCHLISTS', return_value={})
   @mock.patch.object(detect_disabled_tests, '_CreateLocalTests')
   @mock.patch.object(bigquery_helper, '_ReadQueryResultsPage')
   def testExecuteQueryNoRows(self, mock_execute_query, mock_create_local, *_):
