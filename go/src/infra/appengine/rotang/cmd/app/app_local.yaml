@@ -17,13 +17,13 @@ handlers:
     secure: always
 
   - url: /cron/.*
-    script: _go_app
+    script: auto
     login: admin
 
   - url: /
-    script: _go_app
+    script: auto
     secure: always
 
   - url: /.*
-    script: _go_app
+    script: auto
     secure: always
