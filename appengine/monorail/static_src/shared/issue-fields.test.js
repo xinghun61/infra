@@ -189,6 +189,15 @@ describe('stringValuesForIssueField', () => {
           {fieldRef: {type: 'STR_TYPE', fieldName: 'aString'}, value: 'test'},
           {fieldRef: {type: 'STR_TYPE', fieldName: 'aString'}, value: 'test2'},
           {fieldRef: {type: 'ENUM_TYPE', fieldName: 'ENUM'}, value: 'a-value'},
+          {fieldRef: {type: 'INT_TYPE', fieldId: '6', fieldName: 'Cow-Number'},
+            phaseRef: {phaseName: 'Cow-Phase'},
+            value: '55'},
+          {fieldRef: {type: 'INT_TYPE', fieldId: '6', fieldName: 'Cow-Number'},
+            phaseRef: {phaseName: 'Cow-Phase'},
+            value: '54'},
+          {fieldRef: {type: 'INT_TYPE', fieldId: '6', fieldName: 'Cow-Number'},
+            phaseRef: {phaseName: 'MilkCow-Phase'},
+            value: '56'},
         ],
       };
     });
@@ -198,11 +207,18 @@ describe('stringValuesForIssueField', () => {
       const fieldDefMap = new Map([
         ['astring', {fieldRef: {type: 'STR_TYPE', fieldName: 'aString'}}],
         ['enum', {fieldRef: {type: 'ENUM_TYPE', fieldName: 'ENUM'}}],
+        ['cow-number', {
+          fieldRef: {type: 'INT_TYPE', fieldName: 'Cow-Number'},
+          bool_is_phase_field: true, is_multivalued: true}],
       ]);
       assert.deepEqual(stringValuesForIssueField(issue, 'aString',
           projectName, fieldDefMap), ['test', 'test2']);
       assert.deepEqual(stringValuesForIssueField(issue, 'enum',
           projectName, fieldDefMap), ['a-value']);
+      assert.deepEqual(stringValuesForIssueField(issue, 'cow-phase.cow-number',
+          projectName, fieldDefMap), ['55', '54']);
+      assert.deepEqual(stringValuesForIssueField(issue,
+          'milkcow-phase.cow-number', projectName, fieldDefMap), ['56']);
     });
 
     it('custom fields get precedence over label fields', () => {

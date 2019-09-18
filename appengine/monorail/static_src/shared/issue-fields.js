@@ -38,6 +38,8 @@ export const COLSPEC_DELIMITER_REGEX = /[\s\+]+/;
 export const SITEWIDE_DEFAULT_COLUMNS = ['ID', 'Type', 'Status',
   'Priority', 'Milestone', 'Owner', 'Summary'];
 
+export const PHASE_FIELD_COL_DELIMITER_REGEX = /\./;
+
 export const EMPTY_FIELD_VALUE = '----';
 
 export function extractTypeForIssue(fieldValues, labelRefs) {
@@ -211,13 +213,13 @@ export const DEFAULT_ISSUE_FIELD_LIST = defaultIssueFields.map(
     (field) => field.fieldName);
 
 // TODO(zhangtiff): Integrate this logic with Redux selectors.
-export const stringValuesForIssueField = (issue, fieldName, projectName,
+export const stringValuesForIssueField = (issue, columnName, projectName,
     fieldDefMap = new Map(), labelPrefixFields = new Set()) => {
-  const fieldKey = fieldName.toLowerCase();
+  const columnKey = columnName.toLowerCase();
 
   // Look at whether the field is a built in field first.
-  if (defaultIssueFieldMap.has(fieldKey)) {
-    const bakedFieldDef = defaultIssueFieldMap.get(fieldKey);
+  if (defaultIssueFieldMap.has(columnKey)) {
+    const bakedFieldDef = defaultIssueFieldMap.get(columnKey);
     const values = bakedFieldDef.extractor(issue);
     switch (bakedFieldDef.type) {
       case fieldTypes.ISSUE_TYPE:
@@ -239,21 +241,30 @@ export const stringValuesForIssueField = (issue, fieldName, projectName,
   }
 
   // Handle custom fields.
-  if (fieldDefMap.has(fieldKey)) {
+  let fieldValueKey = columnKey;
+  let fieldNameKey = columnKey;
+  if (columnKey.match(PHASE_FIELD_COL_DELIMITER_REGEX)) {
+    let phaseName;
+    [phaseName, fieldNameKey] = columnKey.split(
+        PHASE_FIELD_COL_DELIMITER_REGEX);
+    // key for fieldValues Map contain the phaseName, if any.
+    fieldValueKey = fieldValueMapKey(fieldNameKey, phaseName);
+  }
+  if (fieldDefMap.has(fieldNameKey)) {
     const fieldValuesMap = fieldValuesToMap(issue.fieldValues);
-    if (fieldValuesMap.has(fieldKey)) {
-      return fieldValuesMap.get(fieldKey);
+    if (fieldValuesMap.has(fieldValueKey)) {
+      return fieldValuesMap.get(fieldValueKey);
     }
   }
 
   // Label options are last in precedence.
-  if (labelPrefixFields.has(fieldKey)) {
+  if (labelPrefixFields.has(columnKey)) {
     const matchingLabels = (issue.labelRefs || []).filter((labelRef) => {
       const labelPrefixKey = labelNameToLabelPrefix(
           labelRef.label).toLowerCase();
-      return fieldKey === labelPrefixKey;
+      return columnKey === labelPrefixKey;
     });
-    const labelPrefix = fieldKey + '-';
+    const labelPrefix = columnKey + '-';
     return matchingLabels.map(
         (labelRef) => removePrefix(labelRef.label, labelPrefix));
   }
