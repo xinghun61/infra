@@ -37,32 +37,24 @@ import (
 // TaskSet encapsulates the running state of a set of tasks, to satisfy
 // a Skylab Execution.
 type TaskSet struct {
-	testRuns []*testRun
-	params   *test_platform.Request_Params
-	retries  int32
+	testRuns     []*testRun
+	params       *test_platform.Request_Params
+	workerConfig *config.Config_SkylabWorker
+	retries      int32
 	// complete indicates that the TaskSet ran to completion of all tasks.
 	complete bool
 	// running indicates that the TaskSet is still running.
 	running bool
+
+	parentTaskID string
 }
 
 type testRun struct {
 	invocation *steps.EnumerationResponse_AutotestInvocation
-	Args       request.Args
 	// Do not read from or mutate attempts without holding appropriate lock
 	// on l.
 	attempts []*attempt
 	l        sync.RWMutex
-}
-
-func newTestRun(ctx context.Context, invocation *steps.EnumerationResponse_AutotestInvocation, params *test_platform.Request_Params, workerConfig *config.Config_SkylabWorker, parentTaskID string) (*testRun, error) {
-	t := testRun{invocation: invocation}
-	a, err := t.RequestArgs(ctx, params, workerConfig, parentTaskID)
-	if err != nil {
-		return nil, errors.Annotate(err, "new test run").Err()
-	}
-	t.Args = a
-	return &t, nil
 }
 
 func (t *testRun) addAttempt(a *attempt) {
@@ -232,16 +224,14 @@ func (a *attempt) complete() bool {
 func NewTaskSet(ctx context.Context, tests []*steps.EnumerationResponse_AutotestInvocation, params *test_platform.Request_Params, workerConfig *config.Config_SkylabWorker, parentTaskID string) (*TaskSet, error) {
 	testRuns := make([]*testRun, len(tests))
 	for i, test := range tests {
-		t, err := newTestRun(ctx, test, params, workerConfig, parentTaskID)
-		if err != nil {
-			return nil, errors.Annotate(err, "new task set").Err()
-		}
-		testRuns[i] = t
+		testRuns[i] = &testRun{invocation: test}
 	}
 	return &TaskSet{
-		testRuns: testRuns,
-		params:   params,
-		running:  true,
+		testRuns:     testRuns,
+		params:       params,
+		workerConfig: workerConfig,
+		running:      true,
+		parentTaskID: parentTaskID,
 	}, nil
 }
 
@@ -277,7 +267,12 @@ func (r *TaskSet) launchAll(ctx context.Context, client swarming.Client) error {
 }
 
 func (r *TaskSet) launchSingle(ctx context.Context, client swarming.Client, tr *testRun) error {
-	req, err := tr.Args.SwarmingNewTaskRequest()
+	args, err := tr.RequestArgs(ctx, r.params, r.workerConfig, r.parentTaskID)
+	if err != nil {
+		return errors.Annotate(err, "launch test named %s", tr.invocation.Test.Name).Err()
+	}
+
+	req, err := args.SwarmingNewTaskRequest()
 	if err != nil {
 		return errors.Annotate(err, "launch test named %s", tr.invocation.Test.Name).Err()
 	}
