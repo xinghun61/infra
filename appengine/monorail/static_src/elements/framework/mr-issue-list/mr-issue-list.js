@@ -184,6 +184,7 @@ export class MrIssueList extends connectStore(LitElement) {
               menuAlignment="right"
               .columns=${this.columns}
               .queryParams=${this.queryParams}
+              .phaseNames=${this._phaseNames}
             ></mr-show-columns-dropdown>
           </th>
         </tr>
@@ -440,12 +441,19 @@ export class MrIssueList extends connectStore(LitElement) {
        * Set of label prefixes.
        */
       _labelPrefixSet: {type: Object},
+      /**
+       * List of unique phase names for all phases in issues.
+       */
+      _phaseNames: {type: Array},
     };
   };
 
   constructor() {
     super();
     this.issues = [];
+    // TODO(jojwang): monorail:6336#c8, when ezt listissues page is fully
+    // deprecated, remove phaseNames from mr-issue-list.
+    this._phaseNames = [];
     this._selectedIssues = new Set();
     this.selectionEnabled = false;
     this.starringEnabled = false;
@@ -477,6 +485,8 @@ export class MrIssueList extends connectStore(LitElement) {
     this._fetchingStarredIssues =
         issue.requests(state).fetchStarredIssues.requesting;
     this._starringIssues = issue.starringIssues(state);
+
+    this._phaseNames = (issue.issueListPhaseNames(state) || []);
   }
 
   firstUpdated() {

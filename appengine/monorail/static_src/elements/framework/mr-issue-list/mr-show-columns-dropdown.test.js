@@ -145,6 +145,33 @@ describe('mr-show-columns-dropdown', () => {
     assert.equal(options[1].icon, '');
   });
 
+  it('phase field columns are correctly named', async () => {
+    element.defaultIssueFields = [];
+    element.columns = [];
+    element._fieldDefs = [
+      {fieldRef: {fieldName: 'Number', type: 'INT_TYPE'}, isPhaseField: true},
+      {fieldRef: {fieldName: 'Speak', type: 'STR_TYPE'}, isPhaseField: true},
+    ];
+    element.phaseNames = ['cow', 'chicken'];
+
+    // Re-compute menu items on update.
+    await element.updateComplete;
+    const options = element.items;
+
+    assert.equal(options.length, 4);
+    assert.equal(options[0].text.trim(), 'chicken.Number');
+    assert.equal(options[0].icon, '');
+
+    assert.equal(options[1].text.trim(), 'chicken.Speak');
+    assert.equal(options[1].icon, '');
+
+    assert.equal(options[2].text.trim(), 'cow.Number');
+    assert.equal(options[2].icon, '');
+
+    assert.equal(options[3].text.trim(), 'cow.Speak');
+    assert.equal(options[3].icon, '');
+  });
+
   it('reloadColspec navigates to page with new colspec', () => {
     element.columns = ['ID', 'Summary'];
     element.queryParams = {};

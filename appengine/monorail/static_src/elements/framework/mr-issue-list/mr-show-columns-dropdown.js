@@ -45,6 +45,10 @@ export class MrShowColumnsDropdown extends connectStore(MrDropdown) {
        */
       columns: {type: Array},
       /**
+       * Array of unique phase names to prepend to phase field columns.
+       */
+      phaseNames: {type: Array},
+      /**
        * Array of built in fields that are available outside of project
        * configuration.
        */
@@ -63,6 +67,7 @@ export class MrShowColumnsDropdown extends connectStore(MrDropdown) {
 
     this.icon = 'more_horiz';
     this.columns = [];
+    this.phaseNames = [];
 
     // TODO(zhangtiff): Make this use more fields for hotlists.
     this.defaultIssueFields = DEFAULT_ISSUE_FIELD_LIST;
@@ -78,13 +83,14 @@ export class MrShowColumnsDropdown extends connectStore(MrDropdown) {
   }
 
   update() {
-    this.items = this.issueOptions(this.defaultIssueFields, this._fieldDefs,
-        this._labelPrefixFields, this.columns);
+    this.items = this.issueOptions(
+        this.defaultIssueFields, this._fieldDefs, this._labelPrefixFields,
+        this.columns, this.phaseNames);
 
     super.update();
   }
 
-  issueOptions(defaultFields, fieldDefs, labelPrefixes, columns) {
+  issueOptions(defaultFields, fieldDefs, labelPrefixes, columns, phaseNames) {
     const selectedOptions = new Set(
         columns.map((col) => col.toLowerCase()));
 
@@ -94,10 +100,6 @@ export class MrShowColumnsDropdown extends connectStore(MrDropdown) {
     defaultFields.forEach((field) => this._addUnselectedField(
         availableFields, field, selectedOptions));
 
-    // HACK/TODO(zhangtiff): Replace this with dynamically computed phase names
-    // once it's possible to get phase data from the API.
-    const allPhases = ['Beta', 'Stable', 'Stable-Exp', 'Stable-Full'];
-
     // Custom fields.
     fieldDefs.forEach((fd) => {
       const {fieldRef, isPhaseField} = fd;
@@ -105,7 +107,7 @@ export class MrShowColumnsDropdown extends connectStore(MrDropdown) {
       if (isPhaseField) {
         // If the custom field belongs to phases, prefix the phase name for
         // each phase.
-        allPhases.forEach((phaseName) => {
+        phaseNames.forEach((phaseName) => {
           this._addUnselectedField(
               availableFields, `${phaseName}.${fieldName}`, selectedOptions);
         });
