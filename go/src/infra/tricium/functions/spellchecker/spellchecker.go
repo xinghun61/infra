@@ -48,26 +48,30 @@ const (
 )
 
 var (
-	// ignoredWords are words that might be in the dictionary but shouldn't be
-	// flagged.
+	// ignoredWords are words that shouldn't be flagged, even if they appear in
+	// the dictionary.
 	ignoredWords = []string{
 		"als",         // abbr. for ambient light sensor
 		"backed",      // as in "backed by"
+		"cant",        // contraction, may appear in variable names, also a word
 		"cas",         // abbr. for Content Addressed Storage
 		"copyable",    // Valid usage, and used in C++, e.g. is_trivially_copyable
 		"crasher",     // something that causes a crash
 		"crate",       // Rust keyword
-		"ect",         // abbr. for effective connection type
+		"dont",        // contraction, may appear in variable names
+		"ect",         // abbr. for effective connection time
+		"files'",      // possessive of files
 		"gae",         // abbr. for Google App Engine
+		"hist",        // abbr. for histogram
 		"ith",         // ordinal form of variable i, like nth
 		"lightening",  // present participle of "to lighten"
 		"mut",         // Rust keyword
-		"seeked",      // JS event
-		"tast",        // Name of a ChromeOS test
-		"wontfix",     // Monorail bug status
-		"files'",      // possessive of files
 		"process'",    // possessive of process
+		"seeked",      // JS event
 		"subprocess'", // possessive of subprocess
+		"tast",        // Name of a ChromeOS test
+		"wont",        // contraction, may appear in variable names, also a word
+		"wontfix",     // Monorail bug status
 	}
 	textFileExts = []string{".txt", ".md"}
 
