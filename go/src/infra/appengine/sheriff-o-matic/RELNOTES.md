@@ -1,20 +1,38 @@
-# Release Notes sheriff-o-matic 2019-09-18
+# Release Notes sheriff-o-matic 2019-09-19
 
-- 2 commits, 1 bugs affected since 7a81e25 (2019-08-28T20:14:51Z)
-- 1 Authors:
+- 12 commits, 5 bugs affected since  (2019-08-23)
+- 3 Authors:
   - seanmccullough@chromium.org
+  - tandrii@google.com
+  - nqmtuan@google.com
 
 ## Changes in this release
 
+- [[som] Update chromium and chromium.perf analyzer crons to use bq.](https://chromium-review.googlesource.com/c/infra/infra/+/1814398) (seanmccullough@chromium.org)
+- [[som] Update frontend to handle truncated test lists.](https://chromium-review.googlesource.com/c/infra/infra/+/1812337) (seanmccullough@chromium.org)
+- [[som] Update test make target to rerun tests to catch flakes early.](https://chromium-review.googlesource.com/c/infra/infra/+/1812119) (seanmccullough@chromium.org)
+- [Reland "[som] Update bq analyzer to handle test-level failure grouping."](https://chromium-review.googlesource.com/c/infra/infra/+/1811357) (seanmccullough@chromium.org)
+- [Revert "[som] Update bq analyzer to handle test-level failure grouping."](https://chromium-review.googlesource.com/c/infra/infra/+/1811297) (tandrii@google.com)
+- [[som] Update bq analyzer to handle test-level failure grouping.](https://chromium-review.googlesource.com/c/infra/infra/+/1804228) (seanmccullough@chromium.org)
+- [Update relnotes. Preparing for go 1.11 release](https://chromium-review.googlesource.com/c/infra/infra/+/1810278) (nqmtuan@google.com)
 - [[som] Update README.md for getting started with a new checkout.](https://chromium-review.googlesource.com/c/infra/infra/+/1804421) (seanmccullough@chromium.org)
 - [[som] Update to go111 runtime](https://chromium-review.googlesource.com/c/infra/infra/+/1803720) (seanmccullough@chromium.org)
+- [[som] Add a warning banner for perfbot sheriffs to check ci console too](https://chromium-review.googlesource.com/c/infra/infra/+/1774877) (seanmccullough@chromium.org)
+- [[som] Handle failures for builds that have never passed.](https://chromium-review.googlesource.com/c/infra/infra/+/1772229) (seanmccullough@chromium.org)
+- [[som] Add chromeosgardener and chromeosgardener.shadow to sidebar](https://chromium-review.googlesource.com/c/infra/infra/+/1771744) (seanmccullough@chromium.org)
 
 
 ## Bugs updated, by author
 - seanmccullough@chromium.org:
+  -  [https://crbug.com/1003262](https://crbug.com/1003262)
   -  [https://crbug.com/980258](https://crbug.com/980258)
-
-
+  -  [https://crbug.com/996917](https://crbug.com/996917)
+  -  [https://crbug.com/996923](https://crbug.com/996923)
+  -  [https://crbug.com/997809](https://crbug.com/997809)
+  
+- tandrii@google.com:
+  -  [https://crbug.com/996917](https://crbug.com/996917)
+  
 # Release Notes sheriff-o-matic 2019-08-23
 
 - 2 commits, 1 bugs affected since 318ba4f (2019-08-21T17:32:38Z)
