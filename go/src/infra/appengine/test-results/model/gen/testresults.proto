@@ -192,6 +192,15 @@ message TestRun {
 
   // Name is the name of the test or test suite.
   string name = 13;
+
+  // Artifacts are extra test output files.
+  repeated Artifact artifacts = 14;
+}
+
+// Artifact represents an extra test output file.
+message Artifact {
+  string name = 1;
+  repeated string values = 2;
 }
 
 // TestResultEvent is suitable for representing a row in a BigQuery table. Note

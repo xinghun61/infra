@@ -90,6 +90,13 @@ func createTestResultEvents(c context.Context, f *model.FullResult, p *UploadPar
 			}
 		}
 
+		for name, values := range ftl.Artifacts {
+			testRun.Artifacts = append(testRun.Artifacts, &gen.Artifact{
+				Name:   name,
+				Values: values,
+			})
+		}
+
 		startTime, err := ptypes.TimestampProto(time.Unix(int64(f.SecondsEpoch), 0))
 		if err != nil {
 			return nil, err

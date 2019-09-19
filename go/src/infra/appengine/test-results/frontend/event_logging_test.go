@@ -37,6 +37,10 @@ func TestCreateEvent(t *testing.T) {
 					Runtime:    nilTime,
 					Runtimes:   []*float64{nilTime, nilTime},
 					Unexpected: &pTrue,
+					Artifacts: map[string][]string{
+						"artifact1": {"val1"},
+						"artifact2": {"val1", "val2"},
+					},
 				},
 				"other/path": &model.FullTestLeaf{
 					Actual:   []string{"IMAGE+TEXT"},
@@ -68,6 +72,16 @@ func TestCreateEvent(t *testing.T) {
 					Expected:     []gen.ResultType{gen.ResultType_PASS},
 					Name:         "path",
 					IsUnexpected: true,
+					Artifacts: []*gen.Artifact{
+						{
+							Name:   "artifact1",
+							Values: []string{"val1"},
+						},
+						{
+							Name:   "artifact2",
+							Values: []string{"val1", "val2"},
+						},
+					},
 				},
 				BuildId: "12345",
 			},
