@@ -7,8 +7,11 @@ import json
 import mock
 import webapp2
 
+from google.appengine.ext import ndb
+
 from handlers.disabled_tests.detection import display_test_disablement
 from libs import time_util
+from model.flake.flake_issue import FlakeIssue
 from model.test_inventory import LuciTest
 from waterfall.test.wf_testcase import WaterfallTestCase
 
@@ -25,14 +28,21 @@ class DisplayTestDisablementTest(WaterfallTestCase):
     self.disabled_test1 = LuciTest(
         key=LuciTest.CreateKey('a', 'b', 'd'),
         disabled_test_variants={('os:Mac1234',)},
-        last_updated_time=datetime.datetime(2019, 6, 29, 0, 0, 0))
+        last_updated_time=datetime.datetime(2019, 6, 29, 0, 0, 0),
+        issue_keys=[ndb.Key('FlakeIssue', 'chromium@123')])
     self.disabled_test1.put()
+    self.issue_1 = FlakeIssue.Create('chromium', 123)
+    self.issue_1.put()
     self.disabled_test1_dict = self.disabled_test1.to_dict()
     self.disabled_test1_dict['disabled_test_variants'] = [
-        [
-            'os:Mac',
-        ],
+        ['os:Mac'],
     ]
+    self.disabled_test1_dict['issues'] = [{
+        'issue_id':
+            123,
+        'issue_link':
+            'https://monorail-prod.appspot.com/p/chromium/issues/detail?id=123',
+    }]
 
     self.disabled_test2 = LuciTest(
         key=LuciTest.CreateKey('a', 'b', 'c'),
@@ -41,10 +51,9 @@ class DisplayTestDisablementTest(WaterfallTestCase):
     self.disabled_test2.put()
     self.disabled_test2_dict = self.disabled_test2.to_dict()
     self.disabled_test2_dict['disabled_test_variants'] = [
-        [
-            'os:Mac',
-        ],
+        ['os:Mac'],
     ]
+    self.disabled_test2_dict['issues'] = []
 
     self.disabled_test3 = LuciTest(
         key=LuciTest.CreateKey('a', 'b', 'e'),

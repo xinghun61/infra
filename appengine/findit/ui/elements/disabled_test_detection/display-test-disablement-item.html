@@ -27,8 +27,20 @@
             </ul>
         </template>
       </td>
-      <!-- TODO(crbug.com/1001130): Add bugs to dashboard -->
-      <td>None</td>
+      <td>
+        <template is="dom-if" if="[[hasBug(disabled_test)]]">
+          <template is="dom-repeat" items="[[disabled_test.issues]]" as="bug">
+            <ul>
+              <li>
+                <a href="[[bug.issue_link]]">[[bug.issue_id]]</a>
+              </li>
+            </ul>
+          </template>
+        </template>
+        <template is="dom-if" if="[[!hasBug(disabled_test)]]">
+          <td>None</td>
+        </template>
+      </td>
     </template>
 
   <script src="../../js/common.js"></script>
@@ -42,6 +54,10 @@
           disabled_test: {
             type: Object
           },
+        },
+
+        hasBug: function (disabled_test) {
+         return (disabled_test.issues && disabled_test.issues.length > 0);
         },
 
       });
