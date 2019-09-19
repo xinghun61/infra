@@ -19,7 +19,7 @@ clean:
 	cd frontend && rm -f src/test-results.vulcanized.html
 
 test:
-	go test -race ./...
+	go test -race -count 10 -failfast ./...
 
 devserver:
 	dev_appserver.py frontend/app.yaml

@@ -2,6 +2,7 @@ package frontend
 
 import (
 	"fmt"
+	"sort"
 	"time"
 
 	"github.com/golang/protobuf/proto"
@@ -94,6 +95,9 @@ func createTestResultEvents(c context.Context, f *model.FullResult, p *UploadPar
 			testRun.Artifacts = append(testRun.Artifacts, &gen.Artifact{
 				Name:   name,
 				Values: values,
+			})
+			sort.Slice(testRun.Artifacts, func(i, j int) bool {
+				return testRun.Artifacts[i].Name < testRun.Artifacts[j].Name
 			})
 		}
 
