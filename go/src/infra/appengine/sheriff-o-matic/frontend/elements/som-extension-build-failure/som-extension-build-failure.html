@@ -79,7 +79,7 @@
       </template>
       <template is="dom-if" if="[[_haveTests(extension.reason.tests)]]">
         <div class="header">
-          [[_testText(extension.reason.tests)]]:
+          [[_testText(extension.reason.tests, extension.reason.num_failing_tests)]]:
         </div>
         <div id="reasons" class="build-failures">
           <ul>

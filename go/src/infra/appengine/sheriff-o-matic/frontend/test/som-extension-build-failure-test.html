@@ -91,6 +91,26 @@
       });
     });
 
+    test('renders links for truncated test results', function(done) {
+      element.extension = {
+        reason: {
+          'tests': [
+          {'test_name': 'best_test'},
+          {'test_name': 'second_best_test'},
+          ],
+          'step': 'webkit_tests',
+          'num_failing_tests': 10
+        },
+      };
+      element._uberify = (url) => { return url; };
+      flush( () => {
+        let header = element.$$('.header');
+        assert.isNotNull(header);
+        assert.equal(header.innerText, "10 tests failed, first 2:")
+        done();
+      });
+    });
+
     test('renders links for code search', function(done) {
       element.extension = {
         reason: {

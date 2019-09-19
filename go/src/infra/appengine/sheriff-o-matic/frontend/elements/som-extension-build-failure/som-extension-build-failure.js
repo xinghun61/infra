@@ -249,7 +249,7 @@ class SomExtensionBuildFailure extends Polymer.mixinBehaviors(
     return a.test_name.localeCompare(b.test_name);
   }
 
-  _testText(tests) {
+  _testText(tests, numFailingTests) {
     // NOTE: This really shouldn't happen; we should only be calling this
     // function
     // when tests is actually defined. We are though, for some reason, and it
@@ -264,6 +264,10 @@ class SomExtensionBuildFailure extends Polymer.mixinBehaviors(
 
     if (len == 1) {
       return '1 test failed';
+    }
+    if (numFailingTests && numFailingTests > len) {
+      return numFailingTests.toString() + ' tests failed, first ' +
+        len.toString();
     }
     return len.toString() + ' tests failed';
   }
