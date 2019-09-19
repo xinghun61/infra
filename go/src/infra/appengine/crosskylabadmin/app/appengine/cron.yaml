@@ -6,15 +6,29 @@ cron:
 - description: push labstations for repair tasks
   url: /internal/cron/push-repair-jobs-for-labstations
   schedule: every 60 minutes
+
 - description: push bots for admin tasks
   url: /internal/cron/push-bots-for-admin-tasks
   schedule: every 5 minutes
+  retry_parameters:
+    # We see a small number of jobs fails with code 500 (internal failure of GAE).
+    # As the handler is idempotent & has low time cost, retry won't cause any
+    # side effect. If it fails, it can catch the next cron train.
+    job_retry_limit: 1
+
 - description: sync device configs to inventory file and datastore
   url: /internal/cron/update-device-configs
   schedule: every 5 minutes
+
 - description: report metrics related to swarming bots.
   url: /internal/cron/report-bots
   schedule: every 5 minutes
+  retry_parameters:
+    # We see a small number of jobs fails with code 500 (internal failure of GAE).
+    # As the handler is idempotent & has low time cost, retry won't cause any
+    # side effect. If it fails, it can catch the next cron train.
+    job_retry_limit: 1
+
 - description: refresh bots
   url: /internal/cron/refresh-bots
   schedule: every 5 minutes
