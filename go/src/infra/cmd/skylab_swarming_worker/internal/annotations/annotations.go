@@ -53,3 +53,8 @@ func StepException(w io.Writer) (int, error) {
 func StepClosed(w io.Writer) (int, error) {
 	return fmt.Fprintf(w, "\n@@@STEP_CLOSED@@@\n")
 }
+
+// StepNestLevel prints a STEP_NEST_LEVEL annotation.
+func StepNestLevel(w io.Writer, n int) (int, error) {
+	return fmt.Fprintf(w, "@@@STEP_NEST_LEVEL@%d@@@\n", n)
+}

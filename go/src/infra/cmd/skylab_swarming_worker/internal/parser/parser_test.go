@@ -208,6 +208,7 @@ func TestAutoservFailure(t *testing.T) {
 func checkOneTestCase(input string, name string, failed bool, summary string) string {
 	input = checkNextAnnotation(input, "SEED_STEP "+name)
 	input = checkNextAnnotation(input, "STEP_CURSOR "+name)
+	input = checkNextAnnotation(input, "STEP_NEST_LEVEL@1")
 	input = checkNextAnnotation(input, "STEP_STARTED")
 
 	So(input, ShouldContainSubstring, summary)

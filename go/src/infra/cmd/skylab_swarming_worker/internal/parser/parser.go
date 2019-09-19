@@ -125,6 +125,7 @@ func annotateTestCases(b []byte, runFailed bool, w io.Writer) error {
 func annotateTestCase(name string, failed bool, summary string, w io.Writer) {
 	annotations.SeedStep(w, name)
 	annotations.StepCursor(w, name)
+	annotations.StepNestLevel(w, 1)
 	annotations.StepStarted(w)
 
 	if failed {
