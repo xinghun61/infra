@@ -15,7 +15,9 @@ from third_party import ezt
 
 from framework import framework_constants
 from framework import table_view_helpers
+from framework import urls
 from tracker import tracker_bizobj
+from tracker import tracker_helpers
 
 # pylint: disable=unused-argument
 
@@ -196,21 +198,29 @@ class TableCellOwnerLastVisit(table_view_helpers.TableCellDate):
         self, last_visit, days_only=True)
 
 
+def _make_issue_views(default_pn, config, ref_issues):
+  return [
+      {"id": tracker_bizobj.FormatIssueRef(
+          (ref_issue.project_name, ref_issue.local_id),
+          default_project_name=default_pn),
+       "href": tracker_helpers.FormatRelativeIssueURL(
+           ref_issue.project_name,
+           urls.ISSUE_DETAIL,
+           id=ref_issue.local_id),
+       "closed": not tracker_helpers.MeansOpenInProject(
+           ref_issue.status, config),
+       "title": ref_issue.summary,}
+      for ref_issue in ref_issues]
+
 class TableCellBlockedOn(table_view_helpers.TableCell):
   """TableCell subclass for listing issues the current issue is blocked on."""
 
   def __init__(self, issue, related_issues=None, **_kw):
     ref_issues = [related_issues[iid] for iid in issue.blocked_on_iids
                   if iid in related_issues]
-    default_pn = issue.project_name
-    # TODO(jrobbins): in cross-project searches, leave default_pn = None.
-    values = [
-        tracker_bizobj.FormatIssueRef(
-            (ref_issue.project_name, ref_issue.local_id),
-            default_project_name=default_pn)
-        for ref_issue in ref_issues]
+    values = _make_issue_views(issue.project_name, _kw["config"], ref_issues)
     table_view_helpers.TableCell.__init__(
-        self, table_view_helpers.CELL_TYPE_ATTR, values)
+        self, table_view_helpers.CELL_TYPE_ISSUES, values)
 
 
 class TableCellBlocking(table_view_helpers.TableCell):
@@ -219,15 +229,9 @@ class TableCellBlocking(table_view_helpers.TableCell):
   def __init__(self, issue, related_issues=None, **_kw):
     ref_issues = [related_issues[iid] for iid in issue.blocking_iids
                   if iid in related_issues]
-    default_pn = issue.project_name
-    # TODO(jrobbins): in cross-project searches, leave default_pn = None.
-    values = [
-        tracker_bizobj.FormatIssueRef(
-            (ref_issue.project_name, ref_issue.local_id),
-            default_project_name=default_pn)
-        for ref_issue in ref_issues]
+    values = _make_issue_views(issue.project_name, _kw["config"], ref_issues)
     table_view_helpers.TableCell.__init__(
-        self, table_view_helpers.CELL_TYPE_ATTR, values)
+        self, table_view_helpers.CELL_TYPE_ISSUES, values)
 
 
 class TableCellBlocked(table_view_helpers.TableCell):
@@ -246,20 +250,14 @@ class TableCellBlocked(table_view_helpers.TableCell):
 class TableCellMergedInto(table_view_helpers.TableCell):
   """TableCell subclass for showing whether an issue is blocked."""
 
-  def __init__(
-      self, issue, related_issues=None, **_kw):
+  def __init__(self, issue, related_issues=None, **_kw):
     if issue.merged_into:
       ref_issue = related_issues[issue.merged_into]
-      ref = ref_issue.project_name, ref_issue.local_id
-      default_pn = issue.project_name
-      # TODO(jrobbins): in cross-project searches, leave default_pn = None.
-      values = [
-          tracker_bizobj.FormatIssueRef(ref, default_project_name=default_pn)]
+      values = _make_issue_views(issue.project_name, _kw["config"], [ref_issue])
     else:   # Note: None means not merged into any issue.
       values = []
-
     table_view_helpers.TableCell.__init__(
-        self, table_view_helpers.CELL_TYPE_ATTR, values)
+        self, table_view_helpers.CELL_TYPE_ISSUES, values)
 
 
 class TableCellComponent(table_view_helpers.TableCell):
