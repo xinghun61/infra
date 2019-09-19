@@ -387,11 +387,9 @@ spam_whitelisted_suffixes = (
 corp_mode_user_groups = [
   'chromeos-all@google.com',
   'chromeos-acl@google.com',
-  'chromeos-acl@chromium.org',
   'chromeos-fte-tvc@google.com',
   'chromeos-fte-tvc@chromium.org',
   'create-team@google.com',
-  'create-team@chromium.org',
   'test-corp-mode@google.com',
   ]
 
