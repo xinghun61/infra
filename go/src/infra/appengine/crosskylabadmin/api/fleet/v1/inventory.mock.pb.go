@@ -114,46 +114,6 @@ func (mr *MockInventoryClientMockRecorder) DeleteDuts(ctx, in interface{}, opts 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteDuts", reflect.TypeOf((*MockInventoryClient)(nil).DeleteDuts), varargs...)
 }
 
-// EnsurePoolHealthy mocks base method
-func (m *MockInventoryClient) EnsurePoolHealthy(ctx context.Context, in *EnsurePoolHealthyRequest, opts ...grpc.CallOption) (*EnsurePoolHealthyResponse, error) {
-	m.ctrl.T.Helper()
-	varargs := []interface{}{ctx, in}
-	for _, a := range opts {
-		varargs = append(varargs, a)
-	}
-	ret := m.ctrl.Call(m, "EnsurePoolHealthy", varargs...)
-	ret0, _ := ret[0].(*EnsurePoolHealthyResponse)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// EnsurePoolHealthy indicates an expected call of EnsurePoolHealthy
-func (mr *MockInventoryClientMockRecorder) EnsurePoolHealthy(ctx, in interface{}, opts ...interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	varargs := append([]interface{}{ctx, in}, opts...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "EnsurePoolHealthy", reflect.TypeOf((*MockInventoryClient)(nil).EnsurePoolHealthy), varargs...)
-}
-
-// EnsurePoolHealthyForAllModels mocks base method
-func (m *MockInventoryClient) EnsurePoolHealthyForAllModels(ctx context.Context, in *EnsurePoolHealthyForAllModelsRequest, opts ...grpc.CallOption) (*EnsurePoolHealthyForAllModelsResponse, error) {
-	m.ctrl.T.Helper()
-	varargs := []interface{}{ctx, in}
-	for _, a := range opts {
-		varargs = append(varargs, a)
-	}
-	ret := m.ctrl.Call(m, "EnsurePoolHealthyForAllModels", varargs...)
-	ret0, _ := ret[0].(*EnsurePoolHealthyForAllModelsResponse)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// EnsurePoolHealthyForAllModels indicates an expected call of EnsurePoolHealthyForAllModels
-func (mr *MockInventoryClientMockRecorder) EnsurePoolHealthyForAllModels(ctx, in interface{}, opts ...interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	varargs := append([]interface{}{ctx, in}, opts...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "EnsurePoolHealthyForAllModels", reflect.TypeOf((*MockInventoryClient)(nil).EnsurePoolHealthyForAllModels), varargs...)
-}
-
 // BalancePools mocks base method
 func (m *MockInventoryClient) BalancePools(ctx context.Context, in *BalancePoolsRequest, opts ...grpc.CallOption) (*BalancePoolsResponse, error) {
 	m.ctrl.T.Helper()
@@ -475,36 +435,6 @@ func (m *MockInventoryServer) DeleteDuts(arg0 context.Context, arg1 *DeleteDutsR
 func (mr *MockInventoryServerMockRecorder) DeleteDuts(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteDuts", reflect.TypeOf((*MockInventoryServer)(nil).DeleteDuts), arg0, arg1)
-}
-
-// EnsurePoolHealthy mocks base method
-func (m *MockInventoryServer) EnsurePoolHealthy(arg0 context.Context, arg1 *EnsurePoolHealthyRequest) (*EnsurePoolHealthyResponse, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "EnsurePoolHealthy", arg0, arg1)
-	ret0, _ := ret[0].(*EnsurePoolHealthyResponse)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// EnsurePoolHealthy indicates an expected call of EnsurePoolHealthy
-func (mr *MockInventoryServerMockRecorder) EnsurePoolHealthy(arg0, arg1 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "EnsurePoolHealthy", reflect.TypeOf((*MockInventoryServer)(nil).EnsurePoolHealthy), arg0, arg1)
-}
-
-// EnsurePoolHealthyForAllModels mocks base method
-func (m *MockInventoryServer) EnsurePoolHealthyForAllModels(arg0 context.Context, arg1 *EnsurePoolHealthyForAllModelsRequest) (*EnsurePoolHealthyForAllModelsResponse, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "EnsurePoolHealthyForAllModels", arg0, arg1)
-	ret0, _ := ret[0].(*EnsurePoolHealthyForAllModelsResponse)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// EnsurePoolHealthyForAllModels indicates an expected call of EnsurePoolHealthyForAllModels
-func (mr *MockInventoryServerMockRecorder) EnsurePoolHealthyForAllModels(arg0, arg1 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "EnsurePoolHealthyForAllModels", reflect.TypeOf((*MockInventoryServer)(nil).EnsurePoolHealthyForAllModels), arg0, arg1)
 }
 
 // BalancePools mocks base method

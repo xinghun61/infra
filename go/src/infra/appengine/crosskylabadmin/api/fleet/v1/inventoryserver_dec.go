@@ -91,40 +91,6 @@ func (s *DecoratedInventory) DeleteDuts(c context.Context, req *DeleteDutsReques
 	return
 }
 
-func (s *DecoratedInventory) EnsurePoolHealthy(c context.Context, req *EnsurePoolHealthyRequest) (rsp *EnsurePoolHealthyResponse, err error) {
-	if s.Prelude != nil {
-		var newCtx context.Context
-		newCtx, err = s.Prelude(c, "EnsurePoolHealthy", req)
-		if err == nil {
-			c = newCtx
-		}
-	}
-	if err == nil {
-		rsp, err = s.Service.EnsurePoolHealthy(c, req)
-	}
-	if s.Postlude != nil {
-		err = s.Postlude(c, "EnsurePoolHealthy", rsp, err)
-	}
-	return
-}
-
-func (s *DecoratedInventory) EnsurePoolHealthyForAllModels(c context.Context, req *EnsurePoolHealthyForAllModelsRequest) (rsp *EnsurePoolHealthyForAllModelsResponse, err error) {
-	if s.Prelude != nil {
-		var newCtx context.Context
-		newCtx, err = s.Prelude(c, "EnsurePoolHealthyForAllModels", req)
-		if err == nil {
-			c = newCtx
-		}
-	}
-	if err == nil {
-		rsp, err = s.Service.EnsurePoolHealthyForAllModels(c, req)
-	}
-	if s.Postlude != nil {
-		err = s.Postlude(c, "EnsurePoolHealthyForAllModels", rsp, err)
-	}
-	return
-}
-
 func (s *DecoratedInventory) BalancePools(c context.Context, req *BalancePoolsRequest) (rsp *BalancePoolsResponse, err error) {
 	if s.Prelude != nil {
 		var newCtx context.Context

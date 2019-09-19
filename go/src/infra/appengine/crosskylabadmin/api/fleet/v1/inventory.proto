@@ -53,16 +53,6 @@ service Inventory {
   // ///////////////////////////////////////////////////////////////////////////
   // DUT pool balancing RPCs
 
-  // EnsurePoolHealthy ensures that a target pool has only healthy DUTs.
-  //
-  // EnsurePoolHealthy works by swapping unhealthy DUTs from target pool with
-  // healthy DUTs from a spare pool.
-  rpc EnsurePoolHealthy(EnsurePoolHealthyRequest) returns
-      (EnsurePoolHealthyResponse);
-
-  rpc EnsurePoolHealthyForAllModels(EnsurePoolHealthyForAllModelsRequest)
-          returns (EnsurePoolHealthyForAllModelsResponse);
-
   // BalancePools is the RPC used by balance pool efforts issued from
   // automatic balance pool cron job or users (skylab ensure-pool-healthy).
   // The above 2 RPCs will be deprecated.
@@ -271,6 +261,7 @@ message DutDeploymentOptions {
 }
 
 message EnsurePoolHealthyRequest {
+  option deprecated = true;
   // dut_selectors filters the set of DUTs considered by EnsurePoolHealthy.
   //
   // All pool changes occurs within this selected set of DUTs.
@@ -350,6 +341,7 @@ message EnsurePoolHealthyResponse {
 }
 
 message EnsurePoolHealthyForAllModelsRequest {
+  option deprecated = true;
   // target_pool is the pool that should contain healthy DUTs.
   string target_pool = 1;
 
@@ -369,6 +361,7 @@ message EnsurePoolHealthyForAllModelsRequest {
 }
 
 message EnsurePoolHealthyForAllModelsResponse {
+  option deprecated = true;
   // model_result maps a model to the EnsurePoolHealthyResponse for that model.
   map<string, EnsurePoolHealthyResponse> model_result = 1;
 }
