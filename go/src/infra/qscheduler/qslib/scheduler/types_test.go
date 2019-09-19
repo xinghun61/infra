@@ -46,12 +46,12 @@ func TestClone(t *testing.T) {
 
 			// Null out memoization fields.
 			for _, t := range s.state.queuedRequests {
-				t.memoizedFanoutGroup = ""
+				t.memoizedFanoutGroup = 0
 				t.fanoutGroupIsMemoized = false
 			}
 			for _, w := range s.state.workers {
 				if !w.IsIdle() {
-					w.runningTask.request.memoizedFanoutGroup = ""
+					w.runningTask.request.memoizedFanoutGroup = 0
 					w.runningTask.request.fanoutGroupIsMemoized = false
 				}
 			}

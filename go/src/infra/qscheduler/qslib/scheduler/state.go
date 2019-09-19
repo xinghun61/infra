@@ -17,8 +17,8 @@ package scheduler
 import (
 	"context"
 	"fmt"
+	"hash/fnv"
 	"sort"
-	"strings"
 	"time"
 
 	"infra/qscheduler/qslib/protos"
@@ -54,8 +54,22 @@ type state struct {
 }
 
 // fanoutGroup identifies the group (for a given request) over which per-account
-// per-image fanout limits will be enforced.
-type fanoutGroup string
+// per-label-set fanout limits will be enforced.
+//
+// This is computed using an fnv hash of the fanout group's descriptor string into
+// a 64 bit hash space. In typical workloads, we expect to have up to 10^6 enqueued
+// tasks. In the worst case, they would each belong to a unique fanout group,
+// in which case the probability that any two of them collide to the same fanout
+// group id is roughly 1 in 10^7 or 10^8.
+//
+// The consequences of a collision are small, it would just cause some tasks to be
+// given an incorrectly low priority, temporarily while the collision was in place.
+//
+// Given that the probability of collision is low, even assuming worst case
+// task distribution, and the consequence of collision is minor, using an
+// int64 ID here is a worth the performance gained by avoiding using
+// the entire fanout group descriptor string.
+type fanoutGroup uint64
 
 // TaskRequest represents a queued or running task TaskRequest.
 type TaskRequest struct {
@@ -115,22 +129,23 @@ func (t *TaskRequest) fanoutGroup() fanoutGroup {
 	}
 
 	if t.AccountID == "" {
-		t.memoizedFanoutGroup = ""
+		t.memoizedFanoutGroup = 0
 		t.fanoutGroupIsMemoized = true
 		return t.memoizedFanoutGroup
 	}
 
-	elems := make([]string, 1, 1+len(t.ProvisionableLabels)+len(t.BaseLabels))
-	elems[0] = string(t.AccountID)
+	elems := make([]string, 0, len(t.ProvisionableLabels)+len(t.BaseLabels))
 	elems = append(elems, t.ProvisionableLabels...)
 	elems = append(elems, t.BaseLabels...)
-	sort.Strings(elems[1:])
+	sort.Strings(elems)
 
-	// This separator is just an arbitrary string that is very unlikely to be
-	// encountered in the wild in account IDs or provisionable labels.
-	const separator = "$;~$"
+	h := fnv.New64()
+	h.Write([]byte(t.AccountID))
+	for _, elem := range elems {
+		h.Write([]byte(elem))
+	}
 
-	t.memoizedFanoutGroup = fanoutGroup(strings.Join(elems, separator))
+	t.memoizedFanoutGroup = fanoutGroup(h.Sum64())
 	t.fanoutGroupIsMemoized = true
 	return t.memoizedFanoutGroup
 }
