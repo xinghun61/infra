@@ -107,9 +107,8 @@ func requestProto(r *TaskRequest, mb *mapBuilder) *protos.TaskRequest {
 	}
 }
 
-// fanoutGroup returns a string that uniquely identifies this task's account
-// and provisionable labels, and thus identifies the fanout group to be
-// used for this account.
+// fanoutGroup returns a unique identifier of this task's account
+// and labels, and thus identifies the fanout group to be used for this account.
 func (t *TaskRequest) fanoutGroup() fanoutGroup {
 	if t.fanoutGroupIsMemoized {
 		return t.memoizedFanoutGroup
@@ -121,12 +120,12 @@ func (t *TaskRequest) fanoutGroup() fanoutGroup {
 		return t.memoizedFanoutGroup
 	}
 
-	provisionable := make([]string, len(t.ProvisionableLabels))
-	copy(provisionable, t.ProvisionableLabels)
-	sort.Strings(provisionable)
+	elems := make([]string, 1, 1+len(t.ProvisionableLabels)+len(t.BaseLabels))
+	elems[0] = string(t.AccountID)
+	elems = append(elems, t.ProvisionableLabels...)
+	elems = append(elems, t.BaseLabels...)
+	sort.Strings(elems[1:])
 
-	elems := []string{string(t.AccountID)}
-	elems = append(elems, provisionable...)
 	// This separator is just an arbitrary string that is very unlikely to be
 	// encountered in the wild in account IDs or provisionable labels.
 	const separator = "$;~$"
