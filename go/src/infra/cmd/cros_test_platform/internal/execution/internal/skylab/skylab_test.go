@@ -721,14 +721,24 @@ func TestRetries(t *testing.T) {
 				So(err, ShouldBeNil)
 				response := run.Response(swarming)
 
-				Convey("each attempt request should have a unique logdog url.", func() {
+				Convey("each attempt request should have a unique logdog url in the.", func() {
 					s := map[string]bool{}
 					for _, req := range swarming.createCalls {
-						url, ok := extractLogdogUrl(req.TaskSlices[0].Properties.Command)
+						url, ok := extractLogdogUrlFromCommand(req.TaskSlices[0].Properties.Command)
 						So(ok, ShouldBeTrue)
 						s[url] = true
 					}
 					So(s, ShouldHaveLength, len(swarming.createCalls))
+				})
+
+				// TODO(crbug.com/1003874, pprabhu) This test case is in the wrong place.
+				// Once the hack to manipulate logdog URL is removed, this block can also be dropped.
+				Convey("the logdog url in the command and in tags should match.", func() {
+					for _, req := range swarming.createCalls {
+						cmdURL, _ := extractLogdogUrlFromCommand(req.TaskSlices[0].Properties.Command)
+						tagURL := extractLogdogUrlFromTags(req.Tags)
+						So(cmdURL, ShouldEqual, tagURL)
+					}
 				})
 
 				Convey("then the launched task count should be correct.", func() {
@@ -744,13 +754,22 @@ func TestRetries(t *testing.T) {
 	})
 }
 
-func extractLogdogUrl(command []string) (string, bool) {
+func extractLogdogUrlFromCommand(command []string) (string, bool) {
 	for i, s := range command[:len(command)-1] {
 		if s == "-logdog-annotation-url" {
 			return command[i+1], true
 		}
 	}
 	return "", false
+}
+
+func extractLogdogUrlFromTags(tags []string) string {
+	for _, s := range tags {
+		if strings.HasPrefix(s, "log_location:") {
+			return s[len("log_location:"):]
+		}
+	}
+	return ""
 }
 
 func TestClientTestArg(t *testing.T) {

@@ -9,10 +9,13 @@ package skylab
 import (
 	"context"
 	"fmt"
+	"regexp"
+	"strings"
 	"sync"
 	"time"
 
 	"github.com/golang/protobuf/ptypes"
+	"github.com/google/uuid"
 
 	build_api "go.chromium.org/chromiumos/infra/proto/go/chromite/api"
 	"go.chromium.org/chromiumos/infra/proto/go/test_platform"
@@ -37,24 +40,32 @@ import (
 // TaskSet encapsulates the running state of a set of tasks, to satisfy
 // a Skylab Execution.
 type TaskSet struct {
-	testRuns     []*testRun
-	params       *test_platform.Request_Params
-	workerConfig *config.Config_SkylabWorker
-	retries      int32
+	testRuns []*testRun
+	params   *test_platform.Request_Params
+	retries  int32
 	// complete indicates that the TaskSet ran to completion of all tasks.
 	complete bool
 	// running indicates that the TaskSet is still running.
 	running bool
-
-	parentTaskID string
 }
 
 type testRun struct {
 	invocation *steps.EnumerationResponse_AutotestInvocation
+	Args       request.Args
 	// Do not read from or mutate attempts without holding appropriate lock
 	// on l.
 	attempts []*attempt
 	l        sync.RWMutex
+}
+
+func newTestRun(ctx context.Context, invocation *steps.EnumerationResponse_AutotestInvocation, params *test_platform.Request_Params, workerConfig *config.Config_SkylabWorker, parentTaskID string) (*testRun, error) {
+	t := testRun{invocation: invocation}
+	a, err := t.RequestArgs(ctx, params, workerConfig, parentTaskID)
+	if err != nil {
+		return nil, errors.Annotate(err, "new test run").Err()
+	}
+	t.Args = a
+	return &t, nil
 }
 
 func (t *testRun) addAttempt(a *attempt) {
@@ -224,14 +235,16 @@ func (a *attempt) complete() bool {
 func NewTaskSet(ctx context.Context, tests []*steps.EnumerationResponse_AutotestInvocation, params *test_platform.Request_Params, workerConfig *config.Config_SkylabWorker, parentTaskID string) (*TaskSet, error) {
 	testRuns := make([]*testRun, len(tests))
 	for i, test := range tests {
-		testRuns[i] = &testRun{invocation: test}
+		t, err := newTestRun(ctx, test, params, workerConfig, parentTaskID)
+		if err != nil {
+			return nil, errors.Annotate(err, "new task set").Err()
+		}
+		testRuns[i] = t
 	}
 	return &TaskSet{
-		testRuns:     testRuns,
-		params:       params,
-		workerConfig: workerConfig,
-		running:      true,
-		parentTaskID: parentTaskID,
+		testRuns: testRuns,
+		params:   params,
+		running:  true,
 	}, nil
 }
 
@@ -267,12 +280,7 @@ func (r *TaskSet) launchAll(ctx context.Context, client swarming.Client) error {
 }
 
 func (r *TaskSet) launchSingle(ctx context.Context, client swarming.Client, tr *testRun) error {
-	args, err := tr.RequestArgs(ctx, r.params, r.workerConfig, r.parentTaskID)
-	if err != nil {
-		return errors.Annotate(err, "launch test named %s", tr.invocation.Test.Name).Err()
-	}
-
-	req, err := args.SwarmingNewTaskRequest()
+	req, err := tr.Args.SwarmingNewTaskRequest()
 	if err != nil {
 		return errors.Annotate(err, "launch test named %s", tr.invocation.Test.Name).Err()
 	}
@@ -332,6 +340,7 @@ func (r *TaskSet) tick(ctx context.Context, client swarming.Client, gf isolate.G
 		if shouldRetry {
 			complete = false
 			logging.Debugf(ctx, "Retrying %s", testRun.invocation.Test.Name)
+			updateLogDogURL(&testRun.Args)
 			if err := r.launchSingle(ctx, client, testRun); err != nil {
 				return false, errors.Annotate(err, "tick for task %s: retry test", latestAttempt.taskID).Err()
 			}
@@ -342,6 +351,30 @@ func (r *TaskSet) tick(ctx context.Context, client swarming.Client, gf isolate.G
 	}
 
 	return complete, nil
+}
+
+var logdogURLPattern = regexp.MustCompile(`logdog\://([\w-_]*)/([\w-_]*)/skylab/[\w-_]*/\+/annotations`)
+
+// updateLogDogURL is a terrible hack to assist refactoring this package.
+// TODO(crbug.com/1003874, pprabhu) Drop this hack at the top of the refactor
+// stack.
+func updateLogDogURL(a *request.Args) {
+	parts := logdogURLPattern.FindStringSubmatch(a.Cmd.LogDogAnnotationURL)
+	if len(parts) != 3 {
+		panic(fmt.Sprintf("Malformed logdog URL %s", a.Cmd.LogDogAnnotationURL))
+	}
+	url := fmt.Sprintf("logdog://%s/%s/skylab/%s/+/annotations", parts[1], parts[2], uuid.New().String())
+	(&a.Cmd).LogDogAnnotationURL = url
+
+	// Clone tags slice before modification.
+	tags := make([]string, len(a.SwarmingTags))
+	copy(tags, a.SwarmingTags)
+	a.SwarmingTags = tags
+	for i, t := range a.SwarmingTags {
+		if strings.HasPrefix(t, "log_location:") {
+			a.SwarmingTags[i] = "log_location:" + url
+		}
+	}
 }
 
 // fetchResults fetches the latest swarming and isolate state of the given attempt,
