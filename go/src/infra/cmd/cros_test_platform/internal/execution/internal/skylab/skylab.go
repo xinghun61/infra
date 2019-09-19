@@ -9,6 +9,7 @@ package skylab
 import (
 	"context"
 	"fmt"
+	"math"
 	"regexp"
 	"strings"
 	"sync"
@@ -40,9 +41,9 @@ import (
 // TaskSet encapsulates the running state of a set of tasks, to satisfy
 // a Skylab Execution.
 type TaskSet struct {
-	testRuns []*testRun
-	params   *test_platform.Request_Params
-	retries  int32
+	testRuns         []*testRun
+	globalMaxRetries int32
+	retries          int32
 	// complete indicates that the TaskSet ran to completion of all tasks.
 	complete bool
 	// running indicates that the TaskSet is still running.
@@ -50,8 +51,9 @@ type TaskSet struct {
 }
 
 type testRun struct {
-	invocation *steps.EnumerationResponse_AutotestInvocation
-	Args       request.Args
+	invocation  *steps.EnumerationResponse_AutotestInvocation
+	Args        request.Args
+	maxAttempts int
 	// Do not read from or mutate attempts without holding appropriate lock
 	// on l.
 	attempts []*attempt
@@ -65,7 +67,22 @@ func newTestRun(ctx context.Context, invocation *steps.EnumerationResponse_Autot
 		return nil, errors.Annotate(err, "new test run").Err()
 	}
 	t.Args = a
+	t.maxAttempts = 1 + int(inferTestMaxRetries(invocation))
 	return &t, nil
+}
+
+func inferTestMaxRetries(inv *steps.EnumerationResponse_AutotestInvocation) int32 {
+	if !inv.GetTest().GetAllowRetries() {
+		return 0
+	}
+	return maxInt32IfZero(inv.GetTest().GetMaxRetries())
+}
+
+func maxInt32IfZero(v int32) int32 {
+	if v == 0 {
+		return int32(math.MaxInt32)
+	}
+	return v
 }
 
 func (t *testRun) addAttempt(a *attempt) {
@@ -79,6 +96,18 @@ func (t *testRun) getAttempts() []*attempt {
 	val := t.attempts
 	t.l.RUnlock()
 	return val
+}
+
+func (t *testRun) AttemptsRemaining() int {
+	r := t.maxAttempts - len(t.getAttempts())
+	if r > 0 {
+		return r
+	}
+	return 0
+}
+
+func (t *testRun) AttemptedAtLeastOnce() bool {
+	return len(t.getAttempts()) > 0
 }
 
 func (t *testRun) RequestArgs(ctx context.Context, params *test_platform.Request_Params, workerConfig *config.Config_SkylabWorker, parentTaskID string) (request.Args, error) {
@@ -242,10 +271,17 @@ func NewTaskSet(ctx context.Context, tests []*steps.EnumerationResponse_Autotest
 		testRuns[i] = t
 	}
 	return &TaskSet{
-		testRuns: testRuns,
-		params:   params,
-		running:  true,
+		testRuns:         testRuns,
+		globalMaxRetries: inferGlobalMaxRetries(params),
+		running:          true,
 	}, nil
+}
+
+func inferGlobalMaxRetries(params *test_platform.Request_Params) int32 {
+	if !params.GetRetry().GetAllow() {
+		return 0
+	}
+	return maxInt32IfZero(params.GetRetry().GetMax())
 }
 
 // LaunchAndWait launches a skylab execution and waits for it to complete,
@@ -416,32 +452,16 @@ func (r *TaskSet) fetchResults(ctx context.Context, a *attempt, client swarming.
 }
 
 // shouldRetry computes if the given testRun should be retried.
-//
-// This will panic if the testRun has never been launched.
 func (r *TaskSet) shouldRetry(tr *testRun) (bool, error) {
-	if r.params.Retry == nil {
-		return false, nil
-	}
-	if !r.params.Retry.Allow {
-		return false, nil
-	}
-	max := r.params.Retry.Max
-	if max != 0 && r.retries >= max {
-		return false, nil
-	}
-	if !tr.invocation.Test.AllowRetries {
-		return false, nil
-	}
-	attempts := tr.getAttempts()
-	attemptCount := len(attempts)
-	if attemptCount < 1 {
+	if !tr.AttemptedAtLeastOnce() {
 		return false, errors.Reason("should retry: can't retry a never-tried test").Err()
 	}
-	// Allow up to MaxRetries + 1 total attempts of a given test.
-	if attemptCount > int(tr.invocation.Test.MaxRetries) {
+	if r.globalRetriesRemaining() <= 0 || tr.AttemptsRemaining() <= 0 {
 		return false, nil
 	}
-	latestAttempt := attempts[attemptCount-1]
+
+	attempts := tr.getAttempts()
+	latestAttempt := attempts[len(attempts)-1]
 	switch verdict := flattenToVerdict(latestAttempt.autotestResult.GetTestCases()); verdict {
 	case test_platform.TaskState_VERDICT_UNSPECIFIED:
 		fallthrough
@@ -454,6 +474,10 @@ func (r *TaskSet) shouldRetry(tr *testRun) (bool, error) {
 	default:
 		return false, errors.Reason("should retry: unknown verdict %s", verdict.String()).Err()
 	}
+}
+
+func (r *TaskSet) globalRetriesRemaining() int32 {
+	return r.globalMaxRetries - r.retries
 }
 
 func toInventoryLabels(params *test_platform.Request_Params, deps []*build_api.AutotestTaskDependency) (*inventory.SchedulableLabels, error) {

@@ -27,6 +27,7 @@ import (
 	swarming_api "go.chromium.org/luci/common/api/swarming/swarming/v1"
 	"go.chromium.org/luci/common/clock"
 	"go.chromium.org/luci/common/clock/testclock"
+	"go.chromium.org/luci/common/data/stringset"
 	"go.chromium.org/luci/common/errors"
 	"go.chromium.org/luci/common/isolated"
 	"go.chromium.org/luci/swarming/proto/jsonrpc"
@@ -609,6 +610,14 @@ func TestInvocationKeyvals(t *testing.T) {
 	})
 }
 
+func invocationsWithServerTests(names ...string) []*steps.EnumerationResponse_AutotestInvocation {
+	ret := make([]*steps.EnumerationResponse_AutotestInvocation, len(names))
+	for i, n := range names {
+		ret[i] = serverTestInvocation(n, "")
+	}
+	return ret
+}
+
 func TestRetries(t *testing.T) {
 	Convey("Given a test with", t, func() {
 		ctx := context.Background()
@@ -619,13 +628,13 @@ func TestRetries(t *testing.T) {
 			ts.Add(2 * d)
 		})
 		swarming := newFakeSwarming("")
-		invs := []*steps.EnumerationResponse_AutotestInvocation{serverTestInvocation("name1", "")}
 		params := basicParams()
 		getter := newFakeGetter()
 		gf := fakeGetterFactory(getter)
 
 		cases := []struct {
-			name string
+			name        string
+			invocations []*steps.EnumerationResponse_AutotestInvocation
 			// autotestResult will be returned by all attempts of this test.
 			autotestResult *skylab_test_runner.Result_Autotest
 			retryParams    *test_platform.Request_Params_Retry
@@ -636,13 +645,15 @@ func TestRetries(t *testing.T) {
 			expectedRetryCount int
 		}{
 			{
-				name:           "no retry configuration in test or request params",
+				name:           "1 test; no retry configuration in test or request params",
+				invocations:    invocationsWithServerTests("name1"),
 				autotestResult: failingResult(),
 
 				expectedRetryCount: 0,
 			},
 			{
-				name: "passing test; retries allowed",
+				name:        "1 passing test; retries allowed",
+				invocations: invocationsWithServerTests("name1"),
 				retryParams: &test_platform.Request_Params_Retry{
 					Allow: true,
 				},
@@ -653,7 +664,8 @@ func TestRetries(t *testing.T) {
 				expectedRetryCount: 0,
 			},
 			{
-				name: "failing test; retries disabled globally",
+				name:        "1 failing test; retries disabled globally",
+				invocations: invocationsWithServerTests("name1"),
 				retryParams: &test_platform.Request_Params_Retry{
 					Allow: false,
 				},
@@ -664,7 +676,8 @@ func TestRetries(t *testing.T) {
 				expectedRetryCount: 0,
 			},
 			{
-				name: "failing test; retries allowed globally and for test",
+				name:        "1 failing test; retries allowed globally and for test",
+				invocations: invocationsWithServerTests("name1"),
 				retryParams: &test_platform.Request_Params_Retry{
 					Allow: true,
 				},
@@ -675,7 +688,8 @@ func TestRetries(t *testing.T) {
 				expectedRetryCount: 1,
 			},
 			{
-				name: "failing test; retries allowed globally, disabled for test",
+				name:        "1 failing test; retries allowed globally, disabled for test",
+				invocations: invocationsWithServerTests("name1"),
 				retryParams: &test_platform.Request_Params_Retry{
 					Allow: true,
 				},
@@ -685,7 +699,8 @@ func TestRetries(t *testing.T) {
 				expectedRetryCount: 0,
 			},
 			{
-				name: "failing test; retries allowed globally with test maximum",
+				name:        "1 failing test; retries allowed globally with test maximum",
+				invocations: invocationsWithServerTests("name1"),
 				retryParams: &test_platform.Request_Params_Retry{
 					Allow: true,
 				},
@@ -696,13 +711,51 @@ func TestRetries(t *testing.T) {
 				expectedRetryCount: 10,
 			},
 			{
-				name: "failing test; retries allowed globally with global maximum",
+				name:        "1 failing test; retries allowed globally with global maximum",
+				invocations: invocationsWithServerTests("name1"),
 				retryParams: &test_platform.Request_Params_Retry{
 					Allow: true,
 					Max:   5,
 				},
 				testAllowRetry: true,
-				testMaxRetry:   10,
+				autotestResult: failingResult(),
+
+				expectedRetryCount: 5,
+			},
+			{
+				name:        "1 failing test; retries allowed globally with global maximum smaller than test maxium",
+				invocations: invocationsWithServerTests("name1"),
+				retryParams: &test_platform.Request_Params_Retry{
+					Allow: true,
+					Max:   5,
+				},
+				testAllowRetry: true,
+				testMaxRetry:   7,
+				autotestResult: failingResult(),
+
+				expectedRetryCount: 5,
+			},
+			{
+				name:        "1 failing test; retries allowed globally with test maximum smaller than global maximum",
+				invocations: invocationsWithServerTests("name1"),
+				retryParams: &test_platform.Request_Params_Retry{
+					Allow: true,
+					Max:   7,
+				},
+				testAllowRetry: true,
+				testMaxRetry:   5,
+				autotestResult: failingResult(),
+
+				expectedRetryCount: 5,
+			},
+			{
+				name:        "2 failing tests; retries allowed globally with global maximum",
+				invocations: invocationsWithServerTests("name1", "name2"),
+				retryParams: &test_platform.Request_Params_Retry{
+					Allow: true,
+					Max:   5,
+				},
+				testAllowRetry: true,
 				autotestResult: failingResult(),
 
 				expectedRetryCount: 5,
@@ -712,10 +765,11 @@ func TestRetries(t *testing.T) {
 			Convey(c.name, func() {
 				getter.SetAutotestResult(c.autotestResult)
 				params.Retry = c.retryParams
-				invs[0].Test.AllowRetries = c.testAllowRetry
-				invs[0].Test.MaxRetries = c.testMaxRetry
-
-				run, err := skylab.NewTaskSet(ctx, invs, params, basicConfig(), "foo-parent-task-id")
+				for _, inv := range c.invocations {
+					inv.Test.AllowRetries = c.testAllowRetry
+					inv.Test.MaxRetries = c.testMaxRetry
+				}
+				run, err := skylab.NewTaskSet(ctx, c.invocations, params, basicConfig(), "foo-parent-task-id")
 				So(err, ShouldBeNil)
 				err = run.LaunchAndWait(ctx, swarming, gf)
 				So(err, ShouldBeNil)
@@ -742,12 +796,16 @@ func TestRetries(t *testing.T) {
 				})
 
 				Convey("then the launched task count should be correct.", func() {
-					So(response.TaskResults, ShouldHaveLength, c.expectedRetryCount+1)
+					// Each test is tried at least once.
+					attemptCount := len(c.invocations) + c.expectedRetryCount
+					So(response.TaskResults, ShouldHaveLength, attemptCount)
 				})
-				Convey("then task attempt numbers should be correct.", func() {
-					for i, res := range response.TaskResults {
-						So(res.Attempt, ShouldEqual, i)
+				Convey("then task (name, attempt) should be unique.", func() {
+					s := make(stringset.Set)
+					for _, res := range response.TaskResults {
+						s.Add(fmt.Sprintf("%s__%d", res.Name, res.Attempt))
 					}
+					So(s, ShouldHaveLength, len(response.TaskResults))
 				})
 			})
 		}
