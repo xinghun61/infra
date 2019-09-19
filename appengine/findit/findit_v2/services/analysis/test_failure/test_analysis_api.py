@@ -161,8 +161,10 @@ class TestAnalysisAPI(AnalysisAPI):
         },
     ]
 
-  def _GetRerunBuildInputProperties(self, project_api, test_failures):
-    return project_api.GetTestRerunBuildInputProperties(test_failures)
+  def _GetRerunBuildInputProperties(self, project_api, test_failures,
+                                    analyzed_build_id):
+    return project_api.GetTestRerunBuildInputProperties(test_failures,
+                                                        analyzed_build_id)
 
   def _GetFailureKeysToAnalyze(self, failure_entities, project_api):
     """Gets failures that'll actually be analyzed in the analysis.

@@ -35,10 +35,10 @@ class DummyProjectAPI(ProjectAPI):  # pragma: no cover.
   def GetTestFailures(self, *_):
     pass
 
-  def GetCompileRerunBuildInputProperties(self, _):
+  def GetCompileRerunBuildInputProperties(self, *_):
     pass
 
-  def GetTestRerunBuildInputProperties(self, _):
+  def GetTestRerunBuildInputProperties(self, *_):
     pass
 
 

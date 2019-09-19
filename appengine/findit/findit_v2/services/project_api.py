@@ -120,11 +120,14 @@ class ProjectAPI(object):  # pragma: no cover.
     # pylint: disable=unused-argument
     raise NotImplementedError
 
-  def GetCompileRerunBuildInputProperties(self, failed_targets):
+  def GetCompileRerunBuildInputProperties(self, failed_targets,
+                                          analyzed_build_id):
     """Gets input properties of a rerun build for compile failures.
 
     Args:
       failed_targets (list of str): Targets Findit wants to rerun in the build.
+      analyzed_build_id (int): Buildbucket Id of the analyzed build, may be used
+          to derive properties for reruns.
 
     Returns:
       (dict): input properties of the rerun build."""
@@ -206,7 +209,7 @@ class ProjectAPI(object):  # pragma: no cover.
     # pylint: disable=unused-argument
     return {}
 
-  def GetTestRerunBuildInputProperties(self, tests):
+  def GetTestRerunBuildInputProperties(self, tests, analyzed_build_id):
     """Gets input properties of a rerun build for test failures.
 
     Args:
@@ -226,6 +229,8 @@ class ProjectAPI(object):  # pragma: no cover.
           },
         },
       }
+      analyzed_build_id (int): Buildbucket Id of the analyzed build, may be used
+          to derive properties for reruns.
 
     Returns:
       (dict): input properties of the rerun build."""

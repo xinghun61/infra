@@ -223,7 +223,8 @@ class AnalysisAPI(object):
     """
     raise NotImplementedError
 
-  def _GetRerunBuildInputProperties(self, project_api, rerun_failures):
+  def _GetRerunBuildInputProperties(self, project_api, rerun_failures,
+                                    analyzed_build_id):
     """Gets project specific input properties to rerun failures."""
     raise NotImplementedError
 
@@ -1213,7 +1214,7 @@ class AnalysisAPI(object):
     luci_project = context.luci_project_name
     project_api = projects.GetProjectAPI(luci_project)
     input_properties = self._GetRerunBuildInputProperties(
-        project_api, atomic_failures)
+        project_api, atomic_failures, analyzed_build_id)
     if input_properties is None:
       return ('Failed to get input properties to trigger rerun build'
               'for build {}.'.format(analyzed_build_id))

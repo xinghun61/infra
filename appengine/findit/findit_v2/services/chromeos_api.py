@@ -341,7 +341,9 @@ class ChromeOSProjectAPI(ProjectAPI):
         bucket=_BISECT_BUCKET,
         builder=rerun_builder)
 
-  def GetCompileRerunBuildInputProperties(self, failed_targets):
+  def GetCompileRerunBuildInputProperties(self, failed_targets,
+                                          analyzed_build_id):
+    # pylint: disable=unused-argument
     targets = set()
     for step_targets in failed_targets.itervalues():
       targets.update(step_targets)
@@ -356,7 +358,7 @@ class ChromeOSProjectAPI(ProjectAPI):
         },
     }
 
-  def GetTestRerunBuildInputProperties(self, tests):
+  def GetTestRerunBuildInputProperties(self, tests, analyzed_build_id):
     """Gets build input properties to trigger a rerun build for test failures.
 
     Args:
@@ -370,6 +372,8 @@ class ChromeOSProjectAPI(ProjectAPI):
           },
         },
       }
+      analyzed_build_id(int): Buildbucket id of the build being analyzed.
+          (Ignored in this project).
 
     Returns:
       dict:
@@ -387,6 +391,7 @@ class ChromeOSProjectAPI(ProjectAPI):
         },
     }
     """
+    # pylint: disable=unused-argument
     bisect_input = defaultdict(list)
     for step_failure in tests.itervalues():
       failure_type = step_failure.get('properties', {}).get('failure_type')

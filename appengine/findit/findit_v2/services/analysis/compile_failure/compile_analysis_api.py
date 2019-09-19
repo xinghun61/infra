@@ -150,8 +150,10 @@ class CompileAnalysisAPI(AnalysisAPI):
         },
     ]
 
-  def _GetRerunBuildInputProperties(self, project_api, rerun_failures):
-    return project_api.GetCompileRerunBuildInputProperties(rerun_failures)
+  def _GetRerunBuildInputProperties(self, project_api, rerun_failures,
+                                    analyzed_build_id):
+    return project_api.GetCompileRerunBuildInputProperties(
+        rerun_failures, analyzed_build_id)
 
   def GetSuspectedCulprits(self, project_api, context, build,
                            first_failures_in_current_build):

@@ -89,7 +89,8 @@ class ChromiumProjectAPI(ProjectAPI):
   def GetRerunBuilderId(self, build):  # pragma: no cover.
     raise NotImplementedError
 
-  def GetTestRerunBuildInputProperties(self, tests):  # pragma: no cover.
+  def GetTestRerunBuildInputProperties(self, tests,
+                                       analyzed_build_id):  # pragma: no cover.
     raise NotImplementedError
 
   def GetTestFailureInfo(self, context, build, first_failures_in_current_build):

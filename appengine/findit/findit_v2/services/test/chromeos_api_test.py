@@ -278,11 +278,12 @@ class ChromeOSProjectAPITest(wf_testcase.TestCase):
 
     self.assertEqual(
         expected_prop,
-        ChromeOSProjectAPI().GetCompileRerunBuildInputProperties(targets))
+        ChromeOSProjectAPI().GetCompileRerunBuildInputProperties(
+            targets, 8000000000122))
 
   def testGetCompileRerunBuildInputPropertiesOtherStep(self):
     self.assertIsNone(ChromeOSProjectAPI().GetCompileRerunBuildInputProperties(
-        {}))
+        {}, 8000000000122))
 
   def testGetFailuresWithMatchingCompileFailureGroupsNoExistingGroup(self):
     build_id = 8000000000122
@@ -529,7 +530,8 @@ class ChromeOSProjectAPITest(wf_testcase.TestCase):
 
     self.assertEqual(
         expected_input,
-        ChromeOSProjectAPI().GetTestRerunBuildInputProperties(tests))
+        ChromeOSProjectAPI().GetTestRerunBuildInputProperties(
+            tests, 8000000000122))
 
   def testGetFailureKeysToAnalyzeTestFailures(self):
     failure_entities = []

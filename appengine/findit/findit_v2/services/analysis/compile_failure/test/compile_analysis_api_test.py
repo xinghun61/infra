@@ -167,8 +167,8 @@ class CompileAnalysisAPITest(wf_testcase.TestCase):
 
   @mock.patch.object(ChromiumProjectAPI, 'GetCompileRerunBuildInputProperties')
   def testGetRerunBuildInputProperties(self, mock_input_properties):
-    self.analysis_api._GetRerunBuildInputProperties(ChromiumProjectAPI(),
-                                                    {'compile': ['a.o']})
+    self.analysis_api._GetRerunBuildInputProperties(
+        ChromiumProjectAPI(), {'compile': ['a.o']}, 8000000000122)
     self.assertTrue(mock_input_properties.called)
 
   def testGetFailureGroupOfBuild(self):
