@@ -113,6 +113,14 @@ func (t *testRun) Completed() bool {
 	return a != nil && a.Completed()
 }
 
+func (t *testRun) TaskResult(urler swarming.URLer) []*steps.ExecuteResponse_TaskResult {
+	ret := make([]*steps.ExecuteResponse_TaskResult, len(t.attempts))
+	for i, a := range t.attempts {
+		ret[i] = toTaskResult(t.invocation.Test.Name, a, i, urler)
+	}
+	return ret
+}
+
 func (t *testRun) GetLatestAttempt() *attempt {
 	if len(t.attempts) == 0 {
 		return nil
@@ -271,6 +279,28 @@ func (a *attempt) Completed() bool {
 	return a.autotestResult != nil
 }
 
+func (a *attempt) Verdict() test_platform.TaskState_Verdict {
+	if !a.Completed() {
+		return test_platform.TaskState_VERDICT_UNSPECIFIED
+	}
+
+	// By default (if no test cases ran), then there is no verdict.
+	verdict := test_platform.TaskState_VERDICT_NO_VERDICT
+	for _, c := range a.autotestResult.GetTestCases() {
+		switch c.Verdict {
+		case skylab_test_runner.Result_Autotest_TestCase_VERDICT_FAIL:
+			// Any case failing means the flat verdict is a failure.
+			return test_platform.TaskState_VERDICT_FAILED
+		case skylab_test_runner.Result_Autotest_TestCase_VERDICT_PASS:
+			// Otherwise, at least 1 passing verdict means a pass.
+			verdict = test_platform.TaskState_VERDICT_PASSED
+		case skylab_test_runner.Result_Autotest_TestCase_VERDICT_UNDEFINED:
+			// Undefined verdicts do not affect flat verdict.
+		}
+	}
+	return verdict
+}
+
 // FetchResults fetches the latest swarming and isolate state of the given attempt,
 // and updates the attempt accordingly.
 func (a *attempt) FetchResults(ctx context.Context, client swarming.Client, gf isolate.GetterFactory) error {
@@ -395,7 +425,7 @@ func (r *TaskSet) tick(ctx context.Context, client swarming.Client, gf isolate.G
 			continue
 		}
 
-		logging.Debugf(ctx, "Task %s (%s) completed with verdict %s", latestAttempt.taskID, testRun.invocation.Test.Name, flattenToVerdict(latestAttempt.autotestResult.GetTestCases()))
+		logging.Debugf(ctx, "Task %s (%s) completed with verdict %s", latestAttempt.taskID, testRun.invocation.Test.Name, latestAttempt.Verdict())
 
 		shouldRetry, err := r.shouldRetry(testRun)
 		if err != nil {
@@ -489,7 +519,7 @@ func (r *TaskSet) shouldRetry(tr *testRun) (bool, error) {
 	}
 
 	latestAttempt := tr.GetLatestAttempt()
-	switch verdict := flattenToVerdict(latestAttempt.autotestResult.GetTestCases()); verdict {
+	switch verdict := latestAttempt.Verdict(); verdict {
 	case test_platform.TaskState_VERDICT_UNSPECIFIED:
 		fallthrough
 	case test_platform.TaskState_VERDICT_FAILED:
@@ -623,9 +653,9 @@ var taskStateToLifeCycle = map[jsonrpc.TaskState]test_platform.TaskState_LifeCyc
 
 // Response constructs a response based on the current state of the
 // TaskSet.
-func (r *TaskSet) Response(swarming swarming.URLer) *steps.ExecuteResponse {
+func (r *TaskSet) Response(urler swarming.URLer) *steps.ExecuteResponse {
 	resp := &steps.ExecuteResponse{}
-	resp.TaskResults = toTaskResults(r.testRuns, swarming)
+	resp.TaskResults = r.taskResults(urler)
 
 	var verdict test_platform.TaskState_Verdict
 	var lifecycle test_platform.TaskState_LifeCycle
@@ -661,4 +691,12 @@ func (r *TaskSet) Response(swarming swarming.URLer) *steps.ExecuteResponse {
 	}
 
 	return resp
+}
+
+func (r *TaskSet) taskResults(urler swarming.URLer) []*steps.ExecuteResponse_TaskResult {
+	var results []*steps.ExecuteResponse_TaskResult
+	for _, test := range r.testRuns {
+		results = append(results, test.TaskResult(urler)...)
+	}
+	return results
 }

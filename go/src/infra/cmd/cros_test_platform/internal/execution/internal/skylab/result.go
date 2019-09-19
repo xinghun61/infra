@@ -63,16 +63,6 @@ func getAutotestResult(ctx context.Context, sResult *swarming_api.SwarmingRpcsTa
 	return a, nil
 }
 
-func toTaskResults(testRuns []*testRun, urler swarming.URLer) []*steps.ExecuteResponse_TaskResult {
-	var results []*steps.ExecuteResponse_TaskResult
-	for _, test := range testRuns {
-		for num, attempt := range test.attempts {
-			results = append(results, toTaskResult(test.invocation.Test.Name, attempt, num, urler))
-		}
-	}
-	return results
-}
-
 func toTaskResult(testName string, attempt *attempt, attemptNum int, urler swarming.URLer) *steps.ExecuteResponse_TaskResult {
 	var verdict test_platform.TaskState_Verdict
 
@@ -82,7 +72,7 @@ func toTaskResult(testName string, attempt *attempt, attemptNum int, urler swarm
 	case attempt.autotestResult.Incomplete:
 		verdict = test_platform.TaskState_VERDICT_FAILED
 	default:
-		verdict = flattenToVerdict(attempt.autotestResult.TestCases)
+		verdict = attempt.Verdict()
 	}
 
 	// TODO(akeshet): Determine this URL in a more principled way. See crbug.com/987487
@@ -102,22 +92,4 @@ func toTaskResult(testName string, attempt *attempt, attemptNum int, urler swarm
 		LogUrl:  logURL,
 		Attempt: int32(attemptNum),
 	}
-}
-
-func flattenToVerdict(tests []*skylab_test_runner.Result_Autotest_TestCase) test_platform.TaskState_Verdict {
-	// By default (if no test cases ran), then there is no verdict.
-	verdict := test_platform.TaskState_VERDICT_NO_VERDICT
-	for _, c := range tests {
-		switch c.Verdict {
-		case skylab_test_runner.Result_Autotest_TestCase_VERDICT_FAIL:
-			// Any case failing means the flat verdict is a failure.
-			return test_platform.TaskState_VERDICT_FAILED
-		case skylab_test_runner.Result_Autotest_TestCase_VERDICT_PASS:
-			// Otherwise, at least 1 passing verdict means a pass.
-			verdict = test_platform.TaskState_VERDICT_PASSED
-		case skylab_test_runner.Result_Autotest_TestCase_VERDICT_UNDEFINED:
-			// Undefined verdicts do not affect flat verdict.
-		}
-	}
-	return verdict
 }
