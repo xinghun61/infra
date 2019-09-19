@@ -46,6 +46,11 @@ _LOCATION_BASED_TAGS = [
     'component',
 ]
 
+_STEP_BASED_TAGS = [
+    'step',
+    'test_type',
+]
+
 
 def _GetQueryParameters():
   return [
@@ -295,6 +300,78 @@ def _CreateLocalTests(row, local_tests, component_mapping, watchlists):
   local_tests[test_key]['issue_keys'].update(_CreateIssueKeys(bugs))
 
 
+def _TagsNeedToBeUpdated(test, new_tags):
+  """Determines if a test's tags need to be updated.
+
+  GPU tests and Webkit Layout Tests need to update their tags if new_tags do not
+  equal existing test.tags.
+  GTests need to update their tags if the set of step-based tags in new_tags
+  does not equal the set of step-based tags in test.tags. Location-based tags
+  for GTests will be updated in a separate job, therefore existing
+  location-based tags will be kept.
+
+  Args:
+    test (LuciTest): LuciTest for which to get updated test tags.
+    new_tags (set([str])): Test tags generated based on the results of the
+      latest disabled test query.
+
+  Returns:
+    Boolean indicating if a tags should be updated.
+  """
+  if not test_name_util.GTEST_REGEX.match(test.normalized_test_name):
+    return bool(new_tags.symmetric_difference(test.tags))
+
+  existing_step_based_tags = {
+      tag for tag in test.tags if tag.split('::')[0] in _STEP_BASED_TAGS
+  }
+  new_step_based_tags = {
+      tag for tag in new_tags if tag.split('::')[0] in _STEP_BASED_TAGS
+  }
+  return bool(
+      new_step_based_tags.symmetric_difference(existing_step_based_tags))
+
+
+def _GetUpdatedTags(test, new_tags):
+  """Returns most up-to-date tags by comparing new and existing tags.
+
+  Determines most up-to-date and accurate tags based on the following:
+    - Step-based tags must come from new_tags.
+    - For GPU Tests, location-based test tags must always come from new_tags.
+    - For GTests, use existing location-based tags.
+    - For all other tests, use location-based tags from new_tags. If
+      new_tags is empty assume test is no longer disabled and keep existing
+      location-based tags.
+
+  Step-based tags are determined by the step name of each test variant.
+  Therefore, step-based tags must always come from new_tags.
+  Location-based tags are determined by the location of the LuciTest and are not
+  expected to change based on the disabled test variants. Therefore, it is safe
+  to use existing location-based tags when new location-based tags could not be
+  found. This does not hold true for GPU Tests as location-based tags for GPU
+  Tests are dependent on the canonical step name of each test variant.
+
+  Args:
+    test (LuciTest): LuciTest for which to get updated test tags.
+    new_tags (set([str])): Test tags generated based on the results of the
+      latest disabled test query.
+
+  Returns:
+    Most up-to-date and accurate set of tags for a LuciTest.
+  """
+  if test.normalized_step_name == 'telemetry_gpu_integration_test':
+    return new_tags
+  if test_name_util.GTEST_REGEX.match(
+      test.normalized_test_name) or not new_tags:
+    new_step_based_tags = {
+        tag for tag in new_tags if tag.split('::')[0] in _STEP_BASED_TAGS
+    }
+    existing_location_based_tags = {
+        tag for tag in test.tags if tag.split('::')[0] in _LOCATION_BASED_TAGS
+    }
+    return new_step_based_tags.union(existing_location_based_tags)
+  return new_tags
+
+
 @ndb.tasklet
 def _UpdateDatastore(test_key, test_attributes, query_time):
   """Updates a LuciTest's disabled_test_variants, issue_keys, tags in datastore.
@@ -326,7 +403,7 @@ def _UpdateDatastore(test_key, test_attributes, query_time):
   test.issue_keys.extend(new_issue_keys)
   test.issue_keys.sort()
 
-  test.tags = test_attributes.get('tags', set())
+  test.tags = _GetUpdatedTags(test, test_attributes.get('tags', set()))
   test.tags.sort()
 
   test.last_updated_time = query_time
@@ -376,7 +453,7 @@ def _UpdateCurrentlyDisabledTests(local_tests, query_time):
       updated_test_keys.append(local_test[0])
     elif local_test[1]['issue_keys'].difference(remote_test.issue_keys):
       updated_test_keys.append(local_test[0])
-    elif local_test[1]['tags'].symmetric_difference(remote_test.tags):
+    elif _TagsNeedToBeUpdated(remote_test, local_test[1]['tags']):
       updated_test_keys.append(local_test[0])
 
   logging.info('Updating or Creating %d LuciTests: ', len(updated_test_keys))
