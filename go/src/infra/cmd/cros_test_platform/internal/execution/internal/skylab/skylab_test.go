@@ -357,7 +357,7 @@ func TestServiceError(t *testing.T) {
 			swarming.setError(fmt.Errorf("foo error"))
 			err := run.LaunchAndWait(ctx, swarming, gf)
 			So(err, ShouldNotBeNil)
-			So(err.Error(), ShouldContainSubstring, "launch test")
+			So(err.Error(), ShouldContainSubstring, "launch attempt")
 			So(err.Error(), ShouldContainSubstring, "foo error")
 		})
 

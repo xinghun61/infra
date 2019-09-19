@@ -93,6 +93,33 @@ func (t *testRun) AttemptedAtLeastOnce() bool {
 	return len(t.attempts) > 0
 }
 
+func (t *testRun) LaunchAttempt(ctx context.Context, client swarming.Client) error {
+	req, err := t.Args.SwarmingNewTaskRequest()
+	if err != nil {
+		return errors.Annotate(err, "launch attempt for %s", t.invocation.Test.Name).Err()
+	}
+	resp, err := client.CreateTask(ctx, req)
+	if err != nil {
+		return errors.Annotate(err, "launch attempt for %s", t.invocation.Test.Name).Err()
+	}
+	logging.Infof(ctx, "Launched attempt for %s as task %s", t.invocation.Test.Name, client.GetTaskURL(resp.TaskId))
+	t.attempts = append(t.attempts, &attempt{taskID: resp.TaskId})
+	return nil
+}
+
+// Completed determines whether we have completed an attempt for this test.
+func (t *testRun) Completed() bool {
+	a := t.GetLatestAttempt()
+	return a != nil && a.Completed()
+}
+
+func (t *testRun) GetLatestAttempt() *attempt {
+	if len(t.attempts) == 0 {
+		return nil
+	}
+	return t.attempts[len(t.attempts)-1]
+}
+
 func (t *testRun) RequestArgs(ctx context.Context, params *test_platform.Request_Params, workerConfig *config.Config_SkylabWorker, parentTaskID string) (request.Args, error) {
 	isClient, err := t.isClientTest()
 	if err != nil {
@@ -239,8 +266,44 @@ type attempt struct {
 	autotestResult *skylab_test_runner.Result_Autotest
 }
 
-func (a *attempt) complete() bool {
+// Completed returns whether the current attempt is complete.
+func (a *attempt) Completed() bool {
 	return a.autotestResult != nil
+}
+
+// FetchResults fetches the latest swarming and isolate state of the given attempt,
+// and updates the attempt accordingly.
+func (a *attempt) FetchResults(ctx context.Context, client swarming.Client, gf isolate.GetterFactory) error {
+	results, err := client.GetResults(ctx, []string{a.taskID})
+	if err != nil {
+		return errors.Annotate(err, "fetch results").Err()
+	}
+	result, err := unpackResult(results, a.taskID)
+	if err != nil {
+		return errors.Annotate(err, "fetch results").Err()
+	}
+	state, err := swarming.AsTaskState(result.State)
+	if err != nil {
+		return errors.Annotate(err, "fetch results").Err()
+	}
+	a.state = state
+
+	switch {
+	// Task ran to completion.
+	case swarming.CompletedTaskStates[state]:
+		r, err := getAutotestResult(ctx, result, gf)
+		if err != nil {
+			logging.Debugf(ctx, "failed to fetch autotest results for task %s due to error '%s', treating its results as incomplete (failure)", a.taskID, err.Error())
+			r = &skylab_test_runner.Result_Autotest{Incomplete: true}
+		}
+		a.autotestResult = r
+	// Task no longer running, but didn't run to completion.
+	case !swarming.UnfinishedTaskStates[state]:
+		a.autotestResult = &skylab_test_runner.Result_Autotest{Incomplete: true}
+	// Task is still running.
+	default:
+	}
+	return nil
 }
 
 // NewTaskSet creates a new TaskSet.
@@ -291,27 +354,10 @@ var isClientTest = map[build_api.AutotestTest_ExecutionEnvironment]bool{
 
 func (r *TaskSet) launchAll(ctx context.Context, client swarming.Client) error {
 	for _, testRun := range r.testRuns {
-		if err := r.launchSingle(ctx, client, testRun); err != nil {
+		if err := testRun.LaunchAttempt(ctx, client); err != nil {
 			return err
 		}
 	}
-	return nil
-}
-
-func (r *TaskSet) launchSingle(ctx context.Context, client swarming.Client, tr *testRun) error {
-	req, err := tr.Args.SwarmingNewTaskRequest()
-	if err != nil {
-		return errors.Annotate(err, "launch test named %s", tr.invocation.Test.Name).Err()
-	}
-
-	resp, err := client.CreateTask(ctx, req)
-	if err != nil {
-		return errors.Annotate(err, "launch test named %s", tr.invocation.Test.Name).Err()
-	}
-
-	logging.Infof(ctx, "Launched test named %s as task %s", tr.invocation.Test.Name, client.GetTaskURL(resp.TaskId))
-
-	tr.attempts = append(tr.attempts, &attempt{taskID: resp.TaskId})
 	return nil
 }
 
@@ -335,17 +381,16 @@ func (r *TaskSet) tick(ctx context.Context, client swarming.Client, gf isolate.G
 	complete = true
 
 	for _, testRun := range r.testRuns {
-		attempts := testRun.attempts
-		latestAttempt := attempts[len(attempts)-1]
-		if latestAttempt.complete() {
+		if testRun.Completed() {
 			continue
 		}
 
-		if err := r.fetchResults(ctx, latestAttempt, client, gf); err != nil {
+		latestAttempt := testRun.GetLatestAttempt()
+		if err := latestAttempt.FetchResults(ctx, client, gf); err != nil {
 			return false, errors.Annotate(err, "tick for task %s", latestAttempt.taskID).Err()
 		}
 
-		if !latestAttempt.complete() {
+		if !testRun.Completed() {
 			complete = false
 			continue
 		}
@@ -360,7 +405,7 @@ func (r *TaskSet) tick(ctx context.Context, client swarming.Client, gf isolate.G
 			complete = false
 			logging.Debugf(ctx, "Retrying %s", testRun.invocation.Test.Name)
 			updateLogDogURL(&testRun.Args)
-			if err := r.launchSingle(ctx, client, testRun); err != nil {
+			if err := testRun.LaunchAttempt(ctx, client); err != nil {
 				return false, errors.Annotate(err, "tick for task %s: retry test", latestAttempt.taskID).Err()
 			}
 			r.retries++
@@ -443,8 +488,7 @@ func (r *TaskSet) shouldRetry(tr *testRun) (bool, error) {
 		return false, nil
 	}
 
-	attempts := tr.attempts
-	latestAttempt := attempts[len(attempts)-1]
+	latestAttempt := tr.GetLatestAttempt()
 	switch verdict := flattenToVerdict(latestAttempt.autotestResult.GetTestCases()); verdict {
 	case test_platform.TaskState_VERDICT_UNSPECIFIED:
 		fallthrough
