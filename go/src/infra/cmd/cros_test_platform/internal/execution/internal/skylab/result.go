@@ -66,7 +66,7 @@ func getAutotestResult(ctx context.Context, sResult *swarming_api.SwarmingRpcsTa
 func toTaskResults(testRuns []*testRun, urler swarming.URLer) []*steps.ExecuteResponse_TaskResult {
 	var results []*steps.ExecuteResponse_TaskResult
 	for _, test := range testRuns {
-		for num, attempt := range test.getAttempts() {
+		for num, attempt := range test.attempts {
 			results = append(results, toTaskResult(test.invocation.Test.Name, attempt, num, urler))
 		}
 	}

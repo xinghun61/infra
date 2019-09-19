@@ -12,7 +12,6 @@ import (
 	"math"
 	"regexp"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/golang/protobuf/ptypes"
@@ -54,10 +53,7 @@ type testRun struct {
 	invocation  *steps.EnumerationResponse_AutotestInvocation
 	Args        request.Args
 	maxAttempts int
-	// Do not read from or mutate attempts without holding appropriate lock
-	// on l.
-	attempts []*attempt
-	l        sync.RWMutex
+	attempts    []*attempt
 }
 
 func newTestRun(ctx context.Context, invocation *steps.EnumerationResponse_AutotestInvocation, params *test_platform.Request_Params, workerConfig *config.Config_SkylabWorker, parentTaskID string) (*testRun, error) {
@@ -85,21 +81,8 @@ func maxInt32IfZero(v int32) int32 {
 	return v
 }
 
-func (t *testRun) addAttempt(a *attempt) {
-	t.l.Lock()
-	t.attempts = append(t.attempts, a)
-	t.l.Unlock()
-}
-
-func (t *testRun) getAttempts() []*attempt {
-	t.l.RLock()
-	val := t.attempts
-	t.l.RUnlock()
-	return val
-}
-
 func (t *testRun) AttemptsRemaining() int {
-	r := t.maxAttempts - len(t.getAttempts())
+	r := t.maxAttempts - len(t.attempts)
 	if r > 0 {
 		return r
 	}
@@ -107,7 +90,7 @@ func (t *testRun) AttemptsRemaining() int {
 }
 
 func (t *testRun) AttemptedAtLeastOnce() bool {
-	return len(t.getAttempts()) > 0
+	return len(t.attempts) > 0
 }
 
 func (t *testRun) RequestArgs(ctx context.Context, params *test_platform.Request_Params, workerConfig *config.Config_SkylabWorker, parentTaskID string) (request.Args, error) {
@@ -328,7 +311,7 @@ func (r *TaskSet) launchSingle(ctx context.Context, client swarming.Client, tr *
 
 	logging.Infof(ctx, "Launched test named %s as task %s", tr.invocation.Test.Name, client.GetTaskURL(resp.TaskId))
 
-	tr.addAttempt(&attempt{taskID: resp.TaskId})
+	tr.attempts = append(tr.attempts, &attempt{taskID: resp.TaskId})
 	return nil
 }
 
@@ -352,7 +335,7 @@ func (r *TaskSet) tick(ctx context.Context, client swarming.Client, gf isolate.G
 	complete = true
 
 	for _, testRun := range r.testRuns {
-		attempts := testRun.getAttempts()
+		attempts := testRun.attempts
 		latestAttempt := attempts[len(attempts)-1]
 		if latestAttempt.complete() {
 			continue
@@ -460,7 +443,7 @@ func (r *TaskSet) shouldRetry(tr *testRun) (bool, error) {
 		return false, nil
 	}
 
-	attempts := tr.getAttempts()
+	attempts := tr.attempts
 	latestAttempt := attempts[len(attempts)-1]
 	switch verdict := flattenToVerdict(latestAttempt.autotestResult.GetTestCases()); verdict {
 	case test_platform.TaskState_VERDICT_UNSPECIFIED:
