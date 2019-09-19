@@ -106,6 +106,7 @@ _POSTSUBMIT_PLATFORM_INFO_MAP = {
     'libassistant': {
         'bucket': 'master.tryserver.cast-chromecast-internal.gce',
         'builder': 'libassistant-absolute_coverage',
+        'coverage_tool': 'clang',
         'ui_name': 'libassistant code coverage',
     },
 }
