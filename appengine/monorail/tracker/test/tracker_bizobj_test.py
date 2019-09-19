@@ -786,6 +786,24 @@ class BizobjTest(unittest.TestCase):
     self.assertItemsEqual(c1.approval_defs + c2.approval_defs,
                           harmonized.approval_defs)
 
+  def testHarmonizeConfigsMeansOpen(self):
+    c1 = tracker_bizobj.MakeDefaultProjectIssueConfig(789)
+    c2 = tracker_bizobj.MakeDefaultProjectIssueConfig(678)
+    means_open = [("TT", True, True),
+                  ("TF", True, False),
+                  ("FT", False, True),
+                  ("FF", False, False)]
+    tracker_bizobj.SetConfigStatuses(c1, [
+        (x[0], x[0], x[1], False)
+         for x in means_open])
+    tracker_bizobj.SetConfigStatuses(c2, [
+        (x[0], x[0], x[2], False)
+         for x in means_open])
+
+    harmonized = tracker_bizobj.HarmonizeConfigs([c1, c2])
+    for stat in harmonized.well_known_statuses:
+      self.assertEqual(stat.means_open, stat.status != "FF")
+
   def testHarmonizeConfigs_DeletedCustomField(self):
     """Only non-deleted custom fields in configs are included."""
     harmonized = tracker_bizobj.HarmonizeConfigs([self.config])

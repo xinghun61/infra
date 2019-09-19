@@ -569,6 +569,13 @@ def HarmonizeConfigs(config_list):
        for config in config_list])
   harmonized_default_sort_spec = ' '.join(
       config.default_sort_spec for config in config_list)
+  harmonized_means_open = {
+      status: any([stat.means_open
+                   for config in config_list
+                   for stat in config.well_known_statuses
+                   if stat.status == status])
+      for status in harmonized_status_names}
+
   # This col_spec is probably not what the user wants to view because it is
   # too much information.  We join all the col_specs here so that we are sure
   # to lookup all users needed for sorting, even if it is more than needed.
@@ -583,7 +590,7 @@ def HarmonizeConfigs(config_list):
 
   for status_name in harmonized_status_names:
     result_config.well_known_statuses.append(tracker_pb2.StatusDef(
-        status=status_name, means_open=True))
+        status=status_name, means_open=harmonized_means_open[status_name]))
 
   for label_name in harmonized_label_names:
     result_config.well_known_labels.append(tracker_pb2.LabelDef(
