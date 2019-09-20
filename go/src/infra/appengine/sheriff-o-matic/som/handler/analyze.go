@@ -211,13 +211,7 @@ func attachFindItResults(ctx context.Context, failures []messages.BuildFailure, 
 	for i, bf := range failures {
 		stepName := bf.StepAtFault.Step.Name
 		for _, someBuilder := range bf.Builders {
-			buildAlternativeID := messages.BuildIdentifierByNumber{
-				Project: someBuilder.Project,
-				Bucket:  someBuilder.Bucket,
-				Builder: someBuilder.Name,
-				Number:  someBuilder.LatestFailure,
-			}
-			results, err := finditClient.FinditBuildbucket(ctx, &buildAlternativeID, []string{stepName})
+			results, err := finditClient.FinditBuildbucket(ctx, someBuilder.LatestFailure, []string{stepName})
 			if err != nil {
 				logging.Errorf(ctx, "error getting findit results: %v", err)
 			}

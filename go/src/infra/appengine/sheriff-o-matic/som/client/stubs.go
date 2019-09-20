@@ -33,7 +33,7 @@ func (fi *StubFindIt) Findit(ctx context.Context, master *messages.MasterLocatio
 }
 
 // FinditBuildbucket returns FinditBuildbucket results.
-func (fi *StubFindIt) FinditBuildbucket(ctx context.Context, buildAlternativeID *messages.BuildIdentifierByNumber, failedSteps []string) ([]*messages.FinditResultV2, error) {
+func (fi *StubFindIt) FinditBuildbucket(ctx context.Context, buildID int64, failedSteps []string) ([]*messages.FinditResultV2, error) {
 	return fi.Responses, fi.Err
 }
 

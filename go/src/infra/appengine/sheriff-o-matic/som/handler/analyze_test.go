@@ -174,7 +174,7 @@ type mockFindit struct {
 	err error
 }
 
-func (mf *mockFindit) FinditBuildbucket(ctx context.Context, id *messages.BuildIdentifierByNumber, stepNames []string) ([]*messages.FinditResultV2, error) {
+func (mf *mockFindit) FinditBuildbucket(ctx context.Context, id int64, stepNames []string) ([]*messages.FinditResultV2, error) {
 	return mf.res, mf.err
 }
 

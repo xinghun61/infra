@@ -167,7 +167,7 @@ func (tfa *testFailureAnalyzer) Analyze(ctx context.Context, fs []*messages.Buil
 }
 
 func getArtifactsForTest(ctx context.Context, f *messages.BuildStep, name string, trc client.TestResults) ([]ArtifactLink, error) {
-	ret := []ArtifactLink{}
+	var ret []ArtifactLink
 	suiteName := GetTestSuite(f)
 	testResults, err := trc.TestResults(ctx, f.Master, f.Build.BuilderName, suiteName, f.Build.Number)
 	if err != nil {
@@ -349,27 +349,11 @@ func getFinditResultsForTests(ctx context.Context, f *messages.BuildStep, failed
 		return nil, nil
 	}
 
-	finditResults, err := findit.Findit(ctx, f.Master, f.Build.BuilderName, f.Build.Number, []string{name})
-	if err != nil {
-		logging.Warningf(ctx, "ignoring findit error: %s", err)
-	}
-	finditResultsMap := map[string]*messages.FinditResult{}
-	for _, result := range finditResults {
-		finditResultsMap[result.TestName] = result
-	}
 	for _, test := range failedTests {
 		testResult := TestWithResult{
 			TestName:     test,
 			IsFlaky:      false,
 			SuspectedCLs: nil,
-		}
-		result, ok := finditResultsMap[test]
-		if ok {
-			testResult = TestWithResult{
-				TestName:     test,
-				IsFlaky:      result.IsFlakyTest,
-				SuspectedCLs: result.SuspectedCLs,
-			}
 		}
 		TestsWithFinditResults = append(TestsWithFinditResults, testResult)
 	}

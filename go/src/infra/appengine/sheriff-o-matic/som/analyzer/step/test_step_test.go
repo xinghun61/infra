@@ -135,15 +135,6 @@ func TestTestStepFailureAlerts(t *testing.T) {
 							Tests: []TestWithResult{
 								{
 									TestName: "test_a",
-									IsFlaky:  false,
-									SuspectedCLs: []messages.SuspectCL{
-										{
-											RepoName:       "repo",
-											Revision:       "deadbeef",
-											CommitPosition: 1234,
-										},
-									},
-									Artifacts: []ArtifactLink{},
 								},
 							},
 						},
@@ -216,32 +207,12 @@ func TestTestStepFailureAlerts(t *testing.T) {
 							Tests: []TestWithResult{
 								{
 									TestName: "test_a",
-									IsFlaky:  false,
-									SuspectedCLs: []messages.SuspectCL{
-										{
-											RepoName:       "repo",
-											Revision:       "deadbeef",
-											CommitPosition: 1234,
-										},
-									},
-									Artifacts: []ArtifactLink{},
 								},
 								{
 									TestName: "test_b",
-									IsFlaky:  false,
-									SuspectedCLs: []messages.SuspectCL{
-										{
-											RepoName:       "repo",
-											Revision:       "deadbeef",
-											CommitPosition: 1234,
-										},
-									},
-									Artifacts: []ArtifactLink{},
 								},
 								{
-									TestName:  tooManyFailuresText,
-									IsFlaky:   false,
-									Artifacts: []ArtifactLink{},
+									TestName: tooManyFailuresText,
 								},
 							},
 						},
@@ -293,15 +264,6 @@ func TestTestStepFailureAlerts(t *testing.T) {
 							Tests: []TestWithResult{
 								{
 									TestName: "test_a",
-									IsFlaky:  false,
-									SuspectedCLs: []messages.SuspectCL{
-										{
-											RepoName:       "repo",
-											Revision:       "deadbeef",
-											CommitPosition: 1234,
-										},
-									},
-									Artifacts: []ArtifactLink{},
 								},
 							},
 						},
@@ -367,54 +329,6 @@ func TestTestStepFailureAlerts(t *testing.T) {
 						&TestFailure{
 							TestNames: []string{},
 							StepName:  "something_tests",
-						},
-					},
-				},
-				{
-					name: "test findit found flaky",
-					failures: []*messages.BuildStep{
-						{
-							Master: &messages.MasterLocation{URL: url.URL{
-								Scheme: "https",
-								Host:   "build.chromium.org",
-								Path:   "/p/fake.Master",
-							}},
-							Build: &messages.Build{
-								BuilderName: "fake_builder",
-							},
-							Step: &messages.Step{
-								Name: "something_tests",
-							},
-						},
-					},
-					testResults: &model.FullResult{
-						Tests: model.FullTest{
-							"test_a": &model.FullTestLeaf{
-								Expected:   []string{"PASS"},
-								Actual:     []string{"FAIL"},
-								Unexpected: truePtr,
-							},
-						},
-					},
-					finditResults: []*messages.FinditResult{
-						{
-							TestName:     "test_a",
-							IsFlakyTest:  true,
-							SuspectedCLs: []messages.SuspectCL{},
-						},
-					},
-					wantResult: []messages.ReasonRaw{
-						&TestFailure{
-							TestNames: []string{"test_a"},
-							StepName:  "something_tests",
-							Tests: []TestWithResult{
-								{
-									TestName:     "test_a",
-									IsFlaky:      true,
-									SuspectedCLs: []messages.SuspectCL{},
-									Artifacts:    []ArtifactLink{},
-								},
-							},
 						},
 					},
 				},

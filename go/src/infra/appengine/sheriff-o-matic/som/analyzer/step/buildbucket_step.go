@@ -226,29 +226,11 @@ func (b *testResultBuildBucketAnalyzer) Analyze(ctx context.Context, f *bbpb.Ste
 
 func (b *testResultBuildBucketAnalyzer) finditResultsForTests(ctx context.Context, master *messages.MasterLocation, builderName, suiteName string, buildNumber int64, failedTests []string) ([]TestWithResult, error) {
 	testsWithFinditResults := []TestWithResult{}
-	finditResults, err := b.finditClient.Findit(ctx, master, builderName, buildNumber, []string{suiteName})
-	logging.Debugf(ctx, "findit has %d results", len(finditResults))
-	if err != nil {
-		logging.Errorf(ctx, "ignoring findit error: %s", err)
-		return nil, err
-	}
-	finditResultsMap := map[string]*messages.FinditResult{}
-	for _, result := range finditResults {
-		finditResultsMap[result.TestName] = result
-	}
 	for _, test := range failedTests {
 		testResult := TestWithResult{
 			TestName:     test,
 			IsFlaky:      false,
 			SuspectedCLs: nil,
-		}
-		result, ok := finditResultsMap[test]
-		if ok {
-			testResult = TestWithResult{
-				TestName:     test,
-				IsFlaky:      result.IsFlakyTest,
-				SuspectedCLs: result.SuspectedCLs,
-			}
 		}
 		testsWithFinditResults = append(testsWithFinditResults, testResult)
 	}

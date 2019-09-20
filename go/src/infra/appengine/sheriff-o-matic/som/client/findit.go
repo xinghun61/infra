@@ -50,12 +50,12 @@ func (f *findit) Findit(ctx context.Context, master *messages.MasterLocation, bu
 }
 
 // FinditBuildbucket fetches items from the findit service using buildbucket concept, which identifies possible culprit CLs for a failed build.
-func (f *findit) FinditBuildbucket(ctx context.Context, buildAlternativeID *messages.BuildIdentifierByNumber, failedSteps []string) ([]*messages.FinditResultV2, error) {
+func (f *findit) FinditBuildbucket(ctx context.Context, buildID int64, failedSteps []string) ([]*messages.FinditResultV2, error) {
 	data := map[string]interface{}{
 		"requests": []map[string]interface{}{
 			{
-				"build_alternative_id": buildAlternativeID,
-				"failed_steps":         failedSteps,
+				"build_id":     buildID,
+				"failed_steps": failedSteps,
 			},
 		},
 	}

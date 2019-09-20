@@ -84,6 +84,6 @@ func (m MockReader) Findit(ctx context.Context, master *messages.MasterLocation,
 }
 
 // FinditBuildbucket implements the Reader interface.
-func (m MockReader) FinditBuildbucket(ctx context.Context, buildAlternativeID *messages.BuildIdentifierByNumber, failedSteps []string) ([]*messages.FinditResultV2, error) {
+func (m MockReader) FinditBuildbucket(ctx context.Context, buildID int64, failedSteps []string) ([]*messages.FinditResultV2, error) {
 	return m.FinditResultsV2, nil
 }
