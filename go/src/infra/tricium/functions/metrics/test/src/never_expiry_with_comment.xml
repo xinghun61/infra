@@ -1,6 +1,8 @@
 <histogram-configuration>
     <histograms>
-        <histogram name="Test.Histogram1" units="units" expires_after="2019-12-30">
+        <histogram name="Test.Histogram1" units="units" expires_after="never">
+        <!-- expires-never: \"heartbeat\" metric (internal: go/uma-heartbeats) -->
+            <owner>ltina@google.com</owner>
             <owner>chrome-metrics-team@google.com</owner>
             <summary> This is a summary </summary>
         </histogram>

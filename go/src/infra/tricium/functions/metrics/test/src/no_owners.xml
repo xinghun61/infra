@@ -1,6 +1,6 @@
 <histogram-configuration>
     <histograms>
-        <histogram name="Test.Histogram1" units="units">
+        <histogram name="Test.Histogram1" units="units" expires_after="2019-12-30">
             <summary> This is a summary </summary>
         </histogram>
     </histograms>
