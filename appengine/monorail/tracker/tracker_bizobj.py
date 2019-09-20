@@ -898,41 +898,36 @@ def ApplyFieldValueChanges(issue, config, fvs_add, fvs_remove, fields_clear):
   """Updates the PB issue's field_values and returns an amendments list."""
   phase_names_dict = {phase.phase_id: phase.name for phase in issue.phases}
   phase_ids = list(phase_names_dict.keys())
-  (field_vals, update_fields_add,
-   update_fields_remove) = MergeFields(
+  (field_vals, added_fvs_by_id,
+   removed_fvs_by_id) = _MergeFields(
        issue.field_values,
        [fv for fv in fvs_add if not fv.phase_id or fv.phase_id in phase_ids],
        [fv for fv in fvs_remove if not fv.phase_id or fv.phase_id in phase_ids],
        config.field_defs)
   amendments = []
-  if update_fields_add or update_fields_remove:
+  if added_fvs_by_id or removed_fvs_by_id:
     issue.field_values = field_vals
     for fd in config.field_defs:
       fd_added_values_by_phase = collections.defaultdict(list)
-      # Split fd's added fvs by the phase they belong to.
-      # non-phase fds will result in {None: [added_fvs]}
-      for fv in update_fields_add:
-        if fv.field_id == fd.field_id:
-          fd_added_values_by_phase[fv.phase_id].append(fv)
-      for phase_id, fvs in fd_added_values_by_phase.items():
-        amendments.append(MakeFieldAmendment(
-            fd.field_id, config,
-            [GetFieldValue(fv, {})
-             for fv in fvs],
-            old_values=[],
-            phase_name=phase_names_dict.get(phase_id)))
-
-      # split fd's removed fvs by the phase they belong to.
       fd_removed_values_by_phase = collections.defaultdict(list)
-      for fv in update_fields_remove:
-        if fv.field_id == fd.field_id:
-          fd_removed_values_by_phase[fv.phase_id].append(fv)
-      for phase_id, fvs in fd_removed_values_by_phase.items():
+      # Split fd's added/removed fvs by the phase they belong to.
+      # non-phase fds will result in {None: [added_fvs]}
+      for fv in added_fvs_by_id.get(fd.field_id, []):
+        fd_added_values_by_phase[fv.phase_id].append(fv)
+      for fv in removed_fvs_by_id.get(fd.field_id, []):
+        fd_removed_values_by_phase[fv.phase_id].append(fv)
+      # Use all_fv_phase_ids to create Amendments, so no empty amendments
+      # are created for issue phases that had no field value changes.
+      all_fv_phase_ids = set(
+          fd_removed_values_by_phase.keys() + fd_added_values_by_phase.keys())
+      for phase_id in all_fv_phase_ids:
+        new_values = [GetFieldValue(fv, {}) for fv
+                      in fd_added_values_by_phase.get(phase_id, [])]
+        old_values = [GetFieldValue(fv, {}) for fv
+                      in fd_removed_values_by_phase.get(phase_id, [])]
         amendments.append(MakeFieldAmendment(
-            fd.field_id, config, [],
-            old_values=[GetFieldValue(fv, {})
-                        for fv in fvs],
-            phase_name=phase_names_dict.get(phase_id)))
+              fd.field_id, config, new_values, old_values=old_values,
+              phase_name=phase_names_dict.get(phase_id)))
 
   # Note: Clearing fields is used with bulk-editing and phase fields do
   # not appear there and cannot be bulk-edited.
@@ -1587,7 +1582,7 @@ def _SafeParseIssueRef(ref_str):
     return None
 
 
-def MergeFields(field_values, fields_add, fields_remove, field_defs):
+def _MergeFields(field_values, fields_add, fields_remove, field_defs):
   """Merge the fields to add/remove into the current field values.
 
   Args:
@@ -1599,17 +1594,18 @@ def MergeFields(field_values, fields_add, fields_remove, field_defs):
     field_defs: list of FieldDef PBs from the issue's project's config.
 
   Returns:
-    A 3-tuple with the merged field values, the specific values that added
-    or removed.  The actual added or removed might be fewer than the requested
-    ones if the issue already had one of the values-to-add or lacked one of the
-    values-to-remove.
+    A 3-tuple with the merged list of field values and {field_id: field_values}
+    dict for the specific values that are added or removed.  The actual added
+    or removed might be fewer than the requested ones if the issue already had
+    one of the values-to-add or lacked one of the values-to-remove.
   """
   is_multi = {fd.field_id: fd.is_multivalued for fd in field_defs}
   merged_fvs = list(field_values)
-  fvs_added = []
+  added_fvs_by_id = collections.defaultdict(list)
   for fv_consider in fields_add:
     consider_value = GetFieldValue(fv_consider, {})
     for old_fv in field_values:
+      # Don't add fv_consider if field_values already contains consider_value
       if (fv_consider.field_id == old_fv.field_id and
           GetFieldValue(old_fv, {}) == consider_value and
           fv_consider.phase_id == old_fv.phase_id):
@@ -1626,19 +1622,20 @@ def MergeFields(field_values, fields_add, fields_remove, field_defs):
           # Drop existing non-phase fvs
           merged_fvs = [fv for fv in merged_fvs if
                         not fv.field_id == fv_consider.field_id]
-      fvs_added.append(fv_consider)
+      added_fvs_by_id[fv_consider.field_id].append(fv_consider)
       merged_fvs.append(fv_consider)
 
-  fvs_removed = []
+  removed_fvs_by_id = collections.defaultdict(list)
   for fv_consider in fields_remove:
     consider_value = GetFieldValue(fv_consider, {})
     for old_fv in field_values:
+      # Only remove fv_consider if field_values contains consider_value
       if (fv_consider.field_id == old_fv.field_id and
           GetFieldValue(old_fv, {}) == consider_value and
           fv_consider.phase_id == old_fv.phase_id):
-        fvs_removed.append(fv_consider)
+        removed_fvs_by_id[fv_consider.field_id].append(fv_consider)
         merged_fvs.remove(old_fv)
-  return merged_fvs, fvs_added, fvs_removed
+  return merged_fvs, added_fvs_by_id, removed_fvs_by_id
 
 
 def SplitBlockedOnRanks(issue, target_iid, split_above, open_iids):

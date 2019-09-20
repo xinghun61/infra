@@ -1116,13 +1116,15 @@ class BizobjTest(unittest.TestCase):
         tracker_pb2.FieldValue(field_id=3, str_value='bok', phase_id=45)]
     original_replace = [
         tracker_pb2.FieldValue(field_id=1, int_value=72),
-        tracker_pb2.FieldValue(field_id=2, int_value=88, phase_id=44),
+        tracker_pb2.FieldValue(field_id=2, int_value=88, phase_id=44)]
+    original_remove = [
+        tracker_pb2.FieldValue(field_id=3, str_value='removedbok', phase_id=45),
     ]
     issue = tracker_pb2.Issue(
         phases=[
             tracker_pb2.Phase(phase_id=45, name='high-school'),
             tracker_pb2.Phase(phase_id=44, name='college')])
-    issue.field_values = original_keep + original_replace
+    issue.field_values = original_keep + original_replace + original_remove
 
     fvs_add_ignore = [
         tracker_pb2.FieldValue(field_id=3, str_value='egg', phase_id=42)]
@@ -1133,7 +1135,7 @@ class BizobjTest(unittest.TestCase):
         # added
         tracker_pb2.FieldValue(field_id=3, str_value='rooster', phase_id=45),
     ]
-    fvs_remove = []
+    fvs_remove = original_remove
     fields_clear = []
     amendments = tracker_bizobj.ApplyFieldValueChanges(
         issue, self.config, fvs_add+fvs_add_ignore, fvs_remove, fields_clear)
@@ -1146,7 +1148,8 @@ class BizobjTest(unittest.TestCase):
          tracker_bizobj.MakeFieldAmendment(
              2, self.config, [100], phase_name='high-school'),
          tracker_bizobj.MakeFieldAmendment(
-             3, self.config, ['rooster'], phase_name='high-school')])
+             3, self.config, ['rooster'], old_values=['removedbok'],
+             phase_name='high-school')])
     self.assertEqual(issue.field_values, original_keep + fvs_add)
 
   def testApplyIssueDelta_NoChange(self):
@@ -1963,11 +1966,11 @@ class BizobjTest(unittest.TestCase):
 
   def testMergeFields_NoChange(self):
     fv1 = tracker_bizobj.MakeFieldValue(1, 42, None, None, None, None, False)
-    merged_fvs, fvs_added, fvs_removed = tracker_bizobj.MergeFields(
+    merged_fvs, fvs_added_dict, fvs_removed_dict = tracker_bizobj._MergeFields(
         [fv1], [], [], [])
     self.assertEqual([fv1], merged_fvs)
-    self.assertEqual([], fvs_added)
-    self.assertEqual([], fvs_removed)
+    self.assertEqual({}, fvs_added_dict)
+    self.assertEqual({}, fvs_removed_dict)
 
   def testMergeFields_SingleValued(self):
     fd = tracker_pb2.FieldDef(field_id=1, field_name='foo')
@@ -1976,18 +1979,18 @@ class BizobjTest(unittest.TestCase):
     fv3 = tracker_bizobj.MakeFieldValue(1, 44, None, None, None, None, False)
 
     # Adding one replaces all values since the field is single-valued.
-    merged_fvs, fvs_added, fvs_removed = tracker_bizobj.MergeFields(
+    merged_fvs, fvs_added_dict, fvs_removed_dict = tracker_bizobj._MergeFields(
         [fv1, fv2], [fv3], [], [fd])
-    self.assertItemsEqual([fv3], merged_fvs)
-    self.assertItemsEqual([fv3], fvs_added)
-    self.assertItemsEqual([], fvs_removed)
+    self.assertEqual([fv3], merged_fvs)
+    self.assertEqual({fv3.field_id: [fv3]}, fvs_added_dict)
+    self.assertEqual({}, fvs_removed_dict)
 
     # Removing one just removes it, does not reset.
-    merged_fvs, fvs_added, fvs_removed = tracker_bizobj.MergeFields(
+    merged_fvs, fvs_added_dict, fvs_removed_dict = tracker_bizobj._MergeFields(
         [fv1, fv2], [], [fv2], [fd])
-    self.assertItemsEqual([fv1], merged_fvs)
-    self.assertItemsEqual([], fvs_added)
-    self.assertItemsEqual([fv2], fvs_removed)
+    self.assertEqual([fv1], merged_fvs)
+    self.assertEqual({}, fvs_added_dict)
+    self.assertEqual({fv2.field_id: [fv2]}, fvs_removed_dict)
 
   def testMergeFields_SingleValuedPhase(self):
     fd = tracker_pb2.FieldDef(
@@ -2000,18 +2003,18 @@ class BizobjTest(unittest.TestCase):
         1, 47, None, None, None, None, False, phase_id=1) # should replace fv4
 
      # Adding one replaces all values since the field is single-valued.
-    merged_fvs, fvs_added, fvs_removed = tracker_bizobj.MergeFields(
+    merged_fvs, fvs_added_dict, fvs_removed_dict = tracker_bizobj._MergeFields(
         [fv1, fv2], [fv3], [], [fd])
-    self.assertItemsEqual([fv3, fv2], merged_fvs)
-    self.assertItemsEqual([fv3], fvs_added)
-    self.assertItemsEqual([], fvs_removed)
+    self.assertEqual([fv2, fv3], merged_fvs)
+    self.assertEqual({fv3.field_id: [fv3]}, fvs_added_dict)
+    self.assertEqual({}, fvs_removed_dict)
 
     # Removing one just removes it, does not reset.
-    merged_fvs, fvs_added, fvs_removed = tracker_bizobj.MergeFields(
+    merged_fvs, fvs_added_dict, fvs_removed_dict = tracker_bizobj._MergeFields(
         [fv1, fv2], [], [fv2], [fd])
-    self.assertItemsEqual([fv1], merged_fvs)
-    self.assertItemsEqual([], fvs_added)
-    self.assertItemsEqual([fv2], fvs_removed)
+    self.assertEqual([fv1], merged_fvs)
+    self.assertEqual({}, fvs_added_dict)
+    self.assertEqual({fv2.field_id: [fv2]}, fvs_removed_dict)
 
   def testMergeFields_MultiValued(self):
     fd = tracker_pb2.FieldDef(
@@ -2021,16 +2024,19 @@ class BizobjTest(unittest.TestCase):
     fv3 = tracker_bizobj.MakeFieldValue(1, 44, None, None, None, None, False)
     fv4 = tracker_bizobj.MakeFieldValue(1, 42, None, None, None, None, False)
     fv5 = tracker_bizobj.MakeFieldValue(1, 99, None, None, None, None, False)
+    fv6 = tracker_bizobj.MakeFieldValue(1, 100, None, None, None, None, False)
 
-    merged_fvs, fvs_added, fvs_removed = tracker_bizobj.MergeFields(
-        [fv1, fv2], [fv2, fv3], [fv4, fv5], [fd])
-    self.assertEqual([fv2, fv3], merged_fvs)
-    self.assertEqual([fv3], fvs_added)
-    self.assertEqual([fv4], fvs_removed)
+    merged_fvs, fvs_added_dict, fvs_removed_dict = tracker_bizobj._MergeFields(
+        [fv1, fv2], [fv2, fv3, fv6], [fv4, fv5], [fd])
+    self.assertEqual([fv2, fv3, fv6], merged_fvs)
+    self.assertEqual({fv3.field_id: [fv3, fv6]}, fvs_added_dict)
+    self.assertEqual({fv4.field_id: [fv4]}, fvs_removed_dict)
 
   def testMergeFields_MultiValuedPhase(self):
     fd = tracker_pb2.FieldDef(
         field_id=1, field_name='foo', is_multivalued=True, is_phase_field=True)
+    fd2 = tracker_pb2.FieldDef(
+        field_id=2, field_name='cow', is_multivalued=True, is_phase_field=True)
     fv1 = tracker_bizobj.MakeFieldValue(
         1, 42, None, None, None, None, False, phase_id=1)
     fv2 = tracker_bizobj.MakeFieldValue(
@@ -2039,12 +2045,14 @@ class BizobjTest(unittest.TestCase):
         1, 44, None, None, None, None, False, phase_id=1)
     fv4 = tracker_bizobj.MakeFieldValue(
         1, 99, None, None, None, None, False, phase_id=2)
+    fv5 = tracker_bizobj.MakeFieldValue(
+        2, 22, None, None, None, None, False, phase_id=2)
 
-    merged_fvs, fvs_added, fvs_removed = tracker_bizobj.MergeFields(
-        [fv1, fv2], [fv3, fv1], [fv2, fv4], [fd])
-    self.assertItemsEqual([fv1, fv3], merged_fvs)
-    self.assertItemsEqual([fv3], fvs_added)
-    self.assertItemsEqual([fv2], fvs_removed)
+    merged_fvs, fvs_added_dict, fvs_removed_dict = tracker_bizobj._MergeFields(
+        [fv1, fv2], [fv3, fv1, fv5], [fv2, fv4], [fd, fd2])
+    self.assertEqual([fv1, fv3, fv5], merged_fvs)
+    self.assertEqual({fv3.field_id: [fv3], fv5.field_id: [fv5]}, fvs_added_dict)
+    self.assertEqual({fv2.field_id: [fv2]}, fvs_removed_dict)
 
   def testSplitBlockedOnRanks_Normal(self):
     issue = tracker_pb2.Issue()
