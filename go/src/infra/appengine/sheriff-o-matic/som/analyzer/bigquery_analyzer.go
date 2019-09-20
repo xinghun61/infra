@@ -73,6 +73,20 @@ const crosFailuresQuery = selectFromWhere + `
 	AND bucket IN ("postsubmit", "annealing")
 `
 
+// This list of builders is from
+// https://cs.chromium.org/chromium/build/scripts/slave/recipe_modules/gatekeeper/resources/gatekeeper_trees.json?l=44
+const iosFailuresQuery = selectFromWhere + `
+	project = "chromium"
+	AND MasterName IN ("chromium.mac")
+	AND builder IN (
+		"ios-device",
+		"ios-device-xcode-clang",
+		"ios-simulator",
+		"ios-simulator-full-configs",
+		"ios-simulator-xcode-clang"
+	)
+`
+
 type failureRow struct {
 	TestNamesFingerprint bigquery.NullInt64
 	TestNamesTrunc       bigquery.NullString
@@ -169,6 +183,8 @@ func GetBigQueryAlerts(ctx context.Context, tree string) ([]messages.BuildFailur
 	case "chromeos":
 		queryStr = fmt.Sprintf(crosFailuresQuery, appID)
 		break
+	case "ios":
+		queryStr = fmt.Sprintf(iosFailuresQuery, appID)
 	default:
 		queryStr = fmt.Sprintf(failuresQuery, appID, tree, tree)
 	}

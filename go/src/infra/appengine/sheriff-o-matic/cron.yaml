@@ -31,14 +31,6 @@ cron:
     min_backoff_seconds: 2.5
     max_doublings: 5
 
-- description: Update Official Android alerts
-  url: /_cron/analyze/official_android
-  schedule: every 5 minutes
-  target: analyzer
-  retry_parameters:
-    min_backoff_seconds: 2.5
-    max_doublings: 5
-
 - description: Update Chromium alerts
   url: /_cron/analyze/chromium?use=bigquery
   schedule: every 5 minutes
@@ -56,7 +48,7 @@ cron:
     max_doublings: 5
 
 - description: Update iOS alerts
-  url: /_cron/analyze/ios
+  url: /_cron/analyze/ios?use=bigquery
   schedule: every 5 minutes
   target: analyzer
   retry_parameters:
