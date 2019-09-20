@@ -53,11 +53,12 @@ type testRun struct {
 	invocation  *steps.EnumerationResponse_AutotestInvocation
 	Args        request.Args
 	maxAttempts int
+	runnable    bool
 	attempts    []*attempt
 }
 
 func newTestRun(ctx context.Context, invocation *steps.EnumerationResponse_AutotestInvocation, params *test_platform.Request_Params, workerConfig *config.Config_SkylabWorker, parentTaskID string) (*testRun, error) {
-	t := testRun{invocation: invocation}
+	t := testRun{invocation: invocation, runnable: true}
 	a, err := t.RequestArgs(ctx, params, workerConfig, parentTaskID)
 	if err != nil {
 		return nil, errors.Annotate(err, "new test run").Err()
@@ -93,6 +94,18 @@ func (t *testRun) AttemptedAtLeastOnce() bool {
 	return len(t.attempts) > 0
 }
 
+// ValidateDependencies checks whether this test has dependencies satisfied by
+// at least one Skylab bot.
+func (t *testRun) ValidateDependencies(ctx context.Context, client swarming.Client) (bool, error) {
+	dims, err := t.Args.StaticDimensions()
+	if err != nil {
+		return false, errors.Annotate(err, "validate dependencies").Err()
+	}
+	exists, err := client.BotExists(ctx, dims)
+	logging.Debugf(ctx, "Bot existence check result: %s, error: %s", exists, err)
+	return true, nil
+}
+
 func (t *testRun) LaunchAttempt(ctx context.Context, client swarming.Client) error {
 	req, err := t.Args.SwarmingNewTaskRequest()
 	if err != nil {
@@ -107,13 +120,35 @@ func (t *testRun) LaunchAttempt(ctx context.Context, client swarming.Client) err
 	return nil
 }
 
+// MarkNotRunnable marks this test run as being unable to run.
+//
+// In particular, this means that this test run is Completed().
+func (t *testRun) MarkNotRunnable() {
+	t.runnable = false
+}
+
 // Completed determines whether we have completed an attempt for this test.
 func (t *testRun) Completed() bool {
+	if !t.runnable {
+		return true
+	}
 	a := t.GetLatestAttempt()
 	return a != nil && a.Completed()
 }
 
 func (t *testRun) TaskResult(urler swarming.URLer) []*steps.ExecuteResponse_TaskResult {
+	if !t.runnable {
+		return []*steps.ExecuteResponse_TaskResult{
+			{
+				Name: t.invocation.Test.Name,
+				State: &test_platform.TaskState{
+					LifeCycle: test_platform.TaskState_LIFE_CYCLE_REJECTED,
+					Verdict:   test_platform.TaskState_VERDICT_UNSPECIFIED,
+				},
+			},
+		}
+	}
+
 	ret := make([]*steps.ExecuteResponse_TaskResult, len(t.attempts))
 	for i, a := range t.attempts {
 		ret[i] = toTaskResult(t.invocation.Test.Name, a, i, urler)
@@ -384,6 +419,14 @@ var isClientTest = map[build_api.AutotestTest_ExecutionEnvironment]bool{
 
 func (r *TaskSet) launchAll(ctx context.Context, client swarming.Client) error {
 	for _, testRun := range r.testRuns {
+		runnable, err := testRun.ValidateDependencies(ctx, client)
+		if err != nil {
+			return err
+		}
+		if !runnable {
+			testRun.MarkNotRunnable()
+			continue
+		}
 		if err := testRun.LaunchAttempt(ctx, client); err != nil {
 			return err
 		}
