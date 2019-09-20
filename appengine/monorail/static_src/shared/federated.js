@@ -10,6 +10,10 @@ import loadGapi from './gapi-loader';
 
 const GOOGLE_ISSUE_TRACKER_REGEX = /^b\/\d+$/;
 
+const GOOGLE_ISSUE_TRACKER_API_ROOT = 'https://issuetracker.corp.googleapis.com';
+const GOOGLE_ISSUE_TRACKER_DISCOVERY_PATH = '/$discovery/rest';
+const GOOGLE_ISSUE_TRACKER_API_VERSION = 'v1';
+
 // Returns if shortlink is valid for any federated tracker.
 export function isShortlinkValid(shortlink) {
   return FEDERATED_TRACKERS.some((TrackerClass) => {
@@ -72,20 +76,25 @@ class FederatedIssue {
     throw new Error('Not implemented.');
   }
 
-  // fetchIssueData must return a Promise that resolves an issue object.
-  async fetchIssueData() {
+  // isOpen returns a Promise that resolves either true or false.
+  async isOpen() {
     throw new Error('Not implemented.');
   }
 }
 
+/* Class for Google Issue Tracker logic.
+ *
+ * In order to test this, run the following in the console on an issue detail
+ * page that already contains a federated reference to sign in:
+ *
+ *     gapi.auth2.getAuthInstance().signIn();
+ *
+ * TODO(monorail:6214): Add authorization button.
+ */
 export class GoogleIssueTrackerIssue extends FederatedIssue {
   constructor(shortlink) {
     super(shortlink);
     this.issueID = Number(shortlink.substr(2));
-
-    // Pre-emptively load gapi.js so it's available when we need to fetch
-    // issue data.
-    loadGapi();
   }
 
   shortlinkRe() {
@@ -96,12 +105,41 @@ export class GoogleIssueTrackerIssue extends FederatedIssue {
     return `https://issuetracker.google.com/issues/${this.issueID}`;
   }
 
-  async fetchIssueData() {
-    await loadGapi();
-    // TODO(crbug.com/monorail/5856): Implement fetching Buganizer issues.
+  async isOpen() {
+    const userProfile = await loadGapi();
+    if (!userProfile) {
+      // Fail open.
+      return true;
+    }
+
+    const res = await this._loadGoogleIssueTrackerIssue(this.issueID);
+    if (!res || !res.result) {
+      // Fail open.
+      return true;
+    }
+
+    // Open issues will not have a `resolvedTime`.
+    return !Boolean(res.result.resolvedTime);
+  }
+
+  get _APIURL() {
+    return GOOGLE_ISSUE_TRACKER_API_ROOT + GOOGLE_ISSUE_TRACKER_DISCOVERY_PATH;
+  }
+
+  _loadGoogleIssueTrackerIssue(bugID) {
+    return new Promise((resolve, reject) => {
+      const version = GOOGLE_ISSUE_TRACKER_API_VERSION;
+      gapi.client.load(this._APIURL, version, () => {
+        const request = gapi.client.corp_issuetracker.issues.get({
+          'issueId': bugID,
+        });
+        request.execute((response) => {
+          resolve(response);
+        });
+      });
+    });
   }
 }
-
 
 class FederatedIssueError extends Error {}
 

@@ -2,24 +2,37 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+import {assert} from 'chai';
 import sinon from 'sinon';
 import loadGapi from './gapi-loader.js';
 
 describe('loadGapi', () => {
   beforeEach(() => {
-    sinon.stub(document, 'createElement');
-    window.__gapiLoadStarted = false;
-    window.CS_env = {
-      gapi_client_id: 'rutabaga.id',
-    };
+    window.CS_env = {gapi_client_id: 'rutabaga'};
+    // Pre-load gapi with a fake signin object to prevent loading the
+    // real gapi.js.
+    loadGapi({
+      init: () => {},
+      getUserProfileAsync: () => Promise.resolve({}),
+    });
   });
 
-  it('only loads gapi once when called multiple times', () => {
-    loadGapi();
-    sinon.assert.calledOnce(document.createElement);
+  afterEach(() => {
+    delete window.CS_env;
+  });
 
-    loadGapi();
-    loadGapi();
-    sinon.assert.calledOnce(document.createElement);
+  it('errors out if no client_id', () => {
+    window.CS_env.gapi_client_id = undefined;
+    assert.throws(() => {
+      loadGapi();
+    });
+  });
+
+  it('returns the same promise when called multiple times', () => {
+    const callOne = loadGapi();
+    const callTwo = loadGapi();
+
+    assert.strictEqual(callOne, callTwo);
+    assert.instanceOf(callOne, Promise);
   });
 });

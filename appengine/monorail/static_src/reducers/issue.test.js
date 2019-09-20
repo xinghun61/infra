@@ -9,6 +9,7 @@ import * as issue from './issue.js';
 import {fieldTypes} from 'shared/issue-fields.js';
 import {issueToIssueRef} from 'shared/converters.js';
 import {prpcClient} from 'prpc-client-instance.js';
+import loadGapi from 'shared/gapi-loader';
 
 let prpcCall;
 let dispatch;
@@ -726,6 +727,63 @@ describe('issue', () => {
           ref: 'proj:1',
           starred: false,
           requestKey: 'proj:1',
+        });
+      });
+
+      describe('fetchRelatedIssues', () => {
+        beforeEach(() => {
+          window.CS_env = {gapi_client_id: 'rutabaga'};
+          // Pre-load gapi with a fake signin object to prevent loading the
+          // real gapi.js.
+          loadGapi({
+            init: () => {},
+            getUserProfileAsync: () => Promise.resolve({}),
+          });
+          const response = {
+            result: {
+              resolvedTime: 12345,
+            },
+          };
+          const getSpy = sinon.stub().returns({
+            execute: (cb) => cb(response),
+          });
+          window.gapi = {
+            client: {
+              load: (_url, _version, cb) => cb(),
+              corp_issuetracker: {issues: {get: getSpy}},
+            },
+          };
+          prpcCall.callsFake(() => {
+            return {
+              openRefs: [],
+              closedRefs: [],
+            };
+          });
+        });
+
+        it('fetches federated references', async () => {
+          const testIssue = {
+            projectName: 'proj',
+            localId: 1,
+            danglingBlockingRefs: [{extIdentifier: 'b/1234'}],
+          };
+
+          const action = issue.fetchRelatedIssues(testIssue, false);
+          await action(dispatch);
+
+          sinon.assert.calledWith(dispatch, {
+            type: 'FETCH_RELATED_ISSUES_START',
+          });
+
+          sinon.assert.calledWith(dispatch, {
+            type: 'FETCH_RELATED_ISSUES_SUCCESS',
+            relatedIssues: {
+              'b/1234': {
+                extIdentifier: 'b/1234',
+                statusRef: {meansOpen: false},
+              },
+            },
+          });
         });
       });
     });

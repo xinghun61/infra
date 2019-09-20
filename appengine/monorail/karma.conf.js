@@ -36,7 +36,7 @@ module.exports = function(config) {
           'TKR_fetchOptions',
           // All of the below are necessary for loading gapi.js.
           'gapi',
-          '__gapiLoadStarted',
+          '__gapiLoadPromise',
           '___jsl',
           'osapi',
           'gadgets',

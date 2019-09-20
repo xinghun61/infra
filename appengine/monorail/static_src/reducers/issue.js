@@ -9,6 +9,7 @@ import {fieldTypes, extractTypeForIssue,
   fieldValuesToMap} from 'shared/issue-fields.js';
 import {removePrefix, objectToMap} from 'shared/helpers.js';
 import {issueRefToString} from 'shared/converters.js';
+import {fromShortlink} from 'shared/federated.js';
 import {createReducer, createRequestReducer,
   createKeyedRequestReducer} from './redux-helpers.js';
 import * as project from './project.js';
@@ -615,6 +616,33 @@ export const fetchReferencedUsers = (issue) => async (dispatch) => {
   }
 };
 
+export const fetchFederatedReferenceStatuses = async (issue) => {
+  // Concat all potential fedrefs together, convert from shortlink to classes,
+  // then fire off a request to fetch the status of each.
+  const fedRefs = []
+      .concat(issue.danglingBlockingRefs || [])
+      .concat(issue.danglingBlockedOnRefs || [])
+      .concat(issue.mergedIntoIssueRef ? [issue.mergedIntoIssueRef] : [])
+      .filter((ref) => ref && ref.extIdentifier)
+      .map((ref) => fromShortlink(ref.extIdentifier))
+      .filter((fedRef) => fedRef);
+
+  // If no FedRefs, return empty Map.
+  if (fedRefs.length === 0) {
+    return new Map();
+  }
+
+  const fedRefPromises = fedRefs.map((fedRef) => fedRef.isOpen());
+  const results = await Promise.all(fedRefPromises);
+
+  // Create a map of {extIdentifier -> isOpen}.
+  const shortlinkToStatus = new Map(results.map((result, i) => {
+    return [fedRefs[i].shortlink, result];
+  }));
+
+  return shortlinkToStatus;
+};
+
 // TODO(zhangtiff): Figure out if we can reduce request/response sizes by
 // diffing issues to fetch against issues we already know about to avoid
 // fetching duplicate info.
@@ -632,8 +660,11 @@ export const fetchRelatedIssues = (issue) => async (dispatch) => {
     issueRefs: refsToFetch,
   };
   try {
-    const resp = await prpcClient.call(
-        'monorail.Issues', 'ListReferencedIssues', message);
+    // TODO(jeffcarp): Fetch these separately and combine results.
+    const [resp, fedRefStatuses] = await Promise.all([
+      prpcClient.call('monorail.Issues', 'ListReferencedIssues', message),
+      fetchFederatedReferenceStatuses(issue),
+    ]);
 
     const relatedIssues = {};
 
@@ -647,6 +678,14 @@ export const fetchRelatedIssues = (issue) => async (dispatch) => {
       issue.statusRef.meansOpen = false;
       relatedIssues[issueRefToString(issue)] = issue;
     });
+
+    fedRefStatuses.forEach((isOpen, shortlink) => {
+      relatedIssues[shortlink] = {
+        extIdentifier: shortlink,
+        statusRef: {meansOpen: isOpen},
+      };
+    });
+
     dispatch({
       type: FETCH_RELATED_ISSUES_SUCCESS,
       relatedIssues: relatedIssues,

@@ -8,6 +8,7 @@ import {
   fromShortlink,
   GoogleIssueTrackerIssue,
 } from './federated.js';
+import loadGapi from 'shared/gapi-loader';
 
 describe('isShortlinkValid', () => {
   it('Returns true for valid links', () => {
@@ -64,10 +65,24 @@ describe('GoogleIssueTrackerIssue', () => {
     });
   });
 
-  describe('fetchIssueData', () => {
+  describe('isOpen', () => {
+    beforeEach(() => {
+      window.CS_env = {gapi_client_id: 'rutabaga'};
+      // Pre-load gapi with a fake signin object to prevent loading the
+      // real gapi.js.
+      loadGapi({
+        init: () => {},
+        getUserProfileAsync: () => Promise.resolve({}),
+      });
+    });
+
+    afterEach(() => {
+      delete window.CS_env;
+    });
+
     it('Returns a Promise', () => {
       const issue = new GoogleIssueTrackerIssue('b/1234');
-      const actual = issue.fetchIssueData();
+      const actual = issue.isOpen();
       assert.instanceOf(actual, Promise);
     });
   });
