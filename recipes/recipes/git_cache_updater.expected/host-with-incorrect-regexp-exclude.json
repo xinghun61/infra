@@ -1,0 +1,28 @@
+[
+  {
+    "cmd": [
+      "vpython",
+      "-u",
+      "RECIPE_MODULE[recipe_engine::url]/resources/pycurl.py",
+      "--url",
+      "https://chromium.googlesource.com/?format=TEXT",
+      "--status-json",
+      "/path/to/tmp/json",
+      "--outfile",
+      "/path/to/tmp/"
+    ],
+    "env_suffixes": {
+      "PATH": [
+        "RECIPE_REPO[depot_tools]"
+      ]
+    },
+    "name": "GET https://chromium.googlesource.com/?format=TEXT"
+  },
+  {
+    "failure": {
+      "failure": {},
+      "humanReason": "invalid regular expression[0] u'?.\\\\': nothing to repeat"
+    },
+    "name": "$result"
+  }
+]

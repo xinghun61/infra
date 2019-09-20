@@ -1,0 +1,42 @@
+// Copyright 2019 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+syntax = "proto3";
+
+package recipes.infra.git_cache_updater;
+
+// Input properties recognized by 'infra/git_cache_updater' recipe.
+message Inputs {
+  // Override GS bucket to upload cached git repos to.
+  string override_bucket = 1;
+
+  // If true, will run 'git gc --aggressive' before updating cache.
+  bool aggressive_gc = 2;
+
+  message GitHost{
+    // Host such as chromium.googlesource.com.
+    string host = 1;
+
+    // Optional list of regexps s.t. each matching repo will be excluded.
+    //
+    // The ^..$ is added automatically around the provided regexp.
+    // NOTE: matching is case-insensitive.
+    //
+    // For example,
+    //  * "infra/infra" will exclude exactly "infra/infra" repo.
+    //  * "infra/.+" will exclude all repos starting with "infra/".
+    //
+    // For Gerrit-bound Git hosts like *.googlesource.com, it's highly
+    // recommended to exclude two special repos: {All-repos, All-Users}.
+    repeated string exclude_repos = 2;
+  }
+
+  // Optional. git host to update cache of its repos.
+  GitHost git_host = 3;
+
+  // Optional individual Git repo URLs to update cache for.
+  // For example, https://chromium.googlesource.com/infra/infra.
+  // Omit redundant '.git' and '/' endings.
+  repeated string repo_urls = 4;
+}
