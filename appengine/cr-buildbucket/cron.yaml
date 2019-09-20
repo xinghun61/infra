@@ -48,22 +48,6 @@ cron:
   retry_parameters:
     min_backoff_seconds: 2
 
-# TODO(crbug.com/926536): remove legacy cron jobs.
-- description: export completed prod builds to BigQuery
-  target: backend
-  url: /internal/cron/buildbucket/bq-export-prod
-  schedule: every 1 minutes
-  retry_parameters:
-    min_backoff_seconds: 2
-
-# TODO(crbug.com/926536): remove legacy cron jobs.
-- description: export completed experimental builds to BigQuery
-  target: backend
-  url: /internal/cron/buildbucket/bq-export-experimental
-  schedule: every 1 minutes
-  retry_parameters:
-    min_backoff_seconds: 2
-
 ## cleanup builders
 
 - description: unregister builders that didn't have builds for a long time.

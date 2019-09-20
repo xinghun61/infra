@@ -12,9 +12,3 @@ queue:
   max_concurrent_requests: 128
 - name: bq-export
   mode: pull
-
-# TODO(crbug.com/926536): remove legacy queues.
-- name: bq-export-prod
-  mode: pull
-- name: bq-export-experimental
-  mode: pull

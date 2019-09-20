@@ -23,7 +23,6 @@ import model
 import tq
 
 
-@ndb.tasklet
 def enqueue_bq_export_async(build):
   """Enqueues a pull task to export a completed build to BigQuery."""
   assert ndb.in_transaction()
@@ -34,14 +33,7 @@ def enqueue_bq_export_async(build):
       'method': 'PULL',
       'payload': {'id': build.key.id()},
   }
-  yield (
-      tq.enqueue_async('bq-export', [task_def]),
-      # TODO(crbug.com/926536): remove legacy exporters.
-      tq.enqueue_async(
-          'bq-export-experimental' if build.experimental else 'bq-export-prod',
-          [task_def],
-      ),
-  )
+  return tq.enqueue_async('bq-export', [task_def])
 
 
 class CronExportBuilds(webapp2.RequestHandler):  # pragma: no cover
@@ -60,24 +52,6 @@ class CronExportBuilds(webapp2.RequestHandler):  # pragma: no cover
       if total < 100:
         # Too few for a tight loop.
         return
-
-
-# TODO(crbug.com/926536): remove this in favor of CronExportBuilds
-class CronExportBuildsProd(webapp2.RequestHandler):  # pragma: no cover
-
-  @decorators.require_cronjob
-  def get(self):
-    _process_pull_task_batch('bq-export-prod', 'builds', 'completed_BETA')
-
-
-# TODO(crbug.com/926536): remove this in favor of CronExportBuilds
-class CronExportBuildsExperimental(webapp2.RequestHandler):  # pragma: no cover
-
-  @decorators.require_cronjob
-  def get(self):
-    _process_pull_task_batch(
-        'bq-export-experimental', 'builds_experimental', 'completed_BETA'
-    )
 
 
 def _process_pull_task_batch(queue_name, dataset, table_name):
@@ -173,12 +147,6 @@ def _export_builds(dataset, table_name, builds, deadline):
     for s in proto.steps:
       s.summary_markdown = ''
       s.ClearField('logs')
-
-    # Drop Duration fields until crbug.com/926536 is fixed.
-    for c in proto.infra.swarming.caches:
-      c.ClearField('wait_for_warm_cache')
-    for d in proto.infra.swarming.task_dimensions:
-      d.ClearField('expiration')
 
   res = net.json_request(
       url=((

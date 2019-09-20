@@ -36,7 +36,7 @@ class BigQueryExportTest(testing.AppengineTestCase):
         'components.utils.utcnow', autospec=True, side_effect=lambda: self.now
     )
 
-    self.queue = taskqueue.Queue('bq-export-prod')
+    self.queue = taskqueue.Queue('bq-export')
     self.dataset = 'builds'
 
   @mock.patch('tq.enqueue_async', autospec=True)
@@ -53,7 +53,6 @@ class BigQueryExportTest(testing.AppengineTestCase):
         'payload': {'id': 1},
     }
     enqueue_async.assert_any_call('bq-export', [task_def])
-    enqueue_async.assert_any_call('bq-export-prod', [task_def])
 
   def test_cron_export_builds_to_bq(self):
     bundles = [
