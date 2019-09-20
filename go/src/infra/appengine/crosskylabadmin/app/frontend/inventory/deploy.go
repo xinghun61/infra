@@ -231,7 +231,7 @@ func deployManyDUTs(ctx context.Context, s *gitstore.InventoryStore, sc clients.
 	ds := &deploy.Status{Status: fleet.GetDeploymentStatusResponse_DUT_DEPLOYMENT_STATUS_IN_PROGRESS}
 	// Add DUTs to fleet first synchronously, don't proceed with scheduling tasks
 	// unless we've succeeded in adding the DUTs to the inventory.
-	url, err := addManyDUTsToFleet(ctx, s, nds, o.GetAssignServoPortIfMissing())
+	url, newDevices, err := addManyDUTsToFleet(ctx, s, nds, o.GetAssignServoPortIfMissing())
 	ds.ChangeURL = url
 	if err != nil {
 		failDeployStatus(ctx, ds, fmt.Sprintf("failed to add DUT(s) to fleet: %s", err))
@@ -240,7 +240,8 @@ func deployManyDUTs(ctx context.Context, s *gitstore.InventoryStore, sc clients.
 	if a.GetSkipDeployment() {
 		return ds
 	}
-	for _, nd := range nds {
+	for _, nd := range newDevices {
+		logging.Infof(ctx, "schedule deploy task for %s", nd.GetHostname())
 		taskID, err := scheduleDUTPreparationTask(ctx, sc, nd.GetId(), a)
 		// TODO(gregorynisbet): this only records the last task ID
 		ds.TaskID = taskID
@@ -254,16 +255,12 @@ func deployManyDUTs(ctx context.Context, s *gitstore.InventoryStore, sc clients.
 	return ds
 }
 
-func addManyDUTsToFleet(ctx context.Context, s *gitstore.InventoryStore, nds []*inventory.CommonDeviceSpecs, pickServoPort bool) (string, error) {
+func addManyDUTsToFleet(ctx context.Context, s *gitstore.InventoryStore, nds []*inventory.CommonDeviceSpecs, pickServoPort bool) (string, []*inventory.CommonDeviceSpecs, error) {
 	var respURL string
-	// TODO(gregorynisbet): f is fail fast ... do we want to do anything specific after
-	// encountering an error?
+	newDeviceToID := make(map[*inventory.CommonDeviceSpecs]string)
+
 	f := func() error {
 		var ds []*inventory.CommonDeviceSpecs
-		var ids []string
-		newID := make(map[*inventory.CommonDeviceSpecs]string)
-
-		c := newGlobalInvCache(ctx, s)
 
 		for _, nd := range nds {
 			ds = append(ds, proto.Clone(nd).(*inventory.CommonDeviceSpecs))
@@ -273,27 +270,30 @@ func addManyDUTsToFleet(ctx context.Context, s *gitstore.InventoryStore, nds []*
 			return errors.Annotate(err, "add dut to fleet").Err()
 		}
 
+		// New cache after refreshing store.
+		c := newGlobalInvCache(ctx, s)
+
 		for i, d := range ds {
 			hostname := d.GetHostname()
+			logging.Infof(ctx, "add device to fleet: %s", hostname)
 			if _, ok := c.hostnameToID[hostname]; ok {
-				logging.Infof(ctx, "dut with hostname %s already exists", hostname)
+				logging.Infof(ctx, "dut with hostname %s already exists, skip adding", hostname)
 				continue
 			}
 			if pickServoPort && !hasServoPortAttribute(d) {
 				if err := assignNewServoPort(s.Lab.Duts, d); err != nil {
-					logging.Infof(ctx, "fail to assign new servo port")
+					logging.Infof(ctx, "fail to assign new servo port, skip adding")
 					continue
 				}
 			}
 			nid := addDUTToStore(s, d)
-			ids = append(ids, nid)
-			newID[nds[i]] = nid
+			newDeviceToID[nds[i]] = nid
 		}
 
 		// TODO(ayatane): Implement this better than just regenerating the cache.
 		c = newGlobalInvCache(ctx, s)
 
-		for _, id := range ids {
+		for _, id := range newDeviceToID {
 			if _, err := assignDUT(ctx, c, id); err != nil {
 				return errors.Annotate(err, "add dut to fleet").Err()
 			}
@@ -311,7 +311,7 @@ func addManyDUTsToFleet(ctx context.Context, s *gitstore.InventoryStore, nds []*
 
 		respURL = url
 		for _, nd := range nds {
-			id := newID[nd]
+			id := newDeviceToID[nd]
 			nd.Id = &id
 		}
 		return nil
@@ -319,7 +319,11 @@ func addManyDUTsToFleet(ctx context.Context, s *gitstore.InventoryStore, nds []*
 
 	err := retry.Retry(ctx, transientErrorRetries(), f, retry.LogCallback(ctx, "addManyDUTsToFleet"))
 
-	return respURL, err
+	newDevices := make([]*inventory.CommonDeviceSpecs, 0)
+	for nd := range newDeviceToID {
+		newDevices = append(newDevices, nd)
+	}
+	return respURL, newDevices, err
 }
 
 const (

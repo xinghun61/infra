@@ -22,6 +22,7 @@ import (
 	"infra/appengine/crosskylabadmin/app/config"
 	"infra/appengine/crosskylabadmin/app/frontend/internal/datastore/deploy"
 	"infra/appengine/crosskylabadmin/app/frontend/internal/fakes"
+	"infra/appengine/crosskylabadmin/app/frontend/internal/gitstore"
 	"infra/libs/skylab/inventory"
 
 	"github.com/golang/mock/gomock"
@@ -322,6 +323,40 @@ func TestDeployMultipleDuts(t *testing.T) {
 			Lab: []byte(lab),
 		})
 		So(err, ShouldBeNil)
+
+		Convey("DeployDut with duplicated hostname", func() {
+			ignoredID := "This ID is ignored"
+			specs := &inventory.CommonDeviceSpecs{
+				Id:       &ignoredID,
+				Hostname: stringPtr("host1"),
+				Attributes: []*inventory.KeyValue{
+					{Key: stringPtr("servo_host"), Value: stringPtr("my-special-labstation")},
+					{Key: stringPtr("servo_port"), Value: stringPtr("8888")},
+				},
+			}
+			resp, err := tf.Inventory.DeployDut(tf.C, &fleet.DeployDutRequest{
+				NewSpecs: marshalOrPanicMany(specs),
+			})
+			So(err, ShouldBeNil)
+			deploymentID := resp.DeploymentId
+			So(deploymentID, ShouldNotEqual, "")
+
+			resp2, err := tf.Inventory.GetDeploymentStatus(tf.C, &fleet.GetDeploymentStatusRequest{DeploymentId: deploymentID})
+			So(err, ShouldBeNil)
+			So(resp2.TaskUrl, ShouldEqual, "")
+
+			store := gitstore.NewInventoryStore(tf.FakeGerrit, tf.FakeGitiles)
+			err = store.Refresh(tf.C)
+			So(err, ShouldBeNil)
+			So(store.GetDuts(), ShouldHaveLength, 1)
+
+			duts := mapHostnameToDUTs(store.GetDuts())
+			So(duts, ShouldContainKey, "host1")
+			dut := duts["host1"]
+			firstPort, found := getAttributeByKey(dut.GetCommon(), servoPortAttributeKey)
+			So(found, ShouldEqual, true)
+			So(firstPort, ShouldEqual, "9999")
+		})
 
 		Convey("DeployDut assigns non-conflicting servo_port if requested via option", func() {
 			tf.MockSwarming.EXPECT().CreateTask(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes()
