@@ -38,6 +38,7 @@ from model import analysis_approach_type
 from model.base_build_model import BaseBuildModel
 from model.flake.analysis.flake_analysis_request import FlakeAnalysisRequest
 from model.suspected_cl_confidence import SuspectedCLConfidence
+from model.test_inventory import LuciTest
 from model.wf_analysis import WfAnalysis
 from model.wf_suspected_cl import WfSuspectedCL
 from model.wf_swarming_task import WfSwarmingTask
@@ -149,6 +150,36 @@ class _Build(messages.Message):
 
 class _FlakeAnalysis(messages.Message):
   queued = messages.BooleanField(1, required=True)
+
+
+class _DisabledTestVariant(messages.Message):
+  variant = messages.StringField(1, repeated=True)
+
+
+class _DisabledTestData(messages.Message):
+  luci_project = messages.StringField(1, required=True)
+  normalized_test_name = messages.StringField(2, required=True)
+  normalized_step_name = messages.StringField(3, required=True)
+  disabled_test_variants = messages.MessageField(
+      _DisabledTestVariant, 4, repeated=True)
+
+
+class _DisabledTestsResponse(messages.Message):
+  test_data = messages.MessageField(_DisabledTestData, 1, repeated=True)
+  test_count = messages.IntegerField(2, variant=messages.Variant.INT32)
+
+
+class _DisabledTestRequestType(messages.Enum):
+  NAME_ONLY = 1
+  ALL = 2
+  COUNT = 3
+
+
+class _DisabledTestsRequest(messages.Message):
+  include_tags = messages.StringField(1, repeated=True)
+  exclude_tags = messages.StringField(2, repeated=True)
+  request_type = messages.EnumField(
+      _DisabledTestRequestType, 3, default=_DisabledTestRequestType.NAME_ONLY)
 
 
 @Cached(
@@ -847,3 +878,87 @@ class FindItApi(remote.Service):
         build_count_with_v1_responses)
     return findit_result.BuildFailureAnalysisResponseCollection(
         responses=results)
+
+  def _GetDisabledTestsQuery(self, tags_to_include):
+    disabled_tests_query = LuciTest.query(LuciTest.disabled == True)  # pylint: disable=singleton-comparison
+    for tag in tags_to_include:
+      disabled_tests_query = disabled_tests_query.filter(LuciTest.tags == tag)
+    return disabled_tests_query
+
+  def _FilterOutDisabledTestsByExclusiveTags(self, disabled_tests_query,
+                                             tags_to_exclude):
+    disabled_tests = disabled_tests_query.fetch()
+    return [
+        test for test in disabled_tests
+        if not any(tag in tags_to_exclude for tag in test.tags)
+    ]
+
+  def _GetDisabledTestsByTags(self, tags_to_include, tags_to_exclude):
+    disabled_tests_query = self._GetDisabledTestsQuery(tags_to_include)
+    if not tags_to_exclude:
+      return disabled_tests_query.fetch()
+    return self._FilterOutDisabledTestsByExclusiveTags(disabled_tests_query,
+                                                       tags_to_exclude)
+
+  def _GetDisabledTestCountsForTags(self, tags_to_include, tags_to_exclude):
+    disabled_tests_query = self._GetDisabledTestsQuery(tags_to_include)
+    if not tags_to_exclude:
+      return disabled_tests_query.count()
+    return len(
+        self._FilterOutDisabledTestsByExclusiveTags(disabled_tests_query,
+                                                    tags_to_exclude))
+
+  def _CreateDisabledTestData(self, disabled_tests, request_type):
+    tests = []
+    for test in disabled_tests:
+      test_data = _DisabledTestData(
+          luci_project=test.luci_project,
+          normalized_step_name=test.normalized_step_name,
+          normalized_test_name=test.normalized_test_name,
+      )
+      if request_type == _DisabledTestRequestType.NAME_ONLY:
+        tests.append(test_data)
+        continue
+
+      disabled_test_variants = []
+      summarized_disabled_test_variants = LuciTest.SummarizeDisabledVariants(
+          test.disabled_test_variants)
+      for variant in summarized_disabled_test_variants:
+        disabled_test_variants.append(
+            _DisabledTestVariant(
+                variant=[configuration for configuration in variant]))
+      test_data.disabled_test_variants = disabled_test_variants
+      tests.append(test_data)
+    return tests
+
+  @gae_ts_mon.instrument_endpoint()
+  @endpoints.method(
+      _DisabledTestsRequest,
+      _DisabledTestsResponse,
+      path='disabledtests',
+      name='disabledtests')
+  def FilterDisabledTests(self, request):
+    """Filters the disabled tests according to the provided filters.
+
+    Currently supports filtering by tags.
+      - include_tags: return tests which contain all the tags in include_tags.
+      - exlcude_tags: filter out tests which contain any tag in exclude_tags.
+      - if no tags are specified, the default will return all disabled tests.
+
+    Args:
+      request (_DisabledTestsRequest): Specifies which filters to apply.
+
+    Returns:
+      _DisabledTestsResponse: a count of the disabled tests or a list of
+        disabled tests that satisfied the filters
+    """
+    _ValidateOauthUser()
+
+    if request.request_type == _DisabledTestRequestType.COUNT:
+      return _DisabledTestsResponse(
+          test_count=self._GetDisabledTestCountsForTags(request.include_tags,
+                                                        request.exclude_tags))
+    tests = self._GetDisabledTestsByTags(request.include_tags,
+                                         request.exclude_tags)
+    return _DisabledTestsResponse(
+        test_data=self._CreateDisabledTestData(tests, request.request_type))

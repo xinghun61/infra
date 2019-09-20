@@ -8,6 +8,8 @@ import mock
 import pickle
 import re
 
+from parameterized import parameterized
+
 from buildbucket_proto.build_pb2 import Build
 from buildbucket_proto.build_pb2 import BuilderID
 from google.appengine.api import taskqueue
@@ -25,6 +27,7 @@ from libs import analysis_status
 from model import analysis_approach_type
 from model.base_build_model import BaseBuildModel
 from model.base_suspected_cl import RevertCL
+from model.test_inventory import LuciTest
 from model.wf_analysis import WfAnalysis
 from model.wf_suspected_cl import WfSuspectedCL
 from model.wf_swarming_task import WfSwarmingTask
@@ -1563,3 +1566,246 @@ class FinditApiTest(testing.EndpointsTestCase):
     mock_logging.assert_called_once_with(
         '%d build failure(s), while findit_v2 can provide results for%d, and'
         ' findit_v1 can provide results for %d.', 2, 0, 1)
+
+  @parameterized.expand([
+      ({
+          'request_body': {},
+          'expected_test_data': [
+              {
+                  'luci_project': 'chromium',
+                  'normalized_step_name': 'normal_step1',
+                  'normalized_test_name': 'test_1',
+              },
+              {
+                  'luci_project': 'chromium',
+                  'normalized_step_name': 'normal_step2',
+                  'normalized_test_name': 'test_2',
+              },
+              {
+                  'luci_project': 'chromium',
+                  'normalized_step_name': 'normal_step3',
+                  'normalized_test_name': 'test_3',
+              },
+          ],
+      },),
+      ({
+          'request_body': {
+              'include_tags': [
+                  'component::mock_component',
+                  'test_type::mock_step',
+              ],
+              'request_type':
+                  'ALL',
+          },
+          'expected_test_data': [
+              {
+                  'luci_project': 'chromium',
+                  'normalized_step_name': 'normal_step1',
+                  'normalized_test_name': 'test_1',
+                  'disabled_test_variants': [{
+                      'variant': ['os:Mac'],
+                  },],
+              },
+              {
+                  'luci_project': 'chromium',
+                  'normalized_step_name': 'normal_step2',
+                  'normalized_test_name': 'test_2',
+                  'disabled_test_variants': [{
+                      'variant': ['os:Mac'],
+                  },],
+              },
+          ],
+      },),
+      ({
+          'request_body': {
+              'include_tags': [
+                  'component::mock_component',
+                  'test_type::mock_step',
+              ],
+              'exclude_tags': ['step::mock_step (with patch)',],
+              'request_type':
+                  'ALL',
+          },
+          'expected_test_data': [{
+              'luci_project': 'chromium',
+              'normalized_step_name': 'normal_step2',
+              'normalized_test_name': 'test_2',
+              'disabled_test_variants': [{
+                  'variant': ['os:Mac'],
+              },],
+          },],
+      },),
+      ({
+          'request_body': {
+              'include_tags': [
+                  'component::mock_component',
+                  'test_type::mock_step',
+              ],
+              'request_type':
+                  'NAME_ONLY',
+          },
+          'expected_test_data': [
+              {
+                  'luci_project': 'chromium',
+                  'normalized_step_name': 'normal_step1',
+                  'normalized_test_name': 'test_1'
+              },
+              {
+                  'luci_project': 'chromium',
+                  'normalized_step_name': 'normal_step2',
+                  'normalized_test_name': 'test_2'
+              },
+          ],
+      },),
+      ({
+          'request_body': {
+              'include_tags': [
+                  'component::mock_component',
+                  'test_type::mock_step',
+              ],
+              'exclude_tags': ['step::mock_step (with patch)',],
+              'request_type':
+                  'NAME_ONLY',
+          },
+          'expected_test_data': [{
+              'luci_project': 'chromium',
+              'normalized_step_name': 'normal_step2',
+              'normalized_test_name': 'test_2'
+          },],
+      },),
+  ])
+  @mock.patch.object(endpoint_api, '_ValidateOauthUser')
+  def testFilterDisabledTestsTestData(self, cases, _):
+    test_1 = LuciTest(
+        key=LuciTest.CreateKey('chromium', 'normal_step1', 'test_1'),
+        disabled_test_variants={('os:Mac123',), ('os:Mac124',)},
+        tags=[
+            'component::mock_component',
+            'step::mock_step (with patch)',
+            'test_type::mock_step',
+        ])
+    test_1.put()
+    test_2 = LuciTest(
+        key=LuciTest.CreateKey('chromium', 'normal_step2', 'test_2'),
+        disabled_test_variants={('os:Mac123',), ('os:Mac124',)},
+        tags=[
+            'component::mock_component',
+            'step::mock_step (without patch)',
+            'test_type::mock_step',
+        ])
+    test_2.put()
+    test_3 = LuciTest(
+        key=LuciTest.CreateKey('chromium', 'normal_step3', 'test_3'),
+        disabled_test_variants={('os:Mac123',), ('os:Mac124',)},
+        tags=[])
+    test_3.put()
+    test_4 = LuciTest(
+        key=LuciTest.CreateKey('chromium', 'normal_step4', 'test_4'),
+        disabled_test_variants=set(),
+        tags=[
+            'component::mock_component',
+            'test_type::mock_step',
+        ])
+    test_4.put()
+    test_3.put()
+
+    response = self.call_api('FilterDisabledTests', body=cases['request_body'])
+    self.assertEqual(200, response.status_int)
+
+    actual_test_data = response.json_body.get('test_data', [])
+    for expected_test in cases['expected_test_data']:
+      self.assertIn(expected_test, actual_test_data)
+
+  @parameterized.expand([
+      ({
+          'request_body': {
+              'include_tags': [
+                  'component::mock_component',
+                  'test_type::mock_step',
+              ],
+              'request_type':
+                  'COUNT',
+          },
+          'expected_test_count': 2
+      },),
+      ({
+          'request_body': {
+              'include_tags': [
+                  'component::mock_component',
+                  'test_type::mock_step',
+              ],
+              'exclude_tags': ['step::mock_step (with patch)',],
+              'request_type':
+                  'COUNT',
+          },
+          'expected_test_count': 1
+      },),
+      ({
+          'request_body': {
+              'include_tags': [
+                  'component::mock_component',
+                  'test_type::mock_step',
+              ],
+              'request_type':
+                  'COUNT',
+          },
+          'expected_test_count': 2
+      },),
+      ({
+          'request_body': {
+              'include_tags': [
+                  'component::mock_component',
+                  'test_type::mock_step',
+              ],
+              'exclude_tags': ['step::mock_step (with patch)',],
+              'request_type':
+                  'COUNT',
+          },
+          'expected_test_count': 1
+      },),
+      ({
+          'request_body': {
+              'request_type': 'COUNT',
+          },
+          'expected_test_count': 3
+      },),
+  ])
+  @mock.patch.object(endpoint_api, '_ValidateOauthUser')
+  def testFilterDisabledTestsTestCount(self, cases, _):
+    test_1 = LuciTest(
+        key=LuciTest.CreateKey('chromium', 'normal_step1', 'test_1'),
+        disabled_test_variants={('os:Mac123',), ('os:Mac124',)},
+        tags=[
+            'component::mock_component',
+            'step::mock_step (with patch)',
+            'test_type::mock_step',
+        ])
+    test_1.put()
+    test_2 = LuciTest(
+        key=LuciTest.CreateKey('chromium', 'normal_step2', 'test_2'),
+        disabled_test_variants={('os:Mac123',), ('os:Mac124',)},
+        tags=[
+            'component::mock_component',
+            'step::mock_step (without patch)',
+            'test_type::mock_step',
+        ])
+    test_2.put()
+    test_3 = LuciTest(
+        key=LuciTest.CreateKey('chromium', 'normal_step3', 'test_3'),
+        disabled_test_variants={('os:Mac123',), ('os:Mac124',)},
+        tags=[])
+    test_3.put()
+    test_4 = LuciTest(
+        key=LuciTest.CreateKey('chromium', 'normal_step4', 'test_4'),
+        disabled_test_variants=set(),
+        tags=[
+            'component::mock_component',
+            'test_type::mock_step',
+        ])
+    test_4.put()
+
+    response = self.call_api('FilterDisabledTests', body=cases['request_body'])
+    self.assertEqual(200, response.status_int)
+
+    self.assertEqual(cases['expected_test_count'],
+                     response.json_body.get('test_count'))

@@ -9,10 +9,24 @@ from parameterized import parameterized
 from google.appengine.ext import ndb
 
 from gae_libs.testcase import TestCase
+from model import test_inventory
 from model.test_inventory import LuciTest
 
 
 class TestInventoryTest(TestCase):
+
+  @parameterized.expand([
+      ('os:Mac 10:13', 'os:Mac'),
+      ('os:linux-rel', 'os:linux'),
+      ('os:Ubuntu-14.04', 'os:linux'),
+      ('os:Android123', 'os:Android'),
+      ('os:Chromeos123', 'os:ChromeOS'),
+      ('os:Windows-7-SP1', 'os:Windows'),
+      ('os:Ios', 'os:iOS'),
+      ('os:None', 'os:None'),
+  ])
+  def testNormalizeOS(self, os, normal_os):
+    self.assertEqual(normal_os, test_inventory._NormalizeOS(os))
 
   @parameterized.expand([(99,), ([tuple()],), (set([99]),),
                          ([('congif1'), (99)],)])
@@ -76,3 +90,18 @@ class TestInventoryTest(TestCase):
   def testNormalizedTestName(self):
     test = LuciTest(key=LuciTest.CreateKey('a', 'b', 'c'))
     self.assertEqual('c', test.normalized_test_name)
+
+  @parameterized.expand([
+      (
+          {('MSan:True', 'os:Mac-11.10'), ('MSan:True', 'os:Mac123')},
+          [['MSan:True', 'os:Mac']],
+      ),
+      (
+          {('os:Fake',)},
+          [['os:Fake']],
+      ),
+  ])
+  def testSummarizeDisabledVariants(self, input_test_variants,
+                                    expected_test_variants):
+    self.assertEqual(expected_test_variants,
+                     LuciTest.SummarizeDisabledVariants(input_test_variants))

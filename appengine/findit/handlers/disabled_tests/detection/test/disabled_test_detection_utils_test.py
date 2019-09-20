@@ -17,36 +17,6 @@ from waterfall.test.wf_testcase import WaterfallTestCase
 
 class DisabledTestDetectionUtilsTest(WaterfallTestCase):
 
-  @parameterized.expand([
-      ('os:Mac 10:13', 'os:Mac'),
-      ('os:linux-rel', 'os:linux'),
-      ('os:Ubuntu-14.04', 'os:linux'),
-      ('os:Android123', 'os:Android'),
-      ('os:Chromeos123', 'os:ChromeOS'),
-      ('os:Windows-7-SP1', 'os:Windows'),
-      ('os:Ios', 'os:iOS'),
-      ('os:None', 'os:None'),
-  ])
-  def testNormalizeOS(self, os, normal_os):
-    self.assertEqual(normal_os, disabled_test_detection_utils._NormalizeOS(os))
-
-  @parameterized.expand([
-      (
-          {('MSan:True', 'os:Mac-11.10'), ('MSan:True', 'os:Mac123')},
-          [['MSan:True', 'os:Mac']],
-      ),
-      (
-          {('os:Fake',)},
-          [['os:Fake']],
-      ),
-  ])
-  def testSummarizeDisabledVariants(self, input_test_variants,
-                                    expected_test_variants):
-    self.assertEqual(
-        expected_test_variants,
-        disabled_test_detection_utils._SummarizeDisabledVariants(
-            input_test_variants))
-
   # pylint: disable=line-too-long
   def testGenerateDisabledTestsData(self):
     disabled_test_key = LuciTest.CreateKey('a', 'b', 'c')
