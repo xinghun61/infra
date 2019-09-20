@@ -28,6 +28,7 @@ import (
 	"go.chromium.org/luci/common/clock"
 	"go.chromium.org/luci/common/clock/testclock"
 	"go.chromium.org/luci/common/data/stringset"
+	"go.chromium.org/luci/common/errors"
 	"go.chromium.org/luci/common/isolated"
 	"go.chromium.org/luci/swarming/proto/jsonrpc"
 
@@ -45,7 +46,6 @@ type fakeSwarming struct {
 	createCalls []*swarming_api.SwarmingRpcsNewTaskRequest
 	getCalls    [][]string
 	hasRef      bool
-	botExists   bool
 }
 
 func (f *fakeSwarming) CreateTask(ctx context.Context, req *swarming_api.SwarmingRpcsNewTaskRequest) (*swarming_api.SwarmingRpcsTaskRequestMetadata, error) {
@@ -83,11 +83,7 @@ func (f *fakeSwarming) GetResults(ctx context.Context, IDs []string) ([]*swarmin
 }
 
 func (f *fakeSwarming) BotExists(ctx context.Context, dims []*swarming_api.SwarmingRpcsStringPair) (bool, error) {
-	return f.botExists, nil
-}
-
-func (f *fakeSwarming) SetCannedBotExistsResponse(b bool) {
-	f.botExists = b
+	return false, errors.Reason("not implemented").Err()
 }
 
 func (f *fakeSwarming) GetTaskURL(taskID string) string {
@@ -126,7 +122,6 @@ func newFakeSwarming(server string) *fakeSwarming {
 		callback:  func() {},
 		server:    server,
 		hasRef:    true,
-		botExists: true,
 	}
 }
 
@@ -240,47 +235,6 @@ func basicConfig() *config.Config_SkylabWorker {
 		LuciProject: "foo-luci-project",
 		LogDogHost:  "foo-logdog-host",
 	}
-}
-
-func TestLaunchForNonExistentBot(t *testing.T) {
-	Convey("Given one test invocation but non existent bots", t, func() {
-		ctx := context.Background()
-
-		swarming := newFakeSwarming("")
-		swarming.SetCannedBotExistsResponse(false)
-		getter := newFakeGetter()
-		gf := fakeGetterFactory(getter)
-
-		invs := []*steps.EnumerationResponse_AutotestInvocation{
-			clientTestInvocation("", ""),
-		}
-
-		Convey("when running a skylab execution", func() {
-			run, err := skylab.NewTaskSet(ctx, invs, basicParams(), basicConfig(), "foo-parent-task-id")
-			So(err, ShouldBeNil)
-			err = run.LaunchAndWait(ctx, swarming, gf)
-			So(err, ShouldBeNil)
-
-			resp := run.Response(swarming)
-			So(resp, ShouldNotBeNil)
-
-			Convey("then task result is complete with unspecified verdict.", func() {
-				So(resp.TaskResults, ShouldHaveLength, 1)
-				tr := resp.TaskResults[0]
-				So(tr.State.LifeCycle, ShouldEqual, test_platform.TaskState_LIFE_CYCLE_REJECTED)
-				So(tr.State.Verdict, ShouldEqual, test_platform.TaskState_VERDICT_UNSPECIFIED)
-
-			})
-			Convey("and overall result is complete with failed verdict.", func() {
-				So(resp.State.LifeCycle, ShouldEqual, test_platform.TaskState_LIFE_CYCLE_COMPLETED)
-				So(resp.State.Verdict, ShouldEqual, test_platform.TaskState_VERDICT_FAILED)
-			})
-			Convey("and no skylab swarming tasks are created.", func() {
-				So(swarming.getCalls, ShouldHaveLength, 0)
-				So(swarming.createCalls, ShouldHaveLength, 0)
-			})
-		})
-	})
 }
 
 func TestLaunchAndWaitTest(t *testing.T) {
