@@ -233,7 +233,7 @@ func (c *Client) BotExists(ctx context.Context, dims []*swarming_api.SwarmingRpc
 		if err != nil {
 			return errors.Annotate(err, "bot exists").Err()
 		}
-		if resp == nil {
+		if r == nil {
 			return errors.Reason("bot exists: nil RPC response").Err()
 		}
 		// Assign to captured variable only on success.
