@@ -25,7 +25,8 @@
       "--reset-fetch-config",
       "--verbose",
       "--ref",
-      "refs/branch-heads/*"
+      "refs/branch-heads/*",
+      "--gc-aggressive"
     ],
     "env": {
       "CHROME_HEADLESS": "1",

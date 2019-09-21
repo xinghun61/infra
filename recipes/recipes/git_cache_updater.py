@@ -91,26 +91,27 @@ def RunSteps(api, inputs):
   if inputs.override_bucket:
     env['OVERRIDE_BOOTSTRAP_BUCKET'] = inputs.override_bucket
 
-  with api.context(env=env):
-    # Run the updater script.
-    with api.depot_tools.on_path():
-      for url in sorted(repo_urls):
-        api.step(
-            name='Updating %s' % url,
-            cmd=[
-              'git_cache.py', 'update-bootstrap', url,
-              '--cache-dir', work_dir,
-              '--prune',
-              '--reset-fetch-config',
-              '--verbose',
-              '--ref', 'refs/branch-heads/*',
-              # By default, "refs/heads/*" and refs/tags/* are checked out by
-              # git_cache. However, for heavy branching repos,
-              # 'refs/branch-heads/*' is also very useful (crbug/942169).
-              # This is a noop for repos without refs/branch-heads.
-            ],
-            # It's fine for this to fail, just move on to the next one.
-            ok_ret='any')
+  opts = [
+    '--cache-dir', work_dir,
+    '--prune',
+    '--reset-fetch-config',
+    '--verbose',
+    '--ref', 'refs/branch-heads/*',
+    # By default, "refs/heads/*" and refs/tags/* are checked out by
+    # git_cache. However, for heavy branching repos,
+    # 'refs/branch-heads/*' is also very useful (crbug/942169).
+    # This is a noop for repos without refs/branch-heads.
+  ]
+  if inputs.gc_aggressive:
+    opts += ['--gc-aggressive']
+
+  with api.context(env=env), api.depot_tools.on_path():
+    for url in sorted(repo_urls):
+      api.step(
+          name='Updating %s' % url,
+          cmd=['git_cache.py', 'update-bootstrap', url] + opts,
+          # It's fine for this to fail, just move on to the next one.
+          ok_ret='any')
   return result_pb.RawResult(
       status=bb_common_pb.SUCCESS,
       summary_markdown='Updated cache for %d repos' % len(repo_urls),
@@ -133,11 +134,12 @@ def GenTests(api):
       + api.post_process(post_process.DropExpectation)
   )
   yield (
-      api.test('one-repo-experiment')
+      api.test('one-repo-experiment-aggressive')
       + api.runtime(is_experimental=True, is_luci=True)
       + api.properties(git_cache_updater_pb.Inputs(
           override_bucket='experimental-gs-bucket',
           repo_urls=['https://chromium.googlesource.com/v8/v8'],
+          gc_aggressive=True,
       ))
   )
   yield (

@@ -12,7 +12,7 @@ message Inputs {
   string override_bucket = 1;
 
   // If true, will run 'git gc --aggressive' before updating cache.
-  bool aggressive_gc = 2;
+  bool gc_aggressive = 2;
 
   message GitHost{
     // Host such as chromium.googlesource.com.
