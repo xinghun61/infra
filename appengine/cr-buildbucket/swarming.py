@@ -541,9 +541,11 @@ def _sync_build_and_swarming(build_id, generation):
     tq.enqueue_async(
         SYNC_QUEUE_NAME, [continuation], transactional=False
     ).get_result()
-  except taskqueue.TaskAlreadyExistsError:  # pragma: no cover
+  except (taskqueue.TaskAlreadyExistsError,
+          taskqueue.TombstonedTaskError):  # pragma: no cover
     # Previous attempt for this generation of the task might have already
-    # created the next generation task. This is OK.
+    # created the next generation task, and in case of TombstonedTaskError this
+    # task may be already executing or even finished. This is OK.
     pass
 
 
