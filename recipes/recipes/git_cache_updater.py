@@ -7,6 +7,7 @@
 import re
 
 from recipe_engine import recipe_api
+from recipe_engine import post_process
 from PB.recipe_engine import result as result_pb
 from PB.go.chromium.org.luci.buildbucket.proto import common as bb_common_pb
 
@@ -28,12 +29,6 @@ DEPS = [
 PROPERTIES = git_cache_updater_pb.Inputs
 
 
-# TODO(tandrii): delete this.
-BUILDER_MAPPING = {
-  'git-cache-chromium': 'https://chromium.googlesource.com/',
-}
-
-
 def _list_host_repos(api, host_url):
   host_url = host_url.rstrip('/')
   with api.depot_tools.on_path():
@@ -47,7 +42,7 @@ def _repos_to_urls(host_url, repos):
   return ['%s/%s' % (host_url, repo) for repo in repos]
 
 
-class _InvalidRegexp(Exception):
+class _InvalidInput(Exception):
   pass
 
 
@@ -61,7 +56,7 @@ def _get_repo_urls(api, inputs):
         try:
           exclude_regexps.append(re.compile('^' + r + '$', re.IGNORECASE))
         except Exception as e:
-          raise _InvalidRegexp(
+          raise _InvalidInput(
               'invalid regular expression[%d] %r: %s' % (i, r, e))
       repos = [repo for repo in repos
                if all(not r.match(repo) for r in exclude_regexps)]
@@ -70,17 +65,13 @@ def _get_repo_urls(api, inputs):
   if inputs.repo_urls:
     return list(inputs.repo_urls)
 
-  # Legacy. TODO(tandrii): remove this.
-  host_url = BUILDER_MAPPING[api.buildbucket.builder_name]
-  repos = [repo for repo in _list_host_repos(api, host_url)
-           if repo.lower() not in ('all-projects', 'all-users')]
-  return _repos_to_urls(host_url, repos)
+  raise _InvalidInput('repo_urls or git_host.host must be provided')
 
 
 def RunSteps(api, inputs):
   try:
     repo_urls = _get_repo_urls(api, inputs)
-  except _InvalidRegexp as e:
+  except _InvalidInput as e:
     return result_pb.RawResult(
         status=bb_common_pb.FAILURE,
         summary_markdown=e.message)
@@ -137,9 +128,9 @@ foo/bar
 
 def GenTests(api):
   yield (
-      # TODO(tandrii): remove this legacy buildername-based config.
-      api.test('git-cache-chromium')
-      + api.buildbucket.try_build(builder='git-cache-chromium')
+      api.test('needs input')
+      + api.post_process(post_process.StatusFailure)
+      + api.post_process(post_process.DropExpectation)
   )
   yield (
       api.test('one-repo-experiment')
@@ -172,4 +163,6 @@ def GenTests(api):
               ],
           ),
       ))
+      + api.post_process(post_process.StatusFailure)
+      + api.post_process(post_process.DropExpectation)
   )
