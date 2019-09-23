@@ -1205,11 +1205,10 @@ running this recipe module directly.
 
 Recipe for Tricium that outputs no results.
 
-This is intended to be used as the default recipe for the
-tricium builder, which shouldn't actually be used in runs
-triggered by Tricium.
+This is intended as a simple test for recipe-based analyzers.
+It doesn't do anything.
 
-&mdash; **def [RunSteps](/recipes/recipes/tricium_noop.py#21)(api):**
+&mdash; **def [RunSteps](/recipes/recipes/tricium_noop.py#17)(api):**
 ### *recipes* / [update\_submodules\_mirror](/recipes/recipes/update_submodules_mirror.py)
 
 [DEPS](/recipes/recipes/update_submodules_mirror.py#10): [depot\_tools/gclient][depot_tools/recipe_modules/gclient], [depot\_tools/git][depot_tools/recipe_modules/git], [depot\_tools/gitiles][depot_tools/recipe_modules/gitiles], [recipe\_engine/buildbucket][recipe_engine/recipe_modules/buildbucket], [recipe\_engine/context][recipe_engine/recipe_modules/context], [recipe\_engine/file][recipe_engine/recipe_modules/file], [recipe\_engine/json][recipe_engine/recipe_modules/json], [recipe\_engine/path][recipe_engine/recipe_modules/path], [recipe\_engine/properties][recipe_engine/recipe_modules/properties], [recipe\_engine/raw\_io][recipe_engine/recipe_modules/raw_io], [recipe\_engine/step][recipe_engine/recipe_modules/step]
