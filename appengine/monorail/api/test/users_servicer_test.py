@@ -104,7 +104,7 @@ class UsersServicerTest(unittest.TestCase):
         self.services, cnxn=self.cnxn, requester='owner@example.com')
     response = self.CallWrapped(
         self.users_svcr.GetUser, mc, request)
-    self.assertEqual(response.email, 'test2@example.com')
+    self.assertEqual(response.display_name, 'test2@example.com')
     self.assertEqual(response.user_id, 222)
     self.assertFalse(response.is_site_admin)
 
