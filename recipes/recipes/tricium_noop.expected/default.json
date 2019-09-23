@@ -3,7 +3,7 @@
     "cmd": [],
     "name": "write results",
     "~followup_annotations": [
-      "@@@SET_BUILD_PROPERTY@tricium@\"{\\\"comments\\\": []}\"@@@"
+      "@@@SET_BUILD_PROPERTY@tricium@\"{}\"@@@"
     ]
   },
   {
