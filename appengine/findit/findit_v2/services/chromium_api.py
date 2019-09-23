@@ -7,10 +7,13 @@ from collections import defaultdict
 import json
 import logging
 
+from google.protobuf.field_mask_pb2 import FieldMask
+
 from findit_v2.services.failure_type import StepTypeEnum
 from findit_v2.services.project_api import ProjectAPI
 
 from common.findit_http_client import FinditHttpClient
+from common.waterfall import buildbucket_client
 from infra_api_clients import logdog_util
 from services import git
 from services.compile_failure import extract_compile_signal
@@ -86,12 +89,44 @@ class ChromiumProjectAPI(ProjectAPI):
   def GetTestFailures(self, build, test_steps):  # pragma: no cover.
     raise NotImplementedError
 
-  def GetRerunBuilderId(self, build):  # pragma: no cover.
-    raise NotImplementedError
+  def GetRerunBuilderId(self, _build):
+    return '{project}/{bucket}/{builder}'.format(
+        project='chromium', bucket='findit', builder='findit-rerun')
 
-  def GetTestRerunBuildInputProperties(self, tests,
-                                       analyzed_build_id):  # pragma: no cover.
-    raise NotImplementedError
+  def GetCompileRerunBuildInputProperties(self, failed_targets,
+                                          analyzed_build_id):
+    all_targets = set()
+    for step, targets in failed_targets.iteritems():
+      # Assume the step is a compile step.
+      assert step == 'compile'
+      all_targets |= set(targets)
+
+    properties = {}
+    build = buildbucket_client.GetV2Build(
+        analyzed_build_id,
+        fields=FieldMask(paths=['input.properties', 'builder']))
+    properties['target_builder'] = {
+        'master': build.input.properties['mastername'],
+        'builder': build.builder.builder
+    }
+    properties['compile_targets'] = list(all_targets)
+    return properties
+
+  def GetTestRerunBuildInputProperties(self, tests, analyzed_build_id):
+    properties = {}
+    build = buildbucket_client.GetV2Build(
+        analyzed_build_id,
+        fields=FieldMask(paths=['input.properties', 'builder']))
+    properties['target_builder'] = {
+        'master': build.input.properties['mastername'],
+        'builder': build.builder.builder
+    }
+    properties['tests'] = {
+        s: [t['name'] for t in tests_in_suite['tests']
+           ] for s, tests_in_suite in tests.iteritems()
+    }
+
+    return properties
 
   def GetTestFailureInfo(self, context, build, first_failures_in_current_build):
     """Creates structured object expected by heuristic analysis code."""

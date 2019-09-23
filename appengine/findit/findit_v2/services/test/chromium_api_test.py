@@ -8,9 +8,10 @@ import unittest
 from buildbucket_proto.build_pb2 import Build
 from buildbucket_proto.common_pb2 import Log
 from buildbucket_proto.step_pb2 import Step
-from infra_api_clients import logdog_util
+from common.waterfall import buildbucket_client
 from findit_v2.services.chromium_api import ChromiumProjectAPI
 from findit_v2.services.failure_type import StepTypeEnum
+from infra_api_clients import logdog_util
 from services.compile_failure import compile_failure_analysis
 from services.test_failure import test_failure_analysis
 
@@ -224,12 +225,18 @@ class ChromiumProjectAPITest(unittest.TestCase):
             None,
             None))
 
-  def _CreateBuildbucketBuild(self, build_id, build_number):
+  def _CreateBuildbucketBuild(self,
+                              build_id,
+                              build_number,
+                              master='master',
+                              builder='builder'):
     build = Build(id=build_id, number=build_number)
     build.input.gitiles_commit.host = 'gitiles.host.com'
     build.input.gitiles_commit.project = 'project/name'
     build.input.gitiles_commit.ref = 'ref/heads/master'
     build.input.gitiles_commit.id = 'git_sha'
+    build.input.properties['mastername'] = master
+    build.builder.builder = builder
     return build
 
   @patch.object(logdog_util, 'GetLogFromViewUrl')
@@ -439,3 +446,50 @@ class ChromiumProjectAPITest(unittest.TestCase):
     self.assertEqual(
         expected_response,
         ChromiumProjectAPI().GetCompileFailures(build, [step, step2]))
+
+  @patch.object(buildbucket_client, 'GetV2Build')
+  def testGetCompileRerunBuildInputProperties(self, mock_bb):
+    mock_bb.return_value = self._CreateBuildbucketBuild(
+        800000001234, 1234, 'chromium.linux', 'Linux Builder')
+    props = ChromiumProjectAPI().GetCompileRerunBuildInputProperties({
+        'compile': ['bad_target1', 'bad_tests']
+    }, 800000001234)
+    self.assertEqual(props['target_builder'], {
+        'master': 'chromium.linux',
+        'builder': 'Linux Builder'
+    })
+    self.assertEqual(
+        sorted(props['compile_targets']), ['bad_target1', 'bad_tests'])
+
+  @patch.object(buildbucket_client, 'GetV2Build')
+  def testGetTestRerunBuildInputProperties(self, mock_bb):
+    mock_bb.return_value = self._CreateBuildbucketBuild(
+        800000009999, 9999, 'chromium.linux', 'Linux Tests')
+    props = ChromiumProjectAPI().GetTestRerunBuildInputProperties({
+        'complexitor_tests': {
+            'tests': [
+                {
+                    'name': 'TestTrueNatureOf42',
+                    'properties': {
+                        'ignored': 'at the moment'
+                    }
+                },
+                {
+                    'name': 'ValidateFTLCommunication',
+                    'properties': {
+                        'ignored': 'also'
+                    }
+                },
+            ],
+            'properties': {
+                'this is': 'ignored',
+            },
+        },
+    }, 800000009999)
+    self.assertEqual(props['target_builder'], {
+        'master': 'chromium.linux',
+        'builder': 'Linux Tests'
+    })
+    self.assertEqual(props['tests'], {
+        'complexitor_tests': ['TestTrueNatureOf42', 'ValidateFTLCommunication']
+    })
