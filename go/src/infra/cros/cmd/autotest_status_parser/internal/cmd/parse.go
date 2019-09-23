@@ -194,15 +194,26 @@ func getPrejobVerdict(prejobDir string) skylab_test_runner.Result_Prejob_Step_Ve
 // parseResultsFile extracts all test case results from contents of a
 // status.log file.
 func parseResultsFile(contents string) []*skylab_test_runner.Result_Autotest_TestCase {
+	var stack testCaseStack
 	lines := strings.Split(contents, "\n")
 	testCases := []*skylab_test_runner.Result_Autotest_TestCase{}
 
 	for _, line := range lines {
-		testCase := parseLine(line)
-		if testCase != nil {
+		stack.ParseLine(line)
+
+		testCase := stack.PopFullyParsedTestCase()
+
+		if testCase == nil {
+			continue
+		}
+
+		if isLegalTestCaseName(testCase.Name) {
 			testCases = append(testCases, testCase)
 		}
 	}
+
+	testCases = append(testCases, stack.Flush()...)
+
 	// Stay consistent with the default value which is nil.
 	if len(testCases) == 0 {
 		return nil
@@ -210,33 +221,135 @@ func parseResultsFile(contents string) []*skylab_test_runner.Result_Autotest_Tes
 	return testCases
 }
 
-// parseLine decides whether a given line of status.log contains a test case
-// verdict and if so converts it into a TestCase proto.
-func parseLine(line string) *skylab_test_runner.Result_Autotest_TestCase {
-	parts := strings.Split(strings.Trim(line, "\t"), "\t")
-	if !strings.HasPrefix(parts[0], verdictStringPrefix) {
-		return nil
-	}
+type testCaseStack struct {
+	testCases []skylab_test_runner.Result_Autotest_TestCase
+}
+
+// ParseLine parses a line from status.log in the context of the current test
+// case stack.
+func (s *testCaseStack) ParseLine(line string) {
+	parts := strings.Split(strings.TrimLeft(line, "\t"), "\t")
 	if len(parts) < 3 {
+		return
+	}
+
+	switch {
+	case isStartingEvent(parts[0]):
+		testCaseName := parts[2] // Declared test name if any.
+		if testCaseName == undefinedName {
+			// Use subdir name if declared name not available.
+			testCaseName = parts[1]
+		}
+		s.push(testCaseName)
+
+	case isFinalEvent(parts[0]):
+		s.setVerdict(parseVerdict(parts[0]))
+
+	case isStatusUpdateEvent(parts[0]):
+		s.addSummary(parts[len(parts)-1])
+	}
+}
+
+// PopFullyParsedTestCase pops and returns the top test case of the stack, if
+// it is fully parsed. If the top of the stack is only partially parsed, this
+// function returns nil.
+func (s *testCaseStack) PopFullyParsedTestCase() *skylab_test_runner.Result_Autotest_TestCase {
+	if len(s.testCases) == 0 {
 		return nil
 	}
 
-	testCaseName := parts[2] // Declared test name if any.
-	if testCaseName == undefinedName {
-		// Use subdir name if declared name not available.
-		testCaseName = parts[1]
-	}
-	if testCaseName == undefinedName || testCaseName == "reboot" {
-		// Ignore unnamed and reboot test case substeps.
+	r := s.testCases[len(s.testCases)-1]
+
+	// The test case is not fully parsed.
+	if r.Verdict == skylab_test_runner.Result_Autotest_TestCase_VERDICT_UNDEFINED {
 		return nil
 	}
 
-	verdict := parseVerdict(parts[0])
-	testCase := skylab_test_runner.Result_Autotest_TestCase{
-		Name:    testCaseName,
-		Verdict: verdict,
+	s.testCases = s.testCases[:len(s.testCases)-1]
+	return &r
+}
+
+// Flush pops all test cases currently in the stack, declares them failed and
+// returns them.
+func (s *testCaseStack) Flush() []*skylab_test_runner.Result_Autotest_TestCase {
+	r := []*skylab_test_runner.Result_Autotest_TestCase{}
+
+	for {
+		s.setVerdict(skylab_test_runner.Result_Autotest_TestCase_VERDICT_FAIL)
+
+		tc := s.PopFullyParsedTestCase()
+
+		if tc == nil {
+			break
+		}
+
+		r = append(r, tc)
 	}
-	return &testCase
+
+	return r
+}
+
+// push adds a test case with a given name to the stack.
+func (s *testCaseStack) push(name string) {
+	if s == nil {
+		panic("the test case stack is nil")
+	}
+
+	tc := skylab_test_runner.Result_Autotest_TestCase{
+		Name: name,
+	}
+	s.testCases = append(s.testCases, tc)
+}
+
+// addSummary appends a string to the human_readable_summary of the top
+// test case in the stack.
+func (s *testCaseStack) addSummary(summary string) {
+	// Ignore comments that do not correspond to a specific test case.
+	if len(s.testCases) == 0 {
+		return
+	}
+	if summary == "" {
+		return
+	}
+
+	s.testCases[len(s.testCases)-1].HumanReadableSummary += summary + "\n"
+}
+
+// setVerdict sets the verdict of the top test case in the stack.
+func (s *testCaseStack) setVerdict(verdict skylab_test_runner.Result_Autotest_TestCase_Verdict) {
+	if len(s.testCases) == 0 {
+		return
+	}
+
+	s.testCases[len(s.testCases)-1].Verdict = verdict
+}
+
+// True for the event string from the first line of a test case.
+func isStartingEvent(event string) bool {
+	return event == "START"
+}
+
+// True for the event string from the final line of a test case.
+func isFinalEvent(event string) bool {
+	return strings.HasPrefix(event, verdictStringPrefix)
+}
+
+// True for an event string that may contain a failure/warning reason.
+func isStatusUpdateEvent(event string) bool {
+	switch event {
+	case "FAIL", "WARN", "ERROR", "ABORT", "TEST_NA":
+		return true
+	}
+	return false
+}
+
+// isLegalTestCaseName filters out uninformative execution steps.
+func isLegalTestCaseName(name string) bool {
+	switch name {
+	case "reboot", undefinedName, "":
+		return false
+	}
+	return true
 }
 
 // parseVerdict converts a verdict string from status.log (e.g. "END GOOD",
@@ -247,6 +360,7 @@ func parseVerdict(verdict string) skylab_test_runner.Result_Autotest_TestCase_Ve
 	case "GOOD", "WARN":
 		return skylab_test_runner.Result_Autotest_TestCase_VERDICT_PASS
 	}
+	// TODO(crbug.com/846770): deal with TEST_NA separately.
 	return skylab_test_runner.Result_Autotest_TestCase_VERDICT_FAIL
 }
 

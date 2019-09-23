@@ -62,5 +62,9 @@ END ERROR	----	test3	timestamp=1561420811	localtime=Jun 26 00:00:11
 ## Parsing `status.log`
 
 The goal of this parser is to report a flat list of (sub)test cases together
-with a simple pass/fail verdict. In order to achieve that goal it suffices to
-only look at the "END ..." test event lines and ignore the nesting.
+with a simple pass/fail verdict and comment on what went wrong. In the current
+implementation the verdict is obtained from the "END ..." test event lines and
+the human readable summary is obtained from "FAIL"/"ERROR"/"WARN"/etc test
+event lines. "INFO" and "GOOD" lines are ignored. Initial tab characters are
+ignored - the nesting is determined via keeping track of "START" and "END ..."
+event lines.
