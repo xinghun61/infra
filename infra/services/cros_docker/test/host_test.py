@@ -24,15 +24,27 @@ class HostTests(unittest.TestCase):
 
   @mock.patch('os.path.exists')
   def test_should_write(self, mock_exists):
-    mock_exists.return_value = True
+    mock_exists.side_effect = [True, True]
     with mock.patch('__builtin__.open',
                     mock.mock_open(read_data=host.SSH_CONFIG_FILE_CONTENTS)):
       self.assertFalse(host.should_write_ssh_config())
 
   @mock.patch('os.path.exists')
   def test_should_write_no_file(self, mock_exists):
-    mock_exists.return_value = False
+    mock_exists.side_effect = [True, False]
     self.assertTrue(host.should_write_ssh_config())
+
+  @mock.patch('os.chown')
+  @mock.patch('pwd.getpwnam')
+  @mock.patch('os.mkdir')
+  @mock.patch('os.path.exists')
+  def test_should_write_no_dir(self, mock_exists, mock_mkdir, mock_pwn,
+                               mock_chown):
+    mock_exists.side_effect = [False, False]
+    self.assertTrue(host.should_write_ssh_config())
+    mock_pwn.assert_called_once()
+    mock_mkdir.assert_called_once()
+    mock_chown.assert_called_once()
 
   @mock.patch('os.path.exists')
   def test_should_write_wrong_contents(self, mock_exists):

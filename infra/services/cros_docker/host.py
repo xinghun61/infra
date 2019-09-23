@@ -5,6 +5,7 @@
 import json
 import logging
 import os
+import pwd
 
 
 SSH_IDENTITY_FILE_PATH = '/b/id_rsa'
@@ -42,6 +43,11 @@ def read_device_list(path_to_list):
 
 
 def should_write_ssh_config():
+  ssh_dir = os.path.dirname(SSH_CONFIG_FILE_PATH)
+  if not os.path.exists(ssh_dir):
+    os.mkdir(ssh_dir, 0o700)
+    chrome_bot = pwd.getpwnam('chrome-bot')
+    os.chown(ssh_dir, chrome_bot.pw_uid, chrome_bot.pw_gid)
   if not os.path.exists(SSH_CONFIG_FILE_PATH):
     logging.warning('~/.ssh/config file does not exist. Creating it.')
     return True
