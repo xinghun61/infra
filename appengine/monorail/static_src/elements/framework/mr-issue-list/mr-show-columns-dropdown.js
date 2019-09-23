@@ -32,6 +32,7 @@ export class MrShowColumnsDropdown extends connectStore(MrDropdown) {
           /* Because we're using a sticky header, we need to make sure the
           * dropdown cannot be taller than the screen. */
           --mr-dropdown-menu-max-height: 80vh;
+          --mr-dropdown-menu-overflow: auto;
           --mr-dropdown-menu-icon-size: var(--chops-main-font-size);
         }
       `,

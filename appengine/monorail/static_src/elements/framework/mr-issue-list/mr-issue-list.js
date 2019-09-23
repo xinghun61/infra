@@ -15,7 +15,8 @@ import 'elements/framework/mr-star-button/mr-star-button.js';
 import {issueRefToUrl, issueToIssueRef,
   issueRefToString, labelRefsToOneWordLabels} from 'shared/converters.js';
 import {isTextInput} from 'shared/dom-helpers.js';
-import {urlWithNewParams, pluralize} from 'shared/helpers.js';
+import {urlWithNewParams, pluralize, setHasAny,
+  objectValuesForKeys} from 'shared/helpers.js';
 import {stringValuesForIssueField, EMPTY_FIELD_VALUE,
   SPEC_DELIMITER_REGEX} from 'shared/issue-fields.js';
 import './mr-show-columns-dropdown.js';
@@ -211,6 +212,23 @@ export class MrIssueList extends connectStore(LitElement) {
   }
 
   _headerActions(column, i) {
+    const columnKey = column.toLowerCase();
+
+    const isGroupable = !UNGROUPABLE_COLUMNS.has(columnKey);
+
+    let showOnly = [];
+    if (isGroupable) {
+      const values = [...this._uniqueValuesByColumn.get(columnKey)];
+      if (values.length) {
+        showOnly = [{
+          text: 'Show only',
+          items: values.map((v) => ({
+            text: v,
+            handler: () => this.showOnly(column, v),
+          })),
+        }];
+      }
+    }
     const actions = [
       {
         text: 'Sort up',
@@ -220,13 +238,13 @@ export class MrIssueList extends connectStore(LitElement) {
         text: 'Sort down',
         handler: () => this.updateSortSpec(column, true),
       },
-      // TODO(zhangtiff): Add "Show only" feature.
+      ...showOnly,
       {
         text: 'Hide column',
         handler: () => this.removeColumn(i),
       },
     ];
-    if (!UNGROUPABLE_COLUMNS.has(column.toLowerCase())) {
+    if (isGroupable) {
       actions.push({
         text: 'Group rows',
         handler: () => this.addGroupBy(i),
@@ -420,6 +438,12 @@ export class MrIssueList extends connectStore(LitElement) {
         reflect: true,
       },
       /**
+       * A query representing the current set of matching issues in the issue
+       * list. Does not necessarily match queryParams.q since queryParams.q can
+       * be empty while currentQuery is set to a default project query.
+       */
+      currentQuery: {type: String},
+      /**
        * Object containing URL parameters to be preserved when issue links are
        * clicked.
        */
@@ -473,6 +497,8 @@ export class MrIssueList extends connectStore(LitElement) {
     this._fetchingStarredIssues = false;
     this._starringIssues = new Map();
 
+    this._uniqueValuesByColumn = new Map();
+
     // Expose page.js for stubbing.
     this._page = page;
   };
@@ -511,7 +537,48 @@ export class MrIssueList extends connectStore(LitElement) {
       // ever-growing Set size.
       this._hiddenGroups = new Set();
     }
+
+    const valuesByColumnArgs = ['issues', 'columns', 'projectName',
+      '_fieldDefMap', '_labelPrefixSet'];
+    if (setHasAny(changedProperties, valuesByColumnArgs)) {
+      this._uniqueValuesByColumn = this._computeUniqueValuesByColumn(
+          ...objectValuesForKeys(this, valuesByColumnArgs));
+    }
+
     super.update(changedProperties);
+  }
+
+  /**
+   * Iterates through all issues in a list to sort unique values
+   * across columns, for use in the "Show only" feature.
+   *
+   * @param {Array} issues
+   * @param {Array} columns
+   * @param {String} projectName
+   * @param {Map} fieldDefMap
+   * @param {Set} labelPrefixSet
+   * @return {Map} Map where each entry has a String key for the
+   *   lowercase column name and a Set value, continuing all values for
+   *   that column.
+   */
+  _computeUniqueValuesByColumn(issues, columns, projectName, fieldDefMap,
+      labelPrefixSet) {
+    const valueMap = new Map(
+        columns.map((col) => [col.toLowerCase(), new Set()]));
+
+    issues.forEach((issue) => {
+      columns.forEach((col) => {
+        const key = col.toLowerCase();
+        const valueSet = valueMap.get(key);
+
+        const values = stringValuesForIssueField(issue, col,
+            projectName, fieldDefMap, labelPrefixSet);
+        // Note: This allows multiple casings of the same values to be added
+        // to the Set.
+        values.forEach((v) => valueSet.add(v));
+      });
+    });
+    return valueMap;
   }
 
   /**
@@ -577,6 +644,29 @@ export class MrIssueList extends connectStore(LitElement) {
   get selectedIssues() {
     return this.issues.filter((issue) =>
       this._selectedIssues.has(issueRefToString(issue)));
+  }
+
+  /**
+   * Update the search query to filter values matching a specific one.
+   *
+   * @param {String} column name of the column being filtered.
+   * @param {String} value value of the field to filter by.
+   */
+  showOnly(column, value) {
+    column = column.toLowerCase();
+
+    // TODO(zhangtiff): Handle edge cases where column names are not
+    // mapped directly to field names. For example, "AllLabels", should
+    // query for "Labels".
+    const querySegment = `${column}=${value}`;
+
+    let query = this.currentQuery.trim();
+
+    if (!query.includes(querySegment)) {
+      query += ' ' + querySegment;
+
+      this._updateQueryParams({q: query.trim()}, ['start']);
+    }
   }
 
   /**

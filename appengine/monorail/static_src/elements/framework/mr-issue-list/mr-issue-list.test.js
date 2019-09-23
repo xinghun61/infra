@@ -307,6 +307,37 @@ describe('mr-issue-list', () => {
         '/p/chromium/issues/list?sort=-owner%20-summary');
   });
 
+  it('_uniqueValuesByColumn re-computed when values update', async () => {
+    element.issues = [
+      {id: 1, projectName: 'chromium'},
+      {id: 2, projectName: 'chromium'},
+      {id: 3, projectName: 'chrOmiUm'},
+      {id: 1, projectName: 'other'},
+    ];
+    element.columns = [];
+    await element.updateComplete;
+
+    assert.deepEqual(element._uniqueValuesByColumn, new Map());
+
+    element.columns = ['project'];
+    await element.updateComplete;
+
+    assert.deepEqual(element._uniqueValuesByColumn,
+        new Map([['project', new Set(['chromium', 'other'])]]));
+  });
+
+  it('showOnly adds new search term to query', async () => {
+    element.currentQuery = 'owner:me';
+    element.queryParams = {};
+
+    await element.updateComplete;
+
+    element.showOnly('Priority', 'High');
+
+    sinon.assert.calledWith(element._page,
+        '/p/chromium/issues/list?q=owner%3Ame%20priority%3DHigh');
+  });
+
   it('addGroupBy updates groupby URL param', async () => {
     element.columns = ['Owner', 'Priority'];
     element.groups = ['Status'];

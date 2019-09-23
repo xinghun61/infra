@@ -45,7 +45,6 @@ describe('mr-dropdown', () => {
     assert.isFalse(element.opened);
   });
 
-
   it('clicking outside element closes menu', () => {
     element.open();
     assert.isTrue(element.opened);
@@ -134,5 +133,91 @@ describe('mr-dropdown', () => {
     assert.isTrue(handler1.calledOnce);
     assert.isFalse(handler2.called);
     assert.isTrue(handler3.calledOnce);
+  });
+
+  describe('nested dropdown menus', () => {
+    beforeEach(() => {
+      element.items = [
+        {
+          text: 'test',
+          items: [
+            {text: 'item 1'},
+            {text: 'item 2'},
+            {text: 'item 3'},
+          ],
+        },
+      ];
+
+      element.open();
+    });
+
+    it('nested dropdown menu renders', async () => {
+      await element.updateComplete;
+
+      const nestedDropdown = element.shadowRoot.querySelector('mr-dropdown');
+
+      assert.equal(nestedDropdown.text, 'test');
+      assert.deepEqual(nestedDropdown.items, [
+        {text: 'item 1'},
+        {text: 'item 2'},
+        {text: 'item 3'},
+      ]);
+    });
+
+    it('clicking nested item with handler calls handler', async () => {
+      const handler = sinon.stub();
+      element.items = [{
+        text: 'test',
+        items: [
+          {text: 'item 1'},
+          {
+            text: 'item with handler',
+            handler,
+          },
+        ],
+      }];
+
+      await element.updateComplete;
+
+      const nestedDropdown = element.shadowRoot.querySelector('mr-dropdown');
+
+      nestedDropdown.open();
+      await element.updateComplete;
+
+      // Clicking an unrelated nested item shouldn't call the handler.
+      nestedDropdown.clickItem(0);
+      // Nor should clicking the parent item call the handler.
+      element.clickItem(0);
+      sinon.assert.notCalled(handler);
+
+      element.open();
+      nestedDropdown.open();
+      await element.updateComplete;
+
+      nestedDropdown.clickItem(1);
+      sinon.assert.calledOnce(handler);
+    });
+
+    it('clicking nested dropdown menu toggles nested menu', async () => {
+      await element.updateComplete;
+
+      const nestedDropdown = element.shadowRoot.querySelector('mr-dropdown');
+      const nestedAnchor = nestedDropdown.shadowRoot.querySelector('.anchor');
+
+      assert.isTrue(element.opened);
+      assert.isFalse(nestedDropdown.opened);
+
+      nestedAnchor.click();
+      await element.updateComplete;
+
+      assert.isTrue(element.opened);
+      assert.isTrue(nestedDropdown.opened);
+
+      nestedAnchor.click();
+      await element.updateComplete;
+
+      assert.isTrue(element.opened);
+      assert.isFalse(nestedDropdown.opened);
+    });
   });
 });

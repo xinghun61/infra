@@ -23,7 +23,9 @@ export class MrDropdown extends LitElement {
         --mr-dropdown-icon-font-size: var(--chops-icon-font-size);
         --mr-dropdown-anchor-font-weight: initial;
         --mr-dropdown-anchor-padding: 4px 0.25em;
+        --mr-dropdown-anchor-justify-content: center;
         --mr-dropdown-menu-max-height: initial;
+        --mr-dropdown-menu-overflow: initial;
         --mr-dropdown-menu-min-width: 120%;
         --mr-dropdown-menu-font-size: var(--chops-large-font-size);
         --mr-dropdown-menu-icon-size: var(--chops-icon-font-size);
@@ -69,32 +71,40 @@ export class MrDropdown extends LitElement {
         height: 100%;
         display: flex;
         align-items: center;
-        justify-content: center;
+        justify-content: var(--mr-dropdown-anchor-justify-content);
         cursor: pointer;
         padding: var(--mr-dropdown-anchor-padding);
         color: var(--chops-link-color);
         font-weight: var(--mr-dropdown-anchor-font-weight);
       }
+      /* menuAlignment options: right, left, side. */
       .menu.right {
         right: 0px;
       }
       .menu.left {
         left: 0px;
       }
+      .menu.side {
+        left: 100%;
+        top: 0;
+      }
       .menu {
         font-size: var(--mr-dropdown-menu-font-size);
         position: absolute;
         min-width: var(--mr-dropdown-menu-min-width);
+        max-height: var(--mr-dropdown-menu-max-height);
+        overflow: var(--mr-dropdown-menu-overflow);
         top: 90%;
         display: block;
         background: white;
         border: var(--chops-accessible-border);
         z-index: 990;
         box-shadow: 2px 3px 8px 0px hsla(0, 0%, 0%, 0.3);
-        overflow: auto;
-        max-height: var(--mr-dropdown-menu-max-height);
       }
       .menu-item {
+        background: none;
+        margin: 0;
+        border: 0;
         box-sizing: border-box;
         text-decoration: none;
         white-space: nowrap;
@@ -108,6 +118,12 @@ export class MrDropdown extends LitElement {
       .menu-item[hidden] {
         display: none;
       }
+      mr-dropdown.menu-item {
+        width: 100%;
+        padding: 0;
+        --mr-dropdown-anchor-padding: 0.25em 8px;
+        --mr-dropdown-anchor-justify-content: space-between;
+      }
       .menu hr {
         width: 96%;
         margin: 0 2%;
@@ -119,7 +135,7 @@ export class MrDropdown extends LitElement {
         cursor: pointer;
         color: var(--chops-link-color);
       }
-      .menu a:hover {
+      .menu a:hover, .menu-item mr-dropdown:hover {
         background: hsl(0, 0%, 90%);
       }
     `];
@@ -134,31 +150,50 @@ export class MrDropdown extends LitElement {
         <i class="material-icons">${this.icon}</i>
       </button>
       <div class="menu ${this.menuAlignment}">
-        ${this.items.map((item, index) => html`
-          ${item.separator ? html`
-            <strong ?hidden=${!item.text} class="menu-item">
-              ${item.text}
-            </strong>
-            <hr />
-          ` : html`
-            <a
-              href=${ifDefined(item.url)}
-              @click=${this._onClick}
-              @keydown=${this._onClick}
-              data-idx=${index}
-              tabindex="0"
-              class="menu-item"
-            >
-              <i
-                class="material-icons"
-                ?hidden=${item.icon === undefined}
-              >${item.icon}</i>
-              ${item.text}
-            </a>
-          `}
-        `)}
+        ${this.items.map((item, index) => this._renderItem(item, index))}
         <slot></slot>
       </div>
+    `;
+  }
+
+  _renderItem(item, index) {
+    if (item.separator) {
+      // The menu item is a no-op divider between sections.
+      return html`
+        <strong ?hidden=${!item.text} class="menu-item">
+          ${item.text}
+        </strong>
+        <hr />
+      `;
+    }
+    if (item.items && item.items.length) {
+      // The menu contains a sub-menu.
+      return html`
+        <mr-dropdown
+          .text=${item.text}
+          .items=${item.items}
+          menuAlignment="side"
+          icon="arrow_right"
+          data-idx=${index}
+          class="menu-item"
+        ></button>
+      `;
+    }
+    return html`
+      <a
+        href=${ifDefined(item.url)}
+        @click=${this._onClick}
+        @keydown=${this._onClick}
+        data-idx=${index}
+        tabindex="0"
+        class="menu-item"
+      >
+        <i
+          class="material-icons"
+          ?hidden=${item.icon === undefined}
+        >${item.icon}</i>
+        ${item.text}
+      </a>
     `;
   }
 

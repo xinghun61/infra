@@ -18,6 +18,17 @@ export function arrayDifference(listA, listB, equals) {
   });
 }
 
+/**
+ * Check to see if a Set contains any of a list of values.
+ *
+ * @param {Set} set the Set to check for values in.
+ * @param {Array} values checks if any of these values are included.
+ * @return {Boolean} whether the Set has any of the values or not.
+ */
+export function setHasAny(set, values) {
+  return !!values.find((v) => set.has(v));
+}
+
 // Check if a string has a prefix, ignoring case.
 export function hasPrefix(str, prefix) {
   return str.toLowerCase().startsWith(prefix.toLowerCase());
@@ -45,6 +56,18 @@ export function objectToMap(obj = {}) {
     map.set(key, obj[key]);
   });
   return map;
+}
+
+/**
+ * Given an Object, extract a list of values from it, based on some
+ * specified keys.
+ *
+ * @param {Object} obj the Object to read values from.
+ * @param {Array} keys the Object keys to fetch values for.
+ * @return {Array} Object values matching the given keys.
+ */
+export function objectValuesForKeys(obj, keys = []) {
+  return keys.map((key) => ((key in obj) ? obj[key] : undefined));
 }
 
 export function isEmptyObject(obj) {

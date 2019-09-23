@@ -168,10 +168,11 @@ export class MrListPage extends connectStore(LitElement) {
         .issues=${this.issues}
         .projectName=${this.projectName}
         .queryParams=${this.queryParams}
+        .currentQuery=${this.currentQuery}
         .columns=${this.columns}
+        .groups=${this.groups}
         ?selectionEnabled=${this.editingEnabled}
         ?starringEnabled=${this.starringEnabled}
-        .groups=${this.groups}
         @selectionChange=${this._setSelectedIssues}
       ></mr-issue-list>
     `;

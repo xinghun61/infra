@@ -3,8 +3,9 @@
 // found in the LICENSE file.
 
 import {assert} from 'chai';
-import {arrayDifference, hasPrefix, objectToMap, equalsIgnoreCase,
-  immutableSplice, userIsMember, urlWithNewParams} from './helpers.js';
+import {arrayDifference, setHasAny, hasPrefix, objectToMap, objectValuesForKeys,
+  equalsIgnoreCase, immutableSplice, userIsMember,
+  urlWithNewParams} from './helpers.js';
 
 
 describe('arrayDifference', () => {
@@ -42,6 +43,27 @@ describe('arrayDifference', () => {
   });
 });
 
+describe('setHasAny', () => {
+  it('empty set never has any values', () => {
+    assert.isFalse(setHasAny(new Set(), []));
+    assert.isFalse(setHasAny(new Set(), ['test']));
+    assert.isFalse(setHasAny(new Set(), ['nope', 'yup', 'no']));
+  });
+
+  it('false when no values found', () => {
+    assert.isFalse(setHasAny(new Set(['hello', 'world']), []));
+    assert.isFalse(setHasAny(new Set(['hello', 'world']), ['wor']));
+    assert.isFalse(setHasAny(new Set(['test']), ['other', 'values']));
+    assert.isFalse(setHasAny(new Set([1, 2, 3]), [4, 5, 6]));
+  });
+
+  it('true when values found', () => {
+    assert.isTrue(setHasAny(new Set(['hello', 'world']), ['world']));
+    assert.isTrue(setHasAny(new Set([1, 2, 3]), [3, 4, 5]));
+    assert.isTrue(setHasAny(new Set([1, 2, 3]), [1, 3]));
+  });
+});
+
 describe('hasPrefix', () => {
   it('only true when has prefix', () => {
     assert.isFalse(hasPrefix('teststring', 'test-'));
@@ -66,6 +88,30 @@ describe('objectToMap', () => {
     assert.deepEqual(objectToMap({['weird:key']: 'value',
       ['what is this key']: 'v2'}), new Map([['weird:key', 'value'],
       ['what is this key', 'v2']]));
+  });
+});
+
+describe('objectValuesForKeys', () => {
+  it('no values when no matching keys', () => {
+    assert.deepEqual(objectValuesForKeys({}, []), []);
+    assert.deepEqual(objectValuesForKeys({}, []), []);
+    assert.deepEqual(objectValuesForKeys({key: 'value'}, []), []);
+  });
+
+  it('returns values when keys match', () => {
+    assert.deepEqual(objectValuesForKeys({a: 1, b: 2, c: 3}, ['a', 'b']),
+        [1, 2]);
+    assert.deepEqual(objectValuesForKeys({a: 1, b: 2, c: 3}, ['b', 'c']),
+        [2, 3]);
+    assert.deepEqual(objectValuesForKeys({['weird:key']: {nested: 'obj'}},
+        ['weird:key']), [{nested: 'obj'}]);
+  });
+
+  it('sets non-matching keys to undefined', () => {
+    assert.deepEqual(objectValuesForKeys({a: 1, b: 2, c: 3}, ['c', 'd', 'e']),
+        [3, undefined, undefined]);
+    assert.deepEqual(objectValuesForKeys({a: 1, b: 2, c: 3}, [1, 2, 3]),
+        [undefined, undefined, undefined]);
   });
 });
 
