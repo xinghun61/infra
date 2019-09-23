@@ -50,7 +50,6 @@ type TaskSet struct {
 }
 
 type testRun struct {
-	invocation  *steps.EnumerationResponse_AutotestInvocation
 	Args        request.Args
 	maxAttempts int
 	runnable    bool
@@ -58,8 +57,8 @@ type testRun struct {
 }
 
 func newTestRun(ctx context.Context, invocation *steps.EnumerationResponse_AutotestInvocation, params *test_platform.Request_Params, workerConfig *config.Config_SkylabWorker, parentTaskID string) (*testRun, error) {
-	t := testRun{invocation: invocation, runnable: true}
-	a, err := t.RequestArgs(ctx, params, workerConfig, parentTaskID)
+	t := testRun{runnable: true}
+	a, err := requestArgs(ctx, invocation, params, workerConfig, parentTaskID)
 	if err != nil {
 		return nil, errors.Annotate(err, "new test run").Err()
 	}
@@ -82,89 +81,8 @@ func maxInt32IfZero(v int32) int32 {
 	return v
 }
 
-func (t *testRun) AttemptsRemaining() int {
-	r := t.maxAttempts - len(t.attempts)
-	if r > 0 {
-		return r
-	}
-	return 0
-}
-
-func (t *testRun) AttemptedAtLeastOnce() bool {
-	return len(t.attempts) > 0
-}
-
-// ValidateDependencies checks whether this test has dependencies satisfied by
-// at least one Skylab bot.
-func (t *testRun) ValidateDependencies(ctx context.Context, client swarming.Client) (bool, error) {
-	dims, err := t.Args.StaticDimensions()
-	if err != nil {
-		return false, errors.Annotate(err, "validate dependencies").Err()
-	}
-	exists, err := client.BotExists(ctx, dims)
-	logging.Debugf(ctx, "Bot existence check result: %s, error: %s", exists, err)
-	return true, nil
-}
-
-func (t *testRun) LaunchAttempt(ctx context.Context, client swarming.Client) error {
-	req, err := t.Args.SwarmingNewTaskRequest()
-	if err != nil {
-		return errors.Annotate(err, "launch attempt for %s", t.invocation.Test.Name).Err()
-	}
-	resp, err := client.CreateTask(ctx, req)
-	if err != nil {
-		return errors.Annotate(err, "launch attempt for %s", t.invocation.Test.Name).Err()
-	}
-	logging.Infof(ctx, "Launched attempt for %s as task %s", t.invocation.Test.Name, client.GetTaskURL(resp.TaskId))
-	t.attempts = append(t.attempts, &attempt{taskID: resp.TaskId})
-	return nil
-}
-
-// MarkNotRunnable marks this test run as being unable to run.
-//
-// In particular, this means that this test run is Completed().
-func (t *testRun) MarkNotRunnable() {
-	t.runnable = false
-}
-
-// Completed determines whether we have completed an attempt for this test.
-func (t *testRun) Completed() bool {
-	if !t.runnable {
-		return true
-	}
-	a := t.GetLatestAttempt()
-	return a != nil && a.Completed()
-}
-
-func (t *testRun) TaskResult(urler swarming.URLer) []*steps.ExecuteResponse_TaskResult {
-	if !t.runnable {
-		return []*steps.ExecuteResponse_TaskResult{
-			{
-				Name: t.invocation.Test.Name,
-				State: &test_platform.TaskState{
-					LifeCycle: test_platform.TaskState_LIFE_CYCLE_REJECTED,
-					Verdict:   test_platform.TaskState_VERDICT_UNSPECIFIED,
-				},
-			},
-		}
-	}
-
-	ret := make([]*steps.ExecuteResponse_TaskResult, len(t.attempts))
-	for i, a := range t.attempts {
-		ret[i] = toTaskResult(t.invocation.Test.Name, a, i, urler)
-	}
-	return ret
-}
-
-func (t *testRun) GetLatestAttempt() *attempt {
-	if len(t.attempts) == 0 {
-		return nil
-	}
-	return t.attempts[len(t.attempts)-1]
-}
-
-func (t *testRun) RequestArgs(ctx context.Context, params *test_platform.Request_Params, workerConfig *config.Config_SkylabWorker, parentTaskID string) (request.Args, error) {
-	isClient, err := t.isClientTest()
+func requestArgs(ctx context.Context, invocation *steps.EnumerationResponse_AutotestInvocation, params *test_platform.Request_Params, workerConfig *config.Config_SkylabWorker, parentTaskID string) (request.Args, error) {
+	isClient, err := isClientTest(invocation)
 	if err != nil {
 		return request.Args{}, errors.Annotate(err, "create request args").Err()
 	}
@@ -180,19 +98,19 @@ func (t *testRun) RequestArgs(ctx context.Context, params *test_platform.Request
 	}
 
 	kv := getKeyvals(params, parentTaskID)
-	t.updateWithInvocationKeyvals(kv)
-	t.addKeyvalsForDisplayName(ctx, kv, params)
+	updateWithInvocationKeyvals(kv, invocation)
+	addKeyvalsForDisplayName(ctx, kv, params, invocation)
 
 	cmd := &worker.Command{
-		TaskName:        t.invocation.Test.Name,
+		TaskName:        invocation.Test.Name,
 		ClientTest:      isClient,
 		OutputToIsolate: true,
-		TestArgs:        t.invocation.TestArgs,
+		TestArgs:        invocation.TestArgs,
 		Keyvals:         kv,
 	}
 	cmd.Config(wrap(workerConfig))
 
-	labels, err := toInventoryLabels(params, t.invocation.Test.Dependencies)
+	labels, err := toInventoryLabels(params, invocation.Test.Dependencies)
 	if err != nil {
 		return request.Args{}, errors.Annotate(err, "create request args").Err()
 	}
@@ -211,16 +129,25 @@ func (t *testRun) RequestArgs(ctx context.Context, params *test_platform.Request
 	return args, nil
 }
 
-func (t *testRun) addKeyvalsForDisplayName(ctx context.Context, kv map[string]string, params *test_platform.Request_Params) {
+func isClientTest(invocation *steps.EnumerationResponse_AutotestInvocation) (bool, error) {
+	switch invocation.Test.ExecutionEnvironment {
+	case build_api.AutotestTest_EXECUTION_ENVIRONMENT_CLIENT:
+		return true, nil
+	case build_api.AutotestTest_EXECUTION_ENVIRONMENT_SERVER:
+		return false, nil
+	default:
+		return false, errors.Reason("unknown exec environment %s", invocation.Test.ExecutionEnvironment).Err()
+	}
+}
+
+func addKeyvalsForDisplayName(ctx context.Context, kv map[string]string, params *test_platform.Request_Params, invocation *steps.EnumerationResponse_AutotestInvocation) {
 	const displayNameKey = "label"
 
-	if t.invocation.DisplayName != "" {
-		kv[displayNameKey] = t.invocation.DisplayName
+	if invocation.DisplayName != "" {
+		kv[displayNameKey] = invocation.DisplayName
 		return
 	}
-
-	testName := t.invocation.GetTest().GetName()
-	kv[displayNameKey] = constructDisplayNameFromRequestParams(ctx, kv, params, testName)
+	kv[displayNameKey] = constructDisplayNameFromRequestParams(ctx, kv, params, invocation.GetTest().GetName())
 }
 
 const (
@@ -255,8 +182,8 @@ func constructDisplayNameFromRequestParams(ctx context.Context, kv map[string]st
 	return build + "/" + suite + "/" + testName
 }
 
-func (t *testRun) updateWithInvocationKeyvals(kv map[string]string) {
-	for k, v := range t.invocation.GetResultKeyvals() {
+func updateWithInvocationKeyvals(kv map[string]string, invocation *steps.EnumerationResponse_AutotestInvocation) {
+	for k, v := range invocation.GetResultKeyvals() {
 		if _, ok := kv[k]; !ok {
 			kv[k] = v
 		}
@@ -278,14 +205,6 @@ func getKeyvals(params *test_platform.Request_Params, parentTaskID string) map[s
 	return keyvals
 }
 
-func (t *testRun) isClientTest() (bool, error) {
-	isClient, ok := isClientTest[t.invocation.Test.ExecutionEnvironment]
-	if !ok {
-		return false, errors.Reason("unknown exec environment %s", t.invocation.Test.ExecutionEnvironment).Err()
-	}
-	return isClient, nil
-}
-
 func swarmingTags(cmd *worker.Command, conf *config.Config_SkylabWorker, params *test_platform.Request_Params) []string {
 	tags := []string{
 		"luci_project:" + conf.LuciProject,
@@ -298,6 +217,91 @@ func swarmingTags(cmd *worker.Command, conf *config.Config_SkylabWorker, params 
 	// and other "special tags" from being client-specified here.
 	tags = append(tags, params.GetDecorations().GetTags()...)
 	return tags
+}
+
+func (t *testRun) Name() string {
+	return t.Args.Cmd.TaskName
+}
+
+func (t *testRun) AttemptsRemaining() int {
+	r := t.maxAttempts - len(t.attempts)
+	if r > 0 {
+		return r
+	}
+	return 0
+}
+
+func (t *testRun) AttemptedAtLeastOnce() bool {
+	return len(t.attempts) > 0
+}
+
+// ValidateDependencies checks whether this test has dependencies satisfied by
+// at least one Skylab bot.
+func (t *testRun) ValidateDependencies(ctx context.Context, client swarming.Client) (bool, error) {
+	dims, err := t.Args.StaticDimensions()
+	if err != nil {
+		return false, errors.Annotate(err, "validate dependencies").Err()
+	}
+	exists, err := client.BotExists(ctx, dims)
+	logging.Debugf(ctx, "Bot existence check result: %s, error: %s", exists, err)
+	return true, nil
+}
+
+func (t *testRun) LaunchAttempt(ctx context.Context, client swarming.Client) error {
+	req, err := t.Args.SwarmingNewTaskRequest()
+	if err != nil {
+		return errors.Annotate(err, "launch attempt for %s", t.Name()).Err()
+	}
+	resp, err := client.CreateTask(ctx, req)
+	if err != nil {
+		return errors.Annotate(err, "launch attempt for %s", t.Name()).Err()
+	}
+	logging.Infof(ctx, "Launched attempt for %s as task %s", t.Name(), client.GetTaskURL(resp.TaskId))
+	t.attempts = append(t.attempts, &attempt{taskID: resp.TaskId})
+	return nil
+}
+
+// MarkNotRunnable marks this test run as being unable to run.
+//
+// In particular, this means that this test run is Completed().
+func (t *testRun) MarkNotRunnable() {
+	t.runnable = false
+}
+
+// Completed determines whether we have completed an attempt for this test.
+func (t *testRun) Completed() bool {
+	if !t.runnable {
+		return true
+	}
+	a := t.GetLatestAttempt()
+	return a != nil && a.Completed()
+}
+
+func (t *testRun) TaskResult(urler swarming.URLer) []*steps.ExecuteResponse_TaskResult {
+	if !t.runnable {
+		return []*steps.ExecuteResponse_TaskResult{
+			{
+				Name: t.Name(),
+				State: &test_platform.TaskState{
+					LifeCycle: test_platform.TaskState_LIFE_CYCLE_REJECTED,
+					Verdict:   test_platform.TaskState_VERDICT_UNSPECIFIED,
+				},
+			},
+		}
+	}
+
+	ret := make([]*steps.ExecuteResponse_TaskResult, len(t.attempts))
+	for i, a := range t.attempts {
+		ret[i] = toTaskResult(t.Name(), a, i, urler)
+	}
+	return ret
+}
+
+func (t *testRun) GetLatestAttempt() *attempt {
+	if len(t.attempts) == 0 {
+		return nil
+	}
+	return t.attempts[len(t.attempts)-1]
 }
 
 type attempt struct {
@@ -412,11 +416,6 @@ func (r *TaskSet) LaunchAndWait(ctx context.Context, client swarming.Client, gf 
 	return r.wait(ctx, client, gf)
 }
 
-var isClientTest = map[build_api.AutotestTest_ExecutionEnvironment]bool{
-	build_api.AutotestTest_EXECUTION_ENVIRONMENT_CLIENT: true,
-	build_api.AutotestTest_EXECUTION_ENVIRONMENT_SERVER: false,
-}
-
 func (r *TaskSet) launchAll(ctx context.Context, client swarming.Client) error {
 	for _, testRun := range r.testRuns {
 		runnable, err := testRun.ValidateDependencies(ctx, client)
@@ -468,7 +467,7 @@ func (r *TaskSet) tick(ctx context.Context, client swarming.Client, gf isolate.G
 			continue
 		}
 
-		logging.Debugf(ctx, "Task %s (%s) completed with verdict %s", latestAttempt.taskID, testRun.invocation.Test.Name, latestAttempt.Verdict())
+		logging.Debugf(ctx, "Task %s (%s) completed with verdict %s", latestAttempt.taskID, testRun.Name(), latestAttempt.Verdict())
 
 		shouldRetry, err := r.shouldRetry(testRun)
 		if err != nil {
@@ -476,14 +475,14 @@ func (r *TaskSet) tick(ctx context.Context, client swarming.Client, gf isolate.G
 		}
 		if shouldRetry {
 			complete = false
-			logging.Debugf(ctx, "Retrying %s", testRun.invocation.Test.Name)
+			logging.Debugf(ctx, "Retrying %s", testRun.Name())
 			updateLogDogURL(&testRun.Args)
 			if err := testRun.LaunchAttempt(ctx, client); err != nil {
 				return false, errors.Annotate(err, "tick for task %s: retry test", latestAttempt.taskID).Err()
 			}
 			r.retries++
 		} else {
-			logging.Debugf(ctx, "Not retrying %s", testRun.invocation.Test.Name)
+			logging.Debugf(ctx, "Not retrying %s", testRun.Name())
 		}
 	}
 
