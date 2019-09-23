@@ -36,6 +36,9 @@ describe('stringValuesForIssueField', () => {
         closedTimestamp: initialTime - 120, // 2 minutes ago
         modifiedTimestamp: initialTime - 60, // a minute ago
         openedTimestamp: initialTime - 24 * 60 * 60, // a day ago
+        componentModifiedTimestamp: initialTime - 60, // a minute ago
+        statusModifiedTimestamp: initialTime - 60, // a minute ago
+        ownerModifiedTimestamp: initialTime - 60, // a minute ago
         statusRef: {status: 'Duplicate'},
         mergedIntoIssueRef: {localId: 31, projectName: 'chromium'},
       };
@@ -123,6 +126,13 @@ describe('stringValuesForIssueField', () => {
           ['Infra', 'Monorail>UI']);
     });
 
+    it('computes strings for ComponentModified', () => {
+      const fieldName = 'ComponentModified';
+
+      assert.deepEqual(stringValuesForIssueField(issue, fieldName),
+          ['a minute ago']);
+    });
+
     it('computes strings for MergedInto', () => {
       const fieldName = 'MergedInto';
 
@@ -151,6 +161,20 @@ describe('stringValuesForIssueField', () => {
           ['2']);
     });
 
+    it('computes strings for Status', () => {
+      const fieldName = 'Status';
+
+      assert.deepEqual(stringValuesForIssueField(issue, fieldName),
+          ['Duplicate']);
+    });
+
+    it('computes strings for StatusModified', () => {
+      const fieldName = 'StatusModified';
+
+      assert.deepEqual(stringValuesForIssueField(issue, fieldName),
+          ['a minute ago']);
+    });
+
     it('computes strings for Summary', () => {
       const fieldName = 'Summary';
 
@@ -170,6 +194,13 @@ describe('stringValuesForIssueField', () => {
 
       assert.deepEqual(stringValuesForIssueField(issue, fieldName),
           ['owner@example.com']);
+    });
+
+    it('computes strings for OwnerModified', () => {
+      const fieldName = 'OwnerModified';
+
+      assert.deepEqual(stringValuesForIssueField(issue, fieldName),
+          ['a minute ago']);
     });
 
     it('computes strings for Opened', () => {
