@@ -289,13 +289,19 @@ func logPotentiallyRelevantRules(ctx context.Context, request *test_platform.Req
 	logger := logging.Get(ctx)
 	logger.Warningf("No matching rule found. Printing partially matching rules...")
 	if pr := determineRulesMatchingModel(request, rules); len(pr) > 0 {
-		logger.Warningf("Following rules match requested model: %s", formatFirstFewRules(pr))
+		logger.Infof("Following rules match requested model: %s", formatFirstFewRules(pr))
+	} else {
+		logger.Warningf("No rules matched requested model %s.", request.GetParams().GetHardwareAttributes().GetModel())
 	}
 	if pr := determineRulesMatchingBuildTarget(request, rules); len(pr) > 0 {
-		logger.Warningf("Following rules match requested buildTarget: %s", formatFirstFewRules(pr))
+		logger.Infof("Following rules match requested buildTarget: %s", formatFirstFewRules(pr))
+	} else {
+		logger.Warningf("No rules matched requested build target %s.", request.GetParams().GetSoftwareAttributes().GetBuildTarget().GetName())
 	}
 	if pr := determineRulesMatchingScheduling(request, rules); len(pr) > 0 {
-		logger.Warningf("Following rules match requested scheduling: %s", formatFirstFewRules(pr))
+		logger.Infof("Following rules match requested scheduling: %s", formatFirstFewRules(pr))
+	} else {
+		logger.Warningf("No rules matched requested scheduling %s.", request.GetParams().GetScheduling())
 	}
 }
 
