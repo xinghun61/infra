@@ -26,6 +26,15 @@ type Client struct {
 	server          string
 }
 
+// ListedHost is a collection of information about the DUT managed by a particular bot.
+type ListedHost struct {
+	Hostname string
+}
+
+func (l *ListedHost) String() string {
+	return l.Hostname
+}
+
 // New creates a new Client.
 func New(ctx context.Context, h *http.Client, server string) (*Client, error) {
 	service, err := newSwarmingService(ctx, h, server)
@@ -244,6 +253,80 @@ func (c *Client) BotExists(ctx context.Context, dims []*swarming_api.SwarmingRpc
 		return false, err
 	}
 	return len(resp.Items) > 0, nil
+}
+
+// getSwarmingRpcsBotList -- get a SwarmingRpcsBotList, retrying as appropriate for swarming
+func getSwarmingRpcsBotList(ctx context.Context, c *Client, call *swarming_api.BotsListCall) (*swarming_api.SwarmingRpcsBotList, error) {
+	var tl *swarming_api.SwarmingRpcsBotList
+	f := func() error {
+		var err error
+		tl, err = call.Context(ctx).Do()
+		return err
+	}
+	err := callWithRetries(ctx, f)
+	if err != nil {
+		return nil, err
+	}
+	return tl, nil
+}
+
+// GetBots returns a slice of bots
+func (c *Client) GetBots(ctx context.Context, dims []*swarming_api.SwarmingRpcsStringPair) ([]*swarming_api.SwarmingRpcsBotInfo, error) {
+	var out []*swarming_api.SwarmingRpcsBotInfo
+
+	call := c.SwarmingService.Bots.List().Dimensions(flattenStringPairs(dims)...)
+	for {
+		tl, err := getSwarmingRpcsBotList(ctx, c, call)
+		if err != nil {
+			return nil, err
+		}
+		call = call.Cursor(tl.Cursor)
+		for _, item := range tl.Items {
+			out = append(out, item)
+		}
+		if tl.Cursor == "" {
+			return out, nil
+		}
+	}
+}
+
+// GetListedBots returns information about the DUTs managed by bots satisfying particular dimensions.
+func (c *Client) GetListedBots(ctx context.Context, dims []*swarming_api.SwarmingRpcsStringPair) ([]*ListedHost, error) {
+	var out []*ListedHost
+
+	bots, err := c.GetBots(ctx, dims)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, bot := range bots {
+		var err error
+		newEntry := &ListedHost{}
+		newEntry.Hostname, err = LookupDimension(bot.Dimensions, "dut_name")
+		if err != nil {
+			continue
+		}
+		out = append(out, newEntry)
+	}
+
+	return out, nil
+}
+
+// LookupDimension gets a single string value associated with a dimension
+func LookupDimension(dims []*swarming_api.SwarmingRpcsStringListPair, key string) (string, error) {
+	for _, pair := range dims {
+		if pair.Key == key {
+			if len(pair.Value) == 0 {
+				return "", fmt.Errorf("found key, 0 values")
+			}
+			if len(pair.Value) > 1 {
+				return "", fmt.Errorf("found key, (%d) values", len(pair.Value))
+			}
+			return pair.Value[0], nil
+		}
+	}
+	// TODO(gregorynisbet): truncate key if it's too long
+	return "", fmt.Errorf("no corresponding value for key (%s)", key)
 }
 
 func flattenStringPairs(pairs []*swarming_api.SwarmingRpcsStringPair) []string {

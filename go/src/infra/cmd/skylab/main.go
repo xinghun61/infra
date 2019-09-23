@@ -38,6 +38,7 @@ func getApplication() *cli.Application {
 			subcommands.Section("Inventory Queries"),
 			cmd.Diagnose,
 			cmd.DutInfo,
+			cmd.DutList,
 			cmd.Inventory,
 			cmd.ListRemovedDuts,
 			subcommands.Section("Inventory Operations"),
