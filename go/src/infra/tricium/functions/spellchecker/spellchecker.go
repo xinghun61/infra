@@ -58,6 +58,7 @@ var (
 		"copyable",    // Valid usage, and used in C++, e.g. is_trivially_copyable
 		"crasher",     // something that causes a crash
 		"crate",       // Rust keyword
+		"cros",        // CrOS, ChromeOS
 		"dont",        // contraction, may appear in variable names
 		"ect",         // abbr. for effective connection time
 		"files'",      // possessive of files
