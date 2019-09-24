@@ -219,7 +219,7 @@ def _IngestProto(build_id):
 def _TriggerV1AnalysisForChromiumBuildIfNeeded(bucket, builder_name, build_id,
                                                build_result):
   """Temporary solution of triggering v1 analysis until v2 is ready."""
-  if bucket != 'ci':
+  if 'ci' not in bucket:
     return
 
   if build_result != 'FAILURE':
