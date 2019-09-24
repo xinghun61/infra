@@ -243,8 +243,10 @@ func (t *testRun) ValidateDependencies(ctx context.Context, client swarming.Clie
 		return false, errors.Annotate(err, "validate dependencies").Err()
 	}
 	exists, err := client.BotExists(ctx, dims)
-	logging.Debugf(ctx, "Bot existence check result: %s, error: %s", exists, err)
-	return true, nil
+	if err != nil {
+		return false, errors.Annotate(err, "validate dependencies").Err()
+	}
+	return exists, nil
 }
 
 func (t *testRun) LaunchAttempt(ctx context.Context, client swarming.Client) error {

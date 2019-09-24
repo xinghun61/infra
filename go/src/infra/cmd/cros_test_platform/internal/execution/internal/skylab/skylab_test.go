@@ -243,7 +243,7 @@ func basicConfig() *config.Config_SkylabWorker {
 }
 
 func TestLaunchForNonExistentBot(t *testing.T) {
-	SkipConvey("Given one test invocation but non existent bots", t, func() {
+	Convey("Given one test invocation but non existent bots", t, func() {
 		ctx := context.Background()
 
 		swarming := newFakeSwarming("")
