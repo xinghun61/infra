@@ -37,6 +37,9 @@ export class MrMetadata extends connectStore(LitElement) {
       td {
         width: 60%;
       }
+      td.allow-overflow {
+        overflow: visible;
+      }
       th {
         text-align: left;
         width: 40%;
@@ -135,7 +138,9 @@ export class MrMetadata extends connectStore(LitElement) {
         ${this.issueStatus.status === 'Duplicate' ? html`
           <tr>
             <th>MergedInto:</th>
-            <td>
+            <!-- Allow overflow to enable the FedRef popup to expand. -->
+            <!-- TODO(jeffcarp): Look into a more elegant solution. -->
+            <td class="allow-overflow">
               <mr-issue-link
                 .projectName=${this.issueRef.projectName}
                 .issue=${this.mergedInto}
