@@ -6,7 +6,7 @@ Have an issue with a piece of build infrastructure?
 Our troopers are here to help.
 
 Oncall hours: we cover working hours in the Pacific timezone:
-+ 1800 - 0100 UTC (1000 - 1800 MTV)
++ 1600 - 0000 UTC (900 - 1700 MTV)
 
 Issues in EMEA are handled on a best-effort basis by volunteers. See
 [here](http://shortn/_TqFYfP9nk6) (internal link) for contact information.
