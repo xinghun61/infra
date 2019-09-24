@@ -6,13 +6,17 @@ package main
 
 import (
 	"bufio"
+	"encoding/json"
 	"encoding/xml"
 	"flag"
 	"fmt"
+	"io/ioutil"
 	"log"
+	"net/http"
 	"os"
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
@@ -20,10 +24,11 @@ import (
 )
 
 const (
-	category        = "Metrics"
-	histogramEndTag = "</histogram>"
-	ownerStartTag   = "<owner"
-	dateFormat      = "2006-01-02"
+	category            = "Metrics"
+	histogramEndTag     = "</histogram>"
+	ownerStartTag       = "<owner"
+	dateFormat          = "2006-01-02"
+	dateMilestoneFormat = "2006-01-02T15:04:05"
 
 	oneOwnerError = `[WARNING] It's a best practice to list multiple owners,
 so that there's no single point of failure for communication:
@@ -43,6 +48,8 @@ https://chromium.googlesource.com/chromium/src/+/HEAD/tools/metrics/histograms/R
 	neverExpiryError = `[ERROR] Histograms that never expire must have an XML comment describing why,
 such as <!-- expires-never: \"heartbeat\" metric (internal: go/uma-heartbeats) -->:
 https://chromium.googlesource.com/chromium/src/+/HEAD/tools/metrics/histograms/README.md#Histogram-Expiry`
+	milestoneFailure = `[WARNING] Tricium failed to fetch milestone branch date.
+Please double-check that this milestone is correct, because the tool is currently not able to check for you.`
 )
 
 var (
@@ -55,7 +62,8 @@ var (
 	expiryMilestonePattern = regexp.MustCompile(`^M([0-9]{2,3})$`)
 
 	// Now is an alias for time.Now, can be overwritten by tests
-	now = time.Now
+	now              = time.Now
+	getMilestoneDate = getMilestoneDateImpl
 )
 
 // Histogram contains all info about a UMA histogram
@@ -74,6 +82,17 @@ type Metadata struct {
 	HistogramLineNum      int
 	OwnerLineNum          int
 	HasNeverExpiryComment bool
+}
+
+// Milestone contains the date of a particular milestone
+type Milestone struct {
+	Milestone int    `json:"mstone"`
+	Date      string `json:"branch_point"`
+}
+
+// Milestones contains a list of milestones
+type Milestones struct {
+	Milestones []Milestone `json:"mstones"`
 }
 
 func main() {
@@ -217,21 +236,21 @@ func checkExpiry(path string, histogram Histogram, metadata *Metadata) []*triciu
 		if dateMatch {
 			inputDate, err := time.Parse(dateFormat, expiry)
 			if err != nil {
-				log.Fatalf("Failed to parse expiry date")
+				log.Fatalf("Failed to parse expiry date: %v", err)
 			}
-			dateDiff := int(inputDate.Sub(now()).Hours()/24) + 1
-			if dateDiff <= 0 {
-				commentMessage = pastExpiryWarning
-				logMessage = "[WARNING]: Expiry in past"
-			} else if dateDiff >= 365 {
-				commentMessage = farExpiryWarning
-				logMessage = "[WARNING]: Expiry past one year"
-			} else {
-				commentMessage = fmt.Sprintf("[INFO]: Expiry date is in %d days", dateDiff)
-				logMessage = commentMessage
-			}
+			processExpiryDateDiff(inputDate, &commentMessage, &logMessage)
 		} else if milestoneMatch {
-			// TODO: check that milestone is within time limit
+			milestone, err := strconv.Atoi(expiry[1:])
+			if err != nil {
+				log.Fatalf("Failed to convert input milestone to integer: %v", err)
+			}
+			milestoneDate, err := getMilestoneDate(milestone)
+			if err != nil {
+				commentMessage = milestoneFailure
+				logMessage = fmt.Sprintf("[WARNING] Milestone Fetch Failure: %v", err)
+			} else {
+				processExpiryDateDiff(milestoneDate, &commentMessage, &logMessage)
+			}
 		} else {
 			commentMessage = badExpiryError
 			logMessage = "[ERROR]: Expiry condition badly formatted"
@@ -246,6 +265,52 @@ func checkExpiry(path string, histogram Histogram, metadata *Metadata) []*triciu
 	}
 	log.Printf("ADDING Comment for %s at line %d: %s", histogram.Name, metadata.HistogramLineNum, logMessage)
 	return expiryComments
+}
+
+func processExpiryDateDiff(inputDate time.Time, commentMessage *string, logMessage *string) {
+	dateDiff := int(inputDate.Sub(now()).Hours()/24) + 1
+	if dateDiff <= 0 {
+		*commentMessage = pastExpiryWarning
+		*logMessage = "[WARNING]: Expiry in past"
+	} else if dateDiff >= 365 {
+		*commentMessage = farExpiryWarning
+		*logMessage = "[WARNING]: Expiry past one year"
+	} else {
+		*commentMessage = fmt.Sprintf("[INFO]: Expiry date is in %d days", dateDiff)
+		*logMessage = *commentMessage
+	}
+}
+
+func getMilestoneDateImpl(milestone int) (time.Time, error) {
+	var milestoneDate time.Time
+	url := fmt.Sprintf("https://chromiumdash.appspot.com/fetch_milestone_schedule?mstone=%d", milestone)
+	milestoneClient := http.Client{
+		Timeout: time.Second * 2,
+	}
+	req, err := http.NewRequest(http.MethodGet, url, nil)
+	if err != nil {
+		return milestoneDate, err
+	}
+	res, err := milestoneClient.Do(req)
+	if err != nil {
+		return milestoneDate, err
+	}
+	body, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		return milestoneDate, err
+	}
+	newMilestones := Milestones{}
+	err = json.Unmarshal(body, &newMilestones)
+	if err != nil {
+		return milestoneDate, err
+	}
+	dateString := newMilestones.Milestones[0].Date
+	log.Printf("Fetched branch date %s for milestone %d", dateString, milestone)
+	milestoneDate, err = time.Parse(dateMilestoneFormat, dateString)
+	if err != nil {
+		log.Fatalf("Failed to parse milestone date: %v", err)
+	}
+	return milestoneDate, nil
 }
 
 func createExpiryComment(message string, path string, metadata *Metadata) *tricium.Data_Comment {

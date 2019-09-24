@@ -1,16 +1,22 @@
 {
 	"files": [
+		{ "path": "src/first_team_one_owner.xml" },
+		{ "path": "src/first_team_owner.xml" },
 		{ "path": "src/good.xml" },
 		{ "path": "src/good_individuals.xml" },
-		{ "path": "src/no_owners.xml" },
-		{ "path": "src/one_owner.xml" },
-		{ "path": "src/first_team_owner.xml" },
-		{ "path": "src/first_team_one_owner.xml" },
+		{ "path": "src/good_milestone.xml" },
+		{ "path": "src/milestone_fetch_failed.xml" },
 		{ "path": "src/never_expiry_no_comment.xml" },
 		{ "path": "src/never_expiry_with_comment.xml" },
 		{ "path": "src/no_expiry.xml" },
-		{ "path": "src/unformatted_expiry.xml" },
+		{ "path": "src/no_owners.xml" },
+		{ "path": "src/one_owner.xml" },
+		{ "path": "src/over_year_expiry.xml" },
+		{ "path": "src/over_year_milestone.xml" },
+		{ "path": "src/over_year_milestone_3.xml" },
 		{ "path": "src/past_expiry.xml" },
-		{ "path": "src/over_year_expiry.xml" }
+		{ "path": "src/past_milestone.xml" },
+		{ "path": "src/unformatted_expiry.xml" },
+		{ "path": "src/unformatted_milestone.xml" }
 	]
 }
