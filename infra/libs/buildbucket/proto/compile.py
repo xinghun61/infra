@@ -30,6 +30,7 @@ COMPONENTS_TOOLS_DIR = os.path.join(
     INFRA_ROOT, 'luci', 'appengine', 'components', 'tools'
 )
 RPC_PROTO_DIR = os.path.join(LUCI_GO_DIR, 'grpc', 'proto')
+COMMON_PROTO_DIR = os.path.join(LUCI_GO_DIR, 'common', 'proto')
 BUILDBUCKET_PROTO_DIR = os.path.join(LUCI_GO_DIR, 'buildbucket', 'proto')
 SWARMING_PROTO = os.path.join(
     LUCI_GO_DIR, 'swarming', 'proto', 'api', 'swarming.proto'
@@ -60,6 +61,7 @@ def main():
 
   proto_files = find_files(BUILDBUCKET_PROTO_DIR, suffix='.proto')
   proto_files += [SWARMING_PROTO]
+  proto_files += find_files(COMMON_PROTO_DIR, suffix='.proto')
   # Copy modified .proto files into temp dir.
   for f in proto_files:
     modify_proto(f, os.path.join(tmpd, os.path.basename(f)))

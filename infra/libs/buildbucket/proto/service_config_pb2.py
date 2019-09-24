@@ -20,7 +20,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   package='buildbucket',
   syntax='proto3',
   serialized_options=_b('Z4go.chromium.org/luci/buildbucket/proto;buildbucketpb'),
-  serialized_pb=_b('\n\x14service_config.proto\x12\x0b\x62uildbucket\x1a\x14project_config.proto\"\x8e\x01\n\x0bSettingsCfg\x12/\n\x08swarming\x18\x01 \x01(\x0b\x32\x1d.buildbucket.SwarmingSettings\x12+\n\x06logdog\x18\x02 \x01(\x0b\x32\x1b.buildbucket.LogDogSettings\x12!\n\x19known_public_gerrit_hosts\x18\x03 \x03(\t\"\xb5\x03\n\x10SwarmingSettings\x12\x15\n\rmilo_hostname\x18\x02 \x01(\t\x12\x36\n\rglobal_caches\x18\x04 \x03(\x0b\x32\x1f.buildbucket.Builder.CacheEntry\x12<\n\ruser_packages\x18\x05 \x03(\x0b\x32%.buildbucket.SwarmingSettings.Package\x12\x42\n\x13luci_runner_package\x18\x06 \x01(\x0b\x32%.buildbucket.SwarmingSettings.Package\x12>\n\x0fkitchen_package\x18\x07 \x01(\x0b\x32%.buildbucket.SwarmingSettings.Package\x1a\x89\x01\n\x07Package\x12\x14\n\x0cpackage_name\x18\x01 \x01(\t\x12\x0f\n\x07version\x18\x02 \x01(\t\x12\x16\n\x0eversion_canary\x18\x03 \x01(\t\x12/\n\x08\x62uilders\x18\x04 \x01(\x0b\x32\x1d.buildbucket.BuilderPredicate\x12\x0e\n\x06subdir\x18\x05 \x01(\tJ\x04\x08\x01\x10\x02\"\"\n\x0eLogDogSettings\x12\x10\n\x08hostname\x18\x01 \x01(\t\"8\n\x10\x42uilderPredicate\x12\r\n\x05regex\x18\x01 \x03(\t\x12\x15\n\rregex_exclude\x18\x02 \x03(\tB6Z4go.chromium.org/luci/buildbucket/proto;buildbucketpbb\x06proto3')
+  serialized_pb=_b('\n\x14service_config.proto\x12\x0b\x62uildbucket\x1a\x14project_config.proto\"\x8e\x01\n\x0bSettingsCfg\x12/\n\x08swarming\x18\x01 \x01(\x0b\x32\x1d.buildbucket.SwarmingSettings\x12+\n\x06logdog\x18\x02 \x01(\x0b\x32\x1b.buildbucket.LogDogSettings\x12!\n\x19known_public_gerrit_hosts\x18\x03 \x03(\t\"\xf5\x03\n\x10SwarmingSettings\x12\x15\n\rmilo_hostname\x18\x02 \x01(\t\x12\x36\n\rglobal_caches\x18\x04 \x03(\x0b\x32\x1f.buildbucket.Builder.CacheEntry\x12<\n\ruser_packages\x18\x05 \x03(\x0b\x32%.buildbucket.SwarmingSettings.Package\x12\x42\n\x13luci_runner_package\x18\x06 \x01(\x0b\x32%.buildbucket.SwarmingSettings.Package\x12>\n\x0f\x62\x62\x61gent_package\x18\x08 \x01(\x0b\x32%.buildbucket.SwarmingSettings.Package\x12>\n\x0fkitchen_package\x18\x07 \x01(\x0b\x32%.buildbucket.SwarmingSettings.Package\x1a\x89\x01\n\x07Package\x12\x14\n\x0cpackage_name\x18\x01 \x01(\t\x12\x0f\n\x07version\x18\x02 \x01(\t\x12\x16\n\x0eversion_canary\x18\x03 \x01(\t\x12/\n\x08\x62uilders\x18\x04 \x01(\x0b\x32\x1d.buildbucket.BuilderPredicate\x12\x0e\n\x06subdir\x18\x05 \x01(\tJ\x04\x08\x01\x10\x02\"\"\n\x0eLogDogSettings\x12\x10\n\x08hostname\x18\x01 \x01(\t\"8\n\x10\x42uilderPredicate\x12\r\n\x05regex\x18\x01 \x03(\t\x12\x15\n\rregex_exclude\x18\x02 \x03(\tB6Z4go.chromium.org/luci/buildbucket/proto;buildbucketpbb\x06proto3')
   ,
   dependencies=[project__config__pb2.DESCRIPTOR,])
 
@@ -126,8 +126,8 @@ _SWARMINGSETTINGS_PACKAGE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=499,
-  serialized_end=636,
+  serialized_start=563,
+  serialized_end=700,
 )
 
 _SWARMINGSETTINGS = _descriptor.Descriptor(
@@ -166,7 +166,14 @@ _SWARMINGSETTINGS = _descriptor.Descriptor(
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='kitchen_package', full_name='buildbucket.SwarmingSettings.kitchen_package', index=4,
+      name='bbagent_package', full_name='buildbucket.SwarmingSettings.bbagent_package', index=4,
+      number=8, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='kitchen_package', full_name='buildbucket.SwarmingSettings.kitchen_package', index=5,
       number=7, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
@@ -185,7 +192,7 @@ _SWARMINGSETTINGS = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=205,
-  serialized_end=642,
+  serialized_end=706,
 )
 
 
@@ -215,8 +222,8 @@ _LOGDOGSETTINGS = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=644,
-  serialized_end=678,
+  serialized_start=708,
+  serialized_end=742,
 )
 
 
@@ -253,8 +260,8 @@ _BUILDERPREDICATE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=680,
-  serialized_end=736,
+  serialized_start=744,
+  serialized_end=800,
 )
 
 _SETTINGSCFG.fields_by_name['swarming'].message_type = _SWARMINGSETTINGS
@@ -264,6 +271,7 @@ _SWARMINGSETTINGS_PACKAGE.containing_type = _SWARMINGSETTINGS
 _SWARMINGSETTINGS.fields_by_name['global_caches'].message_type = project__config__pb2._BUILDER_CACHEENTRY
 _SWARMINGSETTINGS.fields_by_name['user_packages'].message_type = _SWARMINGSETTINGS_PACKAGE
 _SWARMINGSETTINGS.fields_by_name['luci_runner_package'].message_type = _SWARMINGSETTINGS_PACKAGE
+_SWARMINGSETTINGS.fields_by_name['bbagent_package'].message_type = _SWARMINGSETTINGS_PACKAGE
 _SWARMINGSETTINGS.fields_by_name['kitchen_package'].message_type = _SWARMINGSETTINGS_PACKAGE
 DESCRIPTOR.message_types_by_name['SettingsCfg'] = _SETTINGSCFG
 DESCRIPTOR.message_types_by_name['SwarmingSettings'] = _SWARMINGSETTINGS
