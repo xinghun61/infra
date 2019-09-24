@@ -1,0 +1,10 @@
+package: chromiumos/infra/phosphorus/${platform}
+description: Tool for running tests against DUTs and uploading test results to TKO.
+platforms:
+  - linux-amd64
+go_packages:
+  - infra/cros/cmd/phosphorus
+root: ../../go/bin
+data:
+  - file: phosphorus${exe_suffix}
+  - version_file: .versions/phosphorus${exe_suffix}.cipd_version
