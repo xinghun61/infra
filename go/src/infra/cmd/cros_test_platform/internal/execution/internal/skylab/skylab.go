@@ -299,6 +299,30 @@ func (t *testRun) TaskResult(urler swarming.URLer) []*steps.ExecuteResponse_Task
 	return ret
 }
 
+func (t *testRun) Verdict() test_platform.TaskState_Verdict {
+	if !t.runnable {
+		return test_platform.TaskState_VERDICT_UNSPECIFIED
+	}
+	failedEarlierAttempt := false
+	for _, a := range t.attempts {
+		switch a.Verdict() {
+		case test_platform.TaskState_VERDICT_NO_VERDICT:
+			return test_platform.TaskState_VERDICT_NO_VERDICT
+		case test_platform.TaskState_VERDICT_PASSED:
+			if failedEarlierAttempt {
+				return test_platform.TaskState_VERDICT_PASSED_ON_RETRY
+			}
+			return test_platform.TaskState_VERDICT_PASSED
+		case test_platform.TaskState_VERDICT_FAILED,
+			test_platform.TaskState_VERDICT_UNSPECIFIED:
+			failedEarlierAttempt = true
+		default:
+			return test_platform.TaskState_VERDICT_FAILED
+		}
+	}
+	return test_platform.TaskState_VERDICT_FAILED
+}
+
 func (t *testRun) GetLatestAttempt() *attempt {
 	if len(t.attempts) == 0 {
 		return nil
@@ -323,6 +347,12 @@ func (a *attempt) Completed() bool {
 func (a *attempt) Verdict() test_platform.TaskState_Verdict {
 	if !a.Completed() {
 		return test_platform.TaskState_VERDICT_UNSPECIFIED
+	}
+	if a.autotestResult == nil {
+		return test_platform.TaskState_VERDICT_UNSPECIFIED
+	}
+	if a.autotestResult.Incomplete {
+		return test_platform.TaskState_VERDICT_FAILED
 	}
 
 	// By default (if no test cases ran), then there is no verdict.
@@ -698,43 +728,53 @@ var taskStateToLifeCycle = map[jsonrpc.TaskState]test_platform.TaskState_LifeCyc
 // Response constructs a response based on the current state of the
 // TaskSet.
 func (r *TaskSet) Response(urler swarming.URLer) *steps.ExecuteResponse {
-	resp := &steps.ExecuteResponse{}
-	resp.TaskResults = r.taskResults(urler)
+	resp := &steps.ExecuteResponse{
+		TaskResults: r.taskResults(urler),
+		State: &test_platform.TaskState{
+			Verdict:   r.verdict(),
+			LifeCycle: r.lifecycle(),
+		},
+	}
+	return resp
+}
 
-	var verdict test_platform.TaskState_Verdict
-	var lifecycle test_platform.TaskState_LifeCycle
-
+func (r *TaskSet) lifecycle() test_platform.TaskState_LifeCycle {
 	switch {
 	case r.complete:
-		// The default verdict for a completed TaskSet is passed; if any tasks
-		// failed, they will overwrite this below.
-		verdict = test_platform.TaskState_VERDICT_PASSED
-		lifecycle = test_platform.TaskState_LIFE_CYCLE_COMPLETED
+		return test_platform.TaskState_LIFE_CYCLE_COMPLETED
 	case r.running:
-		lifecycle = test_platform.TaskState_LIFE_CYCLE_RUNNING
+		return test_platform.TaskState_LIFE_CYCLE_RUNNING
 	default:
 		// TODO(akeshet): The task set is neither running nor complete, so it
 		// was cancelled due to an error while in flight. It's not clear yet
 		// if this is the right lifecycle mapping for this state.
-		lifecycle = test_platform.TaskState_LIFE_CYCLE_ABORTED
+		return test_platform.TaskState_LIFE_CYCLE_ABORTED
 	}
+}
 
-	for _, t := range resp.TaskResults {
-		switch t.State.Verdict {
-		case test_platform.TaskState_VERDICT_UNSPECIFIED:
-			fallthrough
-		case test_platform.TaskState_VERDICT_FAILED:
-			verdict = test_platform.TaskState_VERDICT_FAILED
+func (r *TaskSet) verdict() test_platform.TaskState_Verdict {
+	v := test_platform.TaskState_VERDICT_PASSED
+	if !r.complete {
+		v = test_platform.TaskState_VERDICT_UNSPECIFIED
+	}
+	for _, t := range r.testRuns {
+		if !successfulVerdict(t.Verdict()) {
+			v = test_platform.TaskState_VERDICT_FAILED
 			break
 		}
 	}
+	return v
+}
 
-	resp.State = &test_platform.TaskState{
-		Verdict:   verdict,
-		LifeCycle: lifecycle,
+func successfulVerdict(v test_platform.TaskState_Verdict) bool {
+	switch v {
+	case test_platform.TaskState_VERDICT_PASSED,
+		test_platform.TaskState_VERDICT_PASSED_ON_RETRY,
+		test_platform.TaskState_VERDICT_NO_VERDICT:
+		return true
+	default:
+		return false
 	}
-
-	return resp
 }
 
 func (r *TaskSet) taskResults(urler swarming.URLer) []*steps.ExecuteResponse_TaskResult {

@@ -131,32 +131,28 @@ func newFakeSwarming(server string) *fakeSwarming {
 }
 
 type fakeGetter struct {
-	content []byte
+	autotestResultGenerator autotestResultGenerator
 }
 
 func (g *fakeGetter) GetFile(_ context.Context, _ isolated.HexDigest, _ string) ([]byte, error) {
-	return g.content, nil
-}
-
-func (g *fakeGetter) SetResult(res *skylab_test_runner.Result) {
+	r := skylab_test_runner.Result{
+		Harness: &skylab_test_runner.Result_AutotestResult{AutotestResult: g.autotestResultGenerator()},
+	}
 	m := &jsonpb.Marshaler{}
-	s, _ := m.MarshalToString(res)
-	g.content = []byte(s)
+	s, err := m.MarshalToString(&r)
+	if err != nil {
+		panic(fmt.Sprintf("error when marshalling %#v: %s", r, err))
+	}
+	return []byte(s), nil
 }
 
-func (g *fakeGetter) SetAutotestResult(res *skylab_test_runner.Result_Autotest) {
-	r := &skylab_test_runner.Result{}
-	r.Harness = &skylab_test_runner.Result_AutotestResult{AutotestResult: res}
-	g.SetResult(r)
+func (g *fakeGetter) SetAutotestResultGenerator(f autotestResultGenerator) {
+	g.autotestResultGenerator = f
 }
 
 func newFakeGetter() *fakeGetter {
 	f := &fakeGetter{}
-	f.SetAutotestResult(&skylab_test_runner.Result_Autotest{
-		TestCases: []*skylab_test_runner.Result_Autotest_TestCase{
-			{Name: "foo", Verdict: skylab_test_runner.Result_Autotest_TestCase_VERDICT_PASS},
-		},
-	})
+	f.SetAutotestResultGenerator(autotestResultAlwaysPass)
 	return f
 }
 
@@ -370,7 +366,7 @@ func TestTaskStates(t *testing.T) {
 				swarming.setTaskState(c.swarmingState)
 				swarming.setHasOutputRef(c.hasRef)
 				getter := newFakeGetter()
-				getter.SetAutotestResult(&skylab_test_runner.Result_Autotest{})
+				getter.SetAutotestResultGenerator(autotestResultAlwaysEmpty)
 				gf := fakeGetterFactory(getter)
 
 				run, err := skylab.NewTaskSet(ctx, invs, basicParams(), basicConfig(), "foo-parent-task-id")
@@ -573,7 +569,30 @@ func extractKeyvalsArgument(cmd string) string {
 	return m[1]
 }
 
-func passingResult() *skylab_test_runner.Result_Autotest {
+type autotestResultGenerator func() *skylab_test_runner.Result_Autotest
+
+func autotestResultAlwaysEmpty() *skylab_test_runner.Result_Autotest {
+	return &skylab_test_runner.Result_Autotest{}
+}
+
+// generateAutotestResultsFromSlice returns a autotestResultGenerator that
+// sequentially returns the provided results.
+//
+// An attempt to generate more results than provided results in panic().
+func generateAutotestResultsFromSlice(canned []*skylab_test_runner.Result_Autotest) autotestResultGenerator {
+	i := 0
+	f := func() *skylab_test_runner.Result_Autotest {
+		if i >= len(canned) {
+			panic(fmt.Sprintf("requested more results than available (%d)", len(canned)))
+		}
+		r := canned[i]
+		i++
+		return r
+	}
+	return f
+}
+
+func autotestResultAlwaysPass() *skylab_test_runner.Result_Autotest {
 	return &skylab_test_runner.Result_Autotest{
 		Incomplete: false,
 		TestCases: []*skylab_test_runner.Result_Autotest_TestCase{
@@ -582,7 +601,7 @@ func passingResult() *skylab_test_runner.Result_Autotest {
 	}
 }
 
-func failingResult() *skylab_test_runner.Result_Autotest {
+func autotestResultAlwaysFail() *skylab_test_runner.Result_Autotest {
 	return &skylab_test_runner.Result_Autotest{
 		Incomplete: false,
 		TestCases: []*skylab_test_runner.Result_Autotest_TestCase{
@@ -682,20 +701,22 @@ func TestRetries(t *testing.T) {
 			name        string
 			invocations []*steps.EnumerationResponse_AutotestInvocation
 			// autotestResult will be returned by all attempts of this test.
-			autotestResult *skylab_test_runner.Result_Autotest
-			retryParams    *test_platform.Request_Params_Retry
-			testAllowRetry bool
-			testMaxRetry   int32
+			autotestResultGenerator autotestResultGenerator
+			retryParams             *test_platform.Request_Params_Retry
+			testAllowRetry          bool
+			testMaxRetry            int32
 
 			// Total number of expected tasks is this +1
-			expectedRetryCount int
+			expectedRetryCount     int
+			expectedSummaryVerdict test_platform.TaskState_Verdict
 		}{
 			{
-				name:           "1 test; no retry configuration in test or request params",
-				invocations:    invocationsWithServerTests("name1"),
-				autotestResult: failingResult(),
+				name:                    "1 test; no retry configuration in test or request params",
+				invocations:             invocationsWithServerTests("name1"),
+				autotestResultGenerator: autotestResultAlwaysFail,
 
-				expectedRetryCount: 0,
+				expectedRetryCount:     0,
+				expectedSummaryVerdict: test_platform.TaskState_VERDICT_FAILED,
 			},
 			{
 				name:        "1 passing test; retries allowed",
@@ -703,11 +724,12 @@ func TestRetries(t *testing.T) {
 				retryParams: &test_platform.Request_Params_Retry{
 					Allow: true,
 				},
-				testAllowRetry: true,
-				testMaxRetry:   1,
-				autotestResult: passingResult(),
+				testAllowRetry:          true,
+				testMaxRetry:            1,
+				autotestResultGenerator: autotestResultAlwaysPass,
 
-				expectedRetryCount: 0,
+				expectedRetryCount:     0,
+				expectedSummaryVerdict: test_platform.TaskState_VERDICT_PASSED,
 			},
 			{
 				name:        "1 failing test; retries disabled globally",
@@ -715,11 +737,12 @@ func TestRetries(t *testing.T) {
 				retryParams: &test_platform.Request_Params_Retry{
 					Allow: false,
 				},
-				testAllowRetry: true,
-				testMaxRetry:   1,
-				autotestResult: failingResult(),
+				testAllowRetry:          true,
+				testMaxRetry:            1,
+				autotestResultGenerator: autotestResultAlwaysFail,
 
-				expectedRetryCount: 0,
+				expectedRetryCount:     0,
+				expectedSummaryVerdict: test_platform.TaskState_VERDICT_FAILED,
 			},
 			{
 				name:        "1 failing test; retries allowed globally and for test",
@@ -727,11 +750,12 @@ func TestRetries(t *testing.T) {
 				retryParams: &test_platform.Request_Params_Retry{
 					Allow: true,
 				},
-				testAllowRetry: true,
-				testMaxRetry:   1,
-				autotestResult: failingResult(),
+				testAllowRetry:          true,
+				testMaxRetry:            1,
+				autotestResultGenerator: autotestResultAlwaysFail,
 
-				expectedRetryCount: 1,
+				expectedRetryCount:     1,
+				expectedSummaryVerdict: test_platform.TaskState_VERDICT_FAILED,
 			},
 			{
 				name:        "1 failing test; retries allowed globally, disabled for test",
@@ -739,10 +763,11 @@ func TestRetries(t *testing.T) {
 				retryParams: &test_platform.Request_Params_Retry{
 					Allow: true,
 				},
-				testAllowRetry: false,
-				autotestResult: failingResult(),
+				testAllowRetry:          false,
+				autotestResultGenerator: autotestResultAlwaysFail,
 
-				expectedRetryCount: 0,
+				expectedRetryCount:     0,
+				expectedSummaryVerdict: test_platform.TaskState_VERDICT_FAILED,
 			},
 			{
 				name:        "1 failing test; retries allowed globally with test maximum",
@@ -750,11 +775,12 @@ func TestRetries(t *testing.T) {
 				retryParams: &test_platform.Request_Params_Retry{
 					Allow: true,
 				},
-				testAllowRetry: true,
-				testMaxRetry:   10,
-				autotestResult: failingResult(),
+				testAllowRetry:          true,
+				testMaxRetry:            10,
+				autotestResultGenerator: autotestResultAlwaysFail,
 
-				expectedRetryCount: 10,
+				expectedRetryCount:     10,
+				expectedSummaryVerdict: test_platform.TaskState_VERDICT_FAILED,
 			},
 			{
 				name:        "1 failing test; retries allowed globally with global maximum",
@@ -763,10 +789,11 @@ func TestRetries(t *testing.T) {
 					Allow: true,
 					Max:   5,
 				},
-				testAllowRetry: true,
-				autotestResult: failingResult(),
+				testAllowRetry:          true,
+				autotestResultGenerator: autotestResultAlwaysFail,
 
-				expectedRetryCount: 5,
+				expectedRetryCount:     5,
+				expectedSummaryVerdict: test_platform.TaskState_VERDICT_FAILED,
 			},
 			{
 				name:        "1 failing test; retries allowed globally with global maximum smaller than test maxium",
@@ -775,11 +802,12 @@ func TestRetries(t *testing.T) {
 					Allow: true,
 					Max:   5,
 				},
-				testAllowRetry: true,
-				testMaxRetry:   7,
-				autotestResult: failingResult(),
+				testAllowRetry:          true,
+				testMaxRetry:            7,
+				autotestResultGenerator: autotestResultAlwaysFail,
 
-				expectedRetryCount: 5,
+				expectedRetryCount:     5,
+				expectedSummaryVerdict: test_platform.TaskState_VERDICT_FAILED,
 			},
 			{
 				name:        "1 failing test; retries allowed globally with test maximum smaller than global maximum",
@@ -788,11 +816,12 @@ func TestRetries(t *testing.T) {
 					Allow: true,
 					Max:   7,
 				},
-				testAllowRetry: true,
-				testMaxRetry:   5,
-				autotestResult: failingResult(),
+				testAllowRetry:          true,
+				testMaxRetry:            5,
+				autotestResultGenerator: autotestResultAlwaysFail,
 
-				expectedRetryCount: 5,
+				expectedRetryCount:     5,
+				expectedSummaryVerdict: test_platform.TaskState_VERDICT_FAILED,
 			},
 			{
 				name:        "2 failing tests; retries allowed globally with global maximum",
@@ -801,15 +830,42 @@ func TestRetries(t *testing.T) {
 					Allow: true,
 					Max:   5,
 				},
-				testAllowRetry: true,
-				autotestResult: failingResult(),
+				testAllowRetry:          true,
+				autotestResultGenerator: autotestResultAlwaysFail,
 
-				expectedRetryCount: 5,
+				expectedRetryCount:     5,
+				expectedSummaryVerdict: test_platform.TaskState_VERDICT_FAILED,
+			},
+
+			{
+				name:        "1 test that fails then passes; retries allowed",
+				invocations: invocationsWithServerTests("name1"),
+				retryParams: &test_platform.Request_Params_Retry{
+					Allow: true,
+				},
+				testAllowRetry: true,
+				autotestResultGenerator: generateAutotestResultsFromSlice([]*skylab_test_runner.Result_Autotest{
+					{
+						TestCases: []*skylab_test_runner.Result_Autotest_TestCase{
+							{Name: "foo", Verdict: skylab_test_runner.Result_Autotest_TestCase_VERDICT_FAIL},
+						},
+					},
+					{
+						TestCases: []*skylab_test_runner.Result_Autotest_TestCase{
+							{Name: "foo", Verdict: skylab_test_runner.Result_Autotest_TestCase_VERDICT_PASS},
+						},
+					},
+				}),
+
+				expectedRetryCount: 1,
+				// TODO(crbug.com/1005609) Indicate in *some way* that a test
+				// passed only on retry.
+				expectedSummaryVerdict: test_platform.TaskState_VERDICT_PASSED,
 			},
 		}
 		for _, c := range cases {
 			Convey(c.name, func() {
-				getter.SetAutotestResult(c.autotestResult)
+				getter.SetAutotestResultGenerator(c.autotestResultGenerator)
 				params.Retry = c.retryParams
 				for _, inv := range c.invocations {
 					inv.Test.AllowRetries = c.testAllowRetry
@@ -830,7 +886,6 @@ func TestRetries(t *testing.T) {
 					}
 					So(s, ShouldHaveLength, len(swarming.createCalls))
 				})
-
 				// TODO(crbug.com/1003874, pprabhu) This test case is in the wrong place.
 				// Once the hack to manipulate logdog URL is removed, this block can also be dropped.
 				Convey("the logdog url in the command and in tags should match.", func() {
@@ -840,7 +895,6 @@ func TestRetries(t *testing.T) {
 						So(cmdURL, ShouldEqual, tagURL)
 					}
 				})
-
 				Convey("then the launched task count should be correct.", func() {
 					// Each test is tried at least once.
 					attemptCount := len(c.invocations) + c.expectedRetryCount
@@ -852,6 +906,10 @@ func TestRetries(t *testing.T) {
 						s.Add(fmt.Sprintf("%s__%d", res.Name, res.Attempt))
 					}
 					So(s, ShouldHaveLength, len(response.TaskResults))
+				})
+
+				Convey("then the build verdict should be correct.", func() {
+					So(response.State.Verdict, ShouldEqual, c.expectedSummaryVerdict)
 				})
 			})
 		}
@@ -1004,15 +1062,7 @@ func TestResponseVerdict(t *testing.T) {
 		})
 
 		Convey("when the test passed, response verdict is correct.", func() {
-			getter.SetAutotestResult(&skylab_test_runner.Result_Autotest{
-				Incomplete: false,
-				TestCases: []*skylab_test_runner.Result_Autotest_TestCase{
-					{
-						Name:    "foo",
-						Verdict: skylab_test_runner.Result_Autotest_TestCase_VERDICT_PASS,
-					},
-				},
-			})
+			getter.SetAutotestResultGenerator(autotestResultAlwaysPass)
 
 			run.LaunchAndWait(ctx, swarming, gf)
 			resp := run.Response(swarming)
@@ -1021,16 +1071,7 @@ func TestResponseVerdict(t *testing.T) {
 		})
 
 		Convey("when the test failed, response verdict is correct.", func() {
-			getter.SetAutotestResult(&skylab_test_runner.Result_Autotest{
-				Incomplete: false,
-				TestCases: []*skylab_test_runner.Result_Autotest_TestCase{
-					{
-						Name:    "foo",
-						Verdict: skylab_test_runner.Result_Autotest_TestCase_VERDICT_FAIL,
-					},
-				},
-			})
-
+			getter.SetAutotestResultGenerator(autotestResultAlwaysFail)
 			run.LaunchAndWait(ctx, swarming, gf)
 			resp := run.Response(swarming)
 			So(resp.State.LifeCycle, ShouldEqual, test_platform.TaskState_LIFE_CYCLE_COMPLETED)

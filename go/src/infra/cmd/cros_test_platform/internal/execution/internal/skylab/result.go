@@ -64,17 +64,6 @@ func getAutotestResult(ctx context.Context, sResult *swarming_api.SwarmingRpcsTa
 }
 
 func toTaskResult(testName string, attempt *attempt, attemptNum int, urler swarming.URLer) *steps.ExecuteResponse_TaskResult {
-	var verdict test_platform.TaskState_Verdict
-
-	switch {
-	case attempt.autotestResult == nil:
-		verdict = test_platform.TaskState_VERDICT_UNSPECIFIED
-	case attempt.autotestResult.Incomplete:
-		verdict = test_platform.TaskState_VERDICT_FAILED
-	default:
-		verdict = attempt.Verdict()
-	}
-
 	// TODO(akeshet): Determine this URL in a more principled way. See crbug.com/987487
 	// for context.
 	logURL := fmt.Sprintf(
@@ -86,7 +75,7 @@ func toTaskResult(testName string, attempt *attempt, attemptNum int, urler swarm
 		Name: testName,
 		State: &test_platform.TaskState{
 			LifeCycle: taskStateToLifeCycle[attempt.state],
-			Verdict:   verdict,
+			Verdict:   attempt.Verdict(),
 		},
 		TaskUrl: urler.GetTaskURL(attempt.taskID),
 		LogUrl:  logURL,
