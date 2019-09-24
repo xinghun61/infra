@@ -175,19 +175,25 @@ def ProcessEmailNotification(
 
 
 def _GetComponentIDs(proj_config, components):
-  comps = components.split(',') if components else ['Infra']
+  comps = ['Infra']
+  if components:
+    components = components.strip()
+  if components:
+    comps = [c.strip() for c in components.split(',')]
   return tracker_helpers.LookupComponentIDs(comps, proj_config)
 
 
 def _GetIncidentLabel(incident_id):
-  return 'Incident-Id-%s'.lower() % incident_id if incident_id else ''
+  return 'Incident-Id-%s'.strip().lower() % incident_id if incident_id else ''
 
 
 def _GetLabels(custom_labels, trooper_queue, incident_label, priority,
                issue_type, oses):
   labels = set(['Restrict-View-Google'.lower()])
   labels.update(
-      label.lower() for label in itertools.chain(
+      # Whitespaces in a label can cause UI rendering each of the words as
+      # a separate label.
+      ''.join(label.split()).lower() for label in itertools.chain(
           custom_labels.split(',') if custom_labels else [],
           [trooper_queue, incident_label, priority, issue_type],
           oses)
@@ -197,6 +203,8 @@ def _GetLabels(custom_labels, trooper_queue, incident_label, priority,
 
 
 def _GetOwnerID(user_svc, cnxn, owner_email):
+  if owner_email:
+    owner_email = owner_email.strip()
   if not owner_email:
     return None
   emails = [addr for _, addr in rfc822.AddressList(owner_email)]
@@ -204,7 +212,9 @@ def _GetOwnerID(user_svc, cnxn, owner_email):
 
 
 def _GetCCIDs(user_svc, cnxn, cc_emails):
-  if not cc_emails:
+  if cc_emails:
+    cc_emails = cc_emails.strip()
+  if not cc_emails.strip():
     return []
   emails = [addr for _, addr in rfc822.AddressList(cc_emails)]
   return [userID for _, userID
@@ -213,7 +223,7 @@ def _GetCCIDs(user_svc, cnxn, cc_emails):
 
 
 def _GetPriority(known_labels, priority):
-  priority_label = ('Pri-%s' % priority).lower()
+  priority_label = ('Pri-%s' % priority).strip().lower()
   if priority:
     if priority_label in known_labels:
       return priority_label
@@ -225,9 +235,11 @@ def _GetPriority(known_labels, priority):
 
 def _GetStatus(proj_config, owner_id, status):
   # XXX: what if assigned and available are not in known_statuses?
+  if status:
+    status = status.strip().lower()
   if owner_id:
     # If there is an owner, the status must be 'Assigned'.
-    if status and status.lower() != 'assigned':
+    if status and status != 'assigned':
       logging.info(
           'invalid status %s for an alert with an owner; default to assigned',
           status)
@@ -242,10 +254,14 @@ def _GetStatus(proj_config, owner_id, status):
 
 
 def _GetOSes(known_labels, oses):
+  if oses:
+    oses = oses.strip().lower()
   if not oses:
     return []
 
-  os_labels_to_lookup = {('OS-%s' % os).lower() for os in oses.split(',') if os}
+  os_labels_to_lookup = {
+      ('os-%s' % os).strip() for os in oses.split(',') if os
+  }
   os_labels_to_return = os_labels_to_lookup & known_labels
   invalid_os_labels = os_labels_to_lookup - os_labels_to_return
   if invalid_os_labels:
@@ -255,10 +271,12 @@ def _GetOSes(known_labels, oses):
 
 
 def _GetIssueType(known_labels, issue_type):
-  if not issue_type:
+  if issue_type:
+    issue_type = issue_type.strip().lower()
+  if issue_type is None:
     return None
 
-  issue_type_label = ('Type-%s' % issue_type).lower()
+  issue_type_label = 'type-%s' % issue_type
   if issue_type_label in known_labels:
     return issue_type_label
 

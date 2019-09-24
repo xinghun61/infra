@@ -293,6 +293,7 @@ class GetAlertPropertiesTests(unittest.TestCase, TestData):
   @parameterized.expand([
       (None,),
       ('',),
+      (' ',),
   ])
   def testDefaultComponent(self, header_value):
     """Checks if the default component is Infra."""
@@ -368,6 +369,7 @@ class GetAlertPropertiesTests(unittest.TestCase, TestData):
   @parameterized.expand([
       (None, None),
       ('', None),
+      (' ', None),
   ])
   def testDefaultOwnerID(self, header_value, expected_owner_id):
     """Checks if _GetOwnerID returns None in default."""
@@ -402,6 +404,7 @@ class GetAlertPropertiesTests(unittest.TestCase, TestData):
   @parameterized.expand([
       (None, []),
       ('', []),
+      (' ', []),
   ])
   def testDefaultCCIDs(self, header_value, expected_cc_ids):
     """Checks if _GetCCIDs returns an empty list in default."""
@@ -444,6 +447,7 @@ class GetAlertPropertiesTests(unittest.TestCase, TestData):
       # None and '' should result in the default priority returned.
       (None, 'Pri-2'),
       ('', 'Pri-2'),
+      (' ', 'Pri-2'),
 
       # Tests for valid priority values
       ('0', 'Pri-0'),
@@ -471,6 +475,7 @@ class GetAlertPropertiesTests(unittest.TestCase, TestData):
   @parameterized.expand([
       (None, 'Available'),
       ('', 'Available'),
+      (' ', 'Available'),
   ])
   def testDefaultStatus(self, header_value, expected_status):
     """Checks if _GetStatus return Available in default."""
@@ -501,6 +506,11 @@ class GetAlertPropertiesTests(unittest.TestCase, TestData):
     self.mox.VerifyAll()
 
   @parameterized.expand([
+      # If there is an owner, the status should always be Assigned.
+      (None, 'Assigned'),
+      ('', 'Assigned'),
+      (' ', 'Assigned'),
+
       ('random_status', 'Assigned'),
       ('Available', 'Assigned'),
       ('Unconfirmed', 'Assigned'),
@@ -528,6 +538,7 @@ class GetAlertPropertiesTests(unittest.TestCase, TestData):
       # None and '' should result in None returned.
       (None, None),
       ('', None),
+      (' ', None),
 
       # whitelisted issue types
       ('Bug', 'Type-Bug'),
@@ -554,6 +565,7 @@ class GetAlertPropertiesTests(unittest.TestCase, TestData):
       # None and '' should result in an empty list returned.
       (None, []),
       ('', []),
+      (' ', []),
 
       # a single, whitelisted os
       ('Android', ['OS-Android']),
@@ -586,6 +598,7 @@ class GetAlertPropertiesTests(unittest.TestCase, TestData):
       # None and '' should result in an empty list + RSVG returned.
       (None, []),
       ('', []),
+      (' ', []),
 
       ('Label-1', ['label-1']),
       ('Label-1,Label-2', ['label-1', 'label-2',]),
@@ -598,6 +611,11 @@ class GetAlertPropertiesTests(unittest.TestCase, TestData):
       ('Label-1,label-1,', ['label-1']),
       (',Label-1,,label-1,,,', ['label-1']),
       ('Label-1,Label-2,Label-1', ['label-1', 'label-2']),
+
+      # Whitespaces should be removed from labels.
+      ('La bel - 1 ', ['label-1']),
+      ('La bel - 1 , Label- 1', ['label-1']),
+      ('La bel- 1 , Label - 2', ['label-1', 'label-2']),
 
       # RSVG should be set always.
       ('Label-1,Label-1,Restrict-View-Google', ['label-1']),
