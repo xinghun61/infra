@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"strings"
 	"time"
 
 	swarming_api "go.chromium.org/luci/common/api/swarming/swarming/v1"
@@ -375,6 +376,9 @@ func errIsTransient(err error) bool {
 		return true
 	}
 	if e, ok := err.(*googleapi.Error); ok && retryableCodes[e.Code] {
+		return true
+	}
+	if strings.Contains(err.Error(), "connection reset by peer") {
 		return true
 	}
 	return false

@@ -41,6 +41,28 @@ func TestSwarmingCallWithRetries_TransientFailure(t *testing.T) {
 	}
 }
 
+func TestSwarmingCallWithRetries_ConnectionReset(t *testing.T) {
+	ctx, testClock := testclock.UseTime(context.Background(), time.Now())
+	testClock.SetTimerCallback(func(time.Duration, clock.Timer) {
+		testClock.Add(1 * time.Second)
+	})
+	count := 0
+	f := func() error {
+		defer func() { count++ }()
+		if count == 0 {
+			return errors.New("read tcp: read: connection reset by peer")
+		}
+		return nil
+	}
+	err := callWithRetries(ctx, f)
+	if err != nil {
+		t.Fatalf("call error actual != expected, %v != %v", err, nil)
+	}
+	if count != 2 {
+		t.Fatalf("try count actual != expected, %d != %d", count, 1)
+	}
+}
+
 func TestSwarmingCallWithRetries_NontransientFailure(t *testing.T) {
 	count := 0
 	f := func() error {
