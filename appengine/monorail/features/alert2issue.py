@@ -100,7 +100,8 @@ def GetAlertProperties(services, cnxn, project_id, incident_id, trooper_queue,
   props.update(
       status=_GetStatus(proj_config, props['owner_id'],
                         msg.get(AlertEmailHeader.STATUS)),
-      labels=_GetLabels(props['trooper_queue'], props['incident_label'],
+      labels=_GetLabels(msg.get(AlertEmailHeader.LABEL),
+                        props['trooper_queue'], props['incident_label'],
                         props['priority'], props['issue_type'], props['oses']),
   )
 
@@ -179,14 +180,17 @@ def _GetComponentIDs(proj_config, components):
 
 
 def _GetIncidentLabel(incident_id):
-  return 'Incident-Id-%s' % incident_id if incident_id else ''
+  return 'Incident-Id-%s'.lower() % incident_id if incident_id else ''
 
 
-def _GetLabels(trooper_queue, incident_label, priority, issue_type, oses):
-  labels = set(['Restrict-View-Google'])
+def _GetLabels(custom_labels, trooper_queue, incident_label, priority,
+               issue_type, oses):
+  labels = set(['Restrict-View-Google'.lower()])
   labels.update(
-      label for label in itertools.chain(
-          [trooper_queue, incident_label, priority, issue_type], oses)
+      label.lower() for label in itertools.chain(
+          custom_labels.split(',') if custom_labels else [],
+          [trooper_queue, incident_label, priority, issue_type],
+          oses)
       if label
   )
   return list(labels)

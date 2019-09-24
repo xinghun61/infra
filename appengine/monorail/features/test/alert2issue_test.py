@@ -67,7 +67,6 @@ class TestData(object):
 
 class ProcessEmailNotificationTests(unittest.TestCase, TestData):
   """Implements unit tests for alert2issue.ProcessEmailNotification."""
-
   def setUp(self):
     # services
     self.services = service_manager.Services(
@@ -247,6 +246,9 @@ class ProcessEmailNotificationTests(unittest.TestCase, TestData):
 
 class GetAlertPropertiesTests(unittest.TestCase, TestData):
   """Implements unit tests for alert2issue.GetAlertProperties."""
+  def assertSubset(self, lhs, rhs):
+    if not (lhs <= rhs):
+      raise AssertionError('%s not a subset of %s' % (lhs, rhs))
 
   def assertCaseInsensitiveEqual(self, lhs, rhs):
     self.assertEqual(lhs if lhs is None else lhs.lower(),
@@ -355,7 +357,7 @@ class GetAlertPropertiesTests(unittest.TestCase, TestData):
     self.assertTrue(props['oses'])
 
     # Here are a list of the labels that props['labels'] should contain
-    self.assertIn('Restrict-View-Google', props['labels'])
+    self.assertIn('Restrict-View-Google'.lower(), props['labels'])
     self.assertIn(self.trooper_queue, props['labels'])
     self.assertIn(props['incident_label'], props['labels'])
     self.assertIn(props['priority'], props['labels'])
@@ -569,7 +571,7 @@ class GetAlertPropertiesTests(unittest.TestCase, TestData):
       # beginning.
       (',,Android,Findows,Windows,Bendroid,,', ['OS-Android', 'OS-Windows']),
   ])
-  def testGetOS(self, header_value, expected_oses):
+  def testGetOSes(self, header_value, expected_oses):
     """Tests _GetOSes."""
     self.test_msg.replace_header(AlertEmailHeader.OS, header_value)
     props = alert2issue.GetAlertProperties(
@@ -579,3 +581,45 @@ class GetAlertPropertiesTests(unittest.TestCase, TestData):
                             for os in props['oses']),
                      sorted(os if os is None else os.lower()
                             for os in expected_oses))
+
+  @parameterized.expand([
+      # None and '' should result in an empty list + RSVG returned.
+      (None, []),
+      ('', []),
+
+      ('Label-1', ['label-1']),
+      ('Label-1,Label-2', ['label-1', 'label-2',]),
+      ('Label-1,Label-2,Label-3', ['label-1', 'label-2', 'label-3']),
+
+      # Duplicates should be removed.
+      ('Label-1,Label-1', ['label-1']),
+      ('Label-1,label-1', ['label-1']),
+      (',Label-1,label-1,', ['label-1']),
+      ('Label-1,label-1,', ['label-1']),
+      (',Label-1,,label-1,,,', ['label-1']),
+      ('Label-1,Label-2,Label-1', ['label-1', 'label-2']),
+
+      # RSVG should be set always.
+      ('Label-1,Label-1,Restrict-View-Google', ['label-1']),
+  ])
+  def testGetLabels(self, header_value, expected_labels):
+    """Tests _GetLabels."""
+    self.test_msg.replace_header(AlertEmailHeader.LABEL, header_value)
+    props = alert2issue.GetAlertProperties(
+        self.services, self.cnxn, self.project_id, self.incident_id,
+        self.trooper_queue, self.test_msg)
+
+    # Check if there are any duplicates
+    labels = set(props['labels'])
+    self.assertEqual(sorted(props['labels']), sorted(list(labels)))
+
+    # Check the labels that shouldb always be included
+    self.assertIn('Restrict-View-Google'.lower(), labels)
+    self.assertIn(props['trooper_queue'], labels)
+    self.assertIn(props['incident_label'], labels)
+    self.assertIn(props['priority'], labels)
+    self.assertIn(props['issue_type'], labels)
+    self.assertSubset(set(props['oses']), labels)
+
+    # All the custom labels should be present.
+    self.assertSubset(set(expected_labels), labels)

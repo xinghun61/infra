@@ -56,6 +56,7 @@ class AlertEmailHeader(object):
   COMPONENT   = _checkEmailHeaderPrefix('X-Alert2Monorail-component')
   OS          = _checkEmailHeaderPrefix('X-Alert2Monorail-os')
   TYPE        = _checkEmailHeaderPrefix('X-Alert2Monorail-type')
+  LABEL       = _checkEmailHeaderPrefix('X-Alert2Monorail-label')
 
 
 def IsBodyTooBigToParse(body):

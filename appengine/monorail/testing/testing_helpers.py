@@ -43,6 +43,7 @@ ALERT_EMAIL_HEADER_LINES = HEADER_LINES + [
     (AlertEmailHeader.COMPONENT, 'Component'),
     (AlertEmailHeader.TYPE, 'Bug'),
     (AlertEmailHeader.OS, 'Android,Windows'),
+    (AlertEmailHeader.LABEL, ''),
 ]
 
 
