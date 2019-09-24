@@ -30,6 +30,7 @@ func TestRun(t *testing.T) {
 		Path:   findShellCheckBin(),
 		Dir:    testInputDir,
 		Logger: runnerLogger,
+		Enable: "require-variable-braces",
 	}
 	version, err := r.Version()
 	if err != nil {
@@ -64,8 +65,8 @@ func TestRun(t *testing.T) {
 			So(ok, ShouldBeTrue)
 		})
 
-		Convey("There should be two comments", func() {
-			So(len(comments), ShouldEqual, 4)
+		Convey("There should be multiple comments", func() {
+			So(len(comments), ShouldEqual, 5)
 		})
 
 		Convey("Comments should have specific contents", func() {
@@ -100,6 +101,15 @@ func TestRun(t *testing.T) {
 				{
 					"category":  "ShellCheck/SC2086",
 					"message":   "info: Double quote to prevent globbing and word splitting.\n\nhttps://github.com/koalaman/shellcheck/wiki/SC2086",
+					"path":      "bad.sh",
+					"startLine": float64(8),
+					"endLine":   float64(8),
+					"startChar": float64(5),
+					"endChar":   float64(9),
+				},
+				{
+					"category":  "ShellCheck/SC2250",
+					"message":   "style: Prefer putting braces around variable references even when not strictly required.\n\nhttps://github.com/koalaman/shellcheck/wiki/SC2250",
 					"path":      "bad.sh",
 					"startLine": float64(8),
 					"endLine":   float64(8),

@@ -29,6 +29,7 @@ func main() {
 
 	exclude := flag.String("exclude", "", "Exclude warnings (see shellcheck")
 	shell := flag.String("shell", "", "Specify dialect (see shellcheck")
+	enable := flag.String("enable", "", "Enable optional checks (see shellcheck)")
 
 	// This is needed until/unless crbug.com/863106 is fixed.
 	pathFilters := flag.String("path_filters", "", "Patterns to filter file list")
@@ -42,6 +43,7 @@ func main() {
 		Path:    *shellCheckPath,
 		Dir:     *inputDir,
 		Exclude: *exclude,
+		Enable:  *enable,
 		Shell:   *shell,
 		Logger:  runnerLogger,
 	}

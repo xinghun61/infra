@@ -23,6 +23,7 @@ type Runner struct {
 	Path    string
 	Dir     string
 	Exclude string
+	Enable  string
 	Shell   string
 
 	Logger interface {
@@ -61,6 +62,9 @@ func (r *Runner) Warnings(paths ...string) ([]Warning, error) {
 	args := []string{"--format=json1"}
 	if r.Exclude != "" {
 		args = append(args, fmt.Sprintf("--exclude=%s", r.Exclude))
+	}
+	if r.Enable != "" {
+		args = append(args, fmt.Sprintf("--enable=%s", r.Enable))
 	}
 	if r.Shell != "" {
 		args = append(args, fmt.Sprintf("--shell=%s", r.Shell))
