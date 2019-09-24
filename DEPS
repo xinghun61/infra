@@ -146,4 +146,4 @@ hooks = [
   },
 ]
 
-recursedeps = ['build']
+recursedeps = ['build', 'infra/luci']
