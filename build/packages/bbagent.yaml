@@ -1,0 +1,20 @@
+package: infra/tools/luci/bbagent/${platform}
+description: Runs LUCI Executables, part of buildbucket.
+platforms:
+  - linux-386
+  - linux-amd64
+  - linux-arm64
+  - linux-armv6l
+  - linux-mipsle
+  - linux-mips64
+  - linux-mips64le
+  - mac-amd64
+  - windows-386
+  - windows-amd64
+go_packages:
+  - go.chromium.org/luci/buildbucket/cmd/bbagent
+install_mode: copy
+root: ../../go/bin
+data:
+  - file: bbagent${exe_suffix}
+  - version_file: .versions/bbagent${exe_suffix}.cipd_version
