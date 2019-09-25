@@ -293,6 +293,10 @@ class IssueListFunctionsTest(unittest.TestCase):
         issuelist._GetAllPhaseNames(issues),
         ['chicken', 'cow', 'dog', 'goat', 'hippo'])
 
+  def testGetAllPhaseNames_None(self):
+    self.assertItemsEqual(
+        issuelist._GetAllPhaseNames(None), [])
+
 
 def _GetColumns():
   """Return a list of all well known column names."""

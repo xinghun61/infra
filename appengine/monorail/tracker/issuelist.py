@@ -356,6 +356,8 @@ def _GetAllPhaseNames(issues):
   Returns:
     list of unique phase names that appear in at least one issue.
   """
+  if not issues:
+    return []
   return list(set(
       itertools.chain.from_iterable(
           (phase.name.lower() for phase in issue.phases) for
