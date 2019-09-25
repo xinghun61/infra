@@ -17,7 +17,6 @@ from proto import tracker_pb2
 from testing import fake
 from testing import testing_helpers
 from tracker import tablecell
-from tracker import tracker_bizobj
 
 
 class DisplayNameMock(object):
@@ -27,13 +26,11 @@ class DisplayNameMock(object):
     self.user = None
 
 
-def MakeTestIssue(local_id, issue_id, summary, status=None):
+def MakeTestIssue(local_id, issue_id, summary):
   issue = tracker_pb2.Issue()
   issue.local_id = local_id
   issue.issue_id = issue_id
   issue.summary = summary
-  if status:
-    issue.status = status
   return issue
 
 
@@ -46,18 +43,18 @@ class TableCellUnitTest(unittest.TestCase):
 
   def setUp(self):
     self.issue1 = MakeTestIssue(
-        local_id=1, issue_id=100001, summary='One', status="New")
+        local_id=1, issue_id=100001, summary='One')
     self.issue2 = MakeTestIssue(
-        local_id=2, issue_id=100002, summary='Two', status="Fixed")
+        local_id=2, issue_id=100002, summary='Two')
     self.issue3 = MakeTestIssue(
-        local_id=3, issue_id=100003, summary='Three', status="UndefinedString")
+        local_id=3, issue_id=100003, summary='Three')
     self.table_cell_kws = {
         'col': None,
         'users_by_id': self.USERS_BY_ID,
         'non_col_labels': [],
         'label_values': {},
         'related_issues': {},
-        'config': tracker_bizobj.MakeDefaultProjectIssueConfig(678)
+        'config': 'fake config',
         }
 
   def testTableCellNote(self):
@@ -243,26 +240,15 @@ class TableCellUnitTest(unittest.TestCase):
 
     cell = tablecell.TableCellBlockedOn(
         test_issue, **table_cell_kws)
-    self.assertEqual(cell.type, table_view_helpers.CELL_TYPE_ISSUES)
-    self.assertEqual(
-        [x.item for x in cell.values],
-        [{'href': '/p/None/issues/detail?id=1',
-          'id': '1',
-          'closed': False,
-          'title': 'One'},
-         {'href': '/p/None/issues/detail?id=3',
-          'id': '3',
-          'closed': False,
-          'title': 'Three'},
-         {'href': '/p/None/issues/detail?id=2',
-          'id': '2',
-          'closed': True,
-          'title': 'Two'}])
+    self.assertEqual(cell.type, table_view_helpers.CELL_TYPE_ATTR)
+    self.assertEqual(cell.values[0].item, '1')
+    self.assertEqual(cell.values[1].item, '2')
+    self.assertEqual(cell.values[2].item, '3')
 
   def testTableCellBlockedOnNone(self):
     cell = tablecell.TableCellBlockedOn(
         MakeTestIssue(4, 4, 'Four'), **self.table_cell_kws)
-    self.assertEqual(cell.type, table_view_helpers.CELL_TYPE_ISSUES)
+    self.assertEqual(cell.type, table_view_helpers.CELL_TYPE_ATTR)
     self.assertEqual(cell.values, [])
 
   def testTableCellBlocking(self):
@@ -276,27 +262,16 @@ class TableCellUnitTest(unittest.TestCase):
 
     cell = tablecell.TableCellBlocking(
         test_issue, **table_cell_kws)
-    self.assertEqual(cell.type, table_view_helpers.CELL_TYPE_ISSUES)
-    self.assertEqual(
-        [x.item for x in cell.values],
-        [{'href': '/p/None/issues/detail?id=1',
-          'id': '1',
-          'closed': False,
-          'title': 'One'},
-         {'href': '/p/None/issues/detail?id=3',
-          'id': '3',
-          'closed': False,
-          'title': 'Three'},
-         {'href': '/p/None/issues/detail?id=2',
-          'id': '2',
-          'closed': True,
-          'title': 'Two'}])
+    self.assertEqual(cell.type, table_view_helpers.CELL_TYPE_ATTR)
+    self.assertEqual(cell.values[0].item, '1')
+    self.assertEqual(cell.values[1].item, '2')
+    self.assertEqual(cell.values[2].item, '3')
 
   def testTableCellBlockingNone(self):
     cell = tablecell.TableCellBlocking(
         MakeTestIssue(4, 4, 'Four'),
         **self.table_cell_kws)
-    self.assertEqual(cell.type, table_view_helpers.CELL_TYPE_ISSUES)
+    self.assertEqual(cell.type, table_view_helpers.CELL_TYPE_ATTR)
     self.assertEqual(cell.values, [])
 
   def testTableCellBlocked(self):
@@ -322,17 +297,13 @@ class TableCellUnitTest(unittest.TestCase):
 
     cell = tablecell.TableCellMergedInto(
         test_issue, **table_cell_kws)
-    self.assertEqual(cell.type, table_view_helpers.CELL_TYPE_ISSUES)
-    self.assertEqual(cell.values[0].item,
-                     {'href': '/p/None/issues/detail?id=3',
-                      'id': '3',
-                      'closed': False,
-                      'title': 'Three'})
+    self.assertEqual(cell.type, table_view_helpers.CELL_TYPE_ATTR)
+    self.assertEqual(cell.values[0].item, '3')
 
   def testTableCellMergedIntoNotMerged(self):
     cell = tablecell.TableCellMergedInto(
         MakeTestIssue(4, 4, 'Four'), **self.table_cell_kws)
-    self.assertEqual(cell.type, table_view_helpers.CELL_TYPE_ISSUES)
+    self.assertEqual(cell.type, table_view_helpers.CELL_TYPE_ATTR)
     self.assertEqual(cell.values, [])
 
   def testTableCellAllLabels(self):

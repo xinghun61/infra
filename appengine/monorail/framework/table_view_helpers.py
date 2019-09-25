@@ -513,7 +513,6 @@ CELL_TYPE_UNFILTERABLE = 'unfilterable'
 CELL_TYPE_NOTE = 'note'
 CELL_TYPE_PROJECT = 'project'
 CELL_TYPE_URL = 'url'
-CELL_TYPE_ISSUES = 'issues'
 
 
 @total_ordering
