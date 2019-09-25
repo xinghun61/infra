@@ -608,7 +608,7 @@ export const fetchReferencedUsers = (issue) => async (dispatch) => {
 
     const referencedUsers = {};
     (resp.users || []).forEach((user) => {
-      referencedUsers[user.email] = user;
+      referencedUsers[user.displayName] = user;
     });
     dispatch({type: FETCH_REFERENCED_USERS_SUCCESS, referencedUsers});
   } catch (error) {

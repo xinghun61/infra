@@ -249,7 +249,7 @@ function ReplaceUserRef(match, components, _currentProjectName) {
   const textRun = {content: match[0], tag: 'a'};
   if (components.users && components.users.length) {
     const existingUser = components.users.find((user) => {
-      return user.email.toLowerCase() === match[0].toLowerCase();
+      return user.displayName.toLowerCase() === match[0].toLowerCase();
     });
     if (existingUser) {
       textRun.href = `/u/${match[0]}`;

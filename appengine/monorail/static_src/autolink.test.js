@@ -271,7 +271,8 @@ describe('autolink', () => {
 
     it('Replace existing user.', () => {
       const components = {
-        users: [{email: 'user2@gmail.com'}, {email: 'user1@gmail.com'}]};
+        users: [{displayName: 'user2@gmail.com'},
+          {displayName: 'user1@gmail.com'}]};
       const actualTextRun = replacer(match, components);
       assert.deepEqual(
           actualTextRun,
@@ -578,7 +579,7 @@ describe('autolink', () => {
       closedRefs: [{projectName: 'chromium', localId: 456}],
     });
     componentRefs.set('03-user-emails', {
-      users: [{email: 'user2@example.com'}],
+      users: [{displayName: 'user2@example.com'}],
     });
 
     it('empty string does not cause error', () => {
