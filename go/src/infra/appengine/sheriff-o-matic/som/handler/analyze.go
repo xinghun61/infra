@@ -91,17 +91,11 @@ func GetAnalyzeHandler(ctx *router.Context) {
 		errStatus(c, w, http.StatusInternalServerError, "no analyzer set in Context")
 		return
 	}
-	source := r.FormValue("use")
 	var alertsSummary *messages.AlertsSummary
 	var err error
 	c = appengine.WithContext(c, r)
 
-	// TODO: remove this check once we're off buildbot.
-	if source == "bigquery" {
-		alertsSummary, err = generateBigQueryAlerts(c, a, tree)
-	} else {
-		alertsSummary, err = generateAlerts(ctx, a)
-	}
+	alertsSummary, err = generateBigQueryAlerts(c, a, tree)
 
 	if err != nil {
 		errStatus(c, w, http.StatusInternalServerError, err.Error())
@@ -233,125 +227,6 @@ func attachFindItResults(ctx context.Context, failures []messages.BuildFailure, 
 	}
 
 	return failures
-}
-
-func generateAlerts(ctx *router.Context, a *analyzer.Analyzer) (*messages.AlertsSummary, error) {
-	c, w, p := ctx.Context, ctx.Writer, ctx.Params
-
-	tree := p.ByName("tree")
-
-	gkRules, err := getGatekeeperRules(c)
-	if err != nil {
-		logging.Errorf(c, "error getting gatekeeper rules: %v", err)
-		return nil, err
-	}
-
-	trees, err := getGatekeeperTrees(c)
-	if err != nil {
-		logging.Errorf(c, fmt.Sprintf("getting gatekeeper trees: %v", err))
-		return nil, err
-	}
-
-	treeCfgs, ok := trees[tree]
-	if !ok {
-		errStatus(c, w, http.StatusNotFound, fmt.Sprintf("unrecognized tree: %s", tree))
-		return nil, nil
-	}
-
-	a.Gatekeeper = gkRules
-
-	alerts := []messages.Alert{}
-	groupByCat := map[string]map[string]int{}
-
-	for _, treeCfg := range treeCfgs {
-		logging.Debugf(c, "Getting compressed master json for %d masters", len(treeCfg.Masters))
-
-		type res struct {
-			alerts []messages.Alert
-			err    error
-		}
-
-		resCh := make(chan res)
-		for masterLoc := range treeCfg.Masters {
-			masterLoc := masterLoc
-			go func() {
-				buildExtract, err := a.Milo.BuildExtract(c, &masterLoc)
-				r := res{err: err}
-				if err == nil {
-					r.alerts = a.MasterAlerts(c, &masterLoc, buildExtract)
-					r.alerts = append(r.alerts, a.BuilderAlerts(c, tree, &masterLoc, buildExtract)...)
-				}
-				resCh <- r
-			}()
-		}
-
-		var anyErr error
-		for i := 0; i < len(treeCfg.Masters); i++ {
-			r := <-resCh
-			alerts = append(alerts, r.alerts...)
-			if r.err != nil {
-				anyErr = r.err
-			}
-		}
-
-		if anyErr != nil {
-			// Some errors are tolerated so long as some analysis succeeded.
-			logging.Errorf(c, "error creating alerts: %v", anyErr)
-		}
-
-		groupsByCategory, err := mergeAlertsByReason(ctx, alerts)
-		if err != nil {
-			logging.Errorf(c, "error merging alerts by reason: %v", err)
-			return nil, err
-		}
-		for cat, groups := range groupsByCategory {
-			if _, ok := groupByCat[cat]; !ok {
-				groupByCat[cat] = map[string]int{}
-			}
-			for gID := range groups {
-				groupByCat[cat][gID]++
-			}
-		}
-	}
-
-	// Update raw alert counts by category monitoring metrics.
-	alertCountByCategory := map[string]int{}
-	for _, a := range alerts {
-		cat := alertCategory(&a)
-		alertCountByCategory[cat]++
-	}
-
-	for cat, count := range alertCountByCategory {
-		alertCount.Set(c, int64(count), tree, cat)
-	}
-
-	// Update alert groups counts by category monitoring metrics.
-	for cat, groups := range groupByCat {
-		alertGroupCount.Set(c, int64(len(groups)), tree, cat)
-	}
-
-	// Attach test result histories to test failure alerts.
-	for _, alert := range alerts {
-		if !isTestFailure(alert) {
-			continue
-		}
-		if err := attachTestResults(c, &alert, a.TestResults); err != nil {
-			logging.WithError(err).Errorf(c, "attaching results")
-		}
-	}
-
-	logging.Debugf(c, "storing %d alerts for %s", len(alerts), tree)
-	alertsSummary := &messages.AlertsSummary{
-		RevisionSummaries: map[string]messages.RevisionSummary{},
-		Alerts:            alerts,
-	}
-
-	if err := storeAlertsSummary(c, a, tree, alertsSummary); err != nil {
-		logging.Errorf(c, "error storing alerts: %v", err)
-		return nil, err
-	}
-
-	return alertsSummary, nil
 }
 
 func alertCategory(a *messages.Alert) string {

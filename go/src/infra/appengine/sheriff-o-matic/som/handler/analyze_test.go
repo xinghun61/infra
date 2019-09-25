@@ -3,7 +3,6 @@ package handler
 import (
 	"crypto/sha1"
 	"fmt"
-	"net/http"
 	"net/http/httptest"
 	"sort"
 	"testing"
@@ -235,119 +234,6 @@ func TestAttachFinditResults(t *testing.T) {
 		So(len(res), ShouldEqual, 1)
 		So(len(res[0].Culprits), ShouldEqual, 1)
 		So(res[0].HasFindings, ShouldEqual, true)
-	})
-}
-
-func TestGenerateAlerts(t *testing.T) {
-	Convey("bad request", t, func() {
-		c := gaetesting.TestingContext()
-		c = info.SetFactory(c, func(ic context.Context) info.RawInterface {
-			return giMock{dummy.Info(), "", time.Now(), nil}
-		})
-		c = setUpGitiles(c)
-		w := httptest.NewRecorder()
-
-		ctx := &router.Context{
-			Context: c,
-			Writer:  w,
-			Request: makeGetRequest(),
-			Params:  makeParams("tree", "unknown.tree"),
-		}
-
-		a := analyzer.New(5, 100)
-		a.BuildBucket = &mockBuildBucket{}
-		_, _ = generateAlerts(ctx, a)
-
-		So(w.Code, ShouldEqual, http.StatusNotFound)
-	})
-
-	Convey("ok request", t, func() {
-		c := newTestContext()
-		c = info.SetFactory(c, func(ic context.Context) info.RawInterface {
-			return giMock{dummy.Info(), "", time.Now(), nil}
-		})
-		c = setUpGitiles(c)
-
-		c = gologger.StdConfig.Use(c)
-		c = authtest.MockAuthConfig(c)
-
-		w := httptest.NewRecorder()
-		r := makeGetRequest()
-		c = info.SetFactory(c, func(ic context.Context) info.RawInterface {
-			return giMock{dummy.Info(), "", time.Now(), nil}
-		})
-		c = setUpGitiles(c)
-
-		ctx := &router.Context{
-			Context: c,
-			Writer:  w,
-			Request: r,
-			Params:  makeParams("tree", "chromium"),
-		}
-		a := analyzer.New(5, 100)
-		a.Milo = testhelper.MockReader{
-			BuildExtracts: map[string]*messages.BuildExtract{
-				"chromium": {},
-			},
-		}
-		a.BuildBucket = &mockBuildBucket{
-			builds: []*bbpb.Build{
-				{
-					Builder: &bbpb.BuilderID{
-						Project: "chromium",
-						Bucket:  "ci",
-						Builder: "win-rel",
-					},
-					Steps: []*bbpb.Step{
-						{
-							Name:   "Run",
-							Status: bbpb.Status_SUCCESS,
-						},
-					},
-					Status: bbpb.Status_SUCCESS,
-				},
-			},
-		}
-		a.Trees["chromium"] = &model.BuildBucketTree{
-			TreeName: "chromium",
-			TreeBuilders: []*model.TreeBuilder{{
-				Project:  "chromium",
-				Bucket:   "ci",
-				Builders: []string{"win-rel"},
-			}},
-		}
-		_, _ = generateAlerts(ctx, a)
-
-		So(w.Code, ShouldEqual, http.StatusOK)
-	})
-
-	SkipConvey("ok request, no gitiles", t, func() {
-		c := newTestContext()
-		c = info.SetFactory(c, func(ic context.Context) info.RawInterface {
-			return giMock{dummy.Info(), "", time.Now(), nil}
-		})
-		c = urlfetch.Set(c, &testhelper.MockGitilesTransport{})
-		w := httptest.NewRecorder()
-		r := makeGetRequest()
-
-		ctx := &router.Context{
-			Context: c,
-			Writer:  w,
-			Request: r,
-			Params:  makeParams("tree", "chromium"),
-		}
-
-		a := analyzer.New(5, 100)
-		a.Milo = testhelper.MockReader{
-			BuildExtracts: map[string]*messages.BuildExtract{
-				"chromium": {},
-			},
-		}
-		a.BuildBucket = &mockBuildBucket{}
-
-		_, err := generateAlerts(ctx, a)
-
-		So(err, ShouldNotBeNil)
 	})
 }
 

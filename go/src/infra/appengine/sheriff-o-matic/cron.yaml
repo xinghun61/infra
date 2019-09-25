@@ -24,7 +24,7 @@ cron:
   schedule: every 1 hours
 
 - description: Update Android alerts
-  url: /_cron/analyze/android?use=bigquery
+  url: /_cron/analyze/android
   schedule: every 5 minutes
   target: analyzer
   retry_parameters:
@@ -32,7 +32,7 @@ cron:
     max_doublings: 5
 
 - description: Update Chromium alerts
-  url: /_cron/analyze/chromium?use=bigquery
+  url: /_cron/analyze/chromium
   schedule: every 5 minutes
   target: analyzer
   retry_parameters:
@@ -40,7 +40,7 @@ cron:
     max_doublings: 5
 
 - description: Update ChromeOS Alerts
-  url: /_cron/analyze/chromeos?use=bigquery
+  url: /_cron/analyze/chromeos
   schedule: every 5 minutes
   target: analyzer
   retry_parameters:
@@ -48,7 +48,7 @@ cron:
     max_doublings: 5
 
 - description: Update iOS alerts
-  url: /_cron/analyze/ios?use=bigquery
+  url: /_cron/analyze/ios
   schedule: every 5 minutes
   target: analyzer
   retry_parameters:
@@ -56,7 +56,7 @@ cron:
     max_doublings: 5
 
 - description: Update Chromium Perf alerts
-  url: /_cron/analyze/chromium.perf?use=bigquery
+  url: /_cron/analyze/chromium.perf
   schedule: every 5 minutes
   target: analyzer
   retry_parameters:
@@ -64,7 +64,7 @@ cron:
     max_doublings: 5
 
 - description: Update Chromium GPU FYI alerts
-  url: /_cron/analyze/chromium.gpu.fyi?use=bigquery
+  url: /_cron/analyze/chromium.gpu.fyi
   schedule: every 5 minutes
   target: analyzer
   retry_parameters:
@@ -72,7 +72,7 @@ cron:
     max_doublings: 5
 
 - description: Update Chromium Clang alerts
-  url: /_cron/analyze/chromium.clang?use=bigquery
+  url: /_cron/analyze/chromium.clang
   schedule: every 5 minutes
   target: analyzer
   retry_parameters:
@@ -80,7 +80,7 @@ cron:
     max_doublings: 5
 
 - description: Update Fuchsia alerts
-  url: /_cron/analyze/fuchsia?use=bigquery
+  url: /_cron/analyze/fuchsia
   schedule: every 5 minutes
   target: analyzer
   retry_parameters:
