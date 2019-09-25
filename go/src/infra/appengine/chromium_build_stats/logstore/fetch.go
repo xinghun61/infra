@@ -12,6 +12,7 @@ import (
 )
 
 // Fetch fetches file from path in logstore.
+// Caller would need to uncompress the reader.
 func Fetch(ctx context.Context, client *storage.Client, path string) (*storage.Reader, error) {
 	bkt, err := Bucket(ctx, path)
 	if err != nil {

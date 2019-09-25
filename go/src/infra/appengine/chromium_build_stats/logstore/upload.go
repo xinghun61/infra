@@ -45,7 +45,10 @@ func Upload(ctx context.Context, prefix string, data []byte) (_ string, rerr err
 	w := client.Bucket(bkt).Object(logPath).NewWriter(ctx)
 	defer closeCloser(w)
 
-	w.ContentEncoding = "gzip"
+	// no need to set content-encoding?
+	// with this, uploaded file get error "gzip: invalid header".
+	// https://bugs.chromium.org/p/chromium/issues/detail?id=1007149
+	// w.ContentEncoding = "gzip"
 
 	gw := gzip.NewWriter(w)
 	defer closeCloser(gw)

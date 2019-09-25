@@ -322,7 +322,7 @@ func ninjalogFetch(ctx context.Context, logPath string) (*ninjalog.NinjaLog, err
 
 	rd, err := gzip.NewReader(r)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to uncompress: %v", err)
 	}
 	nl, err := ninjalog.Parse(logPath, rd)
 	return nl, err
