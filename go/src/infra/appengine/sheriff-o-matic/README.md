@@ -90,8 +90,8 @@ First create a new CL for the RELNOTES.md update. Then run:
 make relnotes
 ```
 
-Note that you may need to install `GOOGLE_APPLICATION_CREDENTIALS` as
-described below in order to have relnotes work properly this way.
+Note that you may need to authenticate for deployment as
+described below in order to have `make relnotes` work properly this way.
 
 Copy and paste the output into the top of `README.md` and make any manual edits
 if necessary. You can also use the optional flags `-since-date YYYY-MM-DD` or
@@ -101,9 +101,11 @@ of commits to include. Then:
 - Send the RELNOTES.md update CL for review by OWNERS.
 - Land CL.
 - run `make deploy_prod`
+- Double-check that the version is not named with a `-tainted` suffix, as deploying
+such a version will cause alerts to fire (plus, you shouldn't deploy uncommitted code :).
 - Go to the Versions section of the
 [App Engine Console](https://appengine.google.com/) and update the default
-version of the app services. *Rembember to update both the "default" and "analyzer"
+version of the app services. **Important**: *Rembember to update both the "default" and "analyzer"
 services*. Having the default and analyzer services running different versions
 may cause errors and/or monitoring alerts to fire.
 - Send a PSA email to cit-sheriffing@ about the new release.
