@@ -9,7 +9,6 @@ import (
 	"net/http"
 
 	"infra/appengine/sheriff-o-matic/som/analyzer"
-	"infra/appengine/sheriff-o-matic/som/analyzer/step"
 	"infra/appengine/sheriff-o-matic/som/client"
 	"infra/appengine/sheriff-o-matic/som/handler"
 
@@ -47,17 +46,13 @@ func withServiceClients(ctx *router.Context, next router.Handler) {
 
 func setServiceClients(ctx *router.Context, a *analyzer.Analyzer) {
 	if info.AppID(ctx.Context) == prodAppID {
-		logReader, findIt, miloClient, crBug, _, testResults := client.ProdClients(ctx.Context)
-		a.StepAnalyzers = step.DefaultStepAnalyzers(logReader, findIt, testResults)
+		findIt, crBug, _, testResults := client.ProdClients(ctx.Context)
 		a.CrBug = crBug
-		a.Milo = miloClient
 		a.FindIt = findIt
 		a.TestResults = testResults
 	} else {
-		logReader, findIt, miloClient, crBug, _, testResults := client.StagingClients(ctx.Context)
-		a.StepAnalyzers = step.DefaultStepAnalyzers(logReader, findIt, testResults)
+		findIt, crBug, _, testResults := client.StagingClients(ctx.Context)
 		a.CrBug = crBug
-		a.Milo = miloClient
 		a.FindIt = findIt
 		a.TestResults = testResults
 	}

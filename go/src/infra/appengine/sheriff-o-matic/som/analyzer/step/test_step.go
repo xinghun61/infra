@@ -6,16 +6,11 @@ package step
 
 import (
 	"fmt"
-	"sort"
 	"strings"
-
-	"go.chromium.org/luci/common/logging"
 
 	"golang.org/x/net/context"
 
-	"infra/appengine/sheriff-o-matic/som/client"
 	te "infra/appengine/sheriff-o-matic/som/testexpectations"
-	"infra/appengine/test-results/model"
 	"infra/monitoring/messages"
 )
 
@@ -108,95 +103,6 @@ type TestWithResult struct {
 	Artifacts    []ArtifactLink             `json:"artifacts"`
 }
 
-type testFailureAnalyzer struct {
-	findit client.FindIt
-	trc    client.TestResults
-}
-
-// testFailureAnalyzer analyzes steps to see if there is any data in the tests
-// server which corresponds to the failure.
-func (tfa *testFailureAnalyzer) Analyze(ctx context.Context, fs []*messages.BuildStep, tree string) ([]messages.ReasonRaw, []error) {
-	results := make([]messages.ReasonRaw, len(fs))
-	builderConfigs, err := te.LoadBuilderConfigs(ctx)
-	if err != nil {
-		return nil, []error{err}
-	}
-
-	for i, f := range fs {
-		rslt, err := testAnalyzeFailure(ctx, f, tfa.findit, tfa.trc)
-		if err != nil {
-			return nil, []error{err}
-		}
-		if rslt == nil {
-			continue
-		}
-		failure, ok := rslt.(*TestFailure)
-		if !ok {
-			logging.Errorf(ctx, "couldn't cast to *TestFailure: %+v", rslt)
-			continue
-		}
-		for t, r := range failure.Tests {
-			if tree == "chromium.perf" {
-				artifacts, err := getArtifactsForTest(ctx, f, r.TestName, tfa.trc)
-				if err != nil {
-					logging.Errorf(ctx, "couldn't get test artifacts for %+v: %v", r.TestName, err)
-				} else {
-					failure.Tests[t].Artifacts = artifacts
-					logging.Infof(ctx, "added %d artifacts to %q", len(failure.Tests[t].Artifacts), r.TestName)
-				}
-			}
-
-			if false { // Re-enable once we figure out why responses are timing out.
-				config, ok := builderConfigs[f.Build.BuilderName]
-				if !ok {
-					logging.Warningf(ctx, "no config (out of %d) for %s", len(builderConfigs), f.Build.BuilderName)
-					continue
-				}
-				exps, err := getExpectationsForTest(ctx, r.TestName, config)
-				if err != nil {
-					logging.Errorf(ctx, "couldn't get test expectations for %+v: %v", r.TestName, err)
-				} else {
-					failure.Tests[t].Expectations = exps
-				}
-			}
-		}
-		results[i] = failure
-	}
-
-	return results, nil
-}
-
-func getArtifactsForTest(ctx context.Context, f *messages.BuildStep, name string, trc client.TestResults) ([]ArtifactLink, error) {
-	var ret []ArtifactLink
-	suiteName := GetTestSuite(f)
-	testResults, err := trc.TestResults(ctx, f.Master, f.Build.BuilderName, suiteName, f.Build.Number)
-	if err != nil {
-		return nil, err
-	}
-	if testResults == nil {
-		return nil, fmt.Errorf("didn't get any test results for test name %q", name)
-	}
-	delim := "/"
-	if testResults.PathDelim != nil {
-		delim = *testResults.PathDelim
-	}
-
-	for testName, res := range testResults.Tests.Flatten(delim) {
-		if testName == name {
-			for artName, locations := range res.Artifacts {
-				for _, loc := range locations {
-					ret = append(ret, ArtifactLink{
-						Name:     artName,
-						Location: loc,
-					})
-				}
-			}
-		}
-	}
-
-	return ret, nil
-}
-
 // tests is a slice of tests with Findit results.
 type tests []TestWithResult
 
@@ -210,32 +116,6 @@ func (slice tests) Less(i, j int) bool {
 
 func (slice tests) Swap(i, j int) {
 	slice[i], slice[j] = slice[j], slice[i]
-}
-
-func testAnalyzeFailure(ctx context.Context, f *messages.BuildStep, findit client.FindIt, trc client.TestResults) (messages.ReasonRaw, error) {
-	suiteName, failedTests, err := getTestNames(ctx, f, trc)
-	if err != nil {
-		return nil, err
-	}
-
-	testsWithFinditResults, err := getFinditResultsForTests(ctx, f, failedTests, findit)
-	if err != nil {
-		logging.Errorf(ctx, "Error calling Findit, but continuing: %v", err)
-	}
-
-	if failedTests != nil {
-		sortedNames := failedTests
-		sort.Strings(sortedNames)
-		sortedTests := tests(testsWithFinditResults)
-		sort.Sort(sortedTests)
-		return &TestFailure{
-			TestNames: sortedNames,
-			StepName:  suiteName,
-			Tests:     testsWithFinditResults,
-		}, nil
-	}
-
-	return nil, nil
 }
 
 // GetTestSuite returns the name of the test suite executed in a step. Currently, it has
@@ -274,90 +154,6 @@ func GetTestSuite(bs *messages.BuildStep) string {
 	}
 
 	return testSuite
-}
-
-func getTestNames(ctx context.Context, f *messages.BuildStep, trc client.TestResults) (string, []string, error) {
-	name := GetTestSuite(f)
-	if name == "" {
-		return name, nil, nil
-	}
-
-	testResults, err := trc.TestResults(ctx, f.Master, f.Build.BuilderName, name, f.Build.Number)
-
-	if testResults == nil || len(testResults.Tests) == 0 || err != nil {
-		if err != nil {
-			// Still want to keep on serving some data, even if test results is down. We can also do something
-			// in this analyzer, even if we have no test results.
-			logging.Warningf(ctx, "got error fetching test results (ignoring): %s", err)
-		}
-
-		if name != f.Step.Name {
-			logging.Infof(ctx, "name != f.Step.Name: %q vs %q", name, f.Step.Name)
-			// Signal that we still found something useful, even if we
-			// don't have test results.
-			return name, []string{}, nil
-		}
-
-		return name, nil, nil
-	}
-
-	failedTests := unexpectedFailures(testResults)
-
-	if len(failedTests) > maxFailedTests {
-		sort.Strings(failedTests)
-		logging.Errorf(ctx, "Too many failed tests (%d) to put in the resulting json.", len(failedTests))
-		failedTests = append(failedTests[:maxFailedTests], tooManyFailuresText)
-	}
-
-	return name, failedTests, nil
-}
-
-func unexpectedFailures(testResults *model.FullResult) []string {
-	failedTests := []string{}
-	delim := "/"
-	if testResults.PathDelim != nil {
-		delim = *testResults.PathDelim
-	}
-
-	for testName, res := range testResults.Tests.Flatten(delim) {
-		if res.Unexpected != nil && *res.Unexpected {
-			hasPass := false
-			for _, act := range res.Actual {
-				if act == "PASS" {
-					hasPass = true
-					break
-				}
-			}
-			if !hasPass {
-				failedTests = append(failedTests, testName)
-			}
-		}
-	}
-	return failedTests
-}
-
-// Read Findit results and get suspected cls or check if flaky for each test.
-func getFinditResultsForTests(ctx context.Context, f *messages.BuildStep, failedTests []string, findit client.FindIt) ([]TestWithResult, error) {
-	TestsWithFinditResults := []TestWithResult{}
-
-	if failedTests == nil || len(failedTests) == 0 {
-		return nil, nil
-	}
-
-	name := GetTestSuite(f)
-	if name == "" {
-		return nil, nil
-	}
-
-	for _, test := range failedTests {
-		testResult := TestWithResult{
-			TestName:     test,
-			IsFlaky:      false,
-			SuspectedCLs: nil,
-		}
-		TestsWithFinditResults = append(TestsWithFinditResults, testResult)
-	}
-	return TestsWithFinditResults, nil
 }
 
 func getExpectationsForTest(ctx context.Context, testName string, config *te.BuilderConfig) ([]*te.ExpectationStatement, error) {

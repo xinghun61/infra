@@ -24,8 +24,6 @@ import (
 	"infra/monorail"
 
 	"go.chromium.org/luci/common/logging"
-	"go.chromium.org/luci/grpc/prpc"
-	milo "go.chromium.org/luci/milo/api/proto"
 	"go.chromium.org/luci/server/auth"
 )
 
@@ -140,34 +138,6 @@ type Test struct {
 func cacheKeyForBuild(master *messages.MasterLocation, builder string, number int64) string {
 	return filepath.FromSlash(
 		fmt.Sprintf("%s/%s/%d.json", url.QueryEscape(master.String()), url.QueryEscape(builder), number))
-}
-
-type logReader struct {
-	hc *trackingHTTPClient
-}
-
-// NewLogReader returns a default LogReader implementation.
-func NewLogReader() LogReader {
-	return &logReader{
-		hc: &trackingHTTPClient{
-			c: http.DefaultClient,
-		},
-	}
-}
-
-// So logReader implements LogReader.
-func (r *logReader) StdioForStep(ctx context.Context, master *messages.MasterLocation, builder, step string, buildNum int64) ([]string, error) {
-	URL := &url.URL{
-		Scheme: miloScheme,
-		Host:   miloHost,
-	}
-
-	URL.Path = fmt.Sprintf("/p/%s/builders/%s/builds/%d/steps/%s/logs/stdio/text", master, builder, buildNum, step)
-
-	expvars.Add("StdioForStep", 1)
-	defer expvars.Add("StdioForStep", -1)
-	res, _, err := r.hc.getText(ctx, URL.String())
-	return strings.Split(res, "\n"), err
 }
 
 func contains(arr []string, s string) bool {
@@ -448,56 +418,22 @@ func NewMonorail(c context.Context, baseURL string) monorail.MonorailClient {
 }
 
 // ProdClients returns a set of service clients pointed at production.
-func ProdClients(ctx context.Context) (LogReader, FindIt, Milo, CrBug, monorail.MonorailClient, TestResults) {
+func ProdClients(ctx context.Context) (FindIt, CrBug, monorail.MonorailClient, TestResults) {
 	findIt := NewFindit("https://findit-for-me.appspot.com")
-
-	client, err := getAsSelfOAuthClient(ctx)
-	if err != nil {
-		panic("No OAuth client in context")
-	}
-
-	opts := prpc.DefaultOptions()
-	opts.PerRPCTimeout = 10 * time.Minute
-
-	miloPRPCClient := &prpc.Client{
-		C:       client,
-		Host:    "luci-milo.appspot.com",
-		Options: opts,
-	}
-	miloBuildbot := milo.NewBuildbotPRPCClient(miloPRPCClient)
-	miloClient := &miloClient{BuildBot: miloBuildbot}
-
 	monorailClient := NewMonorail(ctx, "https://monorail-prod.appspot.com")
 	testResultsClient := NewTestResults("https://test-results.appspot.com")
 	crBugs := &CrBugs{}
 
-	return NewLogReader(), findIt, miloClient, crBugs, monorailClient, testResultsClient
+	return findIt, crBugs, monorailClient, testResultsClient
 }
 
 // StagingClients returns a set of service clients pointed at instances suitable for a
 // staging environment.
-func StagingClients(ctx context.Context) (LogReader, FindIt, Milo, CrBug, monorail.MonorailClient, TestResults) {
+func StagingClients(ctx context.Context) (FindIt, CrBug, monorail.MonorailClient, TestResults) {
 	findIt := NewFindit("https://findit-for-me-staging.appspot.com")
-
-	client, err := getAsSelfOAuthClient(ctx)
-	if err != nil {
-		panic("No OAuth client in context")
-	}
-
-	opts := prpc.DefaultOptions()
-	opts.PerRPCTimeout = 10 * time.Minute
-
-	miloPRPCClient := &prpc.Client{
-		C:       client,
-		Host:    "luci-milo.appspot.com",
-		Options: opts,
-	}
-	miloBuildbot := milo.NewBuildbotPRPCClient(miloPRPCClient)
-	miloClient := &miloClient{BuildBot: miloBuildbot}
-
 	monorailClient := NewMonorail(ctx, "https://monorail-staging.appspot.com")
 	testResultsClient := NewTestResults("https://test-results.appspot.com")
 	crBugs := &CrBugs{}
 
-	return NewLogReader(), findIt, miloClient, crBugs, monorailClient, testResultsClient
+	return findIt, crBugs, monorailClient, testResultsClient
 }
