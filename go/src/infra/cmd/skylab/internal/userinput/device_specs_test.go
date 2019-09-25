@@ -201,6 +201,28 @@ text with this-other-hostname in the middle`
 	}
 }
 
+// TestMcsvFieldsConsistentWithMcsvPrompt checks whether the prompt string for the mcsv file
+// and the field names themselves are consistent.
+func TestMcsvFieldsConsistentWithMcsvPrompt(t *testing.T) {
+	got := strings.Join(mcsvFields, ",")
+	if got != mcsvFieldsPrompt {
+		t.Errorf("mcsvFields not consistent with prompt -want +got:\n%s",
+			pretty.Compare(strings.Split(mcsvFieldsPrompt, "\n"), strings.Split(got, "\n")))
+	}
+}
+
+// TestMcsvFieldsNoDuplicates checks whether the mcsvfields contains any duplicates.
+func TestMcsvFieldsNoDuplicates(t *testing.T) {
+	seen := make(map[string]bool)
+	for _, string := range mcsvFields {
+		if _, ok := seen[string]; ok {
+			t.Errorf("mcsvFields contains duplicate key %s", string)
+			break
+		}
+		seen[string] = true
+	}
+}
+
 // promptHandler responds to user prompts using a canned response.
 type promptHandler struct {
 	// Canned response for prompts.

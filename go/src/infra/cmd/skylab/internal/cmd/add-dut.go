@@ -58,6 +58,7 @@ https://chromium.googlesource.com/infra/infra/+/refs/heads/master/go/src/infra/l
 		c.Flags.BoolVar(&c.skipImageDownload, "skip-image-download", false, `Some DUT preparation steps require downloading OS image onto an external drive
 connected to the DUT. This flag disables the download, instead using whatever
 image is already downloaded onto the external drive.`)
+		c.Flags.BoolVar(&c.mcsv, "m", false, `interpret the specs file as a CSV of DUT descriptions.`)
 		return c
 	},
 }
@@ -68,6 +69,7 @@ type addDutRun struct {
 	envFlags     envFlags
 	newSpecsFile string
 	tail         bool
+	mcsv         bool
 
 	skipInstallOS       bool
 	skipInstallFirmware bool
@@ -84,6 +86,8 @@ func (c *addDutRun) Run(a subcommands.Application, args []string, env subcommand
 }
 
 func (c *addDutRun) innerRun(a subcommands.Application, args []string, env subcommands.Env) error {
+	var specs []*inventory.DeviceUnderTest
+	var err error
 	if len(args) > 0 {
 		return NewUsageError(c.Flags, "unexpected positional args: %s", args)
 	}
@@ -100,11 +104,27 @@ func (c *addDutRun) innerRun(a subcommands.Application, args []string, env subco
 		Options: site.DefaultPRPCOptions,
 	})
 
-	specs, err := c.getSpecs(a)
-	if err != nil {
-		return err
+	if c.mcsv {
+		specs, err = userinput.GetMCSVSpecs(c.newSpecsFile)
+		if err != nil {
+			return err
+		}
+	} else {
+		s, err := c.getSpecs(a)
+		if err != nil {
+			return err
+		}
+		specs = []*inventory.DeviceUnderTest{s}
 	}
-	setIgnoredID(specs)
+
+	// successfully do nothing if there's nothing to do
+	if len(specs) == 0 {
+		return fmt.Errorf("no specs given")
+	}
+
+	for _, spec := range specs {
+		setIgnoredID(spec)
+	}
 
 	deploymentID, err := c.triggerDeploy(ctx, ic, specs)
 	if err != nil {
@@ -174,17 +194,29 @@ func (c *addDutRun) getSpecs(a subcommands.Application) (*inventory.DeviceUnderT
 	return specs, nil
 }
 
+func serializeMany(specs []*inventory.DeviceUnderTest) ([][]byte, error) {
+	var out [][]byte
+	for _, spec := range specs {
+		serialized, err := proto.Marshal(spec.GetCommon())
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, serialized)
+	}
+	return out, nil
+}
+
 // triggerDeploy kicks off a DeployDut attempt via crosskylabadmin.
 //
 // This function returns the deployment task ID for the attempt.
-func (c *addDutRun) triggerDeploy(ctx context.Context, ic fleet.InventoryClient, specs *inventory.DeviceUnderTest) (string, error) {
-	serialized, err := proto.Marshal(specs.GetCommon())
+func (c *addDutRun) triggerDeploy(ctx context.Context, ic fleet.InventoryClient, specs []*inventory.DeviceUnderTest) (string, error) {
+	serialized, err := serializeMany(specs)
 	if err != nil {
 		return "", errors.Annotate(err, "trigger deploy").Err()
 	}
 
 	resp, err := ic.DeployDut(ctx, &fleet.DeployDutRequest{
-		NewSpecs: [][]byte{serialized},
+		NewSpecs: serialized,
 		Actions: &fleet.DutDeploymentActions{
 			StageImageToUsb:  c.stageImageToUsb(),
 			InstallFirmware:  !c.skipInstallFirmware,

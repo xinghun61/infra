@@ -5,7 +5,11 @@
 package userinput
 
 import (
+	"encoding/csv"
+	"fmt"
 	"infra/libs/skylab/inventory"
+	"io"
+	"io/ioutil"
 	"regexp"
 	"strings"
 
@@ -140,6 +144,152 @@ func getExample() (string, error) {
 	return t, nil
 }
 
+// GetMCSVText accepts a prompt and possibly a path and returns the text of the
+// provided CSV file
+func getMCSVText(specsFile string, mcsvFieldsPrompt string) (string, error) {
+	var text string
+	if specsFile == "" {
+		rawText, err := textEditorInput([]byte(mcsvFieldsPrompt), `minimal-dutspecs.*.csv`)
+		if err != nil {
+			return "", err
+		}
+		text = string(rawText)
+	} else {
+		rawText, err := ioutil.ReadFile(specsFile)
+		if err != nil {
+			return "", err
+		}
+		text = string(rawText)
+	}
+	if text == "" {
+		return "", errors.New(`mcsv file cannot be empty`)
+	}
+	return text, nil
+}
+
+// GetMCSVSpecs get a sequence of DeviceUnderTests in the MCSV format from the specified file.
+func GetMCSVSpecs(specsFile string) ([]*inventory.DeviceUnderTest, error) {
+	text, err := getMCSVText(specsFile, mcsvFieldsPrompt)
+	if err != nil {
+		return nil, err
+	}
+	return parseMCSV(text)
+}
+
+// parseMCSV takes a file in MCSV format and converts it into a list of inventory.DeviceUnderTest's
+func parseMCSV(text string) ([]*inventory.DeviceUnderTest, error) {
+	var out []*inventory.DeviceUnderTest
+
+	reader := strings.NewReader(text)
+	csvReader := csv.NewReader(reader)
+
+	for linum := 1; ; linum++ {
+		rec, err := csvReader.Read()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			e := errors.Annotate(err, fmt.Sprintf("malformed csv line %d", linum)).Err()
+			return nil, e
+		}
+		// if linum is 1, determine whether this is a header
+		if linum == 1 && looksLikeHeader(rec) {
+			if err := validateSameStringArray(mcsvFields, rec); err != nil {
+				return nil, err
+			}
+			continue
+		}
+		mcsvRecord, err := parseMcsvRecord(mcsvFields, rec)
+		if err != nil {
+			return nil, errors.Annotate(err, fmt.Sprintf(`malformed entry for csv file on line %d`, linum)).Err()
+		}
+		err = validateMcsvRecord(mcsvRecord)
+		if err != nil {
+			return nil, errors.Annotate(err, fmt.Sprintf(`nonconforming entry for csv file on line %d`, linum)).Err()
+		}
+		out = append(out, deviceUnderTestOfMcsvRecord(mcsvRecord))
+	}
+
+	return out, nil
+}
+
+func looksLikeHeader(rec []string) bool {
+	if len(rec) == 0 {
+		return false
+	}
+	return rec[0] == "host"
+}
+
+func parseMcsvRecord(header []string, rec []string) (*mcsvRecord, error) {
+	out := &mcsvRecord{}
+	if len(header) != len(rec) {
+		return nil, errors.New(fmt.Sprintf("length mismatch: expected (%d) actual (%d)", len(header), len(rec)))
+	}
+	for i := range header {
+		name := header[i]
+		value := rec[i]
+		switch name {
+		case "host":
+			out.host = value
+		case "model":
+			out.model = value
+		case "board":
+			out.board = value
+		case "servo_host", "servoHost":
+			out.servoHost = value
+		case "servo_port", "servoPort":
+			out.servoPort = value
+		case "servo_serial", "servoSerial":
+			out.servoSerial = value
+		case "powerunit_hostname", "powerunitHostname":
+			out.powerunitHostname = value
+		case "powerunit_outlet", "powerunitOutlet":
+			out.powerunitOutlet = value
+		default:
+			return nil, errors.New(fmt.Sprintf(`unknown field: %s`, name))
+		}
+	}
+	return out, nil
+}
+
+func dutAddAttribute(dut *inventory.DeviceUnderTest, key string, value string) {
+	kv := &inventory.KeyValue{
+		Key:   &key,
+		Value: &value,
+	}
+	dut.Common.Attributes = append(dut.Common.Attributes, kv)
+}
+
+func deviceUnderTestOfMcsvRecord(rec *mcsvRecord) *inventory.DeviceUnderTest {
+	out := &inventory.DeviceUnderTest{
+		Common: &inventory.CommonDeviceSpecs{
+			Labels: &inventory.SchedulableLabels{},
+		},
+	}
+	out.Common.Hostname = &rec.host
+	out.Common.Labels.Board = &rec.board
+	out.Common.Labels.Model = &rec.model
+	dutAddAttribute(out, `servo_host`, rec.servoHost)
+	dutAddAttribute(out, `servo_port`, rec.servoPort)
+	dutAddAttribute(out, `servo_serial`, rec.servoSerial)
+	dutAddAttribute(out, `powerunit_hostname`, rec.powerunitHostname)
+	dutAddAttribute(out, `powerunit_outlet`, rec.powerunitOutlet)
+	return out
+}
+
+func validateSameStringArray(expected []string, actual []string) error {
+	if len(expected) != len(actual) {
+		return errors.New("length mismatch")
+	}
+	for i, e := range expected {
+		a := actual[i]
+		if e != a {
+			return fmt.Errorf("item mismatch at position (%d) expected (%s) got (%s)", i, e, a)
+		}
+	}
+	return nil
+}
+
 func serialize(dut *inventory.DeviceUnderTest) (string, error) {
 	m := jsonpb.Marshaler{
 		EnumsAsInts: false,
@@ -183,6 +333,58 @@ func dropCommentLines(text string) string {
 func isCommented(line string) bool {
 	// Valid match cannot be empty because it at least contains commentPrefix.
 	return commentDetectionPattern.FindString(line) != ""
+}
+
+var mcsvFields = []string{
+	"host",
+	"board",
+	"model",
+	"servo_host",
+	"servo_port",
+	"servo_serial",
+	"powerunit_hostname",
+	"powerunit_outlet",
+}
+
+const mcsvFieldsPrompt = `host,board,model,servo_host,servo_port,servo_serial,powerunit_hostname,powerunit_outlet`
+
+type mcsvRecord struct {
+	host              string
+	board             string
+	model             string
+	servoHost         string
+	servoPort         string
+	servoSerial       string
+	powerunitHostname string
+	powerunitOutlet   string
+}
+
+func validateMcsvRecord(rec *mcsvRecord) error {
+	if rec.host == "" {
+		return errors.New("host cannot be empty")
+	}
+	if rec.board == "" {
+		return errors.New("board cannot be empty")
+	}
+	if rec.model == "" {
+		return errors.New("model cannot be empty")
+	}
+	if rec.servoHost == "" {
+		return errors.New("servo_host cannot be empty")
+	}
+	if rec.servoPort == "" {
+		return errors.New("servo_port cannot be empty")
+	}
+	if rec.servoSerial == "" {
+		return errors.New("servo_serial cannot be empty")
+	}
+	if rec.powerunitHostname == "" {
+		return errors.New("powerunit_hostname cannot be empty")
+	}
+	if rec.powerunitOutlet == "" {
+		return errors.New("powerunit_outlet cannot be empty")
+	}
+	return nil
 }
 
 const commentPrefix = "// "
