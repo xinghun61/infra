@@ -66,6 +66,7 @@ export class MrShowColumnsDropdown extends connectStore(MrDropdown) {
   constructor() {
     super();
 
+    this.label = 'Show columns';
     this.icon = 'more_horiz';
     this.columns = [];
     this.phaseNames = [];

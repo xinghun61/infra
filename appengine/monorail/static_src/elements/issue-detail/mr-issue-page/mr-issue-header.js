@@ -163,9 +163,9 @@ export class MrIssueHeader extends connectStore(LitElement) {
         </div>
         ${this._issueOptions.length ? html`
           <mr-dropdown
-            aria-label="issue options menu"
             .items=${this._issueOptions}
             icon="more_vert"
+            label="Issue options"
           ></mr-dropdown>
         ` : ''}
         <mr-flipper></mr-flipper>

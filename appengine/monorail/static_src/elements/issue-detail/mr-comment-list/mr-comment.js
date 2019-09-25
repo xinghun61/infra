@@ -150,6 +150,7 @@ export class MrComment extends LitElement {
           <div class="comment-options">
             <mr-dropdown
               .items=${this._commentOptions}
+              label="Comment options"
               icon="more_vert"
             ></mr-dropdown>
           </div>

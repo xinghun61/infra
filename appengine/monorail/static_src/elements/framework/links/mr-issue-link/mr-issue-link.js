@@ -36,7 +36,11 @@ export class MrIssueLink extends LitElement {
     let fedRefInfo;
     if (this.issue && this.issue.extIdentifier) {
       fedRefInfo = html`
-        <mr-dropdown icon="info_outline" menuAlignment="left">
+        <mr-dropdown
+          label="Federated Reference Info"
+          icon="info_outline"
+          menuAlignment="left"
+        >
           <mr-cue
             cuePrefName="federated_reference"
             nondismissible>

@@ -26,8 +26,11 @@ export class MrAccountDropdown extends LitElement {
 
   render() {
     return html`
-      <mr-dropdown .text=${this.userDisplayName} .items=${this.items}
-          .icon="arrow_drop_down"></mr-dropdown>
+      <mr-dropdown
+        .text=${this.userDisplayName}
+        .items=${this.items}
+        .icon="arrow_drop_down"
+      ></mr-dropdown>
     `;
   }
 

@@ -281,8 +281,12 @@ export default class MrChart extends LitElement {
           </div>
           <div id="groupBy">
             <label for="dropdown">Choose group by:</label>
-            <mr-dropdown id="dropdown" ?disabled=${!doneLoading} .text=${this.groupBy.display}>
-            ${this.dropdownHTML}
+            <mr-dropdown
+              id="dropdown"
+              ?disabled=${!doneLoading}
+              .text=${this.groupBy.display}
+            >
+              ${this.dropdownHTML}
             </mr-dropdown>
           </div>
         </div>

@@ -142,6 +142,7 @@ export class MrHeader extends connectStore(LitElement) {
       <div class="right-section">
         <mr-dropdown
           icon="settings"
+          label="Project Settings"
           .items=${this._projectSettingsItems}
           ?hidden=${!this.projectName}
         ></mr-dropdown>

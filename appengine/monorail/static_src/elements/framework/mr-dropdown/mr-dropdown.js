@@ -5,6 +5,9 @@
 import {LitElement, html, css} from 'lit-element';
 import {ifDefined} from 'lit-html/directives/if-defined';
 
+export const SCREENREADER_ATTRIBUTE_ERROR = `For screenreader support,
+  mr-dropdown must always have either a label or a text property defined.`;
+
 /**
  * `<mr-dropdown>`
  *
@@ -144,10 +147,15 @@ export class MrDropdown extends LitElement {
   render() {
     return html`
       <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-      <button class="anchor" @click=${this.toggle}
-        ?disabled=${this.disabled} aria-expanded=${this.opened}>
+      <button class="anchor"
+        @click=${this.toggle}
+        ?disabled=${this.disabled}
+        title=${this.title || this.label}
+        aria-label=${this.label}
+        aria-expanded=${this.opened}
+      >
         ${this.text}
-        <i class="material-icons">${this.icon}</i>
+        <i class="material-icons" aria-hidden>${this.icon}</i>
       </button>
       <div class="menu ${this.menuAlignment}">
         ${this.items.map((item, index) => this._renderItem(item, index))}
@@ -200,6 +208,7 @@ export class MrDropdown extends LitElement {
   constructor() {
     super();
 
+    this.label = '';
     this.text = '';
     this.items = [];
     this.icon = 'arrow_drop_down';
@@ -212,6 +221,8 @@ export class MrDropdown extends LitElement {
 
   static get properties() {
     return {
+      title: {type: String},
+      label: {type: String},
       text: {type: String},
       items: {type: Array},
       icon: {type: String},
@@ -239,6 +250,14 @@ export class MrDropdown extends LitElement {
   disconnectedCallback() {
     super.disconnectedCallback();
     window.removeEventListener('click', this._boundCloseOnOutsideClick, true);
+  }
+
+  updated(changedProperties) {
+    if (changedProperties.has('label') || changedProperties.has('text')) {
+      if (!this.label && !this.text) {
+        console.error(SCREENREADER_ATTRIBUTE_ERROR);
+      }
+    }
   }
 
   toggle() {

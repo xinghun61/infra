@@ -3,7 +3,7 @@
 // found in the LICENSE file.
 
 import {assert} from 'chai';
-import {MrDropdown} from './mr-dropdown.js';
+import {MrDropdown, SCREENREADER_ATTRIBUTE_ERROR} from './mr-dropdown.js';
 import sinon from 'sinon';
 
 let element;
@@ -13,6 +13,7 @@ describe('mr-dropdown', () => {
   beforeEach(() => {
     element = document.createElement('mr-dropdown');
     document.body.appendChild(element);
+    element.label = 'new dropdown';
 
     randomButton = document.createElement('button');
     document.body.appendChild(randomButton);
@@ -25,6 +26,21 @@ describe('mr-dropdown', () => {
 
   it('initializes', () => {
     assert.instanceOf(element, MrDropdown);
+  });
+
+  it('warns users about accessibility when no label or text', async () => {
+    element.label = 'ok';
+    sinon.spy(console, 'error');
+
+    await element.updateComplete;
+    sinon.assert.notCalled(console.error);
+
+    element.label = undefined;
+
+    await element.updateComplete;
+    sinon.assert.calledWith(console.error, SCREENREADER_ATTRIBUTE_ERROR);
+
+    console.error.restore();
   });
 
   it('toggle changes opened state', () => {

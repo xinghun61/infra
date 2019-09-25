@@ -197,6 +197,7 @@ export class MrSearchBar extends LitElement {
           <i class="material-icons">search</i>
         </button>
         <mr-dropdown
+          label="Search options"
           .items=${this._searchMenuItems}
         ></mr-dropdown>
       </form>
