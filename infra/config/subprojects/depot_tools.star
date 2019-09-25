@@ -40,6 +40,15 @@ build.presubmit(
     run_hooks = False,
 )
 
+build.presubmit(
+    name = 'Depot Tools Presubmit (win)',
+    cq_group = 'depot_tools cq',
+    repo_name = 'depot_tools',
+    run_hooks = False,
+    os = 'Windows',
+    experiment_percentage = 100,
+)
+
 
 # Recipes ecosystem.
 recipes.simulation_tester(
