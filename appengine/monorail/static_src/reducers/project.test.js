@@ -6,7 +6,7 @@ import {assert} from 'chai';
 import sinon from 'sinon';
 import {prpcClient} from 'prpc-client-instance.js';
 import * as project from './project.js';
-import {fieldTypes} from 'shared/issue-fields.js';
+import {fieldTypes, SITEWIDE_DEFAULT_COLUMNS} from 'shared/issue-fields.js';
 
 describe('project reducers', () => {
   it('visibleMembersReducer', () => {
@@ -58,6 +58,40 @@ describe('project selectors', () => {
     }}), {
       projectThumbnailUrl: 'test.png',
     });
+  });
+
+  it('defaultColumns', () => {
+    assert.deepEqual(project.defaultColumns({}), SITEWIDE_DEFAULT_COLUMNS);
+    assert.deepEqual(project.defaultColumns({project: {}}),
+        SITEWIDE_DEFAULT_COLUMNS);
+    assert.deepEqual(project.defaultColumns({project: {
+      presentationConfig: {},
+    }}), SITEWIDE_DEFAULT_COLUMNS);
+    assert.deepEqual(project.defaultColumns({project: {
+      presentationConfig: {defaultColSpec: 'ID+Summary+AllLabels'},
+    }}), ['ID', 'Summary', 'AllLabels']);
+  });
+
+  it('currentColumns', () => {
+    assert.deepEqual(project.currentColumns({}), SITEWIDE_DEFAULT_COLUMNS);
+    assert.deepEqual(project.currentColumns({project: {}}),
+        SITEWIDE_DEFAULT_COLUMNS);
+    assert.deepEqual(project.currentColumns({project: {
+      presentationConfig: {},
+    }}), SITEWIDE_DEFAULT_COLUMNS);
+    assert.deepEqual(project.currentColumns({project: {
+      presentationConfig: {defaultColSpec: 'ID+Summary+AllLabels'},
+    }}), ['ID', 'Summary', 'AllLabels']);
+
+    // Params override default.
+    assert.deepEqual(project.currentColumns({
+      project: {
+        presentationConfig: {defaultColSpec: 'ID+Summary+AllLabels'},
+      },
+      sitewide: {
+        queryParams: {colspec: 'ID+Summary+ColumnName+Priority'},
+      },
+    }), ['ID', 'Summary', 'ColumnName', 'Priority']);
   });
 
   it('defaultQuery', () => {

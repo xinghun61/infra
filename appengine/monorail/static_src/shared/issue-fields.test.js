@@ -3,11 +3,45 @@
 // found in the LICENSE file.
 
 import {assert} from 'chai';
-import {stringValuesForIssueField} from './issue-fields.js';
+import {parseColSpec, stringValuesForIssueField} from './issue-fields.js';
 import sinon from 'sinon';
 
 let issue;
 let clock;
+
+describe('parseColSpec', () => {
+  it('empty spec produces empty list', () => {
+    assert.deepEqual(parseColSpec(),
+        []);
+    assert.deepEqual(parseColSpec(''),
+        []);
+    assert.deepEqual(parseColSpec(' + + + '),
+        []);
+    assert.deepEqual(parseColSpec('          '),
+        []);
+    assert.deepEqual(parseColSpec('+++++'),
+        []);
+  });
+
+  it('parses spec correctly', () => {
+    assert.deepEqual(parseColSpec('ID+Summary+AllLabels+Priority'),
+        ['ID', 'Summary', 'AllLabels', 'Priority']);
+  });
+
+  it('parses spaces correctly', () => {
+    assert.deepEqual(parseColSpec('ID Summary AllLabels Priority'),
+        ['ID', 'Summary', 'AllLabels', 'Priority']);
+    assert.deepEqual(parseColSpec('ID + Summary + AllLabels + Priority'),
+        ['ID', 'Summary', 'AllLabels', 'Priority']);
+    assert.deepEqual(parseColSpec('ID   Summary AllLabels     Priority'),
+        ['ID', 'Summary', 'AllLabels', 'Priority']);
+  });
+
+  it('spec parsing preserves dashed parameters', () => {
+    assert.deepEqual(parseColSpec('ID+Summary+Test-Label+Another-Label'),
+        ['ID', 'Summary', 'Test-Label', 'Another-Label']);
+  });
+});
 
 describe('stringValuesForIssueField', () => {
   describe('built-in fields', () => {

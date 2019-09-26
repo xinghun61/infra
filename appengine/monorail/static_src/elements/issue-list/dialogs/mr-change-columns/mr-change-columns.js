@@ -8,7 +8,7 @@ import qs from 'qs';
 import 'elements/chops/chops-button/chops-button.js';
 import 'elements/chops/chops-dialog/chops-dialog.js';
 import {SHARED_STYLES} from 'shared/shared-styles.js';
-import {SPEC_DELIMITER_REGEX} from 'shared/issue-fields.js';
+import {parseColSpec} from 'shared/issue-fields.js';
 
 /**
  * `<mr-change-columns>`
@@ -107,7 +107,7 @@ export class MrChangeColumns extends LitElement {
 
   save() {
     const input = this.shadowRoot.querySelector('#columnsInput');
-    const newColumns = input.value.trim().split(SPEC_DELIMITER_REGEX);
+    const newColumns = parseColSpec(input.value);
 
     const params = {...this.queryParams};
     params.colspec = newColumns.join('+');

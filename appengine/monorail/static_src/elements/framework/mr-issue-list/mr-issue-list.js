@@ -17,8 +17,8 @@ import {issueRefToUrl, issueToIssueRef,
 import {isTextInput} from 'shared/dom-helpers.js';
 import {urlWithNewParams, pluralize, setHasAny,
   objectValuesForKeys} from 'shared/helpers.js';
-import {stringValuesForIssueField, EMPTY_FIELD_VALUE,
-  SPEC_DELIMITER_REGEX} from 'shared/issue-fields.js';
+import {stringValuesForIssueField, parseColSpec,
+  EMPTY_FIELD_VALUE} from 'shared/issue-fields.js';
 import './mr-show-columns-dropdown.js';
 
 const COLUMN_DISPLAY_NAMES = {
@@ -678,7 +678,7 @@ export class MrIssueList extends connectStore(LitElement) {
   updateSortSpec(column, descending = false) {
     column = column.toLowerCase();
     const oldSpec = this.queryParams.sort || '';
-    const columns = oldSpec.toLowerCase().split(SPEC_DELIMITER_REGEX);
+    const columns = parseColSpec(oldSpec.toLowerCase());
 
     // Remove any old instances of the same sort spec.
     const newSpec = columns.filter(

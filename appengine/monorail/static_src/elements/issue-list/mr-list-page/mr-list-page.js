@@ -10,8 +10,7 @@ import * as issue from 'reducers/issue.js';
 import * as user from 'reducers/user.js';
 import * as project from 'reducers/project.js';
 import {prpcClient} from 'prpc-client-instance.js';
-import {SPEC_DELIMITER_REGEX, SITEWIDE_DEFAULT_COLUMNS}
-  from 'shared/issue-fields.js';
+import {parseColSpec} from 'shared/issue-fields.js';
 import {urlWithNewParams, userIsMember} from 'shared/helpers.js';
 import 'elements/framework/mr-dropdown/mr-dropdown.js';
 import 'elements/framework/mr-issue-list/mr-issue-list.js';
@@ -210,7 +209,7 @@ export class MrListPage extends connectStore(LitElement) {
             <mr-dropdown
               icon="more_vert"
               menuAlignment="left"
-              title="More actions..."
+              label="More actions..."
               .items=${this._moreActions}
             ></mr-dropdown>
           ` : ''}
@@ -272,6 +271,7 @@ export class MrListPage extends connectStore(LitElement) {
     this.fetchingIssueList = false;
     this.selectedIssues = [];
     this.queryParams = {};
+    this.columns = [];
     this._usersProjects = new Map();
 
     this._boundRefresh = this.refresh.bind(this);
@@ -342,6 +342,7 @@ export class MrListPage extends connectStore(LitElement) {
     this.fetchingIssueList = issue.requests(state).fetchIssueList.requesting;
 
     this.currentQuery = project.currentQuery(state);
+    this.columns = project.currentColumns(state);
   }
 
   get starringEnabled() {
@@ -354,16 +355,8 @@ export class MrListPage extends connectStore(LitElement) {
         || this._currentUser.isSiteAdmin);
   }
 
-  get columns() {
-    // TODO(zhangtiff): Add project default columns.
-    const colspec = this.queryParams.colspec;
-    return colspec ? colspec.split(SPEC_DELIMITER_REGEX)
-      : SITEWIDE_DEFAULT_COLUMNS;
-  }
-
   get groups() {
-    const groupBy = this.queryParams.groupby;
-    return groupBy ? groupBy.split(SPEC_DELIMITER_REGEX) : [];
+    return parseColSpec(this.queryParams.groupby);
   }
 
   get maxItems() {

@@ -6,7 +6,8 @@ import {combineReducers} from 'redux';
 import {createSelector} from 'reselect';
 import {createReducer, createRequestReducer} from './redux-helpers.js';
 import * as sitewide from 'reducers/sitewide.js';
-import {fieldTypes} from 'shared/issue-fields.js';
+import {fieldTypes, SITEWIDE_DEFAULT_COLUMNS,
+  parseColSpec} from 'shared/issue-fields.js';
 import {hasPrefix, removePrefix} from 'shared/helpers.js';
 import {fieldNameToLabelPrefix,
   labelNameToLabelPrefix} from 'shared/converters.js';
@@ -115,6 +116,31 @@ export const visibleMembers = createSelector(project,
     (project) => project.visibleMembers || {});
 export const presentationConfig = createSelector(project,
     (project) => project.presentationConfig || {});
+
+/**
+ * Get the default columns for the currently viewed project.
+ */
+export const defaultColumns = createSelector(presentationConfig,
+    ({defaultColSpec}) =>{
+      if (defaultColSpec) {
+        return parseColSpec(defaultColSpec);
+      }
+      return SITEWIDE_DEFAULT_COLUMNS;
+    });
+
+/**
+ * Compute the current columns that the user is viewing in the list
+ * view, based on default columns and URL parameters.
+ */
+export const currentColumns = createSelector(
+    defaultColumns,
+    sitewide.queryParams,
+    (defaultColumns, params = {}) => {
+      if (params.colspec) {
+        return parseColSpec(params.colspec);
+      }
+      return defaultColumns;
+    });
 
 /**
  * Get the default query for the currently viewed project.

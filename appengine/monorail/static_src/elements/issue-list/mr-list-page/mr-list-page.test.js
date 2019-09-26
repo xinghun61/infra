@@ -148,20 +148,6 @@ describe('mr-list-page', () => {
     assert.equal(element.maxItems, DEFAULT_ISSUES_PER_PAGE);
   });
 
-  it('parses colspec parameter correctly', () => {
-    element.queryParams = {colspec: 'ID+Summary+AllLabels+Priority'};
-
-    assert.deepEqual(element.columns,
-        ['ID', 'Summary', 'AllLabels', 'Priority']);
-  });
-
-  it('colspec parsing preserves dashed parameters', () => {
-    element.queryParams = {colspec: 'ID+Summary+Test-Label+Another-Label'};
-
-    assert.deepEqual(element.columns,
-        ['ID', 'Summary', 'Test-Label', 'Another-Label']);
-  });
-
   it('parses groupby parameter correctly', () => {
     element.queryParams = {groupby: 'Priority+Status'};
 
@@ -170,9 +156,9 @@ describe('mr-list-page', () => {
   });
 
   it('groupby parsing preserves dashed parameters', () => {
-    element.queryParams = {colspec: 'Priority+Custom-Status'};
+    element.queryParams = {groupby: 'Priority+Custom-Status'};
 
-    assert.deepEqual(element.columns,
+    assert.deepEqual(element.groups,
         ['Priority', 'Custom-Status']);
   });
 

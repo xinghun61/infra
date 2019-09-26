@@ -34,13 +34,24 @@ export const fieldTypes = Object.freeze({
   PROJECT_TYPE: 'PROJECT_TYPE',
 });
 
-export const SPEC_DELIMITER_REGEX = /[\s\+]+/;
+const SPEC_DELIMITER_REGEX = /[\s\+]+/;
 export const SITEWIDE_DEFAULT_COLUMNS = ['ID', 'Type', 'Status',
   'Priority', 'Milestone', 'Owner', 'Summary'];
 
 export const PHASE_FIELD_COL_DELIMITER_REGEX = /\./;
 
 export const EMPTY_FIELD_VALUE = '----';
+
+/**
+ * Parses colspec or groupbyspec values from user input such as form fields
+ * or the URL.
+ *
+ * @param {String} spec a delimited string with spec values to parse.
+ * @return {Array} list of spec values represented by the string.
+ */
+export function parseColSpec(spec = '') {
+  return spec.split(SPEC_DELIMITER_REGEX).filter(Boolean);
+}
 
 export function extractTypeForIssue(fieldValues, labelRefs) {
   if (fieldValues) {
