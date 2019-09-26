@@ -38,8 +38,6 @@ import (
 	"go.chromium.org/luci/common/logging"
 	"go.chromium.org/luci/common/retry/transient"
 	"go.chromium.org/luci/common/sync/parallel"
-	"go.chromium.org/luci/grpc/prpc"
-	milo "go.chromium.org/luci/milo/api/proto"
 	"go.chromium.org/luci/server/auth"
 	"go.chromium.org/luci/server/auth/xsrf"
 	"go.chromium.org/luci/server/router"
@@ -162,18 +160,12 @@ func cronDiscoverBuilders(c *router.Context) error {
 
 	cfg := config.Get(c.Context)
 	switch {
-	case cfg.BuildbotServiceHostname == "":
-		return errors.New("invalid config: discovery: milo host unspecified")
 	case cfg.MonorailHostname == "":
 		return errors.New("invalid config: discovery: monorail host unspecified")
 	}
 
 	discoverer := &discovery.Builders{
-		DatastoreOpSem: make(parallel.Semaphore, 10),
-		Buildbot: milo.NewBuildbotPRPCClient(&prpc.Client{
-			C:    &http.Client{Transport: transport},
-			Host: cfg.BuildbotServiceHostname,
-		}),
+		DatastoreOpSem:   make(parallel.Semaphore, 10),
 		Monorail:         bugs.DefaultFactory(transport),
 		MonorailHostname: cfg.MonorailHostname,
 	}
