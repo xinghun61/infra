@@ -34,6 +34,9 @@ LUCI_PROJECTS = {
     'chromium': {
         'ci': {
             'supported_builders': ['Linux Builder']
+        },
+        'findit': {
+            'rerun_builders': ['findit-rerun'],
         }
     },
     'chromeos': {

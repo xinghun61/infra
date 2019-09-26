@@ -277,7 +277,13 @@ class ChromiumProjectAPITest(unittest.TestCase):
                     },
                     'last_passed_build': None
                 }
-            }
+            },
+            'first_failed_build': {
+                'commit_id': 'git_sha',
+                'id': 8765432109123,
+                'number': 123,
+            },
+            'last_passed_build': None
         }
     }
 
@@ -359,7 +365,13 @@ class ChromiumProjectAPITest(unittest.TestCase):
                     },
                     'last_passed_build': None
                 }
-            }
+            },
+            'first_failed_build': {
+                'commit_id': 'git_sha',
+                'id': 8765432109123,
+                'number': 123,
+            },
+            'last_passed_build': None
         }
     }
 
@@ -424,7 +436,13 @@ class ChromiumProjectAPITest(unittest.TestCase):
                     },
                     'last_passed_build': None
                 }
-            }
+            },
+            'first_failed_build': {
+                'commit_id': 'git_sha',
+                'id': 8765432109123,
+                'number': 123,
+            },
+            'last_passed_build': None
         },
         'compile-like-step': {
             'failures': {
@@ -439,7 +457,13 @@ class ChromiumProjectAPITest(unittest.TestCase):
                     },
                     'last_passed_build': None
                 }
-            }
+            },
+            'first_failed_build': {
+                'commit_id': 'git_sha',
+                'id': 8765432109123,
+                'number': 123,
+            },
+            'last_passed_build': None
         }
     }
 
@@ -458,6 +482,7 @@ class ChromiumProjectAPITest(unittest.TestCase):
         'master': 'chromium.linux',
         'builder': 'Linux Builder'
     })
+    self.assertEqual(props['mastername'], 'chromium.linux')
     self.assertEqual(
         sorted(props['compile_targets']), ['bad_target1', 'bad_tests'])
 
@@ -490,6 +515,7 @@ class ChromiumProjectAPITest(unittest.TestCase):
         'master': 'chromium.linux',
         'builder': 'Linux Tests'
     })
+    self.assertEqual(props['mastername'], 'chromium.linux')
     self.assertEqual(props['tests'], {
         'complexitor_tests': ['TestTrueNatureOf42', 'ValidateFTLCommunication']
     })

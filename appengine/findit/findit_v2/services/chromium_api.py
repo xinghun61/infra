@@ -76,7 +76,12 @@ class ChromiumProjectAPI(ProjectAPI):
         if failed_targets:
           logging.info('Found the following failed targets in step %s: %s',
                        step_name, ', '.join(failed_targets))
-          result.setdefault(step_name, {'failures': {}})
+          result.setdefault(
+              step_name, {
+                  'failures': {},
+                  'last_passed_build': None,
+                  'first_failed_build': build_info,
+              })
           result[step_name]['failures'][frozenset(failed_targets)] = {
               'properties': {
                   'rule': rule
@@ -105,6 +110,10 @@ class ChromiumProjectAPI(ProjectAPI):
     build = buildbucket_client.GetV2Build(
         analyzed_build_id,
         fields=FieldMask(paths=['input.properties', 'builder']))
+    # The recipe depends on the mastername being set.
+    # TODO(crbug.com/1008119): Fix the recipe so that it populates this property
+    # based on target_builder.
+    properties['mastername'] = build.input.properties['mastername']
     properties['target_builder'] = {
         'master': build.input.properties['mastername'],
         'builder': build.builder.builder
@@ -121,6 +130,7 @@ class ChromiumProjectAPI(ProjectAPI):
         'master': build.input.properties['mastername'],
         'builder': build.builder.builder
     }
+    properties['mastername'] = build.input.properties['mastername']
     properties['tests'] = {
         s: [t['name'] for t in tests_in_suite['tests']
            ] for s, tests_in_suite in tests.iteritems()
