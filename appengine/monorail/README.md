@@ -47,10 +47,11 @@ Here's how to run Monorail locally for development on any unix system (not under
 1.  Configure the site defaults in settings.py.  You can leave it as-is for now.
 1.  Set up the front-end development environment:
     1.  Make sure you've run `gclient runhooks`, which will install the correct versions of `node` and `npm`.
+    1.  Run `npm install`
 1.  Run the app:
-    1.  Run 'make serve'
+    1.  Run `make serve`
 1.  Browse the app at localhost:8080 your browser.
-1.  Optional: Create/modify your Monorail User row in the database and make that user a site admin.
+1.  Optional: Create/modify your Monorail User row in the database and make that user a site admin. You will need to be a site admin to gain access to create projects through the UI.
     1.  `UPDATE User SET is_site_admin = TRUE WHERE email = 'YOUR@EMAIL';`
     1.  `Restart your local dev appserver.`
 
@@ -95,7 +96,7 @@ This error occurs when `dev_appserver` cannot find the MySQLdb library.  Try ins
 This occurs when your mysql server is not running.  Check if it is running with ps aux | grep mysqld.  Start it up with <code>/etc/init.d/mysqld start </code>on linux, or just <code>mysqld</code>.
 *   dev_appserver says <strong><code>OSError: [Errno 24] Too many open files </code></strong>and then lists out all source files
 dev_appserver wants to reload source files that you have changed in the editor, however that feature does not seem to work well with multiple GAE modules and instances running in different processes.  The workaround is to control-C or <strong><code>kill</code></strong> the dev_appserver processes and restart them.
-*   <code>IntegrityError: (1364, "Field 'comment_id' doesn't have a default value</code> happens when trying to file or update an issue. In some versions of SQL, the STRICT_TRANS_TABLES option is set by default. You'll have to disable this option to stop this error.
+*   <code>IntegrityError: (1364, "Field 'comment_id' doesn't have a default value")</code> happens when trying to file or update an issue. In some versions of SQL, the STRICT_TRANS_TABLES option is set by default. You'll have to disable this option to stop this error.
 
 ## Supported browsers
 
