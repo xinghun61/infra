@@ -801,7 +801,7 @@ class ProcessCodeCoverageData(BaseHandler):
             builder in ('linux-rel', 'chromeos-vm-code-coverage',
                         'linux-chromeos-code-coverage', 'linux-code-coverage',
                         'android-code-coverage',
-                        'android-kitkat-arm-coverage-rel'))
+                        'android-marshmallow-arm64-coverage-rel'))
 
   def HandlePost(self):
     """Loads the data from GS bucket, and dumps them into ndb."""
