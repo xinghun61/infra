@@ -569,9 +569,13 @@ def _apply_builder_config_async(builder_cfg, build_proto):
       flatten_swarmingcfg.read_properties(builder_cfg.recipe)
   )
 
-  build_proto.input.experimental = (
-      builder_cfg.experimental == project_config_pb2.YES
-  )
+  is_prod = yield _is_migrating_builder_prod_async(builder_cfg, build_proto)
+  if is_prod is not None:  # pragma: no cover | TODO(nodir): remove branch
+    build_proto.input.experimental = not is_prod
+  else:
+    build_proto.input.experimental = (
+        builder_cfg.experimental == project_config_pb2.YES
+    )
 
   # Populate exe.
   build_proto.exe.CopyFrom(builder_cfg.exe)
@@ -631,3 +635,59 @@ def _add_configured_cache(build_proto, configured_cache):
       ),
       env_var=configured_cache.env_var,
   )
+
+
+@ndb.tasklet
+def _is_migrating_builder_prod_async(
+    builder_cfg, build_proto
+):  # pragma: no cover | TODO(nodir): delete this code
+  """Returns True if the builder is prod according to the migration app.
+
+  See also 'luci_migration_host' in the project config.
+
+  If unknown, returns None.
+  On failures, logs them and returns None.
+
+  TODO(nodir): remove this function when Buildbot is turned down.
+  """
+  ret = None
+
+  master = None
+  props_list = (
+      build_proto.input.properties,
+      bbutil.dict_to_struct(
+          flatten_swarmingcfg.read_properties(builder_cfg.recipe)
+      ),
+  )
+  for prop_name in ('luci_migration_master_name', 'mastername'):
+    for props in props_list:
+      if prop_name in props:
+        master = props[prop_name]
+        break
+    if master:  # pragma: no branch
+      break
+
+  host = _clear_dash(builder_cfg.luci_migration_host)
+  if master and host:
+    try:
+      url = 'https://%s/masters/%s/builders/%s/' % (
+          host, master, builder_cfg.name
+      )
+      res = yield net.json_request_async(
+          url, params={'format': 'json'}, scopes=net.EMAIL_SCOPE
+      )
+      ret = res.get('luci_is_prod')
+    except net.NotFoundError:
+      logging.warning(
+          'missing migration status for %r/%r', master, builder_cfg.name
+      )
+    except net.Error:
+      logging.exception(
+          'failed to get migration status for %r/%r', master, builder_cfg.name
+      )
+  raise ndb.Return(ret)
+
+
+def _clear_dash(s):
+  """Returns s if it is not '-', otherwise returns ''."""
+  return s if s != '-' else ''
