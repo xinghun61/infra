@@ -113,8 +113,8 @@ class SwarmbucketApiTest(testing.EndpointsTestCase):
     self.settings = service_config_pb2.SettingsCfg(
         swarming=dict(
             milo_hostname='milo.example.com',
-            luci_runner_package=dict(
-                package_name='infra/tools/luci_runner',
+            bbagent_package=dict(
+                package_name='infra/tools/bbagent',
                 version='luci-runner-version',
             ),
             kitchen_package=dict(
@@ -282,7 +282,7 @@ class SwarmbucketApiTest(testing.EndpointsTestCase):
         'cipd_input': {
             'packages': [
                 {
-                    'package_name': 'infra/tools/luci_runner',
+                    'package_name': 'infra/tools/bbagent',
                     'path': '.',
                     'version': 'luci-runner-version',
                 },

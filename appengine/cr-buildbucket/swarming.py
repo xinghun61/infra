@@ -68,7 +68,7 @@ _CACHE_DIR = 'cache'
 # This is the path, relative to the swarming run dir, which is where the recipes
 # are either checked out, or installed via CIPD package.
 #
-# TODO(iannucci): rename this for luci_runner (maybe to "user_exe").
+# TODO(iannucci): rename this for bbagent (maybe to "user_exe").
 _KITCHEN_CHECKOUT = 'kitchen-checkout'
 
 # Directory where user-available packages are installed, such as git.
@@ -322,7 +322,7 @@ def _compute_cipd_input(build, settings):
     }
 
   packages = [
-      convert('.', settings.swarming.luci_runner_package),
+      convert('.', settings.swarming.bbagent_package),
       convert('.', settings.swarming.kitchen_package),
       {
           'package_name': build.proto.exe.cipd_package,
@@ -343,8 +343,8 @@ def _compute_cipd_input(build, settings):
 
 def _compute_command(build, settings):
   if _builder_matches(build.proto.builder,
-                      settings.swarming.luci_runner_package.builders):
-    return _compute_luci_runner(build, settings)
+                      settings.swarming.bbagent_package.builders):
+    return _compute_bbagent(build, settings)
 
   logdog = build.proto.infra.logdog
   annotation_url = (
@@ -426,26 +426,26 @@ _CLI_ENCODED_STRIP_RE = re.compile('\n|=')
 
 
 def _cli_encode_proto(message):
-  """Encodes a proto message for use on the luci_runner command line."""
+  """Encodes a proto message for use on the bbagent command line."""
   raw = message.SerializeToString().encode('zlib').encode('base64')
   return _CLI_ENCODED_STRIP_RE.sub('', raw)
 
 
-def _compute_luci_runner(build, settings):
-  """Returns the command for luci_runner."""
-  args = launcher_pb2.RunnerArgs(
-      buildbucket_host=app_identity.get_default_version_hostname(),
-      logdog_host=build.proto.infra.logdog.hostname,
-      executable_dir=_KITCHEN_CHECKOUT,
+def _compute_bbagent(build, settings):
+  """Returns the command for bbagent."""
+  is_windows = any(
+      dim.key == 'os' and dim.value.startswith('Windows')
+      for dim in build.proto.infra.swarming.task_dimensions
+  )
+  sep = "\\" if is_windows else "/"
+
+  args = launcher_pb2.BBAgentArgs(
+      executable_path=sep.join((_KITCHEN_CHECKOUT, 'luciexe')),
       cache_dir=_CACHE_DIR,
       known_public_gerrit_hosts=settings.known_public_gerrit_hosts,
-      luci_system_account='system',
       build=build.proto,
   )
-  return [
-      u'luci_runner${EXECUTABLE_SUFFIX}', '-args-b64gz',
-      _cli_encode_proto(args)
-  ]
+  return [u'bbagent${EXECUTABLE_SUFFIX}', _cli_encode_proto(args)]
 
 
 def validate_build(build):
@@ -508,6 +508,9 @@ def _sync_build_and_swarming(build_id, generation):
   build.proto.infra.ParseFromString(bundle.infra.infra)
   build.proto.input.properties.ParseFromString(
       bundle.input_properties.properties
+  )
+  build.proto.infra.buildbucket.hostname = (
+      app_identity.get_default_version_hostname()
   )
   sw = build.proto.infra.swarming
 
@@ -804,7 +807,7 @@ def _sync_build_with_task_result_in_memory(build, build_infra, task_result):
       bp.status = common_pb2.INFRA_FAILURE
       bp.status_details.timeout.SetInParent()
     elif state == 'BOT_DIED' or task_result.get('failure'):
-      # If this truly was a non-infra failure, luci_runner would catch that and
+      # If this truly was a non-infra failure, bbagent would catch that and
       # mark the build as FAILURE.
       # That did not happen, so this is an infra failure.
       bp.status = common_pb2.INFRA_FAILURE

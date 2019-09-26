@@ -453,7 +453,7 @@ def validate_service_cfg(swarming, ctx):
   for i, p in enumerate(swarming.user_packages):
     with ctx.prefix('user_package[%d]: ' % i):
       _validate_package(p, ctx)
-  with ctx.prefix('luci_runner_package: '):
-    _validate_package(swarming.luci_runner_package, ctx)
+  with ctx.prefix('bbagent_package: '):
+    _validate_package(swarming.bbagent_package, ctx)
   with ctx.prefix('kitchen_package: '):
     _validate_package(swarming.kitchen_package, ctx, allow_predicate=False)

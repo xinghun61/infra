@@ -673,8 +673,8 @@ class ServiceCfgTest(testing.AppengineTestCase):
     self.cfg_test(
         '''
         milo_hostname: "ci.example.com"
-        luci_runner_package {
-          package_name: "infra/luci_runner"
+        bbagent_package {
+          package_name: "infra/bbagent"
           version: "stable"
           version_canary: "canary"
           builders {

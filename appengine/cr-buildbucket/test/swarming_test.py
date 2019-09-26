@@ -69,8 +69,8 @@ class BaseTest(testing.AppengineTestCase):
     self.settings = service_config_pb2.SettingsCfg(
         swarming=dict(
             milo_hostname='milo.example.com',
-            luci_runner_package=dict(
-                package_name='infra/tools/luci_runner',
+            bbagent_package=dict(
+                package_name='infra/tools/bbagent',
                 version='luci-runner-version',
                 version_canary='luci-runner-version-canary',
                 builders=service_config_pb2.BuilderPredicate(
@@ -302,7 +302,7 @@ class TaskDefTest(BaseTest):
     cipd_input = swarming._compute_cipd_input(build, self.settings)
     packages = {p['package_name']: p for p in cipd_input['packages']}
     self.assertEqual(
-        packages['infra/tools/luci_runner']['version'],
+        packages['infra/tools/bbagent']['version'],
         'luci-runner-version-canary',
     )
     self.assertEqual(
@@ -464,13 +464,10 @@ class TaskDefTest(BaseTest):
 
     actual = self.compute_task_def(build)
 
-    expected_args = launcher_pb2.RunnerArgs(
-        buildbucket_host='cr-buildbucket.appspot.com',
-        logdog_host='logs.example.com',
-        executable_dir=swarming._KITCHEN_CHECKOUT,
+    expected_args = launcher_pb2.BBAgentArgs(
+        executable_path=swarming._KITCHEN_CHECKOUT + '/luciexe',
         cache_dir=swarming._CACHE_DIR,
         known_public_gerrit_hosts=['chromium-review.googlesource.com'],
-        luci_system_account='system',
         build=build.proto,
     )
     expected_swarming_props_def = {
@@ -497,8 +494,7 @@ class TaskDefTest(BaseTest):
         'execution_timeout_secs':
             '3600',
         'command': [
-            'luci_runner${EXECUTABLE_SUFFIX}',
-            '-args-b64gz',
+            'bbagent${EXECUTABLE_SUFFIX}',
             swarming._cli_encode_proto(expected_args),
         ],
         'dimensions': [
@@ -510,7 +506,7 @@ class TaskDefTest(BaseTest):
         'cipd_input': {
             'packages': [
                 {
-                    'package_name': 'infra/tools/luci_runner',
+                    'package_name': 'infra/tools/bbagent',
                     'path': '.',
                     'version': 'luci-runner-version',
                 },
@@ -580,7 +576,7 @@ class TaskDefTest(BaseTest):
     )
 
     # Now check that the blob on the cli is actually reasonable.
-    cli_blob = actual['task_slices'][0]['properties']['command'][2]
+    cli_blob = actual['task_slices'][0]['properties']['command'][1]
     # No newlines, no padding
     self.assertNotIn('\n', cli_blob)
     self.assertNotIn('=', cli_blob)
@@ -592,7 +588,7 @@ class TaskDefTest(BaseTest):
     padding = '=' * (4 - (len(cli_blob) % 4))
     self.assertLessEqual(len(padding), 2)  # should be '', '=', or '=='
 
-    args = launcher_pb2.RunnerArgs()
+    args = launcher_pb2.BBAgentArgs()
     args.ParseFromString((cli_blob + padding).decode('base64').decode('zlib'))
     self.assertEqual(args, expected_args)
 
@@ -682,6 +678,10 @@ class SyncBuildTest(BaseTest):
     }]}
     self.patch(
         'swarming.compute_task_def', autospec=True, return_value=self.task_def
+    )
+    self.patch(
+        'google.appengine.api.app_identity.get_default_version_hostname',
+        return_value='cr-buildbucket.appspot.com'
     )
 
     self.build_bundle = test_util.build_bundle(
