@@ -1,0 +1,12 @@
+<histogram-configuration>
+    <histograms>
+        <histogram name="Test.Histogram1" units="units" expires_after="M79">
+            <obsolete>
+                Deprecated as of M79. Now using Test.Histogram2.
+            </obsolete>
+            <owner>ltina@google.com</owner>
+            <owner>chrome-metrics-team@google.com</owner>
+            <summary> This is a summary </summary>
+        </histogram>
+    </histograms>
+</histogram-configuration>

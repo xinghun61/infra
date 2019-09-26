@@ -25,10 +25,11 @@ import (
 
 const (
 	category            = "Metrics"
-	histogramEndTag     = "</histogram>"
-	ownerStartTag       = "<owner"
 	dateFormat          = "2006-01-02"
 	dateMilestoneFormat = "2006-01-02T15:04:05"
+	histogramEndTag     = "</histogram>"
+	obsoleteStartTag    = "<obsolete"
+	ownerStartTag       = "<owner"
 
 	oneOwnerError = `[WARNING] It's a best practice to list multiple owners,
 so that there's no single point of failure for communication:
@@ -36,20 +37,24 @@ https://chromium.googlesource.com/chromium/src/+/HEAD/tools/metrics/histograms/R
 	firstOwnerTeamError = `[WARNING] Please list an individual as the primary owner for this metric:
 https://chromium.googlesource.com/chromium/src/+/HEAD/tools/metrics/histograms/README.md#Owners.`
 	noExpiryError = `[ERROR] Please specify an expiry condition for this histogram:
-https://chromium.googlesource.com/chromium/src/+/HEAD/tools/metrics/histograms/README.md#Histogram-Expiry`
+https://chromium.googlesource.com/chromium/src/+/HEAD/tools/metrics/histograms/README.md#Histogram-Expiry.`
 	badExpiryError = `[ERROR] Could not parse histogram expiry. Please format as YYYY-MM-DD or MXX:
-https://chromium.googlesource.com/chromium/src/+/HEAD/tools/metrics/histograms/README.md#Histogram-Expiry`
+https://chromium.googlesource.com/chromium/src/+/HEAD/tools/metrics/histograms/README.md#Histogram-Expiry.`
 	pastExpiryWarning = `[WARNING] This expiry date is in the past. Did you mean to set an expiry date in the future?`
 	farExpiryWarning  = `[WARNING] It's a best practice to choose an expiry that is at most one year out:
-https://chromium.googlesource.com/chromium/src/+/HEAD/tools/metrics/histograms/README.md#Histogram-Expiry`
+https://chromium.googlesource.com/chromium/src/+/HEAD/tools/metrics/histograms/README.md#Histogram-Expiry.`
 	neverExpiryInfo = `[INFO] The expiry should only be set to \"never\" in rare cases.
 Please double-check that this use of \"never\" is appropriate:
-https://chromium.googlesource.com/chromium/src/+/HEAD/tools/metrics/histograms/README.md#Histogram-Expiry`
+https://chromium.googlesource.com/chromium/src/+/HEAD/tools/metrics/histograms/README.md#Histogram-Expiry.`
 	neverExpiryError = `[ERROR] Histograms that never expire must have an XML comment describing why,
 such as <!-- expires-never: \"heartbeat\" metric (internal: go/uma-heartbeats) -->:
-https://chromium.googlesource.com/chromium/src/+/HEAD/tools/metrics/histograms/README.md#Histogram-Expiry`
+https://chromium.googlesource.com/chromium/src/+/HEAD/tools/metrics/histograms/README.md#Histogram-Expiry.`
 	milestoneFailure = `[WARNING] Tricium failed to fetch milestone branch date.
 Please double-check that this milestone is correct, because the tool is currently not able to check for you.`
+	obsoleteDateError = `[WARNING] When marking a histogram as <obsolete>,
+please document when the histogram was removed,
+either as a date including a 2-digit month and 4-digit year,
+or a milestone in MXX format.`
 )
 
 var (
@@ -60,6 +65,11 @@ var (
 	// Match date patterns of format YYYY-MM-DD
 	expiryDatePattern      = regexp.MustCompile(`^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[1-2][0-9]|3[0-1])$`)
 	expiryMilestonePattern = regexp.MustCompile(`^M([0-9]{2,3})$`)
+	// Match years between 1970 and 2999
+	obsoleteYearPattern = regexp.MustCompile(`19[7-9][0-9]|2([0-9]{3})`)
+	// Match double-digit or spelled-out months
+	obsoleteMonthPattern     = regexp.MustCompile(`([^0-9](0[1-9]|10|11|12)[^0-9])|Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec`)
+	obsoleteMilestonePattern = regexp.MustCompile(`M([0-9]{2,3})`)
 
 	// Now is an alias for time.Now, can be overwritten by tests
 	now              = time.Now
@@ -81,6 +91,7 @@ type Histogram struct {
 type Metadata struct {
 	HistogramLineNum      int
 	OwnerLineNum          int
+	ObsoleteLineNum       int
 	HasNeverExpiryComment bool
 }
 
@@ -161,6 +172,8 @@ func analyzeFile(scanner *bufio.Scanner, path string) []*tricium.Data_Comment {
 			if metadata.OwnerLineNum == histogramStart {
 				metadata.OwnerLineNum = lineNum
 			}
+		} else if strings.HasPrefix(line, obsoleteStartTag) {
+			metadata.ObsoleteLineNum = lineNum
 		} else if neverExpiryCommentPattern.MatchString(line) {
 			metadata.HasNeverExpiryComment = true
 		}
@@ -180,6 +193,9 @@ func checkHistogram(path string, histBytes []byte, metadata *Metadata) []*triciu
 		comments = append(comments, comment)
 	}
 	if comment := checkNonTeamOwner(path, histogram, metadata); comment != nil {
+		comments = append(comments, comment)
+	}
+	if comment := checkObsolete(path, histogram, metadata); comment != nil {
 		comments = append(comments, comment)
 	}
 	if expiryComments := checkExpiry(path, histogram, metadata); expiryComments != nil {
@@ -213,6 +229,23 @@ func createOwnerComment(message string, path string, metadata *Metadata) *triciu
 		Path:      path,
 		StartLine: int32(metadata.OwnerLineNum),
 	}
+}
+
+func checkObsolete(path string, histogram Histogram, metadata *Metadata) *tricium.Data_Comment {
+	if histogram.Obsolete != "" &&
+		!obsoleteMilestonePattern.MatchString(histogram.Obsolete) &&
+		!(obsoleteYearPattern.MatchString(histogram.Obsolete) &&
+			obsoleteMonthPattern.MatchString(histogram.Obsolete)) {
+		comment := &tricium.Data_Comment{
+			Category:  fmt.Sprintf("%s/%s", category, "Obsolete"),
+			Message:   obsoleteDateError,
+			Path:      path,
+			StartLine: int32(metadata.ObsoleteLineNum),
+		}
+		log.Printf("ADDING Comment for %s at line %d: %s", histogram.Name, comment.StartLine, "[ERROR]: Obsolete no date")
+		return comment
+	}
+	return nil
 }
 
 func checkExpiry(path string, histogram Histogram, metadata *Metadata) []*tricium.Data_Comment {
