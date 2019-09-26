@@ -266,6 +266,13 @@ def GetArtifactAttr(
           related_issues[blocked_on_iid].project_name,
           related_issues[blocked_on_iid].local_id)) for
               blocked_on_iid in art.blocked_on_iids]
+  if attribute_name == 'blocking':
+    if not art.blocking_iids:
+      return [framework_constants.NO_VALUES]
+    return [tracker_bizobj.FormatIssueRef((
+        related_issues[blocking_iid].project_name,
+        related_issues[blocking_iid].local_id)) for
+            blocking_iid in art.blocking_iids]
   if attribute_name == 'adder':
     if hotlist_issue_context:
       adder_id = hotlist_issue_context['adder_id']
