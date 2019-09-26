@@ -214,7 +214,7 @@ def _GetOwnerID(user_svc, cnxn, owner_email):
 def _GetCCIDs(user_svc, cnxn, cc_emails):
   if cc_emails:
     cc_emails = cc_emails.strip()
-  if not cc_emails.strip():
+  if not cc_emails:
     return []
   emails = [addr for _, addr in rfc822.AddressList(cc_emails)]
   return [userID for _, userID

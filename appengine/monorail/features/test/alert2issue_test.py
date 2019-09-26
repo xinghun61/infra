@@ -408,7 +408,7 @@ class GetAlertPropertiesTests(unittest.TestCase, TestData):
   ])
   def testDefaultCCIDs(self, header_value, expected_cc_ids):
     """Checks if _GetCCIDs returns an empty list in default."""
-    self.test_msg.replace_header(AlertEmailHeader.OWNER, header_value)
+    self.test_msg.replace_header(AlertEmailHeader.CC, header_value)
     props = alert2issue.GetAlertProperties(
         self.services, self.cnxn, self.project_id, self.incident_id,
         self.trooper_queue, self.test_msg)
