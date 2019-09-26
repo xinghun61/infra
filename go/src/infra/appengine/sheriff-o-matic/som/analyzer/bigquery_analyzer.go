@@ -35,7 +35,7 @@ SELECT
   CulpritIdRangeEnd,
   StartTime
 FROM
-	` + "`%s.events.sheriffable_failures`" + `
+	` + "`%s.%s.sheriffable_failures`" + `
 WHERE
 `
 
@@ -194,18 +194,22 @@ func GetBigQueryAlerts(ctx context.Context, tree string) ([]messages.BuildFailur
 	queryStr := ""
 	switch tree {
 	case "android":
-		queryStr = fmt.Sprintf(androidFailuresQuery, appID)
+		queryStr = fmt.Sprintf(androidFailuresQuery, appID, "chromium")
 		break
 	case "chromium.gpu.fyi":
-		queryStr = fmt.Sprintf(chromiumGPUFYIFailuresQuery, appID)
+		queryStr = fmt.Sprintf(chromiumGPUFYIFailuresQuery, appID, "chromium")
 		break
 	case "chromeos":
-		queryStr = fmt.Sprintf(crosFailuresQuery, appID)
+		queryStr = fmt.Sprintf(crosFailuresQuery, appID, "chromeos")
 		break
 	case "ios":
-		queryStr = fmt.Sprintf(iosFailuresQuery, appID)
+		queryStr = fmt.Sprintf(iosFailuresQuery, appID, "chromium")
+		break
+	case "fuchsia":
+		queryStr = fmt.Sprintf(failuresQuery, appID, "fuchsia", tree, tree)
+		break
 	default:
-		queryStr = fmt.Sprintf(failuresQuery, appID, tree, tree)
+		queryStr = fmt.Sprintf(failuresQuery, appID, "chromium", tree, tree)
 	}
 
 	logging.Infof(ctx, "query: %s", queryStr)

@@ -1,4 +1,4 @@
-CREATE OR REPLACE VIEW `APP_ID.events.failing_steps`
+CREATE OR REPLACE VIEW `APP_ID.PROJECT_NAME.failing_steps`
 AS
 /*
 Failing steps table.
@@ -24,7 +24,7 @@ WITH
   OFFSET
     (0)] latest
   FROM
-    `cr-buildbucket.builds.completed_BETA` AS b
+    `cr-buildbucket.PROJECT_NAME.builds` AS b
   WHERE
     create_time > TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 7 DAY)
   GROUP BY

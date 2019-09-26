@@ -1,4 +1,4 @@
-CREATE OR REPLACE VIEW `APP_ID.events.sheriffable_failures`
+CREATE OR REPLACE VIEW `APP_ID.PROJECT_NAME.sheriffable_failures`
 AS
 /*
 Sheriffable failures table.
@@ -87,7 +87,7 @@ WITH
   OFFSET
     (0)] latest
   FROM
-    `APP_ID.events.step_status_transitions` s
+    `APP_ID.PROJECT_NAME.step_status_transitions` s
   WHERE
     s.step_status = 'FAILURE'
     AND s.previous_status = 'SUCCESS'
@@ -118,7 +118,7 @@ SELECT
   t.latest.id as CulpritIdRangeEnd,
   t.latest.end_time AS StartTime
 FROM
-  `APP_ID.events.failing_steps` s
+  `APP_ID.PROJECT_NAME.failing_steps` s
   # Deal with steps who have *never* been green by using a left outer join.
   # Include all of the latest failing steps, and for the ones whose beginnings
   # we can identify, include git pos etc. Otherwise just include the current

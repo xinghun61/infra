@@ -1,4 +1,4 @@
-CREATE OR REPLACE VIEW `APP_ID.events.step_status_transitions`
+CREATE OR REPLACE VIEW `APP_ID.PROJECT_NAME.step_status_transitions`
 AS
 /*
 Step status transition table.
@@ -26,7 +26,7 @@ WITH
      LAG(b.input.gitiles_commit) OVER (PARTITION BY b.builder.project, b.builder.bucket, b.builder.builder, b.input.gitiles_commit.host, b.input.gitiles_commit.project, b.input.gitiles_commit.ref, step.name ORDER BY b.input.gitiles_commit.position, b.id desc, b.number) AS previous_input_commit,
     LAG(b.id) OVER (PARTITION BY b.builder.project, b.builder.bucket, b.builder.builder, b.output.gitiles_commit.host, b.output.gitiles_commit.project, b.output.gitiles_commit.ref, step.name ORDER BY b.output.gitiles_commit.position, b.number) AS previous_id
     FROM
-    `cr-buildbucket.builds.completed_BETA` b,
+    `cr-buildbucket.PROJECT_NAME.builds` b,
     UNNEST(steps) AS step
   WHERE
     create_time > TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 7 DAY)
