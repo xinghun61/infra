@@ -3,6 +3,7 @@
 # found in the LICENSE file.
 
 from gae_libs.testcase import TestCase
+from infra_api_clients.swarming import swarming_task_request
 from infra_api_clients.swarming.swarming_task_request import (
     SwarmingTaskInputsRef)
 from infra_api_clients.swarming.swarming_task_request import (
@@ -32,7 +33,15 @@ class SwarmingTaskRequestTest(TestCase):
             io_timeout_secs='1200',
             idempotent=True,
             inputs_ref=SwarmingTaskInputsRef(
-                isolated=None, isolatedserver=None, namespace=None)),
+                isolated=None, isolatedserver=None, namespace=None),
+            cipd_input=swarming_task_request.CIPDInput(
+                packages=swarming_task_request.CIPDPackages(),
+                client_package=swarming_task_request.CIPDClientPackage(
+                    version=None,
+                    package_name=None,
+                ),
+                server=None),
+        ),
         pubsub_auth_token=None,
         pubsub_topic=None,
         pubsub_userdata=None,
@@ -44,6 +53,11 @@ class SwarmingTaskRequestTest(TestCase):
                      SwarmingTaskRequest.GetSwarmingTaskRequestTemplate())
 
   def testFromSerializable(self):
+    cipd_packages = [{
+        'path': 'path',
+        'version': 'version',
+        'package_name': 'package_name',
+    }]
     data = {
         'expiration_secs': '50',
         'name': 'a swarming task',
@@ -76,6 +90,14 @@ class SwarmingTaskRequestTest(TestCase):
                 'random_field': 'blabla'
             },
             'io_timeout_secs': 10,
+            'cipd_input': {
+                'packages': cipd_packages,
+                'client_package': {
+                    'version': 'version',
+                    'package_name': 'package_name',
+                },
+                'server': 'server',
+            },
         },
     }
 
@@ -109,7 +131,13 @@ class SwarmingTaskRequestTest(TestCase):
             inputs_ref=SwarmingTaskInputsRef(
                 isolated='a-hash',
                 isolatedserver=None,
-                namespace='default-gzip')),
+                namespace='default-gzip'),
+            cipd_input=swarming_task_request.CIPDInput(
+                packages=swarming_task_request.CIPDPackages.FromSerializable(
+                    cipd_packages),
+                client_package=swarming_task_request.CIPDClientPackage(
+                    version='version', package_name='package_name'),
+                server='server')),
         pubsub_auth_token='token',
         pubsub_topic='topic',
         pubsub_userdata='data',

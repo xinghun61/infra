@@ -4,6 +4,40 @@
 
 from libs.list_of_basestring import ListOfBasestring
 from libs.structured_object import StructuredObject
+from libs.structured_object import TypedList
+
+
+class CIPDPackage(StructuredObject):
+  path = basestring
+  version = basestring
+  package_name = basestring
+
+
+class CIPDPackages(TypedList):
+  _element_type = CIPDPackage
+
+  @classmethod
+  def FromSerializable(cls, packages):
+    serialized_data = cls()
+    for package in packages or []:
+      serialized_data.append(
+          CIPDPackage(
+              path=package.get('path'),
+              version=package.get('version'),
+              package_name=package.get('package_name'),
+          ))
+    return serialized_data
+
+
+class CIPDClientPackage(StructuredObject):
+  version = basestring
+  package_name = basestring
+
+
+class CIPDInput(StructuredObject):
+  packages = CIPDPackages
+  client_package = CIPDClientPackage
+  server = basestring
 
 
 class SwarmingTaskInputsRef(StructuredObject):
@@ -41,6 +75,8 @@ class SwarmingTaskProperties(StructuredObject):
 
   # String representaiton of int.
   io_timeout_secs = basestring
+
+  cipd_input = CIPDInput
 
 
 class SwarmingTaskRequest(StructuredObject):
@@ -93,7 +129,15 @@ class SwarmingTaskRequest(StructuredObject):
             io_timeout_secs='1200',
             idempotent=True,
             inputs_ref=SwarmingTaskInputsRef(
-                isolated=None, isolatedserver=None, namespace=None)),
+                isolated=None, isolatedserver=None, namespace=None),
+            cipd_input=CIPDInput(
+                packages=CIPDPackages(),
+                client_package=CIPDClientPackage(
+                    version=None,
+                    package_name=None,
+                ),
+                server=None),
+        ),
         pubsub_auth_token=None,
         pubsub_topic=None,
         pubsub_userdata=None,
@@ -118,6 +162,7 @@ class SwarmingTaskRequest(StructuredObject):
     """
     properties = data.get('properties', {})
     inputs_ref = properties.get('inputs_ref', {})
+    cipd_input = properties.get('cipd_input', {})
 
     return SwarmingTaskRequest(
         created_ts=data.get('created_ts'),
@@ -141,7 +186,18 @@ class SwarmingTaskRequest(StructuredObject):
             inputs_ref=SwarmingTaskInputsRef(
                 isolated=inputs_ref.get('isolated'),
                 isolatedserver=inputs_ref.get('isolatedserver'),
-                namespace=inputs_ref.get('namespace'))),
+                namespace=inputs_ref.get('namespace')),
+            cipd_input=CIPDInput(
+                packages=CIPDPackages.FromSerializable(
+                    cipd_input.get('packages')),
+                client_package=CIPDClientPackage(
+                    version=cipd_input.get('client_package', {}).get('version'),
+                    package_name=cipd_input.get('client_package',
+                                                {}).get('package_name'),
+                ),
+                server=cipd_input.get('server'),
+            ),
+        ),
         pubsub_auth_token=data.get('pubsub_auth_token'),
         pubsub_topic=data.get('pubsub_topic'),
         pubsub_userdata=data.get('pubsub_userdata'),

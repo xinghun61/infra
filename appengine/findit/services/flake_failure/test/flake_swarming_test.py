@@ -10,6 +10,7 @@ from dto import swarming_task_error
 from dto.flake_swarming_task_output import FlakeSwarmingTaskOutput
 from dto.swarming_task_error import SwarmingTaskError
 from infra_api_clients.swarming import swarming_util
+from infra_api_clients.swarming import swarming_task_request
 from infra_api_clients.swarming.swarming_task_request import (
     SwarmingTaskInputsRef)
 from infra_api_clients.swarming.swarming_task_request import (
@@ -458,7 +459,14 @@ class FlakeSwarmingTest(wf_testcase.WaterfallTestCase):
             execution_timeout_secs='3600',
             env_prefixes=[],
             grace_period_secs='30',
-            caches=None),
+            caches=None,
+            cipd_input=swarming_task_request.CIPDInput(
+                packages=swarming_task_request.CIPDPackages(),
+                client_package=swarming_task_request.CIPDClientPackage(
+                    version=None,
+                    package_name=None,
+                ),
+                server=None)),
         priority='25',
         parent_task_id='',
         user='',
