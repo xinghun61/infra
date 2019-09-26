@@ -10,12 +10,9 @@ import (
 	"context"
 	"fmt"
 	"math"
-	"regexp"
-	"strings"
 	"time"
 
 	"github.com/golang/protobuf/ptypes"
-	"github.com/google/uuid"
 
 	build_api "go.chromium.org/chromiumos/infra/proto/go/chromite/api"
 	"go.chromium.org/chromiumos/infra/proto/go/test_platform"
@@ -422,7 +419,6 @@ func (a *attempt) TaskName() string {
 }
 
 func (a *attempt) Launch(ctx context.Context, client swarming.Client) error {
-	updateLogDogURL(&a.args)
 	req, err := a.args.SwarmingNewTaskRequest()
 	if err != nil {
 		return errors.Annotate(err, "launch attempt for %s", a.TaskName()).Err()
@@ -615,30 +611,6 @@ func (r *TaskSet) tick(ctx context.Context, client swarming.Client, gf isolate.G
 	}
 
 	return complete, nil
-}
-
-var logdogURLPattern = regexp.MustCompile(`logdog\://([\w-_.]*)/([\w-_]*)/skylab/[\w-_]*/\+/annotations`)
-
-// updateLogDogURL is a terrible hack to assist refactoring this package.
-// TODO(crbug.com/1003874, pprabhu) Drop this hack at the top of the refactor
-// stack.
-func updateLogDogURL(a *request.Args) {
-	parts := logdogURLPattern.FindStringSubmatch(a.Cmd.LogDogAnnotationURL)
-	if len(parts) != 3 {
-		panic(fmt.Sprintf("Malformed logdog URL %s", a.Cmd.LogDogAnnotationURL))
-	}
-	url := fmt.Sprintf("logdog://%s/%s/skylab/%s/+/annotations", parts[1], parts[2], uuid.New().String())
-	(&a.Cmd).LogDogAnnotationURL = url
-
-	// Clone tags slice before modification.
-	tags := make([]string, len(a.SwarmingTags))
-	copy(tags, a.SwarmingTags)
-	a.SwarmingTags = tags
-	for i, t := range a.SwarmingTags {
-		if strings.HasPrefix(t, "log_location:") {
-			a.SwarmingTags[i] = "log_location:" + url
-		}
-	}
 }
 
 // fetchResults fetches the latest swarming and isolate state of the given attempt,
