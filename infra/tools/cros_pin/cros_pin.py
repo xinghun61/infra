@@ -272,44 +272,10 @@ class UpdateTracker(object):
 
   def update(self):
     LOGGER.info('Updating repositories: %s', self._updated)
-    affected_masters = set()
-    for pin in self._updated.iterkeys():
-      affected_masters.update(pin.masters)
-
-    failed_slave_pool_masters = []
-    for m in sorted(affected_masters):
-      try:
-        self._regenerate_slave_pool(m)
-      except SlavePoolUpdateError:
-        LOGGER.exception("Failed to update slave pools for [%s].", m)
-        failed_slave_pool_masters.append(m)
-    if failed_slave_pool_masters:
-      LOGGER.error('Failed to update slave pools for: %s. You may need to '
-                   'add additional slaves the pool(s).',
-                   failed_slave_pool_masters)
-      raise SlavePoolUpdateError("Failed to update slave pools.")
-
-    # Upload CLs for the affected repositories.
     for pin, updates in self._updated.iteritems():
       self._upload_patch(
           self._c.subpath(*pin.base),
           self._generate_commit_message(updates))
-
-  def _regenerate_slave_pool(self, master):
-    LOGGER.debug('Regenerating slave pool for: %s', master)
-    cmd = [
-        os.path.join(*self.RUNIT_PY),
-        os.path.join(*self.SLAVE_ALLOC_UPDATE),
-    ]
-    cmd += logging_verbosity()
-    cmd.append(master)
-
-    rv, stdout = execute.call(cmd, cwd=self._c.path)
-    if rv != 0:
-      LOGGER.exception('Failed to update slaves for master [%s] (%d):\n%s',
-                       master, rv, stdout)
-      raise SlavePoolUpdateError()
-
 
   def _upload_patch(self, repo_path, commit_msg):
     # Check if the Git repository actually has changes.
