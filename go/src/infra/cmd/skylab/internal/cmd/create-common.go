@@ -46,7 +46,7 @@ e.g., reef-canary/R73-11580.0.0.`)
 (e.g. cheets-version:git_pi-arc/cheets_x86_64).  May be specified
 multiple times.  Optional.`)
 	fl.IntVar(&c.priority, "priority", defaultTaskPriority,
-		`Specify the priority of the test.  A high value means this test
+		`Specify the priority of the test [50,255].  A high value means this test
 will be executed in a low priority. If the tasks runs in a quotascheduler controlled pool, this value will be ignored.`)
 	fl.IntVar(&c.timeoutMins, "timeout-mins", 30, "Task runtime timeout.")
 	fl.IntVar(&c.maxRetries, "max-retries", 0,
