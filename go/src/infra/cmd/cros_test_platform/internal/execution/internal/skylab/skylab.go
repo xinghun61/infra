@@ -50,20 +50,16 @@ type TaskSet struct {
 }
 
 type testRun struct {
-	Args        request.Args
-	maxAttempts int
-	runnable    bool
-	attempts    []*attempt
+	argsGenerator argsGenerator
+	Name          string
+	maxAttempts   int
+	runnable      bool
+	attempts      []*attempt
 }
 
 func newTestRun(ctx context.Context, invocation *steps.EnumerationResponse_AutotestInvocation, params *test_platform.Request_Params, workerConfig *config.Config_SkylabWorker, parentTaskID string) (*testRun, error) {
-	t := testRun{runnable: true}
-	ag := argsGenerator{invocation: invocation, params: params, workerConfig: workerConfig, parentTaskID: parentTaskID}
-	a, err := ag.GenerateArgs(ctx)
-	if err != nil {
-		return nil, errors.Annotate(err, "new test run").Err()
-	}
-	t.Args = a
+	t := testRun{runnable: true, Name: invocation.GetTest().GetName()}
+	t.argsGenerator = argsGenerator{invocation: invocation, params: params, workerConfig: workerConfig, parentTaskID: parentTaskID}
 	t.maxAttempts = 1 + int(inferTestMaxRetries(invocation))
 	return &t, nil
 }
@@ -301,10 +297,6 @@ func (a *argsGenerator) swarmingTags(cmd *worker.Command) []string {
 	return tags
 }
 
-func (t *testRun) Name() string {
-	return t.Args.Cmd.TaskName
-}
-
 func (t *testRun) AttemptsRemaining() int {
 	r := t.maxAttempts - len(t.attempts)
 	if r > 0 {
@@ -320,7 +312,11 @@ func (t *testRun) AttemptedAtLeastOnce() bool {
 // ValidateDependencies checks whether this test has dependencies satisfied by
 // at least one Skylab bot.
 func (t *testRun) ValidateDependencies(ctx context.Context, client swarming.Client) (bool, error) {
-	dims, err := t.Args.StaticDimensions()
+	args, err := t.argsGenerator.GenerateArgs(ctx)
+	if err != nil {
+		return false, errors.Annotate(err, "validate dependencies").Err()
+	}
+	dims, err := args.StaticDimensions()
 	if err != nil {
 		return false, errors.Annotate(err, "validate dependencies").Err()
 	}
@@ -332,16 +328,15 @@ func (t *testRun) ValidateDependencies(ctx context.Context, client swarming.Clie
 }
 
 func (t *testRun) LaunchAttempt(ctx context.Context, client swarming.Client) error {
-	req, err := t.Args.SwarmingNewTaskRequest()
+	args, err := t.argsGenerator.GenerateArgs(ctx)
 	if err != nil {
-		return errors.Annotate(err, "launch attempt for %s", t.Name()).Err()
+		return err
 	}
-	resp, err := client.CreateTask(ctx, req)
-	if err != nil {
-		return errors.Annotate(err, "launch attempt for %s", t.Name()).Err()
+	a := attempt{args: args}
+	if err := a.Launch(ctx, client); err != nil {
+		return err
 	}
-	logging.Infof(ctx, "Launched attempt for %s as task %s", t.Name(), client.GetTaskURL(resp.TaskId))
-	t.attempts = append(t.attempts, &attempt{taskID: resp.TaskId})
+	t.attempts = append(t.attempts, &a)
 	return nil
 }
 
@@ -365,7 +360,7 @@ func (t *testRun) TaskResult(urler swarming.URLer) []*steps.ExecuteResponse_Task
 	if !t.runnable {
 		return []*steps.ExecuteResponse_TaskResult{
 			{
-				Name: t.Name(),
+				Name: t.Name,
 				State: &test_platform.TaskState{
 					LifeCycle: test_platform.TaskState_LIFE_CYCLE_REJECTED,
 					Verdict:   test_platform.TaskState_VERDICT_UNSPECIFIED,
@@ -376,7 +371,7 @@ func (t *testRun) TaskResult(urler swarming.URLer) []*steps.ExecuteResponse_Task
 
 	ret := make([]*steps.ExecuteResponse_TaskResult, len(t.attempts))
 	for i, a := range t.attempts {
-		ret[i] = toTaskResult(t.Name(), a, i, urler)
+		ret[i] = toTaskResult(t.Name, a, i, urler)
 	}
 	return ret
 }
@@ -413,12 +408,32 @@ func (t *testRun) GetLatestAttempt() *attempt {
 }
 
 type attempt struct {
+	args   request.Args
 	taskID string
 	state  jsonrpc.TaskState
 	// Note: If we ever begin supporting other harnesses's result formats
 	// then this field will change to a *skylab_test_runner.Result.
 	// For now, the autotest-specific variant is more convenient.
 	autotestResult *skylab_test_runner.Result_Autotest
+}
+
+func (a *attempt) TaskName() string {
+	return a.args.Cmd.TaskName
+}
+
+func (a *attempt) Launch(ctx context.Context, client swarming.Client) error {
+	updateLogDogURL(&a.args)
+	req, err := a.args.SwarmingNewTaskRequest()
+	if err != nil {
+		return errors.Annotate(err, "launch attempt for %s", a.TaskName()).Err()
+	}
+	resp, err := client.CreateTask(ctx, req)
+	if err != nil {
+		return errors.Annotate(err, "launch attempt for %s", a.TaskName()).Err()
+	}
+	a.taskID = resp.TaskId
+	logging.Infof(ctx, "Launched attempt for %s as task %s", a.TaskName(), client.GetTaskURL(a.taskID))
+	return nil
 }
 
 // Completed returns whether the current attempt is complete.
@@ -581,7 +596,7 @@ func (r *TaskSet) tick(ctx context.Context, client swarming.Client, gf isolate.G
 			continue
 		}
 
-		logging.Debugf(ctx, "Task %s (%s) completed with verdict %s", latestAttempt.taskID, testRun.Name(), latestAttempt.Verdict())
+		logging.Debugf(ctx, "Task %s (%s) completed with verdict %s", latestAttempt.taskID, testRun.Name, latestAttempt.Verdict())
 
 		shouldRetry, err := r.shouldRetry(testRun)
 		if err != nil {
@@ -589,14 +604,13 @@ func (r *TaskSet) tick(ctx context.Context, client swarming.Client, gf isolate.G
 		}
 		if shouldRetry {
 			complete = false
-			logging.Debugf(ctx, "Retrying %s", testRun.Name())
-			updateLogDogURL(&testRun.Args)
+			logging.Debugf(ctx, "Retrying %s", testRun.Name)
 			if err := testRun.LaunchAttempt(ctx, client); err != nil {
 				return false, errors.Annotate(err, "tick for task %s: retry test", latestAttempt.taskID).Err()
 			}
 			r.retries++
 		} else {
-			logging.Debugf(ctx, "Not retrying %s", testRun.Name())
+			logging.Debugf(ctx, "Not retrying %s", testRun.Name)
 		}
 	}
 
