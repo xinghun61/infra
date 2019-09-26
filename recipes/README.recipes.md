@@ -970,9 +970,11 @@ Pushes a trivial CL to Gerrit to verify git authentication works on LUCI.
 &mdash; **def [RunSteps](/recipes/recipes/luci_go.py#29)(api, GOARCH):**
 ### *recipes* / [luci\_py](/recipes/recipes/luci_py.py)
 
-[DEPS](/recipes/recipes/luci_py.py#5): [depot\_tools/bot\_update][depot_tools/recipe_modules/bot_update], [depot\_tools/gclient][depot_tools/recipe_modules/gclient], [recipe\_engine/buildbucket][recipe_engine/recipe_modules/buildbucket], [recipe\_engine/properties][recipe_engine/recipe_modules/properties]
+[DEPS](/recipes/recipes/luci_py.py#5): [depot\_tools/bot\_update][depot_tools/recipe_modules/bot_update], [depot\_tools/gclient][depot_tools/recipe_modules/gclient], [recipe\_engine/buildbucket][recipe_engine/recipe_modules/buildbucket], [recipe\_engine/context][recipe_engine/recipe_modules/context], [recipe\_engine/path][recipe_engine/recipe_modules/path], [recipe\_engine/platform][recipe_engine/recipe_modules/platform], [recipe\_engine/properties][recipe_engine/recipe_modules/properties], [recipe\_engine/step][recipe_engine/recipe_modules/step]
 
-&mdash; **def [RunSteps](/recipes/recipes/luci_py.py#13)(api):**
+&mdash; **def [RunSteps](/recipes/recipes/luci_py.py#17)(api):**
+
+&mdash; **def [RunSwarmingUITests](/recipes/recipes/luci_py.py#26)(api):**
 ### *recipes* / [master\_manager\_config](/recipes/recipes/master_manager_config.py)
 
 [DEPS](/recipes/recipes/master_manager_config.py#5): [depot\_tools/bot\_update][depot_tools/recipe_modules/bot_update], [depot\_tools/gclient][depot_tools/recipe_modules/gclient], [depot\_tools/infra\_paths][depot_tools/recipe_modules/infra_paths], [infra\_checkout](#recipe_modules-infra_checkout), [recipe\_engine/buildbucket][recipe_engine/recipe_modules/buildbucket], [recipe\_engine/json][recipe_engine/recipe_modules/json], [recipe\_engine/path][recipe_engine/recipe_modules/path], [recipe\_engine/platform][recipe_engine/recipe_modules/platform], [recipe\_engine/properties][recipe_engine/recipe_modules/properties], [recipe\_engine/python][recipe_engine/recipe_modules/python], [recipe\_engine/step][recipe_engine/recipe_modules/step]
