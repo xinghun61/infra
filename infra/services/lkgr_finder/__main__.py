@@ -80,8 +80,6 @@ def ParseArgs(argv):
                          action='store_const', const='DEBUG', default='INFO')
 
   input_group = parser.add_argument_group('Input data sources')
-  input_group.add_argument('--buildbot', action='store_true', default=True,
-                           help='Get data from Buildbot JSON (default).')
   input_group.add_argument('--build-data', metavar='FILE',
                            help='Get data from the specified file.')
   input_group.add_argument('--manual', metavar='VALUE',

@@ -140,10 +140,6 @@ Build = collections.namedtuple(
     'Build', ['number', 'result', 'revision'])
 
 
-MILO_JSON_ENDPOINT = (
-    'https://luci-milo.appspot.com/prpc/milo.Buildbot/GetBuildbotBuildsJSON')
-
-
 OAUTH_SCOPES = ['https://www.googleapis.com/auth/userinfo.email']
 
 
@@ -244,42 +240,23 @@ def FetchBuildbucketBuildsForBuilder(
 
 
 def FetchBuildsWorker(fetch_q, fetch_fn):  # pragma: no cover
-  """Pull build json from buildbot masters.
+  """Pull build json from builders.
 
   Args:
     @param fetch_q: A pre-populated Queue.Queue containing tuples of:
-      master: buildbot master to get json from.
-      builder: Name of the builder on that master.
+      bucket: Buildbucket bucket containing the builder.
+      builder: Name of the builder in that bucket.
       output_builds: Output dictionary of builder to build data.
     @type fetch_q: tuple
   """
   while True:
     try:
-      master, builder, service_account, output_builds = fetch_q.get(False)
+      bucket, builder, service_account, output_builds = fetch_q.get(False)
     except Queue.Empty:
       return
 
     output_builds[builder] = fetch_fn(
-        master, builder, service_account_file=service_account)
-
-
-def FetchBuildbotBuilds(
-    masters, max_threads=0, service_account=None):  # pragma: no cover
-  """Fetch all build data about the builders in the input masters.
-
-  Args:
-    @param masters: Dictionary of the form
-    { master: {
-        builders: [list of strings]
-    } }
-    This dictionary is a subset of the project configuration json.
-    @type masters: dict
-    @param max_threads: Maximum number of parallel requests.
-    @type max_threads: int
-  """
-  return _FetchBuilds(
-      masters, FetchBuildbotBuildsForBuilder,
-      max_threads=max_threads, service_account=service_account)
+        bucket, builder, service_account_file=service_account)
 
 
 def FetchBuildbucketBuilds(
