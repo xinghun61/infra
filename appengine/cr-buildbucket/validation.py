@@ -291,6 +291,7 @@ UPDATE_BUILD_FIELD_PATHS = {
     'build.status_details',
     'build.summary_markdown',
     'build.steps',
+    'build.output',
     'build.output.properties',
     'build.output.gitiles_commit',
 }

@@ -158,7 +158,7 @@ def compute_task_def(build, settings, fake_build):
 
   task = {
       'name': 'bb-%d-%s' % (build.proto.id, build.builder_id),
-      'tags': _compute_tags(build),
+      'tags': _compute_tags(build, settings),
       'priority': str(sw.priority),
       'task_slices': _compute_task_slices(build, settings),
   }
@@ -185,20 +185,29 @@ def compute_task_def(build, settings, fake_build):
   return task
 
 
-def _compute_tags(build):
+def _compute_tags(build, settings):
   """Computes the Swarming task request tags to use."""
-  logdog = build.proto.infra.logdog
   tags = {
-      # TODO(iannucci): remove log_location
-      'log_location:logdog://%s/%s/%s/+/annotations' %
-      (logdog.hostname, logdog.project, logdog.prefix),
-      # TODO(iannucci): remove luci_project.
-      'luci_project:%s' % build.proto.builder.project,
       'buildbucket_bucket:%s' % build.bucket_id,
       'buildbucket_build_id:%s' % build.key.id(),
       'buildbucket_hostname:%s' % app_identity.get_default_version_hostname(),
       'buildbucket_template_canary:%s' % ('1' if build.canary else '0'),
+
+      # TODO(iannucci): 'luci_project' is only necessary for getting swarming to
+      # show the 'rich output' tab. Swarming should instead look for the
+      # buildbucket_* tags to compute a buildbucket link on milo, or
+      # raw_build_log to compute a raw link (for led tasks).
+      'luci_project:%s' % build.proto.builder.project,
   }
+
+  if not _builder_matches(build.proto.builder,
+                          settings.swarming.bbagent_package.builders):
+    logdog = build.proto.infra.logdog
+    tags.add(
+        'log_location:logdog://%s/%s/%s/+/annotations' %
+        (logdog.hostname, logdog.project, logdog.prefix)
+    )
+
   tags.update(build.tags)
   return sorted(tags)
 

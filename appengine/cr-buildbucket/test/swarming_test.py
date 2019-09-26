@@ -122,10 +122,6 @@ class TaskDefTest(BaseTest):
         'priority':
             100,
         'tags': [
-            (
-                'log_location:logdog://luci-logdog-dev.appspot.com/${project}/'
-                'buildbucket/${hostname}/${build_id}/+/annotations'
-            ),
             'luci_project:${project}',
         ],
         'task_slices': [{
@@ -546,10 +542,6 @@ class TaskDefTest(BaseTest):
             'buildbucket_template_canary:0',
             'builder:linux',
             'buildset:1',
-            (
-                'log_location:logdog://logs.example.com/chromium/bb/+/'
-                'annotations'
-            ),
             'luci_project:chromium',
         ],
         'task_slices': [{

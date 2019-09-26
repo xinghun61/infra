@@ -322,10 +322,6 @@ class SwarmbucketApiTest(testing.EndpointsTestCase):
             'buildbucket_hostname:cr-buildbucket.appspot.com',
             'buildbucket_template_canary:0',
             'builder:linux',
-            (
-                'log_location:logdog://logdog.example.com/chromium/buildbucket'
-                '/cr-buildbucket.appspot.com/1/+/annotations'
-            ),
             'luci_project:chromium',
         ],
         'priority':
