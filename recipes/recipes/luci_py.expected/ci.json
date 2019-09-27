@@ -105,8 +105,7 @@
     "cmd": [
       "git",
       "diff",
-      "--exit-code",
-      "HEAD"
+      "--exit-code"
     ],
     "cwd": "[START_DIR]/infra/luci/appengine/swarming/ui2",
     "env_prefixes": {

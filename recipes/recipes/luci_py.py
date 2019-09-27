@@ -42,13 +42,13 @@ def _step_swarming_ui_tests(api):
 
 
 def _steps_check_diffs_on_ui_assets(api):
-    api.step('build assets', ['make', 'release'])
-    diff_check = api.git('diff', '--exit-code', 'HEAD', ok_ret='any')
-    if diff_check.retcode != 0:
-      diff_check.presentation.status = 'FAILURE'
-      api.python.failing_step(
-          'ASSETS DIFF DETECTED',
-          ASSETS_DIFF_FAILURE_MESSAGE)
+  api.step('build assets', ['make', 'release'])
+  diff_check = api.git('diff', '--exit-code', ok_ret='any')
+  if diff_check.retcode != 0:
+    diff_check.presentation.status = 'FAILURE'
+    api.python.failing_step(
+        'ASSETS DIFF DETECTED',
+        ASSETS_DIFF_FAILURE_MESSAGE)
 
 
 def GenTests(api):
