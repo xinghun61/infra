@@ -5,13 +5,19 @@
 DEPS = [
   'depot_tools/bot_update',
   'depot_tools/gclient',
+  'depot_tools/git',
   'recipe_engine/buildbucket',
   'recipe_engine/context',
   'recipe_engine/path',
   'recipe_engine/platform',
   'recipe_engine/properties',
+  'recipe_engine/python',
   'recipe_engine/step',
 ]
+
+ASSETS_DIFF_FAILURE_MESSAGE = '''
+- Please check the diffs in the previous step
+- Please run `make release` to update assets '''
 
 
 def RunSteps(api):
@@ -20,17 +26,29 @@ def RunSteps(api):
   # TODO(tandrii): trigger tests without PRESUBMIT.py; https://crbug.com/917479
 
   if api.platform.is_linux:
-    RunSwarmingUITests(api)
+    _step_swarming_ui_tests(api)
 
 
-def RunSwarmingUITests(api):
-  ui_dir = api.path['checkout'].join('luci', 'appengine', 'swarming', 'ui2')
-  node_path = ui_dir.join('nodejs', 'bin')
-  paths_to_add = [api.path.pathsep.join([str(node_path)])]
-  env_prefixes = {'PATH': paths_to_add}
-  with api.context(env_prefixes=env_prefixes, cwd=ui_dir):
-    api.step('swarming-ui install node modules', ['npm', 'ci'])
-    api.step('swarming-ui run tests', ['make', 'test'])
+def _step_swarming_ui_tests(api):
+  with api.step.nest('swarming-ui'):
+    ui_dir = api.path['checkout'].join('luci', 'appengine', 'swarming', 'ui2')
+    node_path = ui_dir.join('nodejs', 'bin')
+    paths_to_add = [api.path.pathsep.join([str(node_path)])]
+    env_prefixes = {'PATH': paths_to_add}
+    with api.context(env_prefixes=env_prefixes, cwd=ui_dir):
+      api.step('install node modules', ['npm', 'ci'])
+      _steps_check_diffs_on_ui_assets(api)
+      api.step('run tests', ['make', 'test'])
+
+
+def _steps_check_diffs_on_ui_assets(api):
+    api.step('build assets', ['make', 'release'])
+    diff_check = api.git('diff', '--exit-code', 'HEAD', ok_ret='any')
+    if diff_check.retcode != 0:
+      diff_check.presentation.status = 'FAILURE'
+      api.python.failing_step(
+          'ASSETS DIFF DETECTED',
+          ASSETS_DIFF_FAILURE_MESSAGE)
 
 
 def GenTests(api):
@@ -48,4 +66,14 @@ def GenTests(api):
           'infra', 'try', 'Luci-py Presubmit',
           git_repo='https://chromium.googlesource.com/infra/luci/luci-py',
       )
+  )
+
+  # test case for failures
+  yield (
+      api.test('failure') +
+      api.buildbucket.try_build(
+          'infra', 'try', 'Luci-py Presubmit',
+          git_repo='https://chromium.googlesource.com/infra/luci/luci-py',
+      ) +
+      api.step_data('swarming-ui.git diff', retcode=1)
   )

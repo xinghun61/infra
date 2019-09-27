@@ -3,9 +3,51 @@
     "cmd": [
       "python",
       "-u",
+      "RECIPE_REPO[depot_tools]/gerrit_client.py",
+      "changes",
+      "--host",
+      "https://chromium-review.googlesource.com",
+      "--json_file",
+      "/path/to/tmp/json",
+      "--limit",
+      "1",
+      "-p",
+      "change=123456",
+      "-o",
+      "ALL_REVISIONS",
+      "-o",
+      "DOWNLOAD_COMMANDS"
+    ],
+    "env": {
+      "PATH": "<PATH>:RECIPE_REPO[depot_tools]"
+    },
+    "infra_step": true,
+    "name": "gerrit fetch current CL info",
+    "timeout": 600,
+    "~followup_annotations": [
+      "@@@STEP_LOG_LINE@json.output@[@@@",
+      "@@@STEP_LOG_LINE@json.output@  {@@@",
+      "@@@STEP_LOG_LINE@json.output@    \"branch\": \"master\", @@@",
+      "@@@STEP_LOG_LINE@json.output@    \"revisions\": {@@@",
+      "@@@STEP_LOG_LINE@json.output@      \"184ebe53805e102605d11f6b143486d15c23a09c\": {@@@",
+      "@@@STEP_LOG_LINE@json.output@        \"_number\": \"7\", @@@",
+      "@@@STEP_LOG_LINE@json.output@        \"ref\": \"refs/changes/56/123456/7\"@@@",
+      "@@@STEP_LOG_LINE@json.output@      }@@@",
+      "@@@STEP_LOG_LINE@json.output@    }@@@",
+      "@@@STEP_LOG_LINE@json.output@  }@@@",
+      "@@@STEP_LOG_LINE@json.output@]@@@",
+      "@@@STEP_LOG_END@json.output@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
       "RECIPE_MODULE[depot_tools::bot_update]/resources/bot_update.py",
       "--spec-path",
       "cache_dir = '[CACHE]/git'\nsolutions = [{'deps_file': '.DEPS.git', 'managed': True, 'name': 'infra', 'url': 'https://chromium.googlesource.com/infra/infra.git'}]",
+      "--patch_root",
+      "infra/luci",
       "--revision_mapping_file",
       "{\"got_revision\": \"infra/luci\"}",
       "--git-cache-dir",
@@ -14,6 +56,8 @@
       "[CLEANUP]/bot_update",
       "--output_json",
       "/path/to/tmp/json",
+      "--patch_ref",
+      "https://chromium.googlesource.com/infra/luci/luci-py@refs/heads/master:refs/changes/56/123456/7",
       "--revision",
       "infra@origin/master",
       "--revision",
@@ -41,7 +85,7 @@
       "@@@STEP_LOG_LINE@json.output@    }@@@",
       "@@@STEP_LOG_LINE@json.output@  }, @@@",
       "@@@STEP_LOG_LINE@json.output@  \"patch_failure\": false, @@@",
-      "@@@STEP_LOG_LINE@json.output@  \"patch_root\": \"infra\", @@@",
+      "@@@STEP_LOG_LINE@json.output@  \"patch_root\": \"infra/luci\", @@@",
       "@@@STEP_LOG_LINE@json.output@  \"properties\": {@@@",
       "@@@STEP_LOG_LINE@json.output@    \"got_revision\": \"2fed50a953d2415fd4185c8fb72bf4c9808a597e\", @@@",
       "@@@STEP_LOG_LINE@json.output@    \"got_revision_cp\": \"refs/heads/master@{#81833}\"@@@",
@@ -67,7 +111,10 @@
   },
   {
     "cmd": [],
-    "name": "swarming-ui"
+    "name": "swarming-ui",
+    "~followup_annotations": [
+      "@@@STEP_FAILURE@@@"
+    ]
   },
   {
     "cmd": [
@@ -117,13 +164,15 @@
     "infra_step": true,
     "name": "swarming-ui.git diff",
     "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@1@@@"
+      "@@@STEP_NEST_LEVEL@1@@@",
+      "@@@STEP_FAILURE@@@"
     ]
   },
   {
     "cmd": [
-      "make",
-      "test"
+      "python",
+      "-u",
+      "import sys; sys.exit(1)"
     ],
     "cwd": "[START_DIR]/infra/luci/appengine/swarming/ui2",
     "env_prefixes": {
@@ -131,12 +180,18 @@
         "[START_DIR]/infra/luci/appengine/swarming/ui2/nodejs/bin"
       ]
     },
-    "name": "swarming-ui.run tests",
+    "name": "swarming-ui.ASSETS DIFF DETECTED",
     "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@1@@@"
+      "@@@STEP_NEST_LEVEL@1@@@",
+      "@@@STEP_TEXT@<br/>- Please check the diffs in the previous step<br/>- Please run `make release` to update assets @@@",
+      "@@@STEP_FAILURE@@@"
     ]
   },
   {
+    "failure": {
+      "failure": {},
+      "humanReason": "Step('swarming-ui.ASSETS DIFF DETECTED') (retcode: 1)"
+    },
     "name": "$result"
   }
 ]

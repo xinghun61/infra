@@ -110,6 +110,10 @@
     ]
   },
   {
+    "cmd": [],
+    "name": "swarming-ui"
+  },
+  {
     "cmd": [
       "npm",
       "ci"
@@ -120,7 +124,45 @@
         "[START_DIR]/infra/luci/appengine/swarming/ui2/nodejs/bin"
       ]
     },
-    "name": "swarming-ui install node modules"
+    "name": "swarming-ui.install node modules",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "make",
+      "release"
+    ],
+    "cwd": "[START_DIR]/infra/luci/appengine/swarming/ui2",
+    "env_prefixes": {
+      "PATH": [
+        "[START_DIR]/infra/luci/appengine/swarming/ui2/nodejs/bin"
+      ]
+    },
+    "name": "swarming-ui.build assets",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "git",
+      "diff",
+      "--exit-code",
+      "HEAD"
+    ],
+    "cwd": "[START_DIR]/infra/luci/appengine/swarming/ui2",
+    "env_prefixes": {
+      "PATH": [
+        "[START_DIR]/infra/luci/appengine/swarming/ui2/nodejs/bin"
+      ]
+    },
+    "infra_step": true,
+    "name": "swarming-ui.git diff",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
   },
   {
     "cmd": [
@@ -133,7 +175,10 @@
         "[START_DIR]/infra/luci/appengine/swarming/ui2/nodejs/bin"
       ]
     },
-    "name": "swarming-ui run tests"
+    "name": "swarming-ui.run tests",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
   },
   {
     "name": "$result"
