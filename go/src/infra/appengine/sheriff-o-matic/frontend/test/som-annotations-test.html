@@ -257,7 +257,20 @@
       );
     });
 
-    test('save bug saves an annotation', function() {
+    test('click file bugs with defaults', (done) => {
+      flush(() => {
+        element._fileBugModel = [{ title: 'bug summary' }];
+        element._fileBugCallBack = null;
+        element._fileBugClicked();
+        expect(element.$.fileBug.$.projectId.value).equal('chromium');
+        expect(element.$.fileBug.$.priority.value).equal('Pri-2');
+        expect(element.$.fileBug.$.summary.value).equal('bug summary');
+
+        done();
+      });
+    });
+
+    test('save bug saves an annotation', function () {
       let sendStub = sinon.stub(element, 'sendAnnotation');
       sendStub.onCall(0).returns({
           then: (f) => {

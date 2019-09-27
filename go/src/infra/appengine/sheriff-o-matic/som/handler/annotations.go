@@ -368,6 +368,7 @@ func FileBugHandler(ctx *router.Context) {
 	rawJSON := struct {
 		Summary     string
 		Description string
+		ProjectID   string
 		Cc          []string
 		Priority    string
 		Labels      []string
@@ -394,7 +395,7 @@ func FileBugHandler(ctx *router.Context) {
 
 	fileBugReq := &monorail.InsertIssueRequest{
 		Issue: &monorail.Issue{
-			ProjectId:   "chromium",
+			ProjectId:   rawJSON.ProjectID,
 			Cc:          ccList,
 			Summary:     rawJSON.Summary,
 			Description: description,

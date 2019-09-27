@@ -22,6 +22,34 @@ class SomFileBug extends Polymer.mixinBehaviors([AnnotationManagerBehavior, Post
       },
       /** The bug's description. */
       description: String,
+      /** The bug's projectId. */
+      projectId: {
+        type: String,
+        value: 'chromium',
+      },
+      projectIds: {
+        type: Array,
+        value: [
+          {
+            label: 'chromium',
+          },
+          {
+            label: 'fuchsia',
+          },
+          {
+            label: 'gn',
+          },
+          {
+            label: 'monorail',
+          },
+          {
+            label: 'v8',
+          },
+          {
+            label: 'webrtc',
+          },
+        ],
+      },
       /** The bug's labels. */
       labels: Array,
       /** The bug's cc list. */
@@ -36,19 +64,19 @@ class SomFileBug extends Polymer.mixinBehaviors([AnnotationManagerBehavior, Post
         value: [
           {
             label: 'Pri-0',
-            tip: 'Emergency',
+            displayName: 'Pri-0 = Emergency',
           },
           {
             label: 'Pri-1',
-            tip: 'Need (for target milestone)',
+            displayName: 'Pri-1 = Need (for target milestone)',
           },
           {
             label: 'Pri-2',
-            tip: 'Want (for target milestone)',
+            displayName: 'Pri-2 = Want (for target milestone)',
           },
           {
             label: 'Pri-3',
-            tip: 'Not time critical',
+            displayName: 'Pri-3 = Not time critical',
           },
         ],
       },
@@ -102,25 +130,31 @@ class SomFileBug extends Polymer.mixinBehaviors([AnnotationManagerBehavior, Post
       let bugData = {
         Summary: this.$.summary.value,
         Description: this.$.description.value,
+        ProjectId: this.$.projectId.value,
         Cc: selectedUsers,
         Labels: labels,
       }
-
-      return this
-          .postJSON('/api/v1/filebug/', bugData)
-          .then(jsonParsePromise)
-          .catch((error) => {
-            this._fileBugErrorMessage = 'Error trying to create new issue: ' + error;
-          })
-          .then(this._fileBugResponse.bind(this));
+      return this.fileBugRequest(bugData);
     }
+  }
+
+  fileBugRequest(bugData) {
+    return this
+        .postJSON('/api/v1/filebug/', bugData)
+        .then(jsonParsePromise)
+        .catch((error) => {
+          this._fileBugErrorMessage = 'Error trying to create new issue: '
+            + error;
+        })
+        .then(this._fileBugResponse.bind(this));
   }
 
   _fileBugResponse(response) {
     if (response.issue && response.issue.id) {
       this.filedBugId = response.issue.id.toString();
     } else {
-       this._fileBugErrorMessage = 'Error, no issue or issue id found: ' + response;
+      this._fileBugErrorMessage = 'Error, no issue or issue id found: '
+        + response;
     }
 
     this.fire('success');
@@ -183,10 +217,6 @@ class SomFileBug extends Polymer.mixinBehaviors([AnnotationManagerBehavior, Post
 
   _ccUserSelected(e) {
     this.ccSuggestions = [];
-  }
-
-  _computePrioritySelected(itemValue, selectedValue) {
-    return itemValue === selectedValue;
   }
 }
 

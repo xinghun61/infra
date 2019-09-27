@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<script src="/bower_components/webcomponentsjs/webcomponents-loader.js"></script>
+<script src="/bower_components/web-component-tester/browser.js"></script>
+<link rel="import" href="/bower_components/iron-test-helpers/iron-test-helpers.html">
+<link rel="import" href="/elements/som-annotations/som-annotations.html">
+<link rel="import" href="/elements/som-annotations/som-file-bug.html">
+
+<test-fixture id="basic">
+  <template>
+    <som-file-bug></som-file-bug>
+  </template>
+</test-fixture>
+<script>
+  (function () {
+    'use strict';
+
+    suite('bugs', function () {
+      var element;
+
+      setup(function () {
+        element = fixture('basic');
+      });
+
+      test('file bug default', (done) => {
+        let sendStub = sinon.stub(element, 'fileBugRequest');
+        sendStub.onCall(0).returns({
+          then: (f) => {
+            f({ issue: { id: 111 } });
+          }
+        });
+        flush(() => {
+          element.open();
+          element.$.summary.value = 'bug summary';
+          element.$.description.value = 'som detected a failure'
+          element.$.labels.value = 'foo,bar';
+          expect(element.$.projectId.value).equals('chromium');
+          element._fileBug();
+          let expectedData = {
+            Summary: element.$.summary.value,
+            Description: element.$.description.value,
+            ProjectId: 'chromium',
+            Cc: [],
+            Labels: ['foo', 'bar', 'Pri-2'],
+          }
+          sinon.assert.calledWith(sendStub, expectedData);
+
+          done();
+        });
+      });
+      test('file bug with different priority and projectId', (done) => {
+        let sendStub = sinon.stub(element, 'fileBugRequest');
+        sendStub.onCall(0).returns({
+          then: (f) => {
+            f({ issue: { id: 111 } });
+          }
+        });
+        flush(() => {
+          element.open();
+          element.$.summary.value = 'bug summary';
+          element.$.description.value = 'som detected a failure'
+          element.$.labels.value = 'foo,bar';
+          element.$.priority.value = 'Pri-0';
+          element.$.projectId.value = 'fuchsia';
+          element._fileBug();
+          let expectedData = {
+            Summary: element.$.summary.value,
+            Description: element.$.description.value,
+            ProjectId: 'fuchsia',
+            Cc: [],
+            Labels: ['foo', 'bar', 'Pri-0'],
+          }
+          sinon.assert.calledWith(sendStub, expectedData);
+          done();
+        });
+      });
+    });
+  })();
+
+</script>

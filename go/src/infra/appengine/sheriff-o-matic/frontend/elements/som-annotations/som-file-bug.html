@@ -3,6 +3,9 @@
 
 <link rel="import" href="../../bower_components/paper-dialog/paper-dialog.html">
 <link rel="import" href="../../bower_components/paper-dialog-scrollable/paper-dialog-scrollable.html">
+<link rel="import" href="../../bower_components/paper-dropdown-menu/paper-dropdown-menu.html">
+<link rel="import" href="../../bower_components/paper-listbox/paper-listbox.html">
+<link rel="import" href="../../bower_components/neon-animation/web-animations.html">
 
 <link rel="import" href="../../elements/som-input-styles.html">
 <link rel="import" href="../../elements/som-utility-styles.html">
@@ -13,9 +16,11 @@
       .buttons {
         margin-top: 1em;
       }
+
       .buttons button {
         font-size: 1.1em;
       }
+
       chops-user-input {
         display: block;
       }
@@ -25,33 +30,48 @@
       <div class="error">[[_fileBugErrorMessage]]</div>
       <paper-dialog-scrollable>
         <paper-input id="summary" label="Summary" value="[[summary]]"></paper-input>
-        <paper-textarea id="description" always-float-label label="Description" value="[[description]]"></paper-textarea>
-        <chops-user-input
-            id="cc" label="CC"
-            input-value="[[_arrayToString(cc)]]"
-            suggestions="[[ccSuggestions]]"
-            on-input="_ccChanged"
-            on-user-selected="_ccUserSelected"
-            multiple></chops-user-input>
-        <select value="{{priority::change}}" id="priority">
-          <template is="dom-repeat" items="[[priorities]]">
-            <option value="[[item.label]]" selected$="[[_computePrioritySelected(item.label, priority)]]">[[item.label]] = [[item.tip]]</option>
-          </template>
-        </select>
+        <chops-user-input id="cc" label="CC" input-value="[[_arrayToString(cc)]]" suggestions="[[ccSuggestions]]"
+          on-input="_ccChanged" on-user-selected="_ccUserSelected" multiple></chops-user-input>
+        <paper-dropdown-menu id="priority" label="Priority" value="{{priority}}" alwaysFloatLabel>
+          <paper-listbox class="dropdown-content" slot="dropdown-content" attr-for-selected="label">
+            <template is="dom-repeat" items="[[priorities]]">
+              <paper-item label="[[item.label]]">
+                [[item.displayName]]
+              </paper-item>
+            </template>
+          </paper-listbox>
+        </paper-dropdown-menu>
+
+        <paper-dropdown-menu id="projectId" label="Project" value="{{projectId}}" always-float-label>
+          <paper-listbox class="dropdown-content" slot="dropdown-content">
+            <template is="dom-repeat" items="[[projectIds]]">
+              <paper-item>
+                [[item.label]]
+              </paper-item>
+            </template>
+          </paper-listbox>
+        </paper-dropdown-menu>
+
         <paper-input id="labels" label="Labels (separate by commas)" value="[[_arrayToString(labels)]]"></paper-input>
+        <paper-textarea id="description" always-float-label label="Description" value="[[description]]">
+        </paper-textarea>
       </paper-dialog-scrollable>
       <div class="buttons">
         <button dialog-dismiss>
           Close
         </button>
-        <button class="emphasized"  on-tap="_fileBug">File Bug</button>
+        <button class="emphasized" on-tap="_fileBug">File Bug</button>
       </div>
     </paper-dialog>
 
 
 
     <paper-dialog id="bugFiledDialog" with-backdrop>
-      <div>Successfully linked new bug <a href$="https://crbug.com/[[filedBugId]]" target="_blank"> Bug [[filedBugId]]</a> to alert.</div>
+      <div>
+        Successfully linked new bug
+        <a href$="https://crbug.com/[[projectId]]/[[filedBugId]]" target="_blank">
+          Bug [[filedBugId]]</a> to alert.
+      </div>
       <div class="buttons">
         <button dialog-dismiss>
           Close
@@ -60,4 +80,4 @@
     </paper-dialog>
   </template>
   <script src="som-file-bug.js"></script>
-<dom-module>
+  <dom-module>
