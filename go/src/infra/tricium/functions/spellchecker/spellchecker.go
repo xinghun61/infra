@@ -73,6 +73,7 @@ var (
 		"tast",        // Name of a ChromeOS test
 		"wont",        // contraction, may appear in variable names, also a word
 		"wontfix",     // Monorail bug status
+		"maks",        // given name
 	}
 	textFileExts = []string{".txt", ".md"}
 
