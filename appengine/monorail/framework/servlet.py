@@ -755,7 +755,7 @@ class Servlet(webapp2.RequestHandler):
         'app_version': app_version,
         'gapi_client_id': settings.gapi_client_id,
         'viewing_user_page': ezt.boolean(False),
-        'other_ui_path': None,
+        'old_ui_url': None,
 
         'is_member': ezt.boolean(False),
         }

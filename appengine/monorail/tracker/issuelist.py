@@ -162,8 +162,8 @@ class IssueList(servlet.Servlet):
         mr.cnxn, mr.auth.user_id)
 
     new_ui_url = ''
-    if mr.mode == 'grid':
-      new_ui_url = self.request.url.replace('list', 'list_new')
+    if hasattr(self.request, 'url'):
+      new_ui_url = self.request.url.replace('issues/list', 'issues/list_new')
 
     # monorail:6336, needed for <ezt-show-columns-connector>
     phase_names = _GetAllPhaseNames(pipeline.visible_results)

@@ -15,14 +15,6 @@
   versionBase="[version_base]"
 ></mr-app>
 
-<div class"new-link" style="text-align: center">
-  [if-any is_grid]
-    <a href=[old_ui_url] style="text-decoration: none">
-      View in the old UI
-    </a>
-  [end]
-</div>
-
 [include "../framework/polymer-footer.ezt"]
 
 [if-any local_id]

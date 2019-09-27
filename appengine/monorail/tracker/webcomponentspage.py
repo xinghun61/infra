@@ -37,18 +37,15 @@ class WebComponentsPage(servlet.Servlet):
     Returns:
       Dict of values used by EZT for rendering the page.
     """
-    # Create link to view in old UI for grid view
-    is_grid = ''
+    # Create link to view in old UI for the list view pages.
     old_ui_url = ''
-    if mr.mode == 'grid':
-      is_grid = 'grid'
-      old_ui_url = self.request.url.replace('/list_new', '/list')
+    if self.request.url.find('issues/list_new') >= 0:
+      old_ui_url = self.request.url.replace('issues/list_new', 'issues/list')
 
     return {
        'local_id': mr.local_id,
-       'is_grid': is_grid,
        'old_ui_url': old_ui_url,
-        }
+      }
 
 
 class IssueDetailRedirect(servlet.Servlet):

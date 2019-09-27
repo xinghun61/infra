@@ -1,16 +1,10 @@
 [# This template displays the part of the footer used by both web components and EZT pages. ]
 
 <div id="footer">
-  [if-any other_ui_path]
-    [if-any local_id]
-      <a href="/p/[projectname]/[other_ui_path]?id=[local_id]">
-        [is other_ui_path "issues/detail_ezt"]
-          View in old UI
-        [else]
-          View in new UI
-        [end]
-      </a>
-    [end]
+  [if-any old_ui_url]
+    <a href="[old_ui_url]">
+      View in the old UI
+    </a>
   [end]
 
   <a href="https://bugs.chromium.org/p/monorail/adminIntro" title="Monorail [app_version]">About Monorail</a>
