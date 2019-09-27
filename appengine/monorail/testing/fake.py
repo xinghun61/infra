@@ -1767,56 +1767,6 @@ class IssueService(object):
       highest = max([0] + [issue.local_id for issue in issue_dict.values()])
       return highest
 
-  def ApplyIssueComment(
-      self, cnxn, services, reporter_id, project_id,
-      local_id, summary, status, owner_id, cc_ids, labels, field_values,
-      component_ids, blocked_on, blocking, dangling_blocked_on_refs,
-      dangling_blocking_refs, merged_into, index_now=False,
-      page_gen_ts=None, comment=None, inbound_message=None, attachments=None,
-      kept_attachments=None, is_description=False, timestamp=None):
-    """Feel free to implement a spec-compliant return value."""
-    issue = self.issues_by_project[project_id][local_id]
-    amendments = []
-
-    if summary and summary != issue.summary:
-      issue.summary = summary
-      amendments.append(tracker_bizobj.MakeSummaryAmendment(
-          summary, issue.summary))
-
-    if status and status != issue.status:
-      issue.status = status
-      amendments.append(tracker_bizobj.MakeStatusAmendment(
-          status, issue.status))
-
-    issue.owner_id = owner_id
-    issue.cc_ids = cc_ids
-    issue.labels = labels
-    issue.field_values = field_values
-    issue.component_ids = component_ids
-
-    issue.blocked_on_iids.extend(blocked_on)
-    next_rank = sys.maxint
-    if issue.blocked_on_ranks:
-      next_rank = issue.blocked_on_ranks[-1] - 1
-    issue.blocked_on_ranks.extend(
-        list(range(next_rank, next_rank - len(blocked_on), -1)))
-
-    issue.blocking_iids.extend(blocking)
-    issue.dangling_blocked_on_refs.extend(dangling_blocked_on_refs)
-    issue.dangling_blocking_refs.extend(dangling_blocking_refs)
-
-    if merged_into is not None:
-      issue.merged_into = merged_into
-
-    if amendments or (comment and comment.strip()) or attachments:
-      comment_pb = self.CreateIssueComment(
-          cnxn, issue, reporter_id, comment,
-          amendments=amendments, inbound_message=inbound_message)
-    else:
-      comment_pb = None
-
-    return amendments, comment_pb
-
   def _MakeIssueComment(
       self, project_id, user_id, content, inbound_message=None,
       amendments=None, attachments=None, kept_attachments=None, timestamp=None,

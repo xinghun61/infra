@@ -829,16 +829,12 @@ def MergeCCsAndAddCommentMultipleIssues(
   target_cc = merge_into_issue.cc_ids
   add_cc = [user_id for user_id in source_cc if user_id not in target_cc]
 
-  _, merge_comment_pb = services.issue.ApplyIssueComment(
-      mr.cnxn, services, mr.auth.user_id,
-      merge_into_issue.project_id, merge_into_issue.local_id,
-      merge_into_issue.summary, merge_into_issue.status,
-      merge_into_issue.owner_id, list(target_cc) + list(add_cc),
-      merge_into_issue.labels, merge_into_issue.field_values,
-      merge_into_issue.component_ids, merge_into_issue.blocked_on_iids,
-      merge_into_issue.blocking_iids, merge_into_issue.dangling_blocked_on_refs,
-      merge_into_issue.dangling_blocking_refs, merge_into_issue.merged_into,
-      index_now=False, comment=merge_comment)
+  config = services.config.GetProjectConfig(
+      mr.cnxn, merge_into_issue.project_id)
+  delta = tracker_pb2.IssueDelta(cc_ids_add=add_cc)
+  _, merge_comment_pb = services.issue.DeltaUpdateIssue(
+    mr.cnxn, services, mr.auth.user_id, merge_into_issue.project_id,
+    config, merge_into_issue, delta, index_now=False, comment=merge_comment)
 
   return merge_comment_pb
 
