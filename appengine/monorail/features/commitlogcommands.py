@@ -19,12 +19,15 @@ from __future__ import absolute_import
 import logging
 import re
 
+from businesslogic import work_env
 from features import commands
 from features import send_notifications
 from framework import emailfmt
 from framework import exceptions
 from framework import framework_bizobj
 from framework import framework_helpers
+from framework import permissions
+from proto import tracker_pb2
 
 
 # Actions have separate 'Parse' and 'Run' implementations to allow better
@@ -106,7 +109,7 @@ class IssueAction(object):
 
     return has_commands
 
-  def Run(self, cnxn, services, allow_edit=True):
+  def Run(self, mc, services):
     """Execute this action."""
     raise NotImplementedError()
 
@@ -118,59 +121,42 @@ class UpdateIssueAction(IssueAction):
     super(UpdateIssueAction, self).__init__()
     self.local_id = local_id
 
-  def Run(self, cnxn, services, allow_edit=True):
+  def Run(self, mc, services):
     """Updates an issue based on the parsed commands."""
     try:
       issue = services.issue.GetIssueByLocalID(
-          cnxn, self.project.project_id, self.local_id)
+          mc.cnxn, self.project.project_id, self.local_id, use_cache=False)
     except exceptions.NoSuchIssueException:
       return  # Issue does not exist, so do nothing
 
-    old_owner_id = issue.owner_id
-    new_summary = self.parser.summary or issue.summary
+    delta = tracker_pb2.IssueDelta()
 
-    if self.parser.status is None:
-      new_status = issue.status
-    else:
-      new_status = self.parser.status
+    allow_edit = permissions.CanEditIssue(
+        mc.auth.effective_ids, mc.perms, self.project, issue)
 
-    if self.parser.owner_id is None:
-      new_owner_id = issue.owner_id
-    else:
-      new_owner_id = self.parser.owner_id
+    if allow_edit:
+      delta.summary = self.parser.summary or issue.summary
+      if self.parser.status is None:
+        delta.status = issue.status
+      else:
+        delta.status = self.parser.status
 
-    new_cc_ids = [cc for cc in list(issue.cc_ids) + list(self.parser.cc_add)
-                  if cc not in self.parser.cc_remove]
-    (new_labels, _update_add, _update_remove) = framework_bizobj.MergeLabels(
-         issue.labels, self.parser.labels_add,
-         self.parser.labels_remove, self.config)
+      if self.parser.owner_id is None:
+        delta.owner_id = issue.owner_id
+      else:
+        delta.owner_id = self.parser.owner_id
 
-    new_field_values = issue.field_values  # TODO(jrobbins): edit custom ones
+      delta.cc_ids_add = list(self.parser.cc_add)
+      delta.cc_ids_remove = list(self.parser.cc_remove)
+      delta.labels_add = self.parser.labels_add
+      delta.labels_remove = self.parser.labels_remove
+      # TODO(jrobbins): allow editing of custom fields
 
-    if not allow_edit:
-      # If user can't edit, then only consider the plain-text comment,
-      # and set all other fields back to their original values.
-      logging.info('Processed reply from user who can not edit issue')
-      new_summary = issue.summary
-      new_status = issue.status
-      new_owner_id = issue.owner_id
-      new_cc_ids = issue.cc_ids
-      new_labels = issue.labels
-      new_field_values = issue.field_values
+    with work_env.WorkEnv(mc, services) as we:
+      we.UpdateIssue(
+          issue, delta, self.description, inbound_message=self.inbound_message)
 
-    amendments, comment_pb = services.issue.ApplyIssueComment(
-        cnxn, services, self.commenter_id,
-        self.project.project_id, issue.local_id, new_summary, new_status,
-        new_owner_id, new_cc_ids, new_labels, new_field_values,
-        issue.component_ids, issue.blocked_on_iids, issue.blocking_iids,
-        issue.dangling_blocked_on_refs, issue.dangling_blocking_refs,
-        issue.merged_into, comment=self.description,
-        inbound_message=self.inbound_message)
+    logging.info('Updated issue %s:%s',
+                 self.project.project_name, issue.local_id)
 
-    logging.info('Updated issue %s:%s w/ amendments %r',
-                 self.project.project_name, issue.local_id, amendments)
-
-    if amendments or self.description:  # Avoid completely empty comments.
-      send_notifications.PrepareAndSendIssueChangeNotification(
-          issue.issue_id, self.hostport, self.commenter_id,
-          old_owner_id=old_owner_id, comment_id=comment_pb.id)
+    # Note: notifications are generated in work_env.

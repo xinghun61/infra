@@ -1435,7 +1435,7 @@ class IssueService(object):
       config, issue, delta, index_now=False, comment=None, attachments=None,
       iids_to_invalidate=None, rules=None, predicate_asts=None,
       is_description=False, timestamp=None, kept_attachments=None,
-      importer_id=None):
+      importer_id=None, inbound_message=None):
     """Update the issue in the database and return a set of update tuples.
 
     Args:
@@ -1464,6 +1464,8 @@ class IssueService(object):
           a change to the issue description
       importer_id: optional ID of user ID for an API client that is importing
           issues and attributing them to other users.
+      inbound_message: optional string full text of an email that caused
+          this comment to be added.
 
     Returns:
       A tuple (amendments, comment_pb) with a list of Amendment PBs that
@@ -1530,7 +1532,7 @@ class IssueService(object):
         cnxn, issue, reporter_id, comment, amendments=amendments,
         is_description=is_description, attachments=attachments, commit=False,
         kept_attachments=kept_attachments, timestamp=timestamp,
-        importer_id=importer_id)
+        importer_id=importer_id, inbound_message=inbound_message)
     self._UpdateIssuesModified(
         cnxn, iids_to_invalidate, modified_timestamp=issue.modified_timestamp,
         invalidate=invalidate)

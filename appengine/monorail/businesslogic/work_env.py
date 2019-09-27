@@ -1161,7 +1161,7 @@ class WorkEnv(object):
 
   def UpdateIssue(
       self, issue, delta, comment_content, attachments=None, send_email=True,
-      is_description=False, kept_attachments=None):
+      is_description=False, kept_attachments=None, inbound_message=None):
     """Update an issue with a set of changes and add a comment.
 
     Args:
@@ -1173,7 +1173,9 @@ class WorkEnv(object):
       is_description: True if this adds a new issue description.
       kept_attachments: This should be a list of int attachment ids for
           attachments kept from previous descriptions, if the comment is
-          a change to the issue description
+          a change to the issue description.
+      inbound_message: optional string full text of an email that caused
+          this comment to be added.
 
     Returns:
       Nothing.
@@ -1251,7 +1253,7 @@ class WorkEnv(object):
           self.mc.cnxn, self.services, self.mc.auth.user_id, issue.project_id,
           config, issue, delta, comment=comment_content,
           attachments=attachments, is_description=is_description,
-          kept_attachments=kept_attachments)
+          kept_attachments=kept_attachments, inbound_message=inbound_message)
 
     with self.mc.profiler.Phase('Following up after issue update'):
       if delta.merged_into:

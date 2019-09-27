@@ -1909,7 +1909,7 @@ class IssueService(object):
       config, issue, delta, index_now=False, comment=None, attachments=None,
       iids_to_invalidate=None, rules=None, predicate_asts=None,
       is_description=False, timestamp=None, kept_attachments=None,
-      importer_id=None):
+      importer_id=None, inbound_message=None):
     # Return a bogus amendments list if any of the fields changed
     amendments, _ = tracker_bizobj.ApplyIssueDelta(
         cnxn, self, issue, delta, config)
@@ -1920,7 +1920,8 @@ class IssueService(object):
     comment_pb = self.CreateIssueComment(
         cnxn, issue, reporter_id, comment, attachments=attachments,
         amendments=amendments, is_description=is_description,
-        kept_attachments=kept_attachments, importer_id=importer_id)
+        kept_attachments=kept_attachments, importer_id=importer_id,
+        inbound_message=inbound_message)
 
     self.indexer_called = index_now
     return amendments, comment_pb

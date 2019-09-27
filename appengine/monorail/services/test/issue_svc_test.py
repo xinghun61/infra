@@ -1227,7 +1227,8 @@ class IssueServiceTest(unittest.TestCase):
     self.services.issue.CreateIssueComment(
         self.cnxn, issue, commenter_id, 'comment text', attachments=None,
         amendments=amendments, commit=False, is_description=False,
-        kept_attachments=None, importer_id=None, timestamp=ANY)
+        kept_attachments=None, importer_id=None, timestamp=ANY,
+        inbound_message=None)
     self.services.issue._UpdateIssuesModified(
         self.cnxn, {issue.issue_id, target_issue.issue_id},
         modified_timestamp=self.now, invalidate=True)
@@ -1276,7 +1277,8 @@ class IssueServiceTest(unittest.TestCase):
     self.services.issue.CreateIssueComment(
         self.cnxn, issue, commenter_id, 'comment text', attachments=None,
         amendments=amendments, commit=False, is_description=False,
-        kept_attachments=None, importer_id=None, timestamp=ANY)
+        kept_attachments=None, importer_id=None, timestamp=ANY,
+        inbound_message=None)
     # Call to find added blockedon issues.
     self.services.issue.GetIssues(
         self.cnxn, [blockedon_issue.issue_id]).AndReturn([blockedon_issue])
@@ -1338,7 +1340,8 @@ class IssueServiceTest(unittest.TestCase):
     self.services.issue.CreateIssueComment(
         self.cnxn, issue, commenter_id, 'comment text', attachments=None,
         amendments=amendments, commit=False, is_description=False,
-        kept_attachments=None, importer_id=None, timestamp=ANY)
+        kept_attachments=None, importer_id=None, timestamp=ANY,
+        inbound_message=None)
     # Call to find added blockedon issues.
     self.services.issue.GetIssues(self.cnxn, []).AndReturn([])
     # Call to find removed blockedon issues.
@@ -1392,7 +1395,8 @@ class IssueServiceTest(unittest.TestCase):
     self.services.issue.CreateIssueComment(
         self.cnxn, issue, commenter_id, 'a comment', attachments=None,
         amendments=[], commit=False, is_description=False,
-        kept_attachments=None, importer_id=333, timestamp=ANY).AndReturn(
+        kept_attachments=None, importer_id=333, timestamp=ANY,
+        inbound_message=None).AndReturn(
           tracker_pb2.IssueComment(content='a comment', importer_id=333))
     self.services.issue.GetIssues(self.cnxn, []).AndReturn([])
     self.services.issue.GetIssues(self.cnxn, []).AndReturn([])

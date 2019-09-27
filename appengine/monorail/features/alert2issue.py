@@ -171,7 +171,7 @@ def ProcessEmailNotification(
         services, strip_quoted_lines=True)
 
     if commands_found:
-      uia.Run(cnxn, services, allow_edit=True)
+      uia.Run(mc, services)
 
 
 def _GetComponentIDs(proj_config, components):

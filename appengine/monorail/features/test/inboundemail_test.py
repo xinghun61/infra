@@ -24,6 +24,7 @@ from features import commitlogcommands
 from features import inboundemail
 from framework import authdata
 from framework import emailfmt
+from framework import monorailcontext
 from framework import permissions
 from proto import project_pb2
 from proto import tracker_pb2
@@ -109,6 +110,7 @@ class InboundEmailTest(unittest.TestCase):
     self.assertIsNone(ret)
 
   def testProcessMail_ProjectNotLive(self):
+    self.services.user.TestAddUser('user@example.com', 111)
     self.project.state = project_pb2.ProjectState.DELETABLE
     email_tasks = self.inbound.ProcessMail(self.msg, self.project_addr)
     email_task = email_tasks[0]
@@ -116,6 +118,7 @@ class InboundEmailTest(unittest.TestCase):
     self.assertEquals('Project not found', email_task['subject'])
 
   def testProcessMail_ProjectInboundEmailDisabled(self):
+    self.services.user.TestAddUser('user@example.com', 111)
     self.project.process_inbound_email = False
     email_tasks = self.inbound.ProcessMail(self.msg, self.project_addr)
     email_task = email_tasks[0]
@@ -124,6 +127,7 @@ class InboundEmailTest(unittest.TestCase):
                       email_task['subject'])
 
   def testProcessMail_NoRefHeader(self):
+    self.services.user.TestAddUser('user@example.com', 111)
     self.mox.StubOutWithMock(emailfmt, 'ValidateReferencesHeader')
     emailfmt.ValidateReferencesHeader(
         mox.IgnoreArg(), self.project, mox.IgnoreArg(),
@@ -142,12 +146,7 @@ class InboundEmailTest(unittest.TestCase):
                       email_task['subject'])
 
   def testProcessMail_NoAccount(self):
-    self.mox.StubOutWithMock(emailfmt, 'ValidateReferencesHeader')
-    emailfmt.ValidateReferencesHeader(
-        mox.IgnoreArg(), self.project, mox.IgnoreArg(),
-        mox.IgnoreArg()).AndReturn(True)
-    self.mox.ReplayAll()
-
+    # Note: not calling TestAddUser().
     email_tasks = self.inbound.ProcessMail(self.msg, self.project_addr)
     self.mox.VerifyAll()
     self.assertEquals(1, len(email_tasks))
@@ -157,23 +156,13 @@ class InboundEmailTest(unittest.TestCase):
                       email_task['subject'])
 
   def testProcessMail_BannedAccount(self):
-    self.services.user.TestAddUser('user@example.com', 111)
-    class MockAuthData:
-      def __init__(self):
-        self.user_pb = user_pb2.MakeUser(111)
-        self.effective_ids = set([1, 2, 3])
-        self.user_id = 111
-    mock_auth_data = MockAuthData()
-    mock_auth_data.user_pb.banned = 'banned'
+    user_pb = self.services.user.TestAddUser('user@example.com', 111)
+    user_pb.banned = 'banned'
 
     self.mox.StubOutWithMock(emailfmt, 'ValidateReferencesHeader')
     emailfmt.ValidateReferencesHeader(
         mox.IgnoreArg(), self.project, mox.IgnoreArg(),
         mox.IgnoreArg()).AndReturn(True)
-    self.mox.StubOutWithMock(authdata.AuthData, 'FromEmail')
-    authdata.AuthData.FromEmail(
-        mox.IgnoreArg(), 'user@example.com', self.services,
-        autocreate=False).AndReturn(mock_auth_data)
     self.mox.ReplayAll()
 
     email_tasks = self.inbound.ProcessMail(self.msg, self.project_addr)
@@ -186,33 +175,16 @@ class InboundEmailTest(unittest.TestCase):
 
   def testProcessMail_Success(self):
     self.services.user.TestAddUser('user@example.com', 111)
-    class MockAuthData:
-      def __init__(self):
-        self.user_pb = user_pb2.MakeUser(111)
-        self.effective_ids = set([1, 2, 3])
-        self.user_id = 111
-    mock_auth_data = MockAuthData()
 
     self.mox.StubOutWithMock(emailfmt, 'ValidateReferencesHeader')
     emailfmt.ValidateReferencesHeader(
         mox.IgnoreArg(), self.project, mox.IgnoreArg(),
         mox.IgnoreArg()).AndReturn(True)
 
-    self.mox.StubOutWithMock(authdata.AuthData, 'FromEmail')
-    authdata.AuthData.FromEmail(
-        mox.IgnoreArg(), 'user@example.com', self.services,
-        autocreate=False).AndReturn(mock_auth_data)
-
-    self.mox.StubOutWithMock(permissions, 'GetPermissions')
-    permissions.GetPermissions(
-        mock_auth_data.user_pb, mock_auth_data.effective_ids,
-        self.project).AndReturn('test permissions')
-
     self.mox.StubOutWithMock(self.inbound, 'ProcessIssueReply')
     self.inbound.ProcessIssueReply(
         mox.IgnoreArg(), self.project, 123, self.project_addr,
-        'user@example.com', 111, mock_auth_data.effective_ids,
-        'test permissions', 'awesome!')
+        'awesome!')
 
     self.mox.ReplayAll()
 
@@ -241,6 +213,8 @@ class InboundEmailTest(unittest.TestCase):
         self.user_pb = user_pb2.MakeUser(111)
         self.effective_ids = set([1, 2, 3])
         self.user_id = 111
+        self.email = 'user@example.com'
+
     mock_auth_data = MockAuthData()
     self.mox.StubOutWithMock(authdata.AuthData, 'FromEmail')
     authdata.AuthData.FromEmail(
@@ -260,9 +234,12 @@ class InboundEmailTest(unittest.TestCase):
 
   def testProcessIssueReply_NoIssue(self):
     nonexistant_local_id = 200
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='user@example.com')
+    mc.LookupLoggedInUserPerms(self.project)
+
     email_tasks = self.inbound.ProcessIssueReply(
-        self.cnxn, self.project, nonexistant_local_id, self.project_addr,
-        'user@example.com', 111, [1, 2, 3], permissions.USER_PERMISSIONSET,
+        mc, self.project, nonexistant_local_id, self.project_addr,
         'awesome!')
     self.assertEquals(1, len(email_tasks))
     email_task = email_tasks[0]
@@ -273,9 +250,12 @@ class InboundEmailTest(unittest.TestCase):
 
   def testProcessIssueReply_DeletedIssue(self):
     self.issue.deleted = True
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='user@example.com')
+    mc.LookupLoggedInUserPerms(self.project)
+
     email_tasks = self.inbound.ProcessIssueReply(
-        self.cnxn, self.project, self.issue.local_id, self.project_addr,
-        'user@example.com', 111, [1, 2, 3], permissions.USER_PERMISSIONSET,
+        mc, self.project, self.issue.local_id, self.project_addr,
         'awesome!')
     self.assertEquals(1, len(email_tasks))
     email_task = email_tasks[0]
@@ -285,9 +265,13 @@ class InboundEmailTest(unittest.TestCase):
                       email_task['subject'])
 
   def VerifyUserHasNoPerm(self, perms):
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='user@example.com')
+    mc.perms = perms
+
     email_tasks = self.inbound.ProcessIssueReply(
-        self.cnxn, self.project, self.issue.local_id, self.project_addr,
-        'user@example.com', 111, [1, 2, 3], perms, 'awesome!')
+        mc, self.project, self.issue.local_id, self.project_addr,
+        'awesome!')
     self.assertEquals(1, len(email_tasks))
     email_task = email_tasks[0]
     self.assertEquals('user@example.com', email_task['to'])
@@ -305,7 +289,10 @@ class InboundEmailTest(unittest.TestCase):
     self.VerifyUserHasNoPerm(permissions.READ_ONLY_PERMISSIONSET)
 
   def testProcessIssueReply_NoEditIssuePerm(self):
-    perms = permissions.USER_PERMISSIONSET
+    self.services.user.TestAddUser('user@example.com', 111)
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='user@example.com')
+    mc.perms = permissions.USER_PERMISSIONSET
     mock_uia = commitlogcommands.UpdateIssueAction(self.issue.local_id)
 
     self.mox.StubOutWithMock(commitlogcommands, 'UpdateIssueAction')
@@ -316,19 +303,21 @@ class InboundEmailTest(unittest.TestCase):
         self.cnxn, self.project.project_name, 111, ['awesome!'], self.services,
         strip_quoted_lines=True)
     self.mox.StubOutWithMock(mock_uia, 'Run')
-    # Allow edit is false here because the permission set does not contain
-    # EDIT_ISSUE.
-    mock_uia.Run(self.cnxn, self.services, allow_edit=False)
+    # mc.perms does not contain permission EDIT_ISSUE.
+    mock_uia.Run(mc, self.services)
 
     self.mox.ReplayAll()
     ret = self.inbound.ProcessIssueReply(
-        self.cnxn, self.project, self.issue.local_id, self.project_addr,
-        'from_addr', 111, [1, 2, 3], perms, 'awesome!')
+        mc, self.project, self.issue.local_id, self.project_addr,
+        'awesome!')
     self.mox.VerifyAll()
     self.assertIsNone(ret)
 
   def testProcessIssueReply_Success(self):
-    perms = permissions.COMMITTER_ACTIVE_PERMISSIONSET
+    self.services.user.TestAddUser('user@example.com', 111)
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='user@example.com')
+    mc.perms = permissions.COMMITTER_ACTIVE_PERMISSIONSET
     mock_uia = commitlogcommands.UpdateIssueAction(self.issue.local_id)
 
     self.mox.StubOutWithMock(commitlogcommands, 'UpdateIssueAction')
@@ -339,12 +328,12 @@ class InboundEmailTest(unittest.TestCase):
         self.cnxn, self.project.project_name, 111, ['awesome!'], self.services,
         strip_quoted_lines=True)
     self.mox.StubOutWithMock(mock_uia, 'Run')
-    mock_uia.Run(self.cnxn, self.services, allow_edit=True)
+    mock_uia.Run(mc, self.services)
 
     self.mox.ReplayAll()
     ret = self.inbound.ProcessIssueReply(
-        self.cnxn, self.project, self.issue.local_id, self.project_addr,
-        'from_addr', 111, [1, 2, 3], perms, 'awesome!')
+        mc, self.project, self.issue.local_id, self.project_addr,
+        'awesome!')
     self.mox.VerifyAll()
     self.assertIsNone(ret)
 

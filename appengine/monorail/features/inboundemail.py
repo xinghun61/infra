@@ -134,6 +134,14 @@ class InboundEmail(webapp2.RequestHandler):
       self.services.cache_manager.DoDistributedInvalidation(cnxn)
 
     project = self.services.project.GetProjectByName(cnxn, project_name)
+    # Authenticate the author_addr and perm check.
+    try:
+      mc = monorailcontext.MonorailContext(
+          self.services, cnxn=cnxn, requester=author_addr, autocreate=is_alert)
+      mc.LookupLoggedInUserPerms(project)
+    except exceptions.NoSuchUserException:
+      return _MakeErrorMessageReplyTask(
+          project_addr, error_addr, self._templates['no_account'])
 
     # TODO(zhangtiff): Add separate email templates for alert error cases.
     if not project or project.state != project_pb2.ProjectState.LIVE:
@@ -158,59 +166,39 @@ class InboundEmail(webapp2.RequestHandler):
         return _MakeErrorMessageReplyTask(
             project_addr, from_addr, self._templates['not_a_reply'])
 
-    # Authenticate the author_addr and perm check.
     # Note: If the issue summary line is changed, a new thread is created,
     # and replies to the old thread will no longer work because the subject
     # line hash will not match, which seems reasonable.
-    try:
-      auth = authdata.AuthData.FromEmail(
-          cnxn, author_addr, self.services, autocreate=is_alert)
-    except exceptions.NoSuchUserException:
-      auth = None
-    if not auth or not auth.user_id:
-      return _MakeErrorMessageReplyTask(
-          project_addr, error_addr, self._templates['no_account'])
 
-    if auth.user_pb.banned:
+    if mc.auth.user_pb.banned:
       logging.info('Banned user %s tried to post to %s',
                    from_addr, project_addr)
       return _MakeErrorMessageReplyTask(
           project_addr, error_addr, self._templates['banned'])
 
-    perms = permissions.GetPermissions(
-        auth.user_pb, auth.effective_ids, project)
-
     # If the email is an alert, switch to the alert handling path.
     if is_alert:
       alert2issue.ProcessEmailNotification(
           self.services, cnxn, project, project_addr, from_addr,
-          auth, subject, body, incident_id, msg, trooper_queue)
+          mc.auth, subject, body, incident_id, msg, trooper_queue)
       return None
 
     # This email is a response to an email about a comment.
     self.ProcessIssueReply(
-        cnxn, project, local_id, project_addr, from_addr, auth.user_id,
-        auth.effective_ids, perms, body)
+        mc, project, local_id, project_addr, body)
 
     return None
 
   def ProcessIssueReply(
-      self, cnxn, project, local_id, project_addr, from_addr, author_id,
-      effective_ids, perms, body):
+      self, mc, project, local_id, project_addr, body):
     """Examine an issue reply email body and add a comment to the issue.
 
     Args:
-      cnxn: connection to SQL database.
+      mc: MonorailContext with cnxn and the requester email, user_id, perms.
       project: Project PB for the project containing the issue.
       local_id: int ID of the issue being replied to.
       project_addr: string email address used for outbound emails from
           that project.
-      from_addr: string email address of the user who sent the email
-          reply to our server.
-      author_id: int user ID of user who sent the reply email.
-      effective_ids: set of int user IDs for the user (including any groups),
-          or an empty set if user is not signed in.
-      perms: PermissionSet for the user who sent the reply email.
       body: string email body text of the reply email.
 
     Returns:
@@ -223,7 +211,7 @@ class InboundEmail(webapp2.RequestHandler):
     """
     try:
       issue = self.services.issue.GetIssueByLocalID(
-          cnxn, project.project_id, local_id)
+          mc.cnxn, project.project_id, local_id)
     except exceptions.NoSuchIssueException:
       issue = None
 
@@ -231,31 +219,30 @@ class InboundEmail(webapp2.RequestHandler):
       # The referenced issue was not found, e.g., it might have been
       # deleted, or someone messed with the subject line.  Reject it.
       return _MakeErrorMessageReplyTask(
-          project_addr, from_addr, self._templates['no_artifact'],
+          project_addr, mc.auth.email, self._templates['no_artifact'],
           artifact_phrase='issue %d' % local_id,
           project_name=project.project_name)
 
-    can_view = perms.CanUsePerm(
-        permissions.VIEW, effective_ids, project,
+    can_view = mc.perms.CanUsePerm(
+        permissions.VIEW, mc.auth.effective_ids, project,
         permissions.GetRestrictions(issue))
-    can_comment = perms.CanUsePerm(
-        permissions.ADD_ISSUE_COMMENT, effective_ids, project,
+    can_comment = mc.perms.CanUsePerm(
+        permissions.ADD_ISSUE_COMMENT, mc.auth.effective_ids, project,
         permissions.GetRestrictions(issue))
     if not can_view or not can_comment:
       return _MakeErrorMessageReplyTask(
-          project_addr, from_addr, self._templates['no_perms'],
+          project_addr, mc.auth.email, self._templates['no_perms'],
           artifact_phrase='issue %d' % local_id,
           project_name=project.project_name)
-    allow_edit = permissions.CanEditIssue(
-        effective_ids, perms, project, issue)
+
     # TODO(jrobbins): if the user does not have EDIT_ISSUE and the inbound
     # email tries to make an edit, send back an error message.
 
     lines = body.strip().split('\n')
     uia = commitlogcommands.UpdateIssueAction(local_id)
-    uia.Parse(cnxn, project.project_name, author_id, lines, self.services,
-              strip_quoted_lines=True)
-    uia.Run(cnxn, self.services, allow_edit=allow_edit)
+    uia.Parse(mc.cnxn, project.project_name, mc.auth.user_id, lines,
+              self.services, strip_quoted_lines=True)
+    uia.Run(mc, self.services)
 
 
 def _MakeErrorMessageReplyTask(

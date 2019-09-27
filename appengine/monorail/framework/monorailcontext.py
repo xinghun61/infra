@@ -35,7 +35,8 @@ class MonorailContext(object):
   """
 
   def __init__(
-      self, services, cnxn=None, requester=None, auth=None, perms=None):
+      self, services, cnxn=None, requester=None, auth=None, perms=None,
+      autocreate=True):
     """Construct a MonorailContext.
 
     Args:
@@ -44,10 +45,12 @@ class MonorailContext(object):
       requester: String email address of user making the request or None.
       auth: AuthData object used during testing.
       perms: PermissionSet used during testing.
+      autocreate: Set to False to require that a row in the User table already
+          exists for this user, otherwise raise NoSuchUserException.
     """
     self.cnxn = cnxn or sql.MonorailConnection()
     self.auth = auth or authdata.AuthData.FromEmail(
-        self.cnxn, requester, services, autocreate=True)
+        self.cnxn, requester, services, autocreate=autocreate)
     self.perms = perms  # Usually None until LookupLoggedInUserPerms() called.
     self.profiler = profiler.Profiler()
 
