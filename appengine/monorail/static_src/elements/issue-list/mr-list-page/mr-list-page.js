@@ -12,6 +12,7 @@ import * as project from 'reducers/project.js';
 import {prpcClient} from 'prpc-client-instance.js';
 import {parseColSpec} from 'shared/issue-fields.js';
 import {urlWithNewParams, userIsMember} from 'shared/helpers.js';
+import 'elements/chops/chops-snackbar/chops-snackbar.js';
 import 'elements/framework/mr-dropdown/mr-dropdown.js';
 import 'elements/framework/mr-issue-list/mr-issue-list.js';
 // eslint-disable-next-line max-len
@@ -113,6 +114,7 @@ export class MrListPage extends connectStore(LitElement) {
     const selectedRefs = this.selectedIssues.map(
         ({localId, projectName}) => ({localId, projectName}));
     return html`
+      ${this._renderSnackbar()}
       ${this._renderControls()}
       ${this._renderListBody()}
       <mr-update-issue-hotlists
@@ -125,8 +127,17 @@ export class MrListPage extends connectStore(LitElement) {
     `;
   }
 
+  _renderSnackbar() {
+    if (this.fetchingIssueList && this.totalIssues) {
+      return html`
+        <chops-snackbar>Updating issues...</chops-snackbar>
+      `;
+    }
+    return '';
+  }
+
   _renderListBody() {
-    if (this.fetchingIssueList) {
+    if (this.fetchingIssueList && !this.totalIssues) {
       return html`
         <div class="container-loading">
           Loading...

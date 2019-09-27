@@ -32,10 +32,30 @@ describe('mr-list-page', () => {
     const loading = element.shadowRoot.querySelector('.container-loading');
     const noIssues = element.shadowRoot.querySelector('.container-no-issues');
     const issueList = element.shadowRoot.querySelector('mr-issue-list');
+    const snackbar = element.shadowRoot.querySelector('chops-snackbar');
 
     assert.equal(loading.textContent.trim(), 'Loading...');
     assert.isNull(noIssues);
     assert.isNull(issueList);
+    assert.isNull(snackbar);
+  });
+
+  it('does not clear existing issue list when loading new issues', async () => {
+    element.fetchingIssueList = true;
+    element.totalIssues = 1;
+    element.issues = [{localId: 1, projectName: 'chromium'}];
+
+    await element.updateComplete;
+
+    const loading = element.shadowRoot.querySelector('.container-loading');
+    const noIssues = element.shadowRoot.querySelector('.container-no-issues');
+    const issueList = element.shadowRoot.querySelector('mr-issue-list');
+    const snackbar = element.shadowRoot.querySelector('chops-snackbar');
+
+    assert.isNull(loading);
+    assert.isNull(noIssues);
+    assert.isNotNull(issueList);
+    assert.isNotNull(snackbar);
   });
 
   it('shows list when done loading', async () => {
@@ -47,10 +67,12 @@ describe('mr-list-page', () => {
     const loading = element.shadowRoot.querySelector('.container-loading');
     const noIssues = element.shadowRoot.querySelector('.container-no-issues');
     const issueList = element.shadowRoot.querySelector('mr-issue-list');
+    const snackbar = element.shadowRoot.querySelector('chops-snackbar');
 
     assert.isNull(loading);
     assert.isNull(noIssues);
     assert.isNotNull(issueList);
+    assert.isNull(snackbar);
   });
 
   it('shows no issues when no search results', async () => {

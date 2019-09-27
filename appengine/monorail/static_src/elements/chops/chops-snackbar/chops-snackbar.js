@@ -26,6 +26,7 @@ export class ChopsSnackbar extends LitElement {
         left: 1em;
         padding: 16px;
         position: fixed;
+        z-index: 1000;
       }
       :host([hidden]) {
         visibility: hidden;
