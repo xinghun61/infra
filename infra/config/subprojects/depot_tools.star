@@ -46,7 +46,6 @@ build.presubmit(
     repo_name = 'depot_tools',
     run_hooks = False,
     os = 'Windows',
-    experiment_percentage = 100,
 )
 
 
