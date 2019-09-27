@@ -21,6 +21,10 @@ import (
 	tricium "infra/tricium/api/v1"
 )
 
+const (
+	patchName = "tricium_generated_diff.patch"
+)
+
 func main() {
 	inputDir := flag.String("input", "", "Path to root of Tricium input")
 	outputDir := flag.String("output", "", "Path to root of Tricium output")
@@ -89,11 +93,15 @@ func main() {
 		log.Fatalf("Failed to run command: %v, cmd: %s", err, c.Args)
 	}
 
+	getLastPatch(tempDir, files, input)
+	files = append(files, &tricium.Data_File{Path: patchName})
+
 	// Copy files to output directory for isolation.
 	log.Printf("Copying from %q to %q.", tempDir, *outputDir)
 	output := &tricium.Data_Files{
 		Files:         copyFiles(tempDir, *outputDir, files),
 		CommitMessage: input.CommitMessage,
+		Patch:         patchName,
 	}
 
 	// Write Tricium output FILES data.
@@ -102,6 +110,34 @@ func main() {
 		log.Fatalf("Failed to write FILES data: %v", err)
 	}
 	log.Printf("Wrote RESULTS data to path %q.", p)
+}
+
+func getLastPatch(dir string, files []*tricium.Data_File, input *tricium.Data_GitFileDetails) {
+	fetchCmd := exec.Command("git", "fetch", "--depth=2", "--no-tags",
+		"--no-recurse-submodules", input.Repository, input.Ref)
+	runCmd(fetchCmd, dir)
+
+	// If a file that has patchName already exists, remove it before generating the diff
+	deleteExistingCmd := exec.Command("rm", "-f", patchName)
+	runCmd(deleteExistingCmd, dir)
+
+	diffCmd := exec.Command("git", "diff", "--output="+patchName, "FETCH_HEAD~", "FETCH_HEAD", "--")
+	for _, file := range files {
+		diffCmd.Args = append(diffCmd.Args, file.Path)
+	}
+	runCmd(diffCmd, dir)
+}
+
+func runCmd(c *exec.Cmd, dir string) string {
+	var stderr bytes.Buffer
+	c.Dir = dir
+	c.Stderr = &stderr
+	log.Printf("Running cmd: %s", c.Args)
+	out, err := c.Output()
+	if err != nil {
+		log.Fatalf("Failed to run command %s\n%v\nStderr: %s", c.Args, err, stderr.String())
+	}
+	return string(out)
 }
 
 // filterSkippedFiles filters out files we don't want to analyze.
@@ -264,7 +300,10 @@ func copyFiles(inputDir, outputDir string, files []*tricium.Data_File) []*triciu
 		if err := cmd.Wait(); err != nil {
 			log.Fatalf("Command failed: %v, stderr: %s", err, slurp)
 		}
-		out = append(out, file)
+		// Copy the patch, but do not add the patch to the output file paths
+		if file.Path != patchName {
+			out = append(out, file)
+		}
 	}
 	return out
 }

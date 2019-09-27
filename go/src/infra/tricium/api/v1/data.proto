@@ -80,6 +80,13 @@ message Data {
     repeated File files = 3;
 
     string commit_message = 4;
+
+    // Path to patch from the root of the isolated input.
+    // This is a temporary solution to allow the Tricium metrics analyzer
+    // to access diffs. See https://bugs.chromium.org/p/chromium/issues/detail?id=1004564
+    // for more details. This will be replaced with a recipe
+    // and removed in the future.
+    string patch = 5;
   }
 
   message File {
