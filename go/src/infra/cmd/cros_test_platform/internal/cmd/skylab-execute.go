@@ -8,7 +8,9 @@ import (
 	"context"
 	"fmt"
 	"net/url"
+	"time"
 
+	"github.com/golang/protobuf/ptypes"
 	"github.com/maruel/subcommands"
 
 	"go.chromium.org/chromiumos/infra/proto/go/test_platform/config"
@@ -86,7 +88,12 @@ func (c *skylabExecuteRun) innerRun(a subcommands.Application, args []string, en
 		return err
 	}
 
-	response, err := c.handleRequest(ctx, runner, client, gf)
+	maxDuration, err := ptypes.Duration(request.RequestParams.Time.MaximumDuration)
+	if err != nil {
+		maxDuration = 12 * time.Hour
+	}
+
+	response, err := c.handleRequest(ctx, maxDuration, runner, client, gf)
 	if err != nil && response == nil {
 		// Catastrophic error. There is no reasonable response to write.
 		return err

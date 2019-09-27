@@ -8,6 +8,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/maruel/subcommands"
 
@@ -19,6 +20,7 @@ import (
 
 	"infra/cmd/cros_test_platform/internal/execution"
 	"infra/cmd/cros_test_platform/internal/execution/isolate"
+	"infra/libs/skylab/common/errctx"
 	"infra/libs/skylab/swarming"
 )
 
@@ -65,7 +67,9 @@ func (c *commonExecuteRun) validateRequestCommon(request *steps.ExecuteRequest) 
 	return nil
 }
 
-func (c *commonExecuteRun) handleRequest(ctx context.Context, runner execution.Runner, t *swarming.Client, gf isolate.GetterFactory) (*steps.ExecuteResponse, error) {
+func (c *commonExecuteRun) handleRequest(ctx context.Context, maximumDuration time.Duration, runner execution.Runner, t *swarming.Client, gf isolate.GetterFactory) (*steps.ExecuteResponse, error) {
+	ctx, cancel := errctx.WithTimeout(ctx, maximumDuration, fmt.Errorf("exceeded request's maximum duration"))
+	defer cancel(nil)
 	err := runner.LaunchAndWait(ctx, t, gf)
 	return runner.Response(t), err
 }

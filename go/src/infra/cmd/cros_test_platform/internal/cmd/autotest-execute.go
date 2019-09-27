@@ -6,7 +6,9 @@ package cmd
 
 import (
 	"fmt"
+	"time"
 
+	"github.com/golang/protobuf/ptypes"
 	"github.com/maruel/subcommands"
 
 	"infra/cmd/cros_test_platform/internal/execution"
@@ -65,7 +67,12 @@ func (c *autotestExecuteRun) innerRun(a subcommands.Application, args []string, 
 
 	runner := execution.NewAutotestRunner(request.Enumeration.AutotestInvocations, request.RequestParams, request.GetConfig().GetAutotestBackend())
 
-	response, err := c.handleRequest(ctx, runner, client, nil)
+	maxDuration, err := ptypes.Duration(request.RequestParams.Time.MaximumDuration)
+	if err != nil {
+		maxDuration = 12 * time.Hour
+	}
+
+	response, err := c.handleRequest(ctx, maxDuration, runner, client, nil)
 	if err != nil && response == nil {
 		// Catastrophic error. There is no reasonable response to write.
 		return err
