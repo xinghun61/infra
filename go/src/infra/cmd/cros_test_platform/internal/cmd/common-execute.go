@@ -69,7 +69,7 @@ func (c *commonExecuteRun) validateRequestCommon(request *steps.ExecuteRequest) 
 
 func (c *commonExecuteRun) handleRequest(ctx context.Context, maximumDuration time.Duration, runner execution.Runner, t *swarming.Client, gf isolate.GetterFactory) (*steps.ExecuteResponse, error) {
 	ctx, cancel := errctx.WithTimeout(ctx, maximumDuration, fmt.Errorf("exceeded request's maximum duration"))
-	defer cancel(nil)
+	defer cancel(context.Canceled)
 	err := runner.LaunchAndWait(ctx, t, gf)
 	return runner.Response(t), err
 }
