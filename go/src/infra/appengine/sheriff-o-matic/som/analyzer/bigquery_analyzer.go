@@ -39,8 +39,6 @@ FROM
 WHERE
 `
 
-// TODO: customize the WHERE clause for chromium.  I suspect
-// just using the project field isn't quite right.
 const failuresQuery = selectFromWhere + `
 	(Project = %q OR MasterName = %q)
 	AND Bucket NOT IN ("try", "cq", "staging", "general")
@@ -90,6 +88,14 @@ const chromiumGPUFYIFailuresQuery = selectFromWhere + `
 const crosFailuresQuery = selectFromWhere + `
 	project = "chromeos"
 	AND bucket IN ("postsubmit", "annealing")
+`
+
+const fuchsiaFailuresQuery = selectFromWhere + `
+	(Project = %q OR MasterName = %q)
+	AND Bucket NOT IN ("try", "cq", "staging", "general")
+	AND Builder NOT LIKE "%%bisect%%"
+LIMIT
+	1000
 `
 
 // This list of builders is from
@@ -206,7 +212,7 @@ func GetBigQueryAlerts(ctx context.Context, tree string) ([]messages.BuildFailur
 		queryStr = fmt.Sprintf(iosFailuresQuery, appID, "chromium")
 		break
 	case "fuchsia":
-		queryStr = fmt.Sprintf(failuresQuery, appID, "fuchsia", tree, tree)
+		queryStr = fmt.Sprintf(fuchsiaFailuresQuery, appID, "fuchsia", tree, tree)
 		break
 	default:
 		queryStr = fmt.Sprintf(failuresQuery, appID, "chromium", tree, tree)
