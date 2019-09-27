@@ -41,7 +41,6 @@ runOnLoad(function() {
     if (target.classList.contains("rowwidgets") || target.parentNode.classList.contains("rowwidgets"))
       return;
     while (target && target.tagName != "TR") target = target.parentNode;
-    event.preventDefault();
     if ('[is_hotlist]') {
        if (!target.attributes[[]"issue-context-url"]) return;
        _go(target.attributes[[]"issue-context-url"].value, (event.metaKey || event.ctrlKey || event.button == 1));

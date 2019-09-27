@@ -476,7 +476,7 @@ class TableViewHelpersTest(unittest.TestCase):
     cell_factories = {}
     table_data = table_view_helpers.MakeTableData(
         visible_results, [], lower_columns, lower_columns,
-        cell_factories, [], 'unused function', {}, self.config)
+        cell_factories, [], 'unused function', {}, set(), self.config)
     self.assertEqual([], table_data)
 
     lower_columns = ['type', 'priority', 'summary', 'stars']
@@ -487,7 +487,7 @@ class TableViewHelpersTest(unittest.TestCase):
 
     table_data = table_view_helpers.MakeTableData(
         visible_results, [], lower_columns, [], {},
-        cell_factories, 'unused function', {}, self.config)
+        cell_factories, 'unused function', {}, set(), self.config)
     self.assertEqual([], table_data)
 
   def testMakeTableData_Normal(self):
@@ -502,7 +502,7 @@ class TableViewHelpersTest(unittest.TestCase):
 
     table_data = table_view_helpers.MakeTableData(
         visible_results, [], lower_columns, lower_columns, {},
-        cell_factories, lambda art: 'id', {}, self.config)
+        cell_factories, lambda art: 'id', {}, set(), self.config)
     self.assertEqual(1, len(table_data))
     row = table_data[0]
     self.assertEqual(4, len(row.cells))
@@ -521,7 +521,7 @@ class TableViewHelpersTest(unittest.TestCase):
 
     table_data = table_view_helpers.MakeTableData(
         visible_results, [], lower_columns, lower_group_by, {},
-        cell_factories, lambda art: 'id', {}, self.config)
+        cell_factories, lambda art: 'id', {}, set(), self.config)
     self.assertEqual(1, len(table_data))
     row = table_data[0]
     self.assertEqual(1, len(row.group.cells))
@@ -541,7 +541,7 @@ class TableViewHelpersTest(unittest.TestCase):
     # a result is an table_view_helpers.TableRow object with a "cells" field
     # containing a list of table_view_helpers.TableCell objects.
     result = table_view_helpers.MakeRowData(
-        art, columns, {}, cell_factories, {}, self.config, {})
+        art, columns, {}, cell_factories, {}, set(), self.config, {})
 
     self.assertEqual(len(columns), len(result.cells))
 

@@ -13,6 +13,7 @@ from __future__ import division
 from __future__ import absolute_import
 
 import collections
+import itertools
 import logging
 import re
 import urllib
@@ -525,44 +526,29 @@ def GetAllowedOpenedAndClosedIssues(mr, issue_ids, services):
   """
   open_issues, closed_issues = services.issue.GetOpenAndClosedIssues(
       mr.cnxn, issue_ids)
-  project_dict = GetAllIssueProjects(
-      mr.cnxn, open_issues + closed_issues, services.project)
-  config_dict = services.config.GetProjectConfigs(mr.cnxn,
-      list(project_dict.keys()))
-  allowed_open_issues = FilterOutNonViewableIssues(
-      mr.auth.effective_ids, mr.auth.user_pb, project_dict, config_dict,
-      open_issues)
-  allowed_closed_issues = FilterOutNonViewableIssues(
-      mr.auth.effective_ids, mr.auth.user_pb, project_dict, config_dict,
-      closed_issues)
-
-  return allowed_open_issues, allowed_closed_issues
+  return GetAllowedIssues(mr, [open_issues, closed_issues], services)
 
 
-def GetAllowedOpenAndClosedRelatedIssues(services, mr, issue):
-  """Retrieve the issues that the given issue references.
-
-  Related issues are the blocked on, blocking, and merged-into issues.
-  This function also filters the results to only the issues that the
-  user is allowed to view.
+def GetAllowedIssues(mr, issue_groups, services):
+  """Filter lists of issues identified by issue_groups.
 
   Args:
-    services: connection to issue, config, and project persistence layers.
     mr: commonly used info parsed from the request.
-    issue: the Issue PB being viewed.
+    issue_groups: list of list of issues to filter.
+    services: connection to issue, config, and project persistence layers.
 
   Returns:
-    Two dictionaries of issues that the user is allowed to view: one for open
-    issues and one for closed issues.
+    List of filtered list of issues.
   """
-  related_issue_iids = list(issue.blocked_on_iids) + list(issue.blocking_iids)
-  if issue.merged_into:
-    related_issue_iids.append(issue.merged_into)
-  open_issues, closed_issues = GetAllowedOpenedAndClosedIssues(
-      mr, related_issue_iids, services)
-  open_dict = {issue.issue_id: issue for issue in open_issues}
-  closed_dict = {issue.issue_id: issue for issue in closed_issues}
-  return open_dict, closed_dict
+
+  project_dict = GetAllIssueProjects(
+      mr.cnxn, itertools.chain.from_iterable(issue_groups), services.project)
+  config_dict = services.config.GetProjectConfigs(mr.cnxn,
+      list(project_dict.keys()))
+  return [FilterOutNonViewableIssues(
+      mr.auth.effective_ids, mr.auth.user_pb, project_dict, config_dict,
+      issues)
+          for issues in issue_groups]
 
 
 def MakeViewsForUsersInIssues(cnxn, issue_list, user_service, omit_ids=None):

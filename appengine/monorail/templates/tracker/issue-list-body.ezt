@@ -64,6 +64,25 @@
        </td>
      [end]
 
+     [is table_data.cells.type "issues"]
+       <td class="url col_[table_data.cells.col_index]" [if-any table_data.cells.align]align="[table_data.cells.align]"[end]>
+         [if-any table_data.cells.values]
+           [for table_data.cells.values]
+             <a href="[table_data.cells.values.item.href]" rel="nofollow"
+               [if-any table_data.cells.values.item.title]
+                 title="[table_data.cells.values.item.title]"
+               [end]
+               [if-any table_data.cells.values.item.closed]
+                 style="text-decoration: line-through;"
+               [end]
+             >
+             [table_data.cells.values.item.id]</a>
+             [if-index table_data.cells.values last][else], [end]
+           [end]
+         [else]----[end]
+       </td>
+     [end]
+
     [end]
    <td style="padding:0">
      <a href="[table_data.crbug_url]" class="directlink material-icons" title="crbug link"

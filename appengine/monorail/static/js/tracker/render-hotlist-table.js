@@ -164,6 +164,35 @@ function createUrlCell(td, cell) {
   });
 }
 
+function createIssuesCell(td, cell) {
+  td.classList.add('url');
+  if (cell.values.length > 0) {
+    cell.values.forEach( function(value, index, array) {
+      const span = document.createElement('span');
+      if (value['isDerived']) {
+        span.className = 'derived';
+      }
+      const a = document.createElement('a');
+      a.href = value['href'];
+      a.rel = 'nofollow"';
+      if (value['title']) {
+        a.title = value['title'];
+      }
+      if (value['closed']) {
+        a.style.textDecoration = 'line-through';
+      }
+      a.textContent = value['id'];
+      span.appendChild(a);
+      td.appendChild(span);
+      if (index != array.length-1) {
+        td.appendChild(document.createTextNode(', '));
+      }
+    });
+  } else {
+    td.textContent = '---';
+  }
+}
+
 /**
  * Helper function to fill a td element with a cell's non-column labels.
  * @param {Element} td element to be added to current row in table.
@@ -246,6 +275,8 @@ function renderHotlistRow(tableRow, pageSettings) {
       createProjectCell(td, tableRow);
     } else if (cell['type'] == 'url') {
       createUrlCell(td, cell);
+    } else if (cell['type'] == 'issues') {
+      createIssuesCell(td, cell);
     } else {
       createAttrAndUnfiltCell(td, cell);
     }

@@ -132,6 +132,11 @@ def CreateHotlistTableData(mr, hotlist_issues, services):
         mr.cnxn, list(related_iids))
     related_issues = {issue.issue_id: issue for issue in related_issues_list}
 
+  with mr.profiler.Phase('filtering unviewable issues'):
+    viewable_iids_set = {issue.issue_id
+                         for issue in tracker_helpers.GetAllowedIssues(
+                             mr, [related_issues.values()], services)[0]}
+
   with mr.profiler.Phase('building table'):
     context_for_all_issues = {
         issue.issue_id: hotlist_issues_context[issue.issue_id]
@@ -160,7 +165,8 @@ def CreateHotlistTableData(mr, hotlist_issues, services):
         pagination.visible_results, starred_iid_set,
         mr.col_spec.lower().split(), mr.group_by_spec.lower().split(),
         issues_users_by_id, tablecell.CELL_FACTORIES, related_issues,
-        harmonized_config, context_for_all_issues, mr.hotlist_id, sort_spec)
+        viewable_iids_set, harmonized_config, context_for_all_issues,
+        mr.hotlist_id, sort_spec)
 
   table_related_dict = {
       'column_values': column_values, 'unshown_columns': unshown_columns,
@@ -170,13 +176,14 @@ def CreateHotlistTableData(mr, hotlist_issues, services):
 
 def _MakeTableData(issues, starred_iid_set, lower_columns,
                    lower_group_by, users_by_id, cell_factories,
-                   related_issues, config, context_for_all_issues,
+                   related_issues, viewable_iids_set, config,
+                   context_for_all_issues,
                    hotlist_id, sort_spec):
   """Returns data from MakeTableData after adding additional information."""
   table_data = table_view_helpers.MakeTableData(
       issues, starred_iid_set, lower_columns, lower_group_by,
       users_by_id, cell_factories, lambda issue: issue.issue_id,
-      related_issues, config, context_for_all_issues)
+      related_issues, viewable_iids_set, config, context_for_all_issues)
 
   for row, art in zip(table_data, issues):
     row.issue_id = art.issue_id

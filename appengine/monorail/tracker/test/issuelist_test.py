@@ -186,7 +186,7 @@ class IssueListFunctionsTest(unittest.TestCase):
     # Standard columns
     lower_columns = _GetColumns()
     table_data = issuelist._MakeTableData(
-        visible_results, [], lower_columns, [], {}, CELL_FACTORIES, {},
+        visible_results, [], lower_columns, [], {}, CELL_FACTORIES, {}, set(),
         self.config)
     self.assertEqual(1, len(table_data))
     row = table_data[0]
@@ -202,7 +202,7 @@ class IssueListFunctionsTest(unittest.TestCase):
     # 2 columns -> 2 cells with 1 value in each cell.
     lower_columns = ['type', 'priority']
     table_data = issuelist._MakeTableData(
-        visible_results, [], lower_columns, [], {}, CELL_FACTORIES, {},
+        visible_results, [], lower_columns, [], {}, CELL_FACTORIES, {}, set(),
         self.config)
     self.assertEqual(1, len(table_data))
     row = table_data[0]
@@ -223,7 +223,7 @@ class IssueListFunctionsTest(unittest.TestCase):
     # A combined column -> 1 cell with 2 values in it.
     lower_columns = ['type/priority']
     table_data = issuelist._MakeTableData(
-        visible_results, [], lower_columns, [], {}, CELL_FACTORIES, {},
+        visible_results, [], lower_columns, [], {}, CELL_FACTORIES, {}, set(),
         self.config)
     self.assertEqual(1, len(table_data))
     row = table_data[0]
@@ -244,7 +244,7 @@ class IssueListFunctionsTest(unittest.TestCase):
     lower_columns = ['type', 'priority']
     table_data = issuelist._MakeTableData(
         visible_results, [], lower_columns, ['type'], {}, CELL_FACTORIES,
-        {}, self.config)
+        {}, set(), self.config)
     self.assertEqual(1, len(table_data))
     row = table_data[0]
     self.assertEqual(len(lower_columns), len(row.cells))

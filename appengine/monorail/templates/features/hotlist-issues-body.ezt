@@ -50,7 +50,14 @@ runOnLoad(function(){
         "values": [[]
         [for table_data.cells.values]
           {
-          "item": "[format "js"][table_data.cells.values.item][end]",
+            [is table_data.cells.type "issues"]
+              "id": "[format "js"][table_data.cells.values.item.id][end]",
+              "href": "[format "js"][table_data.cells.values.item.href][end]",
+              "title": "[format "js"][table_data.cells.values.item.title][end]",
+              "closed": "[format "js"][table_data.cells.values.item.closed][end]",
+            [else]
+              "item": "[format "js"][table_data.cells.values.item][end]",
+            [end]
           "isDerived": "[table_data.cells.values.is_derived]",
           }[if-index table_data.cells.values last][else],[end]
         [end]

@@ -17,6 +17,7 @@ from proto import tracker_pb2
 from testing import fake
 from testing import testing_helpers
 from tracker import tablecell
+from tracker import tracker_bizobj
 
 
 class DisplayNameMock(object):
@@ -26,11 +27,13 @@ class DisplayNameMock(object):
     self.user = None
 
 
-def MakeTestIssue(local_id, issue_id, summary):
+def MakeTestIssue(local_id, issue_id, summary, status=None):
   issue = tracker_pb2.Issue()
   issue.local_id = local_id
   issue.issue_id = issue_id
   issue.summary = summary
+  if status:
+    issue.status = status
   return issue
 
 
@@ -43,18 +46,21 @@ class TableCellUnitTest(unittest.TestCase):
 
   def setUp(self):
     self.issue1 = MakeTestIssue(
-        local_id=1, issue_id=100001, summary='One')
+        local_id=1, issue_id=100001, summary='One', status="New")
     self.issue2 = MakeTestIssue(
-        local_id=2, issue_id=100002, summary='Two')
+        local_id=2, issue_id=100002, summary='Two', status="Fixed")
     self.issue3 = MakeTestIssue(
-        local_id=3, issue_id=100003, summary='Three')
+        local_id=3, issue_id=100003, summary='Three', status="UndefinedString")
+    self.issue5 = MakeTestIssue(
+        local_id=5, issue_id=100005, summary='FiveUnviewable', status="Fixed")
     self.table_cell_kws = {
         'col': None,
         'users_by_id': self.USERS_BY_ID,
         'non_col_labels': [],
         'label_values': {},
         'related_issues': {},
-        'config': 'fake config',
+        'config': tracker_bizobj.MakeDefaultProjectIssueConfig(678),
+        'viewable_iids_set': {100001, 100002, 100003}
         }
 
   def testTableCellNote(self):
@@ -232,46 +238,78 @@ class TableCellUnitTest(unittest.TestCase):
   def testTableCellBlockedOn(self):
     test_issue = MakeTestIssue(4, 4, 'Four')
     test_issue.blocked_on_iids = [
-        self.issue1.issue_id, self.issue2.issue_id, self.issue3.issue_id]
+        self.issue1.issue_id, self.issue2.issue_id, self.issue3.issue_id,
+        self.issue5.issue_id]
     table_cell_kws = self.table_cell_kws.copy()
     table_cell_kws['related_issues'] = {
         self.issue1.issue_id: self.issue1, self.issue2.issue_id: self.issue2,
-        self.issue3.issue_id: self.issue3}
+        self.issue3.issue_id: self.issue3, self.issue5.issue_id: self.issue5}
 
     cell = tablecell.TableCellBlockedOn(
         test_issue, **table_cell_kws)
-    self.assertEqual(cell.type, table_view_helpers.CELL_TYPE_ATTR)
-    self.assertEqual(cell.values[0].item, '1')
-    self.assertEqual(cell.values[1].item, '2')
-    self.assertEqual(cell.values[2].item, '3')
+    self.assertEqual(cell.type, table_view_helpers.CELL_TYPE_ISSUES)
+    self.assertEqual(
+        [x.item for x in cell.values],
+        [{'href': '/p/None/issues/detail?id=1',
+          'id': '1',
+          'closed': None,
+          'title': 'One'},
+         {'href': '/p/None/issues/detail?id=3',
+          'id': '3',
+          'closed': None,
+          'title': 'Three'},
+         {'href': '/p/None/issues/detail?id=5',
+          'id': '5',
+          'closed': None,
+          'title': ''},
+         {'href': '/p/None/issues/detail?id=2',
+          'id': '2',
+          'closed': 'yes',
+          'title': 'Two'}])
 
   def testTableCellBlockedOnNone(self):
     cell = tablecell.TableCellBlockedOn(
         MakeTestIssue(4, 4, 'Four'), **self.table_cell_kws)
-    self.assertEqual(cell.type, table_view_helpers.CELL_TYPE_ATTR)
+    self.assertEqual(cell.type, table_view_helpers.CELL_TYPE_ISSUES)
     self.assertEqual(cell.values, [])
 
   def testTableCellBlocking(self):
     test_issue = MakeTestIssue(4, 4, 'Four')
     test_issue.blocking_iids = [
-        self.issue1.issue_id, self.issue2.issue_id, self.issue3.issue_id]
+        self.issue1.issue_id, self.issue2.issue_id, self.issue3.issue_id,
+        self.issue5.issue_id]
     table_cell_kws = self.table_cell_kws.copy()
     table_cell_kws['related_issues'] = {
         self.issue1.issue_id: self.issue1, self.issue2.issue_id: self.issue2,
-        self.issue3.issue_id: self.issue3}
+        self.issue3.issue_id: self.issue3, self.issue5.issue_id: self.issue5}
 
     cell = tablecell.TableCellBlocking(
         test_issue, **table_cell_kws)
-    self.assertEqual(cell.type, table_view_helpers.CELL_TYPE_ATTR)
-    self.assertEqual(cell.values[0].item, '1')
-    self.assertEqual(cell.values[1].item, '2')
-    self.assertEqual(cell.values[2].item, '3')
+    self.assertEqual(cell.type, table_view_helpers.CELL_TYPE_ISSUES)
+    self.assertEqual(
+        [x.item for x in cell.values],
+        [{'href': '/p/None/issues/detail?id=1',
+          'id': '1',
+          'closed': None,
+          'title': 'One'},
+         {'href': '/p/None/issues/detail?id=3',
+          'id': '3',
+          'closed': None,
+          'title': 'Three'},
+         {'href': '/p/None/issues/detail?id=5',
+          'id': '5',
+          'closed': None,
+          'title': ''},
+         {'href': '/p/None/issues/detail?id=2',
+          'id': '2',
+          'closed': 'yes',
+          'title': 'Two'}])
 
   def testTableCellBlockingNone(self):
     cell = tablecell.TableCellBlocking(
         MakeTestIssue(4, 4, 'Four'),
         **self.table_cell_kws)
-    self.assertEqual(cell.type, table_view_helpers.CELL_TYPE_ATTR)
+    self.assertEqual(cell.type, table_view_helpers.CELL_TYPE_ISSUES)
     self.assertEqual(cell.values, [])
 
   def testTableCellBlocked(self):
@@ -291,19 +329,38 @@ class TableCellUnitTest(unittest.TestCase):
 
   def testTableCellMergedInto(self):
     test_issue = MakeTestIssue(4, 4, 'Four')
-    test_issue.merged_into = self.issue3.issue_id
+    test_issue.merged_into = self.issue2.issue_id
     table_cell_kws = self.table_cell_kws.copy()
-    table_cell_kws['related_issues'] = {self.issue3.issue_id: self.issue3}
+    table_cell_kws['related_issues'] = {self.issue2.issue_id: self.issue2}
 
     cell = tablecell.TableCellMergedInto(
         test_issue, **table_cell_kws)
-    self.assertEqual(cell.type, table_view_helpers.CELL_TYPE_ATTR)
-    self.assertEqual(cell.values[0].item, '3')
+    self.assertEqual(cell.type, table_view_helpers.CELL_TYPE_ISSUES)
+    self.assertEqual(cell.values[0].item,
+                     {'href': '/p/None/issues/detail?id=2',
+                      'id': '2',
+                      'closed': 'yes',
+                      'title': 'Two'})
+
+  def testTableCellMergedIntoUnviewable(self):
+    test_issue = MakeTestIssue(4, 4, 'Four')
+    test_issue.merged_into = self.issue5.issue_id
+    table_cell_kws = self.table_cell_kws.copy()
+    table_cell_kws['related_issues'] = {self.issue5.issue_id: self.issue5}
+
+    cell = tablecell.TableCellMergedInto(
+        test_issue, **table_cell_kws)
+    self.assertEqual(cell.type, table_view_helpers.CELL_TYPE_ISSUES)
+    self.assertEqual(cell.values[0].item,
+                     {'href': '/p/None/issues/detail?id=5',
+                      'id': '5',
+                      'closed': None,
+                      'title': ''})
 
   def testTableCellMergedIntoNotMerged(self):
     cell = tablecell.TableCellMergedInto(
         MakeTestIssue(4, 4, 'Four'), **self.table_cell_kws)
-    self.assertEqual(cell.type, table_view_helpers.CELL_TYPE_ATTR)
+    self.assertEqual(cell.type, table_view_helpers.CELL_TYPE_ISSUES)
     self.assertEqual(cell.values, [])
 
   def testTableCellAllLabels(self):

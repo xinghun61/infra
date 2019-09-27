@@ -556,66 +556,10 @@ class HelpersTest(unittest.TestCase):
         self.services)
     self.assertFalse(valid)
 
+  # MakeViewsForUsersInIssuesTest is tested in MakeViewsForUsersInIssuesTest.
+
   def testGetAllowedOpenedAndClosedIssues(self):
     pass  # TOOD(jrobbins): Write this test.
-
-  def testGetAllowedOpenAndClosedRelatedIssues(self):
-    gaoacri = tracker_helpers.GetAllowedOpenAndClosedRelatedIssues
-    opened = {
-        100001: _Issue('proj', 1, 'summary 1', 'New'),
-        100002: _Issue('proj', 2, 'summary 2', 'Accepted'),
-        }
-    closed = {
-        100003: _Issue('proj', 3, 'summary 3', 'Accepted'),
-        100004: _Issue('proj', 4, 'summary 4', 'Invalid'),
-        }
-    project = project_pb2.Project()
-    project.project_id = 789
-    project.project_name = 'proj'
-    project.state = project_pb2.ProjectState.LIVE
-    mr = testing_helpers.MakeMonorailRequest(project=project)
-    fake_issue_service = testing_helpers.Blank(
-        GetOpenAndClosedIssues=lambda _cnxn, iids: (
-            [opened[iid] for iid in iids if iid in opened],
-            [closed[iid] for iid in iids if iid in closed]))
-    fake_config_service = testing_helpers.Blank(
-        GetProjectConfigs=lambda _cnxn, pids: (
-            {pid: tracker_bizobj.MakeDefaultProjectIssueConfig(pid)
-             for pid in pids}))
-    fake_project_service = testing_helpers.Blank(
-        GetProjects=lambda _, project_ids: {project.project_id: project})
-    services = service_manager.Services(
-        issue=fake_issue_service, config=fake_config_service,
-        project=fake_project_service)
-
-    issue = tracker_pb2.Issue()
-    issue.project_id = 789
-    # No merged into, no blocking, no blocked on.
-    open_dict, closed_dict = gaoacri(services, mr, issue)
-    self.assertEqual({}, open_dict)
-    self.assertEqual({}, closed_dict)
-
-    # An open "merged into"
-    issue.merged_into = 100001
-    open_dict, closed_dict = gaoacri(services, mr, issue)
-    self.assertEqual({100001: opened[100001]}, open_dict)
-    self.assertEqual({}, closed_dict)
-
-    # A closed "merged into"
-    issue.merged_into = 100003
-    open_dict, closed_dict = gaoacri(services, mr, issue)
-    self.assertEqual({}, open_dict)
-    self.assertEqual({100003: closed[100003]}, closed_dict)
-
-    # Some blocking and blocked on
-    issue.blocking_iids.append(100001)
-    issue.blocked_on_iids.append(100004)
-    open_dict, closed_dict = gaoacri(services, mr, issue)
-    self.assertEqual({100001: opened[100001]}, open_dict)
-    self.assertEqual({100003: closed[100003],
-                      100004: closed[100004]}, closed_dict)
-
-  # MakeViewsForUsersInIssuesTest is tested in MakeViewsForUsersInIssuesTest.
 
   def testFormatIssueListURL_JumpedToIssue(self):
     """If we jumped to issue 123, the list is can=1&q=id-123."""

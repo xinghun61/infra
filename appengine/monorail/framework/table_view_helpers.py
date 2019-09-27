@@ -325,8 +325,8 @@ def ExtractUniqueValues(columns, artifact_list, users_by_id,
 
 def MakeTableData(
     visible_results, starred_items, lower_columns, lower_group_by,
-    users_by_id, cell_factories, id_accessor, related_issues, config,
-    context_for_all_issues=None):
+    users_by_id, cell_factories, id_accessor, related_issues,
+    viewable_iids_set, config, context_for_all_issues=None):
   """Return a list of list row objects for display by EZT.
 
   Args:
@@ -341,6 +341,7 @@ def MakeTableData(
     id_accessor: function that maps from an artifact to the ID/name that might
         be in the starred items list.
     related_issues: dict {issue_id: issue} of pre-fetched related issues.
+    viewable_iids_set: set of issue ids that can be viewed by the user.
     config: ProjectIssueConfig PB for the current project.
     context_for_all_issues: A dictionary of dictionaries containing values
         passed in to cell factory functions to create TableCells. Dictionary
@@ -364,7 +365,7 @@ def MakeTableData(
   for idx, art in enumerate(visible_results):
     row = MakeRowData(
         art, lower_columns, users_by_id, factories_to_use, related_issues,
-        config, context_for_all_issues)
+        viewable_iids_set, config, context_for_all_issues)
     row.starred = ezt.boolean(id_accessor(art) in starred_items)
     row.idx = idx  # EZT does not have loop counters, so add idx.
     table_data.append(row)
@@ -375,8 +376,8 @@ def MakeTableData(
     # common case where no new group heading row is to be inserted.
     group = MakeRowData(
         art, [group_name.strip('-') for group_name in lower_group_by],
-        users_by_id, group_cell_factories, related_issues, config,
-        context_for_all_issues)
+        users_by_id, group_cell_factories, related_issues, viewable_iids_set,
+        config, context_for_all_issues)
     for cell, group_name in zip(group.cells, lower_group_by):
       cell.group_name = group_name
     if group == current_group:
@@ -390,8 +391,8 @@ def MakeTableData(
 
 
 def MakeRowData(
-    art, columns, users_by_id, cell_factory_list, related_issues, config,
-    context_for_all_issues):
+    art, columns, users_by_id, cell_factory_list, related_issues,
+    viewable_iids_set, config, context_for_all_issues):
   """Make a TableRow for use by EZT when rendering HTML table of results.
 
   Args:
@@ -402,6 +403,7 @@ def MakeRowData(
     cell_factory_list: list of functions that each create TableCell
         objects for a given column.
     related_issues: dict {issue_id: issue} of pre-fetched related issues.
+    viewable_iids_set: set of issue ids that can be viewed by the user.
     config: ProjectIssueConfig PB for the current project.
     context_for_all_issues: A dictionary of dictionaries containing values
         passed in to cell factory functions to create TableCells. Dictionary
@@ -441,6 +443,7 @@ def MakeRowData(
         'non_col_labels': non_col_labels,
         'label_values': label_values,
         'related_issues': related_issues,
+        'viewable_iids_set': viewable_iids_set,
         'config': config,
         }
     kw.update(context_for_all_issues.get(art.issue_id, {}))
@@ -519,6 +522,7 @@ CELL_TYPE_UNFILTERABLE = 'unfilterable'
 CELL_TYPE_NOTE = 'note'
 CELL_TYPE_PROJECT = 'project'
 CELL_TYPE_URL = 'url'
+CELL_TYPE_ISSUES = 'issues'
 
 
 @total_ordering

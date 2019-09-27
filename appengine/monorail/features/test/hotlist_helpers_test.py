@@ -115,7 +115,7 @@ class MakeTableDataTest(unittest.TestCase):
         'summary': table_view_helpers.TableCellSummary}
     table_data = hotlist_helpers._MakeTableData(
         issues, [], ['summary'], [], {} , cell_factories,
-        {}, config, None, 29, 'stars')
+        {}, set(), config, None, 29, 'stars')
     self.assertEqual(len(table_data), 1)
     row = table_data[0]
     self.assertEqual(row.issue_id, 1001)

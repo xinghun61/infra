@@ -114,8 +114,15 @@ class IssueList(servlet.Servlet):
           mr.cnxn, list(related_iids))
       related_issues = {issue.issue_id: issue for issue in related_issues_list}
 
+    with mr.profiler.Phase('filtering unviewable issues'):
+      viewable_iids_set = {issue.issue_id
+                           for issue in tracker_helpers.GetAllowedIssues(
+                               mr, [related_issues.values()], self.services)[0]}
+
     with mr.profiler.Phase('building table/grid'):
       if pipeline.grid_mode:
+        # TODO(eyalsoha): Add viewable_iids_set to the grid so that referenced
+        # issues can be links.
         page_data = grid_view_helpers.GetGridViewData(
             mr, pipeline.allowed_results or [], pipeline.harmonized_config,
             pipeline.users_by_id, starred_iid_set, pipeline.grid_limited,
@@ -123,7 +130,8 @@ class IssueList(servlet.Servlet):
       else:
         page_data = self.GetTableViewData(
             mr, pipeline.visible_results or [], pipeline.harmonized_config,
-            pipeline.users_by_id, starred_iid_set, related_issues)
+            pipeline.users_by_id, starred_iid_set, related_issues,
+            viewable_iids_set)
 
     # We show a special message when no query will every produce any results
     # because the project has no issues in it.
@@ -195,7 +203,8 @@ class IssueList(servlet.Servlet):
     return tablecell.CELL_FACTORIES
 
   def GetTableViewData(
-      self, mr, results, config, users_by_id, starred_iid_set, related_issues):
+      self, mr, results, config, users_by_id, starred_iid_set, related_issues,
+      viewable_iids_set):
     """EZT template values to render a Table View of issues.
 
     Args:
@@ -206,6 +215,7 @@ class IssueList(servlet.Servlet):
       involved in results.
       starred_iid_set: Set of issues that the user has starred.
       related_issues: dict {issue_id: issue} of pre-fetched related issues.
+      viewable_iids_set: set of issue ids that are viewable by the user.
 
     Returns:
       Dictionary of page data for rendering of the Table View.
@@ -222,7 +232,8 @@ class IssueList(servlet.Servlet):
     lower_group_by = mr.group_by_spec.lower().split()
     table_data = _MakeTableData(
         results, starred_iid_set, lower_columns, lower_group_by,
-        users_by_id, self.GetCellFactories(), related_issues, config)
+        users_by_id, self.GetCellFactories(), related_issues,
+        viewable_iids_set, config)
 
     # Used to offer easy filtering of each unique value in each column.
     column_values = table_view_helpers.ExtractUniqueValues(
@@ -317,12 +328,12 @@ def _AnyDerivedValues(table_data):
 
 def _MakeTableData(
     visible_results, starred_iid_set, lower_columns, lower_group_by,
-    users_by_id, cell_factories, related_issues, config):
+    users_by_id, cell_factories, related_issues, viewable_iids_set, config):
   """Return a list of list row objects for display by EZT."""
   table_data = table_view_helpers.MakeTableData(
       visible_results, starred_iid_set,
       lower_columns, lower_group_by, users_by_id, cell_factories,
-      lambda issue: issue.issue_id, related_issues, config)
+      lambda issue: issue.issue_id, related_issues, viewable_iids_set, config)
 
   for row, art in zip(table_data, visible_results):
     row.local_id = art.local_id
