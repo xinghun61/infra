@@ -16,6 +16,7 @@ import * as project from './project.js';
 import * as user from './user.js';
 import {fieldValueMapKey} from 'shared/metadata-helpers.js';
 import {prpcClient} from 'prpc-client-instance.js';
+import loadGapi, {fetchGapiEmail} from 'shared/gapi-loader.js';
 
 // Actions
 const SET_ISSUE_REF = 'SET_ISSUE_REF';
@@ -616,7 +617,7 @@ export const fetchReferencedUsers = (issue) => async (dispatch) => {
   }
 };
 
-export const fetchFederatedReferenceStatuses = async (issue) => {
+export const fetchFederatedReferenceStatuses = (issue) => async (dispatch) => {
   // Concat all potential fedrefs together, convert from shortlink to classes,
   // then fire off a request to fetch the status of each.
   const fedRefs = []
@@ -632,6 +633,16 @@ export const fetchFederatedReferenceStatuses = async (issue) => {
     return new Map();
   }
 
+  // Load email separately since it might have changed.
+  await loadGapi();
+  const email = await fetchGapiEmail();
+
+  // If already logged in, dispatch login success event.
+  dispatch({
+    type: user.GAPI_LOGIN_SUCCESS,
+    email: email,
+  });
+
   const fedRefPromises = fedRefs.map((fedRef) => fedRef.isOpen());
   const results = await Promise.all(fedRefPromises);
 
@@ -640,6 +651,8 @@ export const fetchFederatedReferenceStatuses = async (issue) => {
     return [fedRefs[i].shortlink, result];
   }));
 
+  // TODO(jeffcarp): Expand this to return issue summary as well,
+  // update reducer to assign appropriately.
   return shortlinkToStatus;
 };
 
@@ -660,10 +673,10 @@ export const fetchRelatedIssues = (issue) => async (dispatch) => {
     issueRefs: refsToFetch,
   };
   try {
-    // TODO(jeffcarp): Fetch these separately and combine results.
+    // TODO(jeffcarp): Split into 2 action creators, resolve separately.
     const [resp, fedRefStatuses] = await Promise.all([
       prpcClient.call('monorail.Issues', 'ListReferencedIssues', message),
-      fetchFederatedReferenceStatuses(issue),
+      dispatch(fetchFederatedReferenceStatuses(issue)),
     ]);
 
     const relatedIssues = {};

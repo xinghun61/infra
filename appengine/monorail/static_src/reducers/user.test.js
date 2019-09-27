@@ -120,6 +120,49 @@ describe('user', () => {
         },
       });
     });
+
+    describe('GAPI_LOGIN_SUCCESS', () => {
+      it('sets currentUser.gapiEmail', () => {
+        const newState = user.currentUserReducer({}, {
+          type: user.GAPI_LOGIN_SUCCESS,
+          email: 'rutabaga@rutabaga.com',
+        });
+        assert.deepEqual(newState, {
+          gapiEmail: 'rutabaga@rutabaga.com',
+        });
+      });
+
+      it('defaults to an empty string', () => {
+        const newState = user.currentUserReducer({}, {
+          type: user.GAPI_LOGIN_SUCCESS,
+        });
+        assert.deepEqual(newState, {
+          gapiEmail: '',
+        });
+      });
+    });
+
+    describe('GAPI_LOGOUT_SUCCESS', () => {
+      it('sets currentUser.gapiEmail', () => {
+        const newState = user.currentUserReducer({}, {
+          type: user.GAPI_LOGOUT_SUCCESS,
+          email: '',
+        });
+        assert.deepEqual(newState, {
+          gapiEmail: '',
+        });
+      });
+
+      it('defaults to an empty string', () => {
+        const state = {};
+        const newState = user.currentUserReducer(state, {
+          type: user.GAPI_LOGOUT_SUCCESS,
+        });
+        assert.deepEqual(newState, {
+          gapiEmail: '',
+        });
+      });
+    });
   });
 
   describe('selectors', () => {

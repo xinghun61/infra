@@ -19,6 +19,9 @@ import {prpcClient} from 'prpc-client-instance.js';
  * An element that displays one of a set of predefined help messages
  * iff that message is appropriate to the current user and page.
  *
+ * TODO: Factor this class out into a base view component and separate
+ * usage-specific components, such as those for user prefs.
+ *
  */
 export class MrCue extends connectStore(LitElement) {
   constructor() {
@@ -133,11 +136,6 @@ export class MrCue extends connectStore(LitElement) {
           To find issues containing "${this.jumpLocalId}", use quotes.
           `;
       }
-    } else if (this.cuePrefName === 'federated_reference') {
-      // TODO(jeffcarp): Include the name of the tracker.
-      return html`
-        This references an issue in another tracker.
-      `;
     }
   }
 

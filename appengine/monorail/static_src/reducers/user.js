@@ -8,6 +8,7 @@ import {createReducer, createRequestReducer} from './redux-helpers.js';
 import {prpcClient} from 'prpc-client-instance.js';
 import {objectToMap} from 'shared/helpers.js';
 import {userRefToId, userToUserRef} from 'shared/converters.js';
+import loadGapi, {fetchGapiEmail} from 'shared/gapi-loader.js';
 
 // Actions
 const FETCH_START = 'user/FETCH_START';
@@ -30,6 +31,14 @@ export const SET_PREFS_START = 'user/SET_PREFS_START';
 export const SET_PREFS_SUCCESS = 'user/SET_PREFS_SUCCESS';
 export const SET_PREFS_FAILURE = 'user/SET_PREFS_FAILURE';
 
+const GAPI_LOGIN_START = 'GAPI_LOGIN_START';
+export const GAPI_LOGIN_SUCCESS = 'GAPI_LOGIN_SUCCESS';
+const GAPI_LOGIN_FAILURE = 'GAPI_LOGIN_FAILURE';
+
+const GAPI_LOGOUT_START = 'GAPI_LOGOUT_START';
+export const GAPI_LOGOUT_SUCCESS = 'GAPI_LOGOUT_SUCCESS';
+const GAPI_LOGOUT_FAILURE = 'GAPI_LOGOUT_FAILURE';
+
 /* State Shape
 {
   currentUser: {
@@ -37,6 +46,7 @@ export const SET_PREFS_FAILURE = 'user/SET_PREFS_FAILURE';
     groups: Array,
     hotlists: Array,
     prefs: Object,
+    gapiEmail: String,
   },
   requests: {
     fetch: Object,
@@ -53,6 +63,13 @@ const USER_DEFAULT = {
   projects: {},
   prefs: {},
   prefsLoaded: false,
+};
+
+const gapiEmailReducer = (user, action) => {
+  return {
+    ...user,
+    gapiEmail: action.email || '',
+  };
 };
 
 export const currentUserReducer = createReducer(USER_DEFAULT, {
@@ -84,6 +101,8 @@ export const currentUserReducer = createReducer(USER_DEFAULT, {
       prefs,
     };
   },
+  [GAPI_LOGIN_SUCCESS]: gapiEmailReducer,
+  [GAPI_LOGOUT_SUCCESS]: gapiEmailReducer,
 });
 
 export const usersByIdReducer = createReducer({}, {
@@ -267,5 +286,47 @@ export const setPrefs = (newPrefs, saveChanges = true) => async (dispatch) => {
     dispatch(fetchPrefs());
   } catch (error) {
     dispatch({type: SET_PREFS_ERROR, error});
+  }
+};
+
+/**
+ * Action creator to initiate the gapi.js login flow.
+ *
+ * @return {Promise} Resolved only when gapi.js login succeeds.
+ */
+export const initGapiLogin = () => (dispatch) => {
+  dispatch({type: GAPI_LOGIN_START});
+
+  return new Promise(async (resolve) => {
+    try {
+      await loadGapi();
+      gapi.auth2.getAuthInstance().signIn().then(async () => {
+        const email = await fetchGapiEmail();
+        dispatch({type: GAPI_LOGIN_SUCCESS, email: email});
+        resolve();
+      });
+    } catch (error) {
+      // TODO(jeffcarp): Pop up a message that signIn failed.
+      dispatch({type: GAPI_LOGIN_FAILURE, error});
+    }
+  });
+};
+
+/**
+ * Action creator to log the user out of gapi.js
+ *
+ * @return {undefined}
+ */
+export const initGapiLogout = () => async (dispatch) => {
+  dispatch({type: GAPI_LOGOUT_START});
+
+  try {
+    await loadGapi();
+    gapi.auth2.getAuthInstance().signOut().then(() => {
+      dispatch({type: GAPI_LOGOUT_SUCCESS, email: ''});
+    });
+  } catch (error) {
+    // TODO(jeffcarp): Pop up a message that signOut failed.
+    dispatch({type: GAPI_LOGOUT_FAILURE, error});
   }
 };

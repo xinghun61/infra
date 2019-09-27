@@ -126,11 +126,11 @@ describe('mr-issue-link', () => {
 
     assert.isTrue(dropdown.opened);
 
-    const cue = dropdown.querySelector('mr-cue');
+    const cue = dropdown.querySelector('mr-fed-ref-cue');
     assert.isNotNull(cue);
     const message = cue.shadowRoot.querySelector('#message');
     assert.isNotNull(message);
-    assert.include(message.innerText, 'another tracker');
+    assert.include(message.innerText, 'Buganizer issue tracker');
   });
 
   it('shows title when summary is defined', async () => {

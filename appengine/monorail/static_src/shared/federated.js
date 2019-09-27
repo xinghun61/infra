@@ -6,7 +6,7 @@
  * Logic for dealing with federated issue references.
  */
 
-import loadGapi from './gapi-loader';
+import loadGapi, {fetchGapiEmail} from './gapi-loader.js';
 
 const GOOGLE_ISSUE_TRACKER_REGEX = /^b\/\d+$/;
 
@@ -76,21 +76,18 @@ class FederatedIssue {
     throw new Error('Not implemented.');
   }
 
+  // trackerName should return the name of the bug tracker.
+  get trackerName() {
+    throw new Error('Not implemented.');
+  }
+
   // isOpen returns a Promise that resolves either true or false.
   async isOpen() {
     throw new Error('Not implemented.');
   }
 }
 
-/* Class for Google Issue Tracker logic.
- *
- * In order to test this, run the following in the console on an issue detail
- * page that already contains a federated reference to sign in:
- *
- *     gapi.auth2.getAuthInstance().signIn();
- *
- * TODO(monorail:6214): Add authorization button.
- */
+// Class for Google Issue Tracker (Buganizer) logic.
 export class GoogleIssueTrackerIssue extends FederatedIssue {
   constructor(shortlink) {
     super(shortlink);
@@ -105,9 +102,14 @@ export class GoogleIssueTrackerIssue extends FederatedIssue {
     return `https://issuetracker.google.com/issues/${this.issueID}`;
   }
 
+  get trackerName() {
+    return 'Buganizer';
+  }
+
   async isOpen() {
-    const userProfile = await loadGapi();
-    if (!userProfile) {
+    await loadGapi();
+    const email = await fetchGapiEmail();
+    if (!email) {
       // Fail open.
       return true;
     }
