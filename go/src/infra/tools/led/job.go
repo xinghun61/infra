@@ -38,15 +38,17 @@ func JobSliceFromTaskSlice(ts *swarming.SwarmingRpcsTaskSlice) (*JobSlice, error
 
 	ret.S.Env = ingestMap(&props.Env)
 	ret.S.CipdPkgs = map[string]map[string]string{}
-	for _, pkg := range props.CipdInput.Packages {
-		if _, ok := ret.S.CipdPkgs[pkg.Path]; !ok {
-			ret.S.CipdPkgs[pkg.Path] = map[string]string{}
+	if props.CipdInput != nil {
+		for _, pkg := range props.CipdInput.Packages {
+			if _, ok := ret.S.CipdPkgs[pkg.Path]; !ok {
+				ret.S.CipdPkgs[pkg.Path] = map[string]string{}
+			}
+			ret.S.CipdPkgs[pkg.Path][pkg.PackageName] = pkg.Version
 		}
-		ret.S.CipdPkgs[pkg.Path][pkg.PackageName] = pkg.Version
-	}
-	props.CipdInput.Packages = nil
-	if props.CipdInput.Server == "" && props.CipdInput.ClientPackage == nil {
-		props.CipdInput = nil
+		props.CipdInput.Packages = nil
+		if props.CipdInput.Server == "" && props.CipdInput.ClientPackage == nil {
+			props.CipdInput = nil
+		}
 	}
 
 	ret.U.Dimensions = ingestMap(&props.Dimensions)
