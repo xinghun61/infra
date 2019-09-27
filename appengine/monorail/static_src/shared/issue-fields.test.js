@@ -245,6 +245,63 @@ describe('stringValuesForIssueField', () => {
     });
   });
 
+  describe('custom approval fields', () => {
+    beforeEach(() => {
+      issue = {
+        localId: 33,
+        projectName: 'bird',
+        approvalValues: [
+          {fieldRef: {type: 'APPROVAL_TYPE', fieldName: 'Goose-Approval'},
+            approverRefs: []},
+          {fieldRef: {type: 'APPROVAL_TYPE', fieldName: 'Chicken-Approval'},
+            status: 'APPROVED'},
+          {fieldRef: {type: 'APPROVAL_TYPE', fieldName: 'Dodo-Approval'},
+            status: 'NEED_INFO', approverRefs: [{displayName: 'kiwi@bird.test'},
+              {displayName: 'mini-dino@bird.test'}],
+          },
+        ],
+      };
+    });
+
+    it('handles approval approver columns', () => {
+      const projectName = 'bird';
+      const fieldDefMap = new Map([
+        ['goose-approval', {
+          fieldRef: {type: 'APPROVAL_TYPE', fieldName: 'Goose-Approval'}}],
+        ['chicken-approval', {
+          fieldRef: {type: 'APPROVAL_TYPE', fieldName: 'Chicken-Approval'}}],
+        ['dodo-approval', {
+          fieldRef: {type: 'APPROVAL_TYPE', fieldName: 'Dodo-Approval'}}],
+      ]);
+      assert.deepEqual(stringValuesForIssueField(
+          issue, 'goose-approval-approver',
+          projectName, fieldDefMap), []);
+      assert.deepEqual(stringValuesForIssueField(
+          issue, 'chicken-approval-approver',
+          projectName, fieldDefMap), []);
+      assert.deepEqual(stringValuesForIssueField(
+          issue, 'dodo-approval-approver',
+          projectName, fieldDefMap), ['kiwi@bird.test', 'mini-dino@bird.test']);
+    });
+    it('handles approval value columns', () => {
+      const projectName = 'bird';
+      const fieldDefMap = new Map([
+        ['goose-approval', {
+          fieldRef: {type: 'APPROVAL_TYPE', fieldName: 'Goose-Approval'}}],
+        ['chicken-approval', {
+          fieldRef: {type: 'APPROVAL_TYPE', fieldName: 'Chicken-Approval'}}],
+        ['dodo-approval', {
+          fieldRef: {type: 'APPROVAL_TYPE', fieldName: 'Dodo-Approval'}}],
+      ]);
+      assert.deepEqual(stringValuesForIssueField(issue, 'goose-approval',
+          projectName, fieldDefMap), ['NotSet']);
+      assert.deepEqual(stringValuesForIssueField(issue, 'chicken-approval',
+          projectName, fieldDefMap), ['Approved']);
+      assert.deepEqual(stringValuesForIssueField(issue, 'dodo-approval',
+          projectName, fieldDefMap), ['NeedInfo']);
+    });
+  });
+
   describe('custom fields', () => {
     beforeEach(() => {
       issue = {

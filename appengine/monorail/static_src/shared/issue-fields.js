@@ -8,6 +8,7 @@ import {labelRefsToStrings, issueRefsToStrings, componentRefsToStrings,
   userRefsToDisplayNames, statusRefsToStrings, labelNameToLabelPrefix,
 } from './converters.js';
 import {removePrefix} from './helpers.js';
+import {STATUS_ENUM_TO_TEXT} from 'shared/approval-consts.js';
 import {fieldValueMapKey} from 'shared/metadata-helpers.js';
 
 // TODO(zhangtiff): Merge this file with metadata-helpers.js.
@@ -41,6 +42,8 @@ export const SITEWIDE_DEFAULT_COLUMNS = ['ID', 'Type', 'Status',
 export const PHASE_FIELD_COL_DELIMITER_REGEX = /\./;
 
 export const EMPTY_FIELD_VALUE = '----';
+
+export const APPROVER_COL_SUFFIX_REGEX = /\-approver$/i;
 
 /**
  * Parses colspec or groupbyspec values from user input such as form fields
@@ -76,9 +79,11 @@ export function extractTypeForIssue(fieldValues, labelRefs) {
   return;
 }
 
+// TODO(jojwang): monorail:6397, Refactor these specific map producers into
+// selectors.
 /**
  * Converts issue.fieldValues into a map where values can be looked up given
- * a field ref.
+ * a field value key.
  *
  * @param {Array} fieldValues List of values with a fieldRef attached.
  * @return {Map} keys are a string constructed using fieldValueMapKey() and
@@ -99,6 +104,48 @@ export function fieldValuesToMap(fieldValues) {
   }
   return acc;
 }
+
+/**
+ * Converts issue.approvalValues into a map where values can be looked up given
+  * a field value key.
+  *
+  * @param {Array} approvalValues list of approvals with a fieldRef attached.
+  * @return {Map} keys are a string constructed using approvalValueFieldMapKey()
+  *   and values are an Array of value strings.
+  */
+export function approvalValuesToMap(approvalValues) {
+  if (!approvalValues) return new Map();
+  const approvalKeysToValues = new Map();
+  for (const av of approvalValues) {
+    if (!av || !av.fieldRef || !av.fieldRef.fieldName) continue;
+    const key = fieldValueMapKey(av.fieldRef.fieldName);
+    // If there is not status for this approval, the value should show NOT_SET.
+    approvalKeysToValues.set(key, [STATUS_ENUM_TO_TEXT[av.status || '']]);
+  }
+  return approvalKeysToValues;
+}
+
+/**
+ * Converts issue.approvalValues into a map where the approvers can be looked
+ * up given a field value key.
+ *
+ * @param {Array} approvalValues list of approvals with a fieldRef attached.
+ * @return {Map} keys are a string constructed using fieldValueMapKey() and
+ *   values are an Array of
+ */
+export function approvalApproversToMap(approvalValues) {
+  if (!approvalValues) return new Map();
+  const approvalKeysToApprovers = new Map();
+  for (const av of approvalValues) {
+    if (!av || !av.fieldRef || !av.fieldRef.fieldName ||
+        !av.approverRefs) continue;
+    const key = fieldValueMapKey(av.fieldRef.fieldName);
+    const approvers = av.approverRefs.map((ref) => ref.displayName);
+    approvalKeysToApprovers.set(key, approvers);
+  }
+  return approvalKeysToApprovers;
+}
+
 
 // Helper function used for fields with only one value that can be unset.
 const wrapValueIfExists = (value) => value ? [value] : [];
@@ -247,6 +294,28 @@ export const stringValuesForIssueField = (issue, columnName, projectName,
         return values.map((time) => relativeTime(new Date(time * 1000)));
     }
     return values.map((value) => `${value}`);
+  }
+
+  // Handle custom approval field approver columns.
+  const found = columnKey.match(APPROVER_COL_SUFFIX_REGEX);
+  if (found) {
+    const approvalName = columnKey.slice(0, -found[0].length);
+    const approvalFieldKey = fieldValueMapKey(approvalName);
+    if (fieldDefMap.has(approvalFieldKey)) {
+      const approvalApproversMap = approvalApproversToMap(issue.approvalValues);
+      if (approvalApproversMap.has(approvalFieldKey)) {
+        return approvalApproversMap.get(approvalFieldKey);
+      }
+    }
+  }
+
+  // Handle custom approval field columns.
+  if (fieldDefMap.has(columnKey) && fieldDefMap.get(columnKey).fieldRef &&
+      fieldDefMap.get(columnKey).fieldRef.type == fieldTypes.APPROVAL_TYPE) {
+    const approvalValuesMap = approvalValuesToMap(issue.approvalValues);
+    if (approvalValuesMap.has(columnKey)) {
+      return approvalValuesMap.get(columnKey);
+    }
   }
 
   // Handle custom fields.
