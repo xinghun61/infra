@@ -236,6 +236,9 @@ def validate_builder_cfg(builder, mixin_names, final, ctx):
     with ctx.prefix('swarming_host: '):
       _validate_hostname(builder.swarming_host, ctx)
 
+  if builder.luci_migration_host != "":
+    ctx.error('deprecated luci_migration_host field must be removed.')
+
   for i, t in enumerate(builder.swarming_tags):
     with ctx.prefix('tag #%d: ', i + 1):
       _validate_tag(t, ctx)
