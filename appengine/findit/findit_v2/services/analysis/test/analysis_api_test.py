@@ -1334,11 +1334,13 @@ class AnalysisAPITest(wf_testcase.TestCase):
     return rerun_build
 
   @mock.patch.object(
+      CompileAnalysisAPI, '_GetRerunDimensions', return_value=None)
+  @mock.patch.object(
       ChromiumProjectAPI,
       'GetCompileRerunBuildInputProperties',
       return_value={'recipe': 'compile'})
   @mock.patch.object(buildbucket_client, 'TriggerV2Build')
-  def testTriggerRerunBuild(self, mock_trigger_build, _):
+  def testTriggerRerunBuild(self, mock_trigger_build, *_):
     new_build_id = 800000024324
     new_build = Build(id=new_build_id, number=300)
     new_build.status = common_pb2.SCHEDULED
@@ -1364,6 +1366,7 @@ class AnalysisAPITest(wf_testcase.TestCase):
             host=rerun_commit.gitiles_host,
             ref=rerun_commit.gitiles_ref,
             id=rerun_commit.gitiles_id), {'recipe': 'compile'},
+        dimensions=None,
         tags=[
             {
                 'value': 'compile-failure-culprit-finding',
@@ -1376,11 +1379,13 @@ class AnalysisAPITest(wf_testcase.TestCase):
         ])
 
   @mock.patch.object(
+      CompileAnalysisAPI, '_GetRerunDimensions', return_value=None)
+  @mock.patch.object(
       ChromiumProjectAPI,
       'GetCompileRerunBuildInputProperties',
       return_value={'recipe': 'compile'})
   @mock.patch.object(buildbucket_client, 'TriggerV2Build')
-  def testTriggerRerunBuildFoundRunningBuild(self, mock_trigger_build, _):
+  def testTriggerRerunBuildFoundRunningBuild(self, mock_trigger_build, *_):
     """This test is for the case where there's already an existing rerun build,
       so no new rerun-build should be scheduled."""
     rerun_builder = BuilderID(
@@ -1396,11 +1401,13 @@ class AnalysisAPITest(wf_testcase.TestCase):
     self.assertFalse(mock_trigger_build.called)
 
   @mock.patch.object(
+      CompileAnalysisAPI, '_GetRerunDimensions', return_value=None)
+  @mock.patch.object(
       ChromiumProjectAPI,
       'GetCompileRerunBuildInputProperties',
       return_value={'recipe': 'compile'})
   @mock.patch.object(buildbucket_client, 'TriggerV2Build')
-  def testTriggerRerunBuildFoundUnusableBuild(self, mock_trigger_build, _):
+  def testTriggerRerunBuildFoundUnusableBuild(self, mock_trigger_build, *_):
     """This test is for the case where there's already an existing build, but it
       ended with unusable results, so a new rerun-build should be scheduled."""
     new_build_id = 800000024324
@@ -1431,6 +1438,7 @@ class AnalysisAPITest(wf_testcase.TestCase):
             host=rerun_commit.gitiles_host,
             ref=rerun_commit.gitiles_ref,
             id=rerun_commit.gitiles_id), {'recipe': 'compile'},
+        dimensions=None,
         tags=[
             {
                 'value': 'compile-failure-culprit-finding',
@@ -1467,11 +1475,13 @@ class AnalysisAPITest(wf_testcase.TestCase):
     self.assertFalse(mock_trigger_build.called)
 
   @mock.patch.object(
+      CompileAnalysisAPI, '_GetRerunDimensions', return_value=None)
+  @mock.patch.object(
       ChromiumProjectAPI,
       'GetCompileRerunBuildInputProperties',
       return_value=None)
   @mock.patch.object(buildbucket_client, 'TriggerV2Build')
-  def testTriggerRerunBuildFailedToGetProperty(self, mock_trigger_build, _):
+  def testTriggerRerunBuildFailedToGetProperty(self, mock_trigger_build, *_):
     """This test is for the case where there's already an existing rerun build,
       so no new rerun-build should be scheduled."""
     rerun_commit = self.commits[2]
@@ -1487,11 +1497,13 @@ class AnalysisAPITest(wf_testcase.TestCase):
     self.assertFalse(mock_trigger_build.called)
 
   @mock.patch.object(
+      CompileAnalysisAPI, '_GetRerunDimensions', return_value=None)
+  @mock.patch.object(
       ChromiumProjectAPI,
       'GetCompileRerunBuildInputProperties',
       return_value={'recipe': 'compile'})
   @mock.patch.object(buildbucket_client, 'TriggerV2Build', return_value=None)
-  def testTriggerRerunBuildFailedToTriggerBuild(self, mock_trigger_build, _):
+  def testTriggerRerunBuildFailedToTriggerBuild(self, mock_trigger_build, *_):
     """This test is for the case where there's already an existing rerun build,
       so no new rerun-build should be scheduled."""
     rerun_commit = self.commits[2]
@@ -1542,13 +1554,15 @@ class AnalysisAPITest(wf_testcase.TestCase):
     self.assertEqual(expected_results, results)
 
   @mock.patch.object(
+      CompileAnalysisAPI, '_GetRerunDimensions', return_value=None)
+  @mock.patch.object(
       CompileAnalysisAPI,
       '_GetRerunBuildInputProperties',
       return_value={'recipe': 'compile'})
   @mock.patch.object(buildbucket_client, 'TriggerV2Build')
   @mock.patch.object(git, 'MapCommitPositionsToGitHashes')
   def testRerunBasedAnalysisContinueWithNextRerunBuild(self, mock_revisions,
-                                                       mock_trigger_build, _):
+                                                       mock_trigger_build, *_):
     mock_revisions.return_value = {n: str(n) for n in xrange(6000000, 6000005)}
     mock_rerun_build = Build(id=8000055000123, number=78990)
     mock_rerun_build.create_time.FromDatetime(datetime(2019, 4, 30))
@@ -1596,10 +1610,12 @@ class AnalysisAPITest(wf_testcase.TestCase):
       CompileAnalysisAPI,
       '_GetRerunBuildInputProperties',
       return_value={'recipe': 'compile'})
+  @mock.patch.object(
+      CompileAnalysisAPI, '_GetRerunDimensions', return_value=None)
   @mock.patch.object(buildbucket_client, 'TriggerV2Build')
   @mock.patch.object(git, 'MapCommitPositionsToGitHashes')
   def testRerunBasedAnalysisTriggersSuspectsParent(self, mock_revisions,
-                                                   mock_trigger_build, _):
+                                                   mock_trigger_build, *_):
     # Trigger the suspect's parent.
     mock_revisions.return_value = {n: str(n) for n in xrange(6000000, 6000005)}
     mock_suspect = Suspect.Create(
@@ -1627,13 +1643,15 @@ class AnalysisAPITest(wf_testcase.TestCase):
     self.assertEqual(6000003, rerun_builds[0].gitiles_commit.commit_position)
 
   @mock.patch.object(
+      CompileAnalysisAPI, '_GetRerunDimensions', return_value=None)
+  @mock.patch.object(
       CompileAnalysisAPI,
       '_GetRerunBuildInputProperties',
       return_value={'recipe': 'compile'})
   @mock.patch.object(buildbucket_client, 'TriggerV2Build')
   @mock.patch.object(git, 'MapCommitPositionsToGitHashes')
   def testRerunBasedAnalysisTriggersSuspect(self, mock_revisions,
-                                            mock_trigger_build, _):
+                                            mock_trigger_build, *_):
     # Trigger the suspect itself if its parent passed.
     mock_revisions.return_value = {n: str(n) for n in xrange(6000000, 6000005)}
     mock_suspect = Suspect.Create(

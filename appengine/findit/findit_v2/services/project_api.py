@@ -108,6 +108,26 @@ class ProjectAPI(object):  # pragma: no cover.
     # pylint: disable=unused-argument
     raise NotImplementedError
 
+  def GetRerunDimensions(self, analyzed_build_id):
+    """Dimensions for rerun builds.
+
+    Some projects may use a single re-run builder supporting multiple
+    configurations and dimensions, they may override this function to provide
+    custom dimensions to the rerun job request.
+
+    The expected return value is a list of dictionaries where each dictionary
+    has two key/value pairs describing one dimension. E.g.
+    [{
+        'key': 'os',
+        'value': 'Mac'
+    }, {
+        'key': ...,
+        'value': ...
+    }, ...]
+    """
+    # pylint: disable=unused-argument
+    return None
+
   def GetRerunBuilderId(self, build):
     """Gets builder id to run the rerun builds.
 

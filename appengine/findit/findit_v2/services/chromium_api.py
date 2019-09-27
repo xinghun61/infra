@@ -98,6 +98,27 @@ class ChromiumProjectAPI(ProjectAPI):
     return '{project}/{bucket}/{builder}'.format(
         project='chromium', bucket='findit', builder='findit-rerun')
 
+  def GetRerunDimensions(self, analyzed_build_id):
+    # Copy these dimensions from the analyzed builder to the rerun job request.
+    dimension_whitelist = set([
+        'os',
+        'gpu',
+    ])
+    build = buildbucket_client.GetV2Build(
+        analyzed_build_id,
+        fields=FieldMask(paths=['infra.swarming.taskDimensions']))
+    assert build, "Could not get analyzed build %d" % analyzed_build_id
+    dimension_dicts = []
+    for dimension_proto in build.infra.swarming.task_dimensions:
+      if dimension_proto.key in dimension_whitelist:
+        # Explicitly include only the 'key' and 'value' keys to discard
+        # 'expiration' which is unrelated.
+        dimension_dicts.append({
+            'key': dimension_proto.key,
+            'value': dimension_proto.value
+        })
+    return dimension_dicts
+
   def GetCompileRerunBuildInputProperties(self, failed_targets,
                                           analyzed_build_id):
     all_targets = set()

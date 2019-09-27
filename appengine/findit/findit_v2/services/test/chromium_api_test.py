@@ -225,11 +225,14 @@ class ChromiumProjectAPITest(unittest.TestCase):
             None,
             None))
 
-  def _CreateBuildbucketBuild(self,
-                              build_id,
-                              build_number,
-                              master='master',
-                              builder='builder'):
+  def _CreateBuildbucketBuild(
+      self,
+      build_id,
+      build_number,
+      master='master',
+      builder='builder',
+      dimensions=None,
+  ):
     build = Build(id=build_id, number=build_number)
     build.input.gitiles_commit.host = 'gitiles.host.com'
     build.input.gitiles_commit.project = 'project/name'
@@ -237,6 +240,10 @@ class ChromiumProjectAPITest(unittest.TestCase):
     build.input.gitiles_commit.id = 'git_sha'
     build.input.properties['mastername'] = master
     build.builder.builder = builder
+    for d in (dimensions or []):
+      new_d = build.infra.swarming.task_dimensions.add()
+      new_d.key = d['key']
+      new_d.value = d['value']
     return build
 
   @patch.object(logdog_util, 'GetLogFromViewUrl')
@@ -519,3 +526,24 @@ class ChromiumProjectAPITest(unittest.TestCase):
     self.assertEqual(props['tests'], {
         'complexitor_tests': ['TestTrueNatureOf42', 'ValidateFTLCommunication']
     })
+
+  @patch.object(buildbucket_client, 'GetV2Build')
+  def testGetRerunDimensions(self, mock_bb):
+    mock_bb.return_value = self._CreateBuildbucketBuild(
+        800000009999,
+        9999,
+        'chromium.linux',
+        'Linux Tests',
+        dimensions=[{
+            'key': 'os',
+            'value': 'Mac',
+        }, {
+            'key': 'cpu',
+            'value': 'x86',
+        }, {
+            'key': 'ssd',
+            'value': '1',
+        }],
+    )
+    dimensions = ChromiumProjectAPI().GetRerunDimensions(800000009999)
+    self.assertEqual(dimensions, [{'key': 'os', 'value': 'Mac'}])

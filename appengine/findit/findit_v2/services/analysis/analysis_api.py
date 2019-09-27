@@ -223,6 +223,12 @@ class AnalysisAPI(object):
     """
     raise NotImplementedError
 
+  def _GetRerunDimensions(self, project_api, analyzed_build_id):
+    """Gets project specific override dimensions for rerun jobs."""
+    # By default, all types of analyses derive override dimensions (if any) the
+    # same way, varying only by project.
+    return project_api.GetRerunDimensions(analyzed_build_id)
+
   def _GetRerunBuildInputProperties(self, project_api, rerun_failures,
                                     analyzed_build_id):
     """Gets project specific input properties to rerun failures."""
@@ -1218,6 +1224,7 @@ class AnalysisAPI(object):
     if input_properties is None:
       return ('Failed to get input properties to trigger rerun build'
               'for build {}.'.format(analyzed_build_id))
+    rerun_dimensions = self._GetRerunDimensions(project_api, analyzed_build_id)
 
     rerun_tags = self._GetRerunBuildTags(analyzed_build_id)
     gitiles_commit_pb = common_pb2.GitilesCommit(
@@ -1226,7 +1233,11 @@ class AnalysisAPI(object):
         ref=rerun_commit.gitiles_ref,
         id=rerun_commit.gitiles_id)
     new_build = buildbucket_client.TriggerV2Build(
-        rerun_builder, gitiles_commit_pb, input_properties, tags=rerun_tags)
+        rerun_builder,
+        gitiles_commit_pb,
+        input_properties,
+        tags=rerun_tags,
+        dimensions=rerun_dimensions)
 
     if not new_build:
       return ('Failed to trigger rerun build for {} in build {},'
