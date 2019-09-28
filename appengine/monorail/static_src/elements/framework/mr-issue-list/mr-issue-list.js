@@ -350,8 +350,10 @@ export class MrIssueList extends connectStore(LitElement) {
                 .value=${id}
                 .checked=${rowSelected}
                 type="checkbox"
+                data-index=${i}
                 aria-label="Select Issue ${issue.localId}"
                 @change=${this._selectIssue}
+                @click=${this._selectIssueRange}
               />
             ` : ''}
             ${this.starringEnabled ? html`
@@ -499,6 +501,9 @@ export class MrIssueList extends connectStore(LitElement) {
 
     this._uniqueValuesByColumn = new Map();
 
+    /** @type {Number} */
+    this._lastSelectedCheckbox = -1;
+
     // Expose page.js for stubbing.
     this._page = page;
   };
@@ -536,6 +541,8 @@ export class MrIssueList extends connectStore(LitElement) {
       // Clear group toggle state when the list of issues changes to prevent an
       // ever-growing Set size.
       this._hiddenGroups = new Set();
+
+      this._lastSelectedCheckbox = -1;
     }
 
     const valuesByColumnArgs = ['issues', 'columns', 'projectName',
@@ -823,7 +830,7 @@ export class MrIssueList extends connectStore(LitElement) {
         break;
       case 'x': // Toggle selection of focused issue.
         const key = issueRefToString(issue);
-        this._updateSelectedIssue(key, !this._selectedIssues.has(key));
+        this._updateSelectedIssues([key], !this._selectedIssues.has(key));
         break;
       case 'o': // Open current issue.
       case 'O': // Open current issue in new tab.
@@ -867,28 +874,62 @@ export class MrIssueList extends connectStore(LitElement) {
     this.dispatchEvent(new CustomEvent('selectionChange'));
   }
 
-  // TODO(zhangtiff): Add Shift+Click to select a range of issues.
+  // TODO(zhangtiff): Implement Shift+Click to select a range of checkboxes
+  // for the 'x' hot key.
+  _selectIssueRange(e) {
+    if (!this.selectionEnabled) return;
+
+    const checkbox = e.target;
+
+    const index = Number.parseInt(checkbox.dataset.index);
+    if (Number.isNaN(index)) {
+      console.error('Issue checkbox has invalid data-index attribute.');
+      return;
+    }
+
+    const lastIndex = this._lastSelectedCheckbox;
+    if (e.shiftKey && lastIndex >= 0) {
+      const newCheckedState = checkbox.checked;
+
+      const start = Math.min(lastIndex, index);
+      const end = Math.max(lastIndex, index) + 1;
+
+      const updatedIssueKeys = this.issues.slice(start, end).map(
+          issueRefToString);
+      this._updateSelectedIssues(updatedIssueKeys, newCheckedState);
+    }
+
+    this._lastSelectedCheckbox = index;
+  }
+
   _selectIssue(e) {
     if (!this.selectionEnabled) return;
 
     const checkbox = e.target;
-    const idKey = checkbox.value;
+    const issueKey = checkbox.value;
 
-    this._updateSelectedIssue(idKey, checkbox.checked);
+    this._updateSelectedIssues([issueKey], checkbox.checked);
   }
 
-  _updateSelectedIssue(issueKey, selected) {
-    const oldSelection = this._selectedIssues.has(issueKey);
+  _updateSelectedIssues(issueKeys, selected) {
+    let hasChanges = false;
 
-    if (selected) {
-      this._selectedIssues.add(issueKey);
-    } else if (this._selectedIssues.has(issueKey)) {
-      this._selectedIssues.delete(issueKey);
-    }
+    issueKeys.forEach((issueKey) => {
+      const oldSelection = this._selectedIssues.has(issueKey);
 
-    const newSelection = this._selectedIssues.has(issueKey);
+      if (selected) {
+        this._selectedIssues.add(issueKey);
+      } else if (this._selectedIssues.has(issueKey)) {
+        this._selectedIssues.delete(issueKey);
+      }
 
-    if (newSelection !== oldSelection) {
+      const newSelection = this._selectedIssues.has(issueKey);
+
+      hasChanges = hasChanges || newSelection !== oldSelection;
+    });
+
+
+    if (hasChanges) {
       this.requestUpdate('_selectedIssues');
       this.dispatchEvent(new CustomEvent('selectionChange'));
     }

@@ -411,25 +411,6 @@ describe('mr-issue-list', () => {
     sinon.assert.calledWith(element.removeColumn, 1);
   });
 
-  it('selections disabled when selectionEnabled is false', async () => {
-    element.selectionEnabled = false;
-    element.issues = [
-      {summary: 'test issue'},
-      {summary: 'I have a summary'},
-    ];
-
-    await element.updateComplete;
-
-    let checkboxes = element.shadowRoot.querySelectorAll('.issue-checkbox');
-    assert.equal(checkboxes.length, 0);
-
-    element.selectionEnabled = true;
-    await element.updateComplete;
-
-    checkboxes = element.shadowRoot.querySelectorAll('.issue-checkbox');
-    assert.equal(checkboxes.length, 2);
-  });
-
   it('starring disabled when starringEnabled is false', async () => {
     element.starringEnabled = false;
     element.issues = [
@@ -449,106 +430,172 @@ describe('mr-issue-list', () => {
     assert.equal(stars.length, 2);
   });
 
-  it('selected issues render selected attribute', async () => {
-    element.selectionEnabled = true;
-    element.issues = [
-      {summary: 'issue 1', localId: 1, projectName: 'proj'},
-      {summary: 'another issue', localId: 2, projectName: 'proj'},
-      {summary: 'issue 2', localId: 3, projectName: 'proj'},
-    ];
-    element.columns = ['Summary'];
+  describe('issue selection', () => {
+    beforeEach(() => {
+      element.selectionEnabled = true;
+    });
 
-    await element.updateComplete;
+    it('selections disabled when selectionEnabled is false', async () => {
+      element.selectionEnabled = false;
+      element.issues = [
+        {summary: 'test issue'},
+        {summary: 'I have a summary'},
+      ];
 
-    element._selectedIssues = new Set(['proj:1']);
+      await element.updateComplete;
 
-    await element.updateComplete;
+      let checkboxes = element.shadowRoot.querySelectorAll('.issue-checkbox');
+      assert.equal(checkboxes.length, 0);
 
-    const issues = element.shadowRoot.querySelectorAll('tr[selected]');
+      element.selectionEnabled = true;
+      await element.updateComplete;
 
-    assert.equal(issues.length, 1);
-    assert.equal(issues[0].dataset.index, '0');
-    assert.include(issues[0].textContent, 'issue 1');
-  });
+      checkboxes = element.shadowRoot.querySelectorAll('.issue-checkbox');
+      assert.equal(checkboxes.length, 2);
+    });
 
-  it('clicking select all selects all issues', async () => {
-    element.selectionEnabled = true;
-    element.issues = [
-      {summary: 'issue 1', localId: 1, projectName: 'proj'},
-      {summary: 'issue 2', localId: 2, projectName: 'proj'},
-    ];
+    it('selected issues render selected attribute', async () => {
+      element.issues = [
+        {summary: 'issue 1', localId: 1, projectName: 'proj'},
+        {summary: 'another issue', localId: 2, projectName: 'proj'},
+        {summary: 'issue 2', localId: 3, projectName: 'proj'},
+      ];
+      element.columns = ['Summary'];
 
-    await element.updateComplete;
+      await element.updateComplete;
 
-    assert.deepEqual(element.selectedIssues, []);
+      element._selectedIssues = new Set(['proj:1']);
 
-    const selectAll = element.shadowRoot.querySelector('.select-all');
-    selectAll.click();
+      await element.updateComplete;
 
-    assert.deepEqual(element.selectedIssues, [
-      {summary: 'issue 1', localId: 1, projectName: 'proj'},
-      {summary: 'issue 2', localId: 2, projectName: 'proj'},
-    ]);
-  });
+      const issues = element.shadowRoot.querySelectorAll('tr[selected]');
 
-  it('when checked select all deselects all issues', async () => {
-    element.selectionEnabled = true;
-    element.issues = [
-      {summary: 'issue 1', localId: 1, projectName: 'proj'},
-      {summary: 'issue 2', localId: 2, projectName: 'proj'},
-    ];
+      assert.equal(issues.length, 1);
+      assert.equal(issues[0].dataset.index, '0');
+      assert.include(issues[0].textContent, 'issue 1');
+    });
 
-    await element.updateComplete;
+    it('clicking select all selects all issues', async () => {
+      element.issues = [
+        {summary: 'issue 1', localId: 1, projectName: 'proj'},
+        {summary: 'issue 2', localId: 2, projectName: 'proj'},
+      ];
 
-    element._selectedIssues = new Set(['proj:1', 'proj:2']);
+      await element.updateComplete;
 
-    await element.updateComplete;
+      assert.deepEqual(element.selectedIssues, []);
 
-    assert.deepEqual(element.selectedIssues, [
-      {summary: 'issue 1', localId: 1, projectName: 'proj'},
-      {summary: 'issue 2', localId: 2, projectName: 'proj'},
-    ]);
+      const selectAll = element.shadowRoot.querySelector('.select-all');
+      selectAll.click();
 
-    const selectAll = element.shadowRoot.querySelector('.select-all');
-    selectAll.click();
+      assert.deepEqual(element.selectedIssues, [
+        {summary: 'issue 1', localId: 1, projectName: 'proj'},
+        {summary: 'issue 2', localId: 2, projectName: 'proj'},
+      ]);
+    });
 
-    assert.deepEqual(element.selectedIssues, []);
-  });
+    it('when checked select all deselects all issues', async () => {
+      element.issues = [
+        {summary: 'issue 1', localId: 1, projectName: 'proj'},
+        {summary: 'issue 2', localId: 2, projectName: 'proj'},
+      ];
 
-  it('selected issues added when issues checked', async () => {
-    element.selectionEnabled = true;
-    element.issues = [
-      {summary: 'issue 1', localId: 1, projectName: 'proj'},
-      {summary: 'another issue', localId: 2, projectName: 'proj'},
-      {summary: 'issue 2', localId: 3, projectName: 'proj'},
-    ];
+      await element.updateComplete;
 
-    await element.updateComplete;
+      element._selectedIssues = new Set(['proj:1', 'proj:2']);
 
-    assert.deepEqual(element.selectedIssues, []);
+      await element.updateComplete;
 
-    const checkboxes = element.shadowRoot.querySelectorAll('.issue-checkbox');
+      assert.deepEqual(element.selectedIssues, [
+        {summary: 'issue 1', localId: 1, projectName: 'proj'},
+        {summary: 'issue 2', localId: 2, projectName: 'proj'},
+      ]);
 
-    assert.equal(checkboxes.length, 3);
+      const selectAll = element.shadowRoot.querySelector('.select-all');
+      selectAll.click();
 
-    checkboxes[2].checked = true;
-    checkboxes[2].dispatchEvent(new CustomEvent('change'));
+      assert.deepEqual(element.selectedIssues, []);
+    });
 
-    await element.updateComplete;
+    it('selected issues added when issues checked', async () => {
+      element.issues = [
+        {summary: 'issue 1', localId: 1, projectName: 'proj'},
+        {summary: 'another issue', localId: 2, projectName: 'proj'},
+        {summary: 'issue 2', localId: 3, projectName: 'proj'},
+      ];
 
-    assert.deepEqual(element.selectedIssues, [
-      {summary: 'issue 2', localId: 3, projectName: 'proj'},
-    ]);
+      await element.updateComplete;
 
-    checkboxes[0].checked = true;
-    checkboxes[0].dispatchEvent(new CustomEvent('change'));
+      assert.deepEqual(element.selectedIssues, []);
 
-    await element.updateComplete;
+      const checkboxes = element.shadowRoot.querySelectorAll('.issue-checkbox');
 
-    assert.deepEqual(element.selectedIssues, [
-      {summary: 'issue 1', localId: 1, projectName: 'proj'},
-      {summary: 'issue 2', localId: 3, projectName: 'proj'},
-    ]);
+      assert.equal(checkboxes.length, 3);
+
+      checkboxes[2].dispatchEvent(new MouseEvent('click'));
+
+      await element.updateComplete;
+
+      assert.deepEqual(element.selectedIssues, [
+        {summary: 'issue 2', localId: 3, projectName: 'proj'},
+      ]);
+
+      checkboxes[0].dispatchEvent(new MouseEvent('click'));
+
+      await element.updateComplete;
+
+      assert.deepEqual(element.selectedIssues, [
+        {summary: 'issue 1', localId: 1, projectName: 'proj'},
+        {summary: 'issue 2', localId: 3, projectName: 'proj'},
+      ]);
+    });
+
+    it('shift+click selects issues in a range', async () => {
+      element.issues = [
+        {localId: 1, projectName: 'proj'},
+        {localId: 2, projectName: 'proj'},
+        {localId: 3, projectName: 'proj'},
+        {localId: 4, projectName: 'proj'},
+        {localId: 5, projectName: 'proj'},
+      ];
+
+      await element.updateComplete;
+
+      assert.deepEqual(element.selectedIssues, []);
+
+      const checkboxes = element.shadowRoot.querySelectorAll('.issue-checkbox');
+
+      // First click.
+      checkboxes[0].dispatchEvent(new MouseEvent('click'));
+
+      await element.updateComplete;
+
+      assert.deepEqual(element.selectedIssues, [
+        {localId: 1, projectName: 'proj'},
+      ]);
+
+      // Second click.
+      checkboxes[3].dispatchEvent(new MouseEvent('click', {shiftKey: true}));
+
+      await element.updateComplete;
+
+      assert.deepEqual(element.selectedIssues, [
+        {localId: 1, projectName: 'proj'},
+        {localId: 2, projectName: 'proj'},
+        {localId: 3, projectName: 'proj'},
+        {localId: 4, projectName: 'proj'},
+      ]);
+
+      // It's possible to chain Shift+Click operations.
+      checkboxes[2].dispatchEvent(new MouseEvent('click', {shiftKey: true}));
+
+      await element.updateComplete;
+
+      assert.deepEqual(element.selectedIssues, [
+        {localId: 1, projectName: 'proj'},
+        {localId: 2, projectName: 'proj'},
+      ]);
+    });
   });
 
   describe('hot keys', () => {
