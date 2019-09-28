@@ -18,7 +18,8 @@ const RESTRICT_TO_DOMAIN = '@google.com';
 
 // loadGapi loads window.gapi and returns a logged in user object or null.
 // Allows overriding signinImpl for testing.
-export default function loadGapi(signinImpl=signin) {
+export default function loadGapi() {
+  const signinImpl = getSigninInstance();
   // Validate client_id exists.
   if (!CS_env.gapi_client_id) {
     throw new Error('Cannot find gapi.js client id');
@@ -38,7 +39,8 @@ export default function loadGapi(signinImpl=signin) {
 }
 
 // For fetching current email. May have changed since load.
-export function fetchGapiEmail(signinImpl=signin) {
+export function fetchGapiEmail() {
+  const signinImpl = getSigninInstance();
   return new Promise((resolve) => {
     signinImpl.getUserProfileAsync().then((profile) => {
       resolve(
@@ -51,4 +53,14 @@ export function fetchGapiEmail(signinImpl=signin) {
       );
     });
   });
+}
+
+// Provide a singleton chops-signin instance to make testing easier.
+let signinInstance;
+export function getSigninInstance(signinImpl=signin, overwrite=false) {
+  // Assign on first run.
+  if (overwrite || !signinInstance) {
+    signinInstance = signinImpl;
+  }
+  return signinInstance;
 }

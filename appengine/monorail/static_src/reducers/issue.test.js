@@ -9,7 +9,7 @@ import * as issue from './issue.js';
 import {fieldTypes} from 'shared/issue-fields.js';
 import {issueToIssueRef} from 'shared/converters.js';
 import {prpcClient} from 'prpc-client-instance.js';
-import loadGapi from 'shared/gapi-loader';
+import {getSigninInstance} from 'shared/gapi-loader.js';
 
 let prpcCall;
 let dispatch;
@@ -582,6 +582,112 @@ describe('issue', () => {
           issues: [],
           progress: 1,
         },
+      });
+    });
+
+    describe('federated references', () => {
+      beforeEach(() => {
+        // Preload signinImpl with a fake for testing.
+        getSigninInstance({
+          init: sinon.stub(),
+          getUserProfileAsync: () => (
+            Promise.resolve({
+              getEmail: sinon.stub().returns('rutabaga@google.com'),
+            })
+          ),
+        });
+        window.CS_env = {gapi_client_id: 'rutabaga'};
+        const getStub = sinon.stub().returns({
+          execute: (cb) => cb(response),
+        });
+        const response = {
+          result: {
+            resolvedTime: 12345,
+          },
+        };
+        window.gapi = {
+          client: {
+            load: (_url, _version, cb) => cb(),
+            corp_issuetracker: {issues: {get: getStub}},
+          },
+        };
+      });
+
+      afterEach(() => {
+        delete window.CS_env;
+        delete window.gapi;
+      });
+
+      describe('fetchFederatedReferenceStatuses', () => {
+        it('returns an empty map if no fedrefs found', async () => {
+          const dispatch = sinon.stub();
+          const testIssue = {};
+          const action = issue.fetchFederatedReferenceStatuses(testIssue);
+          const result = await action(dispatch);
+
+          assert.equal(dispatch.getCalls().length, 0);
+          assert.instanceOf(result, Map);
+          assert.deepEqual(Array.from(result), []);
+        });
+
+        it('fetches from Buganizer API', async () => {
+          const dispatch = sinon.stub();
+          const testIssue = {
+            danglingBlockingRefs: [
+              {extIdentifier: 'b/123456'},
+            ],
+            danglingBlockedOnRefs: [
+              {extIdentifier: 'b/654321'},
+            ],
+            mergedIntoIssueRef: {
+              extIdentifier: 'b/987654',
+            },
+          };
+          const action = issue.fetchFederatedReferenceStatuses(testIssue);
+          const result = await action(dispatch);
+
+          sinon.assert.calledWith(dispatch, {
+            type: 'GAPI_LOGIN_SUCCESS',
+            email: 'rutabaga@google.com',
+          });
+          assert.deepEqual(Array.from(result.entries()), [
+            ['b/123456', false],
+            ['b/654321', false],
+            ['b/987654', false],
+          ]);
+        });
+      });
+
+      describe('fetchRelatedIssues', () => {
+        it('calls fetchFederatedReferenceStatuses for mergedinto', async () => {
+          const dispatch = sinon.stub().returns(new Map([
+            ['b/987654', false],
+          ]));
+          prpcCall.returns(Promise.resolve({openRefs: [], closedRefs: []}));
+          const testIssue = {
+            mergedIntoIssueRef: {
+              extIdentifier: 'b/987654',
+            },
+          };
+          const action = issue.fetchRelatedIssues(testIssue);
+          await action(dispatch);
+
+          // Important: mergedinto fedref is not passed to ListReferencedIssues.
+          const expectedMessage = {issueRefs: []};
+          sinon.assert.calledWith(prpcClient.call, 'monorail.Issues',
+              'ListReferencedIssues', expectedMessage);
+          sinon.assert.calledWith(dispatch, {
+            type: 'FETCH_RELATED_ISSUES_SUCCESS',
+            relatedIssues: {
+              'b/987654': {
+                extIdentifier: 'b/987654',
+                statusRef: {
+                  meansOpen: false,
+                },
+              },
+            },
+          });
+        });
       });
     });
   });

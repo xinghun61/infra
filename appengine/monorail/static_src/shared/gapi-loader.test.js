@@ -4,17 +4,23 @@
 
 import {assert} from 'chai';
 import sinon from 'sinon';
-import loadGapi, {fetchGapiEmail} from './gapi-loader';
+import loadGapi, {fetchGapiEmail, getSigninInstance} from './gapi-loader.js';
 
 describe('gapi-loader', () => {
+  let signinImpl;
   beforeEach(() => {
     window.CS_env = {gapi_client_id: 'rutabaga'};
-    // Pre-load gapi with a fake signin object to prevent loading the
-    // real gapi.js.
-    loadGapi({
-      init: () => {},
-      getUserProfileAsync: () => Promise.resolve({}),
-    });
+    signinImpl = {
+      init: sinon.stub(),
+      getUserProfileAsync: () => (
+        Promise.resolve({
+          getEmail: sinon.stub().returns('rutabaga@google.com'),
+        })
+      ),
+    };
+    // Preload signinImpl with a fake for testing.
+    getSigninInstance(signinImpl, true);
+    delete window.__gapiLoadPromise;
   });
 
   afterEach(() => {
@@ -32,29 +38,36 @@ describe('gapi-loader', () => {
       const callTwo = loadGapi();
 
       assert.strictEqual(callOne, callTwo);
+      assert.strictEqual(callOne, window.__gapiLoadPromise);
+      assert.strictEqual(callTwo, window.__gapiLoadPromise);
       assert.instanceOf(callOne, Promise);
+    });
+
+    it('calls init and returns the current email if any', async () => {
+      const response = await loadGapi();
+      sinon.assert.calledWith(signinImpl.init, window.CS_env.gapi_client_id,
+          ['client'], ['https://www.googleapis.com/auth/buganizer']);
+      assert.equal(response, 'rutabaga@google.com');
     });
   });
 
   describe('fetchGapiEmail()', () => {
     it('returns a profile for allowed domains', async () => {
-      const gapiEmail = await fetchGapiEmail({
-        init: () => {},
+      getSigninInstance({
         getUserProfileAsync: () => Promise.resolve({
-          getEmail: () => 'rutabaga@google.com',
+          getEmail: sinon.stub().returns('rutabaga@google.com'),
         }),
-      });
-      assert.deepEqual(gapiEmail, 'rutabaga@google.com');
+      }, true);
+      assert.deepEqual(await fetchGapiEmail(), 'rutabaga@google.com');
     });
 
     it('returns nothing for non-allowed domains', async () => {
-      const gapiEmail = await fetchGapiEmail({
-        init: () => {},
+      getSigninInstance({
         getUserProfileAsync: () => Promise.resolve({
-          getEmail: () => 'rutabaga@rutabaga.com',
+          getEmail: sinon.stub().returns('rutabaga@rutabaga.com'),
         }),
-      });
-      assert.deepEqual(gapiEmail, null);
+      }, true);
+      assert.deepEqual(await fetchGapiEmail(), null);
     });
   });
 });

@@ -8,7 +8,7 @@ import {
   fromShortlink,
   GoogleIssueTrackerIssue,
 } from './federated.js';
-import loadGapi from 'shared/gapi-loader';
+import {getSigninInstance} from 'shared/gapi-loader.js';
 
 describe('isShortlinkValid', () => {
   it('Returns true for valid links', () => {
@@ -66,14 +66,20 @@ describe('GoogleIssueTrackerIssue', () => {
   });
 
   describe('isOpen', () => {
+    let signinImpl;
     beforeEach(() => {
       window.CS_env = {gapi_client_id: 'rutabaga'};
-      // Pre-load gapi with a fake signin object to prevent loading the
-      // real gapi.js.
-      loadGapi({
-        init: () => {},
-        getUserProfileAsync: () => Promise.resolve({}),
-      });
+      signinImpl = {
+        init: sinon.stub(),
+        getUserProfileAsync: () => (
+          Promise.resolve({
+            getEmail: sinon.stub().returns('rutabaga@google.com'),
+          })
+        ),
+      };
+      // Preload signinImpl with a fake for testing.
+      getSigninInstance(signinImpl, true);
+      delete window.__gapiLoadPromise;
     });
 
     afterEach(() => {

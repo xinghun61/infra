@@ -665,7 +665,8 @@ export const fetchRelatedIssues = (issue) => async (dispatch) => {
 
   const refsToFetch = (issue.blockedOnIssueRefs || []).concat(
       issue.blockingIssueRefs || []);
-  if (issue.mergedIntoIssueRef) {
+  // Add mergedinto ref, exclude FedRefs which are fetched separately.
+  if (issue.mergedIntoIssueRef && !issue.mergedIntoIssueRef.extIdentifier) {
     refsToFetch.push(issue.mergedIntoIssueRef);
   }
 
