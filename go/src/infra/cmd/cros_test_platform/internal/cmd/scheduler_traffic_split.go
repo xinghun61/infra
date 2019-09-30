@@ -141,7 +141,8 @@ func determineTrafficSplit(request *test_platform.Request, trafficSplitConfig *s
 		return nil, errors.Annotate(err, "determine traffic split").Err()
 	}
 
-	rules := determineRelevantSuiteRules(request, trafficSplitConfig.SuiteOverrides)
+	rules := extractRulesRelevantToSuites(request.GetTestPlan().GetSuite(), trafficSplitConfig.SuiteOverrides)
+	rules = newRuleFilter(rules).ForRequest(request)
 	if len(rules) == 0 {
 		rules = newRuleFilter(trafficSplitConfig.Rules).ForRequest(request)
 	}
@@ -224,19 +225,18 @@ func applyRequestModification(request *test_platform.Request, mod *scheduler.Req
 	return &dst
 }
 
-func determineRelevantSuiteRules(request *test_platform.Request, suiteOverrides []*scheduler.SuiteOverride) []*scheduler.Rule {
-	suites := make(stringset.Set)
-	for _, s := range request.GetTestPlan().GetSuite() {
+func extractRulesRelevantToSuites(suites []*test_platform.Request_Suite, suiteOverrides []*scheduler.SuiteOverride) []*scheduler.Rule {
+	m := make(stringset.Set)
+	for _, s := range suites {
 		if s.GetName() != "" {
-			suites.Add(s.GetName())
+			m.Add(s.GetName())
 		}
 	}
 
 	rules := []*scheduler.Rule{}
 	for _, so := range suiteOverrides {
-		r := so.Rule
-		if suites.Has(so.GetSuite().GetName()) && isRuleRelevant(request, r) {
-			rules = append(rules, r)
+		if m.Has(so.GetSuite().GetName()) {
+			rules = append(rules, so.Rule)
 		}
 	}
 	return rules
