@@ -8,7 +8,6 @@ import (
 	"testing"
 
 	"github.com/kylelemons/godebug/pretty"
-	"go.chromium.org/chromiumos/infra/proto/go/test_platform/steps"
 
 	"go.chromium.org/chromiumos/infra/proto/go/chromiumos"
 
@@ -37,12 +36,7 @@ func TestTrafficSplitWithoutRulesReturnsError(t *testing.T) {
 	}
 	for _, c := range cases {
 		t.Run(c.Tag, func(t *testing.T) {
-			_, err := determineTrafficSplit(
-				&steps.SchedulerTrafficSplitRequest{
-					Request: c.Request,
-				},
-				trafficSplitConfig,
-			)
+			_, err := determineTrafficSplit(c.Request, trafficSplitConfig)
 			if err == nil {
 				t.Errorf("no error returned for missing rules")
 			}
@@ -54,12 +48,10 @@ func TestTrafficSplitWithoutRulesReturnsError(t *testing.T) {
 
 func TestTrafficSplitWithNoSchedulingReturnsError(t *testing.T) {
 	_, err := determineTrafficSplit(
-		&steps.SchedulerTrafficSplitRequest{
-			Request: &test_platform.Request{
-				Params: &test_platform.Request_Params{
-					HardwareAttributes: &test_platform.Request_Params_HardwareAttributes{
-						Model: "lumpy",
-					},
+		&test_platform.Request{
+			Params: &test_platform.Request_Params{
+				HardwareAttributes: &test_platform.Request_Params_HardwareAttributes{
+					Model: "lumpy",
 				},
 			},
 		},
@@ -204,12 +196,7 @@ func TestTrafficSplit(t *testing.T) {
 
 	for _, c := range cases {
 		t.Run(c.Tag, func(t *testing.T) {
-			resp, err := determineTrafficSplit(
-				&steps.SchedulerTrafficSplitRequest{
-					Request: c.Request,
-				},
-				c.TrafficSplitConfig,
-			)
+			resp, err := determineTrafficSplit(c.Request, c.TrafficSplitConfig)
 			if err != nil {
 				t.Fatalf("error in determineTrafficSplit: %s", err)
 			}
@@ -225,9 +212,7 @@ func TestTrafficSplit(t *testing.T) {
 
 func TestTrafficSplitWithConflictingTargetsReturnsError(t *testing.T) {
 	_, err := determineTrafficSplit(
-		&steps.SchedulerTrafficSplitRequest{
-			Request: unmanagedPoolRequest("", "grunt", "toolchain"),
-		},
+		unmanagedPoolRequest("", "grunt", "toolchain"),
 		trafficSplitWithRules(
 			unmanagedPoolRule("atlas", "grunt", "toolchain", scheduler.Backend_BACKEND_AUTOTEST),
 			unmanagedPoolRule("barla", "grunt", "toolchain", scheduler.Backend_BACKEND_SKYLAB),
@@ -240,9 +225,7 @@ func TestTrafficSplitWithConflictingTargetsReturnsError(t *testing.T) {
 
 func TestTrafficSplitWithConflictingRequestModReturnsError(t *testing.T) {
 	_, err := determineTrafficSplit(
-		&steps.SchedulerTrafficSplitRequest{
-			Request: unmanagedPoolRequest("", "grunt", "toolchain"),
-		},
+		unmanagedPoolRequest("", "grunt", "toolchain"),
 		trafficSplitWithRules(
 			unmanagedPoolRuleWithQuotaAccountOverride("atlas", "grunt", "toolchain", scheduler.Backend_BACKEND_SKYLAB, "quota_account_cq"),
 			unmanagedPoolRule("barla", "grunt", "toolchain", scheduler.Backend_BACKEND_SKYLAB),

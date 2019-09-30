@@ -77,7 +77,7 @@ func (c *schedulerTrafficSplitRun) innerRun(a subcommands.Application, args []st
 	if err != nil {
 		return err
 	}
-	resp, err := determineTrafficSplit(&request, split)
+	resp, err := determineTrafficSplit(request.Request, split)
 	if err != nil {
 		logPotentiallyRelevantRules(ctx, request.Request, split.Rules)
 		return err
@@ -136,14 +136,14 @@ func (c *schedulerTrafficSplitRun) downloadTrafficSplitConfig(ctx context.Contex
 	return res.Contents, nil
 }
 
-func determineTrafficSplit(request *steps.SchedulerTrafficSplitRequest, trafficSplitConfig *scheduler.TrafficSplit) (*steps.SchedulerTrafficSplitResponse, error) {
-	if err := ensureSufficientForTrafficSplit(request.Request); err != nil {
+func determineTrafficSplit(request *test_platform.Request, trafficSplitConfig *scheduler.TrafficSplit) (*steps.SchedulerTrafficSplitResponse, error) {
+	if err := ensureSufficientForTrafficSplit(request); err != nil {
 		return nil, errors.Annotate(err, "determine traffic split").Err()
 	}
 
-	rules := determineRelevantSuiteRules(request.Request, trafficSplitConfig.SuiteOverrides)
+	rules := determineRelevantSuiteRules(request, trafficSplitConfig.SuiteOverrides)
 	if len(rules) == 0 {
-		rules = determineRelevantRules(request.Request, trafficSplitConfig.Rules)
+		rules = determineRelevantRules(request, trafficSplitConfig.Rules)
 	}
 
 	var rule *scheduler.Rule
@@ -195,8 +195,8 @@ func schedulingNotEqual(s1, s2 *test_platform.Request_Params_Scheduling) bool {
 	return false
 }
 
-func applyTrafficSplitRule(request *steps.SchedulerTrafficSplitRequest, rule *scheduler.Rule) (*steps.SchedulerTrafficSplitResponse, error) {
-	newRequest := applyRequestModification(request.Request, rule.GetRequestMod())
+func applyTrafficSplitRule(request *test_platform.Request, rule *scheduler.Rule) (*steps.SchedulerTrafficSplitResponse, error) {
+	newRequest := applyRequestModification(request, rule.GetRequestMod())
 	switch rule.Backend {
 	case scheduler.Backend_BACKEND_AUTOTEST:
 		return &steps.SchedulerTrafficSplitResponse{
