@@ -136,8 +136,10 @@ def _IngestProto(build_id):
           paths=['id', 'output.properties', 'input', 'status', 'builder']))
 
   if not build:
-    return BaseHandler.CreateError(
-        'Could not retrieve build #%d from buildbucket, retry' % build_id, 404)
+    logging.error(
+        'Could not retrieve build #%d from buildbucket, '
+        'acknowledging to avoid retries', build_id)
+    return
 
   # Sanity check.
   assert build_id == build.id

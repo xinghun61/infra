@@ -110,8 +110,8 @@ class CompletedBuildPubsubIngestorTest(AppengineTestCase):
         },
     })
     response = self.test_app.post(
-        '/index-isolated-builds?format=json', params=request_body, status=404)
-    self.assertEqual(404, response.status_int)
+        '/index-isolated-builds?format=json', params=request_body, status=200)
+    self.assertEqual(200, response.status_int)
 
   @mock.patch.object(completed_build_pubsub_ingestor,
                      '_TriggerV1AnalysisForChromiumBuildIfNeeded')
