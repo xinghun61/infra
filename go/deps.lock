@@ -1,5 +1,5 @@
-hash: 320dc5355103c72178d2770b697a858b6a9b07f149ad82b612ad2ad67e4b5bc3
-updated: 2019-09-27T18:32:56.06508101-04:00
+hash: c84c3f217eae3e870678386b100152842c6db3a0e23396430231dc227896cb02
+updated: 2019-09-30T10:50:57.944089655-04:00
 imports:
 - name: cloud.google.com/go
   version: f8deca375cd9d09ceb90b71ed939bdd18df1b2a3
@@ -192,10 +192,10 @@ imports:
   version: b4936e06046bbecbb94cae9c18127ebe510a2cb9
   repo: https://chromium.googlesource.com/external/github.com/jtolds/gls.git
 - name: github.com/juju/errors
-  version: 0232dcc7464d0c0037b619d6e10190301d01362f
+  version: d42613fe1ab9e303fc850e7a19fda2e8eeb6516e
   repo: https://chromium.googlesource.com/external/github.com/juju/errors.git
 - name: github.com/julienschmidt/httprouter
-  version: b64ea83919261edd921848433c9b646623212f5e
+  version: 19b98be7737c102a3b78ca81c8d0e81040c4ad36
   repo: https://chromium.googlesource.com/external/github.com/julienschmidt/httprouter.git
 - name: github.com/kardianos/osext
   version: 2bc1f35cddc0cc527b4bc3dce8578fc2a6c11384
@@ -393,7 +393,7 @@ imports:
   subpackages:
   - plugin/grpc
 - name: go.skia.org/infra
-  version: 763c9e3aadeaf5704051c01e76aadb3652e24878
+  version: 0f038115e92f3395f6d889edd8e48fb5e0ecdd32
   repo: https://skia.googlesource.com/buildbot.git
   subpackages:
   - gold-client/cmd/goldctl
@@ -425,7 +425,7 @@ imports:
   subpackages:
   - cmd/gomobile
 - name: golang.org/x/net
-  version: c00fd9afed17cfdca9b3e1e3b8de7ef2b3f0347b
+  version: c5a3c61f89f3ed696ec36b629ef1b97541165225
   repo: https://go.googlesource.com/net.git
   subpackages:
   - context
@@ -454,7 +454,7 @@ imports:
   version: c4c64cad1fd0a1a8dab2523e04e61d35308e131e
   repo: https://go.googlesource.com/time.git
 - name: golang.org/x/tools
-  version: 030b2cf1153e8cae0dc666053fad6691cde7fbd9
+  version: e7abfedfabcfcc6a3220ae994ab001754cf1a76a
   repo: https://go.googlesource.com/tools.git
   subpackages:
   - cmd/callgraph
