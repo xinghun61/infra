@@ -35,6 +35,20 @@ func TestCustomCancel(t *testing.T) {
 	}
 }
 
+func TestChildOfCustomCancelNil(t *testing.T) {
+	parent := context.Background()
+	ctx, cancel := errctx.WithCancel(parent)
+	ctx, c := context.WithCancel(ctx)
+	defer c()
+	cancel(nil)
+	<-ctx.Done()
+	actual := ctx.Err()
+	expect := context.Canceled
+	if actual != expect {
+		t.Errorf("unexpected Err value, got: %s, want: %s", actual, expect)
+	}
+}
+
 func TestParentCancel(t *testing.T) {
 	parent, cancel := context.WithCancel(context.Background())
 	ctx, _ := errctx.WithCancel(parent)

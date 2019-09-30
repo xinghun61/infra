@@ -57,10 +57,16 @@ func (c *cancelContext) Value(key interface{}) interface{} {
 }
 
 // cancel cancels the context with the given error.
+//
+// If no error is provided, context.Canceled is inferred.
 func (c *cancelContext) cancel(err error) {
 	c.cancelOnce.Do(func() {
 		c.errMutex.Lock()
-		c.err = err
+		if err == nil {
+			c.err = context.Canceled
+		} else {
+			c.err = err
+		}
 		close(c.done)
 		c.errMutex.Unlock()
 	})
