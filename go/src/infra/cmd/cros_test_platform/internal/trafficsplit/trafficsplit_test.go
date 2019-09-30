@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-package cmd
+package trafficsplit
 
 import (
 	"testing"
@@ -36,7 +36,7 @@ func TestTrafficSplitWithoutRulesReturnsError(t *testing.T) {
 	}
 	for _, c := range cases {
 		t.Run(c.Tag, func(t *testing.T) {
-			_, err := determineTrafficSplit(c.Request, trafficSplitConfig)
+			_, err := ApplyToRequest(c.Request, trafficSplitConfig)
 			if err == nil {
 				t.Errorf("no error returned for missing rules")
 			}
@@ -47,7 +47,7 @@ func TestTrafficSplitWithoutRulesReturnsError(t *testing.T) {
 }
 
 func TestTrafficSplitWithNoSchedulingReturnsError(t *testing.T) {
-	_, err := determineTrafficSplit(
+	_, err := ApplyToRequest(
 		&test_platform.Request{
 			Params: &test_platform.Request_Params{
 				HardwareAttributes: &test_platform.Request_Params_HardwareAttributes{
@@ -196,7 +196,7 @@ func TestTrafficSplit(t *testing.T) {
 
 	for _, c := range cases {
 		t.Run(c.Tag, func(t *testing.T) {
-			resp, err := determineTrafficSplit(c.Request, c.TrafficSplitConfig)
+			resp, err := ApplyToRequest(c.Request, c.TrafficSplitConfig)
 			if err != nil {
 				t.Fatalf("error in determineTrafficSplit: %s", err)
 			}
@@ -211,7 +211,7 @@ func TestTrafficSplit(t *testing.T) {
 }
 
 func TestTrafficSplitWithConflictingTargetsReturnsError(t *testing.T) {
-	_, err := determineTrafficSplit(
+	_, err := ApplyToRequest(
 		unmanagedPoolRequest("", "grunt", "toolchain"),
 		trafficSplitWithRules(
 			unmanagedPoolRule("atlas", "grunt", "toolchain", scheduler.Backend_BACKEND_AUTOTEST),
@@ -224,7 +224,7 @@ func TestTrafficSplitWithConflictingTargetsReturnsError(t *testing.T) {
 }
 
 func TestTrafficSplitWithConflictingRequestModReturnsError(t *testing.T) {
-	_, err := determineTrafficSplit(
+	_, err := ApplyToRequest(
 		unmanagedPoolRequest("", "grunt", "toolchain"),
 		trafficSplitWithRules(
 			unmanagedPoolRuleWithQuotaAccountOverride("atlas", "grunt", "toolchain", scheduler.Backend_BACKEND_SKYLAB, "quota_account_cq"),
@@ -237,7 +237,7 @@ func TestTrafficSplitWithConflictingRequestModReturnsError(t *testing.T) {
 }
 
 func TestRulesMatchingModel(t *testing.T) {
-	f := newRuleFilter([]*scheduler.Rule{
+	f := NewRuleFilter([]*scheduler.Rule{
 		unmanagedPoolRule("wrongModel", "wrongBuildTarget", "wrongPool", scheduler.Backend_BACKEND_SKYLAB),
 		unmanagedPoolRule("model", "buildTarget", "pool", scheduler.Backend_BACKEND_SKYLAB),
 		unmanagedPoolRule("model", "wrongBuildTarget", "wrongPool", scheduler.Backend_BACKEND_SKYLAB),
@@ -253,7 +253,7 @@ func TestRulesMatchingModel(t *testing.T) {
 }
 
 func TestRulesMatchingBuildTarget(t *testing.T) {
-	f := newRuleFilter([]*scheduler.Rule{
+	f := NewRuleFilter([]*scheduler.Rule{
 		unmanagedPoolRule("wrongModel", "wrongBuildTarget", "wrongPool", scheduler.Backend_BACKEND_SKYLAB),
 		unmanagedPoolRule("model", "buildTarget", "pool", scheduler.Backend_BACKEND_SKYLAB),
 		unmanagedPoolRule("wrongModel", "buildTarget", "wrongPool", scheduler.Backend_BACKEND_SKYLAB),
@@ -269,7 +269,7 @@ func TestRulesMatchingBuildTarget(t *testing.T) {
 }
 
 func TestRulesMatchingScheduling(t *testing.T) {
-	f := newRuleFilter([]*scheduler.Rule{
+	f := NewRuleFilter([]*scheduler.Rule{
 		unmanagedPoolRule("wrongModel", "wrongBuildTarget", "wrongPool", scheduler.Backend_BACKEND_SKYLAB),
 		managedPoolRule("model", "target", test_platform.Request_Params_Scheduling_MANAGED_POOL_CQ, scheduler.Backend_BACKEND_SKYLAB),
 		unmanagedPoolRule("model", "buildTarget", "pool", scheduler.Backend_BACKEND_SKYLAB),
