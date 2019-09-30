@@ -99,7 +99,7 @@ func (c *skylabExecuteRun) innerRun(a subcommands.Application, args []string, en
 		return err
 	}
 
-	return writeResponse(c.outputPath, response, err)
+	return writeResponseWithError(c.outputPath, response, err)
 }
 
 func sameHost(urlA, urlB string) bool {

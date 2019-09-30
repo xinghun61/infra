@@ -99,7 +99,7 @@ func (c *enumerateRun) innerRun(a subcommands.Application, args []string, env su
 		return err
 	}
 	resp := steps.EnumerationResponse{AutotestInvocations: ts}
-	return writeResponse(c.outputPath, &resp, writableErr)
+	return writeResponseWithError(c.outputPath, &resp, writableErr)
 }
 
 func (c *enumerateRun) processCLIArgs(args []string) error {

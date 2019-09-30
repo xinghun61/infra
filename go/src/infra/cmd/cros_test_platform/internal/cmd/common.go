@@ -63,11 +63,11 @@ func exitCode(err error) int {
 	}
 }
 
-// writeResponse writes response as JSON encoded protobuf to outFile.
+// writeResponseWithError writes response as JSON encoded protobuf to outFile.
 //
 // If errorSoFar is non-nil, this function considers the response to be partial
 // and tags the returned error to that effect.
-func writeResponse(outFile string, response proto.Message, errorSoFar error) error {
+func writeResponseWithError(outFile string, response proto.Message, errorSoFar error) error {
 	w, err := os.Create(outFile)
 	if err != nil {
 		return errors.MultiError{errorSoFar, errors.Annotate(err, "write response").Err()}
@@ -77,6 +77,11 @@ func writeResponse(outFile string, response proto.Message, errorSoFar error) err
 		return errors.MultiError{errorSoFar, errors.Annotate(err, "write response").Err()}
 	}
 	return partialErrorTag.Apply(errorSoFar)
+}
+
+// writeResponseWithError writes response as JSON encoded protobuf to outFile.
+func writeResponse(outFile string, response proto.Message) error {
+	return writeResponseWithError(outFile, response, nil)
 }
 
 // Use partialErrorTag to indicate when partial response is written to the

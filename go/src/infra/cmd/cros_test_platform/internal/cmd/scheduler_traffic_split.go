@@ -80,7 +80,7 @@ func (c *schedulerTrafficSplitRun) innerRun(a subcommands.Application, args []st
 		logPotentiallyRelevantRules(ctx, request.Request, split.Rules)
 		return err
 	}
-	return writeResponse(c.outputPath, resp, nil)
+	return writeResponse(c.outputPath, resp)
 }
 
 func (c *schedulerTrafficSplitRun) processCLIArgs(args []string) error {

@@ -42,7 +42,7 @@ func TestExitCodeWithWriteResponseErrors(t *testing.T) {
 	response := steps.EnumerationResponse{}
 	for _, c := range cases {
 		t.Run(c.tag, func(t *testing.T) {
-			err := writeResponse(c.outFile, &response, c.errorSoFar)
+			err := writeResponseWithError(c.outFile, &response, c.errorSoFar)
 			got := exitCode(err)
 			if got != c.want {
 				t.Errorf("incorrect exit code %d, want %d. Error was %s", got, c.want, err)

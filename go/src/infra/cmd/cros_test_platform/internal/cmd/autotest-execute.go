@@ -78,7 +78,7 @@ func (c *autotestExecuteRun) innerRun(a subcommands.Application, args []string, 
 		return err
 	}
 
-	return writeResponse(c.outputPath, response, err)
+	return writeResponseWithError(c.outputPath, response, err)
 }
 
 func (c *autotestExecuteRun) validateRequest(request *steps.ExecuteRequest) error {
