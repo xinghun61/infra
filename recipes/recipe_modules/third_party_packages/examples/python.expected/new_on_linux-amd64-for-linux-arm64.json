@@ -381,7 +381,7 @@
       "make",
       "install",
       "-j",
-      "2"
+      "8"
     ],
     "cwd": "[START_DIR]/python/_support/ncurses-6.0/tic_build",
     "name": "ncurses-6.0.make tic",
@@ -425,7 +425,7 @@
       "make",
       "install.libs",
       "-j",
-      "2"
+      "8"
     ],
     "cwd": "[START_DIR]/python/_support/ncurses-6.0/ncurses-6.0",
     "env_prefixes": {
@@ -491,7 +491,7 @@
       "make",
       "install",
       "-j",
-      "2"
+      "8"
     ],
     "cwd": "[START_DIR]/python/_support/readline-7.0/readline-7.0",
     "name": "readline-7.0.make",
@@ -553,7 +553,7 @@
       "make",
       "install",
       "-j",
-      "2"
+      "8"
     ],
     "cwd": "[START_DIR]/python/_support/zlib-1.2.11/zlib-1.2.11",
     "name": "zlib-1.2.11.make",
@@ -620,7 +620,7 @@
       "make",
       "install",
       "-j",
-      "2"
+      "8"
     ],
     "cwd": "[START_DIR]/python/_support/sqlite-autoconf-3190300/sqlite-autoconf-3190300",
     "name": "sqlite-autoconf-3190300.make",
@@ -682,7 +682,7 @@
       "make",
       "install",
       "-j",
-      "2"
+      "8"
     ],
     "cwd": "[START_DIR]/python/_support/libnsl-1.0.4/libnsl-1.0.4",
     "name": "libnsl-1.0.4.make",
@@ -744,7 +744,7 @@
     "cmd": [
       "make",
       "-j",
-      "2"
+      "8"
     ],
     "cwd": "[START_DIR]/python/_support/openssl-1.1.0f/openssl-1.1.0f",
     "name": "openssl-1.1.0f.make",
@@ -849,7 +849,7 @@
       "make",
       "install",
       "-j",
-      "2"
+      "8"
     ],
     "cwd": "[START_DIR]/python/_support/sed-4.2.2/sed-4.2.2",
     "name": "sed-4.2.2.make",
@@ -910,7 +910,7 @@
       "make",
       "install",
       "-j",
-      "2"
+      "8"
     ],
     "cwd": "[START_DIR]/python/_support/autoconf-2.69/autoconf-2.69",
     "name": "autoconf-2.69.make",

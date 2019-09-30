@@ -285,7 +285,7 @@
       "make",
       "install",
       "-j",
-      "2"
+      "8"
     ],
     "cwd": "[START_DIR]/git/_support/zlib-1.2.11/zlib-1.2.11",
     "name": "zlib-1.2.11.make",
@@ -348,7 +348,7 @@
       "make",
       "install",
       "-j",
-      "2"
+      "8"
     ],
     "cwd": "[START_DIR]/git/_support/libidn2-2.0.4/libidn2-2.0.4",
     "name": "libidn2-2.0.4.make",
@@ -415,7 +415,7 @@
       "make",
       "install",
       "-j",
-      "2"
+      "8"
     ],
     "cwd": "[START_DIR]/git/_support/curl-7.59.0/curl-7.59.0",
     "name": "curl-7.59.0.make",
@@ -478,7 +478,7 @@
       "make",
       "install",
       "-j",
-      "2"
+      "8"
     ],
     "cwd": "[START_DIR]/git/_support/pcre2-10.23/pcre2-10.23",
     "name": "pcre2-10.23.make",
@@ -539,7 +539,7 @@
       "make",
       "install",
       "-j",
-      "2"
+      "8"
     ],
     "cwd": "[START_DIR]/git/_support/autoconf-2.69/autoconf-2.69",
     "name": "autoconf-2.69.make",
@@ -632,7 +632,7 @@
       "make",
       "install",
       "-j",
-      "2"
+      "8"
     ],
     "cwd": "[START_DIR]/git/checkout",
     "env_prefixes": {

@@ -292,7 +292,7 @@
       "make",
       "install",
       "-j",
-      "2"
+      "8"
     ],
     "cwd": "[START_DIR]/swig/_support/autoconf-2.69/autoconf-2.69",
     "name": "autoconf-2.69.make",
@@ -368,7 +368,7 @@
       "make",
       "install",
       "-j",
-      "2"
+      "8"
     ],
     "cwd": "[START_DIR]/swig/_support/automake-1.15/automake-1.15",
     "env_prefixes": {
@@ -436,7 +436,7 @@
       "make",
       "install",
       "-j",
-      "2"
+      "8"
     ],
     "cwd": "[START_DIR]/swig/_support/pcre-8.41/pcre-8.41",
     "name": "pcre-8.41.make",
