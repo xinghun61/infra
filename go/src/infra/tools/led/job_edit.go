@@ -143,11 +143,12 @@ func extractCmdCwdFromIsolated(ctx context.Context, isoClient *isolatedclient.Cl
 		iso := queue[0]
 		if _, ok := seenIsolateds[iso]; ok {
 			err = errors.Reason("loop detected when resolving isolate %q", rootIso).Err()
+			return
 		}
 		seenIsolateds[iso] = struct{}{}
 
 		buf := bytes.Buffer{}
-		if err = isoClient.Fetch(ctx, rootIso, &buf); err != nil {
+		if err = isoClient.Fetch(ctx, iso, &buf); err != nil {
 			err = errors.Annotate(err, "fetching isolated %q", iso).Err()
 			return
 		}

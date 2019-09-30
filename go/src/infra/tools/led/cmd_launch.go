@@ -185,6 +185,9 @@ func (c *cmdLaunch) Run(a subcommands.Application, args []string, env subcommand
 				"version": u.RecipeCIPDSource.Version,
 			}
 		}
+		if u.RecipeProperties == nil {
+			u.RecipeProperties = make(map[string]interface{})
+		}
 		u.RecipeProperties["$recipe_engine/led"] = ledProperties
 		return nil
 	})
