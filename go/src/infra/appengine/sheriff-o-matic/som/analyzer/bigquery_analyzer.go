@@ -82,7 +82,22 @@ LIMIT
 `
 
 const chromiumGPUFYIFailuresQuery = selectFromWhere + `
-  MasterName = "chromium.gpu.fyi"
+	MasterName = "chromium.gpu.fyi"
+`
+const chromiumFailuresQuery = selectFromWhere +
+	`
+MasterName IN(
+	"chrome",
+	"chromium",
+	"chromium.chromiumos",
+	"chromium.gpu",
+	"chromium.linux",
+	"chromium.mac",
+	"chromium.memory",
+	"chromium.win"
+	)
+LIMIT
+	1000
 `
 
 const crosFailuresQuery = selectFromWhere + `
@@ -201,6 +216,9 @@ func GetBigQueryAlerts(ctx context.Context, tree string) ([]messages.BuildFailur
 	switch tree {
 	case "android":
 		queryStr = fmt.Sprintf(androidFailuresQuery, appID, "chromium")
+		break
+	case "chromium":
+		queryStr = fmt.Sprintf(chromiumFailuresQuery, appID, "chromium")
 		break
 	case "chromium.gpu.fyi":
 		queryStr = fmt.Sprintf(chromiumGPUFYIFailuresQuery, appID, "chromium")
