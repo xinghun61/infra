@@ -50,8 +50,5 @@ build.presubmit(
 try_builder(
     name = 'luci-py-try-xenial-64',
     os = 'Ubuntu-16.04',
-    # TODO(crbug.com/982254, crbug.com/1006030)
-    # remove 'experiment_percentage = 100' after making it stable
-    experiment_percentage = 100,
     properties = {'presubmit': True},
 )
