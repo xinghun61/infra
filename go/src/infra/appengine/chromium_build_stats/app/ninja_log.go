@@ -180,7 +180,14 @@ func uploadNinjaLogHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	defer r.Body.Close()
-	ninjalog, err := ninjalog.Parse("ninjalog", r.Body)
+	gr, err := gzip.NewReader(r.Body)
+	if err != nil {
+		log.Warningf(ctx, "request is not gzipped?")
+		http.Error(w, "Only gzipped body is allowed.", http.StatusUnsupportedMediaType)
+		return
+	}
+	defer gr.Close()
+	ninjalog, err := ninjalog.Parse("ninjalog", gr)
 	if err != nil {
 		log.Errorf(ctx, "failed to parse ninjalog: %v", err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
