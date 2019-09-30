@@ -143,7 +143,7 @@ func determineTrafficSplit(request *test_platform.Request, trafficSplitConfig *s
 
 	rules := determineRelevantSuiteRules(request, trafficSplitConfig.SuiteOverrides)
 	if len(rules) == 0 {
-		rules = determineRelevantRules(request, trafficSplitConfig.Rules)
+		rules = newRuleFilter(trafficSplitConfig.Rules).ForRequest(request)
 	}
 
 	var rule *scheduler.Rule
@@ -242,9 +242,52 @@ func determineRelevantSuiteRules(request *test_platform.Request, suiteOverrides 
 	return rules
 }
 
-func determineRelevantRules(request *test_platform.Request, rules []*scheduler.Rule) []*scheduler.Rule {
+func logPotentiallyRelevantRules(ctx context.Context, request *test_platform.Request, rules []*scheduler.Rule) {
+	f := newRuleFilter(rules)
+	logger := logging.Get(ctx)
+	logger.Warningf("No matching rule found. Printing partially matching rules...")
+
+	m := request.GetParams().GetHardwareAttributes().GetModel()
+	if pr := f.ForModel(m); len(pr) > 0 {
+		logger.Infof("Following rules match requested model: %s", formatFirstFewRules(pr))
+	} else {
+		logger.Warningf("No rules matched requested model %s.", m)
+	}
+
+	b := request.GetParams().GetSoftwareAttributes().GetBuildTarget().GetName()
+	if pr := f.ForBuildTarget(b); len(pr) > 0 {
+		logger.Infof("Following rules match requested buildTarget: %s", formatFirstFewRules(pr))
+	} else {
+		logger.Warningf("No rules matched requested build target %s.", b)
+	}
+
+	s := request.GetParams().GetScheduling()
+	if pr := f.ForScheduling(s); len(pr) > 0 {
+		logger.Infof("Following rules match requested scheduling: %s", formatFirstFewRules(pr))
+	} else {
+		logger.Warningf("No rules matched requested scheduling %s.", s)
+	}
+}
+
+func formatFirstFewRules(rules []*scheduler.Rule) string {
+	const rulesToPrint = 5
+	s := fmt.Sprintf("%v", rules[:rulesToPrint])
+	if len(s) > rulesToPrint {
+		s = fmt.Sprintf("%s... [%d more]", s, len(s)-rulesToPrint)
+	}
+	return s
+}
+
+type ruleFilter []*scheduler.Rule
+
+func newRuleFilter(rules []*scheduler.Rule) ruleFilter {
+	return ruleFilter(rules)
+}
+
+// ForRequest returns rules relevant to a test platform request.
+func (f ruleFilter) ForRequest(request *test_platform.Request) []*scheduler.Rule {
 	ret := []*scheduler.Rule{}
-	for _, r := range rules {
+	for _, r := range f {
 		if isRuleRelevant(request, r) {
 			ret = append(ret, r)
 		}
@@ -285,64 +328,35 @@ func isNonEmptyAndDistinct(got, want string) bool {
 	return got != "" && got != want
 }
 
-func logPotentiallyRelevantRules(ctx context.Context, request *test_platform.Request, rules []*scheduler.Rule) {
-	logger := logging.Get(ctx)
-	logger.Warningf("No matching rule found. Printing partially matching rules...")
-	if pr := determineRulesMatchingModel(request, rules); len(pr) > 0 {
-		logger.Infof("Following rules match requested model: %s", formatFirstFewRules(pr))
-	} else {
-		logger.Warningf("No rules matched requested model %s.", request.GetParams().GetHardwareAttributes().GetModel())
-	}
-	if pr := determineRulesMatchingBuildTarget(request, rules); len(pr) > 0 {
-		logger.Infof("Following rules match requested buildTarget: %s", formatFirstFewRules(pr))
-	} else {
-		logger.Warningf("No rules matched requested build target %s.", request.GetParams().GetSoftwareAttributes().GetBuildTarget().GetName())
-	}
-	if pr := determineRulesMatchingScheduling(request, rules); len(pr) > 0 {
-		logger.Infof("Following rules match requested scheduling: %s", formatFirstFewRules(pr))
-	} else {
-		logger.Warningf("No rules matched requested scheduling %s.", request.GetParams().GetScheduling())
-	}
-}
-
-func formatFirstFewRules(rules []*scheduler.Rule) string {
-	const rulesToPrint = 5
-	s := fmt.Sprintf("%v", rules[:rulesToPrint])
-	if len(s) > rulesToPrint {
-		s = fmt.Sprintf("%s... [%d more]", s, len(s)-rulesToPrint)
-	}
-	return s
-}
-
-func determineRulesMatchingModel(request *test_platform.Request, rules []*scheduler.Rule) []*scheduler.Rule {
-	r := test_platform.Request{
+// ForModel returns rules relevant to a model.
+func (f ruleFilter) ForModel(model string) []*scheduler.Rule {
+	return f.ForRequest(&test_platform.Request{
 		Params: &test_platform.Request_Params{
 			HardwareAttributes: &test_platform.Request_Params_HardwareAttributes{
-				Model: request.GetParams().GetHardwareAttributes().GetModel(),
+				Model: model,
 			},
 		},
-	}
-	return determineRelevantRules(&r, rules)
+	})
 }
 
-func determineRulesMatchingBuildTarget(request *test_platform.Request, rules []*scheduler.Rule) []*scheduler.Rule {
-	r := test_platform.Request{
+// ForBuildTarget returns rules relevant to a build target.
+func (f ruleFilter) ForBuildTarget(buildTarget string) []*scheduler.Rule {
+	return f.ForRequest(&test_platform.Request{
 		Params: &test_platform.Request_Params{
 			SoftwareAttributes: &test_platform.Request_Params_SoftwareAttributes{
 				BuildTarget: &chromiumos.BuildTarget{
-					Name: request.GetParams().GetSoftwareAttributes().GetBuildTarget().GetName(),
+					Name: buildTarget,
 				},
 			},
 		},
-	}
-	return determineRelevantRules(&r, rules)
+	})
 }
 
-func determineRulesMatchingScheduling(request *test_platform.Request, rules []*scheduler.Rule) []*scheduler.Rule {
-	r := test_platform.Request{
+// ForScheduling returns rules relevant to a scheduling argument.
+func (f ruleFilter) ForScheduling(s *test_platform.Request_Params_Scheduling) []*scheduler.Rule {
+	return f.ForRequest(&test_platform.Request{
 		Params: &test_platform.Request_Params{
-			Scheduling: request.GetParams().GetScheduling(),
+			Scheduling: s,
 		},
-	}
-	return determineRelevantRules(&r, rules)
+	})
 }

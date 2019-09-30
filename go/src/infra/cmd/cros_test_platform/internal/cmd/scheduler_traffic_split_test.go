@@ -237,13 +237,12 @@ func TestTrafficSplitWithConflictingRequestModReturnsError(t *testing.T) {
 }
 
 func TestRulesMatchingModel(t *testing.T) {
-	rules := []*scheduler.Rule{
+	f := newRuleFilter([]*scheduler.Rule{
 		unmanagedPoolRule("wrongModel", "wrongBuildTarget", "wrongPool", scheduler.Backend_BACKEND_SKYLAB),
 		unmanagedPoolRule("model", "buildTarget", "pool", scheduler.Backend_BACKEND_SKYLAB),
 		unmanagedPoolRule("model", "wrongBuildTarget", "wrongPool", scheduler.Backend_BACKEND_SKYLAB),
-	}
-	request := unmanagedPoolRequest("model", "buildTarget", "pool")
-	got := determineRulesMatchingModel(request, rules)
+	})
+	got := f.ForModel("model")
 	want := []*scheduler.Rule{
 		unmanagedPoolRule("model", "buildTarget", "pool", scheduler.Backend_BACKEND_SKYLAB),
 		unmanagedPoolRule("model", "wrongBuildTarget", "wrongPool", scheduler.Backend_BACKEND_SKYLAB),
@@ -254,13 +253,12 @@ func TestRulesMatchingModel(t *testing.T) {
 }
 
 func TestRulesMatchingBuildTarget(t *testing.T) {
-	rules := []*scheduler.Rule{
+	f := newRuleFilter([]*scheduler.Rule{
 		unmanagedPoolRule("wrongModel", "wrongBuildTarget", "wrongPool", scheduler.Backend_BACKEND_SKYLAB),
 		unmanagedPoolRule("model", "buildTarget", "pool", scheduler.Backend_BACKEND_SKYLAB),
 		unmanagedPoolRule("wrongModel", "buildTarget", "wrongPool", scheduler.Backend_BACKEND_SKYLAB),
-	}
-	request := unmanagedPoolRequest("model", "buildTarget", "pool")
-	got := determineRulesMatchingBuildTarget(request, rules)
+	})
+	got := f.ForBuildTarget("buildTarget")
 	want := []*scheduler.Rule{
 		unmanagedPoolRule("model", "buildTarget", "pool", scheduler.Backend_BACKEND_SKYLAB),
 		unmanagedPoolRule("wrongModel", "buildTarget", "wrongPool", scheduler.Backend_BACKEND_SKYLAB),
@@ -271,14 +269,15 @@ func TestRulesMatchingBuildTarget(t *testing.T) {
 }
 
 func TestRulesMatchingScheduling(t *testing.T) {
-	rules := []*scheduler.Rule{
+	f := newRuleFilter([]*scheduler.Rule{
 		unmanagedPoolRule("wrongModel", "wrongBuildTarget", "wrongPool", scheduler.Backend_BACKEND_SKYLAB),
 		managedPoolRule("model", "target", test_platform.Request_Params_Scheduling_MANAGED_POOL_CQ, scheduler.Backend_BACKEND_SKYLAB),
 		unmanagedPoolRule("model", "buildTarget", "pool", scheduler.Backend_BACKEND_SKYLAB),
 		unmanagedPoolRule("wrongModel", "wrongBuildTarget", "pool", scheduler.Backend_BACKEND_SKYLAB),
-	}
-	request := unmanagedPoolRequest("model", "buildTarget", "pool")
-	got := determineRulesMatchingScheduling(request, rules)
+	})
+	got := f.ForScheduling(&test_platform.Request_Params_Scheduling{
+		Pool: &test_platform.Request_Params_Scheduling_UnmanagedPool{UnmanagedPool: "pool"},
+	})
 	want := []*scheduler.Rule{
 		unmanagedPoolRule("model", "buildTarget", "pool", scheduler.Backend_BACKEND_SKYLAB),
 		unmanagedPoolRule("wrongModel", "wrongBuildTarget", "pool", scheduler.Backend_BACKEND_SKYLAB),
