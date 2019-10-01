@@ -8,6 +8,8 @@ import json
 import re
 import urllib
 
+from google.appengine.api import app_identity
+
 from libs.gitiles import commit_util
 from libs.gitiles import diff
 from libs.gitiles.blame import Blame
@@ -27,6 +29,12 @@ REVERTED_REVISION_PATTERN = re.compile(
 TIMEZONE_PATTERN = re.compile('[-+]\d{4}$')
 CACHE_EXPIRE_TIME_SECONDS = 24 * 60 * 60
 _DEFAULT_REF = 'refs/heads/master'
+
+
+def _GetAccessTokenHeader():
+  auth_scopes = 'https://www.googleapis.com/auth/gerritcodereview'
+  auth_token, _ = app_identity.get_access_token(auth_scopes)
+  return {'Authorization': 'Bearer {}'.format(auth_token)}
 
 
 class GitilesRepository(GitRepository):
@@ -78,7 +86,8 @@ class GitilesRepository(GitRepository):
     # Gerrit prepends )]}' to json-formatted response.
     prefix = ')]}\'\n'
 
-    status_code, content, _response_headers = self.http_client.Get(url, params)
+    status_code, content, _response_headers = self.http_client.Get(
+        url, params, headers=_GetAccessTokenHeader())
     if status_code != 200:
       return None
     elif not content or not content.startswith(prefix):
@@ -88,7 +97,7 @@ class GitilesRepository(GitRepository):
 
   def _SendRequestForTextResponse(self, url):
     status_code, content, _response_headers = self.http_client.Get(
-        url, {'format': 'text'})
+        url, {'format': 'text'}, headers=_GetAccessTokenHeader())
     if status_code != 200:
       return None
     return base64.b64decode(content)
