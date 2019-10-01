@@ -10,17 +10,49 @@ name: base
 imagepins: pins.yaml
 
 infra:
-  # Set of infra services used when building images from workstations, on CI
-  # waterfall (but not production release builders) and on trybots.
+  # Set of infra services used when building images from workstations.
+  #
+  # 'dev' is used by cloudbuildhelper tool by default (e.g. when ran manually on
+  # a workstation without explicitly passing -infra flag).
+  #
+  # Images produced manually are tagged manually as well (i.e. the developer
+  # will have to pass -tag flag to cloudbuildhelper).
   #
   # Images built using this set of services are OK for local use and for dev
   # clusters, but MUST NOT be deployed to clusters that have access to real
   # user data.
-  #
-  # Workstations, non-proudction CI builders and trybots are considered NOT
-  # pristine enough to use for release builds.
   dev:
-    storage: gs://chops-public-images-dev
+    storage: gs://chops-public-images-dev/dev
+    registry: gcr.io/chops-public-images-dev
+    cloudbuild:
+      project: chops-public-images-dev
+      docker: 18.09.6  # see https://gcr.io/cloud-builders/docker
+
+  # Set of infra services used when building images on try builders.
+  #
+  # Canonical image tags are based on hash of inputs. Produces images are also
+  # tagged based on the CL number they were built from.
+  #
+  # Images built using this set of services are OK for local use and for dev
+  # clusters, but MUST NOT be deployed to clusters that have access to real
+  # user data.
+  try:
+    storage: gs://chops-public-images-dev/try
+    registry: gcr.io/chops-public-images-dev
+    cloudbuild:
+      project: chops-public-images-dev
+      docker: 18.09.6  # see https://gcr.io/cloud-builders/docker
+
+  # Set of infra services used when building images on non-production CI
+  # builders.
+  #
+  # Canonical image tags are based on git commits they were built from.
+  #
+  # Images built using this set of services are OK for local use and for dev
+  # clusters, but MUST NOT be deployed to clusters that have access to real
+  # user data.
+  ci:
+    storage: gs://chops-public-images-dev/ci
     registry: gcr.io/chops-public-images-dev
     cloudbuild:
       project: chops-public-images-dev
@@ -29,6 +61,8 @@ infra:
   # Set of infra services used when building release images on production
   # release builders. Nominally only release builders have access to these
   # services.
+  #
+  # Canonical image tags are based on git commits they were built from.
   #
   # Images built using this set of services can be used anywhere, including
   # in production clusters.

@@ -82,7 +82,7 @@ ci_builder(
     properties = {
         'mode': 'MODE_CI',
         'project': 'PROJECT_INFRA',
-        'infra': 'dev',
+        'infra': 'ci',
         'manifests': ['infra/build/images/deterministic'],
     },
 )
@@ -103,7 +103,7 @@ try_builder(
     properties = {
         'mode': 'MODE_CL',
         'project': 'PROJECT_INFRA',
-        'infra': 'dev',
+        'infra': 'try',
         'manifests': ['infra/build/images/deterministic'],
     },
 )
