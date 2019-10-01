@@ -55,6 +55,30 @@ func TestMockBQResults(t *testing.T) {
 
 }
 
+func TestGenerateBuilderURL(t *testing.T) {
+	Convey("Test builder with no space", t, func() {
+		project := "chromium"
+		bucket := "ci"
+		builderName := "Win"
+		url := generateBuilderURL(project, bucket, builderName)
+		So(url, ShouldEqual, "https://ci.chromium.org/p/chromium/builders/ci/Win")
+	})
+	Convey("Test builder with some spaces", t, func() {
+		project := "chromium"
+		bucket := "ci"
+		builderName := "Win 7 Test"
+		url := generateBuilderURL(project, bucket, builderName)
+		So(url, ShouldEqual, "https://ci.chromium.org/p/chromium/builders/ci/Win%207%20Test")
+	})
+	Convey("Test builder with special characters", t, func() {
+		project := "chromium"
+		bucket := "ci"
+		builderName := "Mac 10.13 Tests (dbg)"
+		url := generateBuilderURL(project, bucket, builderName)
+		So(url, ShouldEqual, "https://ci.chromium.org/p/chromium/builders/ci/Mac%2010.13%20Tests%20%28dbg%29")
+	})
+}
+
 func TestProcessBQResults(t *testing.T) {
 	ctx := context.Background()
 	ctx = gologger.StdConfig.Use(ctx)

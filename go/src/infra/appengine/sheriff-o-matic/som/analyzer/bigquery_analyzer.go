@@ -10,6 +10,7 @@ import (
 	"google.golang.org/api/iterator"
 	"infra/appengine/sheriff-o-matic/som/analyzer/step"
 	"infra/monitoring/messages"
+	"net/url"
 	"sort"
 	"strings"
 	"time"
@@ -249,6 +250,10 @@ type nexter interface {
 	Next(interface{}) error
 }
 
+func generateBuilderURL(project string, bucket string, builderName string) string {
+	return fmt.Sprintf("https://ci.chromium.org/p/%s/builders/%s/%s", project, bucket, url.PathEscape(builderName))
+}
+
 func processBQResults(ctx context.Context, it nexter) ([]messages.BuildFailure, error) {
 	alertedBuildersByStep := map[string][]messages.AlertedBuilder{}
 	alertedBuildersByStepAndTests := map[string]map[int64][]messages.AlertedBuilder{}
@@ -298,7 +303,7 @@ func processBQResults(ctx context.Context, it nexter) ([]messages.BuildFailure, 
 			Master:           r.MasterName.StringVal,
 			FirstFailure:     r.BuildIDBegin.Int64,
 			LatestFailure:    r.BuildIDEnd.Int64,
-			URL:              fmt.Sprintf("https://ci.chromium.org/p/%s/builders/%s/%s", r.Project, r.Bucket, r.Builder),
+			URL:              generateBuilderURL(r.Project, r.Bucket, r.Builder),
 			LatestPassingRev: latestPassingRev,
 			FirstFailingRev:  firstFailingRev,
 			NumFailingTests:  r.NumTests.Int64,
