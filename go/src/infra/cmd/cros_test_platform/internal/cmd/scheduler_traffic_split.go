@@ -14,6 +14,7 @@ import (
 	"infra/cmd/cros_test_platform/internal/site"
 	"infra/cmd/cros_test_platform/internal/trafficsplit"
 
+	"github.com/golang/protobuf/proto"
 	"github.com/maruel/subcommands"
 	"go.chromium.org/chromiumos/infra/proto/go/test_platform/config"
 	"go.chromium.org/chromiumos/infra/proto/go/test_platform/migration/scheduler"
@@ -39,6 +40,7 @@ https://chromium.googlesource.com/chromiumos/infra/proto/+/master/src/test_platf
 		c.authFlags.Register(&c.Flags, site.DefaultAuthOptions)
 		c.Flags.StringVar(&c.inputPath, "input_json", "", "Path that contains JSON encoded test_platform.steps.SchedulerTrafficSplitRequest")
 		c.Flags.StringVar(&c.outputPath, "output_json", "", "Path where JSON encoded test_platform.steps.SchedulerTrafficSplitResponse should be written.")
+		c.Flags.BoolVar(&c.multiRequest, "multi_request", false, "If true, handle multiple requests at once (transitional flag: crbug.com/1008135).")
 		return c
 	},
 }
@@ -47,8 +49,9 @@ type schedulerTrafficSplitRun struct {
 	subcommands.CommandRunBase
 	authFlags authcli.Flags
 
-	inputPath  string
-	outputPath string
+	multiRequest bool
+	inputPath    string
+	outputPath   string
 }
 
 func (c *schedulerTrafficSplitRun) Run(a subcommands.Application, args []string, env subcommands.Env) int {
@@ -63,24 +66,43 @@ func (c *schedulerTrafficSplitRun) innerRun(a subcommands.Application, args []st
 	if err := c.processCLIArgs(args); err != nil {
 		return err
 	}
-	var request steps.SchedulerTrafficSplitRequest
-	if err := readRequest(c.inputPath, &request); err != nil {
-		return err
-	}
-
 	ctx := cli.GetContext(a, c, env)
 	ctx = setupLogging(ctx)
 
-	split, err := c.getTrafficSplitConfig(ctx, request.Config)
+	requests, err := c.readRequests()
 	if err != nil {
 		return err
 	}
-	resp, err := trafficsplit.ApplyToRequest(request.Request, split)
-	if err != nil {
-		logPotentiallyRelevantRules(ctx, request.Request, split.Rules)
+	if len(requests) == 0 {
+		return errors.Reason("zero requests").Err()
+	}
+	if err := ensureIdenticalConfigs(requests); err != nil {
 		return err
 	}
-	return writeResponse(c.outputPath, resp)
+
+	split, err := c.getTrafficSplitConfig(ctx, requests[0].Config)
+	if err != nil {
+		return err
+	}
+
+	resps := make([]*steps.SchedulerTrafficSplitResponse, len(requests))
+	merr := errors.NewMultiError()
+	for i, r := range requests {
+		if resp, err := trafficsplit.ApplyToRequest(r.Request, split); err == nil {
+			resps[i] = resp
+		} else {
+			logPotentiallyRelevantRules(ctx, r.Request, split.Rules)
+			merr = append(merr, err)
+		}
+	}
+	if merr.First() != nil {
+		return merr
+	}
+
+	if autotestResponseCount(resps) > 0 && len(resps) > 1 {
+		return errors.Reason("multiple requests with autotest backend: %s", resps).Err()
+	}
+	return c.writeResponses(resps)
 }
 
 func (c *schedulerTrafficSplitRun) processCLIArgs(args []string) error {
@@ -94,6 +116,73 @@ func (c *schedulerTrafficSplitRun) processCLIArgs(args []string) error {
 		return errors.Reason("-output_json not specified").Err()
 	}
 	return nil
+}
+
+func (c *schedulerTrafficSplitRun) readRequests() ([]*steps.SchedulerTrafficSplitRequest, error) {
+	if c.multiRequest {
+		rs, err := c.readMultiRequest()
+		if err != nil {
+			return nil, err
+		}
+		return rs.Requests, nil
+	}
+	r, err := c.readSingleRequest()
+	if err != nil {
+		return nil, err
+	}
+	return []*steps.SchedulerTrafficSplitRequest{r}, nil
+}
+
+func (c *schedulerTrafficSplitRun) readMultiRequest() (*steps.SchedulerTrafficSplitRequests, error) {
+	var requests steps.SchedulerTrafficSplitRequests
+	if err := readRequest(c.inputPath, &requests); err != nil {
+		return nil, err
+	}
+	return &requests, nil
+}
+
+func (c *schedulerTrafficSplitRun) readSingleRequest() (*steps.SchedulerTrafficSplitRequest, error) {
+	var request steps.SchedulerTrafficSplitRequest
+	if err := readRequest(c.inputPath, &request); err != nil {
+		return nil, err
+	}
+	return &request, nil
+}
+
+func ensureIdenticalConfigs(rs []*steps.SchedulerTrafficSplitRequest) error {
+	if len(rs) == 0 {
+		return nil
+	}
+	c := rs[0].GetConfig()
+	for _, o := range rs[1:] {
+		if !proto.Equal(c, o.GetConfig()) {
+			return errors.Reason("mismatched configs: %s vs %s", c, o.GetConfig()).Err()
+		}
+	}
+	return nil
+}
+
+func autotestResponseCount(rs []*steps.SchedulerTrafficSplitResponse) int {
+	c := 0
+	for _, r := range rs {
+		if r.GetAutotestRequest() != nil {
+			c++
+		}
+	}
+	return c
+}
+
+func (c *schedulerTrafficSplitRun) writeResponses(resps []*steps.SchedulerTrafficSplitResponse) error {
+	if c.multiRequest {
+		return writeResponse(c.outputPath, &steps.SchedulerTrafficSplitResponses{
+			Responses: resps,
+		})
+	}
+
+	if len(resps) > 1 {
+		panic(fmt.Sprintf("multiple responses without -multi_request: %s", resps))
+	}
+	return writeResponse(c.outputPath, resps[0])
 }
 
 func (c *schedulerTrafficSplitRun) getTrafficSplitConfig(ctx context.Context, config *config.Config_SchedulerMigration) (*scheduler.TrafficSplit, error) {
@@ -137,7 +226,7 @@ func (c *schedulerTrafficSplitRun) downloadTrafficSplitConfig(ctx context.Contex
 func logPotentiallyRelevantRules(ctx context.Context, request *test_platform.Request, rules []*scheduler.Rule) {
 	f := trafficsplit.NewRuleFilter(rules)
 	logger := logging.Get(ctx)
-	logger.Warningf("No matching rule found. Printing partially matching rules...")
+	logger.Warningf("No matching rule found for %s. Printing partially matching rules...", request)
 
 	m := request.GetParams().GetHardwareAttributes().GetModel()
 	if pr := f.ForModel(m); len(pr) > 0 {
