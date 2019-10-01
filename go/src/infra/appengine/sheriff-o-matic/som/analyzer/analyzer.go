@@ -81,9 +81,8 @@ type Analyzer struct {
 	Now func() time.Time
 
 	// Mock these out in tests.
-	CrBug       client.CrBug
-	FindIt      client.FindIt
-	TestResults client.TestResults
+	CrBug  client.CrBug
+	FindIt client.FindIt
 }
 
 // New returns a new Analyzer. If client is nil, it assigns a default implementation.

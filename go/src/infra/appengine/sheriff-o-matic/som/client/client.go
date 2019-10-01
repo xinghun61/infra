@@ -418,22 +418,20 @@ func NewMonorail(c context.Context, baseURL string) monorail.MonorailClient {
 }
 
 // ProdClients returns a set of service clients pointed at production.
-func ProdClients(ctx context.Context) (FindIt, CrBug, monorail.MonorailClient, TestResults) {
+func ProdClients(ctx context.Context) (FindIt, CrBug, monorail.MonorailClient) {
 	findIt := NewFindit("https://findit-for-me.appspot.com")
 	monorailClient := NewMonorail(ctx, "https://monorail-prod.appspot.com")
-	testResultsClient := NewTestResults("https://test-results.appspot.com")
 	crBugs := &CrBugs{}
 
-	return findIt, crBugs, monorailClient, testResultsClient
+	return findIt, crBugs, monorailClient
 }
 
 // StagingClients returns a set of service clients pointed at instances suitable for a
 // staging environment.
-func StagingClients(ctx context.Context) (FindIt, CrBug, monorail.MonorailClient, TestResults) {
+func StagingClients(ctx context.Context) (FindIt, CrBug, monorail.MonorailClient) {
 	findIt := NewFindit("https://findit-for-me-staging.appspot.com")
 	monorailClient := NewMonorail(ctx, "https://monorail-staging.appspot.com")
-	testResultsClient := NewTestResults("https://test-results.appspot.com")
 	crBugs := &CrBugs{}
 
-	return findIt, crBugs, monorailClient, testResultsClient
+	return findIt, crBugs, monorailClient
 }

@@ -46,15 +46,13 @@ func withServiceClients(ctx *router.Context, next router.Handler) {
 
 func setServiceClients(ctx *router.Context, a *analyzer.Analyzer) {
 	if info.AppID(ctx.Context) == prodAppID {
-		findIt, crBug, _, testResults := client.ProdClients(ctx.Context)
+		findIt, crBug, _ := client.ProdClients(ctx.Context)
 		a.CrBug = crBug
 		a.FindIt = findIt
-		a.TestResults = testResults
 	} else {
-		findIt, crBug, _, testResults := client.StagingClients(ctx.Context)
+		findIt, crBug, _ := client.StagingClients(ctx.Context)
 		a.CrBug = crBug
 		a.FindIt = findIt
-		a.TestResults = testResults
 	}
 }
 
