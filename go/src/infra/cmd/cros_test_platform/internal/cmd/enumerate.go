@@ -39,6 +39,7 @@ https://chromium.googlesource.com/chromiumos/infra/proto/+/master/src/test_platf
 		c.authFlags.Register(&c.Flags, site.DefaultAuthOptions)
 		c.Flags.StringVar(&c.inputPath, "input_json", "", "Path that contains JSON encoded test_platform.steps.EnumerationRequest")
 		c.Flags.StringVar(&c.outputPath, "output_json", "", "Path where JSON encoded test_platform.steps.EnumerationResponse should be written.")
+		c.Flags.BoolVar(&c.multiRequest, "multi_request", false, "If true, handle multiple requests at once (transitional flag: crbug.com/1008135).")
 		return c
 	},
 }
@@ -47,8 +48,9 @@ type enumerateRun struct {
 	subcommands.CommandRunBase
 	authFlags authcli.Flags
 
-	inputPath  string
-	outputPath string
+	inputPath    string
+	outputPath   string
+	multiRequest bool
 }
 
 func (c *enumerateRun) Run(a subcommands.Application, args []string, env subcommands.Env) int {
@@ -63,8 +65,18 @@ func (c *enumerateRun) innerRun(a subcommands.Application, args []string, env su
 	if err := c.processCLIArgs(args); err != nil {
 		return err
 	}
-	var request steps.EnumerationRequest
-	if err := readRequest(c.inputPath, &request); err != nil {
+	ctx := cli.GetContext(a, c, env)
+	ctx = setupLogging(ctx)
+
+	requests, err := c.readRequests()
+	if err != nil {
+		return err
+	}
+	if len(requests) == 0 {
+		return errors.Reason("zero requests").Err()
+	}
+	gsPath, err := c.gsPath(requests)
+	if err != nil {
 		return err
 	}
 
@@ -75,15 +87,6 @@ func (c *enumerateRun) innerRun(a subcommands.Application, args []string, env su
 	defer func() {
 		os.RemoveAll(workspace)
 	}()
-
-	ctx := cli.GetContext(a, c, env)
-	ctx = setupLogging(ctx)
-
-	gsPath, err := c.gsPath(&request)
-	if err != nil {
-		return err
-	}
-
 	lp, err := c.downloadArtifacts(ctx, gsPath, workspace)
 	if err != nil {
 		return err
@@ -94,12 +97,20 @@ func (c *enumerateRun) innerRun(a subcommands.Application, args []string, env su
 		// Catastrophic error. There is no reasonable response to write.
 		return writableErr
 	}
-	ts, err := c.enumerate(tm, &request)
-	if err != nil {
-		return err
+
+	resps := make([]*steps.EnumerationResponse, len(requests))
+	merr := errors.NewMultiError()
+	for i, r := range requests {
+		if ts, err := c.enumerate(tm, r); err != nil {
+			merr = append(merr, err)
+		} else {
+			resps[i] = &steps.EnumerationResponse{AutotestInvocations: ts}
+		}
 	}
-	resp := steps.EnumerationResponse{AutotestInvocations: ts}
-	return writeResponseWithError(c.outputPath, &resp, writableErr)
+	if merr.First() != nil {
+		return merr
+	}
+	return c.writeResponseWithError(resps, writableErr)
 }
 
 func (c *enumerateRun) processCLIArgs(args []string) error {
@@ -115,14 +126,69 @@ func (c *enumerateRun) processCLIArgs(args []string) error {
 	return nil
 }
 
-func (c *enumerateRun) gsPath(request *steps.EnumerationRequest) (gs.Path, error) {
-	if request.Metadata == nil {
-		return "", errors.Reason("nil request.metadata").Err()
+func (c *enumerateRun) readRequests() ([]*steps.EnumerationRequest, error) {
+	if c.multiRequest {
+		rs, err := c.readMultiRequest()
+		if err != nil {
+			return nil, err
+		}
+		return rs.Requests, nil
 	}
-	if request.Metadata.TestMetadataUrl == "" {
-		return "", errors.Reason("empty request.metadata.test_metadata_url").Err()
+	r, err := c.readSingleRequest()
+	if err != nil {
+		return nil, err
 	}
-	return gs.Path(request.Metadata.TestMetadataUrl), nil
+	return []*steps.EnumerationRequest{r}, nil
+}
+
+func (c *enumerateRun) writeResponseWithError(resps []*steps.EnumerationResponse, err error) error {
+	if c.multiRequest {
+		return writeResponseWithError(
+			c.outputPath,
+			&steps.EnumerationResponses{
+				Responses: resps,
+			},
+			err,
+		)
+	}
+	if len(resps) > 1 {
+		panic(fmt.Sprintf("multiple responses without -multi_request: %s", resps))
+	}
+	return writeResponseWithError(c.outputPath, resps[0], err)
+}
+
+func (c *enumerateRun) readMultiRequest() (*steps.EnumerationRequests, error) {
+	var requests steps.EnumerationRequests
+	if err := readRequest(c.inputPath, &requests); err != nil {
+		return nil, err
+	}
+	return &requests, nil
+}
+
+func (c *enumerateRun) readSingleRequest() (*steps.EnumerationRequest, error) {
+	var request steps.EnumerationRequest
+	if err := readRequest(c.inputPath, &request); err != nil {
+		return nil, err
+	}
+	return &request, nil
+}
+
+func (c *enumerateRun) gsPath(requests []*steps.EnumerationRequest) (gs.Path, error) {
+	if len(requests) == 0 {
+		panic("zero requests")
+	}
+
+	m := requests[0].GetMetadata().GetTestMetadataUrl()
+	if m == "" {
+		return "", errors.Reason("empty request.metadata.test_metadata_url in %s", requests[0]).Err()
+	}
+	for _, r := range requests[1:] {
+		o := r.GetMetadata().GetTestMetadataUrl()
+		if o != m {
+			return "", errors.Reason("mismatched test metadata URLs: %s vs %s", m, o).Err()
+		}
+	}
+	return gs.Path(m), nil
 }
 
 func (c *enumerateRun) downloadArtifacts(ctx context.Context, gsDir gs.Path, workspace string) (artifacts.LocalPaths, error) {
