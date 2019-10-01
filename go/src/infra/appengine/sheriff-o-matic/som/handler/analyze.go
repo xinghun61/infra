@@ -62,7 +62,7 @@ var errStatus = func(c context.Context, w http.ResponseWriter, status int, msg s
 	w.Write([]byte(msg))
 }
 
-type bySeverity []messages.Alert
+type bySeverity []*messages.Alert
 
 func (a bySeverity) Len() int      { return len(a) }
 func (a bySeverity) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
@@ -124,9 +124,9 @@ func generateBigQueryAlerts(c context.Context, a *analyzer.Analyzer, tree string
 	}
 
 	// Filter out ignored builders/steps.
-	filteredBuilderAlerts := []messages.BuildFailure{}
+	filteredBuilderAlerts := []*messages.BuildFailure{}
 	for _, ba := range builderAlerts {
-		builders := []messages.AlertedBuilder{}
+		builders := []*messages.AlertedBuilder{}
 		for _, b := range ba.Builders {
 			masterURL, err := url.Parse(fmt.Sprintf("https://build.chromium.org/p/%s", b.Master))
 			if err != nil {
@@ -150,9 +150,9 @@ func generateBigQueryAlerts(c context.Context, a *analyzer.Analyzer, tree string
 		}
 	}
 	logging.Infof(c, "filtered alerts, before: %d after: %d", len(builderAlerts), len(filteredBuilderAlerts))
-	builderAlerts = attachFindItResults(c, filteredBuilderAlerts, a.FindIt)
+	attachFindItResults(c, filteredBuilderAlerts, a.FindIt)
 
-	alerts := []messages.Alert{}
+	alerts := []*messages.Alert{}
 	for _, ba := range builderAlerts {
 		title := fmt.Sprintf("Step %q failing on %d builder(s)", ba.StepAtFault.Step.Name, len(ba.Builders))
 		startTime := messages.TimeToEpochTime(time.Now())
@@ -166,7 +166,7 @@ func generateBigQueryAlerts(c context.Context, a *analyzer.Analyzer, tree string
 			}
 		}
 
-		alert := messages.Alert{
+		alert := &messages.Alert{
 			Key:       fmt.Sprintf("%s.%v", tree, ba.Reason.Signature()),
 			Title:     title,
 			Extension: ba,
@@ -188,7 +188,7 @@ func generateBigQueryAlerts(c context.Context, a *analyzer.Analyzer, tree string
 
 	alertsSummary := &messages.AlertsSummary{
 		Timestamp:         messages.TimeToEpochTime(time.Now()),
-		RevisionSummaries: map[string]messages.RevisionSummary{},
+		RevisionSummaries: map[string]*messages.RevisionSummary{},
 		Alerts:            alerts,
 	}
 
@@ -200,8 +200,8 @@ func generateBigQueryAlerts(c context.Context, a *analyzer.Analyzer, tree string
 	return alertsSummary, nil
 }
 
-func attachFindItResults(ctx context.Context, failures []messages.BuildFailure, finditClient client.FindIt) []messages.BuildFailure {
-	for i, bf := range failures {
+func attachFindItResults(ctx context.Context, failures []*messages.BuildFailure, finditClient client.FindIt) {
+	for _, bf := range failures {
 		stepName := bf.StepAtFault.Step.Name
 		for _, someBuilder := range bf.Builders {
 			results, err := finditClient.FinditBuildbucket(ctx, someBuilder.LatestFailure, []string{stepName})
@@ -220,12 +220,7 @@ func attachFindItResults(ctx context.Context, failures []messages.BuildFailure, 
 				bf.IsSupported = bf.IsSupported || result.IsSupported
 			}
 		}
-		// TODO(seanmccullough): Clean up the messages package structs so they all
-		// have pointer fields.
-		failures[i] = bf
 	}
-
-	return failures
 }
 
 func alertCategory(a *messages.Alert) string {
@@ -246,14 +241,14 @@ type groupCounts map[string]map[string]int
 // one alert with multiple builders indicated.
 // FIXME: Move the regression range logic into package regrange
 // This logic is for buildbot alerts, not buildbucket alerts.
-func mergeAlertsByReason(ctx *router.Context, alerts []messages.Alert) (groupCounts, error) {
+func mergeAlertsByReason(ctx *router.Context, alerts []*messages.Alert) (groupCounts, error) {
 	c, p := ctx.Context, ctx.Params
 
 	tree := p.ByName("tree")
 
-	byReason := map[string][]messages.Alert{}
+	byReason := map[string][]*messages.Alert{}
 	for _, alert := range alerts {
-		bf, ok := alert.Extension.(messages.BuildFailure)
+		bf, ok := alert.Extension.(*messages.BuildFailure)
 		if !ok {
 			logging.Infof(c, "%s failed, but isn't a builder-failure: %s", alert.Key, alert.Type)
 			continue
@@ -283,11 +278,11 @@ func mergeAlertsByReason(ctx *router.Context, alerts []messages.Alert) (groupCou
 
 			workC <- func() error {
 				sort.Sort(messages.Alerts(stepAlerts))
-				mergedBF := stepAlerts[0].Extension.(messages.BuildFailure)
+				mergedBF := stepAlerts[0].Extension.(*messages.BuildFailure)
 
 				stepsAtFault := make([]*messages.BuildStep, len(stepAlerts))
 				for i := range stepAlerts {
-					bf, ok := stepAlerts[i].Extension.(messages.BuildFailure)
+					bf, ok := stepAlerts[i].Extension.(*messages.BuildFailure)
 					if !ok {
 						return fmt.Errorf("alert extension %s was not a BuildFailure", stepAlerts[i].Extension)
 					}
@@ -307,7 +302,7 @@ func mergeAlertsByReason(ctx *router.Context, alerts []messages.Alert) (groupCou
 						logging.Warningf(c, "got err while getting annotation from key %s: %s. Ignoring", alr.Key, err)
 					}
 
-					cat := alertCategory(&alr)
+					cat := alertCategory(alr)
 
 					// Count ungrouped alerts as their own groups.
 					gID := groupTitle

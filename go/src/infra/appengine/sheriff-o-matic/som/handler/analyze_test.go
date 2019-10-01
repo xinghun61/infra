@@ -181,7 +181,7 @@ func (mf *mockFindit) Findit(ctx context.Context, master *messages.MasterLocatio
 func TestAttachFinditResults(t *testing.T) {
 	Convey("smoke", t, func() {
 		c := gaetesting.TestingContext()
-		bf := []messages.BuildFailure{
+		bf := []*messages.BuildFailure{
 			{
 				StepAtFault: &messages.BuildStep{
 					Step: &messages.Step{
@@ -191,14 +191,15 @@ func TestAttachFinditResults(t *testing.T) {
 			},
 		}
 		fc := &mockFindit{}
-		res := attachFindItResults(c, bf, fc)
-		So(len(res), ShouldEqual, 1)
+		attachFindItResults(c, bf, fc)
+		So(len(bf), ShouldEqual, 1)
 	})
+
 	Convey("some results", t, func() {
 		c := newTestContext()
-		bf := []messages.BuildFailure{
+		bf := []*messages.BuildFailure{
 			{
-				Builders: []messages.AlertedBuilder{
+				Builders: []*messages.AlertedBuilder{
 					{
 						Name: "some builder",
 					},
@@ -213,9 +214,9 @@ func TestAttachFinditResults(t *testing.T) {
 		fc := &mockFindit{
 			res: []*messages.FinditResultV2{{
 				StepName: "some step",
-				Culprits: []messages.Culprit{
+				Culprits: []*messages.Culprit{
 					{
-						Commit: messages.GitilesCommit{
+						Commit: &messages.GitilesCommit{
 							Host:           "githost",
 							Project:        "proj",
 							ID:             "0xdeadbeef",
@@ -227,10 +228,10 @@ func TestAttachFinditResults(t *testing.T) {
 				IsSupported: true,
 			}},
 		}
-		res := attachFindItResults(c, bf, fc)
-		So(len(res), ShouldEqual, 1)
-		So(len(res[0].Culprits), ShouldEqual, 1)
-		So(res[0].HasFindings, ShouldEqual, true)
+		attachFindItResults(c, bf, fc)
+		So(len(bf), ShouldEqual, 1)
+		So(len(bf[0].Culprits), ShouldEqual, 1)
+		So(bf[0].HasFindings, ShouldEqual, true)
 	})
 }
 
@@ -243,10 +244,10 @@ func TestStoreAlertsSummary(t *testing.T) {
 		c = setUpGitiles(c)
 		a := analyzer.New(5, 100)
 		err := storeAlertsSummary(c, a, "some tree", &messages.AlertsSummary{
-			Alerts: []messages.Alert{
+			Alerts: []*messages.Alert{
 				{
 					Title: "foo",
-					Extension: messages.BuildFailure{
+					Extension: &messages.BuildFailure{
 						RegressionRanges: []*messages.RegressionRange{
 							{Repo: "some repo", URL: "about:blank", Positions: []string{}, Revisions: []string{}},
 						},
@@ -300,7 +301,7 @@ func TestMergeAlertsByReason(t *testing.T) {
 
 		tests := []struct {
 			name    string
-			in      []messages.Alert
+			in      []*messages.Alert
 			want    []model.Annotation
 			wantErr error
 		}{
@@ -310,7 +311,7 @@ func TestMergeAlertsByReason(t *testing.T) {
 			},
 			{
 				name: "no merges",
-				in: []messages.Alert{
+				in: []*messages.Alert{
 					{
 						Type: messages.AlertBuildFailure,
 						Extension: messages.BuildFailure{
@@ -324,7 +325,7 @@ func TestMergeAlertsByReason(t *testing.T) {
 					},
 					{
 						Type: messages.AlertBuildFailure,
-						Extension: messages.BuildFailure{
+						Extension: &messages.BuildFailure{
 							Reason: &messages.Reason{
 								Raw: &fakeReasonRaw{
 									signature: "reason_b",
@@ -338,10 +339,10 @@ func TestMergeAlertsByReason(t *testing.T) {
 			},
 			{
 				name: "multiple builders fail on bad_test",
-				in: []messages.Alert{
+				in: []*messages.Alert{
 					{
 						Type: messages.AlertBuildFailure,
-						Extension: messages.BuildFailure{
+						Extension: &messages.BuildFailure{
 							Reason: &messages.Reason{
 								Raw: &fakeReasonRaw{
 									signature: "bad_test",
@@ -352,7 +353,7 @@ func TestMergeAlertsByReason(t *testing.T) {
 					},
 					{
 						Type: messages.AlertBuildFailure,
-						Extension: messages.BuildFailure{
+						Extension: &messages.BuildFailure{
 							Reason: &messages.Reason{
 								Raw: &fakeReasonRaw{
 									signature: "bad_test",
@@ -363,7 +364,7 @@ func TestMergeAlertsByReason(t *testing.T) {
 					},
 					{
 						Type: messages.AlertBuildFailure,
-						Extension: messages.BuildFailure{
+						Extension: &messages.BuildFailure{
 							Reason: &messages.Reason{
 								Raw: &fakeReasonRaw{
 									signature: "bad_test",

@@ -105,8 +105,8 @@ func New(minBuilds, maxBuilds int) *Analyzer {
 }
 
 // GetRevisionSummaries returns a slice of RevisionSummaries for the list of hashes.
-func (a *Analyzer) GetRevisionSummaries(hashes []string) ([]messages.RevisionSummary, error) {
-	ret := []messages.RevisionSummary{}
+func (a *Analyzer) GetRevisionSummaries(hashes []string) ([]*messages.RevisionSummary, error) {
+	ret := []*messages.RevisionSummary{}
 	for _, h := range hashes {
 		a.rslck.Lock()
 		s, ok := a.revisionSummaries[h]
@@ -114,7 +114,7 @@ func (a *Analyzer) GetRevisionSummaries(hashes []string) ([]messages.RevisionSum
 		if !ok {
 			continue
 		}
-		ret = append(ret, s)
+		ret = append(ret, &s)
 	}
 
 	return ret, nil

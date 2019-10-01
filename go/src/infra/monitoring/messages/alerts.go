@@ -77,10 +77,10 @@ func TimeToEpochTime(t time.Time) EpochTime {
 
 // AlertsSummary is the top-level entity in alerts.json.
 type AlertsSummary struct {
-	Alerts            []Alert                    `json:"alerts"`
-	Resolved          []Alert                    `json:"resolved"`
-	RevisionSummaries map[string]RevisionSummary `json:"revision_summaries"`
-	Timestamp         EpochTime                  `json:"timestamp"`
+	Alerts            []*Alert                    `json:"alerts"`
+	Resolved          []*Alert                    `json:"resolved"`
+	RevisionSummaries map[string]*RevisionSummary `json:"revision_summaries"`
+	Timestamp         EpochTime                   `json:"timestamp"`
 }
 
 // Severity is a sorted order of how severe an alert is.
@@ -119,7 +119,7 @@ type Alert struct {
 	Severity  Severity  `json:"severity"` // TODO: consider using an enum.
 	Time      EpochTime `json:"time"`
 	StartTime EpochTime `json:"start_time"`
-	Links     []Link    `json:"links"`
+	Links     []*Link   `json:"links"`
 	Tags      []string  `json:"tags"`
 	// Type determines what kind of extension has been set on the Alert.
 	Type AlertType `json:"type"`
@@ -129,7 +129,7 @@ type Alert struct {
 }
 
 // Alerts is a slice of alerts, sorted by Key by default
-type Alerts []Alert
+type Alerts []*Alert
 
 func (a Alerts) Len() int      { return len(a) }
 func (a Alerts) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
@@ -146,11 +146,11 @@ type Link struct {
 // BuildFailure is an Extension.
 type BuildFailure struct {
 	TreeCloser       bool               `json:"tree_closer"`
-	Builders         []AlertedBuilder   `json:"builders"`
+	Builders         []*AlertedBuilder  `json:"builders"`
 	StepAtFault      *BuildStep         `json:"-"`
 	Reason           *Reason            `json:"reason"`
 	RegressionRanges []*RegressionRange `json:"regression_ranges"`
-	SuspectedCLs     []SuspectCL        `json:"suspected_cls"`
+	SuspectedCLs     []*SuspectCL       `json:"suspected_cls"`
 	// Status of Findit analysis: RUNNING or FINISHED.
 	FinditStatus string `json:"findit_status"`
 	// Url to Findit result page.
@@ -163,7 +163,7 @@ type BuildFailure struct {
 	// gitiles information like host/project/ref to identify a commit, so
 	// that it can support different LUCI projects easily.
 	// When presents, SuspectedCLs should be empty.
-	Culprits []Culprit `json:"culprits"`
+	Culprits []*Culprit `json:"culprits"`
 }
 
 // BuildStep is a step which was run in a particular build. Useful for analyzing
@@ -238,10 +238,10 @@ type RegressionRange struct {
 	URL  string `json:"url"`
 	// Revisions have the first and last revisions in the range,
 	// And RevisionsWithResults have the revisions that are suspected.
-	Revisions            []string                   `json:"revisions"`
-	Positions            []string                   `json:"positions"`
-	RevisionsWithResults []RevisionWithFinditResult `json:"revisions_with_results"`
-	Host                 string                     `json:"host"`
+	Revisions            []string                    `json:"revisions"`
+	Positions            []string                    `json:"positions"`
+	RevisionsWithResults []*RevisionWithFinditResult `json:"revisions_with_results"`
+	Host                 string                      `json:"host"`
 }
 
 // RevisionWithFinditResult saves information from Findit about a specific revision.

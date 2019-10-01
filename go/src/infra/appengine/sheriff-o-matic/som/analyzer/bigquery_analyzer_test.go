@@ -820,7 +820,7 @@ func TestProcessBQResults(t *testing.T) {
 	})
 }
 
-type byFirstFailure []messages.BuildFailure
+type byFirstFailure []*messages.BuildFailure
 
 func (f byFirstFailure) Len() int      { return len(f) }
 func (f byFirstFailure) Swap(i, j int) { f[i], f[j] = f[j], f[i] }
@@ -828,7 +828,7 @@ func (f byFirstFailure) Less(i, j int) bool {
 	return f[i].Builders[0].FirstFailure < f[j].Builders[0].FirstFailure
 }
 
-type byTests []messages.BuildFailure
+type byTests []*messages.BuildFailure
 
 func (f byTests) Len() int      { return len(f) }
 func (f byTests) Swap(i, j int) { f[i], f[j] = f[j], f[i] }
@@ -846,15 +846,15 @@ func (f byTests) Less(i, j int) bool {
 
 func TestFilterHierarchicalSteps(t *testing.T) {
 	Convey("smoke", t, func() {
-		failures := []messages.BuildFailure{}
+		failures := []*messages.BuildFailure{}
 		got := filterHierarchicalSteps(failures)
 		So(len(got), ShouldEqual, 0)
 	})
 
 	Convey("single step, single builder", t, func() {
-		failures := []messages.BuildFailure{
+		failures := []*messages.BuildFailure{
 			{
-				Builders: []messages.AlertedBuilder{
+				Builders: []*messages.AlertedBuilder{
 					{
 						Project: "project",
 						Bucket:  "bucket",
@@ -875,9 +875,9 @@ func TestFilterHierarchicalSteps(t *testing.T) {
 	})
 
 	Convey("nested step, single builder", t, func() {
-		failures := []messages.BuildFailure{
+		failures := []*messages.BuildFailure{
 			{
-				Builders: []messages.AlertedBuilder{
+				Builders: []*messages.AlertedBuilder{
 					{
 						Project: "project",
 						Bucket:  "bucket",
@@ -891,7 +891,7 @@ func TestFilterHierarchicalSteps(t *testing.T) {
 				},
 			},
 			{
-				Builders: []messages.AlertedBuilder{
+				Builders: []*messages.AlertedBuilder{
 					{
 						Project: "project",
 						Bucket:  "bucket",
@@ -905,7 +905,7 @@ func TestFilterHierarchicalSteps(t *testing.T) {
 				},
 			},
 			{
-				Builders: []messages.AlertedBuilder{
+				Builders: []*messages.AlertedBuilder{
 					{
 						Project: "project",
 						Bucket:  "bucket",
@@ -926,9 +926,9 @@ func TestFilterHierarchicalSteps(t *testing.T) {
 	})
 
 	Convey("single step, multiple builders", t, func() {
-		failures := []messages.BuildFailure{
+		failures := []*messages.BuildFailure{
 			{
-				Builders: []messages.AlertedBuilder{
+				Builders: []*messages.AlertedBuilder{
 					{
 						Project: "project",
 						Bucket:  "bucket",
@@ -954,9 +954,9 @@ func TestFilterHierarchicalSteps(t *testing.T) {
 	})
 
 	Convey("nested step, multiple builder", t, func() {
-		failures := []messages.BuildFailure{
+		failures := []*messages.BuildFailure{
 			{
-				Builders: []messages.AlertedBuilder{
+				Builders: []*messages.AlertedBuilder{
 					{
 						Project: "project",
 						Bucket:  "bucket",
@@ -975,7 +975,7 @@ func TestFilterHierarchicalSteps(t *testing.T) {
 				},
 			},
 			{
-				Builders: []messages.AlertedBuilder{
+				Builders: []*messages.AlertedBuilder{
 					{
 						Project: "project",
 						Bucket:  "bucket",
@@ -994,7 +994,7 @@ func TestFilterHierarchicalSteps(t *testing.T) {
 				},
 			},
 			{
-				Builders: []messages.AlertedBuilder{
+				Builders: []*messages.AlertedBuilder{
 					{
 						Project: "project",
 						Bucket:  "bucket",
@@ -1021,9 +1021,9 @@ func TestFilterHierarchicalSteps(t *testing.T) {
 	})
 
 	Convey("mixed nested steps, multiple builder", t, func() {
-		failures := []messages.BuildFailure{
+		failures := []*messages.BuildFailure{
 			{
-				Builders: []messages.AlertedBuilder{
+				Builders: []*messages.AlertedBuilder{
 					{
 						Project: "project",
 						Bucket:  "bucket",
@@ -1042,7 +1042,7 @@ func TestFilterHierarchicalSteps(t *testing.T) {
 				},
 			},
 			{
-				Builders: []messages.AlertedBuilder{
+				Builders: []*messages.AlertedBuilder{
 					{
 						Project: "project",
 						Bucket:  "bucket",
@@ -1061,7 +1061,7 @@ func TestFilterHierarchicalSteps(t *testing.T) {
 				},
 			},
 			{
-				Builders: []messages.AlertedBuilder{
+				Builders: []*messages.AlertedBuilder{
 					{
 						Project: "project",
 						Bucket:  "bucket",
@@ -1075,7 +1075,7 @@ func TestFilterHierarchicalSteps(t *testing.T) {
 				},
 			},
 			{
-				Builders: []messages.AlertedBuilder{
+				Builders: []*messages.AlertedBuilder{
 					{
 						Project: "project",
 						Bucket:  "bucket",
@@ -1089,7 +1089,7 @@ func TestFilterHierarchicalSteps(t *testing.T) {
 				},
 			},
 			{
-				Builders: []messages.AlertedBuilder{
+				Builders: []*messages.AlertedBuilder{
 					{
 						Project: "project",
 						Bucket:  "bucket",
@@ -1108,7 +1108,7 @@ func TestFilterHierarchicalSteps(t *testing.T) {
 				},
 			},
 			{
-				Builders: []messages.AlertedBuilder{
+				Builders: []*messages.AlertedBuilder{
 					{
 						Project: "project",
 						Bucket:  "bucket",

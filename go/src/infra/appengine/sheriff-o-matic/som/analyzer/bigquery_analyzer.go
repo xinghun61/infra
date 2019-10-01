@@ -203,7 +203,7 @@ func (b *bqFailure) Title(bses []*messages.BuildStep) string {
 //   - Merge alerts for sets of multiple failing steps. Currently will return one alert
 //     for each failing step on a builder. If step_a and step_b are failing on the same
 //     builder or set of builders, they should be merged into a single alert.
-func GetBigQueryAlerts(ctx context.Context, tree string) ([]messages.BuildFailure, error) {
+func GetBigQueryAlerts(ctx context.Context, tree string) ([]*messages.BuildFailure, error) {
 	appID := info.AppID(ctx)
 	if appID == "None" {
 		appID = "sheriff-o-matic-staging"
@@ -254,9 +254,9 @@ func generateBuilderURL(project string, bucket string, builderName string) strin
 	return fmt.Sprintf("https://ci.chromium.org/p/%s/builders/%s/%s", project, bucket, url.PathEscape(builderName))
 }
 
-func processBQResults(ctx context.Context, it nexter) ([]messages.BuildFailure, error) {
-	alertedBuildersByStep := map[string][]messages.AlertedBuilder{}
-	alertedBuildersByStepAndTests := map[string]map[int64][]messages.AlertedBuilder{}
+func processBQResults(ctx context.Context, it nexter) ([]*messages.BuildFailure, error) {
+	alertedBuildersByStep := map[string][]*messages.AlertedBuilder{}
+	alertedBuildersByStepAndTests := map[string]map[int64][]*messages.AlertedBuilder{}
 	testNamesTruncForFingerprint := map[int64]string{}
 
 	for {
@@ -296,7 +296,7 @@ func processBQResults(ctx context.Context, it nexter) ([]messages.BuildFailure, 
 				GitHash:  gitEnd.ID.StringVal,
 			}
 		}
-		ab := messages.AlertedBuilder{
+		ab := &messages.AlertedBuilder{
 			Project:          r.Project,
 			Bucket:           r.Bucket,
 			Name:             r.Builder,
@@ -311,9 +311,9 @@ func processBQResults(ctx context.Context, it nexter) ([]messages.BuildFailure, 
 
 		forStep, ok := alertedBuildersByStep[r.StepName]
 		if !ok {
-			forStep = []messages.AlertedBuilder{}
+			forStep = []*messages.AlertedBuilder{}
 			alertedBuildersByStep[r.StepName] = forStep
-			alertedBuildersByStepAndTests[r.StepName] = map[int64][]messages.AlertedBuilder{}
+			alertedBuildersByStepAndTests[r.StepName] = map[int64][]*messages.AlertedBuilder{}
 		}
 		forStep = append(forStep, ab)
 		alertedBuildersByStep[r.StepName] = forStep
@@ -322,7 +322,7 @@ func processBQResults(ctx context.Context, it nexter) ([]messages.BuildFailure, 
 
 			forTest, ok := alertedBuildersByStepAndTests[r.StepName][r.TestNamesFingerprint.Int64]
 			if !ok {
-				forTest = []messages.AlertedBuilder{}
+				forTest = []*messages.AlertedBuilder{}
 				alertedBuildersByStepAndTests[r.StepName][r.TestNamesFingerprint.Int64] = forTest
 			}
 			forTest = append(forTest, ab)
@@ -330,7 +330,7 @@ func processBQResults(ctx context.Context, it nexter) ([]messages.BuildFailure, 
 		}
 	}
 
-	ret := []messages.BuildFailure{}
+	ret := []*messages.BuildFailure{}
 	for stepName, alertedBuilders := range alertedBuildersByStep {
 		alertedBuilders := alertedBuilders
 		// While we have the alertedBuilders for this alert, we should identify the
@@ -380,7 +380,8 @@ func processBQResults(ctx context.Context, it nexter) ([]messages.BuildFailure, 
 				for _, testName := range testNames {
 					reason.Tests = append(reason.Tests, step.TestWithResult{
 						TestName: testName,
-						// TODO: set these, as they are in test_step.go:
+						// These are set later by the analyze.go handler, so it calls
+						// findit less frequently
 						// IsFlaky
 						// SuspectedCLs
 						// Expectations
@@ -390,7 +391,7 @@ func processBQResults(ctx context.Context, it nexter) ([]messages.BuildFailure, 
 				for _, abForTest := range buildersForTest {
 					reason.NumFailingTests = abForTest.NumFailingTests
 				}
-				bf := messages.BuildFailure{
+				bf := &messages.BuildFailure{
 					StepAtFault: &messages.BuildStep{
 						Step: &messages.Step{
 							Name: stepName,
@@ -410,7 +411,7 @@ func processBQResults(ctx context.Context, it nexter) ([]messages.BuildFailure, 
 				kind:     "basic",
 				severity: messages.ReliableFailure,
 			}
-			bf := messages.BuildFailure{
+			bf := &messages.BuildFailure{
 				StepAtFault: &messages.BuildStep{
 					Step: &messages.Step{
 						Name: stepName,
@@ -430,21 +431,21 @@ func processBQResults(ctx context.Context, it nexter) ([]messages.BuildFailure, 
 	return ret, nil
 }
 
-func builderKey(b messages.AlertedBuilder) string {
+func builderKey(b *messages.AlertedBuilder) string {
 	return fmt.Sprintf("%s/%s/%s", b.Project, b.Bucket, b.Name)
 }
 
-func filterHierarchicalSteps(failures []messages.BuildFailure) []messages.BuildFailure {
-	ret := []messages.BuildFailure{}
+func filterHierarchicalSteps(failures []*messages.BuildFailure) []*messages.BuildFailure {
+	ret := []*messages.BuildFailure{}
 	// First group failures by builder.
-	failuresByBuilder := map[string][]messages.BuildFailure{}
-	builders := map[string]messages.AlertedBuilder{}
+	failuresByBuilder := map[string][]*messages.BuildFailure{}
+	builders := map[string]*messages.AlertedBuilder{}
 	for _, f := range failures {
 		for _, b := range f.Builders {
 			key := builderKey(b)
 			builders[key] = b
 			if _, ok := failuresByBuilder[key]; !ok {
-				failuresByBuilder[key] = []messages.BuildFailure{}
+				failuresByBuilder[key] = []*messages.BuildFailure{}
 			}
 			failuresByBuilder[key] = append(failuresByBuilder[key], f)
 		}
@@ -474,7 +475,7 @@ func filterHierarchicalSteps(failures []messages.BuildFailure) []messages.BuildF
 	// Now filter out BuildFailures whose StepAtFault has been filtered out for
 	// that builder.
 	for _, failure := range failures {
-		filteredBuilders := []messages.AlertedBuilder{}
+		filteredBuilders := []*messages.AlertedBuilder{}
 		for _, b := range failure.Builders {
 			key := builderKey(b)
 			filtered := filteredFailuresByBuilder[key]
@@ -496,7 +497,7 @@ func filterHierarchicalSteps(failures []messages.BuildFailure) []messages.BuildF
 // populated, though that may not translate well because multiple builders are
 // grouped by failing step and the same "step" may occur at different
 // indexes in different builders.
-type byStepName []messages.BuildFailure
+type byStepName []*messages.BuildFailure
 
 func (a byStepName) Len() int      { return len(a) }
 func (a byStepName) Swap(i, j int) { a[i], a[j] = a[j], a[i] }

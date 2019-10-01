@@ -86,13 +86,13 @@ func GetAlerts(ctx *router.Context, unresolved bool, resolved bool) *messages.Al
 	}
 
 	alertsSummary := &messages.AlertsSummary{
-		RevisionSummaries: make(map[string]messages.RevisionSummary),
+		RevisionSummaries: make(map[string]*messages.RevisionSummary),
 	}
 	if len(alertResults) >= 1 {
-		alertsSummary.Alerts = make([]messages.Alert, len(alertResults))
+		alertsSummary.Alerts = make([]*messages.Alert, len(alertResults))
 	}
 	if len(resolvedResults) >= 1 {
-		alertsSummary.Resolved = make([]messages.Alert, len(resolvedResults))
+		alertsSummary.Resolved = make([]*messages.Alert, len(resolvedResults))
 	}
 
 	for i, alertJSON := range alertResults {
@@ -122,8 +122,8 @@ func GetAlerts(ctx *router.Context, unresolved bool, resolved bool) *messages.Al
 	}
 
 	for _, summaryJSON := range revisionSummaryResults {
-		var summary messages.RevisionSummary
-		err := json.Unmarshal(summaryJSON.Contents, &summary)
+		summary := &messages.RevisionSummary{}
+		err := json.Unmarshal(summaryJSON.Contents, summary)
 		if err != nil {
 			errStatus(c, w, http.StatusInternalServerError, err.Error())
 			return nil
@@ -212,7 +212,7 @@ func putAlertsDatastore(c context.Context, tree string, alertsSummary *messages.
 			Resolved:     false,
 			AutoResolved: false,
 		})
-		alertMap[alert.Key] = &alert
+		alertMap[alert.Key] = alert
 	}
 
 	// Add/modify alerts.
