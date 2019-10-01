@@ -3,12 +3,13 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+# TODO(vadimsh, crbug.com/835919): Remove this after Oct 10 2019.
+
 import argparse
 import logging
 import os
+import shutil
 import sys
-
-from install_cipd_packages import cipd_ensure_list
 
 
 BOOTSTRAP_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -26,13 +27,17 @@ def main():
     logging.getLogger().setLevel(logging.DEBUG)
 
   base = os.path.abspath(options.dest)
-  cipd_ensure_list(os.path.join(base, 'google_appengine'), [
-    ('infra/gae_sdk/python/all', 'latest'),
-  ])
-  cipd_ensure_list(os.path.join(base, 'go_appengine'), [
-    ('infra/gae_sdk/go/${os=mac,linux}-${arch}', 'latest'),
-  ])
+
+  rmtree(os.path.join(base, 'google_appengine'))
+  rmtree(os.path.join(base, 'go_appengine'))
   return 0
+
+
+def rmtree(path):
+  if not os.path.exists(path):
+    return
+  logging.info('Removing %s', path)
+  shutil.rmtree(path, ignore_errors=True)
 
 
 if __name__ == '__main__':

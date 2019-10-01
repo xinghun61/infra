@@ -17,7 +17,6 @@ INFRA_ROOT = os.path.dirname(os.path.abspath(__file__))
 
 # Whitelist of packages to test on Windows.
 WIN_ENABLED_PACKAGES = [
-  'infra/libs/buildbot',
   'infra/libs/decorators',
   'infra/libs/gitiles',
   'infra/libs/process_invocation',
