@@ -27,7 +27,6 @@
   * [cros_flash_scheduler](#recipes-cros_flash_scheduler) &mdash; This recipe is used to keep Chrome's pools of CrOS DUTs up to date.
   * [depot_tools_builder](#recipes-depot_tools_builder) &mdash; Recipe to build windows depot_tools bootstrap zipfile.
   * [docker_image_builder](#recipes-docker_image_builder)
-  * [gae_sdk_cipd_packager](#recipes-gae_sdk_cipd_packager)
   * [gerrit_hello_world](#recipes-gerrit_hello_world) &mdash; Pushes a trivial CL to Gerrit to verify git authentication works on LUCI.
   * [git_cache_updater](#recipes-git_cache_updater) &mdash; Updates the Git Cache zip files.
   * [goma_hello_world](#recipes-goma_hello_world) &mdash; Compiles trivial C++ program using Goma.
@@ -843,11 +842,6 @@ Recipe to build windows depot_tools bootstrap zipfile.
 [DEPS](/recipes/recipes/docker_image_builder.py#8): [build/docker][build/recipe_modules/docker], [depot\_tools/bot\_update][depot_tools/recipe_modules/bot_update], [depot\_tools/gclient][depot_tools/recipe_modules/gclient], [recipe\_engine/file][recipe_engine/recipe_modules/file], [recipe\_engine/path][recipe_engine/recipe_modules/path], [recipe\_engine/properties][recipe_engine/recipe_modules/properties], [recipe\_engine/raw\_io][recipe_engine/recipe_modules/raw_io], [recipe\_engine/runtime][recipe_engine/recipe_modules/runtime], [recipe\_engine/service\_account][recipe_engine/recipe_modules/service_account], [recipe\_engine/step][recipe_engine/recipe_modules/step], [recipe\_engine/time][recipe_engine/recipe_modules/time]
 
 &mdash; **def [RunSteps](/recipes/recipes/docker_image_builder.py#37)(api, arch_type):**
-### *recipes* / [gae\_sdk\_cipd\_packager](/recipes/recipes/gae_sdk_cipd_packager.py)
-
-[DEPS](/recipes/recipes/gae_sdk_cipd_packager.py#9): [build/gae\_sdk][build/recipe_modules/gae_sdk], [build/zip][build/recipe_modules/zip], [depot\_tools/cipd][depot_tools/recipe_modules/cipd], [depot\_tools/gsutil][depot_tools/recipe_modules/gsutil], [recipe\_engine/path][recipe_engine/recipe_modules/path], [recipe\_engine/python][recipe_engine/recipe_modules/python], [recipe\_engine/raw\_io][recipe_engine/recipe_modules/raw_io], [recipe\_engine/runtime][recipe_engine/recipe_modules/runtime], [recipe\_engine/step][recipe_engine/recipe_modules/step]
-
-&mdash; **def [RunSteps](/recipes/recipes/gae_sdk_cipd_packager.py#21)(api):**
 ### *recipes* / [gerrit\_hello\_world](/recipes/recipes/gerrit_hello_world.py)
 
 [DEPS](/recipes/recipes/gerrit_hello_world.py#8): [recipe\_engine/context][recipe_engine/recipe_modules/context], [recipe\_engine/file][recipe_engine/recipe_modules/file], [recipe\_engine/path][recipe_engine/recipe_modules/path], [recipe\_engine/platform][recipe_engine/recipe_modules/platform], [recipe\_engine/properties][recipe_engine/recipe_modules/properties], [recipe\_engine/step][recipe_engine/recipe_modules/step], [recipe\_engine/time][recipe_engine/recipe_modules/time]
@@ -1248,7 +1242,6 @@ Runs a step which adds a link to the current CL if there is one.
 [build/recipe_modules/chromium]: https://chromium.googlesource.com/chromium/tools/build.git/+/2870f738789e7ee4cf8b2b69d56221c8382f6f7b/scripts/slave/README.recipes.md#recipe_modules-chromium
 [build/recipe_modules/chromium_checkout]: https://chromium.googlesource.com/chromium/tools/build.git/+/2870f738789e7ee4cf8b2b69d56221c8382f6f7b/scripts/slave/README.recipes.md#recipe_modules-chromium_checkout
 [build/recipe_modules/docker]: https://chromium.googlesource.com/chromium/tools/build.git/+/2870f738789e7ee4cf8b2b69d56221c8382f6f7b/scripts/slave/README.recipes.md#recipe_modules-docker
-[build/recipe_modules/gae_sdk]: https://chromium.googlesource.com/chromium/tools/build.git/+/2870f738789e7ee4cf8b2b69d56221c8382f6f7b/scripts/slave/README.recipes.md#recipe_modules-gae_sdk
 [build/recipe_modules/goma]: https://chromium.googlesource.com/chromium/tools/build.git/+/2870f738789e7ee4cf8b2b69d56221c8382f6f7b/scripts/slave/README.recipes.md#recipe_modules-goma
 [build/recipe_modules/puppet_service_account]: https://chromium.googlesource.com/chromium/tools/build.git/+/2870f738789e7ee4cf8b2b69d56221c8382f6f7b/scripts/slave/README.recipes.md#recipe_modules-puppet_service_account
 [build/recipe_modules/repo]: https://chromium.googlesource.com/chromium/tools/build.git/+/2870f738789e7ee4cf8b2b69d56221c8382f6f7b/scripts/slave/README.recipes.md#recipe_modules-repo
