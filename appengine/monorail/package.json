@@ -42,7 +42,7 @@
     "@chopsui/prpc-client": "0.0.2",
     "@chopsui/tsmon-client": "1.0.1",
     "@webcomponents/webcomponentsjs": "^2.2.7",
-    "chart.js": "^2.7.2",
+    "chart.js": "^2.9.4",
     "debounce": "^1.2.0",
     "diff": "^4.0.1",
     "lit-element": "^2.0.0",
