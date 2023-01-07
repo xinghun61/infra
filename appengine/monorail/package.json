@@ -10,7 +10,7 @@
     "deep-equal": "^1.0.1",
     "eslint": "^5.16.0",
     "eslint-config-google": "^0.12.0",
-    "html-webpack-plugin": "^3.2.0",
+    "html-webpack-plugin": "^5.5.0",
     "istanbul-instrumenter-loader": "^3.0.1",
     "karma": "^4.0.0",
     "karma-chrome-launcher": "^2.2.0",
